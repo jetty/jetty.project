@@ -70,19 +70,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@RunWith (AdvancedRunner.class)
+@RunWith(AdvancedRunner.class)
 public class AsyncIOServletTest
 {
     private Server server;
     private ServerConnector connector;
-    private ServletContextHandler context;
     private String path = "/path";
     private static final ThreadLocal<Throwable> scope = new ThreadLocal<>();
 
     public void startServer(HttpServlet servlet) throws Exception
     {
-        startServer(servlet,30000);
+        startServer(servlet, 30000);
     }
+
     public void startServer(HttpServlet servlet, long idleTimeout) throws Exception
     {
         server = new Server();
@@ -91,7 +91,7 @@ public class AsyncIOServletTest
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(false);
         server.addConnector(connector);
 
-        context = new ServletContextHandler(server, "/", false, false);
+        ServletContextHandler context = new ServletContextHandler(server, "/", false, false);
         ServletHolder holder = new ServletHolder(servlet);
         holder.setAsyncSupported(true);
         context.addServlet(holder, path);
@@ -101,18 +101,19 @@ public class AsyncIOServletTest
             @Override
             public void enterScope(Context context, Request request, Object reason)
             {
-                if (scope.get()!=null)
+                if (scope.get() != null)
                 {
-                    System.err.println(Thread.currentThread()+" Already entered scope!!!");
+                    System.err.println(Thread.currentThread() + " Already entered scope!!!");
                     scope.get().printStackTrace();
                     throw new IllegalStateException();
                 }
                 scope.set(new Throwable());
             }
+
             @Override
             public void exitScope(Context context, Request request)
             {
-                if (scope.get()==null)
+                if (scope.get() == null)
                     throw new IllegalStateException();
                 scope.set(null);
             }
@@ -123,7 +124,7 @@ public class AsyncIOServletTest
 
     private static void assertScope()
     {
-        if (scope.get()==null)
+        if (scope.get() == null)
             Assert.fail("Not in scope");
     }
 
@@ -131,7 +132,7 @@ public class AsyncIOServletTest
     public void stopServer() throws Exception
     {
         server.stop();
-        if (scope.get()!=null)
+        if (scope.get() != null)
         {
             System.err.println("Still in scope after stop!");
             scope.get().printStackTrace();
@@ -185,8 +186,8 @@ public class AsyncIOServletTest
                     public void onError(Throwable t)
                     {
                         assertScope();
-                        Assert.assertThat("onError type",t,instanceOf(throwable.getClass()));
-                        Assert.assertThat("onError message",t.getMessage(),is(throwable.getMessage()));
+                        Assert.assertThat("onError type", t, instanceOf(throwable.getClass()));
+                        Assert.assertThat("onError message", t.getMessage(), is(throwable.getMessage()));
                         latch.countDown();
                         response.setStatus(500);
 
@@ -211,13 +212,12 @@ public class AsyncIOServletTest
             output.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String line=in.readLine();
+            String line = in.readLine();
             assertThat(line, containsString("500 Server Error"));
-            while (line.length()>0)
+            while (line.length() > 0)
             {
-                line=in.readLine();
+                line = in.readLine();
             }
-            line=in.readLine();
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -263,7 +263,7 @@ public class AsyncIOServletTest
                     }
                 });
             }
-        },1000);
+        }, 1000);
 
         String data1 = "0123456789";
         String data2 = "ABCDEF";
@@ -301,13 +301,13 @@ public class AsyncIOServletTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
-                if (request.getDispatcherType()==DispatcherType.ERROR)
+                if (request.getDispatcherType() == DispatcherType.ERROR)
                 {
                     response.flushBuffer();
                     return;
                 }
 
-                final AsyncContext asyncContext = request.startAsync(request, response);
+                request.startAsync(request, response);
                 request.getInputStream().setReadListener(new ReadListener()
                 {
                     @Override
@@ -328,7 +328,10 @@ public class AsyncIOServletTest
                     {
                         assertScope();
                         errors.incrementAndGet();
-                        throw new NullPointerException("explicitly_thrown_by_test_2"){{this.initCause(t);}};
+                        throw new NullPointerException("explicitly_thrown_by_test_2")
+                        {{
+                            this.initCause(t);
+                        }};
                     }
                 });
             }
@@ -428,8 +431,8 @@ public class AsyncIOServletTest
     {
         final CountDownLatch latch = new CountDownLatch(1);
         String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
-        for (int i=0;i<10;i++)
-            text=text+text;
+        for (int i = 0; i < 10; i++)
+            text = text + text;
         final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
 
         startServer(new HttpServlet()
@@ -455,11 +458,11 @@ public class AsyncIOServletTest
                                 Thread.sleep(100);
                                 out.write(data);
                             }
-                            catch(IOException e)
+                            catch (IOException e)
                             {
                                 throw e;
                             }
-                            catch(Exception e)
+                            catch (Exception e)
                             {
                                 e.printStackTrace();
                             }
@@ -488,13 +491,13 @@ public class AsyncIOServletTest
             output.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String line=in.readLine();
+            String line = in.readLine();
             assertThat(line, containsString("200 OK"));
-            while (line.length()>0)
-                line=in.readLine();
-            line=in.readLine();
+            while (line.length() > 0)
+                line = in.readLine();
+            line = in.readLine();
             assertThat(line, not(containsString(" ")));
-            line=in.readLine();
+            line = in.readLine();
             assertThat(line, containsString("discontent. How Now Brown Cow. The "));
         }
 
@@ -523,9 +526,9 @@ public class AsyncIOServletTest
 
                 in.setReadListener(new ReadListener()
                 {
-                    transient int _i=0;
-                    transient boolean _minusOne=false;;
-                    transient boolean _finished=false;;
+                    transient int _i = 0;
+                    transient boolean _minusOne = false;
+                    transient boolean _finished = false;
 
                     @Override
                     public void onError(Throwable t)
@@ -539,24 +542,24 @@ public class AsyncIOServletTest
                     public void onDataAvailable() throws IOException
                     {
                         assertScope();
-                        while(in.isReady() && !in.isFinished())
+                        while (in.isReady() && !in.isFinished())
                         {
                             int b = in.read();
-                            if (b==-1)
-                                _minusOne=true;
-                            else if (data[_i++]!=b)
+                            if (b == -1)
+                                _minusOne = true;
+                            else if (data[_i++] != b)
                                 throw new IllegalStateException();
                         }
 
                         if (in.isFinished())
-                            _finished=true;
+                            _finished = true;
                     }
 
                     @Override
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        out.write(String.format("i=%d eof=%b finished=%b",_i,_minusOne,_finished).getBytes(StandardCharsets.ISO_8859_1));
+                        out.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(StandardCharsets.ISO_8859_1));
                         async.complete();
                     }
                 });
@@ -565,8 +568,8 @@ public class AsyncIOServletTest
 
         String request = "GET " + path + " HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "Content-Type: text/plain\r\n"+
-                "Content-Length: "+data.length+"\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + data.length + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
 
@@ -579,12 +582,12 @@ public class AsyncIOServletTest
             output.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String line=in.readLine();
+            String line = in.readLine();
             assertThat(line, containsString("200 OK"));
-            while (line.length()>0)
-                line=in.readLine();
-            line=in.readLine();
-            assertThat(line, containsString("i="+data.length+" eof=true finished=true"));
+            while (line.length() > 0)
+                line = in.readLine();
+            line = in.readLine();
+            assertThat(line, containsString("i=" + data.length + " eof=true finished=true"));
         }
     }
 
@@ -627,14 +630,14 @@ public class AsyncIOServletTest
                             Thread.sleep(1000);
                             if (!in.isReady())
                                 throw new IllegalStateException();
-                            if (in.read()!='X')
+                            if (in.read() != 'X')
                                 throw new IllegalStateException();
                             if (!in.isReady())
                                 throw new IllegalStateException();
-                            if (in.read()!=-1)
+                            if (in.read() != -1)
                                 throw new IllegalStateException();
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             e.printStackTrace();
                         }
@@ -653,8 +656,8 @@ public class AsyncIOServletTest
 
         String request = "GET " + path + " HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "Content-Type: text/plain\r\n"+
-                "Content-Length: "+data.length+"\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + data.length + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
 
@@ -669,11 +672,11 @@ public class AsyncIOServletTest
             output.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String line=in.readLine();
+            String line = in.readLine();
             assertThat(line, containsString("200 OK"));
-            while (line.length()>0)
-                line=in.readLine();
-            line=in.readLine();
+            while (line.length() > 0)
+                line = in.readLine();
+            line = in.readLine();
             assertThat(line, containsString("OK"));
         }
     }
@@ -697,7 +700,7 @@ public class AsyncIOServletTest
                 final ServletInputStream in = request.getInputStream();
                 final ServletOutputStream out = response.getOutputStream();
 
-                if (request.getDispatcherType()==DispatcherType.ERROR)
+                if (request.getDispatcherType() == DispatcherType.ERROR)
                     throw new IllegalStateException();
 
                 in.setReadListener(new ReadListener()
@@ -714,28 +717,24 @@ public class AsyncIOServletTest
                     public void onDataAvailable() throws IOException
                     {
                         assertScope();
-                        async.start(
-                        new Runnable()
+                        async.start(() ->
                         {
-                            public void run()
+                            assertScope();
+                            try
                             {
-                                assertScope();
-                                try
-                                {
-                                    Thread.sleep(1000);
-                                    if (!in.isReady())
-                                        throw new IllegalStateException();
-                                    if (in.read()!='X')
-                                        throw new IllegalStateException();
-                                    if (!in.isReady())
-                                        throw new IllegalStateException();
-                                    if (in.read()!=-1)
-                                        throw new IllegalStateException();
-                                }
-                                catch(Exception e)
-                                {
-                                    e.printStackTrace();
-                                }
+                                Thread.sleep(1000);
+                                if (!in.isReady())
+                                    throw new IllegalStateException();
+                                if (in.read() != 'X')
+                                    throw new IllegalStateException();
+                                if (!in.isReady())
+                                    throw new IllegalStateException();
+                                if (in.read() != -1)
+                                    throw new IllegalStateException();
+                            }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
                             }
                         });
                     }
@@ -752,8 +751,8 @@ public class AsyncIOServletTest
 
         String request = "GET " + path + " HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "Content-Type: text/plain\r\n"+
-                "Content-Length: "+data.length+"\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + data.length + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
 
@@ -768,11 +767,11 @@ public class AsyncIOServletTest
             output.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String line=in.readLine();
+            String line = in.readLine();
             assertThat(line, containsString("200 OK"));
-            while (line.length()>0)
-                line=in.readLine();
-            line=in.readLine();
+            while (line.length() > 0)
+                line = in.readLine();
+            line = in.readLine();
             assertThat(line, containsString("OK"));
         }
     }
@@ -813,7 +812,7 @@ public class AsyncIOServletTest
                         while (in.isReady())
                         {
                             int b = in.read();
-                            if (b<0)
+                            if (b < 0)
                             {
                                 out.write("OK\n".getBytes(StandardCharsets.ISO_8859_1));
                                 async.complete();
@@ -836,8 +835,8 @@ public class AsyncIOServletTest
 
         String request = "GET " + path + " HTTP/1.1\r\n" +
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "Content-Type: text/plain\r\n"+
-                "Content-Length: "+data.length+"\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + data.length + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
 
@@ -851,13 +850,13 @@ public class AsyncIOServletTest
             output.flush();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String line=in.readLine();
+            String line = in.readLine();
             assertThat(line, containsString("200 OK"));
-            while (line.length()>0)
+            while (line.length() > 0)
             {
-                line=in.readLine();
+                line = in.readLine();
             }
-            line=in.readLine();
+            line = in.readLine();
             assertThat(line, containsString("OK"));
             Assert.assertFalse(allDataRead.get());
         }
@@ -919,7 +918,7 @@ public class AsyncIOServletTest
             output.flush();
 
             String response = IO.toString(client.getInputStream());
-            assertThat(response,containsString(" 200 OK"));
+            assertThat(response, containsString(" 200 OK"));
             // wait for onAllDataRead BEFORE closing client
             latch.await();
         }
