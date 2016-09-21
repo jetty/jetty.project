@@ -909,8 +909,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void recycle()
     {
         _interceptor = _channel;
-        if (BufferUtil.hasContent(_aggregate))
-            BufferUtil.clear(_aggregate);
+        HttpConfiguration config = _channel.getHttpConfiguration();
+        _bufferSize = config.getOutputBufferSize();
+        _commitSize = config.getOutputAggregationSize();
+        if (_commitSize > _bufferSize)
+            _commitSize = _bufferSize;
+        releaseBuffer();
         _written = 0;
         reopen();
     }

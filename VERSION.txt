@@ -232,10 +232,8 @@ jetty-9.3.12.v20160915 - 15 September 2016
  + 185 Implement RFC 7239 (Forwarded header)
  + 700 Bundle org.eclipse.jetty.http.spi not available via p2 repository
  + 725 Provide a private way to report security issues
- + 732 Add jetty-documentation into jetty distribution under demo-base
  + 752 Implement support for HTTP2 SETTINGS_MAX_HEADER_LIST_SIZE
  + 759 Ensure wrapped Responses will close and commit outputstream or writer
- + 761 Clarify retainDays for NCSARequestLog in documentation
  + 780 The moved websocket PathSpec is incompatible with cometd 3.0.x
  + 783 Report name of broken jar file
  + 784 JSP Session updated before sendRedirect() lose their information
@@ -262,7 +260,6 @@ jetty-9.3.12.v20160915 - 15 September 2016
  + 860 Only TLS 1.2 Supported
  + 868 ClassLoader leak with Jetty and Karaf - static instances of
    java.lang.Throwable
- + 872 override-web.xml configured inside webapp's jetty-web.xml is ignored
  + 880 Refactor jetty-http's HostPortHttpField logic into new jetty-util class
  + 882 Add IPv6 support to IPAddressMap in jetty-util
  + 889 ConstantThrowable.name can be removed
