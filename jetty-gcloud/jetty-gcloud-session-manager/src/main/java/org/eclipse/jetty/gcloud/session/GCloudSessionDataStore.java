@@ -64,14 +64,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public static final int DEFAULT_MAX_RETRIES = 5;
     public static final int DEFAULT_BACKOFF_MS = 1000;
 
-    private Datastore _datastore;
-    private KeyFactory _keyFactory;
-    private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
-    private int _maxRetries = DEFAULT_MAX_RETRIES;
-    private int _backoff = DEFAULT_BACKOFF_MS;
+    protected Datastore _datastore;
+    protected KeyFactory _keyFactory;
+    protected int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
+    protected int _maxRetries = DEFAULT_MAX_RETRIES;
+    protected int _backoff = DEFAULT_BACKOFF_MS;
 
-    private boolean _dsProvided = false;
-    private EntityDataModel _model;
+    protected boolean _dsProvided = false;
+    protected EntityDataModel _model;
     
     
     
