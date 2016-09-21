@@ -32,8 +32,18 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
 {
     private int _maxRetries;
     private int _backoffMs;
+    private GCloudSessionDataStore.EntityDataModel _model;
     
     
+    public GCloudSessionDataStore.EntityDataModel getEntityDataModel()
+    {
+        return _model;
+    }
+    
+    public void setEntityDataModel(GCloudSessionDataStore.EntityDataModel model)
+    {
+        _model = model;
+    }
 
     public int getMaxRetries()
     {

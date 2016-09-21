@@ -59,31 +59,261 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
-    public  static final String ID = "id";
-    public  static final String CONTEXTPATH = "contextPath";
-    public  static final String VHOST = "vhost";
-    public  static final String ACCESSED = "accessed";
-    public  static final String LASTACCESSED = "lastAccessed";
-    public  static final String CREATETIME = "createTime";
-    public  static final  String COOKIESETTIME = "cookieSetTime";
-    public  static final String LASTNODE = "lastNode";
-    public  static final String EXPIRY = "expiry";
-    public  static final  String MAXINACTIVE = "maxInactive";
-    public  static final  String ATTRIBUTES = "attributes";
 
-    public static final String KIND = "GCloudSession";
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final int DEFAULT_MAX_RETRIES = 5;
     public static final int DEFAULT_BACKOFF_MS = 1000;
 
-    private Datastore _datastore;
-    private KeyFactory _keyFactory;
-    private int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
-    private int _maxRetries = DEFAULT_MAX_RETRIES;
-    private int _backoff = DEFAULT_BACKOFF_MS;
+    protected Datastore _datastore;
+    protected KeyFactory _keyFactory;
+    protected int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
+    protected int _maxRetries = DEFAULT_MAX_RETRIES;
+    protected int _backoff = DEFAULT_BACKOFF_MS;
 
-    private boolean _dsProvided = false;
+    protected boolean _dsProvided = false;
+    protected EntityDataModel _model;
     
+    
+    
+    /**
+     * EntityDataModel
+     *
+     * Names of type of Entity and Entity properties for sessions.
+     */
+    public static class EntityDataModel
+    {
+        public  static final String ID = "id";
+        public  static final String CONTEXTPATH = "contextPath";
+        public  static final String VHOST = "vhost";
+        public  static final String ACCESSED = "accessed";
+        public  static final String LASTACCESSED = "lastAccessed";
+        public  static final String CREATETIME = "createTime";
+        public  static final  String COOKIESETTIME = "cookieSetTime";
+        public  static final String LASTNODE = "lastNode";
+        public  static final String EXPIRY = "expiry";
+        public  static final  String MAXINACTIVE = "maxInactive";
+        public  static final  String ATTRIBUTES = "attributes";
+
+        public static final String KIND = "GCloudSession";
+        protected String _kind = KIND;
+        protected String _id = ID;
+        protected String _contextPath = CONTEXTPATH;
+        protected String _vhost = VHOST;
+        protected String _accessed = ACCESSED;
+        protected String _lastAccessed = LASTACCESSED;
+        protected String _lastNode = LASTNODE;
+        protected String _createTime = CREATETIME;
+        protected String _cookieSetTime = COOKIESETTIME;
+        protected String _expiry = EXPIRY;
+        protected String _maxInactive = MAXINACTIVE;
+        protected String _attributes = ATTRIBUTES;
+        
+     
+        public EntityDataModel()
+        {
+            System.err.println("NEW CALLED");
+        }
+        
+        private void checkNotNull(String s)
+        {
+            if (s == null)
+                throw new IllegalArgumentException(s);
+        }
+        
+        /**
+         * @return the lastNode
+         */
+        public String getLastNode()
+        {
+            return _lastNode;
+        }
+
+        /**
+         * @param lastNode the lastNode to set
+         */
+        public void setLastNode(String lastNode)
+        {
+            _lastNode = lastNode;
+        }
+
+        /**
+         * @return the kind
+         */
+        public String getKind()
+        {
+            return _kind;
+        }
+        /**
+         * @param kind the kind to set
+         */
+        public void setKind(String kind)
+        {
+            checkNotNull(kind);
+            _kind = kind;
+        }
+        /**
+         * @return the id
+         */
+        public String getId()
+        {
+            return _id;
+        }
+        /**
+         * @param id the id to set
+         */
+        public void setId(String id)
+        {
+            checkNotNull(id);
+            _id = id;
+        }
+        /**
+         * @return the contextPath
+         */
+        public String getContextPath()
+        {
+            return _contextPath;
+        }
+        /**
+         * @param contextPath the contextPath to set
+         */
+        public void setContextPath(String contextPath)
+        {
+            checkNotNull(contextPath);
+            _contextPath = contextPath;
+        }
+        /**
+         * @return the vhost
+         */
+        public String getVhost()
+        {
+            return _vhost;
+        }
+        /**
+         * @param vhost the vhost to set
+         */
+        public void setVhost(String vhost)
+        {
+            checkNotNull(vhost);
+            _vhost = vhost;
+        }
+        /**
+         * @return the accessed
+         */
+        public String getAccessed()
+        {
+            return _accessed;
+        }
+        /**
+         * @param accessed the accessed to set
+         */
+        public void setAccessed(String accessed)
+        {
+            checkNotNull(accessed);
+            _accessed = accessed;
+        }
+        /**
+         * @return the lastAccessed
+         */
+        public String getLastAccessed()
+        {
+            return _lastAccessed;
+        }
+        /**
+         * @param lastAccessed the lastAccessed to set
+         */
+        public void setLastAccessed(String lastAccessed)
+        {
+            checkNotNull(lastAccessed);
+            _lastAccessed = lastAccessed;
+        }
+        /**
+         * @return the createTime
+         */
+        public String getCreateTime()
+        {
+            return _createTime;
+        }
+        /**
+         * @param createTime the createTime to set
+         */
+        public void setCreateTime(String createTime)
+        {
+            checkNotNull(createTime);
+            _createTime = createTime;
+        }
+        /**
+         * @return the cookieSetTime
+         */
+        public String getCookieSetTime()
+        {
+            return _cookieSetTime;
+        }
+        /**
+         * @param cookieSetTime the cookieSetTime to set
+         */
+        public void setCookieSetTime(String cookieSetTime)
+        {
+            checkNotNull(cookieSetTime);
+            _cookieSetTime = cookieSetTime;
+        }
+        /**
+         * @return the expiry
+         */
+        public String getExpiry()
+        {
+            return _expiry;
+        }
+        /**
+         * @param expiry the expiry to set
+         */
+        public void setExpiry(String expiry)
+        {
+            checkNotNull(expiry);
+            _expiry = expiry;
+        }
+        /**
+         * @return the maxInactive
+         */
+        public String getMaxInactive()
+        {
+            return _maxInactive;
+        }
+        /**
+         * @param maxInactive the maxInactive to set
+         */
+        public void setMaxInactive(String maxInactive)
+        {
+            checkNotNull(maxInactive);
+            _maxInactive = maxInactive;
+        }
+        /**
+         * @return the attributes
+         */
+        public String getAttributes()
+        {
+            return _attributes;
+        }
+        /**
+         * @param attributes the attributes to set
+         */
+        public void setAttributes(String attributes)
+        {
+            checkNotNull(attributes);
+            _attributes = attributes;
+        }
+        
+    }
+    
+    public void setEntityDataModel(EntityDataModel model)
+    {
+        _model = model;
+    }
+    
+    
+    public EntityDataModel getEntityDataModel ()
+    {
+        return _model;
+    }
     
     
     public void setBackoffMs (int ms)
@@ -117,8 +347,11 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         if (!_dsProvided)
             _datastore = DatastoreOptions.defaultInstance().service();
+        
+        if (_model == null)
+            _model = new EntityDataModel();
 
-        _keyFactory = _datastore.newKeyFactory().kind(KIND);     
+        _keyFactory = _datastore.newKeyFactory().kind(_model.getKind());     
         super.doStart();
     }
 
@@ -200,9 +433,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {        
             //get up to maxResult number of sessions that have expired
             Query<ProjectionEntity> query = Query.projectionEntityQueryBuilder()
-                    .kind(KIND)
-                    .projection(ID, LASTNODE, EXPIRY)
-                    .filter(CompositeFilter.and(PropertyFilter.gt(EXPIRY, 0), PropertyFilter.le(EXPIRY, now)))
+                    .kind(_model.getKind())
+                    .projection(_model.getId(), _model.getLastNode(), _model.getExpiry())
+                    .filter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), now)))
                     .limit(_maxResults)
                     .build();
 
@@ -211,9 +444,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             while (presults.hasNext())
             {
                 ProjectionEntity pe = presults.next();
-                String id = pe.getString(ID);
-                String lastNode = pe.getString(LASTNODE);
-                long expiry = pe.getLong(EXPIRY);
+                String id = pe.getString(_model.getId());
+                String lastNode = pe.getString(_model.getLastNode());
+                long expiry = pe.getLong(_model.getExpiry());
 
                 if (StringUtil.isBlank(lastNode))
                     expired.add(id); //nobody managing it
@@ -254,8 +487,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     try
                     {
                         Query<Key> q = Query.keyQueryBuilder()
-                                .kind(KIND)
-                                .filter(PropertyFilter.eq(ID, s))
+                                .kind(_model.getKind())
+                                .filter(PropertyFilter.eq(_model.getId(), s))
                                 .build();
                        QueryResults<Key> res = _datastore.run(q);
                         if (!res.hasNext())
@@ -289,9 +522,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public boolean exists(String id) throws Exception
     {
         Query<ProjectionEntity> query = Query.projectionEntityQueryBuilder()
-                .kind(KIND)
-                .projection(EXPIRY)
-                .filter(PropertyFilter.eq(ID, id))
+                .kind(_model.getKind())
+                .projection(_model.getExpiry())
+                .filter(PropertyFilter.eq(_model.getId(), id))
                 .build();
 
 
@@ -300,7 +533,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         if (presults.hasNext())
         {
             ProjectionEntity pe = presults.next();
-            long expiry = pe.getLong(EXPIRY);
+            long expiry = pe.getLong(_model.getExpiry());
             if (expiry <= 0)
                 return true; //never expires
             else
@@ -371,7 +604,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * @param context the session context
      * @return the key
      */
-    private Key makeKey (String id, SessionContext context)
+    protected Key makeKey (String id, SessionContext context)
     {
         String key = context.getCanonicalContextPath()+"_"+context.getVhost()+"_"+id;
         return _keyFactory.newKey(key);
@@ -385,7 +618,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * @return the entity
      * @throws Exception
      */
-    private Entity entityFromSession (SessionData session, Key key) throws Exception
+    protected Entity entityFromSession (SessionData session, Key key) throws Exception
     {
         if (session == null)
             return null;
@@ -400,17 +633,17 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         
         //turn a session into an entity         
         entity = Entity.builder(key)
-                .set(ID, session.getId())
-                .set(CONTEXTPATH, session.getContextPath())
-                .set(VHOST, session.getVhost())
-                .set(ACCESSED, session.getAccessed())
-                .set(LASTACCESSED, session.getLastAccessed())
-                .set(CREATETIME, session.getCreated())
-                .set(COOKIESETTIME, session.getCookieSet())
-                .set(LASTNODE,session.getLastNode())
-                .set(EXPIRY, session.getExpiry())
-                .set(MAXINACTIVE, session.getMaxInactiveMs())
-                .set(ATTRIBUTES, BlobValue.builder(Blob.copyFrom(baos.toByteArray())).excludeFromIndexes(true).build()).build();
+                .set(_model.getId(), session.getId())
+                .set(_model.getContextPath(), session.getContextPath())
+                .set(_model.getVhost(), session.getVhost())
+                .set(_model.getAccessed(), session.getAccessed())
+                .set(_model.getLastAccessed(), session.getLastAccessed())
+                .set(_model.getCreateTime(), session.getCreated())
+                .set(_model.getCookieSetTime(), session.getCookieSet())
+                .set(_model.getLastNode(),session.getLastNode())
+                .set(_model.getExpiry(), session.getExpiry())
+                .set(_model.getMaxInactive(), session.getMaxInactiveMs())
+                .set(_model.getAttributes(), BlobValue.builder(Blob.copyFrom(baos.toByteArray())).excludeFromIndexes(true).build()).build();
 
                  
         return entity;
@@ -422,7 +655,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * @return the session data
      * @throws Exception if unable to get the entity
      */
-    private SessionData sessionFromEntity (Entity entity) throws Exception
+    protected SessionData sessionFromEntity (Entity entity) throws Exception
     {
         if (entity == null)
             return null;
@@ -436,17 +669,17 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 try
                 {
                     //turn an Entity into a Session
-                    String id = entity.getString(ID);
-                    String contextPath = entity.getString(CONTEXTPATH);
-                    String vhost = entity.getString(VHOST);
-                    long accessed = entity.getLong(ACCESSED);
-                    long lastAccessed = entity.getLong(LASTACCESSED);
-                    long createTime = entity.getLong(CREATETIME);
-                    long cookieSet = entity.getLong(COOKIESETTIME);
-                    String lastNode = entity.getString(LASTNODE);
-                    long expiry = entity.getLong(EXPIRY);
-                    long maxInactive = entity.getLong(MAXINACTIVE);
-                    Blob blob = (Blob) entity.getBlob(ATTRIBUTES);
+                    String id = entity.getString(_model.getId());
+                    String contextPath = entity.getString(_model.getContextPath());
+                    String vhost = entity.getString(_model.getVhost());
+                    long accessed = entity.getLong(_model.getAccessed());
+                    long lastAccessed = entity.getLong(_model.getLastAccessed());
+                    long createTime = entity.getLong(_model.getCreateTime());
+                    long cookieSet = entity.getLong(_model.getCookieSetTime());
+                    String lastNode = entity.getString(_model.getLastNode());
+                    long expiry = entity.getLong(_model.getExpiry());
+                    long maxInactive = entity.getLong(_model.getMaxInactive());
+                    Blob blob = (Blob) entity.getBlob(_model.getAttributes());
 
                     SessionData session = newSessionData (id, createTime, accessed, lastAccessed, maxInactive);
                     session.setLastNode(lastNode);
