@@ -44,7 +44,7 @@ public class HouseKeeper extends AbstractLifeCycle
     protected Scheduler.Task _task; //scavenge task
     protected Runner _runner;
     protected boolean _ownScheduler = false;
-    private long _intervalMs =  0;
+    private long _intervalMs =  DEFAULT_PERIOD_MS;
    
    
     

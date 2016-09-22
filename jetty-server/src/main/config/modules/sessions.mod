@@ -16,4 +16,4 @@ etc/sessions/id-manager.xml
 #jetty.sessionIdManager.workerName=node1
 
 ## Period between runs of the session scavenger (in seconds)
-#jetty.sessionScavengeInterval.seconds=60
+#jetty.sessionScavengeInterval.seconds=600

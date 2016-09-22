@@ -43,7 +43,8 @@ public class SessionContext
 
     public SessionContext (String workerName, ContextHandler.Context context)
     {
-        _sessionHandler = context.getContextHandler().getChildHandlerByClass(SessionHandler.class);
+        if (context != null)
+            _sessionHandler = context.getContextHandler().getChildHandlerByClass(SessionHandler.class);
         _workerName = workerName;
         _context = context;
         _canonicalContextPath = canonicalizeContextPath(_context);
