@@ -27,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Ignore;
@@ -51,21 +49,17 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        start(null);
+        start(new EmptyServerHandler());
         client.stop();
         client.setConnectTimeout(connectTimeout);
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
-        request.send(new Response.CompleteListener()
+        request.send(result ->
         {
-            @Override
-            public void onComplete(Result result)
-            {
-                if (result.isFailed())
-                    latch.countDown();
-            }
+            if (result.isFailed())
+                latch.countDown();
         });
 
         Assert.assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
@@ -80,7 +74,7 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 2000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        start(null);
+        start(new EmptyServerHandler());
         client.stop();
         client.setConnectTimeout(connectTimeout);
         client.start();
@@ -89,14 +83,10 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         final CountDownLatch latch = new CountDownLatch(2);
         Request request = client.newRequest(host, port);
         request.timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        completes.incrementAndGet();
-                        latch.countDown();
-                    }
+                    completes.incrementAndGet();
+                    latch.countDown();
                 });
 
         Assert.assertFalse(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
@@ -112,31 +102,23 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        start(null);
+        start(new EmptyServerHandler());
         client.stop();
         client.setConnectTimeout(connectTimeout);
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
-        request.send(new Response.CompleteListener()
+        request.send(result1 ->
         {
-            @Override
-            public void onComplete(Result result)
+            if (result1.isFailed())
             {
-                if (result.isFailed())
+                // Retry
+                client.newRequest(host, port).send(result2 ->
                 {
-                    // Retry
-                    client.newRequest(host, port).send(new Response.CompleteListener()
-                    {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            if (result.isFailed())
-                                latch.countDown();
-                        }
-                    });
-                }
+                    if (result2.isFailed())
+                        latch.countDown();
+                });
             }
         });
 
