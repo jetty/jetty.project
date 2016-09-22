@@ -11,9 +11,10 @@ session-cache
 sessions
 
 [xml]
-etc/sessions/hash-session-cache.xml
+etc/sessions/session-cache-hash.xml
 
 [ini-template]
 #jetty.session.evictionPolicy=-1
 #jetty.session.saveOnInactiveEvict=false
+#jetty.session.saveOnCreate=false
 #jetty.session.removeUnloadableSessions=false
