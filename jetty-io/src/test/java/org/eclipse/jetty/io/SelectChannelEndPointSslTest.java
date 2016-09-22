@@ -24,11 +24,14 @@ import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.CRC32;
+import java.util.zip.Deflater;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -37,6 +40,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.BufferUtil;
@@ -82,6 +86,75 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         sslConnection.getDecryptedEndPoint().setConnection(appConnection);
         return sslConnection;
     }
+
+    private static final byte[] content =
+        ("Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. \r\n"+
+        "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
+        "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. \r\n"+
+        "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam "+
+        "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate "+
+        "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. \r\n"+
+        "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum "+
+        "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa "+
+        "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam "+
+        "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. "+
+        "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
+        "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.\r\n").getBytes();
+
+    @Test
+    public void testGoogle() throws Exception
+    {
+        Deflater deflater = new Deflater(Deflater.DEFAULT_COMPRESSION,true);     
+        CRC32 crc = new CRC32();
+
+        crc.update(content,0,content.length);
+        deflater.setInput(content,0,content.length);
+        deflater.finish();
+        
+        byte[] compressed = new byte[16*1024];
+        
+        int length=deflater.deflate(compressed,0,compressed.length,Deflater.NO_FLUSH);
+        System.err.println(deflater.finished());
+
+        int v=(int)crc.getValue();
+        compressed[length++]=(byte)(v & 0xFF);
+        compressed[length++]=(byte)((v>>>8) & 0xFF);
+        compressed[length++]=(byte)((v>>>16) & 0xFF);
+        compressed[length++]=(byte)((v>>>24) & 0xFF);
+
+        v=deflater.getTotalIn();
+        compressed[length++]=(byte)(v & 0xFF);
+        compressed[length++]=(byte)((v>>>8) & 0xFF);
+        compressed[length++]=(byte)((v>>>16) & 0xFF);
+        compressed[length++]=(byte)((v>>>24) & 0xFF);
+        
+        SslContextFactory sslCtxFactory=new SslContextFactory(true);
+        sslCtxFactory.start();
+        try(SSLSocket socket = sslCtxFactory.newSslSocket())
+        { 
+            String host = "20160922t165538-dot-jetty9-work.appspot.com"; // env:flex
+            // String host = "20160922t162437-dot-jetty9-work.appspot.com";
+            socket.connect(new InetSocketAddress(host,443));
+            
+            String request = "POST /dump/test HTTP/1.0\r\n"+
+            "Host: "+host+"\r\n"+
+            "Accept-Encoding: gzip\r\n"+
+            "Connection: close\r\n"+
+            "Random: header\r\n"+
+            "Content-Encoding: gzip\r\n"+
+            "Content-Type: text/plain\r\n"+
+            "Content-Length: "+length+"\r\n"+
+            "\r\n";
+            
+            socket.getOutputStream().write(request.getBytes());
+            socket.getOutputStream().write(compressed,0,length);
+            socket.getOutputStream().flush();
+            
+            IO.copy(socket.getInputStream(),System.out);
+            
+        }
+    }
+
 
     @Test
     @Override
