@@ -43,7 +43,7 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
      * @see org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port,int max, int scavengePeriod,int evictionPolicy)
+    public AbstractTestServer createServer(int port,int max, int scavengePeriod,int evictionPolicy) throws Exception
     {
         return  new GCloudTestServer(port, max, scavengePeriod, evictionPolicy);
     }

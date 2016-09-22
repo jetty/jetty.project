@@ -46,7 +46,7 @@ public class RemoteRemoveSessionTest extends AbstractRemoveSessionTest
     
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
        InfinispanTestSessionServer s = new InfinispanTestSessionServer(port, max, scavenge,evictionPolicy, __testSupport.getCache());
        return s;

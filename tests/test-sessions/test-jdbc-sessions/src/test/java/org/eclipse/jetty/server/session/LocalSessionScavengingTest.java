@@ -43,11 +43,18 @@ public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTe
         }
     }
 
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
         return new JdbcTestServer(port,max,scavenge, evictionPolicy);
     }
 
+    @Test
+    public void testNoScavenging() throws Exception
+    {
+        super.testNoScavenging();
+    }
+    
+    
     @Test
     public void testLocalSessionsScavenging() throws Exception
     {

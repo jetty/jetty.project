@@ -108,11 +108,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         protected String _maxInactive = MAXINACTIVE;
         protected String _attributes = ATTRIBUTES;
         
-     
-        public EntityDataModel()
-        {
-            System.err.println("NEW CALLED");
-        }
         
         private void checkNotNull(String s)
         {

@@ -42,7 +42,7 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
         return new MongoTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }

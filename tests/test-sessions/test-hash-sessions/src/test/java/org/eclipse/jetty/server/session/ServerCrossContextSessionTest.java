@@ -23,7 +23,7 @@ import org.junit.Test;
 public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
 {
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
         return new HashTestServer(port,max,scavenge,evictionPolicy);
     }

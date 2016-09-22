@@ -45,7 +45,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
      * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
         GCloudTestServer server =  new GCloudTestServer(port, maxInactive, scavengeInterval, evictionPolicy) 
         {

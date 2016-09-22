@@ -60,7 +60,7 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
 
 
     @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy) throws Exception
     {
        return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
     }

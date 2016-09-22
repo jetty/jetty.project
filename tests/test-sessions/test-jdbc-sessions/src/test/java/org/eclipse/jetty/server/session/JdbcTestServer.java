@@ -79,12 +79,12 @@ public class JdbcTestServer extends AbstractTestServer
     }
 
   
-    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, String connectionUrl)
+    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, String connectionUrl) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
     
-    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
+    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }

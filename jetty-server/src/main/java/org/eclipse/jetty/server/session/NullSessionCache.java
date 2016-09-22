@@ -37,6 +37,7 @@ public class NullSessionCache extends AbstractSessionCache
     public NullSessionCache(SessionHandler handler)
     {
         super(handler);
+        super.setEvictionPolicy(EVICT_ON_SESSION_EXIT);
     }
 
     /** 
@@ -103,5 +104,16 @@ public class NullSessionCache extends AbstractSessionCache
     {
         return null;
     }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionCache#setEvictionPolicy(int)
+     */
+    @Override
+    public void setEvictionPolicy(int evictionTimeout)
+    {
+        LOG.warn("Ignoring eviction setting:"+evictionTimeout);
+    }
+    
+    
 
 }

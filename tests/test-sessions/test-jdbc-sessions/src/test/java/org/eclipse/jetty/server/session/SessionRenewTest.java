@@ -30,7 +30,7 @@ public class SessionRenewTest extends AbstractSessionRenewTest
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
         return new JdbcTestServer(port, max, scavenge, evictionPolicy);
     }
