@@ -1,3 +1,5 @@
+jetty-8.1.23-SNAPSHOT
+
 jetty-8.1.22.v20160922
  + 950 set compiler version to 1.6
 
