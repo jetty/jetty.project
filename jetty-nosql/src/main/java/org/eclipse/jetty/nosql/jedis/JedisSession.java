@@ -36,8 +36,8 @@ import java.util.Set;
 import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.nosql.NoSqlSessionManager;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A bridge between the format stored ({@link Map}) and the {@link NoSqlSession}, that the {@link NoSqlSessionManager} uses. For inspiration, the
@@ -119,10 +119,7 @@ class JedisSession
 
     }
 
-    /**
-     * Standard SLF4J Logger
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger(JedisSession.class);
+    private final static Logger LOGGER = Log.getLogger("org.eclipse.jetty.server.session");
 
     private static final String ZERO = "0";
 
