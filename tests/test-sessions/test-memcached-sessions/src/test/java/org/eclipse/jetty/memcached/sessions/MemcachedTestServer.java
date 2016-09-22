@@ -148,7 +148,7 @@ public class MemcachedTestServer extends AbstractTestServer
      * @param scavengePeriod
      * @param evictionPolicy
      */
-    public MemcachedTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
+    public MemcachedTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }

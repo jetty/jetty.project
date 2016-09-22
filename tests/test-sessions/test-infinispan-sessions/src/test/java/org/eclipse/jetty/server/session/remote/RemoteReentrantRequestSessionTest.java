@@ -52,7 +52,7 @@ public class RemoteReentrantRequestSessionTest extends AbstractReentrantRequestS
      * @see org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavenge, int evictionPolicy) throws Exception
     {
        return new InfinispanTestSessionServer(port, maxInactive, scavenge, evictionPolicy, __testSupport.getCache());
     }

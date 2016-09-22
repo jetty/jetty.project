@@ -546,7 +546,6 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 //make the session table if necessary
                 String tableName = _dbAdaptor.convertIdentifier(getTableName());
                 String schemaName = _dbAdaptor.convertIdentifier(getSchemaName());
-                System.err.println ("Tablename: "+tableName+" SchemaName:"+schemaName);
                 try (ResultSet result = metaData.getTables(null, schemaName, tableName, null))
                 {
                     if (!result.next())

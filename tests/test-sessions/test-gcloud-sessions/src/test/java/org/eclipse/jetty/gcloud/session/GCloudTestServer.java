@@ -36,8 +36,9 @@ public class GCloudTestServer extends AbstractTestServer
      * @param maxInactivePeriod
      * @param scavengePeriod
      * @param evictionPolicy
+     * @throws Exception TODO
      */
-    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
+    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }

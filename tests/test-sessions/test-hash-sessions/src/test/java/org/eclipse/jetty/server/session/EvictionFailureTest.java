@@ -31,7 +31,7 @@ public class EvictionFailureTest extends AbstractSessionEvictionFailureTest
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
         return new HashTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }

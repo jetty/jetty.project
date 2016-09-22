@@ -40,7 +40,7 @@ public class ServerCrossContextSessionTest extends AbstractServerCrossContextSes
     
 
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy) throws Exception
     {
        return new FileTestServer(port,max,scavenge, evictionPolicy);
     }

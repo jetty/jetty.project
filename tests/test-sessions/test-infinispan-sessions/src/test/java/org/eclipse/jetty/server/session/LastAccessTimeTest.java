@@ -42,7 +42,7 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
         return new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache());
     }

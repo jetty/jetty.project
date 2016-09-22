@@ -42,7 +42,7 @@ public class InvalidateSessionTest extends AbstractInvalidationSessionTest
     }
 
     @Override
-    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInterval, int scavengeInterval, int evictionPolicy) throws Exception
     {
         return new MongoTestServer(port, maxInterval, scavengeInterval, evictionPolicy);
     }

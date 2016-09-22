@@ -58,12 +58,12 @@ public abstract class AbstractTestServer
         return sessionCookie;
     }
 
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
     {
         this (port, maxInactivePeriod, scavengePeriod, evictionPolicy, null);
     }
     
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, Object cfg)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, Object cfg) throws Exception
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;

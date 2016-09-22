@@ -41,7 +41,7 @@ public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTe
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
        MongoTestServer mserver=new MongoTestServer(port,max,scavenge, evictionPolicy);
        

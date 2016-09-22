@@ -68,7 +68,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
        return new MongoTestServer(port,max,scavenge, evictionPolicy);
     }
