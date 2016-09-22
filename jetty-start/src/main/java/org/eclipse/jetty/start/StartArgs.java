@@ -958,7 +958,7 @@ public class StartArgs
         if (arg.startsWith("--add-to-startd="))
         {
             String value = Props.getValue(arg);
-            StartLog.warn("--add-to-startd is deprecated! Instead use: --add-to-start=%s",value);
+            StartLog.warn("--add-to-startd is deprecated! Instead use: --create-startd --add-to-start=%s",value);
             createStartd=true;
             startModules.addAll(Props.getValues(arg));
             run = false;
