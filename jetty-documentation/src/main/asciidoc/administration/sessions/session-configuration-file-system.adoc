@@ -16,7 +16,7 @@
 
 [[configuring-sessions-file-system]]
 
-=== Configuring Session Management using the File System
+=== Non-Clustered Session Management: File System
 
 When using the Jetty distribution, you will first need to enable the `session-store-file` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
@@ -52,12 +52,12 @@ Opening the `start.d/session-store-file.ini` will show a list of all the configu
 # ---------------------------------------
 --module=session-store-file
 
-jetty.session.storeDir=${jetty.base}/sessions
-#jetty.session.deleteUnrestorableFiles=false
+jetty.session.file.storeDir=${jetty.base}/sessions
+#jetty.session.file.deleteUnrestorableFiles=false
 ----
 
 jetty.session.storeDir::
 This defines the location for storage of Session files.
-jetty.session.deleteUnrestorableFiles::
+jetty.session.file.deleteUnrestorableFiles::
 Boolean.
 If set to true, unreadable files will be deleted: this is useful to prevent repeated logging of the same error when the scavenger periodically (re-) attempts to load the corrupted information for a session in order to expire it.
