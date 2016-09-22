@@ -63,6 +63,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Each of the nested objects inside the "context" element contains:
  * <ul>
  *  <li>unique_context_name : nested object containing name:value pairs of the session attributes for that context</li>
+ *  <li>unique_context_name: vhost:contextpath, where no vhosts="0_0_0_0", root context = "", contextpath "/" replaced by "_"
  * </ul>
  * <p>
  * One of the name:value attribute pairs will always be the special attribute "__metadata__". The value 
@@ -74,10 +75,10 @@ import org.eclipse.jetty.util.log.Logger;
  * { "_id"       : ObjectId("52845534a40b66410f228f23"), 
  *    "accessed" :  NumberLong("1384818548903"), 
  *    "maxIdle"  : 1,
- *    "context"  : { "::_contextA" : { "A"            : "A", 
+ *    "context"  : { "0_0_0_0:_testA" : { "A"            : "A", 
  *                                     "__metadata__" : { "version" : NumberLong(2) } 
  *                                   },
- *                   "::_contextB" : { "B"            : "B", 
+ *                   "0_0_0_0:_testB" : { "B"            : "B", 
  *                                     "__metadata__" : { "version" : NumberLong(1) } 
  *                                   } 
  *                 }, 
@@ -91,7 +92,9 @@ import org.eclipse.jetty.util.log.Logger;
  * In MongoDB, the nesting level is indicated by "." separators for the key name. Thus to
  * interact with a session attribute, the key is composed of:
  * <code>"context".unique_context_name.attribute_name</code>
- *  Eg  <code>"context"."::/contextA"."A"</code>
+ *  Eg  <code>"context"."0_0_0_0:_testA"."A"</code>
+ *  
+ * 
  */
 public class MongoSessionDataStore extends NoSqlSessionDataStore
 {
