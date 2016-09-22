@@ -459,9 +459,10 @@ public class HttpClient extends ContainerLifeCycle
                     HttpHeader.PROXY_AUTHORIZATION == header)
                 continue;
 
+            String name = field.getName();
             String value = field.getValue();
-            if (!newRequest.getHeaders().contains(header, value))
-                newRequest.header(field.getName(), value);
+            if (!newRequest.getHeaders().contains(name, value))
+                newRequest.header(name, value);
         }
         return newRequest;
     }
