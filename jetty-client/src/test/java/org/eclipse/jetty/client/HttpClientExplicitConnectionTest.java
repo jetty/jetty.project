@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Connection;
@@ -27,7 +28,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -65,7 +66,6 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         }
     }
 
-    @Slow
     @Test
     public void testExplicitConnectionIsClosedOnRemoteClose() throws Exception
     {
@@ -97,5 +97,27 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         DuplexConnectionPool connectionPool = httpDestination.getConnectionPool();
         Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
         Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
+    }
+
+    @Test
+    public void testExplicitConnectionResponseListeners() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        Destination destination = client.getDestination(scheme, "localhost", connector.getLocalPort());
+        FuturePromise<Connection> futureConnection = new FuturePromise<>();
+        destination.newConnection(futureConnection);
+        Connection connection = futureConnection.get(5, TimeUnit.SECONDS);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Request request = client.newRequest(destination.getHost(), destination.getPort())
+                .scheme(scheme)
+                .onResponseSuccess(response -> responseLatch.countDown());
+
+        FutureResponseListener listener = new FutureResponseListener(request);
+        connection.send(request, listener);
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }

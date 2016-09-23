@@ -68,21 +68,23 @@ public abstract class HttpConnection implements Connection
     @Override
     public void send(Request request, Response.CompleteListener listener)
     {
-        ArrayList<Response.ResponseListener> listeners = new ArrayList<>(2);
-        if (request.getTimeout() > 0)
+        HttpRequest httpRequest = (HttpRequest)request;
+
+        ArrayList<Response.ResponseListener> listeners = new ArrayList<>(httpRequest.getResponseListeners());
+        if (httpRequest.getTimeout() > 0)
         {
-            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(request);
+            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(httpRequest);
             timeoutListener.schedule(getHttpClient().getScheduler());
             listeners.add(timeoutListener);
         }
         if (listener != null)
             listeners.add(listener);
 
-        HttpExchange exchange = new HttpExchange(getHttpDestination(), (HttpRequest)request, listeners);
+        HttpExchange exchange = new HttpExchange(getHttpDestination(), httpRequest, listeners);
 
         SendFailure result = send(exchange);
         if (result != null)
-            request.abort(result.failure);
+            httpRequest.abort(result.failure);
     }
 
     protected abstract SendFailure send(HttpExchange exchange);
