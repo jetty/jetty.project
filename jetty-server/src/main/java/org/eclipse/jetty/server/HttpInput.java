@@ -54,11 +54,11 @@ public class HttpInput extends ServletInputStream implements Runnable
         boolean addContent(Content content);
     }
     
-    public static class IndentityInterceptor implements Interceptor
+    public static class NestedInterceptor implements Interceptor
     {
         private final Interceptor _next;
         
-        public IndentityInterceptor(Interceptor next)
+        public NestedInterceptor(Interceptor next)
         {
             _next = next;
         }
@@ -811,6 +811,11 @@ public class HttpInput extends ServletInputStream implements Runnable
             _content = content;
         }
 
+        public ByteBuffer getByteBuffer()
+        {
+            return _content;
+        }
+        
         @Override
         public InvocationType getInvocationType()
         {

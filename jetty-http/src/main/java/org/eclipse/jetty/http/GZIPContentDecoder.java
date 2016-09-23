@@ -19,34 +19,43 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * Decoder for the "gzip" encoding.
+ * 
+ * @TODO this is a work in progress
  */
 public class GZIPContentDecoder
 {
     private final Inflater inflater = new Inflater(true);
-    private final byte[] bytes;
-    private byte[] output;
+    private final ByteBufferPool pool;
+    private final int bufferSize;
     private State state;
     private int size;
     private int value;
     private byte flags;
+    private ByteBuffer inflated;
 
     public GZIPContentDecoder()
     {
-        this(2048);
+        this(null,2048);
     }
 
     public GZIPContentDecoder(int bufferSize)
     {
-        this.bytes = new byte[bufferSize];
+        this(null,bufferSize);
+    }
+    
+    public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
+    {
+        this.bufferSize = bufferSize;
+        this.pool = pool;
         reset();
     }
 
@@ -59,18 +68,57 @@ public class GZIPContentDecoder
      * <p>The decoding may be finished without consuming the buffer completely if the buffer contains
      * gzip bytes plus other bytes (either plain or gzipped).</p>
      */
-    public ByteBuffer decode(ByteBuffer buffer)
+    public ByteBuffer decode(ByteBuffer compressed)
+    {
+        decodeChunks(compressed);
+        return inflated==null?BufferUtil.EMPTY_BUFFER:inflated;
+    }
+
+    protected void decodedChunk(ByteBuffer chunk)
+    {
+        if (inflated==null)
+            inflated=chunk;
+        else
+        {
+            int size = inflated.remaining() + chunk.remaining();
+            if (size<=inflated.capacity())
+            {
+                BufferUtil.put(chunk,inflated);
+                release(chunk);
+            }
+            else
+            {
+                ByteBuffer bigger=pool==null?BufferUtil.allocate(size):pool.acquire(size,false);
+                BufferUtil.put(inflated,bigger);
+                release(inflated);
+                BufferUtil.put(chunk,bigger);
+                release(chunk);
+            }
+        }
+    }
+    
+    
+    /**
+     * <p>If the decoding did not produce any output, for example because it consumed gzip header
+     * or trailer bytes, it returns a buffer with zero capacity.</p>
+     * <p>This method never returns null.</p>
+     * <p>The given {@code buffer}'s position will be modified to reflect the bytes consumed during
+     * the decoding.</p>
+     * <p>The decoding may be finished without consuming the buffer completely if the buffer contains
+     * gzip bytes plus other bytes (either plain or gzipped).</p>
+     */
+    protected void decodeChunks(ByteBuffer compressed)
     {
         try
         {
-            while (buffer.hasRemaining())
+            while (compressed.hasRemaining())
             {
-                byte currByte = buffer.get();
+                byte currByte = compressed.get();
                 switch (state)
                 {
                     case INITIAL:
                     {
-                        buffer.position(buffer.position() - 1);
+                        compressed.position(compressed.position() - 1);
                         state = State.ID;
                         break;
                     }
@@ -123,7 +171,7 @@ public class GZIPContentDecoder
                     }
                     case FLAGS:
                     {
-                        buffer.position(buffer.position() - 1);
+                        compressed.position(compressed.position() - 1);
                         if ((flags & 0x04) == 0x04)
                         {
                             state = State.EXTRA_LENGTH;
@@ -200,35 +248,27 @@ public class GZIPContentDecoder
                     }
                     case DATA:
                     {
-                        buffer.position(buffer.position() - 1);
+                        // TODO this will not always be possible
+                        compressed.position(compressed.position() - 1);
+                        ByteBuffer inflated=null;
                         while (true)
                         {
-                            int decoded = inflate(bytes);
-                            if (decoded == 0)
+                            ByteBuffer chunk = inflate();
+                            if (chunk.hasRemaining())
+                                decodedChunk(chunk);
+                            else if (inflater.needsInput())
                             {
-                                if (inflater.needsInput())
+                                if (compressed.hasRemaining())
                                 {
-                                    if (buffer.hasRemaining())
-                                    {
-                                        byte[] input = new byte[buffer.remaining()];
-                                        buffer.get(input);
-                                        inflater.setInput(input);
-                                    }
-                                    else
-                                    {
-                                        if (output != null)
-                                        {
-                                            ByteBuffer result = ByteBuffer.wrap(output);
-                                            output = null;
-                                            return result;
-                                        }
-                                        break;
-                                    }
+                                    // TODO do this without copy from buffer array
+                                    byte[] input = new byte[compressed.remaining()];
+                                    compressed.get(input);
+                                    inflater.setInput(input);
                                 }
                                 else if (inflater.finished())
                                 {
                                     int remaining = inflater.getRemaining();
-                                    buffer.position(buffer.limit() - remaining);
+                                    compressed.position(compressed.limit() - remaining);
                                     state = State.CRC;
                                     size = 0;
                                     value = 0;
@@ -236,22 +276,7 @@ public class GZIPContentDecoder
                                 }
                                 else
                                 {
-                                    throw new ZipException("Invalid inflater state");
-                                }
-                            }
-                            else
-                            {
-                                if (output == null)
-                                {
-                                    // Save the inflated bytes and loop to see if we have finished
-                                    output = Arrays.copyOf(bytes, decoded);
-                                }
-                                else
-                                {
-                                    // Accumulate inflated bytes and loop to see if we have finished
-                                    byte[] newOutput = Arrays.copyOf(output, output.length + decoded);
-                                    System.arraycopy(bytes, 0, newOutput, output.length, decoded);
-                                    output = newOutput;
+                                    break;
                                 }
                             }
                         }
@@ -279,9 +304,9 @@ public class GZIPContentDecoder
                             if (value != inflater.getBytesWritten())
                                 throw new ZipException("Invalid input size");
 
-                            ByteBuffer result = output == null ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(output);
+                            // TODO ByteBuffer result = output == null ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(output);
                             reset();
-                            return result;
+                            return ;
                         }
                         break;
                     }
@@ -289,7 +314,6 @@ public class GZIPContentDecoder
                         throw new ZipException();
                 }
             }
-            return BufferUtil.EMPTY_BUFFER;
         }
         catch (ZipException x)
         {
@@ -297,11 +321,14 @@ public class GZIPContentDecoder
         }
     }
 
-    private int inflate(byte[] bytes) throws ZipException
+    private ByteBuffer inflate() throws ZipException
     {
         try
         {
-            return inflater.inflate(bytes);
+            ByteBuffer inflated = acquire();
+            int length = inflater.inflate(inflated.array(),inflated.arrayOffset(),inflated.capacity());
+            inflated.limit(length);
+            return inflated;
         }
         catch (DataFormatException x)
         {
@@ -312,8 +339,6 @@ public class GZIPContentDecoder
     private void reset()
     {
         inflater.reset();
-        Arrays.fill(bytes, (byte)0);
-        output = null;
         state = State.INITIAL;
         size = 0;
         value = 0;
@@ -328,5 +353,16 @@ public class GZIPContentDecoder
     private enum State
     {
         INITIAL, ID, CM, FLG, MTIME, XFL, OS, FLAGS, EXTRA_LENGTH, EXTRA, NAME, COMMENT, HCRC, DATA, CRC, ISIZE
+    }
+    
+    public ByteBuffer acquire()
+    {
+        return pool==null?BufferUtil.allocate(bufferSize):pool.acquire(bufferSize,false);
+    }
+    
+    public void release(ByteBuffer buffer)
+    {
+        if (pool!=null)
+            pool.release(buffer);
     }
 }
