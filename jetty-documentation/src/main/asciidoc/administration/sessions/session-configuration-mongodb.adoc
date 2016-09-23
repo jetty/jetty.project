@@ -16,7 +16,7 @@
 
 [[configuring-sessions-mongo]]
 
-=== Configuring Session Clustering with MongoDB
+=== Clustered Session Management: MongoDB
 
 When using the Jetty distribution, you will first need to enable the `session-store-mongo` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
@@ -68,14 +68,20 @@ Opening the `start.d/session-store-mongo.ini` will show a list of all the config
 # ---------------------------------------
 --module=session-store-mongo
 
-#jetty.session.dbName=HttpSessions
-#jetty.session.collectionName=jettySessions
+#jetty.session.mongo.dbName=HttpSessions
+#jetty.session.mongo.collectionName=jettySessions
+#jetty.session.mongo.host=localhost
+#jetty.session.mongo.port=27017
 #jetty.session.gracePeriod.seconds=3600
 ----
 
-jetty.session.dbName::
+jetty.session.mongo.dbName::
 Name of the database in Mongo used to store the Session collection.
-jetty.session.collectionName::
+jetty.session.mongo.collectionName::
 Name of the collection in Mongo used to keep all of the Sessions.
+jetty.session.mongo.host::
+Host name or address for the remote Mongo instance.
+jetty.session.mongo.port::
+Port number for the remote Mongo instance.
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
