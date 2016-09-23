@@ -29,10 +29,11 @@ import org.eclipse.jetty.util.BufferUtil;
 /**
  * Decoder for the "gzip" encoding.
  * 
- * @TODO this is a work in progress
  */
 public class GZIPContentDecoder
 {
+    // TODO this is a work in progress
+
     private final Inflater inflater = new Inflater(true);
     private final ByteBufferPool pool;
     private final int bufferSize;
@@ -59,15 +60,6 @@ public class GZIPContentDecoder
         reset();
     }
 
-    /**
-     * <p>If the decoding did not produce any output, for example because it consumed gzip header
-     * or trailer bytes, it returns a buffer with zero capacity.</p>
-     * <p>This method never returns null.</p>
-     * <p>The given {@code buffer}'s position will be modified to reflect the bytes consumed during
-     * the decoding.</p>
-     * <p>The decoding may be finished without consuming the buffer completely if the buffer contains
-     * gzip bytes plus other bytes (either plain or gzipped).</p>
-     */
     public ByteBuffer decode(ByteBuffer compressed)
     {
         decodeChunks(compressed);
@@ -98,15 +90,6 @@ public class GZIPContentDecoder
     }
     
     
-    /**
-     * <p>If the decoding did not produce any output, for example because it consumed gzip header
-     * or trailer bytes, it returns a buffer with zero capacity.</p>
-     * <p>This method never returns null.</p>
-     * <p>The given {@code buffer}'s position will be modified to reflect the bytes consumed during
-     * the decoding.</p>
-     * <p>The decoding may be finished without consuming the buffer completely if the buffer contains
-     * gzip bytes plus other bytes (either plain or gzipped).</p>
-     */
     protected void decodeChunks(ByteBuffer compressed)
     {
         try

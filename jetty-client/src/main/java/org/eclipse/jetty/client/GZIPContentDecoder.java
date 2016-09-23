@@ -29,10 +29,10 @@ import org.eclipse.jetty.util.BufferUtil;
 /**
  * {@link ContentDecoder} for the "gzip" encoding.
  * 
- * @TODO use the jetty-http GZIPContentDecoder
  */
 public class GZIPContentDecoder implements ContentDecoder
 {
+    // TODO use the jetty-http GZIPContentDecoder
     private final Inflater inflater = new Inflater(true);
     private final byte[] bytes;
     private byte[] output;
