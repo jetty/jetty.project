@@ -810,10 +810,23 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testConnectThrowsUnknownHostException() throws Exception
     {
+        String host = "idontexist";
+        int port = 80;
+
+        try
+        {
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress(host, port), 1000);
+            Assume.assumeTrue("Host must not be resolvable", false);
+        }
+        catch (IOException ignored)
+        {
+        }
+
         start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("idontexist", 80)
+        client.newRequest(host, port)
                 .send(result ->
                 {
                     Assert.assertTrue(result.isFailed());
