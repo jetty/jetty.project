@@ -162,8 +162,14 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             {
                 dataInfo = queue.poll();
             }
+
             if (dataInfo == null)
+            {
+                DataInfo prevDataInfo = this.dataInfo;
+                if (prevDataInfo != null && prevDataInfo.last)
+                    return Action.SUCCEEDED;
                 return Action.IDLE;
+            }
 
             this.dataInfo = dataInfo;
             responseContent(dataInfo.exchange, dataInfo.buffer, this);
@@ -176,9 +182,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
             byteBufferPool.release(dataInfo.buffer);
             dataInfo.callback.succeeded();
-            if (dataInfo.last)
-                responseSuccess(dataInfo.exchange);
             super.succeeded();
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            responseSuccess(dataInfo.exchange);
         }
 
         @Override
