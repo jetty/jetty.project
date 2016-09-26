@@ -693,6 +693,11 @@ public class HttpRequest implements Request
         client.send(request, responseListeners);
     }
 
+    protected List<Response.ResponseListener> getResponseListeners()
+    {
+        return responseListeners;
+    }
+
     @Override
     public boolean abort(Throwable cause)
     {

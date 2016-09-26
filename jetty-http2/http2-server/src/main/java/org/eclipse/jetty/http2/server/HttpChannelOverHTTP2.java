@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 public class HttpChannelOverHTTP2 extends HttpChannel
 {
@@ -297,8 +296,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public void onFailure(Throwable failure)
     {
-        onEarlyEOF();
-        getState().asyncError(failure);
+        if (onEarlyEOF())
+            handle();
+        else
+            getState().asyncError(failure);
     }
 
     protected void consumeInput()

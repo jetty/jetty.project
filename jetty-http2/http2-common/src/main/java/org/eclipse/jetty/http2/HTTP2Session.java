@@ -997,8 +997,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void abort(Throwable failure)
     {
-        terminate();
         notifyFailure(this, failure);
+        terminate();
     }
 
     public boolean isDisconnected()
