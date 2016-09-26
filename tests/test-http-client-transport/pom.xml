@@ -61,7 +61,7 @@
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
+            <artifactId>jetty-servlet</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

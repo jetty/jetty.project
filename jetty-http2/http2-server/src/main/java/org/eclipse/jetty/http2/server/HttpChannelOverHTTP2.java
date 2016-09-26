@@ -296,8 +296,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public void onFailure(Throwable failure)
     {
-        onEarlyEOF();
-        getState().asyncError(failure);
+        if (onEarlyEOF())
+            handle();
+        else
+            getState().asyncError(failure);
     }
 
     protected void consumeInput()

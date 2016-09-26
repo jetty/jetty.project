@@ -135,6 +135,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
+        public void onFailure(Session session, Throwable failure)
+        {
+            getConnection().onSessionFailure(failure);
+        }
+
+        @Override
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
             // Servers do not receive responses.
