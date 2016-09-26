@@ -100,13 +100,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public long getMessagesIn()
     {
-        return totalRequests.intValue();
+        return totalRequests.get();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return totalResponses.intValue();
+        return totalResponses.get();
     }
 
     @Override
