@@ -76,6 +76,10 @@ public class ConnectionStatisticsTest extends AbstractTest
 
         Assert.assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
 
+        // The bytes have already arrived, but give time to
+        // the server to finish to run the response logic.
+        Thread.sleep(1000);
+
         // Close all connections.
         stop();
 
