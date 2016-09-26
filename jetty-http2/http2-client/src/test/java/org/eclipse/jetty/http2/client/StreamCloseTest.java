@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -308,6 +309,7 @@ public class StreamCloseTest extends AbstractTest
     @Test
     public void testFailedSessionClosesIdleStream() throws Exception
     {
+        AtomicReference<Session> sessionRef = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final List<Stream> streams = new ArrayList<>();
         start(new ServerSessionListener.Adapter()
@@ -329,9 +331,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public void onFailure(Session session, Throwable failure)
             {
-                Assert.assertEquals(0, session.getStreams().size());
-                for (Stream stream : streams)
-                    Assert.assertTrue(stream.isClosed());
+                sessionRef.set(session);
                 latch.countDown();
             }
         });
@@ -347,5 +347,13 @@ public class StreamCloseTest extends AbstractTest
         session.newStream(request2, new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Session serverSession = sessionRef.get();
+
+        // Wait for the server to finish the close activities.
+        Thread.sleep(1000);
+
+        Assert.assertEquals(0, serverSession.getStreams().size());
+        for (Stream stream : streams)
+            Assert.assertTrue(stream.isClosed());
     }
 }

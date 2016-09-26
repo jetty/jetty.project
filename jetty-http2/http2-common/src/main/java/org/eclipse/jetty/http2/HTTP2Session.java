@@ -462,8 +462,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void onConnectionFailure(int error, String reason)
     {
-        close(error, reason, Callback.NOOP);
         notifyFailure(this, new IOException(String.format("%d/%s", error, reason)));
+        close(error, reason, Callback.NOOP);
     }
 
     @Override
