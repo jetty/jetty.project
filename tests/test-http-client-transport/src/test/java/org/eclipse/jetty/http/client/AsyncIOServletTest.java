@@ -153,16 +153,16 @@ public class AsyncIOServletTest extends AbstractTest
         testAsyncReadThrows(new Error("explicitly_thrown_by_test"));
     }
 
-    private void testAsyncReadThrows(final Throwable throwable) throws Exception
+    private void testAsyncReadThrows(Throwable throwable) throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
-                final AsyncContext asyncContext = request.startAsync(request, response);
+                AsyncContext asyncContext = request.startAsync(request, response);
                 request.getInputStream().setReadListener(new ReadListener()
                 {
                     @Override
@@ -214,7 +214,7 @@ public class AsyncIOServletTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
                 AsyncContext asyncContext = request.startAsync(request, response);
@@ -290,7 +290,7 @@ public class AsyncIOServletTest extends AbstractTest
     @Test
     public void testOnErrorThrows() throws Exception
     {
-        final AtomicInteger errors = new AtomicInteger();
+        AtomicInteger errors = new AtomicInteger();
         start(new HttpServlet()
         {
             @Override
@@ -320,7 +320,7 @@ public class AsyncIOServletTest extends AbstractTest
                     }
 
                     @Override
-                    public void onError(final Throwable t)
+                    public void onError(Throwable t)
                     {
                         assertScope();
                         errors.incrementAndGet();
@@ -358,16 +358,16 @@ public class AsyncIOServletTest extends AbstractTest
         testAsyncWriteThrows(new Error("explicitly_thrown_by_test"));
     }
 
-    private void testAsyncWriteThrows(final Throwable throwable) throws Exception
+    private void testAsyncWriteThrows(Throwable throwable) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
-                final AsyncContext asyncContext = request.startAsync(request, response);
+                AsyncContext asyncContext = request.startAsync(request, response);
                 response.getOutputStream().setWriteListener(new WriteListener()
                 {
                     @Override
@@ -415,13 +415,13 @@ public class AsyncIOServletTest extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
                 response.flushBuffer();
 
-                final AsyncContext async = request.startAsync();
-                final ServletOutputStream out = response.getOutputStream();
+                AsyncContext async = request.startAsync();
+                ServletOutputStream out = response.getOutputStream();
                 out.setWriteListener(new WriteListener()
                 {
                     @Override
@@ -469,12 +469,12 @@ public class AsyncIOServletTest extends AbstractTest
     public void testIsReadyAtEOF() throws Exception
     {
         String text = "TEST\n";
-        byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
+        byte[] data = text.getBytes(StandardCharsets.UTF_8);
 
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
                 response.flushBuffer();
@@ -510,7 +510,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(StandardCharsets.ISO_8859_1));
+                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(StandardCharsets.UTF_8));
                         async.complete();
                     }
 
@@ -540,21 +540,19 @@ public class AsyncIOServletTest extends AbstractTest
     @Test
     public void testOnAllDataRead() throws Exception
     {
-        String text = "X";
-        byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
         String success = "SUCCESS";
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
                 response.flushBuffer();
 
-                final AsyncContext async = request.startAsync();
+                AsyncContext async = request.startAsync();
                 async.setTimeout(5000);
-                final ServletInputStream in = request.getInputStream();
-                final ServletOutputStream out = response.getOutputStream();
+                ServletInputStream in = request.getInputStream();
+                ServletOutputStream out = response.getOutputStream();
 
                 in.setReadListener(new ReadListener()
                 {
@@ -584,7 +582,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        out.write(success.getBytes(StandardCharsets.ISO_8859_1));
+                        out.write(success.getBytes(StandardCharsets.UTF_8));
                         async.complete();
                     }
 
@@ -599,6 +597,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
+        byte[] data = "X".getBytes(StandardCharsets.UTF_8);
         CountDownLatch clientLatch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider()
         {
@@ -638,13 +637,11 @@ public class AsyncIOServletTest extends AbstractTest
     @Test
     public void testOtherThreadOnAllDataRead() throws Exception
     {
-        String text = "X";
-        byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
         String success = "SUCCESS";
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
                 response.flushBuffer();
@@ -688,7 +685,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
-                        output.write(success.getBytes(StandardCharsets.ISO_8859_1));
+                        output.write(success.getBytes(StandardCharsets.UTF_8));
                         async.complete();
                     }
 
@@ -703,6 +700,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
+        byte[] data = "X".getBytes(StandardCharsets.UTF_8);
         CountDownLatch clientLatch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
         client.newRequest(newURI())
@@ -735,15 +733,13 @@ public class AsyncIOServletTest extends AbstractTest
     @Test
     public void testCompleteBeforeOnAllDataRead() throws Exception
     {
-        String text = "XYZ";
-        byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
         String success = "SUCCESS";
         AtomicBoolean allDataRead = new AtomicBoolean(false);
 
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 assertScope();
                 response.flushBuffer();
@@ -763,7 +759,7 @@ public class AsyncIOServletTest extends AbstractTest
                             int b = input.read();
                             if (b < 0)
                             {
-                                output.write(success.getBytes(StandardCharsets.ISO_8859_1));
+                                output.write(success.getBytes(StandardCharsets.UTF_8));
                                 async.complete();
                                 return;
                             }
@@ -774,7 +770,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        output.write("FAILURE".getBytes(StandardCharsets.ISO_8859_1));
+                        output.write("FAILURE".getBytes(StandardCharsets.UTF_8));
                         allDataRead.set(true);
                         throw new IllegalStateException();
                     }
@@ -793,7 +789,7 @@ public class AsyncIOServletTest extends AbstractTest
                 .method(HttpMethod.POST)
                 .path(servletPath)
                 .header(HttpHeader.CONNECTION, "close")
-                .content(new StringContentProvider(text))
+                .content(new StringContentProvider("XYZ"))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
