@@ -222,8 +222,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         // If we have no request yet, just close
         if (_metadata.getMethod() == null)
             _httpConnection.close();
-        else
-            onEarlyEOF();
+        else if (onEarlyEOF())
+            handle();
     }
 
     @Override

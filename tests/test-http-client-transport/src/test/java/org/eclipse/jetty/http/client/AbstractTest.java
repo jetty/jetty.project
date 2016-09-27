@@ -21,6 +21,8 @@ package org.eclipse.jetty.http.client;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.http.HttpServlet;
+
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -40,6 +42,8 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -67,6 +71,8 @@ public abstract class AbstractTest
     protected SslContextFactory sslContextFactory;
     protected Server server;
     protected ServerConnector connector;
+    protected ServletContextHandler context;
+    protected String servletPath = "/servlet";
     protected HttpClient client;
 
     public AbstractTest(Transport transport)
@@ -79,6 +85,22 @@ public abstract class AbstractTest
     {
         startServer(handler);
         startClient();
+    }
+
+    public void start(HttpServlet servlet) throws Exception
+    {
+        startServer(servlet);
+        startClient();
+    }
+
+    protected void startServer(HttpServlet servlet) throws Exception
+    {
+        context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder holder = new ServletHolder(servlet);
+        holder.setAsyncSupported(true);
+        context.addServlet(holder, servletPath);
+        startServer(context);
     }
 
     protected void startServer(Handler handler) throws Exception
@@ -229,8 +251,18 @@ public abstract class AbstractTest
     @After
     public void stop() throws Exception
     {
+        stopClient();
+        stopServer();
+    }
+
+    protected void stopClient() throws Exception
+    {
         if (client != null)
             client.stop();
+    }
+
+    protected void stopServer() throws Exception
+    {
         if (server != null)
             server.stop();
     }

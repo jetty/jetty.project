@@ -41,7 +41,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.GZIPContentDecoder;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -66,9 +65,10 @@ import org.eclipse.jetty.util.component.Destroyable;
  */
 public class AsyncMiddleManServlet extends AbstractProxyServlet
 {
-    private static final String PROXY_REQUEST_COMMITTED = AsyncMiddleManServlet.class.getName() + ".proxyRequestCommitted";
-    private static final String CLIENT_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
-    private static final String SERVER_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
+    private static final String PROXY_REQUEST_CONTENT_COMMITTED_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".proxyRequestContentCommitted";
+    private static final String CLIENT_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
+    private static final String SERVER_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
+    private static final String CONTINUE_ACTION_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".continueAction";
 
     @Override
     protected void service(HttpServletRequest clientRequest, HttpServletResponse proxyResponse) throws ServletException, IOException
@@ -91,8 +91,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 .method(clientRequest.getMethod())
                 .version(HttpVersion.fromString(clientRequest.getProtocol()));
 
-        boolean hasContent = hasContent(clientRequest);
-
         copyRequestHeaders(clientRequest, proxyRequest);
 
         addProxyHeaders(clientRequest, proxyRequest);
@@ -105,16 +103,43 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         // If there is content, the send of the proxy request
         // is delayed and performed when the content arrives,
         // to allow optimization of the Content-Length header.
-        if (hasContent)
-            proxyRequest.content(newProxyContentProvider(clientRequest, proxyResponse, proxyRequest));
+        if (hasContent(clientRequest))
+        {
+            DeferredContentProvider provider = newProxyContentProvider(clientRequest, proxyResponse, proxyRequest);
+            proxyRequest.content(provider);
+
+            if (expects100Continue(clientRequest))
+            {
+                proxyRequest.attribute(CLIENT_REQUEST_ATTRIBUTE, clientRequest);
+                proxyRequest.attribute(CONTINUE_ACTION_ATTRIBUTE, (Runnable)() ->
+                {
+                    try
+                    {
+                        ServletInputStream input = clientRequest.getInputStream();
+                        input.setReadListener(newProxyReadListener(clientRequest, proxyResponse, proxyRequest, provider));
+                    }
+                    catch (Throwable failure)
+                    {
+                        onClientRequestFailure(clientRequest, proxyRequest, proxyResponse, failure);
+                    }
+                });
+                sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
+            }
+            else
+            {
+                ServletInputStream input = clientRequest.getInputStream();
+                input.setReadListener(newProxyReadListener(clientRequest, proxyResponse, proxyRequest, provider));
+            }
+        }
         else
+        {
             sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
+        }
     }
 
-    protected ContentProvider newProxyContentProvider(final HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest) throws IOException
+    protected DeferredContentProvider newProxyContentProvider(final HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest) throws IOException
     {
-        ServletInputStream input = clientRequest.getInputStream();
-        DeferredContentProvider provider = new DeferredContentProvider()
+        return new DeferredContentProvider()
         {
             @Override
             public boolean offer(ByteBuffer buffer, Callback callback)
@@ -124,8 +149,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 return super.offer(buffer, callback);
             }
         };
-        input.setReadListener(newProxyReadListener(clientRequest, proxyResponse, proxyRequest, provider));
-        return provider;
     }
 
     protected ReadListener newProxyReadListener(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest, DeferredContentProvider provider)
@@ -152,6 +175,14 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
     {
         return ContentTransformer.IDENTITY;
+    }
+
+    @Override
+    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    {
+        super.onContinue(clientRequest, proxyRequest);
+        Runnable action = (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
+        action.run();
     }
 
     private void transform(ContentTransformer transformer, ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
@@ -197,10 +228,10 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     private void cleanup(HttpServletRequest clientRequest)
     {
-        ContentTransformer clientTransformer = (ContentTransformer)clientRequest.getAttribute(CLIENT_TRANSFORMER);
+        ContentTransformer clientTransformer = (ContentTransformer)clientRequest.getAttribute(CLIENT_TRANSFORMER_ATTRIBUTE);
         if (clientTransformer instanceof Destroyable)
             ((Destroyable)clientTransformer).destroy();
-        ContentTransformer serverTransformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
+        ContentTransformer serverTransformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER_ATTRIBUTE);
         if (serverTransformer instanceof Destroyable)
             ((Destroyable)serverTransformer).destroy();
     }
@@ -237,6 +268,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         private final Request proxyRequest;
         private final DeferredContentProvider provider;
         private final int contentLength;
+        private final boolean expects100Continue;
         private int length;
 
         protected ProxyReader(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest, DeferredContentProvider provider)
@@ -246,6 +278,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             this.proxyRequest = proxyRequest;
             this.provider = provider;
             this.contentLength = clientRequest.getContentLength();
+            this.expects100Continue = expects100Continue(clientRequest);
         }
 
         @Override
@@ -321,14 +354,12 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         private void process(ByteBuffer content, Callback callback, boolean finished) throws IOException
         {
-            ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(CLIENT_TRANSFORMER);
+            ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(CLIENT_TRANSFORMER_ATTRIBUTE);
             if (transformer == null)
             {
                 transformer = newClientRequestContentTransformer(clientRequest, proxyRequest);
-                clientRequest.setAttribute(CLIENT_TRANSFORMER, transformer);
+                clientRequest.setAttribute(CLIENT_TRANSFORMER_ATTRIBUTE, transformer);
             }
-
-            boolean committed = clientRequest.getAttribute(PROXY_REQUEST_COMMITTED) != null;
 
             int contentBytes = content.remaining();
 
@@ -361,11 +392,15 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             if (_log.isDebugEnabled())
                 _log.debug("{} upstream content transformation {} -> {} bytes", getRequestId(clientRequest), contentBytes, newContentBytes);
 
-            if (!committed && (size > 0 || finished))
+            boolean contentCommitted = clientRequest.getAttribute(PROXY_REQUEST_CONTENT_COMMITTED_ATTRIBUTE) != null;
+            if (!contentCommitted && (size > 0 || finished))
             {
-                proxyRequest.header(HttpHeader.CONTENT_LENGTH, null);
-                clientRequest.setAttribute(PROXY_REQUEST_COMMITTED, true);
-                sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
+                clientRequest.setAttribute(PROXY_REQUEST_CONTENT_COMMITTED_ATTRIBUTE, true);
+                if (!expects100Continue)
+                {
+                    proxyRequest.header(HttpHeader.CONTENT_LENGTH, null);
+                    sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
+                }
             }
 
             if (size == 0)
@@ -401,6 +436,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onBegin(Response serverResponse)
         {
+            response = serverResponse;
             proxyResponse.setStatus(serverResponse.getStatus());
         }
 
@@ -430,11 +466,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                     clientRequest.setAttribute(WRITE_LISTENER_ATTRIBUTE, proxyWriter);
                 }
 
-                ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
+                ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER_ATTRIBUTE);
                 if (transformer == null)
                 {
                     transformer = newServerResponseContentTransformer(clientRequest, proxyResponse, serverResponse);
-                    clientRequest.setAttribute(SERVER_TRANSFORMER, transformer);
+                    clientRequest.setAttribute(SERVER_TRANSFORMER_ATTRIBUTE, transformer);
                 }
 
                 length += contentBytes;
@@ -502,7 +538,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                     if (contentLength < 0)
                     {
                         ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
-                        ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
+                        ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER_ATTRIBUTE);
 
                         transform(transformer, BufferUtil.EMPTY_BUFFER, true, buffers);
 
@@ -544,7 +580,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onComplete(Result result)
         {
-            response = result.getResponse();
             if (result.isSucceeded())
                 complete.succeeded();
             else

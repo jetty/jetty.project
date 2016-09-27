@@ -64,6 +64,10 @@ public class ContinueProtocolHandler implements ProtocolHandler
         return new ContinueListener();
     }
 
+    protected void onContinue(Request request)
+    {
+    }
+
     protected class ContinueListener extends BufferingResponseListener
     {
         @Override
@@ -72,7 +76,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
             // Handling of success must be done here and not from onComplete(),
             // since the onComplete() is not invoked because the request is not completed yet.
 
-            HttpConversation conversation = ((HttpRequest)response.getRequest()).getConversation();
+            Request request = response.getRequest();
+            HttpConversation conversation = ((HttpRequest)request).getConversation();
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);
 
@@ -88,6 +93,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
                     // All good, continue
                     exchange.resetResponse();
                     exchange.proceed(null);
+                    onContinue(request);
                     break;
                 }
                 default:
@@ -98,7 +104,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
                     List<Response.ResponseListener> listeners = exchange.getResponseListeners();
                     HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
                     notifier.forwardSuccess(listeners, contentResponse);
-                    exchange.proceed(new HttpRequestException("Expectation failed", exchange.getRequest()));
+                    exchange.proceed(new HttpRequestException("Expectation failed", request));
                     break;
                 }
             }
