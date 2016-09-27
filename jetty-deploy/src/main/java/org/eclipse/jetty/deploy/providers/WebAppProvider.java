@@ -253,7 +253,7 @@ public class WebAppProvider extends ScanningAppProvider
         Resource resource = Resource.newResource(app.getOriginId());
         File file = resource.getFile();
         if (!resource.exists())
-            throw new IllegalStateException("App resouce does not exist "+resource);
+            throw new IllegalStateException("App resource does not exist "+resource);
 
         String context = file.getName();
 
