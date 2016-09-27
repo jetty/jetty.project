@@ -28,6 +28,8 @@ import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * Decoder for the "gzip" encoding.
+ * <p>An Decode that inflates gzip compressed data that has been
+ * optimized for async usage with minimal data copies.
  * 
  */
 public class GZIPContentDecoder
@@ -59,6 +61,11 @@ public class GZIPContentDecoder
         reset();
     }
 
+    /** Inflate compressed data from a buffer.
+     * 
+     * @param compressed Buffer containing compressed data.
+     * @return Buffer containing inflated data.
+     */
     public ByteBuffer decode(ByteBuffer compressed)
     {
         decodeChunks(compressed);
@@ -70,6 +77,18 @@ public class GZIPContentDecoder
         return result;
     }
 
+    /** Called when a chunk of data is inflated.
+     * <p>The default implementation aggregates all the chunks 
+     * into a single buffer returned from {@link #decode(ByteBuffer)}.
+     * Derived implementations may choose to consume chunks individually
+     * and return false to prevent further inflation until a subsequent
+     * call to {@link #decode(ByteBuffer)} or {@link #decodeChunks(ByteBuffer)}.
+     *  
+     * @param chunk The inflated chunk of data
+     * @return False if inflating should continue, or True if the call 
+     * to {@link #decodeChunks(ByteBuffer)} or {@link #decode(ByteBuffer)} 
+     * should return, allowing back pressure of compressed data.
+     */
     protected boolean decodedChunk(ByteBuffer chunk)
     {
         if (_inflated==null)
@@ -100,6 +119,12 @@ public class GZIPContentDecoder
     }
     
     
+    /**
+     * Inflate compressed data.
+     * <p>Inflation continues until the compressed block end is reached, there is no 
+     * more compressed data or a call to {@link #decodedChunk(ByteBuffer)} returns true.
+     * @param compressed
+     */
     protected void decodeChunks(ByteBuffer compressed)
     {
         try
@@ -367,11 +392,21 @@ public class GZIPContentDecoder
         INITIAL, ID, CM, FLG, MTIME, XFL, OS, FLAGS, EXTRA_LENGTH, EXTRA, NAME, COMMENT, HCRC, DATA, CRC, ISIZE
     }
     
+    /**
+     * @return An indirect buffer of the configured buffersize either from the pool or freshly allocated. 
+     */
     public ByteBuffer acquire()
     {
         return _pool==null?BufferUtil.allocate(_bufferSize):_pool.acquire(_bufferSize,false);
     }
     
+    /**
+     * Release an allocated buffer.
+     * <p>This method will called {@link ByteBufferPool#release(ByteBuffer)} if a buffer pool has
+     * been configured.  This method should be called once for all buffers returned from {@link #decode(ByteBuffer)}
+     * or passed to {@link #decodedChunk(ByteBuffer)}.
+     * @param buffer The buffer to release.
+     */
     public void release(ByteBuffer buffer)
     {
         if (_pool!=null && buffer!=BufferUtil.EMPTY_BUFFER)

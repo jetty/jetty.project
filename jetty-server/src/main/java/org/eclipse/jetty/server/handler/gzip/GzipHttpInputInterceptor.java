@@ -25,6 +25,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
 
+/**
+ * A HttpInput Interceptor that inflates GZIP encoded request content.
+ *
+ */
 public class GzipHttpInputInterceptor implements HttpInput.Interceptor
 {
     class Decoder extends GZIPContentDecoder

@@ -402,7 +402,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * @return size in bytes of the buffer to inflate compressed request, or <=0 for no inflation.
+     * @return size in bytes of the buffer to inflate compressed request, or 0 for no inflation.
      */
     public int getInflateBufferSize()
     {
@@ -411,7 +411,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * @param inflateRequests size in bytes of the buffer to inflate compressed request, or <=0 for no inflation.
+     * @param size size in bytes of the buffer to inflate compressed request, or 0 for no inflation.
      */
     public void setInflateBufferSize(int size)
     {
