@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class GzipHttpInputInterceptor implements HttpInput.Interceptor
 {
