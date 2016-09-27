@@ -32,16 +32,15 @@ import org.eclipse.jetty.util.BufferUtil;
  */
 public class GZIPContentDecoder
 {
-    // TODO this is a work in progress
-
-    private final Inflater inflater = new Inflater(true);
-    private final ByteBufferPool pool;
-    private final int bufferSize;
-    private State state;
-    private int size;
-    private int value;
-    private byte flags;
-    private ByteBuffer inflated;
+    private final Inflater _inflater = new Inflater(true);
+    private final ByteBufferPool _pool;
+    private final int _bufferSize;
+    private State _state;
+    private int _size;
+    private int _value;
+    private byte _flags;
+    private ByteBuffer _empty;
+    private ByteBuffer _inflated;
 
     public GZIPContentDecoder()
     {
@@ -55,38 +54,49 @@ public class GZIPContentDecoder
     
     public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
     {
-        this.bufferSize = bufferSize;
-        this.pool = pool;
+        _bufferSize = bufferSize;
+        _pool = pool;
         reset();
     }
 
     public ByteBuffer decode(ByteBuffer compressed)
     {
         decodeChunks(compressed);
-        return inflated==null?BufferUtil.EMPTY_BUFFER:inflated;
+        if (BufferUtil.isEmpty(_inflated) || _state==State.CRC || _state==State.ISIZE )
+            return BufferUtil.EMPTY_BUFFER;
+        
+        ByteBuffer result = _inflated;
+        _inflated = null;
+        return result;
     }
 
-    protected void decodedChunk(ByteBuffer chunk)
+    protected boolean decodedChunk(ByteBuffer chunk)
     {
-        if (inflated==null)
-            inflated=chunk;
+        if (_inflated==null)
+            _inflated=chunk;
         else
         {
-            int size = inflated.remaining() + chunk.remaining();
-            if (size<=inflated.capacity())
+            int size = _inflated.remaining() + chunk.remaining();
+            if (size<=_inflated.capacity())
             {
-                BufferUtil.put(chunk,inflated);
+                BufferUtil.append(_inflated,chunk);
+                BufferUtil.put(chunk,_inflated);
                 release(chunk);
             }
             else
             {
-                ByteBuffer bigger=pool==null?BufferUtil.allocate(size):pool.acquire(size,false);
-                BufferUtil.put(inflated,bigger);
-                release(inflated);
+                ByteBuffer bigger=_pool==null?BufferUtil.allocate(size):_pool.acquire(size,false);
+                int pos=BufferUtil.flipToFill(bigger);
+                BufferUtil.put(_inflated,bigger);
                 BufferUtil.put(chunk,bigger);
+                BufferUtil.flipToFlush(bigger,pos);
+                release(_inflated);
                 release(chunk);
+                _inflated = bigger;
             }
         }
+        
+        return false;
     }
     
     
@@ -94,26 +104,115 @@ public class GZIPContentDecoder
     {
         try
         {
-            while (compressed.hasRemaining())
+            while (true)
             {
-                byte currByte = compressed.get();
-                switch (state)
+                switch (_state)
                 {
                     case INITIAL:
                     {
-                        compressed.position(compressed.position() - 1);
-                        state = State.ID;
+                        _state = State.ID;
                         break;
                     }
+
+                    case FLAGS:
+                    {
+                        if ((_flags & 0x04) == 0x04)
+                        {
+                            _state = State.EXTRA_LENGTH;
+                            _size = 0;
+                            _value = 0;
+                        }
+                        else if ((_flags & 0x08) == 0x08)
+                            _state = State.NAME;
+                        else if ((_flags & 0x10) == 0x10)
+                            _state = State.COMMENT;
+                        else if ((_flags & 0x2) == 0x2)
+                        {
+                            _state = State.HCRC;
+                            _size = 0;
+                            _value = 0;
+                        }
+                        else
+                        {
+                            _state = State.DATA;
+                            continue;
+                        }
+                        break;
+                    }
+                    
+                    case DATA:
+                    {
+                        while (true)
+                        {
+                            ByteBuffer chunk = _empty==null?acquire():_empty;
+                            _empty = chunk;
+                            
+                            try
+                            {
+                                int length = _inflater.inflate(chunk.array(),chunk.arrayOffset(),chunk.capacity());
+                                chunk.limit(length);
+                            }
+                            catch (DataFormatException x)
+                            {
+                                _empty=null;
+                                throw new ZipException(x.getMessage());
+                            }
+                            
+                            if (chunk.hasRemaining())
+                            {
+                                _empty=null;
+                                if (decodedChunk(chunk))
+                                    return;
+                            }
+                            else if (_inflater.needsInput())
+                            {
+                                if (!compressed.hasRemaining())
+                                    return;
+                                if (compressed.hasArray())
+                                {
+                                    _inflater.setInput(compressed.array(),compressed.arrayOffset()+compressed.position(),compressed.remaining());
+                                    compressed.position(compressed.limit());
+                                }
+                                else
+                                {
+                                    // TODO use the pool
+                                    byte[] input = new byte[compressed.remaining()];
+                                    compressed.get(input);
+                                    _inflater.setInput(input);
+                                }  
+                            }
+                            else if (_inflater.finished())
+                            {
+                                int remaining = _inflater.getRemaining();
+                                compressed.position(compressed.limit() - remaining);
+                                _state = State.CRC;
+                                _size = 0;
+                                _value = 0;
+                                break;
+                            }
+                        }
+                        continue;
+                    }
+                    
+                    default:
+                        break;
+                }
+        
+                if (!compressed.hasRemaining())
+                    break;
+                
+                byte currByte = compressed.get();
+                switch (_state)
+                {
                     case ID:
                     {
-                        value += (currByte & 0xFF) << 8 * size;
-                        ++size;
-                        if (size == 2)
+                        _value += (currByte & 0xFF) << 8 * _size;
+                        ++_size;
+                        if (_size == 2)
                         {
-                            if (value != 0x8B1F)
+                            if (_value != 0x8B1F)
                                 throw new ZipException("Invalid gzip bytes");
-                            state = State.CM;
+                            _state = State.CM;
                         }
                         break;
                     }
@@ -121,77 +220,54 @@ public class GZIPContentDecoder
                     {
                         if ((currByte & 0xFF) != 0x08)
                             throw new ZipException("Invalid gzip compression method");
-                        state = State.FLG;
+                        _state = State.FLG;
                         break;
                     }
                     case FLG:
                     {
-                        flags = currByte;
-                        state = State.MTIME;
-                        size = 0;
-                        value = 0;
+                        _flags = currByte;
+                        _state = State.MTIME;
+                        _size = 0;
+                        _value = 0;
                         break;
                     }
                     case MTIME:
                     {
                         // Skip the 4 MTIME bytes
-                        ++size;
-                        if (size == 4)
-                            state = State.XFL;
+                        ++_size;
+                        if (_size == 4)
+                            _state = State.XFL;
                         break;
                     }
                     case XFL:
                     {
                         // Skip XFL
-                        state = State.OS;
+                        _state = State.OS;
                         break;
                     }
                     case OS:
                     {
                         // Skip OS
-                        state = State.FLAGS;
-                        break;
-                    }
-                    case FLAGS:
-                    {
-                        compressed.position(compressed.position() - 1);
-                        if ((flags & 0x04) == 0x04)
-                        {
-                            state = State.EXTRA_LENGTH;
-                            size = 0;
-                            value = 0;
-                        }
-                        else if ((flags & 0x08) == 0x08)
-                            state = State.NAME;
-                        else if ((flags & 0x10) == 0x10)
-                            state = State.COMMENT;
-                        else if ((flags & 0x2) == 0x2)
-                        {
-                            state = State.HCRC;
-                            size = 0;
-                            value = 0;
-                        }
-                        else
-                            state = State.DATA;
+                        _state = State.FLAGS;
                         break;
                     }
                     case EXTRA_LENGTH:
                     {
-                        value += (currByte & 0xFF) << 8 * size;
-                        ++size;
-                        if (size == 2)
-                            state = State.EXTRA;
+                        _value += (currByte & 0xFF) << 8 * _size;
+                        ++_size;
+                        if (_size == 2)
+                            _state = State.EXTRA;
                         break;
                     }
                     case EXTRA:
                     {
                         // Skip EXTRA bytes
-                        --value;
-                        if (value == 0)
+                        --_value;
+                        if (_value == 0)
                         {
                             // Clear the EXTRA flag and loop on the flags
-                            flags &= ~0x04;
-                            state = State.FLAGS;
+                            _flags &= ~0x04;
+                            _state = State.FLAGS;
                         }
                         break;
                     }
@@ -201,8 +277,8 @@ public class GZIPContentDecoder
                         if (currByte == 0)
                         {
                             // Clear the NAME flag and loop on the flags
-                            flags &= ~0x08;
-                            state = State.FLAGS;
+                            _flags &= ~0x08;
+                            _state = State.FLAGS;
                         }
                         break;
                     }
@@ -212,79 +288,43 @@ public class GZIPContentDecoder
                         if (currByte == 0)
                         {
                             // Clear the COMMENT flag and loop on the flags
-                            flags &= ~0x10;
-                            state = State.FLAGS;
+                            _flags &= ~0x10;
+                            _state = State.FLAGS;
                         }
                         break;
                     }
                     case HCRC:
                     {
                         // Skip HCRC
-                        ++size;
-                        if (size == 2)
+                        ++_size;
+                        if (_size == 2)
                         {
                             // Clear the HCRC flag and loop on the flags
-                            flags &= ~0x02;
-                            state = State.FLAGS;
-                        }
-                        break;
-                    }
-                    case DATA:
-                    {
-                        // TODO this will not always be possible
-                        compressed.position(compressed.position() - 1);
-                        ByteBuffer inflated=null;
-                        while (true)
-                        {
-                            ByteBuffer chunk = inflate();
-                            if (chunk.hasRemaining())
-                                decodedChunk(chunk);
-                            else if (inflater.needsInput())
-                            {
-                                if (compressed.hasRemaining())
-                                {
-                                    // TODO do this without copy from buffer array
-                                    byte[] input = new byte[compressed.remaining()];
-                                    compressed.get(input);
-                                    inflater.setInput(input);
-                                }
-                                else if (inflater.finished())
-                                {
-                                    int remaining = inflater.getRemaining();
-                                    compressed.position(compressed.limit() - remaining);
-                                    state = State.CRC;
-                                    size = 0;
-                                    value = 0;
-                                    break;
-                                }
-                                else
-                                {
-                                    break;
-                                }
-                            }
+                            _flags &= ~0x02;
+                            _state = State.FLAGS;
                         }
                         break;
                     }
                     case CRC:
                     {
-                        value += (currByte & 0xFF) << 8 * size;
-                        ++size;
-                        if (size == 4)
+                        _value += (currByte & 0xFF) << 8 * _size;
+                        ++_size;
+                        if (_size == 4)
                         {
                             // From RFC 1952, compliant decoders need not to verify the CRC
-                            state = State.ISIZE;
-                            size = 0;
-                            value = 0;
+                            _state = State.ISIZE;
+                            _size = 0;
+                            _value = 0;
                         }
                         break;
                     }
                     case ISIZE:
                     {
-                        value += (currByte & 0xFF) << 8 * size;
-                        ++size;
-                        if (size == 4)
+                        _value += (currByte & 0xFF) << 8 * _size;
+                        ++_size;
+                        if (_size == 4)
                         {
-                            if (value != inflater.getBytesWritten())
+                            if (_value != _inflater.getBytesWritten())
                                 throw new ZipException("Invalid input size");
 
                             // TODO ByteBuffer result = output == null ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(output);
@@ -304,33 +344,22 @@ public class GZIPContentDecoder
         }
     }
 
-    private ByteBuffer inflate() throws ZipException
-    {
-        try
-        {
-            ByteBuffer inflated = acquire();
-            int length = inflater.inflate(inflated.array(),inflated.arrayOffset(),inflated.capacity());
-            inflated.limit(length);
-            return inflated;
-        }
-        catch (DataFormatException x)
-        {
-            throw new ZipException(x.getMessage());
-        }
-    }
 
     private void reset()
     {
-        inflater.reset();
-        state = State.INITIAL;
-        size = 0;
-        value = 0;
-        flags = 0;
+        _inflater.reset();
+        _state = State.INITIAL;
+        _size = 0;
+        _value = 0;
+        _flags = 0;
+        if (_empty!=null)
+            release(_empty);
+        _empty = null;
     }
 
     public boolean isFinished()
     {
-        return state == State.INITIAL;
+        return _state == State.INITIAL;
     }
 
     private enum State
@@ -340,12 +369,12 @@ public class GZIPContentDecoder
     
     public ByteBuffer acquire()
     {
-        return pool==null?BufferUtil.allocate(bufferSize):pool.acquire(bufferSize,false);
+        return _pool==null?BufferUtil.allocate(_bufferSize):_pool.acquire(_bufferSize,false);
     }
     
     public void release(ByteBuffer buffer)
     {
-        if (pool!=null)
-            pool.release(buffer);
+        if (_pool!=null && buffer!=BufferUtil.EMPTY_BUFFER)
+            _pool.release(buffer);
     }
 }

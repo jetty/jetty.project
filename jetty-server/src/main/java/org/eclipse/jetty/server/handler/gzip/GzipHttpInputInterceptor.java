@@ -18,76 +18,63 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
-import org.eclipse.jetty.server.HttpInput.Interceptor;
+import org.eclipse.jetty.util.BufferUtil;
 
-public class GzipHttpInputInterceptor extends HttpInput.NestedInterceptor
+public class GzipHttpInputInterceptor implements HttpInput.Interceptor
 {
     class Decoder extends GZIPContentDecoder
     {
-        private boolean wakeup;
-        
         public Decoder(ByteBufferPool pool, int bufferSize)
         {
             super(pool,bufferSize);
         }
 
         @Override
-        protected void decodedChunk(final ByteBuffer chunk)
+        protected boolean decodedChunk(final ByteBuffer chunk)
         {
-            boolean woken = getNext().addContent(new Content(chunk)
-            {
-                @Override
-                public void succeeded()
-                {
-                    release(chunk);
-                }              
-            });
-            wakeup |= woken;
+            _chunk = chunk;
+            return true;
         }
 
         @Override
         public void decodeChunks(ByteBuffer compressed)
         {
-            wakeup=false;
+            _chunk = null;
             super.decodeChunks(compressed);
         }
-        
-        public boolean isWakeup()
-        {
-            return wakeup;
-        }
-        
     }
     
     private final Decoder _decoder;
+    private ByteBuffer _chunk;
     
-    public GzipHttpInputInterceptor(Interceptor next,ByteBufferPool pool, int bufferSize)
+    public GzipHttpInputInterceptor(ByteBufferPool pool, int bufferSize)
     {
-        super(next);
         _decoder = new Decoder(pool,bufferSize);
     }
 
     @Override
-    public boolean addContent(Content content)
-    {
+    public Content readFrom(Content content)
+    {        
         _decoder.decodeChunks(content.getByteBuffer());
-        boolean wakeup = _decoder.isWakeup(); 
+        final ByteBuffer chunk = _chunk;
+
+        if (chunk==null)
+            return null;
         
-        // If there is still content remaining, this is unusual
-        // but let the HttpInput consumer deal with it
-        if (content.hasContent())
-            wakeup = getNext().addContent(content) | wakeup;
-        else
-            // Otherwise succeed it
-            content.succeeded();
-        return wakeup;
+        return new Content(chunk)
+        {
+            @Override
+            public void succeeded()
+            {
+                _decoder.release(chunk);
+            }
+        };
     }
     
 }
