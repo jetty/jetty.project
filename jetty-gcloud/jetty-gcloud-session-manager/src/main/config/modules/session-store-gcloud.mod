@@ -92,6 +92,7 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 ## GCloudDatastore Session config
 #jetty.session.gcloud.maxRetries=5
 #jetty.session.gcloud.backoffMs=1000
+#jetty.session.gcloud.namespace=
 #jetty.session.gcloud.model.kind=GCloudSession
 #jetty.session.gcloud.model.id=id
 #jetty.session.gcloud.model.contextPath=contextPath

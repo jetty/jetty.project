@@ -28,6 +28,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
@@ -49,7 +50,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -198,8 +198,8 @@ public class SslConnectionFactoryTest
     @Test
     public void testSocketCustomization() throws Exception
     {
-        final Queue<String> history = new ConcurrentArrayQueue<>();
-        
+        final Queue<String> history = new LinkedBlockingQueue<>();
+
         _connector.addBean(new SocketCustomizationListener()
         {
             @Override

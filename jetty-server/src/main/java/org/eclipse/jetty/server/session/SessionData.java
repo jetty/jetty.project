@@ -351,7 +351,7 @@ public class SessionData implements Serializable
     public boolean isExpiredAt (long time)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Testing expiry on session {}: Never expires? {} Is expired?{}", _id, (getExpiry()<= 0), (getExpiry() < time));
+            LOG.debug("Testing expiry on session {}: expires at {} now {}", _id, getExpiry(), time);
         if (getExpiry() <= 0)
             return false; //never expires
         return (getExpiry() <= time);
