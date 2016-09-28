@@ -40,20 +40,8 @@ import org.junit.runner.RunWith;
 public class QueueBenchmarkTest
 {
     private static final Logger logger = Log.getLogger(QueueBenchmarkTest.class);
-    private static final Runnable ELEMENT = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-        }
-    };
-    private static final Runnable END = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-        }
-    };
+    private static final Runnable ELEMENT = () -> {};
+    private static final Runnable END = () -> {};
 
     @Stress("High CPU")
     @Test
@@ -67,10 +55,10 @@ public class QueueBenchmarkTest
         final int iterations = 16 * 1024 * 1024;
 
         final List<Queue<Runnable>> queues = new ArrayList<>();
-        queues.add(new ConcurrentArrayQueue<Runnable>()); // Jetty lock-free queue, allocating array blocks
-        queues.add(new ConcurrentLinkedQueue<Runnable>()); // JDK lock-free queue, allocating nodes
-        queues.add(new ArrayBlockingQueue<Runnable>(iterations * writers)); // JDK lock-based, circular array queue
-        queues.add(new BlockingArrayQueue<Runnable>(iterations * writers)); // Jetty lock-based, circular array queue
+        queues.add(new ConcurrentArrayQueue<>()); // Jetty lock-free queue, allocating array blocks
+        queues.add(new ConcurrentLinkedQueue<>()); // JDK lock-free queue, allocating nodes
+        queues.add(new ArrayBlockingQueue<>(iterations * writers)); // JDK lock-based, circular array queue
+        queues.add(new BlockingArrayQueue<>(iterations * writers)); // Jetty lock-based, circular array queue
 
         testQueues(readers, writers, iterations, queues, false);
     }
@@ -87,9 +75,9 @@ public class QueueBenchmarkTest
         final int iterations = 16 * 1024 * 1024;
 
         final List<Queue<Runnable>> queues = new ArrayList<>();
-        queues.add(new LinkedBlockingQueue<Runnable>());
-        queues.add(new ArrayBlockingQueue<Runnable>(iterations * writers));
-        queues.add(new BlockingArrayQueue<Runnable>(iterations * writers));
+        queues.add(new LinkedBlockingQueue<>());
+        queues.add(new ArrayBlockingQueue<>(iterations * writers));
+        queues.add(new BlockingArrayQueue<>(iterations * writers));
 
         testQueues(readers, writers, iterations, queues, true);
     }

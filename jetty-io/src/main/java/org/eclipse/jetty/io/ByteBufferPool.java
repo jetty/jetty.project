@@ -55,7 +55,7 @@ public interface ByteBufferPool
      * @see #acquire(int, boolean)
      */
     public void release(ByteBuffer buffer);
-    
+
     default ByteBuffer newByteBuffer(int capacity, boolean direct)
     {
         return direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
@@ -124,73 +124,72 @@ public interface ByteBufferPool
         }
     }
 
-    
     class Bucket
     {
         private final ByteBufferPool _pool;
         private final int _capacity;
         private final AtomicInteger _space;
-        private final Queue<ByteBuffer> _queue= new ConcurrentArrayQueue<>();
+        private final Queue<ByteBuffer> _queue = new ConcurrentArrayQueue<>();
 
-        public Bucket(ByteBufferPool pool, int bufferSize,int maxSize)
+        public Bucket(ByteBufferPool pool, int bufferSize, int maxSize)
         {
-            _pool=pool;
-            _capacity=bufferSize;
-            _space=maxSize>0?new AtomicInteger(maxSize):null;
+            _pool = pool;
+            _capacity = bufferSize;
+            _space = maxSize > 0 ? new AtomicInteger(maxSize) : null;
         }
-    
+
         public void release(ByteBuffer buffer)
         {
             BufferUtil.clear(buffer);
-            if (_space==null)
+            if (_space == null)
                 _queue.offer(buffer);
-            else if (_space.decrementAndGet()>=0)
+            else if (_space.decrementAndGet() >= 0)
                 _queue.offer(buffer);
             else
                 _space.incrementAndGet();
         }
-    
+
         public ByteBuffer acquire(boolean direct)
         {
             ByteBuffer buffer = _queue.poll();
-            if (buffer == null) 
-               return _pool.newByteBuffer(_capacity,direct);
-            if (_space!=null)
+            if (buffer == null)
+                return _pool.newByteBuffer(_capacity, direct);
+            if (_space != null)
                 _space.incrementAndGet();
-            return buffer;        
+            return buffer;
         }
-    
+
         public void clear()
         {
-            if (_space==null)
+            if (_space == null)
+            {
                 _queue.clear();
+            }
             else
             {
-                int s=_space.getAndSet(0);
-                while(s-->0)
+                int s = _space.getAndSet(0);
+                while (s-- > 0)
                 {
-                    if (_queue.poll()==null)
+                    if (_queue.poll() == null)
                         _space.incrementAndGet();
                 }
             }
         }
-        
+
         boolean isEmpty()
         {
             return _queue.isEmpty();
         }
-        
+
         int size()
         {
             return _queue.size();
         }
-        
+
         @Override
         public String toString()
         {
-            return String.format("Bucket@%x{%d,%d}",hashCode(),_capacity,_queue.size());
+            return String.format("Bucket@%x{%d,%d}", hashCode(), _capacity, _queue.size());
         }
     }
-    
-    
 }

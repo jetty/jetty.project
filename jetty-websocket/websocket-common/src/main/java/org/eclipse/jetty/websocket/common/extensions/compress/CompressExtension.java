@@ -171,7 +171,7 @@ public abstract class CompressExtension extends AbstractExtension
                 return;
             }
     
-            int read = 0;
+            int read;
             while ((read = inflater.inflate(output)) >= 0)
             {
                 if (read == 0)
@@ -258,7 +258,7 @@ public abstract class CompressExtension extends AbstractExtension
         }
 
         byte input[];
-        int inputOffset = 0;
+        int inputOffset;
         int len;
 
         if (buf.hasArray())
@@ -298,7 +298,7 @@ public abstract class CompressExtension extends AbstractExtension
         }
 
         byte input[];
-        int inputOffset = 0;
+        int inputOffset;
         int len;
 
         if (buf.hasArray())
