@@ -49,9 +49,51 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpInput extends ServletInputStream implements Runnable
 {
+    /**
+     * An interceptor for HTTP Request input.
+     * <p>
+     * Unlike inputstream wrappers that can be applied by filters, an interceptor
+     * is entirely transparent and works with async IO APIs.
+     * @see HttpInput#setInterceptor(Interceptor)
+     * @see HttpInput#addInterceptor(Interceptor)
+     */
     public interface Interceptor
     {
         Content readFrom(Content content);
+    }
+    
+    /**
+     * An {@link Interceptor} that chains two other {@link Interceptor}s together.
+     * The {@link #readFrom(Content)} calls the previous {@link Interceptor}'s 
+     * {@link #readFrom(Content)} and then passes any {@link Content} returned 
+     * to the next {@link Interceptor}.
+     */
+    public static class ChainedInterceptor implements Interceptor
+    {
+        private final Interceptor _prev;
+        private final Interceptor _next;
+        
+        public ChainedInterceptor(Interceptor prev, Interceptor next)
+        {
+            _prev = prev;
+            _next = next;
+        }
+
+        public Interceptor getPrev()
+        {
+            return _prev;
+        }
+
+        public Interceptor getNext()
+        {
+            return _next;
+        }
+
+        @Override
+        public Content readFrom(Content content)
+        {
+            return _next.readFrom(_prev.readFrom(content));
+        }
     }
     
 
@@ -61,7 +103,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private final byte[] _oneByteBuffer = new byte[1];
     private Content _content;
-    private Content _chunk;
+    private Content _intercepted;
     private final Deque<Content> _inputQ = new ArrayDeque<>();
     private final HttpChannelState _channelState;
     private ReadListener _listener;
@@ -105,33 +147,34 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    
-    
+    /**
+     * @return The current Interceptor, or null if none set
+     */
     public Interceptor getInterceptor()
     {
         return _interceptor;
     }
 
+    /**
+     * Set the interceptor.
+     * @param interceptor The interceptor to use.
+     */
     public void setInterceptor(Interceptor interceptor)
     {
         _interceptor = interceptor;
     }
 
-    public void addInterceptor(final Interceptor interceptor)
+    /**
+     * Set the {@link Interceptor}, using a {@link ChainedInterceptor} if 
+     * an {@link Interceptor} is already set.
+     * @param interceptor the next {@link Interceptor} in a chain
+     */
+    public void addInterceptor(Interceptor interceptor)
     {
         if (_interceptor == null)
             _interceptor = interceptor;
         else
-        {
-            final Interceptor previous = _interceptor;
-            _interceptor = new Interceptor()
-            {                
-                public Content readFrom(Content content)
-                {
-                    return interceptor.readFrom(previous.readFrom(content));
-                }
-            };
-        }
+            _interceptor = new ChainedInterceptor(_interceptor,interceptor);
     }
 
     @Override
@@ -273,8 +316,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         while (true)
         {            
+            // Get the next content (or EOF)
             Content content = pollReadable();
-            if (_content instanceof EofContent)
+            
+            // If it is EOF, consume it here
+            if (content instanceof EofContent)
             {
                 if (content == EARLY_EOF_CONTENT)
                     _state = EARLY_EOF;
@@ -286,13 +332,15 @@ public class HttpInput extends ServletInputStream implements Runnable
                     boolean woken = _channelState.onReadReady(); // force callback?
                     if (woken)
                         wake();
-                }
-                    
+                }    
+                
+                // Consume the EOF content, either if it was original content
+                // or if it was produced by interception
                 content.succeeded();
                 if (_content==content)
                     _content = null;
-                else if (_chunk==content)
-                    _chunk = null;
+                else if (_intercepted==content)
+                    _intercepted = null;
                 continue;
             }
 
@@ -303,39 +351,61 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     /**
      * Poll the inputQ for Content or EOF. Consumed buffers and non EOF {@link PoisonPillContent}s are removed. EOF state is not updated.
-     * 
+     * Interception is done within this method.
      * @return Content, EOF or null
      */
     protected Content pollReadable()
     {
-        if (_chunk!=null)
+        // If we have a chunk produced by interception
+        if (_intercepted!=null)
         {
-            if (_chunk.hasContent())
-                return _chunk;
-            _chunk.succeeded();
-            _chunk=null;
+            // Use it if it has any remaining content
+            if (_intercepted.hasContent())
+                return _intercepted;
+            
+            // succeed the chunk
+            _intercepted.succeeded();
+            _intercepted=null;
         }
 
+        // If we don't have a Content under consideration, get
+        // the next one off the input Q.
         if (_content == null)
             _content = _inputQ.poll();
         
+        // While we have content to consider.
         while (_content!=null)
         {           
+            // Are we intercepting?
             if (_interceptor!=null)
             {
-                _chunk = _interceptor.readFrom(_content);
-                if (_chunk!=null && _chunk!=_content)
+                // Intercept the current content (may be called several
+                // times for the same content
+                _intercepted = _interceptor.readFrom(_content);
+                
+                // If interception produced new content
+                if (_intercepted!=null && _intercepted!=_content)
                 {
-                    if (_chunk.hasContent())
-                        return _chunk;
-                    _chunk.succeeded();
+                    // if it is not empty use it
+                    if (_intercepted.hasContent())
+                        return _intercepted;
+                    _intercepted.succeeded();
                 }   
-                _chunk=null;
+                
+                // intercepted content consumed
+                _intercepted=null;
+                
+                // fall through so that the unintercepted _content is
+                // considered for any remaining content, for EOF and to
+                // succeed it if it is entirely consumed.
             }
 
+            // If the content has content or is an EOF marker, use it
             if (_content.hasContent() || _content instanceof EofContent)
                 return _content;
             
+            // The content is consumed, so get the next one.  Note that EOF
+            // content is never consumed here, but in #pollContent
             _content.succeeded();
             _content = _inputQ.poll();
         }
