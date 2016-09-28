@@ -19,12 +19,12 @@
 package org.eclipse.jetty.websocket.common.extensions;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
 
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -52,7 +52,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(ExtensionStack.class);
 
-    private final Queue<FrameEntry> entries = new ConcurrentArrayQueue<>();
+    private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
     private final ExtensionFactory factory;
     private List<Extension> extensions;
@@ -292,7 +292,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
         if (LOG.isDebugEnabled())
             LOG.debug("Queuing {}",entry);
-        entries.offer(entry);
+        offerEntry(entry);
         flusher.iterate();
     }
 
@@ -317,12 +317,36 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         }
     }
 
+    private void offerEntry(FrameEntry entry)
+    {
+        synchronized (this)
+        {
+            entries.offer(entry);
+        }
+    }
+
+    private FrameEntry pollEntry()
+    {
+        synchronized (this)
+        {
+            return entries.poll();
+        }
+    }
+
+    private int getQueueSize()
+    {
+        synchronized (this)
+        {
+            return entries.size();
+        }
+    }
+
     @Override
     public String toString()
     {
         StringBuilder s = new StringBuilder();
         s.append("ExtensionStack[");
-        s.append("queueSize=").append(entries.size());
+        s.append("queueSize=").append(getQueueSize());
         s.append(",extensions=");
         if (extensions == null)
         {
@@ -383,7 +407,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         @Override
         protected Action process() throws Exception
         {
-            current = entries.poll();
+            current = pollEntry();
             if (current == null)
             {
                 if (LOG.isDebugEnabled())
