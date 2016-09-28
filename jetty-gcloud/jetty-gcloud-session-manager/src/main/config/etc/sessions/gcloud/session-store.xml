@@ -13,6 +13,7 @@
        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
        <Set name="maxRetries"><Property name="jetty.session.gcloud.maxRetries" default="5"/></Set>
        <Set name="backoffMs"><Property name="jetty.session.gcloud.backoffMs" default="1000"/></Set>
+       <Set name="namespace"><Property name="jetty.session.gcloud.namespace" default=""/></Set>
        <Set name="entityDataModel">
           <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStore$EntityDataModel">
               <Set name="kind">
