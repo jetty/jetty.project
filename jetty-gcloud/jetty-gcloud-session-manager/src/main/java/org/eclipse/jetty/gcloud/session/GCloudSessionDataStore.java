@@ -577,7 +577,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * retrieves the whole Entity.
      * @return set of ExpiryInfo representing the id, lastNode and expiry time of 
      * sessions that are expired
-     * @throws Exception
+     * @throws Exception if datastore experiences a problem
      */
     protected Set<ExpiryInfo> queryExpiryByEntity () throws Exception
     {
@@ -612,7 +612,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     /** An efficient query to find sessions whose expiry time has passed:
      * uses a projection query, which requires indexes to be uploaded.
      * @return id,lastnode and expiry time of sessions that have expired
-     * @throws Exception
+     * @throws Exception if datastore experiences a problem
      */
     protected Set<ExpiryInfo>  queryExpiryByIndex () throws Exception
     {
@@ -709,7 +709,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * Check to see if the given time is in the past.
      * 
      * @param timestamp the time to check
-     * @return false if the timestamp is <= 0, true if it is in the past
+     * @return false if the timestamp is 0 or less, true if it is in the past
      */
     protected boolean isExpired (long timestamp)
     {
@@ -790,6 +790,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     /**
      * Check to see if indexes are available, in which case
      * we can do more performant queries.
+     * @return
      */
     protected boolean checkIndexes ()
     {
@@ -815,7 +816,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      * @param session the session data
      * @param key the key
      * @return the entity
-     * @throws Exception
+     * @throws Exception if there is a deserialization error
      */
     protected Entity entityFromSession (SessionData session, Key key) throws Exception
     {
