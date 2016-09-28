@@ -19,10 +19,10 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.Queue;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -31,7 +31,7 @@ public class Flusher
 {
     private static final Logger LOG = Log.getLogger(Flusher.class);
 
-    private final Queue<Generator.Result> queue = new ConcurrentArrayQueue<>();
+    private final Queue<Generator.Result> queue = new ArrayDeque<>();
     private final IteratingCallback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
 
@@ -43,8 +43,24 @@ public class Flusher
     public void flush(Generator.Result... results)
     {
         for (Generator.Result result : results)
-            queue.offer(result);
+            offer(result);
         flushCallback.iterate();
+    }
+
+    private void offer(Generator.Result result)
+    {
+        synchronized (this)
+        {
+            queue.offer(result);
+        }
+    }
+
+    private Generator.Result poll()
+    {
+        synchronized (this)
+        {
+            return queue.poll();
+        }
     }
 
     public void shutdown()
@@ -60,7 +76,7 @@ public class Flusher
         protected Action process() throws Exception
         {
             // Look if other writes are needed.
-            Generator.Result result = queue.poll();
+            Generator.Result result = poll();
             if (result == null)
             {
                 // No more writes to do, return.
@@ -71,7 +87,7 @@ public class Flusher
             // Most often there is another result in the
             // queue so this is a real optimization because
             // it sends both results in just one TCP packet.
-            Generator.Result other = queue.poll();
+            Generator.Result other = poll();
             if (other != null)
                 result = result.join(other);
 
@@ -106,7 +122,7 @@ public class Flusher
 
             while (true)
             {
-                Generator.Result result = queue.poll();
+                Generator.Result result = poll();
                 if (result == null)
                     break;
                 result.failed(x);

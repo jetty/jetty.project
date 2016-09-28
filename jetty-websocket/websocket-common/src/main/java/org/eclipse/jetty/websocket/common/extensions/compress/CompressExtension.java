@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.extensions.compress;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.DataFormatException;
@@ -28,7 +29,6 @@ import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -72,7 +72,7 @@ public abstract class CompressExtension extends AbstractExtension
     
     private final static boolean NOWRAP = true;
 
-    private final Queue<FrameEntry> entries = new ConcurrentArrayQueue<>();
+    private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
     private Deflater deflaterImpl;
     private Inflater inflaterImpl;
@@ -214,8 +214,24 @@ public abstract class CompressExtension extends AbstractExtension
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
         if (LOG.isDebugEnabled())
             LOG.debug("Queuing {}",entry);
-        entries.offer(entry);
+        offerEntry(entry);
         flusher.iterate();
+    }
+
+    private void offerEntry(FrameEntry entry)
+    {
+        synchronized (this)
+        {
+            entries.offer(entry);
+        }
+    }
+
+    private FrameEntry pollEntry()
+    {
+        synchronized (this)
+        {
+            return entries.poll();
+        }
     }
 
     protected void notifyCallbackSuccess(WriteCallback callback)
@@ -408,7 +424,7 @@ public abstract class CompressExtension extends AbstractExtension
         {
             if (finished)
             {
-                current = entries.poll();
+                current = pollEntry();
                 LOG.debug("Processing {}",current);
                 if (current == null)
                     return Action.IDLE;
@@ -545,7 +561,7 @@ public abstract class CompressExtension extends AbstractExtension
         {
             // Fail all the frames in the queue.
             FrameEntry entry;
-            while ((entry = entries.poll()) != null)
+            while ((entry = pollEntry()) != null)
                 notifyCallbackFailure(entry.callback,x);
         }
 

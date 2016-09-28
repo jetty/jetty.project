@@ -21,12 +21,12 @@ package org.eclipse.jetty.server;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -35,16 +35,8 @@ import org.junit.Test;
 
 public class HttpInputTest
 {
-    private final Queue<String> _history = new ConcurrentArrayQueue<String>()
-    {
-        @Override
-        public boolean add(String s)
-        {
-            //System.err.println("history: "+s);
-            return super.add(s);
-        }
-    };
-    private final Queue<String> _fillAndParseSimulate = new ConcurrentArrayQueue<>();
+    private final Queue<String> _history = new LinkedBlockingQueue<>();
+    private final Queue<String> _fillAndParseSimulate = new LinkedBlockingQueue<>();
     private final ReadListener _listener = new ReadListener()
     {
         @Override

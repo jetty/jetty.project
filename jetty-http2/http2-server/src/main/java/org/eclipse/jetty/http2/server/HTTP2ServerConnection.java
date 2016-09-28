@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.server;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -53,13 +54,12 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
-    private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
+    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final AtomicLong totalRequests = new AtomicLong();
     private final AtomicLong totalResponses = new AtomicLong();
@@ -197,7 +197,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
     {
-        HttpChannelOverHTTP2 channel = channels.poll();
+        HttpChannelOverHTTP2 channel = pollChannel();
         if (channel != null)
         {
             channel.getHttpTransport().setStream(stream);
@@ -214,6 +214,22 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
         stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
         return channel;
+    }
+
+    private void offerChannel(HttpChannelOverHTTP2 channel)
+    {
+        synchronized (this)
+        {
+            channels.offer(channel);
+        }
+    }
+
+    private HttpChannelOverHTTP2 pollChannel()
+    {
+        synchronized (this)
+        {
+            return channels.poll();
+        }
     }
 
     public boolean upgrade(Request request)
@@ -278,7 +294,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
             super.recycle();
-            channels.offer(this);
+            offerChannel(this);
         }
 
         @Override
