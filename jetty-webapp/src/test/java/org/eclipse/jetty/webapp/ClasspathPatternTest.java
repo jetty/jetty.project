@@ -18,11 +18,15 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,8 +42,23 @@ public class ClasspathPatternTest
         pattern.add("-org.excluded.");
         pattern.add("org.example.FooBar");
         pattern.add("-org.example.Excluded");
-        pattern.addAll(Arrays.asList(new String[]{"-org.example.Nested$Minus","org.example.Nested","org.example.Nested$Something"}));
+        pattern.addAll(Arrays.asList(new String[]{
+            "-org.example.Nested$Minus",
+            "org.example.Nested",
+            "org.example.Nested$Something"}));
+        
+        
+        assertThat(pattern,containsInAnyOrder(
+            "org.package.",
+            "-org.excluded.",
+            "org.example.FooBar",
+            "-org.example.Excluded",
+            "-org.example.Nested$Minus",
+            "org.example.Nested",
+            "org.example.Nested$Something"
+            ));
     }
+    
     
     @Test
     public void testClassMatch()
@@ -77,28 +96,6 @@ public class ClasspathPatternTest
         assertTrue(pattern.match("org.example.Nested$Other"));
     }
     
-    @Test
-    public void testAddBefore()
-    {
-        pattern.addBefore("-org.excluded.","org.excluded.ExceptionOne","org.excluded.ExceptionTwo");
-
-        assertTrue(pattern.match("org.excluded.ExceptionOne"));
-        assertTrue(pattern.match("org.excluded.ExceptionTwo"));
-        
-        assertFalse(pattern.match("org.example.Unknown"));
-    }
-    
-    @Test
-    public void testAddAfter()
-    {
-        pattern.addAfter("org.package.","org.excluded.ExceptionOne","org.excluded.ExceptionTwo");
-
-        assertTrue(pattern.match("org.excluded.ExceptionOne"));
-        assertTrue(pattern.match("org.excluded.ExceptionTwo"));
-        
-        assertFalse(pattern.match("org.example.Unknown"));
-    }
-
     @Test
     public void testDoubledNested()
     {

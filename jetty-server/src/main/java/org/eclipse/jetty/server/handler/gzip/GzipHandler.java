@@ -424,7 +424,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
         
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
-        if (!_methods.matches(baseRequest.getMethod()))
+        if (!_methods.test(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}",this,request);
             _handler.handle(target,baseRequest, request, response);
@@ -516,14 +516,14 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (ua == null)
             return false;
         
-        return _agentPatterns.matches(ua);
+        return _agentPatterns.test(ua);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public boolean isMimeTypeGzipable(String mimetype)
     {
-        return _mimeTypes.matches(mimetype);
+        return _mimeTypes.test(mimetype);
     }
 
     /* ------------------------------------------------------------ */
@@ -539,7 +539,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (requestURI == null)
             return true;
         
-        return _paths.matches(requestURI);
+        return _paths.test(requestURI);
     }
 
     /* ------------------------------------------------------------ */

@@ -497,6 +497,28 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return keys;
     }
 
+    public int size()
+    {
+        int s=0;
+        for (int r=0;r<=_rows;r++)
+        {
+            if (_key[r]!=null && _value[r]!=null)
+                s++;
+        }
+        return s;
+    }
+    
+    public boolean isEmpty()
+    {
+        for (int r=0;r<=_rows;r++)
+        {
+            if (_key[r]!=null && _value[r]!=null)
+                return false;
+        }
+        return true;
+    }
+    
+    
     public Set<Map.Entry<String,V>> entrySet()
     {
         Set<Map.Entry<String,V>> entries = new HashSet<>();
@@ -552,6 +574,12 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             _growby=growby;
             _trie = new ArrayTernaryTrie<>(capacity);
+        }
+        
+        public Growing(boolean insensitive, int capacity, int growby)
+        {
+            _growby=growby;
+            _trie = new ArrayTernaryTrie<>(insensitive,capacity);
         }
 
         public boolean put(V v)
@@ -657,6 +685,17 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         {
             _trie.dump();
         }
+
+        public boolean isEmpty()
+        {
+            return _trie.isEmpty();
+        }
+
+        public int size()
+        {
+            return _trie.size();
+        }
         
     }
+
 }

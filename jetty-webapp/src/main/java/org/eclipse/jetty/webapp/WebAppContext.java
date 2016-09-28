@@ -717,12 +717,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @see #setServerClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
+    @Deprecated
     public void prependServerClass(String classOrPackage)
     {
         if (_serverClasses == null)
             loadServerClasses();
 
-        _serverClasses.prependPattern(classOrPackage);
+        _serverClasses.add(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */
@@ -768,12 +769,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @see #setSystemClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
      */
+    @Deprecated
     public void prependSystemClass(String classOrPackage)
     {
         if (_systemClasses == null)
             loadSystemClasses();
 
-        _systemClasses.prependPattern(classOrPackage);
+        _systemClasses.add(classOrPackage);
     }
     
     /* ------------------------------------------------------------ */
