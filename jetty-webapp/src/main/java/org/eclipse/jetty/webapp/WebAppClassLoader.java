@@ -362,7 +362,7 @@ public class WebAppClassLoader extends URLClassLoader
     public Enumeration<URL> getResources(String name) throws IOException
     {
         boolean system_class=_context.isSystemClass(name);
-        boolean server_class=_context.isServerClass(name) && !Boolean.TRUE.equals(__loadServerClasses.get());
+        boolean server_class=!Boolean.TRUE.equals(__loadServerClasses.get()) && _context.isServerClass(name);
         
         List<URL> from_parent = toList(server_class?null:_parent.getResources(name));
         List<URL> from_webapp = toList((system_class&&!from_parent.isEmpty())?null:this.findResources(name));
@@ -405,7 +405,7 @@ public class WebAppClassLoader extends URLClassLoader
             tmp = tmp.substring(0, tmp.length()-6);
         
         boolean system_class=_context.isSystemClass(tmp);
-        boolean server_class=_context.isServerClass(tmp) && !Boolean.TRUE.equals(__loadServerClasses.get());
+        boolean server_class=!Boolean.TRUE.equals(__loadServerClasses.get()) && _context.isServerClass(tmp);
         
         if (LOG.isDebugEnabled())
             LOG.debug("getResource({}) system={} server={} cl={}",name,system_class,server_class,this);
@@ -461,7 +461,7 @@ public class WebAppClassLoader extends URLClassLoader
             boolean tried_parent= false;
 
             boolean system_class=_context.isSystemClass(name);
-            boolean server_class=_context.isServerClass(name) && !Boolean.TRUE.equals(__loadServerClasses.get());
+            boolean server_class=!Boolean.TRUE.equals(__loadServerClasses.get()) && _context.isServerClass(name);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("loadClass({}) system={} server={} cl={}",name,system_class,server_class,this);

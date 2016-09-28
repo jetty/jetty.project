@@ -61,6 +61,7 @@ public class WebAppClassLoaderTest
         _context = new WebAppContext();
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
+        _context.prependServerClass("-org.acme.");
 
         _loader = new WebAppClassLoader(_context);
         _loader.addJars(webapp.addPath("WEB-INF/lib"));

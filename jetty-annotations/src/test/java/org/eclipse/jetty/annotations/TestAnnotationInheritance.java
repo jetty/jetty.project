@@ -93,18 +93,7 @@ public class TestAnnotationInheritance
 
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(Collections.singleton(handler), classNames, new ClassNameResolver ()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
+        parser.parse(Collections.singleton(handler), classNames);
 
         //check we got  2 class annotations
         assertEquals(2, handler.annotatedClassNames.size());
@@ -129,18 +118,7 @@ public class TestAnnotationInheritance
     {
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(Collections.singleton(handler), ClassB.class, new ClassNameResolver ()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        }, true);
+        parser.parse(Collections.singleton(handler), ClassB.class, true);
 
         //check we got  2 class annotations
         assertEquals(2, handler.annotatedClassNames.size());
@@ -165,18 +143,7 @@ public class TestAnnotationInheritance
     {
         AnnotationParser parser = new AnnotationParser();
         SampleHandler handler = new SampleHandler();
-        parser.parse(Collections.singleton(handler), ClassA.class.getName(), new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return true;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
+        parser.parse(Collections.singleton(handler), ClassA.class.getName());
         assertEquals (0, handler.annotatedClassNames.size());
         assertEquals (0, handler.annotatedFields.size());
         assertEquals (0, handler.annotatedMethods.size());
@@ -185,18 +152,7 @@ public class TestAnnotationInheritance
         handler.annotatedFields.clear();
         handler.annotatedMethods.clear();
 
-        parser.parse (Collections.singleton(handler), ClassA.class.getName(), new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
+        parser.parse (Collections.singleton(handler), ClassA.class.getName());
         assertEquals (1, handler.annotatedClassNames.size());
     }
 
@@ -218,7 +174,7 @@ public class TestAnnotationInheritance
         classNames.add(InterfaceD.class.getName());
         classNames.add(Foo.class.getName());
 
-        parser.parse(Collections.singleton(handler), classNames, null);
+        parser.parse(Collections.singleton(handler), classNames);
 
         assertNotNull(map);
         assertFalse(map.isEmpty());

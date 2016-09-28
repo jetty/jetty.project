@@ -138,7 +138,33 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
     // with a more automatic distributed mechanism
     public final static String[] __dftServerClasses =
-    {
+    { 
+        "-java.", 
+        "-java.xml.", 
+        "-javax.el.",
+        "-javax.imageio.", 
+        "-javax.jws.",
+        "-javax.lang.",
+        "-javax.management.",
+        "-javax.naming.",
+        "-javax.net.", 
+        "-javax.print.", 
+        "-javax.rmi.",
+        "-javax.script.", 
+        "-javax.security.",
+        "-javax.smartcardio.",
+        "-javax.sound.",
+        "-javax.sql.",
+        "-javax.swing.",
+        "-javax.tools.",
+        "-javax.transaction.",
+        "-javax.xml.",
+        
+        "-jndi.properties",
+        "-com.sun.jndi.url.java.javaURLContextFactory",
+        
+        "-META-INF.",
+        
         "-org.eclipse.jetty.server.session.SessionData", //don't hide SessionData for de/serialization purposes
         "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
         "-org.eclipse.jetty.util.annotation.", // don't hide jmx annotation
@@ -154,9 +180,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
         "-org.eclipse.jetty.util.log.",     // don't hide server log 
         "-org.eclipse.jetty.alpn.",         // don't hide ALPN
-        "org.objectweb.asm.",               // hide asm used by jetty
-        "org.eclipse.jdt.",                 // hide jdt used by jetty
-        "org.eclipse.jetty."                // hide other jetty classes
+        "."                                 // hide everything else!
     } ;
 
     private final List<String> _configurationClasses = new ArrayList<>();
@@ -759,7 +783,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_serverClasses == null)
             loadServerClasses();
 
-        return _serverClasses.match(name);
+        boolean server_class = _serverClasses.match(name);
+        if (server_class)
+        {
+            System.err.println("SERVER CLASS "+name);
+            // new Throwable().printStackTrace();
+        }
+        return server_class;
     }
 
     /* ------------------------------------------------------------ */

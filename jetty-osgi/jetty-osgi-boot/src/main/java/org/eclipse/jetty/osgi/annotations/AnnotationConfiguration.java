@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.util.log.Log;
@@ -44,9 +43,9 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     public class BundleParserTask extends ParserTask
     {
         
-        public BundleParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource, ClassNameResolver resolver)
+        public BundleParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource)
         {
-            super(parser, handlers, resource, resolver);
+            super(parser, handlers, resource);
         }
 
         public Void call() throws Exception
@@ -57,7 +56,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
                 Bundle bundle = osgiAnnotationParser.getBundle(_resource);
                 if (_stat != null)
                     _stat.start();
-                osgiAnnotationParser.parse(_handlers, bundle,  _resolver); 
+                osgiAnnotationParser.parse(_handlers, bundle); 
                 if (_stat != null)
                     _stat.end();
             }
@@ -195,47 +194,13 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
             handlers.add(_classInheritanceHandler);
         handlers.addAll(_containerInitializerAnnotationHandlers);
 
-        ClassNameResolver classNameResolver = createClassNameResolver(context);
         if (_parserTasks != null)
         {
-            BundleParserTask task = new BundleParserTask(parser, handlers, bundleRes, classNameResolver);
+            BundleParserTask task = new BundleParserTask(parser, handlers, bundleRes);
             _parserTasks.add(task);
             if (LOG.isDebugEnabled())
                 task.setStatistic(new TimeStatistic());
         }
     }
     
-    /**
-     * Returns the same classname resolver than for the webInfjar scanner
-     * @param context the web app context
-     * @return the class name resolver
-     */
-    protected ClassNameResolver createClassNameResolver(final WebAppContext context)
-    {
-        return createClassNameResolver(context,true,false,false,false);
-    }
-    
-    protected ClassNameResolver createClassNameResolver(final WebAppContext context,
-            final boolean excludeSysClass, final boolean excludeServerClass, final boolean excludeEverythingElse,
-            final boolean overrideIsParenLoaderIsPriority)
-    {
-        return new ClassNameResolver ()
-        {
-            public boolean isExcluded (String name)
-            {
-                if (context.isSystemClass(name)) return excludeSysClass;
-                if (context.isServerClass(name)) return excludeServerClass;
-                return excludeEverythingElse;
-            }
-
-            public boolean shouldOverride (String name)
-            { 
-                //looking at system classpath
-                if (context.isParentLoaderPriority())
-                    return overrideIsParenLoaderIsPriority;
-                return !overrideIsParenLoaderIsPriority;
-            }
-        };
-    }
-
 }

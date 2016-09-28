@@ -48,6 +48,7 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -81,8 +82,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<ContainerInitializerAnnotationHandler>();
    
     protected List<ParserTask> _parserTasks;
-    protected WebAppClassNameResolver _webAppClassNameResolver;
-    protected ContainerClassNameResolver _containerClassNameResolver;
 
     protected CounterStatistic _containerPathStats;
     protected CounterStatistic _webInfLibStats;
@@ -138,15 +137,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
         protected Exception _exception;
         protected final AnnotationParser _parser;
         protected final Set<? extends Handler> _handlers;
-        protected final ClassNameResolver _resolver;
         protected final Resource _resource;
         protected TimeStatistic _stat;
         
-        public ParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource, ClassNameResolver resolver)
+        public ParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource)
         {
             _parser = parser;
             _handlers = handlers;
-            _resolver = resolver;
             _resource = resource;
         }
         
@@ -160,7 +157,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             if (_stat != null)
                 _stat.start();
             if (_parser != null)
-                _parser.parse(_handlers, _resource, _resolver); 
+                _parser.parse(_handlers, _resource); 
             if (_stat != null)
                 _stat.end();
             return null;
@@ -174,83 +171,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         public Resource getResource()
         {
             return _resource;
-        }
-        
-    }
-
-    /**
-     * WebAppClassNameResolver
-     *
-     * Checks to see if a classname belongs to hidden or visible packages when scanning,
-     * and whether a classname that is a duplicate should override a previously
-     * scanned classname. 
-     * 
-     * This is analogous to the management of classes that the WebAppClassLoader is doing,
-     * however we don't want to load the classes at this point so we are doing it on
-     * the name only.
-     * 
-     */
-    public class WebAppClassNameResolver implements ClassNameResolver
-    {
-        private WebAppContext _context;
-
-        public WebAppClassNameResolver (WebAppContext context)
-        {
-            _context = context;
-        }
-
-        public boolean isExcluded (String name)
-        {
-            if (_context.isSystemClass(name)) return true;
-            if (_context.isServerClass(name)) return false;
-            return false;
-        }
-
-        public boolean shouldOverride (String name)
-        {
-            //looking at webapp classpath, found already-parsed class 
-            //of same name - did it come from system or duplicate in webapp?
-            if (_context.isParentLoaderPriority())
-                return false;
-            return true;
-        }
-    }
-
-    
-    /**
-     * ContainerClassNameResolver
-     *
-     * Checks to see if a classname belongs to a hidden or visible package
-     * when scanning for annotations and thus whether it should be excluded from
-     * consideration or not.
-     * 
-     * This is analogous to the management of classes that the WebAppClassLoader is doing,
-     * however we don't want to load the classes at this point so we are doing it on
-     * the name only.
-     * 
-     */
-    public class ContainerClassNameResolver implements ClassNameResolver
-    { 
-        private WebAppContext _context;
-        
-        public ContainerClassNameResolver (WebAppContext context)
-        {
-            _context = context;
-        }
-        public boolean isExcluded (String name)
-        {
-            if (_context.isSystemClass(name)) return false;
-            if (_context.isServerClass(name)) return true;
-            return false;
-        }
-
-        public boolean shouldOverride (String name)
-        {
-            //visiting the container classpath, 
-            if (_context.isParentLoaderPriority())
-                return true;
-            return false;
-        }
+        }   
     }
     
     
@@ -390,8 +311,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        _webAppClassNameResolver = new WebAppClassNameResolver(context);
-        _containerClassNameResolver = new ContainerClassNameResolver(context);
         String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN);
         _sciExcludePattern = (tmp==null?null:Pattern.compile(tmp));
     }
@@ -723,23 +642,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public Resource getJarFor (ServletContainerInitializer service) 
     throws MalformedURLException, IOException
     {
-        //try the thread context classloader to get the jar that loaded the class
-        URL jarURL = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
-        
-        //if for some reason that failed (eg we're in osgi and the TCCL does not know about the service) try the classloader that
-        //loaded the class
-        if (jarURL == null)
-            jarURL = service.getClass().getClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
-  
-        String loadingJarName = jarURL.toString();
-
-        int i = loadingJarName.indexOf(".jar");
-        if (i < 0)
-            return null; //not from a jar
-        
-        loadingJarName = loadingJarName.substring(0,i+4);
-        loadingJarName = (loadingJarName.startsWith("jar:")?loadingJarName.substring(4):loadingJarName);
-        return Resource.newResource(loadingJarName);
+        return TypeUtil.getLoadedFrom(service.getClass());
     }
     
     /**
@@ -992,7 +895,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //queue it up for scanning if using multithreaded mode
             if (_parserTasks != null)
             {
-                ParserTask task = new ParserTask(parser, handlers, r, _containerClassNameResolver);
+                ParserTask task = new ParserTask(parser, handlers, r);
                 _parserTasks.add(task);  
                 _containerPathStats.increment();
                 if (LOG.isDebugEnabled())
@@ -1054,7 +957,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
                 if (_parserTasks != null)
                 {
-                    ParserTask task = new ParserTask(parser, handlers,r, _webAppClassNameResolver);
+                    ParserTask task = new ParserTask(parser, handlers,r);
                     _parserTasks.add (task);
                     _webInfLibStats.increment();
                     if (LOG.isDebugEnabled())
@@ -1087,7 +990,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             if (_parserTasks != null)
             {
-                ParserTask task = new ParserTask(parser, handlers, dir, _webAppClassNameResolver);
+                ParserTask task = new ParserTask(parser, handlers, dir);
                 _parserTasks.add(task);
                 _webInfClassesStats.increment();
                 if (LOG.isDebugEnabled())

@@ -25,8 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
-import org.eclipse.jetty.util.StringUtil;
-
 /* ------------------------------------------------------------ */
 /**
  * Classpath classes list performs sequential pattern matching of a class name 
