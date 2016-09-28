@@ -72,6 +72,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
 
     protected boolean _dsProvided = false;
     protected EntityDataModel _model;
+
+
+    private String _namespace;
     
     
     
@@ -316,6 +319,15 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         _backoff = ms;
     }
     
+    public void setNamespace (String namespace)
+    {
+        _namespace = namespace;
+    }
+    
+    public String getNamespace ()
+    {
+        return _namespace;
+    }
     
     public int getBackoffMs ()
     {
@@ -341,8 +353,13 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected void doStart() throws Exception
     {
         if (!_dsProvided)
-            _datastore = DatastoreOptions.defaultInstance().service();
-        
+        {
+            if (!StringUtil.isBlank(getNamespace()))
+                _datastore = DatastoreOptions.builder().namespace(getNamespace()).build().service();
+            else
+                _datastore = DatastoreOptions.defaultInstance().service();
+        }
+
         if (_model == null)
             _model = new EntityDataModel();
 
