@@ -723,6 +723,7 @@ mvn jetty:stop
 The `stopPort` must be free on the machine you are running on.
 If this is not the case, you will get an "Address already in use" error message after the "Started ServerConnector ..." message.
 
+[[jetty-effective-web-xml]]
 ==== jetty:effective-web-xml
 
 This goal calculates a synthetic `web.xml` (the "effective web.xml") according to the rules of the Servlet Specification taking into account all sources of discoverable configuration of web components in your application: descriptors (`webdefault.xml`, `web.xml`, `web-fragment.xml`s, `web-override.xml`) and discovered annotations (`@WebServlet`, `@WebFilter`, `@WebListener`).
