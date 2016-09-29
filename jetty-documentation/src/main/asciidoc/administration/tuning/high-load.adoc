@@ -136,7 +136,7 @@ Make sure to use persistent HTTP/1.1 connections.
 
 ====== JVM Tuning
 
-* Tune the link:garbage-collection.html#examples[Garbage Collection]
+* Tune the link:#tuning-examples[Garbage Collection]
 * Allocate sufficient memory
 * Use the -server option
 * Jetty Tuning
