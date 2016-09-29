@@ -50,6 +50,7 @@ public class FileServer
         // Add the ResourceHandler to the server.
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[] { resource_handler, new DefaultHandler() });
+        server.setHandler(handlers);
 
         // Start things up! By using the server.join() the server thread will join with the current thread.
         // See "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()" for more details.
