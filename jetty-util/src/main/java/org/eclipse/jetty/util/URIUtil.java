@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -842,5 +843,31 @@ public class URIUtil
         encodePath(buf,path,offset);
 
         return URI.create(buf.toString());
+    }
+    
+    public static URI getJarSource(URI uri)
+    {
+        try
+        {
+            if (!"jar".equals(uri.getScheme()))
+                return uri;
+            String s = uri.getSchemeSpecificPart();
+            int bang_slash = s.indexOf("!/");
+            if (bang_slash>=0)
+                s=s.substring(0,bang_slash);
+            return new URI(s);
+        }
+        catch(URISyntaxException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+    }
+    
+    public static String getJarSource(String uri)
+    {
+        if (!uri.startsWith("jar:"))
+            return uri;
+        int bang_slash = uri.indexOf("!/");
+        return (bang_slash>=0)?uri.substring(4,bang_slash):uri.substring(4);
     }
 }

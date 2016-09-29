@@ -173,7 +173,13 @@ public class IncludeExcludeSet<T,P> implements Predicate<P>
             return Boolean.FALSE;
         if (_includePredicate.test(t))
             return Boolean.TRUE;
+        
         return null;
+    }
+    
+    public boolean hasIncludes()
+    {
+        return !_includes.isEmpty();
     }
     
     public int size()

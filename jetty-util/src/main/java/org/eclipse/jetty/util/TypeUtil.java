@@ -721,19 +721,14 @@ public class TypeUtil
         URL url = (loader==null?ClassLoader.getSystemClassLoader():loader).getResource(rname);
         if (url!=null)
         {
-            String from = url.toString();
-            if (from.startsWith("jar:"))
+            try
             {
-                int bash_slash = from.indexOf("!/");
-                try
-                {
-                    return Resource.newResource(bash_slash<0?from.substring(4):from.substring(4,bash_slash));
-                }
-                catch(Exception e)
-                {
-                    LOG.debug(e);
-                }
+                return Resource.newResource(URIUtil.getJarSource(url.toString()));
             }
+            catch(Exception e)
+            {
+                LOG.debug(e);
+            }  
         }    
         
         return null;
