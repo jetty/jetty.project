@@ -59,7 +59,6 @@ public class WebAppClassLoaderTest
         _context = new WebAppContext();
         _context.setBaseResource(webapp);
         _context.setContextPath("/test");
-        _context.getServerClasspathPattern().exclude("org.acme.");
 
         _loader = new WebAppClassLoader(_context);
         _loader.addJars(webapp.addPath("WEB-INF/lib"));
@@ -111,7 +110,6 @@ public class WebAppClassLoaderTest
     public void testWebAppLoad() throws Exception
     {
         _context.setParentLoaderPriority(false);
-        
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
@@ -205,7 +203,6 @@ public class WebAppClassLoaderTest
     @Test
     public void testSystemServerClass() throws Exception
     {
-        
         String[] oldServC=_context.getServerClasses();
         String[] newServC=new String[oldServC.length+1];
         newServC[0]="org.eclipse.jetty.webapp.Configuration";
@@ -229,8 +226,8 @@ public class WebAppClassLoaderTest
         newSysC[0]="org.acme.webapp.ClassInJarA";
         System.arraycopy(oldSysC,0,newSysC,1,oldSysC.length);
         _context.setSystemClasses(newSysC);
-        assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
 
+        assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
         _context.setSystemClasses(oldSysC);
 
         oldServC=_context.getServerClasses();
@@ -274,22 +271,40 @@ public class WebAppClassLoaderTest
         expected.add(webappWebInfClasses);
         
         assertThat("Resources Found (Parent Loader Priority == true)",resources,ordered(expected));
-       
-        _context.getServerClasspathPattern().remove("-org.acme.");
+        
+//        dump(resources);
+//        assertEquals(3,resources.size());
+//        assertEquals(0,resources.get(0).toString().indexOf("file:"));
+//        assertEquals(0,resources.get(1).toString().indexOf("jar:file:"));
+//        assertEquals(-1,resources.get(2).toString().indexOf("test-classes"));
+
+        String[] oldServC=_context.getServerClasses();
+        String[] newServC=new String[oldServC.length+1];
+        newServC[0]="org.acme.";
+        System.arraycopy(oldServC,0,newServC,1,oldServC.length);
+        _context.setServerClasses(newServC);
+
         _context.setParentLoaderPriority(true);
+        // dump(_context);
         resources =Collections.list(_loader.getResources("org/acme/resource.txt"));
         
         expected.clear();
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
-
-        System.err.println(expected);
-        System.err.println(resources);
         
-        assertThat(resources,ordered(expected));
+        assertThat("Resources Found (Parent Loader Priority == true) (with serverClasses filtering)",resources,ordered(expected));
+        
+//        dump(resources);
+//        assertEquals(2,resources.size());
+//        assertEquals(0,resources.get(0).toString().indexOf("jar:file:"));
+//        assertEquals(0,resources.get(1).toString().indexOf("file:"));
 
-        _context.getServerClasspathPattern().exclude("org.acme.");
-        _context.getSystemClasspathPattern().include("org.acme.");
+        _context.setServerClasses(oldServC);
+        String[] oldSysC=_context.getSystemClasses();
+        String[] newSysC=new String[oldSysC.length+1];
+        newSysC[0]="org.acme.";
+        System.arraycopy(oldSysC,0,newSysC,1,oldSysC.length);
+        _context.setSystemClasses(newSysC);
 
         _context.setParentLoaderPriority(true);
         // dump(_context);

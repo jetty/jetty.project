@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,6 +57,7 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.MetaDataComplete;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 
@@ -358,22 +360,28 @@ public class AnnotationConfiguration extends AbstractConfiguration
            }
        }
 
-       //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
-       //classes so we can call their onStartup() methods correctly
-       createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
-
-       if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
-           scanForAnnotations(context);   
-       
-       // Resolve container initializers
-       List<ContainerInitializer> initializers = 
-                   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
-       if (initializers != null && initializers.size()>0)
+       WebAppClassLoader.runWithServerClassAccess(()->
        {
-           Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
-           for (ContainerInitializer i : initializers)
-                   i.resolveClasses(context,map);
-       }
+           //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
+           //classes so we can call their onStartup() methods correctly
+           createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
+
+           if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
+               scanForAnnotations(context);   
+           
+           // Resolve container initializers
+           List<ContainerInitializer> initializers = 
+                       (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+           if (initializers != null && initializers.size()>0)
+           {
+               Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
+               for (ContainerInitializer i : initializers)
+                       i.resolveClasses(context,map);
+           }
+           
+           return null;
+       });
+       
     }
 
 

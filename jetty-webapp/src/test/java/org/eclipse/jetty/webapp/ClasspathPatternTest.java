@@ -148,6 +148,7 @@ public class ClasspathPatternTest
         // System.err.println(loc_test);
         
         ClasspathPattern pattern = new ClasspathPattern();
+        pattern.include("something");
         assertThat(pattern.match(String.class),is(false));
         assertThat(pattern.match(Sun.class),is(false));
         assertThat(pattern.match(Test.class),is(false));

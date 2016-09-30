@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.webapp;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
@@ -39,7 +42,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -89,7 +91,6 @@ public class ClasspathPattern extends AbstractSet<String>
             _type = (_name.startsWith("file:"))?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
         }
         
-
 
         public String getPattern()
         {
@@ -518,15 +519,14 @@ public class ClasspathPattern extends AbstractSet<String>
             Resource resource = TypeUtil.getLoadedFrom(clazz);
             Path path = resource.getFile().toPath();
             
-            Boolean inPatterns = _patterns.isIncludedAndNotExcluded(clazz.getName());
-            Boolean inLocations = _locations.isIncludedAndNotExcluded(path);
+            Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
+            Boolean byLocation = _locations.isIncludedAndNotExcluded(path);
             
             // Combine the tri-state match of both IncludeExclude Sets
-            if ((inPatterns==Boolean.TRUE  || inLocations==Boolean.TRUE) 
-            && !(inPatterns==Boolean.FALSE || inLocations==Boolean.FALSE))
-                return true;
-            if (inPatterns==null && inLocations==null && !(_patterns.hasIncludes() || _locations.hasIncludes()))
-                return true;
+            boolean included = byName==TRUE || byLocation==TRUE
+                || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
+            boolean excluded = byName==FALSE || byLocation==FALSE;
+            return included && !excluded;
         }
         catch (Exception e)
         {
@@ -544,15 +544,15 @@ public class ClasspathPattern extends AbstractSet<String>
         // Treat path elements as packages for name matching
         name=name.replace("/",".");
 
-        Boolean inPatterns = _patterns.isIncludedAndNotExcluded(name);
+        Boolean byName = _patterns.isIncludedAndNotExcluded(name);
         
         // Try to find a file path for location matching
-        Boolean inLocations = null;
+        Boolean byLocation = null;
         try
         {
             Resource resource = Resource.newResource(URIUtil.getJarSource(url.toURI()));
             File file = resource.getFile();
-            inLocations = _locations.isIncludedAndNotExcluded(file.toPath());
+            byLocation = _locations.isIncludedAndNotExcluded(file.toPath());
         }
         catch(Exception e)
         {
@@ -560,13 +560,9 @@ public class ClasspathPattern extends AbstractSet<String>
         }
 
         // Combine the tri-state match of both IncludeExclude Sets
-        if ((inPatterns==Boolean.TRUE  || inLocations==Boolean.TRUE) 
-        && !(inPatterns==Boolean.FALSE || inLocations==Boolean.FALSE))
-            return true;
-        if (inPatterns==null && inLocations==null && !(_patterns.hasIncludes() || _locations.hasIncludes()))
-            return true;
-        
-        return false;
+        boolean included = byName==TRUE || byLocation==TRUE
+            || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
+        boolean excluded = byName==FALSE || byLocation==FALSE;
+        return included && !excluded;
     }
-
 }

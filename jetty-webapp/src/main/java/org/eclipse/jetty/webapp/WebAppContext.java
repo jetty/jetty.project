@@ -59,6 +59,7 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
@@ -145,7 +146,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             lib=null;
         }
         __jvmlib=lib;
-        System.err.println(__jvmlib);
     }
     
     // Server classes are classes that are hidden from being
@@ -154,12 +154,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // it has to include them in its distribution.
     // TODO This centrally managed list of features that are exposed/hidden needs to be replaced
     // with a more automatic distributed mechanism
+    // TODO should be white list rather than black list
     public final static String[] __dftServerClasses =
     { 
-        // exclude all classes loaded from the JVM
-        "-"+__jvmlib,
-        
-        "-META-INF.",
+        "org.eclipse.jetty.",               // hide all jetty classes 
+        "org.objectweb.asm.",               // hide asm used by jetty
+        "org.eclipse.jdt.",                 // hide jdt used by jetty
+
+        "-"+__jvmlib,                       // exclude all classes loaded from the JVM library
         
         "-org.eclipse.jetty.server.session.SessionData", //don't hide SessionData for de/serialization purposes
         "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
@@ -176,7 +178,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
         "-org.eclipse.jetty.util.log.",     // don't hide server log 
         "-org.eclipse.jetty.alpn.",         // don't hide ALPN
-        "."                                 // hide everything else!
     } ;
 
     private final List<String> _configurationClasses = new ArrayList<>();
@@ -807,7 +808,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_serverClasses == null)
             loadServerClasses();
 
-        return _serverClasses.match(clazz);
+        boolean result = _serverClasses.match(clazz);
+        if (LOG.isDebugEnabled())
+            LOG.debug("isServerClass=={} {}",result,clazz);
+        return result;
     }
 
     /* ------------------------------------------------------------ */
@@ -817,7 +821,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_systemClasses == null)
             loadSystemClasses();
 
-        return _systemClasses.match(clazz);
+        boolean result = _systemClasses.match(clazz);
+        if (LOG.isDebugEnabled())
+            LOG.debug("isSystemClass=={} {}",result,clazz);
+        return result;
     }
 
     /* ------------------------------------------------------------ */
@@ -827,7 +834,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_serverClasses == null)
             loadServerClasses();
 
-        return _serverClasses.match(name,url);
+        boolean result =  _serverClasses.match(name,url);
+        if (LOG.isDebugEnabled())
+            LOG.debug("isServerResource=={} {} {}",result,name,url);
+        return result;
     }
     
     /* ------------------------------------------------------------ */
@@ -837,7 +847,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_systemClasses == null)
             loadSystemClasses();
 
-        return _systemClasses.match(name,url);
+        boolean result = _systemClasses.match(name,url);
+        if (LOG.isDebugEnabled())
+            LOG.debug("isSystemResource=={} {} {}",result,name,url);
+        return result;
     }
 
     /* ------------------------------------------------------------ */
@@ -852,8 +865,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (server != null)
         {
             Object systemClasses = server.getAttribute(SERVER_SYS_CLASSES);
-            if (systemClasses != null && systemClasses instanceof String[])
+            if (systemClasses instanceof String[])
                 _systemClasses = new ClasspathPattern((String[])systemClasses);
+            else if (systemClasses instanceof ClasspathPattern)
+                _systemClasses = new ClasspathPattern(((ClasspathPattern)systemClasses).getPatterns());
         }
 
         if (_systemClasses == null)
@@ -874,10 +889,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (server != null)
         {
             Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
-            if (serverClasses != null && serverClasses instanceof String[])
-            {
+            if (serverClasses instanceof String[])
                 _serverClasses = new ClasspathPattern((String[])serverClasses);
-            }
+            else if (serverClasses instanceof ClasspathPattern)
+                _serverClasses = new ClasspathPattern(((ClasspathPattern)serverClasses).getPatterns());
         }
 
         if (_serverClasses == null)
@@ -1560,7 +1575,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 //not one of the standard servlet listeners, check our extended session listener types
                 boolean ok = false;
-                for (Class l:SessionHandler.SESSION_LISTENER_TYPES)
+                for (Class<?> l:SessionHandler.SESSION_LISTENER_TYPES)
                 {
                     if (l.isAssignableFrom(listener))
                     {
@@ -1588,11 +1603,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 for (int i=resources.length;i-->0;)
                 {
                     if (resources[i].getName().startsWith("jar:file"))
-                        return resources[i].getURL();
+                        return resources[i].getURI().toURL();
                 }
             }
 
-            return resource.getURL();
+            return resource.getURI().toURL();
         }
 
         /* ------------------------------------------------------------ */
@@ -1618,7 +1633,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 return servletContext;
             }
         }
-        
     }
 
     /* ------------------------------------------------------------ */
@@ -1626,4 +1640,53 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return _metadata;
     }
+
+    /* ------------------------------------------------------------ */
+    public static void addDefaultServerClasses(Server server,String... pattern )
+    {
+        // look for a Server attribute with the list of Server classes
+        // to apply to every web application. If not present, use our defaults.
+        Object o = server.getAttribute(SERVER_SRV_CLASSES);
+        
+        if (o instanceof ClasspathPattern)
+        {
+            ((ClasspathPattern)o).add(pattern);
+            return;
+        }
+        
+        String[] server_classes;
+        if (o instanceof String[])
+            server_classes = (String[])o;
+        else
+            server_classes = __dftServerClasses;
+        int l = server_classes.length;
+        server_classes = Arrays.copyOf(server_classes,l+pattern.length);
+        System.arraycopy(pattern,0,server_classes,l,pattern.length);
+        server.setAttribute(SERVER_SRV_CLASSES,server_classes);
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void addDefaultSystemClasses(Server server,String... pattern )
+    {
+        // look for a Server attribute with the list of System classes
+        // to apply to every web application. If not present, use our defaults.
+        Object o = server.getAttribute(SERVER_SYS_CLASSES);
+        
+        if (o instanceof ClasspathPattern)
+        {
+            ((ClasspathPattern)o).add(pattern);
+            return;
+        }
+        
+        String[] system_classes;
+        if (o instanceof String[])
+            system_classes = (String[])o;
+        else
+            system_classes = __dftSystemClasses;
+        int l = system_classes.length;
+        system_classes = Arrays.copyOf(system_classes,l+pattern.length);
+        System.arraycopy(pattern,0,system_classes,l,pattern.length);
+        server.setAttribute(SERVER_SYS_CLASSES,system_classes);
+    }
+
 }

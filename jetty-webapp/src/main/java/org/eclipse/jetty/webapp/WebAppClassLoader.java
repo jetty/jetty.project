@@ -27,6 +27,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,10 +37,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Stream;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -149,7 +149,7 @@ public class WebAppClassLoader extends URLClassLoader
      * configured so as to allow server classes to be visible</p>
      * @param action The action to run
      * @return The return from the action
-     * @throws Exception
+     * @throws Exception if thrown by the action
      */
     public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
     {
@@ -373,7 +373,7 @@ public class WebAppClassLoader extends URLClassLoader
         while (urls!=null && urls.hasMoreElements())
         {
             URL url = urls.nextElement();
-            if (!_context.isServerResource(name,url))
+            if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerResource(name,url))
                 from_parent.add(url);
         }
 
@@ -674,4 +674,5 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());
     }
+    
 }

@@ -74,6 +74,12 @@ public class TestAnnotationInheritance
                 return;
             annotatedMethods.add(info.getClassInfo().getClassName()+"."+info.getMethodName());
         }
+        
+        @Override
+        public String toString()
+        {
+            return annotatedClassNames.toString()+annotatedMethods+annotatedFields;
+        }
     }
 
     @After
@@ -136,24 +142,6 @@ public class TestAnnotationInheritance
         //check we got all annotated fields on each class
         assertEquals(1, handler.annotatedFields.size());
         assertEquals("org.eclipse.jetty.annotations.ClassA.m", handler.annotatedFields.get(0));
-    }
-
-    @Test
-    public void testExclusions() throws Exception
-    {
-        AnnotationParser parser = new AnnotationParser();
-        SampleHandler handler = new SampleHandler();
-        parser.parse(Collections.singleton(handler), ClassA.class.getName());
-        assertEquals (0, handler.annotatedClassNames.size());
-        assertEquals (0, handler.annotatedFields.size());
-        assertEquals (0, handler.annotatedMethods.size());
-
-        handler.annotatedClassNames.clear();
-        handler.annotatedFields.clear();
-        handler.annotatedMethods.clear();
-
-        parser.parse (Collections.singleton(handler), ClassA.class.getName());
-        assertEquals (1, handler.annotatedClassNames.size());
     }
 
     @Test
