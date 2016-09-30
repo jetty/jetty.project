@@ -225,6 +225,20 @@ jetty-9.4.0.M0 - 03 June 2016
  + 609 ignore failing test
  + 610 Ignore failing test
 
+jetty-9.3.13.M0 - 30 September 2016
+ + 277 Proxy servlet does not handle HTTP status 100 correctly
+ + 870 TLS protocol exclusion broken for SslContextFactory(String)
+ + 915 The jetty-maven-plugin:stop goal doesn't stop everything completely
+ + 918 Support certificates hot reload
+ + 930 Add module instructions to SSL section
+ + 943 Docs: Error in 'Embedding Jetty' page - example 'FileServer'
+ + 948 9.4.0.RC0 jetty-distribution invalid config etc/jetty-http2c.xml
+ + 955 Response listeners not invoked when using Connection.send()
+ + 959 CompleteListener invoked twice for HTTP/2 transport and response content
+ + 960 Async I/O spin when reading early EOF 
+ + 965 Link from High Load docs to Garbage Collection Tuning is broken
+ + 966 Remove usages of ConcurrentArrayQueue
+
 jetty-9.3.12.v20160915 - 15 September 2016
  + 56 Fix authn issues in LdapLoginModule
  + 131 Improve Connector Statistic names and values
