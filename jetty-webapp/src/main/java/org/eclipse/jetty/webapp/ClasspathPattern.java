@@ -356,6 +356,8 @@ public class ClasspathPattern extends AbstractSet<String>
     
     public boolean include(String name)
     {
+        if (name==null)
+            return false;
         return add(new Entry(name,true));
     }
     
@@ -370,6 +372,8 @@ public class ClasspathPattern extends AbstractSet<String>
     
     public boolean exclude(String name)
     {
+        if (name==null)
+            return false;
         return add(new Entry(name,false));
     }
     
@@ -385,6 +389,8 @@ public class ClasspathPattern extends AbstractSet<String>
     @Override
     public boolean add(String pattern)
     {
+        if (pattern==null)
+            return false;
         return add(new Entry(pattern));
     }
     

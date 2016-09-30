@@ -360,28 +360,22 @@ public class AnnotationConfiguration extends AbstractConfiguration
            }
        }
 
-       WebAppClassLoader.runWithServerClassAccess(()->
-       {
-           //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
-           //classes so we can call their onStartup() methods correctly
-           createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
+       //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
+       //classes so we can call their onStartup() methods correctly
+       createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
 
-           if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
-               scanForAnnotations(context);   
-           
-           // Resolve container initializers
-           List<ContainerInitializer> initializers = 
-                       (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
-           if (initializers != null && initializers.size()>0)
-           {
-               Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
-               for (ContainerInitializer i : initializers)
-                       i.resolveClasses(context,map);
-           }
-           
-           return null;
-       });
-       
+       if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
+           scanForAnnotations(context);   
+
+       // Resolve container initializers
+       List<ContainerInitializer> initializers = 
+           (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+       if (initializers != null && initializers.size()>0)
+       {
+           Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
+           for (ContainerInitializer i : initializers)
+               i.resolveClasses(context,map);
+       }
     }
 
 

@@ -458,11 +458,24 @@ public class WebAppClassLoader extends URLClassLoader
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
+        if ("org.eclipse.jetty.util.log.Log".equals(name))
+            System.err.println("BREAK HERE");
+        
         synchronized (getClassLoadingLock(name))
         {            
             ClassNotFoundException ex= null;
             Class<?> parent_class = null;
             Class<?> webapp_class = null;
+            
+            
+            // Has this loader loaded the class already?
+            webapp_class = findLoadedClass(name);
+            if (webapp_class != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("found webapp loaded {}",webapp_class);
+                return webapp_class;
+            }
             
             // Should we try the parent loader first?
             if (_context.isParentLoaderPriority())
@@ -474,7 +487,11 @@ public class WebAppClassLoader extends URLClassLoader
                     
                     // If the webapp is allowed to see this class
                     if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("PLP parent loaded {}",parent_class);
                         return parent_class;
+                    }
                 }
                 catch (ClassNotFoundException e)
                 {
@@ -483,30 +500,25 @@ public class WebAppClassLoader extends URLClassLoader
                 }
                 
                 // Try the webapp loader
-                webapp_class = findLoadedClass(name);
-                if (webapp_class==null)
+                try
                 {
-                    try
-                    {
-                        webapp_class = this.findClass(name);
-                    }
-                    catch (ClassNotFoundException e)
-                    {
-                        if (ex==null)
-                            throw e;
-                        ex.addSuppressed(e);
-                    }
-                }
-                
-                // If found here then OK to use regardless of system or server classes
-                // If it is a system class, we've already tried to load from parent, so
-                // would have returned it.
-                // If it is a server class, doesn't matter as we have loaded it from the 
-                // webapp
-                if (webapp_class!=null)
-                {
+                    // If found here then OK to use regardless of system or server classes
+                    // If it is a system class, we've already tried to load from parent, so
+                    // would have returned it.
+                    // If it is a server class, doesn't matter as we have loaded it from the 
+                    // webapp
+                    webapp_class = this.findClass(name);
                     resolveClass(webapp_class);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("PLP webapp loaded {}",webapp_class);
                     return webapp_class;
+                }
+                catch (ClassNotFoundException e)
+                {
+                    if (ex==null)
+                        ex = e;
+                    else
+                        ex.addSuppressed(e);
                 }
                 
                 throw ex;
@@ -514,28 +526,21 @@ public class WebAppClassLoader extends URLClassLoader
             else
             {
                 // Not parent loader priority, so...
-                // Try the webapp classloader first
-                webapp_class = findLoadedClass(name);
-                if (webapp_class==null)
-                {
-                    try
-                    {
-                        webapp_class = this.findClass(name);
-                    }
-                    catch (ClassNotFoundException e)
-                    {
-                        // Save it for later
-                        ex = e;
-                    }
-                }
 
-                // If found here then OK to use regardless of server classes
-                if (webapp_class!=null && !_context.isSystemClass(webapp_class))
+                // Try the webapp classloader first
+                // Look in the webapp classloader as a resource, to avoid 
+                // loading a system class.
+                String path = name.replace('.', '/').concat(".class");
+                URL webapp_url = findResource(path);
+                if (webapp_url!=null && !_context.isSystemResource(name,webapp_url))
                 {
+                    webapp_class = this.foundClass(name,webapp_url);
                     resolveClass(webapp_class);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("WAP webapp loaded {}",webapp_class);
                     return webapp_class;
                 }
-                
+
                 // Try the parent loader
                 try
                 {
@@ -543,24 +548,29 @@ public class WebAppClassLoader extends URLClassLoader
                     
                     // If the webapp is allowed to see this class
                     if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("WAP parent loaded {}",parent_class);
                         return parent_class;
+                    }
                 }
                 catch (ClassNotFoundException e)
                 {
-                    if (ex==null)
-                        throw e;
-                    ex.addSuppressed(e);
+                    ex=e;
                 }
 
                 // We couldn't find a parent class, so OK to return a webapp one if it exists 
                 // and we just couldn't see it before 
-                if (webapp_class!=null)
+                if (webapp_url!=null)
                 {
+                    webapp_class = this.foundClass(name,webapp_url);
                     resolveClass(webapp_class);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("WAP !server webapp loaded {}",webapp_class);
                     return webapp_class;
                 }
                 
-                throw ex;
+                throw ex==null?new ClassNotFoundException(name):ex;
             }
         }
     }
@@ -599,67 +609,69 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return _transformers.remove(transformer);
     }
-    
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected Class<?> findClass(final String name) throws ClassNotFoundException
     {
-        Class<?> clazz=null;
-
         if (_transformers.isEmpty())
-            clazz = super.findClass(name);
-        else
+            return super.findClass(name);
+
+        String path = name.replace('.', '/').concat(".class");
+        URL url = findResource(path);
+        if (url==null)
+            throw new ClassNotFoundException(name);
+        return foundClass(name,url);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected Class<?> foundClass(final String name, URL url) throws ClassNotFoundException
+    {
+        if (_transformers.isEmpty())
+            return super.findClass(name);
+
+        InputStream content=null;
+        try
         {
-            String path = name.replace('.', '/').concat(".class");
-            URL url = findResource(path);
-            if (url==null)
-                throw new ClassNotFoundException(name);
+            content = url.openStream();
+            byte[] bytes = IO.readBytes(content);
 
-            InputStream content=null;
-            try
+            if (LOG.isDebugEnabled())
+                LOG.debug("foundClass({}) url={} cl={}",name,url,this);
+
+            for (ClassFileTransformer transformer : _transformers)
             {
-                content = url.openStream();
-                byte[] bytes = IO.readBytes(content);
+                byte[] tmp = transformer.transform(this,name,null,null,bytes);
+                if (tmp != null)
+                    bytes = tmp;
+            }
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("foundClass({}) url={} cl={}",name,url,this);
-                
-                for (ClassFileTransformer transformer : _transformers)
+            return defineClass(name,bytes,0,bytes.length);
+        }
+        catch (IOException e)
+        {
+            throw new ClassNotFoundException(name,e);
+        }
+        catch (IllegalClassFormatException e)
+        {
+            throw new ClassNotFoundException(name,e);
+        }
+        finally
+        {
+            if (content!=null)
+            {
+                try
                 {
-                    byte[] tmp = transformer.transform(this,name,null,null,bytes);
-                    if (tmp != null)
-                        bytes = tmp;
+                    content.close(); 
                 }
-                
-                clazz=defineClass(name,bytes,0,bytes.length);
-            }
-            catch (IOException e)
-            {
-                throw new ClassNotFoundException(name,e);
-            }
-            catch (IllegalClassFormatException e)
-            {
-                throw new ClassNotFoundException(name,e);
-            }
-            finally
-            {
-                if (content!=null)
+                catch (IOException e)
                 {
-                    try
-                    {
-                        content.close(); 
-                    }
-                    catch (IOException e)
-                    {
-                        throw new ClassNotFoundException(name,e);
-                    }
+                    throw new ClassNotFoundException(name,e);
                 }
             }
         }
-
-        return clazz;
     }
+
     
     /* ------------------------------------------------------------ */
     @Override

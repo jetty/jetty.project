@@ -59,7 +59,6 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TypeUtil;
@@ -156,13 +155,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // with a more automatic distributed mechanism
     // TODO should be white list rather than black list
     public final static String[] __dftServerClasses =
-    { 
-        "org.eclipse.jetty.",               // hide all jetty classes 
-        "org.objectweb.asm.",               // hide asm used by jetty
-        "org.eclipse.jdt.",                 // hide jdt used by jetty
-
-        "-"+__jvmlib,                       // exclude all classes loaded from the JVM library
-        
+    {
         "-org.eclipse.jetty.server.session.SessionData", //don't hide SessionData for de/serialization purposes
         "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
         "-org.eclipse.jetty.util.annotation.", // don't hide jmx annotation
@@ -178,6 +171,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls
         "-org.eclipse.jetty.util.log.",     // don't hide server log 
         "-org.eclipse.jetty.alpn.",         // don't hide ALPN
+        "org.objectweb.asm.",               // hide asm used by jetty
+        "org.eclipse.jdt.",                 // hide jdt used by jetty
+        "org.eclipse.jetty."                // hide other jetty classes
     } ;
 
     private final List<String> _configurationClasses = new ArrayList<>();
