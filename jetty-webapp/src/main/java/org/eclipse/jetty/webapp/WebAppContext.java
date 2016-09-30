@@ -86,7 +86,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
 {
-    private static final Logger LOG = Log.getLogger(WebAppContext.class);
+    static final Logger LOG = Log.getLogger(WebAppContext.class);
 
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";

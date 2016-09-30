@@ -458,15 +458,14 @@ public class WebAppClassLoader extends URLClassLoader
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
-        if ("org.eclipse.jetty.util.log.Log".equals(name))
-            System.err.println("BREAK HERE");
+        LOG.setDebugEnabled(true);
+        WebAppContext.LOG.setDebugEnabled(true);
         
         synchronized (getClassLoadingLock(name))
         {            
             ClassNotFoundException ex= null;
             Class<?> parent_class = null;
             Class<?> webapp_class = null;
-            
             
             // Has this loader loaded the class already?
             webapp_class = findLoadedClass(name);
@@ -484,7 +483,7 @@ public class WebAppClassLoader extends URLClassLoader
                 try
                 {
                     parent_class = _parent.loadClass(name); 
-                    
+
                     // If the webapp is allowed to see this class
                     if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
                     {
@@ -532,6 +531,7 @@ public class WebAppClassLoader extends URLClassLoader
                 // loading a system class.
                 String path = name.replace('.', '/').concat(".class");
                 URL webapp_url = findResource(path);
+                
                 if (webapp_url!=null && !_context.isSystemResource(name,webapp_url))
                 {
                     webapp_class = this.foundClass(name,webapp_url);
