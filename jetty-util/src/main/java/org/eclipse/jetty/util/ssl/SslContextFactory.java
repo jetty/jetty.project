@@ -44,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -210,6 +211,15 @@ public class SslContextFactory extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
+        super.doStart();
+        synchronized (this)
+        {
+            load();
+        }
+    }
+
+    private void load() throws Exception
+    {
         SSLContext context = _setContext;
         KeyStore keyStore = _setKeyStore;
         KeyStore trustStore = _setTrustStore;
@@ -244,7 +254,6 @@ public class SslContextFactory extends AbstractLifeCycle
                 Collection<? extends CRL> crls = loadCRL(getCrlPath());
 
                 // Look for X.509 certificates to create alias map
-                _certHosts.clear();
                 if (keyStore != null)
                 {
                     for (String alias : Collections.list(keyStore.aliases()))
@@ -322,11 +331,21 @@ public class SslContextFactory extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
+        synchronized (this)
+        {
+            unload();
+        }
+        super.doStop();
+    }
+
+    private void unload()
+    {
         _factory = null;
+        _selectedProtocols = null;
+        _selectedCipherSuites = null;
         _aliasX509.clear();
         _certHosts.clear();
         _certWilds.clear();
-        super.doStop();
     }
 
     public String[] getSelectedProtocols()
@@ -376,7 +395,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setExcludeProtocols(String... protocols)
     {
-        checkNotStarted();
         _excludeProtocols.clear();
         _excludeProtocols.addAll(Arrays.asList(protocols));
     }
@@ -386,7 +404,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void addExcludeProtocols(String... protocol)
     {
-        checkNotStarted();
         _excludeProtocols.addAll(Arrays.asList(protocol));
     }
 
@@ -405,7 +422,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setIncludeProtocols(String... protocols)
     {
-        checkNotStarted();
         _includeProtocols.clear();
         _includeProtocols.addAll(Arrays.asList(protocols));
     }
@@ -427,7 +443,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setExcludeCipherSuites(String... cipherSuites)
     {
-        checkNotStarted();
         _excludeCipherSuites.clear();
         _excludeCipherSuites.addAll(Arrays.asList(cipherSuites));
     }
@@ -437,7 +452,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void addExcludeCipherSuites(String... cipher)
     {
-        checkNotStarted();
         _excludeCipherSuites.addAll(Arrays.asList(cipher));
     }
 
@@ -458,7 +472,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setIncludeCipherSuites(String... cipherSuites)
     {
-        checkNotStarted();
         _includeCipherSuites.clear();
         _includeCipherSuites.addAll(Arrays.asList(cipherSuites));
     }
@@ -486,7 +499,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setKeyStorePath(String keyStorePath)
     {
-        checkNotStarted();
         try
         {
             _keyStoreResource = Resource.newResource(keyStorePath);
@@ -510,7 +522,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setKeyStoreProvider(String keyStoreProvider)
     {
-        checkNotStarted();
         _keyStoreProvider = keyStoreProvider;
     }
 
@@ -527,7 +538,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setKeyStoreType(String keyStoreType)
     {
-        checkNotStarted();
         _keyStoreType = keyStoreType;
     }
 
@@ -550,7 +560,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setCertAlias(String certAlias)
     {
-        checkNotStarted();
         _certAlias = certAlias;
     }
 
@@ -559,7 +568,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setTrustStorePath(String trustStorePath)
     {
-        checkNotStarted();
         try
         {
             _trustStoreResource = Resource.newResource(trustStorePath);
@@ -583,7 +591,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setTrustStoreProvider(String trustStoreProvider)
     {
-        checkNotStarted();
         _trustStoreProvider = trustStoreProvider;
     }
 
@@ -600,7 +607,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setTrustStoreType(String trustStoreType)
     {
-        checkNotStarted();
         _trustStoreType = trustStoreType;
     }
 
@@ -619,7 +625,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setNeedClientAuth(boolean needClientAuth)
     {
-        checkNotStarted();
         _needClientAuth = needClientAuth;
     }
 
@@ -638,7 +643,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setWantClientAuth(boolean wantClientAuth)
     {
-        checkNotStarted();
         _wantClientAuth = wantClientAuth;
     }
 
@@ -655,7 +659,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setValidateCerts(boolean validateCerts)
     {
-        checkNotStarted();
         _validateCerts = validateCerts;
     }
 
@@ -672,7 +675,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setValidatePeerCerts(boolean validatePeerCerts)
     {
-        checkNotStarted();
         _validatePeerCerts = validatePeerCerts;
     }
 
@@ -685,7 +687,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setKeyStorePassword(String password)
     {
-        checkNotStarted();
         if (password == null)
         {
             if (_keyStoreResource != null)
@@ -694,7 +695,9 @@ public class SslContextFactory extends AbstractLifeCycle
                 _keyStorePassword = null;
         }
         else
+        {
             _keyStorePassword = new Password(password);
+        }
     }
 
     /**
@@ -705,7 +708,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setKeyManagerPassword(String password)
     {
-        checkNotStarted();
         if (password == null)
         {
             if (System.getProperty(KEYPASSWORD_PROPERTY) != null)
@@ -714,7 +716,9 @@ public class SslContextFactory extends AbstractLifeCycle
                 _keyManagerPassword = null;
         }
         else
+        {
             _keyManagerPassword = new Password(password);
+        }
     }
 
     /**
@@ -726,17 +730,17 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setTrustStorePassword(String password)
     {
-        checkNotStarted();
         if (password == null)
         {
-            // Do we need a truststore password?
             if (_trustStoreResource != null && !_trustStoreResource.equals(_keyStoreResource))
                 _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY, null, null);
             else
                 _trustStorePassword = null;
         }
         else
+        {
             _trustStorePassword = new Password(password);
+        }
     }
 
     /**
@@ -754,7 +758,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setProvider(String provider)
     {
-        checkNotStarted();
         _sslProvider = provider;
     }
 
@@ -773,7 +776,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setProtocol(String protocol)
     {
-        checkNotStarted();
         _sslProtocol = protocol;
     }
 
@@ -794,14 +796,31 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setSecureRandomAlgorithm(String algorithm)
     {
-        checkNotStarted();
         _secureRandomAlgorithm = algorithm;
+    }
+
+    /**
+     * @deprecated use {@link #getKeyManagerFactoryAlgorithm()} instead
+     */
+    @Deprecated
+    public String getSslKeyManagerFactoryAlgorithm()
+    {
+        return getKeyManagerFactoryAlgorithm();
+    }
+
+    /**
+     * @deprecated use {@link #setKeyManagerFactoryAlgorithm(String)} instead
+     */
+    @Deprecated
+    public void setSslKeyManagerFactoryAlgorithm(String algorithm)
+    {
+        setKeyManagerFactoryAlgorithm(algorithm);
     }
 
     /**
      * @return The algorithm name (default "SunX509") used by the {@link KeyManagerFactory}
      */
-    public String getSslKeyManagerFactoryAlgorithm()
+    public String getKeyManagerFactoryAlgorithm()
     {
         return _keyManagerFactoryAlgorithm;
     }
@@ -809,9 +828,8 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @param algorithm The algorithm name (default "SunX509") used by the {@link KeyManagerFactory}
      */
-    public void setSslKeyManagerFactoryAlgorithm(String algorithm)
+    public void setKeyManagerFactoryAlgorithm(String algorithm)
     {
-        checkNotStarted();
         _keyManagerFactoryAlgorithm = algorithm;
     }
 
@@ -847,7 +865,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setTrustManagerFactoryAlgorithm(String algorithm)
     {
-        checkNotStarted();
         _trustManagerFactoryAlgorithm = algorithm;
     }
 
@@ -880,7 +897,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setCrlPath(String crlPath)
     {
-        checkNotStarted();
         _crlPath = crlPath;
     }
 
@@ -899,7 +915,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setMaxCertPathLength(int maxCertPathLength)
     {
-        checkNotStarted();
         _maxCertPathLength = maxCertPathLength;
     }
 
@@ -908,7 +923,13 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SSLContext getSslContext()
     {
-        return isStarted() ? _factory._context : _setContext;
+        if (!isStarted())
+            return _setContext;
+
+        synchronized (this)
+        {
+            return _factory._context;
+        }
     }
 
     /**
@@ -916,8 +937,15 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setSslContext(SSLContext sslContext)
     {
-        checkNotStarted();
         _setContext = sslContext;
+    }
+
+    /**
+     * @return the endpoint identification algorithm
+     */
+    public String getEndpointIdentificationAlgorithm()
+    {
+        return _endpointIdentificationAlgorithm;
     }
 
     /**
@@ -927,7 +955,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm)
     {
-        this._endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
+        _endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
     }
 
     /**
@@ -939,7 +967,8 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     protected KeyStore loadKeyStore(Resource resource) throws Exception
     {
-        return CertificateUtils.getKeyStore(resource, getKeyStoreType(), getKeyStoreProvider(), _keyStorePassword == null ? null : _keyStorePassword.toString());
+        String storePassword = _keyStorePassword == null ? null : _keyStorePassword.toString();
+        return CertificateUtils.getKeyStore(resource, getKeyStoreType(), getKeyStoreProvider(), storePassword);
     }
 
     /**
@@ -964,7 +993,6 @@ public class SslContextFactory extends AbstractLifeCycle
             if (passwd == null)
                 passwd = _keyStorePassword == null ? null : _keyStorePassword.toString();
         }
-
         return CertificateUtils.getKeyStore(resource, type, provider, passwd);
     }
 
@@ -989,7 +1017,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
         if (keyStore != null)
         {
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(getSslKeyManagerFactoryAlgorithm());
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(getKeyManagerFactoryAlgorithm());
             keyManagerFactory.init(keyStore, _keyManagerPassword == null ? (_keyStorePassword == null ? null : _keyStorePassword.toString().toCharArray()) : _keyManagerPassword.toString().toCharArray());
             managers = keyManagerFactory.getKeyManagers();
 
@@ -1187,28 +1215,10 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * Check if the lifecycle has been started and throw runtime exception
      */
-    protected void checkNotStarted()
-    {
-        if (isStarted())
-            throw new IllegalStateException("Cannot modify configuration when " + getState());
-    }
-
-    /**
-     * Check if the lifecycle has been started and throw runtime exception
-     */
-    protected void checkIsStarted()
+    private void checkIsStarted()
     {
         if (!isStarted())
             throw new IllegalStateException("!STARTED: " + this);
-    }
-
-    /**
-     * Check if the lifecycle has been started and throw runtime exception
-     */
-    protected void checkIsRunning()
-    {
-        if (!isRunning())
-            throw new IllegalStateException("!RUNNING: " + this);
     }
 
     /**
@@ -1226,7 +1236,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setEnableCRLDP(boolean enableCRLDP)
     {
-        checkNotStarted();
         _enableCRLDP = enableCRLDP;
     }
 
@@ -1245,7 +1254,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setEnableOCSP(boolean enableOCSP)
     {
-        checkNotStarted();
         _enableOCSP = enableOCSP;
     }
 
@@ -1264,7 +1272,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setOcspResponderURL(String ocspResponderURL)
     {
-        checkNotStarted();
         _ocspResponderURL = ocspResponderURL;
     }
 
@@ -1275,13 +1282,18 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setKeyStore(KeyStore keyStore)
     {
-        checkNotStarted();
         _setKeyStore = keyStore;
     }
 
     public KeyStore getKeyStore()
     {
-        return isStarted() ? _factory._keyStore : _setKeyStore;
+        if (!isStarted())
+            return _setKeyStore;
+
+        synchronized (this)
+        {
+            return _factory._keyStore;
+        }
     }
 
     /**
@@ -1291,13 +1303,18 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setTrustStore(KeyStore trustStore)
     {
-        checkNotStarted();
         _setTrustStore = trustStore;
     }
 
     public KeyStore getTrustStore()
     {
-        return isStarted() ? _factory._trustStore : _setTrustStore;
+        if (!isStarted())
+            return _setTrustStore;
+
+        synchronized (this)
+        {
+            return _factory._trustStore;
+        }
     }
 
     /**
@@ -1307,7 +1324,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setKeyStoreResource(Resource resource)
     {
-        checkNotStarted();
         _keyStoreResource = resource;
     }
 
@@ -1323,7 +1339,6 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setTrustStoreResource(Resource resource)
     {
-        checkNotStarted();
         _trustStoreResource = resource;
     }
 
@@ -1406,12 +1421,14 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         checkIsStarted();
 
-        SSLServerSocketFactory factory = _factory._context.getServerSocketFactory();
+        SSLContext context = getSslContext();
+        SSLServerSocketFactory factory = context.getServerSocketFactory();
         SSLServerSocket socket =
                 (SSLServerSocket)(host == null ?
                         factory.createServerSocket(port, backlog) :
                         factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
         socket.setSSLParameters(customize(socket.getSSLParameters()));
+
         return socket;
     }
 
@@ -1419,9 +1436,11 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         checkIsStarted();
 
-        SSLSocketFactory factory = _factory._context.getSocketFactory();
+        SSLContext context = getSslContext();
+        SSLSocketFactory factory = context.getSocketFactory();
         SSLSocket socket = (SSLSocket)factory.createSocket();
         socket.setSSLParameters(customize(socket.getSSLParameters()));
+
         return socket;
     }
 
@@ -1436,9 +1455,12 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SSLEngine newSSLEngine()
     {
-        checkIsRunning();
-        SSLEngine sslEngine = _factory._context.createSSLEngine();
+        checkIsStarted();
+
+        SSLContext context = getSslContext();
+        SSLEngine sslEngine = context.createSSLEngine();
         customize(sslEngine);
+
         return sslEngine;
     }
 
@@ -1453,10 +1475,13 @@ public class SslContextFactory extends AbstractLifeCycle
     public SSLEngine newSSLEngine(String host, int port)
     {
         checkIsStarted();
-        SSLEngine sslEngine = isSessionCachingEnabled()
-                ? _factory._context.createSSLEngine(host, port)
-                : _factory._context.createSSLEngine();
+
+        SSLContext context = getSslContext();
+        SSLEngine sslEngine = isSessionCachingEnabled() ?
+                context.createSSLEngine(host, port) :
+                context.createSSLEngine();
         customize(sslEngine);
+
         return sslEngine;
     }
 
@@ -1510,7 +1535,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SSLParameters customize(SSLParameters sslParams)
     {
-        sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
+        sslParams.setEndpointIdentificationAlgorithm(getEndpointIdentificationAlgorithm());
         sslParams.setUseCipherSuitesOrder(isUseCipherSuitesOrder());
         if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
             sslParams.setSNIMatchers(Collections.singletonList(new AliasSNIMatcher()));
@@ -1523,6 +1548,16 @@ public class SslContextFactory extends AbstractLifeCycle
         if (getNeedClientAuth())
             sslParams.setNeedClientAuth(true);
         return sslParams;
+    }
+
+    public void reload(Consumer<SslContextFactory> consumer) throws Exception
+    {
+        synchronized (this)
+        {
+            consumer.accept(this);
+            unload();
+            load();
+        }
     }
 
     public static X509Certificate[] getCertChain(SSLSession sslSession)
