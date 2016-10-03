@@ -21,8 +21,6 @@ package org.eclipse.jetty.annotations;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,7 +55,6 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.MetaDataComplete;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 
@@ -665,26 +662,41 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (context == null)
             throw new IllegalArgumentException("WebAppContext null");
         
-        if (LOG.isDebugEnabled()) LOG.debug("Checking {} for jar exclusion", sci);
-        
+                
         //A ServletContainerInitializer that came from the container's classpath cannot be excluded by an ordering
         //of WEB-INF/lib jars
         if (isFromContainerClassPath(context, sci))
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} from container classpath", sci);
             return false;
+        }
         
         //If no ordering, nothing is excluded
         if (context.getMetaData().getOrdering() == null)
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} no ordering", sci);
             return false;
-        
+        }
         
         List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
 
         //there is an ordering, but there are no jars resulting from the ordering, everything excluded
         if (orderedJars.isEmpty())
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("Excluded {} empty ordering", sci);
             return true;
+        }
 
         if (sciResource == null)
-            return false; //not from a jar therefore not from WEB-INF so not excludable
+        {
+            //not from a jar therefore not from WEB-INF so not excludable
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} not from jar", sci);
+            return false; 
+        }
         
         URI loadingJarURI = sciResource.getURI();
         boolean found = false;
@@ -695,9 +707,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
             found = r.getURI().equals(loadingJarURI);
         }
 
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("{}Excluded {} found={}",found?"!":"",sci,found);
         return !found;
     }
-
 
     /**
      * Test if the ServletContainerIntializer is excluded by the 
@@ -713,7 +726,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return false;
         
         //test if name of class matches the regex
-        if (LOG.isDebugEnabled()) LOG.debug("Checking {} against containerInitializerExclusionPattern",sci.getClass().getName());
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("Checking {} against containerInitializerExclusionPattern",sci.getClass().getName());
         return _sciExcludePattern.matcher(sci.getClass().getName()).matches();
     }
     
@@ -771,17 +785,20 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //because containerInitializerOrdering omits it
         for (ServletContainerInitializer sci:_loadedInitializers)
         { 
+            LOG.setDebugEnabled(true);
             
             if (matchesExclusionPattern(sci)) 
             {
-                if (LOG.isDebugEnabled()) LOG.debug("{} excluded by pattern", sci);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} excluded by pattern", sci);
                 continue;
             }
 
             Resource sciResource = getJarFor(sci);
             if (isFromExcludedJar(context, sci, sciResource)) 
             { 
-                if (LOG.isDebugEnabled()) LOG.debug("{} is from excluded jar", sci);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} is from excluded jar", sci);
                 continue;
             }
             
@@ -790,7 +807,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
             if (initializerOrdering != null
                 && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
             {
-                if (LOG.isDebugEnabled()) LOG.debug("{} is excluded by ordering", sci);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} is excluded by ordering", sci);
                 continue;
             }
             
@@ -817,12 +835,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //no web.xml ordering defined, add SCIs in any order
             if (context.getMetaData().getOrdering() == null)
             {
-                if (LOG.isDebugEnabled())  LOG.debug("No web.xml ordering, ServletContainerInitializers in random order");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No web.xml ordering, ServletContainerInitializers in random order");
                 nonExcludedInitializers.addAll(sciResourceMap.keySet());
             }
             else
             {
-                if (LOG.isDebugEnabled())  LOG.debug("Ordering ServletContainerInitializers with ordering {}",context.getMetaData().getOrdering());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ordering ServletContainerInitializers with ordering {}",context.getMetaData().getOrdering());
                 for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
                 {
                     //add in SCIs from the container classpath

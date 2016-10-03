@@ -134,7 +134,8 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     {
         Enumeration<URL> osgiUrls = _osgiBundleClassLoader.getResources(name);
         Enumeration<URL> urls = super.getResources(name);
-        return Collections.enumeration(toList(osgiUrls, urls));
+        List<URL> resources = toList(osgiUrls, urls);
+        return Collections.enumeration(resources);
     }
     
     /* ------------------------------------------------------------ */

@@ -27,7 +27,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
-import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +38,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -384,14 +382,24 @@ public class WebAppClassLoader extends URLClassLoader
             if (!_context.isSystemResource(name,url) || from_parent.isEmpty())
                 from_webapp.add(url);
         }
+
+        List<URL> resources;
         
         if (_context.isParentLoaderPriority())
         {
             from_parent.addAll(from_webapp);
-            return Collections.enumeration(from_parent);
+            resources = from_parent;
         }
-        from_webapp.addAll(from_parent);
-        return Collections.enumeration(from_webapp);
+        else
+        {
+            from_webapp.addAll(from_parent);
+            resources = from_webapp;
+        }
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("getResources {} {}",name,resources);
+
+        return Collections.enumeration(resources);
     }
     
     /* ------------------------------------------------------------ */
@@ -405,6 +413,7 @@ public class WebAppClassLoader extends URLClassLoader
     @Override
     public URL getResource(String name)
     {
+        URL resource=null;
         if (_context.isParentLoaderPriority())
         {
             URL parent_url=_parent.getResource(name);
@@ -413,44 +422,50 @@ public class WebAppClassLoader extends URLClassLoader
             if (parent_url!=null
                 && (Boolean.TRUE.equals(__loadServerClasses.get()) 
                     || !_context.isServerResource(name,parent_url)))
-                return parent_url;
-            
+                resource = parent_url;
+            else
+            {
+                URL webapp_url = this.findResource(name);
 
-            URL webapp_url = this.findResource(name);
-            
-            // If found here then OK to use regardless of system or server classes
-            // If it is a system resource, we've already tried to load from parent, so
-            // would have returned it.
-            // If it is a server resource, doesn't matter as we have loaded it from the 
-            // webapp
-            if (webapp_url!=null)
-                return webapp_url;
+                // If found here then OK to use regardless of system or server classes
+                // If it is a system resource, we've already tried to load from parent, so
+                // would have returned it.
+                // If it is a server resource, doesn't matter as we have loaded it from the 
+                // webapp
+                if (webapp_url!=null)
+                    resource = webapp_url;
+            }
         }
         else
         {
             URL webapp_url = this.findResource(name);
 
             if (webapp_url!=null && !_context.isSystemResource(name,webapp_url))
-                return webapp_url;
-            
-            // Couldn't find or see a webapp resource, so try a parent
-            URL parent_url=_parent.getResource(name);
-            if (parent_url!=null
-                && (Boolean.TRUE.equals(__loadServerClasses.get()) 
-                    || !_context.isServerResource(name,parent_url)))
-                return parent_url;
-            
-            // We couldn't find a parent resource, so OK to return a webapp one if it exists 
-            // and we just couldn't see it before 
-            if (webapp_url!=null)
-                return webapp_url;
+                resource = webapp_url;
+            else
+            {
+
+                // Couldn't find or see a webapp resource, so try a parent
+                URL parent_url=_parent.getResource(name);
+                if (parent_url!=null
+                    && (Boolean.TRUE.equals(__loadServerClasses.get()) 
+                        || !_context.isServerResource(name,parent_url)))
+                    resource = parent_url;
+                // We couldn't find a parent resource, so OK to return a webapp one if it exists 
+                // and we just couldn't see it before 
+                else if (webapp_url!=null)
+                    resource = webapp_url;
+            }
         }
         
         // Perhaps this failed due to leading /
-        if (name.startsWith("/"))
-            return getResource(name.substring(1));
-        
-        return null;
+        if (resource==null && name.startsWith("/"))
+            resource = getResource(name.substring(1));
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("getResource {} {}",name,resource);
+       
+        return resource;
         
     }
 
