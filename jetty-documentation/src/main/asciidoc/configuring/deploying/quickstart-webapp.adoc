@@ -21,7 +21,7 @@ The auto discovery features of the Servlet specification can make deployments sl
 Auto discovery of Web Application configuration can be useful during the development of a webapp as it allows new features and frameworks to be enabled simply by dropping in a jar file.
 However, for deployment, the need to scan the contents of many jars can have a significant impact of the start time of a webapp.
 
-From Jetty release 9.2.0.v20140526, the included quickstart module allows a webapp to be pre-scanned and preconfigured.
+With the release of Jetty 9.2, a quickstart module was included which allows a webapp to be pre-scanned and preconfigured.
 This means that all the scanning is done prior to deployment and all configuration is encoded into an effective `web.xml`, called `WEB-INF/quickstart-web.xml`, which can be inspected to understand what will be deployed before deploying.
 Not only does the `quickstart-web.xml` contain all the discovered Servlets, Filters and Constraints, but it also encodes as context parameters all discovered:
 
@@ -35,7 +35,6 @@ Tests have shown that webapps that took many seconds to scan and deploy can now 
 ==== Setting up Quickstart
 
 To use quickstart the module has to be available to the Jetty instance.
-In a maven project this is done by adding a dependency on the artifact ID `jetty-quickstart`.
 In a standard Jetty distribution it can be configured with the following command:
 
 [source, screen, subs="{sub-order}"]
@@ -43,8 +42,22 @@ In a standard Jetty distribution it can be configured with the following command
 $ java -jar $JETTY_HOME/start.jar --add-to-start=quickstart
 ----
 
+In a Maven project this is done by adding a dependency on the artifact ID `jetty-quickstart`.
+
+[source, xml, subs="{sub-order}"]
+----
+<dependency>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-quickstart</artifactId>
+    <version>{VERSION}</version>
+</dependency>
+----
+
+Additionally, for those using Maven, the link:#get-up-and-running[Jetty Maven Plugin] has a goal, link:#jetty-effective-web-xml[`jetty:effective-web-xml`], which performs quickstart operations.
+It should be noted, however, that the Jetty Maven Plugin also includes additional items on it's classpath which may not be needed by the webapp.
+
 Deployed webapps need to be instances of link:{JDURL}/org/eclipse/jetty/quickstart/QuickStartWebApp.html[`org.eclipse.jetty.quickstart.QuickStartWebApp`] rather than the normal `org.eclipse.jetty.webapp.WebAppContext`.
-If a web application already has a `webapps/myapp.xml` file, simply change the class in the Configure element.
+If a web application already has a `webapps/myapp.xml` file, simply change the class in the `Configure` element.
 Otherwise, create a `webapps/myapp.xml` file as follows:
 
 [source, xml, subs="{sub-order}"]
@@ -57,6 +70,9 @@ Otherwise, create a `webapps/myapp.xml` file as follows:
   <Set name="autoPreconfigure">true</Set>
 </Configure>
 ----
+
+For embedded implementations of Jetty, invoking the link:{JDURL}/org/eclipse/jetty/quickstart/PreconfigureQuickStartWar.html[`org.eclipse.jetty.quickstart.PreconfigureQuickStartWar`] class can be used to configure war files for quickstart deployment.
+This will create the `quickstart-web.xml` before the first deployment.
 
 // ==== Preconfiguring the web application
 //
