@@ -13,7 +13,7 @@
         <New class="org.eclipse.jetty.security.HashLoginService">
           <Set name="name">Test Realm</Set>
           <Set name="config"><Property name="jetty.demo.realm" default="etc/realm.properties"/></Set>
-          <Set name="refreshInterval">0</Set>
+          <Set name="hotReload">false</Set>
         </New>
       </Arg>
     </Call>

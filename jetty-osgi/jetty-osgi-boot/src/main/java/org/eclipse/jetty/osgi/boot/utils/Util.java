@@ -19,12 +19,17 @@
 
 package org.eclipse.jetty.osgi.boot.utils;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.StringTokenizer;
+
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.util.StringUtil;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.Filter;
+import org.osgi.framework.InvalidSyntaxException;
 
 /**
  * Various useful functions utility methods for OSGi wide use.
@@ -33,6 +38,31 @@ public class Util
 {
     public static final String DEFAULT_DELIMS = ",;";
 
+    
+    /**
+     * Create an osgi filter for the given classname and server name.
+     * 
+     * @param bundleContext
+     * @param classname the class to match on the filter
+     * @param managedServerName the name of the jetty server instance
+     * @return a new filter
+     * 
+     * @throws InvalidSyntaxException
+     */
+    public static Filter createFilter (BundleContext bundleContext, String classname, String managedServerName) throws InvalidSyntaxException
+    {
+        if (StringUtil.isBlank(managedServerName) || managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
+        {
+            return bundleContext.createFilter("(&(objectclass=" + classname
+                                                + ")(|(managedServerName="+managedServerName
+                                                +")(!(managedServerName=*))))");
+        }
+        else
+        {
+            return bundleContext.createFilter("(&(objectclass=" + classname+ ")(managedServerName="+managedServerName+"))");
+        }
+
+    }
     
     /**
      * Get the value of a manifest header.

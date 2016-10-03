@@ -133,14 +133,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private int _commitSize;
     private WriteListener _writeListener;
     private volatile Throwable _onError;
-
     /*
     ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSED
     -------------------------------------------------------------------------------------------
     setWriteListener() READY->owp ise        ise        ise           ise           ise
     write()            OPEN       ise        PENDING    wpe           wpe           eof
     flush()            OPEN       ise        PENDING    wpe           wpe           eof
-    close()            CLOSED     CLOSED     CLOSED     CLOSED        wpe           CLOSED
+    close()            CLOSED     CLOSED     CLOSED     CLOSED        CLOSED        CLOSED
     isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true
     write completed    -          -          -          ASYNC         READY->owp    -
     */
@@ -244,7 +243,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void close()
     {
-        while (true)
+        while(true)
         {
             OutputState state = _state.get();
             switch (state)
@@ -253,24 +252,48 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     return;
                 }
-                case UNREADY:
+                case ASYNC:
                 {
-                    if (_state.compareAndSet(state, OutputState.ERROR))
-                        _writeListener.onError(_onError == null ? new EofException("Async close") : _onError);
+                    // A close call implies a write operation, thus in asynchronous mode
+                    // a call to isReady() that returned true should have been made.
+                    // However it is desirable to allow a close at any time, specially if 
+                    // complete is called.   Thus we simulate a call to isReady here, assuming
+                    // that we can transition to READY.
+                    if (!_state.compareAndSet(state, OutputState.READY))
+                        continue;
                     break;
+                }
+                case UNREADY:
+                case PENDING:
+                {
+                    // A close call implies a write operation, thus in asynchronous mode
+                    // a call to isReady() that returned true should have been made.
+                    // However it is desirable to allow a close at any time, specially if 
+                    // complete is called.   Because the prior write has not yet completed
+                    // and/or isReady has not been called, this close is allowed, but will
+                    // abort the response.
+                    if (!_state.compareAndSet(state, OutputState.CLOSED))
+                        continue;
+                    IOException ex = new IOException("Closed while Pending/Unready");
+                    LOG.warn(ex.toString());
+                    LOG.debug(ex);
+                    _channel.abort(ex);
+                    return;
                 }
                 default:
                 {
                     if (!_state.compareAndSet(state, OutputState.CLOSED))
-                        break;
+                        continue;
 
+                    // Do a normal close by writing the aggregate buffer or an empty buffer. If we are
+                    // not including, then indicate this is the last write.
                     try
                     {
                         write(BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER, !_channel.getResponse().isIncluding());
                     }
                     catch (IOException x)
                     {
-                        // Ignore it, it's been already logged in write().
+                        LOG.ignore(x); // Ignore it, it's been already logged in write().
                     }
                     finally
                     {
@@ -342,6 +365,20 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public boolean isClosed()
     {
         return _state.get() == OutputState.CLOSED;
+    } 
+
+    public boolean isAsync()
+    {
+        switch (_state.get())
+        {
+            case ASYNC:
+            case READY:
+            case PENDING:
+            case UNREADY:
+                return true;
+            default:
+                return false;
+        }
     }
 
     @Override
@@ -365,6 +402,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return;
 
                 case PENDING:
+                    return;
+                    
                 case UNREADY:
                     throw new WritePendingException();
 
@@ -905,9 +944,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             throw new IllegalStateException();
     }
 
-    /**
-     * @see javax.servlet.ServletOutputStream#isReady()
-     */
     @Override
     public boolean isReady()
     {
@@ -949,7 +985,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void run()
     {
-        loop:
         while (true)
         {
             OutputState state = _state.get();
@@ -962,7 +997,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     case ERROR:
                     {
                         _onError = null;
-                        break loop;
+                        return;
                     }
                     default:
                     {
@@ -974,37 +1009,37 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                                 LOG.debug("onError", th);
                             _writeListener.onError(th);
                             close();
-                            break loop;
+                            return;
                         }
                     }
                 }
                 continue;
             }
 
-            switch (_state.get())
+            // We do not check the state here.  Strictly speaking the state should 
+            // always be READY when run is called.  However, other async threads or 
+            // a prior call by this thread to onDataAvailable may have called write
+            // after onWritePossible was called, so the state could be any of the 
+            // write states.  
+            //
+            // Even if the state is CLOSED, we need to call onWritePossible to tell 
+            // async producer that the last write completed.
+            //
+            // We have to trust the scheduling of this run was done 
+            // for good reason, that is protected correctly by HttpChannelState and 
+            // that implementations of onWritePossible will 
+            // themselves check isReady().  If multiple threads are calling write,
+            // then they must either rely on only a single container thread being
+            // dispatched or perform their own mutual exclusion.
+            try
             {
-                case ASYNC:
-                case READY:
-                case PENDING:
-                case UNREADY:
-                    // Even though a write is not possible, because a close has
-                    // occurred, we need to call onWritePossible to tell async
-                    // producer that the last write completed, so fall through.
-                case CLOSED:
-                    try
-                    {
-                        _writeListener.onWritePossible();
-                        break loop;
-                    }
-                    catch (Throwable e)
-                    {
-                        _onError = e;
-                    }
-                    break;
-
-                default:
-                    _onError = new IllegalStateException("state=" + _state.get());
+                _writeListener.onWritePossible();
+                break;
             }
+            catch (Throwable e)
+            {
+                _onError = e;
+            }            
         }
     }
 

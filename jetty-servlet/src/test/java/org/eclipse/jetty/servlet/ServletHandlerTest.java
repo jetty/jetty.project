@@ -26,17 +26,15 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ServletHandlerTest
 {
-    FilterHolder fh1 = new FilterHolder(Source.DESCRIPTOR);
+    FilterHolder fh1 = new FilterHolder( new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
     FilterMapping fm1 = new FilterMapping();
     
-    FilterHolder fh2 = new FilterHolder(Source.DESCRIPTOR);
+    FilterHolder fh2 = new FilterHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
     FilterMapping fm2 = new FilterMapping();
     
     FilterHolder fh3 = new FilterHolder(Source.JAVAX_API);
@@ -91,7 +89,7 @@ public class ServletHandlerTest
         assertTrue(fm2 == mappings[1]);
         
         //add another ordinary mapping
-        FilterHolder of1 = new FilterHolder(Source.DESCRIPTOR);
+        FilterHolder of1 = new FilterHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
         FilterMapping ofm1 = new FilterMapping();
         ofm1.setFilterHolder(of1);
         ofm1.setPathSpec("/*");

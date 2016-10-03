@@ -35,7 +35,6 @@ import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Module;
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartLog;
-import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
 
 /**
  * Management of the <code>${jetty.base}/start.ini</code> based configuration.
@@ -107,42 +106,23 @@ public class StartIniBuilder implements BaseBuilder.Config
         }
 
         String mode = "";
-        boolean isTransitive = module.matches(OnlyTransitivePredicate.INSTANCE);
-        if (isTransitive)
+        if (module.isTransitive())
         {
             mode = "(transitively) ";
         }
 
-        if (module.hasIniTemplate() || !isTransitive)
+        if (module.hasIniTemplate() || !module.isTransitive())
         {
             StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
 
             // Append to start.ini
             try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
             {
-                writeModuleSection(writer,module);
+                module.writeIniSection(writer);
             }
             return true;
         }
 
         return false;
-    }
-
-    protected void writeModuleSection(BufferedWriter writer, Module module)
-    {
-        PrintWriter out = new PrintWriter(writer);
-
-        out.println("# --------------------------------------- ");
-        out.println("# Module: " + module.getName());
-        out.println("--module=" + module.getName());
-        out.println();
-
-        for (String line : module.getIniTemplate())
-        {
-            out.println(line);
-        }
-
-        out.println();
-        out.flush();
     }
 }

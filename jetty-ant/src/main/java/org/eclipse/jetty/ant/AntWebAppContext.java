@@ -49,10 +49,10 @@ import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -413,7 +413,7 @@ public class AntWebAppContext extends WebAppContext
     {
 
         @Override
-        public ServletHolder newServletHolder(Holder.Source source)
+        public ServletHolder newServletHolder(Source source)
         {
             return new AntServletHolder();
         }

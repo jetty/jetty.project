@@ -1,6 +1,6 @@
-#
-# Jetty Quickstart module
-#
+[description]
+Enables the Jetty Quickstart module for rapid
+deployment of preconfigured webapplications.
 
 [depend]
 server

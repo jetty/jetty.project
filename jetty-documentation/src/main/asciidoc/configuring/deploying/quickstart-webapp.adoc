@@ -39,7 +39,7 @@ In a standard Jetty distribution it can be configured with the following command
 
 [source, screen, subs="{sub-order}"]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-to-startd=quickstart
+$ java -jar $JETTY_HOME/start.jar --add-to-start=quickstart
 ----
 
 In a Maven project this is done by adding a dependency on the artifact ID `jetty-quickstart`.

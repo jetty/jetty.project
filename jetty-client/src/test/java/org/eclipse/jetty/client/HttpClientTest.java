@@ -116,7 +116,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
         long start = System.nanoTime();
         HttpConnectionOverHTTP connection = null;
@@ -638,7 +638,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .onRequestBegin(request ->
                 {
                     HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-                    destination.getConnectionPool().getActiveConnections().peek().close();
+                    DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+                    connectionPool.getActiveConnections().iterator().next().close();
                 })
                 .send(new Response.Listener.Adapter()
                 {

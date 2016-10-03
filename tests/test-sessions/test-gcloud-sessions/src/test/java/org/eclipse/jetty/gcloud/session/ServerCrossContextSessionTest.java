@@ -37,13 +37,11 @@ public class ServerCrossContextSessionTest extends AbstractServerCrossContextSes
     {
         GCloudTestSuite.__testSupport.deleteSessions();
     }
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractServerCrossContextSessionTest#createServer(int)
-     */
+
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy) throws Exception
     {
-        return  new GCloudTestServer(port); 
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
     }
 
     @Test

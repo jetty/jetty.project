@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * {@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.
@@ -763,11 +764,10 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
 
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return true;
+            return InvocationType.NON_BLOCKING;
         }
-
 
         public ByteBuffer getContent()
         {

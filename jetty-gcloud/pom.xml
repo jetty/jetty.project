@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,12 +13,11 @@
   <name>Jetty :: GCloud</name>
 
   <properties>
-    <gcloud.version>0.2.3</gcloud.version>
+    <gcloud.version>0.4.0</gcloud.version>
   </properties>
 
   <modules>
     <module>jetty-gcloud-session-manager</module>
-    <module>jetty-gcloud-memcached-session-manager</module>
   </modules>
 
 </project>

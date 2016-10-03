@@ -18,40 +18,162 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
-import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.nio.channels.CancelledKeyException;
+import java.nio.channels.GatheringByteChannel;
+import java.nio.channels.SelectionKey;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * Channel End Point.
  * <p>Holds the channel and socket for an NIO endpoint.
  */
-public class ChannelEndPoint extends AbstractEndPoint
+public abstract class ChannelEndPoint extends AbstractEndPoint implements ManagedSelector.Selectable
 {
     private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
 
-    private final SocketChannel _channel;
-    private final Socket _socket;
-    private volatile boolean _ishut;
-    private volatile boolean _oshut;
+    private final Locker _locker = new Locker();
+    private final ByteChannel _channel;
+    private final GatheringByteChannel _gather;
+    protected final ManagedSelector _selector;
+    protected final SelectionKey _key;
+    private boolean _updatePending;
 
-    public ChannelEndPoint(Scheduler scheduler,SocketChannel channel)
+    /**
+     * The current value for {@link SelectionKey#interestOps()}.
+     */
+    protected int _currentInterestOps;
+
+    /**
+     * The desired value for {@link SelectionKey#interestOps()}.
+     */
+    protected int _desiredInterestOps;
+
+    private abstract class RunnableTask  implements Runnable, Invocable
     {
-        super(scheduler,
-            (InetSocketAddress)channel.socket().getLocalSocketAddress(),
-            (InetSocketAddress)channel.socket().getRemoteSocketAddress());
+        private final String _operation;
+
+        protected RunnableTask(String op)
+        {
+            _operation=op;
+        }
+
+        @Override
+        public String toString()
+        {
+            return ChannelEndPoint.this.toString()+":"+_operation;
+        }
+    }
+
+    private abstract class RunnableCloseable extends RunnableTask implements Closeable
+    {
+        protected RunnableCloseable(String op)
+        {
+            super(op);
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                ChannelEndPoint.this.close();
+            }
+            catch (Throwable x)
+            {
+                LOG.warn(x);
+            }
+        }
+    }
+
+    private final Runnable _runUpdateKey = new RunnableTask("runUpdateKey")
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public void run()
+        {
+            updateKey();
+        }
+    };
+
+    private final Runnable _runFillable = new RunnableCloseable("runFillable")
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getFillInterest().getCallbackInvocationType();
+        }
+        
+        @Override
+        public void run()
+        {
+            getFillInterest().fillable();
+        }
+    };
+
+    private final Runnable _runCompleteWrite = new RunnableCloseable("runCompleteWrite")
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getWriteFlusher().getCallbackInvocationType();
+        }
+        
+        @Override
+        public void run()
+        {
+            getWriteFlusher().completeWrite();
+        }
+    };
+
+    private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            InvocationType fillT = getFillInterest().getCallbackInvocationType();
+            InvocationType flushT = getWriteFlusher().getCallbackInvocationType();
+            if (fillT==flushT)
+                return fillT;
+            
+            if (fillT==InvocationType.EITHER && flushT==InvocationType.NON_BLOCKING)
+                return InvocationType.EITHER;
+            
+            if (fillT==InvocationType.NON_BLOCKING && flushT==InvocationType.EITHER)
+                return InvocationType.EITHER;
+            
+            return InvocationType.BLOCKING;
+        }
+        
+        @Override
+        public void run()
+        {
+            getWriteFlusher().completeWrite();
+            getFillInterest().fillable();
+        }
+    };
+
+    public ChannelEndPoint(ByteChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+    {
+        super(scheduler);
         _channel=channel;
-        _socket=channel.socket();
+        _selector=selector;
+        _key=key;
+        _gather=(channel instanceof GatheringByteChannel)?(GatheringByteChannel)channel:null;
     }
 
     @Override
@@ -66,60 +188,11 @@ public class ChannelEndPoint extends AbstractEndPoint
         return _channel.isOpen();
     }
 
-    protected void shutdownInput()
+    @Override
+    public void doClose()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("ishut {}", this);
-        _ishut=true;
-        if (_oshut)
-            close();
-    }
-
-    @Override
-    public void shutdownOutput()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("oshut {}", this);
-        _oshut = true;
-        if (_channel.isOpen())
-        {
-            try
-            {
-                if (!_socket.isOutputShutdown())
-                    _socket.shutdownOutput();
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-            }
-            finally
-            {
-                if (_ishut)
-                {
-                    close();
-                }
-            }
-        }
-    }
-
-    @Override
-    public boolean isOutputShutdown()
-    {
-        return _oshut || !_channel.isOpen() || _socket.isOutputShutdown();
-    }
-
-    @Override
-    public boolean isInputShutdown()
-    {
-        return _ishut || !_channel.isOpen() || _socket.isInputShutdown();
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-        if (LOG.isDebugEnabled())
-            LOG.debug("close {}", this);
+            LOG.debug("doClose {}", this);
         try
         {
             _channel.close();
@@ -130,15 +203,28 @@ public class ChannelEndPoint extends AbstractEndPoint
         }
         finally
         {
-            _ishut=true;
-            _oshut=true;
+            super.doClose();
+        }
+    }
+
+    @Override
+    public void onClose()
+    {
+        try
+        {
+            super.onClose();
+        }
+        finally
+        {
+            if (_selector!=null)
+                _selector.destroyEndPoint(this);
         }
     }
 
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
-        if (_ishut)
+        if (isInputShutdown())
             return -1;
 
         int pos=BufferUtil.flipToFill(buffer);
@@ -175,8 +261,8 @@ public class ChannelEndPoint extends AbstractEndPoint
         {
             if (buffers.length==1)
                 flushed=_channel.write(buffers[0]);
-            else if (buffers.length>1)
-                flushed=_channel.write(buffers,0,buffers.length);
+            else if (_gather!=null && buffers.length>1)
+                flushed=_gather.write(buffers,0,buffers.length);
             else
             {
                 for (ByteBuffer b : buffers)
@@ -220,20 +306,142 @@ public class ChannelEndPoint extends AbstractEndPoint
         return _channel;
     }
 
-    public Socket getSocket()
+
+    @Override
+    protected void needsFillInterest()
     {
-        return _socket;
+        changeInterests(SelectionKey.OP_READ);
     }
 
     @Override
     protected void onIncompleteFlush()
     {
-        throw new UnsupportedOperationException();
+        changeInterests(SelectionKey.OP_WRITE);
     }
 
     @Override
-    protected void needsFillInterest() throws IOException
+    public Runnable onSelected()
     {
-        throw new UnsupportedOperationException();
+        /**
+         * This method may run concurrently with {@link #changeInterests(int)}.
+         */
+
+        int readyOps = _key.readyOps();
+        int oldInterestOps;
+        int newInterestOps;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            _updatePending = true;
+            // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
+            oldInterestOps = _desiredInterestOps;
+            newInterestOps = oldInterestOps & ~readyOps;
+            _desiredInterestOps = newInterestOps;
+        }
+
+        boolean fillable = (readyOps & SelectionKey.OP_READ) != 0;
+        boolean flushable = (readyOps & SelectionKey.OP_WRITE) != 0;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, fillable, flushable, this);
+
+        // return task to complete the job
+        Runnable task= fillable 
+                ? (flushable 
+                        ? _runCompleteWriteFillable 
+                        : _runFillable)
+                : (flushable 
+                        ? _runCompleteWrite 
+                        : null);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("task {}",task);
+        return task;
+    }
+
+    @Override
+    public void updateKey()
+    {
+        /**
+         * This method may run concurrently with {@link #changeInterests(int)}.
+         */
+
+        try
+        {
+            int oldInterestOps;
+            int newInterestOps;
+            try (Locker.Lock lock = _locker.lock())
+            {
+                _updatePending = false;
+                oldInterestOps = _currentInterestOps;
+                newInterestOps = _desiredInterestOps;
+                if (oldInterestOps != newInterestOps)
+                {
+                    _currentInterestOps = newInterestOps;
+                    _key.interestOps(newInterestOps);
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Key interests updated {} -> {} on {}", oldInterestOps, newInterestOps, this);
+        }
+        catch (CancelledKeyException x)
+        {
+            LOG.debug("Ignoring key update for concurrently closed channel {}", this);
+            close();
+        }
+        catch (Throwable x)
+        {
+            LOG.warn("Ignoring key update for " + this, x);
+            close();
+        }
+    }
+
+    private void changeInterests(int operation)
+    {
+        /**
+         * This method may run concurrently with
+         * {@link #updateKey()} and {@link #onSelected()}.
+         */
+
+        int oldInterestOps;
+        int newInterestOps;
+        boolean pending;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            pending = _updatePending;
+            oldInterestOps = _desiredInterestOps;
+            newInterestOps = oldInterestOps | operation;
+            if (newInterestOps != oldInterestOps)
+                _desiredInterestOps = newInterestOps;
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("changeInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
+
+        if (!pending && _selector!=null)
+            _selector.submit(_runUpdateKey);
+    }
+
+
+    @Override
+    public String toString()
+    {
+        // We do a best effort to print the right toString() and that's it.
+        try
+        {
+            boolean valid = _key != null && _key.isValid();
+            int keyInterests = valid ? _key.interestOps() : -1;
+            int keyReadiness = valid ? _key.readyOps() : -1;
+            return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
+                    super.toString(),
+                    _currentInterestOps,
+                    _desiredInterestOps,
+                    keyInterests,
+                    keyReadiness);
+        }
+        catch (Throwable x)
+        {
+            return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _desiredInterestOps);
+        }
     }
 }

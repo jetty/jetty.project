@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +27,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,8 +42,6 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * The Arguments required to start Jetty.
@@ -114,7 +113,7 @@ public class StartArgs
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     /** List of enabled modules */
-    private Set<String> modules = new HashSet<>();
+    private List<String> modules = new ArrayList<>();
 
     /** List of modules to skip [files] section validation */
     private Set<String> skipFileValidationModules = new HashSet<>();
@@ -151,17 +150,16 @@ public class StartArgs
     private List<String> rawLibs = new ArrayList<>();
 
     // jetty.base - build out commands
-    /** --add-to-startd=[module,[module]] */
-    private List<String> addToStartdIni = new ArrayList<>();
-    /** --add-to-start=[module,[module]] */
-    private List<String> addToStartIni = new ArrayList<>();
-
+    /** --add-to-start[d]=[module,[module]] */
+    private List<String> startModules = new ArrayList<>();
+    
     // module inspection commands
     /** --write-module-graph=[filename] */
     private String moduleGraphFilename;
 
     /** Collection of all modules */
     private Modules allModules;
+    
     /** Should the server be run? */
     private boolean run = true;
 
@@ -177,10 +175,12 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+    private boolean createStartd = false;
 
     private boolean exec = false;
     private String exec_properties;
     private boolean approveAllLicenses = false;
+   
 
     public StartArgs()
     {
@@ -513,14 +513,9 @@ public class StartArgs
         }
     }
 
-    public List<String> getAddToStartdIni()
+    public List<String> getStartModules()
     {
-        return addToStartdIni;
-    }
-
-    public List<String> getAddToStartIni()
-    {
-        return addToStartIni;
+        return startModules;
     }
 
     public Modules getAllModules()
@@ -533,7 +528,7 @@ public class StartArgs
         return classpath;
     }
 
-    public Set<String> getEnabledModules()
+    public List<String> getEnabledModules()
     {
         return this.modules;
     }
@@ -779,7 +774,12 @@ public class StartArgs
     {
         return version;
     }
-
+    
+    public boolean isCreateStartd()
+    {
+        return createStartd;
+    }
+    
     public void parse(ConfigSources sources)
     {
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
@@ -808,7 +808,7 @@ public class StartArgs
      * @param replaceProps
      *            true if properties in this parse replace previous ones, false to not replace.
      */
-    private void parse(final String rawarg, String source, boolean replaceProps)
+    public void parse(final String rawarg, String source, boolean replaceProps)
     {
         if (rawarg == null)
         {
@@ -945,23 +945,30 @@ public class StartArgs
             run = false;
             return;
         }
-
-        // jetty.base build-out : add to ${jetty.base}/start.d/
-        if (arg.startsWith("--add-to-startd="))
+       
+        // jetty.base build-out : add to ${jetty.base}/start.ini
+        if ("--create-startd".equals(arg))
         {
-            List<String> moduleNames = Props.getValues(arg);
-            addToStartdIni.addAll(moduleNames);
+            createStartd=true;
             run = false;
             download = true;
             licenseCheckRequired = true;
             return;
         }
-
-        // jetty.base build-out : add to ${jetty.base}/start.ini
+        if (arg.startsWith("--add-to-startd="))
+        {
+            String value = Props.getValue(arg);
+            StartLog.warn("--add-to-startd is deprecated! Instead use: --create-startd --add-to-start=%s",value);
+            createStartd=true;
+            startModules.addAll(Props.getValues(arg));
+            run = false;
+            download = true;
+            licenseCheckRequired = true;
+            return;
+        }
         if (arg.startsWith("--add-to-start="))
         {
-            List<String> moduleNames = Props.getValues(arg);
-            addToStartIni.addAll(moduleNames);
+            startModules.addAll(Props.getValues(arg));
             run = false;
             download = true;
             licenseCheckRequired = true;
@@ -1083,6 +1090,8 @@ public class StartArgs
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
+
+    
     private void enableModules(String source, List<String> moduleNames)
     {
         for (String moduleName : moduleNames)
@@ -1104,7 +1113,7 @@ public class StartArgs
         {
             for (String line : module.getDefaultConfig())
             {
-                parse(line,module.getFilesystemRef(),false);
+                parse(line,module.getName(),false);
             }
         }
     }
@@ -1176,11 +1185,22 @@ public class StartArgs
         }
     }
 
+    public void removeProperty(String rawPropValue, String source)
+    {
+        int idx = rawPropValue.indexOf('=');
+        String key = rawPropValue.substring(0,idx);
+        String value = rawPropValue.substring(idx + 1);
+        
+        properties.remove(key,value,source);
+    }
+    
+    
     public void setRun(boolean run)
     {
         this.run = run;
     }
-
+    
+    
     @Override
     public String toString()
     {
@@ -1196,4 +1216,6 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
+
+
 }

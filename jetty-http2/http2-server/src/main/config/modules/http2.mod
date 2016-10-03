@@ -1,6 +1,6 @@
-#
-# HTTP2 Support Module
-#
+[description]
+Enables HTTP2 protocol support on the TLS(SSL) Connector,
+using the ALPN extension to select which protocol to use.
 
 [depend]
 ssl

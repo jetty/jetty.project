@@ -40,12 +40,12 @@ public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTe
     }
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge,int evictionPolicy) throws Exception
     {
-        return  new GCloudTestServer(port, max, scavenge);
+        return  new GCloudTestServer(port, max, scavenge, evictionPolicy);
     }
 
     @Test

@@ -1,6 +1,6 @@
-#
-# Stats module
-#
+[description]
+Enable detailed statistics collection for the server,
+available via JMX.
 
 [depend]
 server

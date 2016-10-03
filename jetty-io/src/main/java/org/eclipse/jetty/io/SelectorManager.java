@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
@@ -49,7 +51,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private ExecutionStrategy.Factory _executionFactory = ExecutionStrategy.Factory.getDefault();
     private long _selectorIndex;
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -97,43 +98,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
-     * @return the {@link ExecutionStrategy.Factory} used by {@link ManagedSelector}
-     */
-    public ExecutionStrategy.Factory getExecutionStrategyFactory()
-    {
-        return _executionFactory;
-    }
-
-    /**
-     * @param _executionFactory the {@link ExecutionStrategy.Factory} used by {@link ManagedSelector}
-     */
-    public void setExecutionStrategyFactory(ExecutionStrategy.Factory _executionFactory)
-    {
-        if (isRunning())
-            throw new IllegalStateException("Cannot change " + ExecutionStrategy.Factory.class.getSimpleName() + " after start()");
-        this._executionFactory = _executionFactory;
-    }
-
-    /**
-     * @return the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public int getSelectorPriorityDelta()
-    {
-        return 0;
-    }
-
-    /**
-     * @param selectorPriorityDelta the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public void setSelectorPriorityDelta(int selectorPriorityDelta)
-    {
-    }
-
-    /**
      * Executes the given task in a different thread.
      *
      * @param task the task to execute
@@ -151,7 +115,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector(SocketChannel channel)
+    private ManagedSelector chooseSelector(SelectableChannel channel)
     {
         // Ideally we would like to have all connections from the same client end
         // up on the same selector (to try to avoid smearing the data from a single
@@ -163,14 +127,17 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         {
             try
             {
-                SocketAddress remote = channel.getRemoteAddress();
-                if (remote instanceof InetSocketAddress)
+                if (channel instanceof SocketChannel)
                 {
-                    byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
-                    if (addr != null)
+                    SocketAddress remote = ((SocketChannel)channel).getRemoteAddress();
+                    if (remote instanceof InetSocketAddress)
                     {
-                        int s = addr[addr.length - 1] & 0xFF;
-                        candidate1 = _selectors[s % getSelectorCount()];
+                        byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
+                        if (addr != null)
+                        {
+                            int s = addr[addr.length - 1] & 0xFF;
+                            candidate1 = _selectors[s % getSelectorCount()];
+                        }
                     }
                 }
             }
@@ -200,9 +167,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      *
      * @param channel    the channel to register
      * @param attachment the attachment object
-     * @see #accept(SocketChannel, Object)
+     * @see #accept(SelectableChannel, Object)
      */
-    public void connect(SocketChannel channel, Object attachment)
+    public void connect(SelectableChannel channel, Object attachment)
     {
         ManagedSelector set = chooseSelector(channel);
         set.submit(set.new Connect(channel, attachment));
@@ -210,9 +177,9 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     /**
      * @param channel the channel to accept
-     * @see #accept(SocketChannel, Object)
+     * @see #accept(SelectableChannel, Object)
      */
-    public void accept(SocketChannel channel)
+    public void accept(SelectableChannel channel)
     {
         accept(channel, null);
     }
@@ -227,7 +194,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @param channel    the channel to register
      * @param attachment the attachment object
      */
-    public void accept(SocketChannel channel, Object attachment)
+    public void accept(SelectableChannel channel, Object attachment)
     {
         final ManagedSelector selector = chooseSelector(channel);
         selector.submit(selector.new Accept(channel, attachment));
@@ -236,12 +203,12 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     /**
      * <p>Registers a server channel for accept operations.
      * When a {@link SocketChannel} is accepted from the given {@link ServerSocketChannel}
-     * then the {@link #accepted(SocketChannel)} method is called, which must be
+     * then the {@link #accepted(SelectableChannel)} method is called, which must be
      * overridden by a derivation of this class to handle the accepted channel
      *
      * @param server the server channel to register
      */
-    public void acceptor(ServerSocketChannel server)
+    public void acceptor(SelectableChannel server)
     {
         final ManagedSelector selector = chooseSelector(null);
         selector.submit(selector.new Acceptor(server));
@@ -249,14 +216,14 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     /**
      * Callback method when a channel is accepted from the {@link ServerSocketChannel}
-     * passed to {@link #acceptor(ServerSocketChannel)}.
+     * passed to {@link #acceptor(SelectableChannel)}.
      * The default impl throws an {@link UnsupportedOperationException}, so it must
      * be overridden by subclasses if a server channel is provided.
      *
      * @param channel the
      * @throws IOException if unable to accept channel
      */
-    protected void accepted(SocketChannel channel) throws IOException
+    protected void accepted(SelectableChannel channel) throws IOException
     {
         throw new UnsupportedOperationException();
     }
@@ -281,7 +248,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected ManagedSelector newSelector(int id)
     {
-        return new ManagedSelector(this, id, getExecutionStrategyFactory());
+        return new ManagedSelector(this, id);
     }
 
     @Override
@@ -299,7 +266,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected void endPointOpened(EndPoint endpoint)
     {
-        endpoint.onOpen();
     }
 
     /**
@@ -309,7 +275,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected void endPointClosed(EndPoint endpoint)
     {
-        endpoint.onClose();
     }
 
     /**
@@ -350,10 +315,21 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         }
     }
 
-    protected boolean finishConnect(SocketChannel channel) throws IOException
+    protected boolean doFinishConnect(SelectableChannel channel) throws IOException
     {
-        return channel.finishConnect();
+        return ((SocketChannel)channel).finishConnect();
     }
+
+    protected boolean isConnectionPending(SelectableChannel channel)
+    {
+        return ((SocketChannel)channel).isConnectionPending();
+    }
+
+    protected SelectableChannel doAccept(SelectableChannel server) throws IOException
+    {
+        return ((ServerSocketChannel)server).accept();
+    }
+
 
     /**
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
@@ -363,24 +339,29 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @param ex         the exception that caused the connect to fail
      * @param attachment the attachment object associated at registration
      */
-    protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+    protected void connectionFailed(SelectableChannel channel, Throwable ex, Object attachment)
     {
         LOG.warn(String.format("%s - %s", channel, attachment), ex);
     }
 
+    protected Selector newSelector() throws IOException
+    {
+        return Selector.open();
+    }
+
     /**
      * <p>Factory method to create {@link EndPoint}.</p>
-     * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SocketChannel, Object)}
-     * or {@link #accept(SocketChannel)}.</p>
+     * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SelectableChannel, Object)}
+     * or {@link #accept(SelectableChannel)}.</p>
      *
      * @param channel      the channel associated to the endpoint
      * @param selector     the selector the channel is registered to
      * @param selectionKey the selection key
      * @return a new endpoint
      * @throws IOException if the endPoint cannot be created
-     * @see #newConnection(SocketChannel, EndPoint, Object)
+     * @see #newConnection(SelectableChannel, EndPoint, Object)
      */
-    protected abstract EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException;
+    protected abstract EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException;
 
     /**
      * <p>Factory method to create {@link Connection}.</p>
@@ -390,7 +371,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @param attachment the attachment
      * @return a new connection
      * @throws IOException if unable to create new connection
-     * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
-    public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;
+    public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 }

@@ -77,8 +77,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     {
         for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
         {
-            if (entry.getKey().equals(objectName))
-                return entry.getValue();
+            if (entry.getValue().equals(objectName))
+                return entry.getKey();
         }
         return null;
     }

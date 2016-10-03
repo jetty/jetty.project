@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -162,7 +163,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         if (size > 0)
         {
             Thread.yield();
-
+            
             if (LOG.isDebugEnabled())
             {
                 for (Thread unstopped : _threads)
@@ -189,7 +190,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * Thread Pool should use Daemon Threading.
+     * Thread Pool should use Daemon Threading. 
      *
      * @param daemon true to enable delegation
      * @see Thread#setDaemon(boolean)
@@ -328,10 +329,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         return _priority;
     }
-
+    
     /**
      * Get the size of the job queue.
-     *
+     * 
      * @return Number of jobs queued waiting for a thread
      */
     @ManagedAttribute("size of the job queue")
@@ -360,7 +361,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         _detailedDump = detailedDump;
     }
-
+    
     @ManagedAttribute("threshold at which the pool is low on threads")
     public int getLowThreadsThreshold()
     {
@@ -434,7 +435,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         return getThreads() - getIdleThreads();
     }
-
+    
     /**
      * <p>Returns whether this thread pool is low on threads.</p>
      * <p>The current formula is:</p>
@@ -549,7 +550,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             jobs = new ArrayList<>(getQueue());
 
         ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, threads, jobs);
+        ContainerLifeCycle.dump(out, indent, threads, Collections.singletonList(new DumpableCollection("jobs",jobs)));
     }
 
     @Override

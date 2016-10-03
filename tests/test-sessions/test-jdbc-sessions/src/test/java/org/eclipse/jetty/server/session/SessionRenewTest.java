@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Test;
 
@@ -28,10 +30,35 @@ public class SessionRenewTest extends AbstractSessionRenewTest
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new JdbcTestServer(port, max, scavenge);
+        return new JdbcTestServer(port, max, scavenge, evictionPolicy);
     }
+    
+    
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionRenewTest#verifyChange(WebAppContext, java.lang.String, java.lang.String)
+     */
+    @Override
+    public boolean verifyChange(WebAppContext context, String oldSessionId, String newSessionId)
+    {
+        try
+        {
+            //assert the new one exists
+            assertTrue(((JdbcTestServer)_server).existsInSessionTable(newSessionId, false));
+            assertFalse(((JdbcTestServer)_server).existsInSessionTable(oldSessionId, false));
+            return true;
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage());
+        }
+        
+        return false;
+    }
+
+
 
     @Test
     public void testSessionRenewal() throws Exception
@@ -39,16 +66,11 @@ public class SessionRenewTest extends AbstractSessionRenewTest
         super.testSessionRenewal();
     }
     
+    
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
-
+    
 }

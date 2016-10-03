@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -44,6 +44,43 @@
                   <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
                 </artifactItem>
               </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>hybrid</shadedClassifierName>
+              <artifactSet>
+                <includes>
+                  <include>org.eclipse.jetty:jetty-http</include>
+                  <include>org.eclipse.jetty:jetty-io</include>
+                  <include>org.eclipse.jetty:jetty-util</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>org.eclipse.jetty.http</pattern>
+                  <shadedPattern>org.eclipse.jetty.client.shaded.http</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.eclipse.jetty.io</pattern>
+                  <shadedPattern>org.eclipse.jetty.client.shaded.io</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.eclipse.jetty.util</pattern>
+                  <shadedPattern>org.eclipse.jetty.client.shaded.util</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>

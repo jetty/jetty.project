@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.Stack;
 
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -106,7 +105,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /** Constructor .
      * @param creator the holder source
      */
-    public ServletHolder(Holder.Source creator)
+    public ServletHolder(Source creator)
     {
         super(creator);
     }
@@ -613,8 +612,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (_config==null)
                 _config=new Config();
 
-
-
             // Handle run as
             if (_identityService!=null)
             {
@@ -627,13 +624,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 initJspServlet();
                 detectJspContainer();
             }
+            else if (_forcedPath != null)
+                detectJspContainer();
 
             initMultiPart();
-
-            if (_forcedPath != null && _jspContainer == null)
-            {
-                detectJspContainer();
-            }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Servlet.init {} for {}",_servlet,getName());
@@ -816,7 +810,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         Servlet servlet = ensureInstance();
 
         // Service the request
-        boolean servlet_error=true;
         Object old_run_as = null;
         boolean suspendable = baseRequest.isAsyncSupported();
         try
@@ -843,7 +836,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
             else
                 servlet.service(request,response);
-            servlet_error=false;
         }
         catch(UnavailableException e)
         {
@@ -852,13 +844,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
         finally
         {
-            // pop run-as role
+            // Pop run-as role.
             if (_identityService!=null)
                 _identityService.unsetRunAs(old_run_as);
-
-            // Handle error params.
-            if (servlet_error)
-                request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME,getName());
         }
     }
 
@@ -904,7 +892,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             try
             {
                 //check for apache
-                Loader.loadClass(Holder.class, APACHE_SENTINEL_CLASS);
+                Loader.loadClass(APACHE_SENTINEL_CLASS);
                 if (LOG.isDebugEnabled())LOG.debug("Apache jasper detected");
                 _jspContainer = JspContainer.APACHE;
             }
@@ -926,7 +914,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         jsp = jsp.substring(i);
         try
         {
-            Class<?> jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Class<?> jspUtil = Loader.loadClass("org.apache.jasper.compiler.JspUtil");
             Method makeJavaIdentifier = jspUtil.getMethod("makeJavaIdentifier", String.class);
             return (String)makeJavaIdentifier.invoke(null, jsp);
         }
@@ -952,7 +940,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return "";
         try
         {
-            Class<?> jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Class<?> jspUtil = Loader.loadClass("org.apache.jasper.compiler.JspUtil");
             Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
             return (String)makeJavaPackage.invoke(null, jsp.substring(0,i));
         }
@@ -1034,7 +1022,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 return clash;
 
             //otherwise apply all of them
-            ServletMapping mapping = new ServletMapping();
+            ServletMapping mapping = new ServletMapping(Source.JAVAX_API);
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
             _servletHandler.addServletMapping(mapping);

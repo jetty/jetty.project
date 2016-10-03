@@ -263,8 +263,13 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
-                response.getOutputStream().write(new byte[length]);
+                try
+                {
+                    baseRequest.setHandled(true);
+                    response.getOutputStream().write(new byte[length]);
+                }
+                catch(IOException e)
+                {}
             }
         });
 

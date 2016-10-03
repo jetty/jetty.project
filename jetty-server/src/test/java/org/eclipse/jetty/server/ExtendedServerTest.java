@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -31,10 +32,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -59,23 +61,27 @@ public class ExtendedServerTest extends HttpServerTestBase
             }
         })
         {
-
             @Override
-            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                return new ExtendedEndPoint(channel,selectSet,key, getScheduler(), getIdleTimeout());
+                return new ExtendedEndPoint(channel,selectSet,key, getScheduler());
             }
 
         });
     }
 
-    private static class ExtendedEndPoint extends SelectChannelEndPoint
+    private static class ExtendedEndPoint extends SocketChannelEndPoint
     {
         private volatile long _lastSelected;
 
-        public ExtendedEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
+        public ExtendedEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
         {
-            super(channel,selector,key,scheduler,idleTimeout);
+            super(channel,selector,key,scheduler);
+        }
+
+        public ExtendedEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+        {
+            super(channel,selector,key,scheduler);
         }
 
         @Override

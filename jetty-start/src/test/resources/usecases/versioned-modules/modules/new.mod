@@ -1,6 +1,3 @@
-#
-# New Module (testing module based defaults)
-#
 
 [version]
 9.3

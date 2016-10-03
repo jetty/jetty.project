@@ -48,7 +48,6 @@ import java.util.Set;
 
 import javax.servlet.ServletRegistration;
 
-import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.junit.Test;
 
 /**

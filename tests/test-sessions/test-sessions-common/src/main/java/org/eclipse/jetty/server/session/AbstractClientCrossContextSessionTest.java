@@ -40,10 +40,10 @@ import org.junit.Test;
 /**
  * AbstractClientCrossContextSessionTest
  */
-public abstract class AbstractClientCrossContextSessionTest
+public abstract class AbstractClientCrossContextSessionTest extends AbstractTestBase
 {
 
-    public abstract AbstractTestServer createServer(int port);
+
 
     @Test
     public void testCrossContextDispatch() throws Exception
@@ -51,7 +51,7 @@ public abstract class AbstractClientCrossContextSessionTest
         String contextA = "/contextA";
         String contextB = "/contextB";
         String servletMapping = "/server";
-        AbstractTestServer server = createServer(0);
+        AbstractTestServer server = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
         TestServletA servletA = new TestServletA();
         ServletHolder holderA = new ServletHolder(servletA);
         ServletContextHandler ctxA = server.addContext(contextA);

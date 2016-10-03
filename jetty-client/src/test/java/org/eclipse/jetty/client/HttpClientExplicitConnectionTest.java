@@ -60,7 +60,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
             Assert.assertEquals(200, response.getStatus());
 
             HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
-            DuplexConnectionPool connectionPool = httpDestination.getConnectionPool();
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
             Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
             Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
         }
@@ -94,7 +94,7 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
         Assert.assertFalse(httpConnection.getEndPoint().isOpen());
 
         HttpDestinationOverHTTP httpDestination = (HttpDestinationOverHTTP)destination;
-        DuplexConnectionPool connectionPool = httpDestination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)httpDestination.getConnectionPool();
         Assert.assertTrue(connectionPool.getActiveConnections().isEmpty());
         Assert.assertTrue(connectionPool.getIdleConnections().isEmpty());
     }

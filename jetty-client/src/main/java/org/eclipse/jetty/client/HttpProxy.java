@@ -80,9 +80,8 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            boolean secure = HttpScheme.HTTPS.is(destination.getScheme());
             SslContextFactory sslContextFactory = destination.getHttpClient().getSslContextFactory();
-            if (secure)
+            if (destination.isSecure())
             {
                 if (sslContextFactory != null)
                 {

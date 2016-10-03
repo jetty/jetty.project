@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -35,27 +36,26 @@ public interface Promise<C>
      * @param result the context
      * @see #failed(Throwable)
      */
-    public abstract void succeeded(C result);
+    default void succeeded(C result)
+    {
+    }
 
     /**
      * <p>Callback invoked when the operation fails.</p>
      *
      * @param x the reason for the operation failure
      */
-    public void failed(Throwable x);
+    default void failed(Throwable x)
+    {
+    }
 
     /**
-     * <p>Empty implementation of {@link Promise}</p>
+     * <p>Empty implementation of {@link Promise}.</p>
      *
-     * @param <C> the type of the context object
+     * @param <U> the type of the result
      */
-    public static class Adapter<C> implements Promise<C>
+    class Adapter<U> implements Promise<U>
     {
-        @Override
-        public void succeeded(C result)
-        {
-        }
-
         @Override
         public void failed(Throwable x)
         {
@@ -63,7 +63,59 @@ public interface Promise<C>
         }
     }
 
-    public static class Wrapper<W> implements Promise<W>
+    /**
+     * <p>Creates a promise from the given incomplete CompletableFuture.</p>
+     * <p>When the promise completes, either succeeding or failing, the
+     * CompletableFuture is also completed, respectively via
+     * {@link CompletableFuture#complete(Object)} or
+     * {@link CompletableFuture#completeExceptionally(Throwable)}.</p>
+     *
+     * @param completable the CompletableFuture to convert into a promise
+     * @return a promise that when completed, completes the given CompletableFuture
+     * @param <T> the type of the result
+     */
+    static <T> Promise<T> from(CompletableFuture<? super T> completable)
+    {
+        if (completable instanceof Promise)
+            return (Promise<T>)completable;
+
+        return new Promise<T>()
+        {
+            @Override
+            public void succeeded(T result)
+            {
+                completable.complete(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                completable.completeExceptionally(x);
+            }
+        };
+    }
+
+    /**
+     * <p>A CompletableFuture that is also a Promise.</p>
+     *
+     * @param <S> the type of the result
+     */
+    class Completable<S> extends CompletableFuture<S> implements Promise<S>
+    {
+        @Override
+        public void succeeded(S result)
+        {
+            complete(result);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            completeExceptionally(x);
+        }
+    }
+
+    class Wrapper<W> implements Promise<W>
     {
         private final Promise<W> promise;
 

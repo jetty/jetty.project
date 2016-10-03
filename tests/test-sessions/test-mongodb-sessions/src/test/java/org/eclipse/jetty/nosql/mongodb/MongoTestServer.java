@@ -20,14 +20,13 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
 
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 
 
@@ -37,97 +36,67 @@ import com.mongodb.MongoException;
 public class MongoTestServer extends AbstractTestServer
 {
     static int __workers=0;
-    private boolean _saveAllAttributes = false; // false save dirty, true save all
     
     
-    public static class TestMongoSessionIdManager extends MongoSessionIdManager 
+    
+    public static void dropCollection () throws MongoException, UnknownHostException
     {
+        new Mongo().getDB("HttpSessions").getCollection("testsessions").drop();
+    }
+    
+    
+    public static void createCollection() throws UnknownHostException, MongoException
+    {
+        new Mongo().getDB("HttpSessions").createCollection("testsessions", null);
+    }
+    
+    
+    public static DBCollection getCollection () throws UnknownHostException, MongoException 
+    {
+        return new Mongo().getDB("HttpSessions").getCollection("testsessions");
+    }
+    
+    
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod) throws Exception
+    {
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
+    }
 
-        public TestMongoSessionIdManager(Server server) throws UnknownHostException, MongoException
+   
+    
+    
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, boolean saveAllAttributes) throws Exception
+    {
+        super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
+    }
+
+
+
+    public SessionHandler newSessionHandler()
+    {
+        SessionHandler handler = new SessionHandler();
+        try
         {
-            super(server);
-        }
-        
-        
-        public void deleteAll ()
-        {
+            MongoSessionDataStore ds = new MongoSessionDataStore();
+            ds.setDBCollection(getCollection());
+            ds.setGracePeriodSec(_scavengePeriod);
             
-            DBCursor checkSessions = _sessions.find();
-
-            for (DBObject session : checkSessions)
-            {
-                _sessions.remove(session);
-            }
-        }
-        
-        public void cancelScavenge ()
-        {
-            if (_scavengerTask != null)
-                _scavengerTask.cancel();
-        }
-    }
-    
-    public MongoTestServer(int port)
-    {
-        super(port, 30, 10);
-    }
-
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod)
-    {
-        super(port, maxInactivePeriod, scavengePeriod);
-    }
-    
-    
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, boolean saveAllAttributes)
-    {
-        super(port, maxInactivePeriod, scavengePeriod);
-        
-        _saveAllAttributes = saveAllAttributes;
-    }
-
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        try
-        {
-            MongoSessionIdManager idManager = new TestMongoSessionIdManager(_server);
-            idManager.setWorkerName("w"+(__workers++));
-            idManager.setScavengePeriod(_scavengePeriod);                  
-
-            return idManager;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public SessionManager newSessionManager()
-    {
-        MongoSessionManager manager;
-        try
-        {
-            manager = new MongoSessionManager();
+            DefaultSessionCache ss = new DefaultSessionCache(handler);
+            handler.setSessionCache(ss);
+            ss.setSessionDataStore(ds);
+            return handler;
         }
         catch (Exception e)
         {
             throw new RuntimeException(e);
         }
         
-        manager.setSavePeriod(0);
-        manager.setStalePeriod(0);
-        manager.setSaveAllAttributes(_saveAllAttributes);
-        //manager.setScavengePeriod((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
-        return manager;
-    }
-
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
-    {
-        return new SessionHandler(sessionManager);
+        
     }
     
     public static void main(String... args) throws Exception
     {
-        MongoTestServer server8080 = new MongoTestServer(8080);
+/*        MongoTestServer server8080 = new MongoTestServer(8080);
         server8080.addContext("/").addServlet(SessionDump.class,"/");
         server8080.start();
         
@@ -136,7 +105,7 @@ public class MongoTestServer extends AbstractTestServer
         server8081.start();
         
         server8080.join();
-        server8081.join();
+        server8081.join();*/
     }
 
 }

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-project</artifactId>
@@ -26,6 +26,7 @@
     <module>test-jetty-osgi-webapp</module>
     <module>test-jetty-osgi-context</module>
     <module>test-jetty-osgi-fragment</module>
+    <module>test-jetty-osgi-server</module>
     <module>jetty-osgi-alpn</module>
     <module>test-jetty-osgi</module>
   </modules>
@@ -60,7 +61,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
-        <version>2.8</version>
         <configuration>
           <manifest>prevent/overwriting/by/pointing/to/nonexisting/MANIFEST.MF</manifest>
           <pde>true</pde>

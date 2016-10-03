@@ -107,9 +107,19 @@ public class HttpTester
 
     public abstract static class Input
     {
+        final ByteBuffer _buffer;
         boolean _eof=false;
         HttpParser _parser;
-        ByteBuffer _buffer = BufferUtil.allocate(8192);
+
+        Input()
+        {
+            this(BufferUtil.allocate(8192));
+        }
+        
+        Input(ByteBuffer buffer)
+        {
+            _buffer = buffer;
+        }
         
         public ByteBuffer getBuffer()
         {
@@ -140,6 +150,19 @@ public class HttpTester
         
         public abstract int fillBuffer() throws IOException; 
         
+    }
+
+    public static Input from(final ByteBuffer data)
+    {
+        return new Input(data.slice())
+        {
+            @Override
+            public int fillBuffer() throws IOException
+            {
+                _eof=true;
+                return -1;
+            }
+        };
     }
 
     public static Input from(final InputStream in)

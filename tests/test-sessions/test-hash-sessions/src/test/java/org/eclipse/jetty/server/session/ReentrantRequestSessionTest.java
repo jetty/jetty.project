@@ -25,9 +25,14 @@ import org.junit.Test;
  */
 public class ReentrantRequestSessionTest extends AbstractReentrantRequestSessionTest
 {
-    public AbstractTestServer createServer(int port)
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest#createServer(int, int, int, int)
+     */
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new HashTestServer(port);
+        return new HashTestServer(port, max, scavenge, evictionPolicy);
     }
 
     @Test

@@ -24,6 +24,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.Channel;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -32,6 +33,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
@@ -249,26 +251,6 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
-     * @return the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public int getSelectorPriorityDelta()
-    {
-        return _manager.getSelectorPriorityDelta();
-    }
-
-    /**
-     * @param selectorPriorityDelta the selector priority delta
-     * @deprecated not implemented
-     */
-    @Deprecated
-    public void setSelectorPriorityDelta(int selectorPriorityDelta)
-    {
-        _manager.setSelectorPriorityDelta(selectorPriorityDelta);
-    }
-
-    /**
      * @return whether this connector uses a channel inherited from the JVM.
      * @see System#inheritedChannel()
      */
@@ -417,7 +399,7 @@ public class ServerConnector extends AbstractNetworkConnector
         return _localPort;
     }
 
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+    protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
     {
         return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout());
     }
@@ -476,22 +458,6 @@ public class ServerConnector extends AbstractNetworkConnector
         _reuseAddress = reuseAddress;
     }
 
-    /**
-     * @return the ExecutionStrategy factory to use for SelectorManager
-     */
-    public ExecutionStrategy.Factory getExecutionStrategyFactory()
-    {
-        return _manager.getExecutionStrategyFactory();
-    }
-
-    /**
-     * @param executionFactory the ExecutionStrategy factory to use for SelectorManager
-     */
-    public void setExecutionStrategyFactory(ExecutionStrategy.Factory executionFactory)
-    {
-        _manager.setExecutionStrategyFactory(executionFactory);
-    }
-
     protected class ServerConnectorManager extends SelectorManager
     {
         public ServerConnectorManager(Executor executor, Scheduler scheduler, int selectors)
@@ -500,19 +466,19 @@ public class ServerConnector extends AbstractNetworkConnector
         }
 
         @Override
-        protected void accepted(SocketChannel channel) throws IOException
+        protected void accepted(SelectableChannel channel) throws IOException
         {
-            ServerConnector.this.accepted(channel);
+            ServerConnector.this.accepted((SocketChannel)channel);
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected ChannelEndPoint newEndPoint(SelectableChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            return ServerConnector.this.newEndPoint(channel, selectSet, selectionKey);
+            return ServerConnector.this.newEndPoint((SocketChannel)channel, selectSet, selectionKey);
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
             return getDefaultConnectionFactory().newConnection(ServerConnector.this, endpoint);
         }

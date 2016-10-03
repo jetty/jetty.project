@@ -34,8 +34,11 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionCache;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -48,12 +51,24 @@ import org.junit.Test;
 public class AttributeNameTest 
 {
 
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
 
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
 
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge,  int idlePassivate)
     throws Exception
     {   
-        MongoTestServer server = new MongoTestServer(port,max,scavenge,true);
+        MongoTestServer server = new MongoTestServer(port,max,scavenge,idlePassivate, true);
         
         return server;
 
@@ -66,12 +81,12 @@ public class AttributeNameTest
         String servletMapping = "/server";
         int maxInactivePeriod = 10000;
         int scavengePeriod = 20000;
-        AbstractTestServer server1 = createServer(0,maxInactivePeriod,scavengePeriod);
+        AbstractTestServer server1 = createServer(0,maxInactivePeriod,scavengePeriod, SessionCache.NEVER_EVICT);
         server1.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server1.start();
         int port1 = server1.getPort();
         
-        AbstractTestServer server2 = createServer(0,maxInactivePeriod,scavengePeriod);
+        AbstractTestServer server2 = createServer(0,maxInactivePeriod,scavengePeriod, SessionCache.NEVER_EVICT);
         server2.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server2.start();
         int port2 = server2.getPort();
@@ -129,14 +144,14 @@ public class AttributeNameTest
             String action = request.getParameter("action");
             if ("init".equals(action))
             {
-                NoSqlSession session = (NoSqlSession)request.getSession(true);
+                Session session = (Session)request.getSession(true);
                 session.setAttribute("a.b.c",System.currentTimeMillis());               
                 sendResult(session,httpServletResponse.getWriter());
-                
+
             }
             else
             {
-                NoSqlSession session = (NoSqlSession)request.getSession(false);
+                Session session = (Session)request.getSession(false);
                 assertNotNull(session);     
                 assertNotNull(session.getAttribute("a.b.c"));
                 sendResult(session,httpServletResponse.getWriter());
@@ -144,7 +159,7 @@ public class AttributeNameTest
 
         }
 
-        private void sendResult(NoSqlSession session, PrintWriter writer)
+        private void sendResult(Session session, PrintWriter writer)
         {
             if (session != null)
             {

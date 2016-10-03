@@ -34,8 +34,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.AbstractSessionIdManager;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -99,7 +98,7 @@ public class BalancerServletTest
 
         if (nodeName != null)
         {
-            AbstractSessionIdManager sessionIdManager = new HashSessionIdManager();
+            DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
             sessionIdManager.setWorkerName(nodeName);
             server.setSessionIdManager(sessionIdManager);
         }

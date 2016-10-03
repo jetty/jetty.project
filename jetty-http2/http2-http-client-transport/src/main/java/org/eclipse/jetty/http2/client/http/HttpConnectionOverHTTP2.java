@@ -22,6 +22,7 @@ import java.nio.channels.AsynchronousCloseException;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
@@ -33,11 +34,13 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP2 extends HttpConnection
+public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
 {
     private final Set<HttpChannel> channels = new ConcurrentHashSet<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
@@ -120,11 +123,22 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
     }
 
     @Override
+    public boolean sweep()
+    {
+        if (!isClosed())
+            return false;
+        if (sweeps.incrementAndGet() < 4)
+            return false;
+        return true;
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s@%h[%s]",
+        return String.format("%s@%x(closed=%b)[%s]",
                 getClass().getSimpleName(),
-                this,
+                hashCode(),
+                isClosed(),
                 session);
     }
 }

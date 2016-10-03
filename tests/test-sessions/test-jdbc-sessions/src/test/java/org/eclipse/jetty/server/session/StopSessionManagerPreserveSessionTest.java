@@ -21,9 +21,6 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.After;
 import org.junit.Test;
@@ -31,38 +28,33 @@ import org.junit.Test;
 public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionManagerPreserveSessionTest
 {
     JdbcTestServer _server;
-    
+
+
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
     
     @Override
-    public void checkSessionPersisted(boolean expected)
+    public void checkSessionPersisted(String id, boolean expected)
     {
         try
         {
-            boolean actual = _server.existsInSessionTable(_id, true);
-            System.err.println(expected+":"+actual);
+            boolean actual = _server.existsInSessionTable(id, true);
             assertEquals(expected, actual);
         }
         catch (Exception e)
         {
+            e.printStackTrace();
             fail(e.getMessage());
         }
     }
 
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
-        _server = new JdbcTestServer(0);
+        _server = new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
         return _server;
     }
 

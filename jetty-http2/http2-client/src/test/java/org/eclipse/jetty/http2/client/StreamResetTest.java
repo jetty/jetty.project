@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -131,29 +132,38 @@ public class StreamResetTest extends AbstractTest
             {
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
-                stream.headers(responseFrame, Callback.NOOP);
+                Callback.Completable completable = new Callback.Completable();
+                stream.headers(responseFrame, completable);
                 return new Stream.Listener.Adapter()
                 {
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
                     {
                         callback.succeeded();
-                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
-                        serverDataLatch.countDown();
+                        completable.thenRun(() ->
+                                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
+                                {
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        serverDataLatch.countDown();
+                                    }
+                                }));
                     }
 
                     @Override
-                    public void onReset(Stream stream, ResetFrame frame)
+                    public void onReset(Stream s, ResetFrame frame)
                     {
                         // Simulate that there is pending data to send.
-                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
+                        IStream stream = (IStream)s;
+                        stream.getSession().frames(stream, new Callback()
                         {
                             @Override
                             public void failed(Throwable x)
                             {
                                 serverResetLatch.countDown();
                             }
-                        });
+                        }, new DataFrame(s.getId(), ByteBuffer.allocate(16), true));
                     }
                 };
             }
@@ -226,7 +236,7 @@ public class StreamResetTest extends AbstractTest
 
                 response.setStatus(200);
                 response.setContentType("text/plain;charset=" + charset.name());
-                response.setContentLength(data.length * 10);
+                response.setContentLength(data.length*10);
                 response.flushBuffer();
 
                 try
@@ -243,7 +253,7 @@ public class StreamResetTest extends AbstractTest
                 {
                     // Write some content after the stream has
                     // been reset, it should throw an exception.
-                    for (int i = 0; i < 10; i++)
+                    for (int i=0;i<10;i++)
                     {
                         Thread.sleep(500);
                         response.getOutputStream().write(data);

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertThat;
+
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -143,5 +146,75 @@ public class QuotedQualityCSVTest
         Assert.assertThat(values,Matchers.contains(
                 "value1.0",
                 "value0.5;p=v"));
+    }
+
+    /* ------------------------------------------------------------ */
+
+    private static final String[] preferBrotli = {"br","gzip"};
+    private static final String[] preferGzip = {"gzip","br"};
+    private static final String[] noFormats = {};
+
+    @Test
+    public void testFirefoxContentEncodingWithBrotliPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(preferBrotli);
+        values.addValue("gzip, deflate, br");
+        assertThat(values, contains("br", "gzip", "deflate"));
+    }
+
+    @Test
+    public void testFirefoxContentEncodingWithGzipPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(preferGzip);
+        values.addValue("gzip, deflate, br");
+        assertThat(values, contains("gzip", "br", "deflate"));
+    }
+
+    @Test
+    public void testFirefoxContentEncodingWithNoPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(noFormats);
+        values.addValue("gzip, deflate, br");
+        assertThat(values, contains("gzip", "deflate", "br"));
+    }
+
+    @Test
+    public void testChromeContentEncodingWithBrotliPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(preferBrotli);
+        values.addValue("gzip, deflate, sdch, br");
+        assertThat(values, contains("br", "gzip", "deflate", "sdch"));
+    }
+
+    @Test
+    public void testComplexEncodingWithGzipPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(preferGzip);
+        values.addValue("gzip;q=0.9, identity;q=0.1, *;q=0.01, deflate;q=0.9, sdch;q=0.7, br;q=0.9");
+        assertThat(values, contains("gzip", "br", "deflate", "sdch", "identity", "*"));
+    }
+
+    @Test
+    public void testComplexEncodingWithBrotliPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(preferBrotli);
+        values.addValue("gzip;q=0.9, identity;q=0.1, *;q=0, deflate;q=0.9, sdch;q=0.7, br;q=0.99");
+        assertThat(values, contains("br", "gzip", "deflate", "sdch", "identity"));
+    }
+
+    @Test
+    public void testStarEncodingWithGzipPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(preferGzip);
+        values.addValue("br, *");
+        assertThat(values, contains("*", "br"));
+    }
+
+    @Test
+    public void testStarEncodingWithBrotliPreference()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(preferBrotli);
+        values.addValue("gzip, *");
+        assertThat(values, contains("*", "gzip"));
     }
 }

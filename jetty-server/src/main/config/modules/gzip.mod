@@ -1,7 +1,6 @@
-#
-# GZIP module
-# Applies GzipHandler to entire server
-#
+[description]
+Enable GzipHandler for dynamic gzip compression
+for the entire server.
 
 [depend]
 server

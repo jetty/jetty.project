@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ant</artifactId>
@@ -26,7 +26,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.websocket,org.eclipse.jetty.drafts</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor</excludeArtifactIds>
+              <excludeArtifactIds>jetty-all,jetty-start</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${project.build.directory}/test-lib</outputDirectory>
             </configuration>

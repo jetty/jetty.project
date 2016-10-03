@@ -52,9 +52,9 @@ public class RemoteLastAccessTimeTest extends AbstractLastAccessTimeTest
     
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new InfinispanTestSessionServer(port, max, scavenge, __testSupport.getCache());
+        return new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache());
     }
 
     @Override

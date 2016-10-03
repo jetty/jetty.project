@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpTransport;
@@ -328,7 +330,7 @@ public class ConnectHandler extends HandlerWrapper
 
         HttpConnection httpConnection = connectContext.getHttpConnection();
         EndPoint downstreamEndPoint = httpConnection.getEndPoint();
-        DownstreamConnection downstreamConnection = newDownstreamConnection(downstreamEndPoint, context, BufferUtil.EMPTY_BUFFER);
+        DownstreamConnection downstreamConnection = newDownstreamConnection(downstreamEndPoint, context);
         downstreamConnection.setInputBufferSize(getBufferSize());
 
         upstreamConnection.setConnection(downstreamConnection);
@@ -386,15 +388,6 @@ public class ConnectHandler extends HandlerWrapper
         return true;
     }
 
-    /**
-     * @deprecated use {@link #newDownstreamConnection(EndPoint, ConcurrentMap)} instead
-     */
-    @Deprecated
-    protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context, ByteBuffer buffer)
-    {
-        return newDownstreamConnection(endPoint, context);
-    }
-
     protected DownstreamConnection newDownstreamConnection(EndPoint endPoint, ConcurrentMap<String, Object> context)
     {
         return new DownstreamConnection(endPoint, getExecutor(), getByteBufferPool(), context);
@@ -431,19 +424,10 @@ public class ConnectHandler extends HandlerWrapper
      */
     protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
-        int read = read(endPoint, buffer);
+        int read = endPoint.fill(buffer);
         if (LOG.isDebugEnabled())
             LOG.debug("{} read {} bytes", this, read);
         return read;
-    }
-
-    /**
-     * @deprecated override {@link #read(EndPoint, ByteBuffer, ConcurrentMap)} instead
-     */
-    @Deprecated
-    protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
-    {
-        return endPoint.fill(buffer);
     }
 
     /**
@@ -458,15 +442,6 @@ public class ConnectHandler extends HandlerWrapper
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} writing {} bytes", this, buffer.remaining());
-        write(endPoint, buffer, callback);
-    }
-
-    /**
-     * @deprecated override {@link #write(EndPoint, ByteBuffer, Callback, ConcurrentMap)} instead
-     */
-    @Deprecated
-    protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
-    {
         endPoint.write(callback, buffer);
     }
 
@@ -526,16 +501,18 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
         {
-            return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), getIdleTimeout());
+            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            endp.setIdleTimeout(getIdleTimeout());
+            return endp;
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
             if (ConnectHandler.LOG.isDebugEnabled())
-                ConnectHandler.LOG.debug("Connected to {}", channel.getRemoteAddress());
+                ConnectHandler.LOG.debug("Connected to {}", ((SocketChannel)channel).getRemoteAddress());
             ConnectContext connectContext = (ConnectContext)attachment;
             UpstreamConnection connection = newUpstreamConnection(endpoint, connectContext);
             connection.setInputBufferSize(getBufferSize());
@@ -543,7 +520,7 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void connectionFailed(SocketChannel channel, final Throwable ex, final Object attachment)
+        protected void connectionFailed(SelectableChannel channel, final Throwable ex, final Object attachment)
         {
             close(channel);
             ConnectContext connectContext = (ConnectContext)attachment;
@@ -631,15 +608,6 @@ public class ConnectHandler extends HandlerWrapper
         public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor, bufferPool, context);
-        }
-
-        /**
-         * @deprecated use {@link #DownstreamConnection(EndPoint, Executor, ByteBufferPool, ConcurrentMap)} instead
-         */
-        @Deprecated
-        public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context, ByteBuffer buffer)
-        {
-            this(endPoint, executor, bufferPool, context);
         }
 
         @Override

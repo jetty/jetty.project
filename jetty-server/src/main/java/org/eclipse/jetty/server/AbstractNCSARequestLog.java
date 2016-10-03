@@ -139,7 +139,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             buf.append("] \"");
             append(buf,request.getMethod());
             buf.append(' ');
-            append(buf,request.getHttpURI().toString());
+            append(buf,request.getOriginalURI());
             buf.append(' ');
             append(buf,request.getProtocol());
             buf.append("\" ");
@@ -222,9 +222,9 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
-     * @param request the HTTP request to log
-     * @param b the build to write logs into
-     * @throws IOException for no reason
+     * @param request request object
+     * @param b StringBuilder to write to
+     * @throws IOException if unable to append extended log
      * @deprecated override {@link #logExtended(StringBuilder, Request, Response)} instead
      */
     @Deprecated

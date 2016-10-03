@@ -1,0 +1,15 @@
+## The XMLs we expect (order is important)
+XML|${jetty.home}/etc/base.xml
+XML|${jetty.home}/etc/main.xml
+XML|${jetty.base}/etc/d.xml
+XML|${jetty.base}/etc/ndb.xml
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.home}/lib/base.jar
+LIB|${jetty.home}/lib/main.jar
+LIB|${jetty.home}/lib/other.jar
+
+# The Properties we expect (order is irrelevant)
+PROP|main.prop=value0
+PROP|default.option=default
+PROP|noDft.option=B

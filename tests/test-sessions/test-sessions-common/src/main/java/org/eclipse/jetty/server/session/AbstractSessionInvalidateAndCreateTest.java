@@ -53,11 +53,11 @@ import org.junit.Test;
  * newly created session correctly (removed from the server and session listeners called).
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=377610
  */
-public abstract class AbstractSessionInvalidateAndCreateTest
+public abstract class AbstractSessionInvalidateAndCreateTest extends AbstractTestBase
 {
     public class MySessionListener implements HttpSessionListener
     {
-        List<String> destroys;
+        List<Integer> destroys = new ArrayList<>();
 
         public void sessionCreated(HttpSessionEvent e)
         {
@@ -66,14 +66,9 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 
         public void sessionDestroyed(HttpSessionEvent e)
         {
-            if (destroys == null)
-                destroys = new ArrayList<>();
-
-            destroys.add((String)e.getSession().getAttribute("identity"));
+            destroys.add(e.getSession().hashCode());
         }
     }
-
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
 
 
 
@@ -81,7 +76,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     {
         try
         {
-            Thread.sleep(scavengePeriod * 3000L);
+            Thread.sleep(scavengePeriod * 1000L);
         }
         catch (InterruptedException e)
         {
@@ -94,9 +89,9 @@ public abstract class AbstractSessionInvalidateAndCreateTest
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 4;
-        int scavengePeriod = 1;
-        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod);
+        int inactivePeriod = 6;
+        int scavengePeriod = 3;
+        AbstractTestServer server = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -123,22 +118,22 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
+                
                 // Make a request which will invalidate the existing session and create a new one
                 Request request2 = client.newRequest(url + "?action=test");
                 request2.header("Cookie", sessionCookie);
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
-                // Wait for the scavenger to run and the session to have expired
-                pause(inactivePeriod + scavengePeriod);
+                // Wait for the scavenger to run
+                pause(inactivePeriod+(2*scavengePeriod));
 
                 //test that the session created in the last test is scavenged:
                 //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged
-                assertTrue(listener.destroys.contains("session1"));
-                assertTrue(listener.destroys.contains("session2"));
+                assertTrue(listener.destroys.size() == 2);
+                assertTrue(listener.destroys.get(0) != listener.destroys.get(1)); //ensure 2 different objects
                 //session2's HttpSessionBindingListener should have been called when it was scavenged
-                assertTrue(servlet.unbound);
+                assertTrue(servlet.listener.unbound);
             }
             finally
             {
@@ -150,24 +145,33 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             server.stop();
         }
     }
+    
+    public static class Foo implements Serializable
+    {
+        public boolean bar = false;
+        
+        public boolean getBar() { return bar;};
+    }
 
-    public static class TestServlet extends HttpServlet
+    public static class MySessionBindingListener implements HttpSessionBindingListener, Serializable
     {
         private boolean unbound = false;
         
-        public class MySessionBindingListener implements HttpSessionBindingListener, Serializable
+        public void valueUnbound(HttpSessionBindingEvent event)
+        {
+            unbound = true;
+        }
+
+        public void valueBound(HttpSessionBindingEvent event)
         {
 
-            public void valueUnbound(HttpSessionBindingEvent event)
-            {
-                unbound = true;
-            }
-
-            public void valueBound(HttpSessionBindingEvent event)
-            {
-
-            }
         }
+    }
+    
+    public static class TestServlet extends HttpServlet
+    {
+        public MySessionBindingListener listener = new MySessionBindingListener();
+       
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
@@ -177,12 +181,15 @@ public abstract class AbstractSessionInvalidateAndCreateTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("identity", "session1");
+                session.setMaxInactiveInterval(-1); //don't let this session expire, we want to explicitly invalidate it
             }
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
                 if (session != null)
                 {
+                    String oldId = session.getId();
+
                     //invalidate existing session
                     session.invalidate();
 
@@ -200,8 +207,11 @@ public abstract class AbstractSessionInvalidateAndCreateTest
 
                     //now make a new session
                     session = request.getSession(true);
+                    String newId = session.getId();
+                    assertTrue(!newId.equals(oldId));
+                    assertTrue (session.getAttribute("identity")==null);
                     session.setAttribute("identity", "session2");
-                    session.setAttribute("listener", new MySessionBindingListener());
+                    session.setAttribute("listener", listener);
                 }
                 else
                     fail("Session already missing");

@@ -19,12 +19,9 @@
 
 package org.eclipse.jetty.gcloud.session;
 
-import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
-
-
 
 /**
  * GCloudTestServer
@@ -33,62 +30,35 @@ import org.eclipse.jetty.server.session.SessionHandler;
  */
 public class GCloudTestServer extends AbstractTestServer
 {
-    static int __workers=0;
-    public static int STALE_INTERVAL_SEC = 1;
-
- 
 
     /**
      * @param port
      * @param maxInactivePeriod
      * @param scavengePeriod
+     * @param evictionPolicy
+     * @throws Exception TODO
      */
-    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    public GCloudTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }
 
-    /**
-     * @param port
-     */
-    public GCloudTestServer(int port)
-    {
-        super(port, 30,10);
-    }
+
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager(java.lang.Object)
+     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler()
      */
     @Override
-    public SessionIdManager newSessionIdManager(Object config)
+    public SessionHandler newSessionHandler()
     {
-        GCloudSessionIdManager idManager = new GCloudSessionIdManager(getServer());
-        idManager.setWorkerName("w"+(__workers++));
-        return idManager;
-    }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
-     */
-    @Override
-    public SessionManager newSessionManager()
-    {
-        GCloudSessionManager sessionManager = new GCloudSessionManager();
-        sessionManager.setSessionIdManager((GCloudSessionIdManager)_sessionIdManager);
-        sessionManager.setStaleIntervalSec(STALE_INTERVAL_SEC);
-        sessionManager.setScavengeIntervalSec(_scavengePeriod);
-        sessionManager.setDatastore(GCloudTestSuite.__testSupport.getDatastore());
-        return sessionManager;
-        
-    }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionHandler(org.eclipse.jetty.server.SessionManager)
-     */
-    @Override
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
-    {
-        return new SessionHandler(sessionManager);
+        SessionHandler handler =  new SessionHandler();
+        handler.setSessionIdManager(_sessionIdManager);
+        GCloudSessionDataStore ds = new GCloudSessionDataStore();
+        ds.setDatastore(GCloudTestSuite.__testSupport.getDatastore());
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        ss.setSessionDataStore(ds);
+        handler.setSessionCache(ss);
+        return handler;
     }
 
 }

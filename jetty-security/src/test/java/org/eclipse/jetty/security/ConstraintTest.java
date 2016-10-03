@@ -85,7 +85,8 @@ public class ConstraintTest
         ContextHandler _context = new ContextHandler();
         SessionHandler _session = new SessionHandler();
 
-        HashLoginService _loginService = new HashLoginService(TEST_REALM);
+        TestLoginService _loginService = new TestLoginService(TEST_REALM);
+        
         _loginService.putUser("user0", new Password("password"), new String[]{});
         _loginService.putUser("user",new Password("password"), new String[] {"user"});
         _loginService.putUser("user2",new Password("password"), new String[] {"user"});

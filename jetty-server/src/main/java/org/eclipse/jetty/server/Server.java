@@ -46,6 +46,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -86,6 +87,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
 
     private final Locker _dateLocker = new Locker();
@@ -143,10 +145,27 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    public ErrorHandler getErrorHandler()
+    {
+        return _errorHandler;
+    }
+
+    /* ------------------------------------------------------------ */
     public void setRequestLog(RequestLog requestLog)
     {
         updateBean(_requestLog,requestLog);
         _requestLog = requestLog;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setErrorHandler(ErrorHandler errorHandler)
+    {
+        if (errorHandler instanceof ErrorHandler.ErrorPageMapper)
+            throw new IllegalArgumentException("ErrorPageMapper is applicable only to ContextHandler");
+        updateBean(_errorHandler,errorHandler);
+        _errorHandler=errorHandler;
+        if (errorHandler!=null)
+            errorHandler.setServer(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -161,7 +180,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _stopAtShutdown;
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -330,6 +348,14 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
+        // Create an error handler if there is none
+        if (_errorHandler==null)
+            _errorHandler=getBean(ErrorHandler.class);
+        if (_errorHandler==null)
+            setErrorHandler(new ErrorHandler());
+        if (_errorHandler instanceof ErrorHandler.ErrorPageMapper)
+            LOG.warn("ErrorPageMapper not supported for Server level Error Handling");
+        
         //If the Server should be stopped when the jvm exits, register
         //with the shutdown handler thread.
         if (getStopAtShutdown())

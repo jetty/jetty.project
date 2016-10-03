@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for CachingSessionDataStores                      -->
+  <!-- ===================================================================== -->
+
+  <Call name="removeBean">
+    <Arg>
+      <Ref id="sessionDataStoreFactory"/>
+    </Arg>
+  </Call>
+
+  
+  
+  <Call name="addBean">
+   <Arg>
+    <New class="org.eclipse.jetty.server.session.CachingSessionDataStoreFactory">
+       <Set name="sessionStoreFactory"><Ref id="sessionDataStoreFactory"/></Set>
+       <Set name="sessionDataMapFactory"><Ref id="sessionDataMapFactory"/></Set>
+    </New>
+   </Arg> 
+  </Call>
+
+</Configure>

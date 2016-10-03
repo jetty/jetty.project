@@ -94,7 +94,9 @@ public class LocalConnector extends AbstractConnector
      * @param requests the requests
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(String)}
      */
+    @Deprecated
     public String getResponses(String requests) throws Exception
     {
         return getResponses(requests, 5, TimeUnit.SECONDS);
@@ -112,7 +114,9 @@ public class LocalConnector extends AbstractConnector
      * @param units The units of idleFor
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(String, boolean, long, TimeUnit)}
      */
+    @Deprecated
     public String getResponses(String requests,long idleFor,TimeUnit units) throws Exception
     {
         ByteBuffer result = getResponses(BufferUtil.toBuffer(requests,StandardCharsets.UTF_8),idleFor,units);
@@ -129,7 +133,9 @@ public class LocalConnector extends AbstractConnector
      * @param requestsBuffer the requests
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(ByteBuffer)}
      */
+    @Deprecated
     public ByteBuffer getResponses(ByteBuffer requestsBuffer) throws Exception
     {
         return getResponses(requestsBuffer, 5, TimeUnit.SECONDS);
@@ -146,7 +152,9 @@ public class LocalConnector extends AbstractConnector
      * @param units The units of idleFor
      * @return the responses
      * @throws Exception if the requests fail
+     * @deprecated Use {@link #getResponse(ByteBuffer, boolean, long, TimeUnit)}
      */
+    @Deprecated
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
         if (LOG.isDebugEnabled())
@@ -314,27 +322,16 @@ public class LocalConnector extends AbstractConnector
         }
 
         @Override
-        public void close()
-        {
-            boolean wasOpen=isOpen();
-            super.close();
-            if (wasOpen)
-            {
-                getConnection().onClose();
-                onClose();
-            }
-        }
-
-        @Override
         public void onClose()
         {
+            getConnection().onClose();
             LocalConnector.this.onEndPointClosed(this);
             super.onClose();
             _closed.countDown();
         }
 
         @Override
-        public void shutdownOutput()
+        public void doShutdownOutput()
         {
             super.shutdownOutput();
             close();

@@ -4,30 +4,18 @@
  <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>9.4.0-SNAPSHOT</version>
  </parent>
   <artifactId>jetty-documentation</artifactId>
   <name>Jetty :: Documentation</name>
   <packaging>pom</packaging>
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <asciidoctor.version>1.5.3</asciidoctor.version>
     <html.directory>${project.build.directory}/current</html.directory>
   </properties>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <version>3.0.1</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>2.6</version>
         <executions>
           <execution>
             <id>copy-assets</id>
@@ -52,7 +40,6 @@
       <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>${asciidoctor.version}</version>
         <executions>
           <execution>
             <id>output-html</id>
@@ -74,7 +61,7 @@
                 <JDURL>http://download.eclipse.org/jetty/stable-9/apidocs</JDURL>
                 <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
                 <SRCDIR>${basedir}/..</SRCDIR>
-                <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.3.x</GITBROWSEURL>
+                <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
                 <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
                 <VERSION>${project.version}</VERSION>
               </attributes>
@@ -134,7 +121,6 @@
           <dependency>
             <groupId>net.sf.docbook</groupId>
             <artifactId>docbook-xml</artifactId>
-            <!--version>5.0-all</version-->
             <version>5.1b4-all</version>
             <classifier>resources</classifier>
             <type>zip</type>
@@ -156,7 +142,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.6</version>
         <configuration>
           <descriptors>
             <descriptor>src/main/assembly/html.xml</descriptor>
@@ -212,7 +197,6 @@
           <plugin>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctor-maven-plugin</artifactId>
-            <version>${asciidoctor.version}</version>
             <dependencies>
               <dependency>
                 <groupId>org.asciidoctor</groupId>

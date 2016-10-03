@@ -28,7 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.GzipHttpContent;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A Handler that can dynamically GZIP compress responses.   Unlike
+ * A Handler that can dynamically GZIP compress responses.   Unlike 
  * previous and 3rd party GzipFilters, this mechanism works with asynchronously
  * generated responses and does not need to wrap the response or it's output
  * stream.  Instead it uses the efficient {@link org.eclipse.jetty.server.HttpOutput.Interceptor} mechanism.
@@ -65,7 +65,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
     private boolean _syncFlush = false;
-
+    
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<>();
 
@@ -73,14 +73,14 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
-
+    
     private HttpField _vary;
 
 
     /* ------------------------------------------------------------ */
     /**
      * Instantiates a new gzip handler.
-     * The excluded Mime Types are initialized to common known
+     * The excluded Mime Types are initialized to common known 
      * images, audio, video and other already compressed types.
      * The included methods is initialized to GET.
      * The excluded agent patterns are set to exclude MSIE 6.0
@@ -101,9 +101,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _mimeTypes.exclude("application/zip");
         _mimeTypes.exclude("application/gzip");
         _mimeTypes.exclude("application/bzip2");
+        _mimeTypes.exclude("application/brotli");
+        _mimeTypes.exclude("application/x-xz");
         _mimeTypes.exclude("application/x-rar-compressed");
         LOG.debug("{} mime types {}",this,_mimeTypes);
-
+        
         _agentPatterns.exclude(".*MSIE 6.0.*");
     }
 
@@ -141,9 +143,27 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * @param pathspecs Path specs (as per servlet spec) to exclude. If a
+     * Add path to excluded paths list.
+     * <p>
+     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
+     * Regex based.  This means that the initial characters on the path spec
+     * line are very strict, and determine the behavior of the path matching.
+     * <ul>
+     *  <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     *      a regex based path spec and will match with normal Java regex rules.</li>
+     *  <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for either an exact match
+     *      or prefix based match.</li>
+     *  <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for a suffix based match.</li>
+     *  <li>All other syntaxes are unsupported</li> 
+     * </ul>
+     * <p>
+     * Note: inclusion takes precedence over exclude.
+     * 
+     * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
      * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute.
+     * otherwise they are absolute.<br>
      * For backward compatibility the pathspecs may be comma separated strings, but this
      * will not be supported in future versions.
      */
@@ -161,7 +181,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _agentPatterns.include(patterns);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param methods The methods to include in compression
@@ -209,19 +229,34 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * Add path specs to include. Inclusion takes precedence over exclusion.
-     * @param pathspecs Path specs (as per servlet spec) to include. If a
+     * Add path specs to include.
+     * <p>
+     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
+     * Regex based.  This means that the initial characters on the path spec
+     * line are very strict, and determine the behavior of the path matching.
+     * <ul>
+     *  <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     *      a regex based path spec and will match with normal Java regex rules.</li>
+     *  <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for either an exact match
+     *      or prefix based match.</li>
+     *  <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     *      a Servlet url-pattern rules path spec for a suffix based match.</li>
+     *  <li>All other syntaxes are unsupported</li> 
+     * </ul>
+     * <p>
+     * Note: inclusion takes precedence over exclude.
+     * 
+     * @param pathspecs Path specs (as per servlet spec) to include. If a 
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute
-     * For backward compatibility the pathspecs may be comma separated strings, but this
-     * will not be supported in future versions.
      */
     public void addIncludedPaths(String... pathspecs)
     {
         for (String p : pathspecs)
             _paths.include(StringUtil.csvSplit(p));
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -241,7 +276,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         return _compressionLevel;
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public Deflater getDeflater(Request request, long content_length)
@@ -252,7 +287,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             LOG.debug("{} excluded user agent {}",this,request);
             return null;
         }
-
+        
         if (content_length>=0 && content_length<_minGzipSize)
         {
             LOG.debug("{} excluded minGzipSize {}",this,request);
@@ -274,16 +309,16 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             LOG.debug("{} excluded not gzip accept {}",this,request);
             return null;
         }
-
+        
         Deflater df = _deflater.get();
         if (df==null)
-            df=new Deflater(_compressionLevel,true);
+            df=new Deflater(_compressionLevel,true);        
         else
             _deflater.set(null);
-
+        
         return df;
     }
-
+    
     /* ------------------------------------------------------------ */
     public String[] getExcludedAgentPatterns()
     {
@@ -318,7 +353,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         Set<String> includes=_agentPatterns.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
-
+    
     /* ------------------------------------------------------------ */
     public String[] getIncludedMethods()
     {
@@ -349,9 +384,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * Get the minimum reponse size.
+     * Get the minimum response size.
      *
-     * @return minimum reponse size
+     * @return minimum response size
      */
     public int getMinGzipSize()
     {
@@ -373,8 +408,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         ServletContext context = baseRequest.getServletContext();
         String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
         LOG.debug("{} handle {} in {}",this,baseRequest,context);
-
-        HttpOutput out = baseRequest.getResponse().getHttpOutput();
+        
+        HttpOutput out = baseRequest.getResponse().getHttpOutput();   
         // Are we already being gzipped?
         HttpOutput.Interceptor interceptor = out.getInterceptor();
         while (interceptor!=null)
@@ -387,15 +422,15 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             }
             interceptor=interceptor.getNextInterceptor();
         }
-
+        
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
-        if (!_methods.matches(baseRequest.getMethod()))
+        if (!_methods.test(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}",this,request);
             _handler.handle(target,baseRequest, request, response);
             return;
         }
-
+        
         // If not a supported URI- no Vary because no matter what client, this URI is always excluded
         // Use pathInfo because this is be
         if (!isPathGzipable(path))
@@ -418,7 +453,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                 return;
             }
         }
-
+        
         if (_checkGzExists && context!=null)
         {
             String realpath=request.getServletContext().getRealPath(path);
@@ -434,19 +469,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                 }
             }
         }
-
+        
         // Special handling for etags
-        String etag = baseRequest.getHttpFields().get(HttpHeader.IF_NONE_MATCH);
+        String etag = baseRequest.getHttpFields().get(HttpHeader.IF_NONE_MATCH); 
         if (etag!=null)
         {
-            int i=etag.indexOf(GzipHttpContent.ETAG_GZIP_QUOTE);
+            int i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
             if (i>0)
             {
                 baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag",etag);
                 while (i>=0)
                 {
-                    etag=etag.substring(0,i)+etag.substring(i+GzipHttpContent.ETAG_GZIP.length());
-                    i=etag.indexOf(GzipHttpContent.ETAG_GZIP_QUOTE,i);
+                    etag=etag.substring(0,i)+etag.substring(i+CompressedContentFormat.GZIP._etag.length());
+                    i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote,i);
                 }
                 baseRequest.getHttpFields().put(new HttpField(HttpHeader.IF_NONE_MATCH,etag));
             }
@@ -480,20 +515,20 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         if (ua == null)
             return false;
-
-        return _agentPatterns.matches(ua);
+        
+        return _agentPatterns.test(ua);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public boolean isMimeTypeGzipable(String mimetype)
     {
-        return _mimeTypes.matches(mimetype);
+        return _mimeTypes.test(mimetype);
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * Checks to see if the path is included or not excluded
+     * Checks to see if the path is included or not excluded 
      *
      * @param requestURI
      *            the request uri
@@ -503,8 +538,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         if (requestURI == null)
             return true;
-
-        return _paths.matches(requestURI);
+        
+        return _paths.test(requestURI);
     }
 
     /* ------------------------------------------------------------ */
@@ -525,7 +560,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _checkGzExists = checkGzExists;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param compressionLevel  The compression level to use to initialize {@link Deflater#setLevel(int)}
@@ -568,7 +603,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
-     * @param pathspecs Path specs (as per servlet spec) to exclude. If a
+     * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute.
      */
@@ -587,7 +622,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _agentPatterns.getIncluded().clear();
         addIncludedAgentPatterns(patterns);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param methods The methods to include in compression
@@ -597,7 +632,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _methods.getIncluded().clear();
         _methods.include(methods);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Set included mime types. Inclusion takes precedence over
@@ -613,7 +648,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /* ------------------------------------------------------------ */
     /**
      * Set the path specs to include. Inclusion takes precedence over exclusion.
-     * @param pathspecs Path specs (as per servlet spec) to include. If a
+     * @param pathspecs Path specs (as per servlet spec) to include. If a 
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute
      */

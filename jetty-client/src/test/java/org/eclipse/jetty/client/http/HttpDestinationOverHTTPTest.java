@@ -24,6 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.HttpClient;
@@ -31,9 +32,6 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -59,11 +57,13 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void test_FirstAcquire_WithEmptyQueue() throws Exception
     {
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        Connection connection = destination.acquire();
+        destination.start();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Connection connection = connectionPool.acquire();
         if (connection == null)
         {
             // There are no queued requests, so the newly created connection will be idle
-            connection = timedPoll(destination.getConnectionPool().getIdleConnections(), 5, TimeUnit.SECONDS);
+            connection = timedPoll(connectionPool.getIdleConnections(), 5, TimeUnit.SECONDS);
         }
         Assert.assertNotNull(connection);
     }
@@ -72,7 +72,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void test_SecondAcquire_AfterFirstAcquire_WithEmptyQueue_ReturnsSameConnection() throws Exception
     {
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        Connection connection1 = destination.acquire();
+        destination.start();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Connection connection1 = connectionPool.acquire();
         if (connection1 == null)
         {
             // There are no queued requests, so the newly created connection will be idle
@@ -80,11 +82,11 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
             {
                 TimeUnit.MILLISECONDS.sleep(50);
-                connection1 = destination.getConnectionPool().getIdleConnections().peek();
+                connection1 = connectionPool.getIdleConnections().peek();
             }
             Assert.assertNotNull(connection1);
 
-            Connection connection2 = destination.acquire();
+            Connection connection2 = connectionPool.acquire();
             Assert.assertSame(connection1, connection2);
         }
     }
@@ -97,18 +99,18 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
-            protected DuplexConnectionPool newConnectionPool(HttpClient client)
+            protected ConnectionPool newConnectionPool(HttpClient client)
             {
                 return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                 {
                     @Override
-                    protected void idleCreated(Connection connection)
+                    protected void onCreated(Connection connection)
                     {
                         try
                         {
                             idleLatch.countDown();
                             latch.await(5, TimeUnit.SECONDS);
-                            super.idleCreated(connection);
+                            super.onCreated(connection);
                         }
                         catch (InterruptedException x)
                         {
@@ -118,7 +120,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                 };
             }
         };
-        Connection connection1 = destination.acquire();
+        destination.start();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Connection connection1 = connectionPool.acquire();
 
         // Make sure we entered idleCreated().
         Assert.assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
@@ -128,13 +132,13 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         Assert.assertNull(connection1);
 
         // Second attempt also returns null because we delayed idleCreated() above.
-        Connection connection2 = destination.acquire();
+        Connection connection2 = connectionPool.acquire();
         Assert.assertNull(connection2);
 
         latch.countDown();
 
         // There must be 2 idle connections.
-        Queue<Connection> idleConnections = destination.getConnectionPool().getIdleConnections();
+        Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Connection connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
         connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
@@ -145,23 +149,25 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection() throws Exception
     {
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        HttpConnectionOverHTTP connection1 = destination.acquire();
+        destination.start();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        HttpConnectionOverHTTP connection1 = (HttpConnectionOverHTTP)connectionPool.acquire();
 
         long start = System.nanoTime();
         while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
         {
             TimeUnit.MILLISECONDS.sleep(50);
-            connection1 = (HttpConnectionOverHTTP)destination.getConnectionPool().getIdleConnections().peek();
+            connection1 = (HttpConnectionOverHTTP)connectionPool.getIdleConnections().peek();
         }
         Assert.assertNotNull(connection1);
 
         // Acquire the connection to make it active
-        Assert.assertSame(connection1, destination.acquire());
+        Assert.assertSame(connection1, connectionPool.acquire());
 
         destination.process(connection1);
         destination.release(connection1);
 
-        Connection connection2 = destination.acquire();
+        Connection connection2 = connectionPool.acquire();
         Assert.assertSame(connection1, connection2);
     }
 
@@ -172,7 +178,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         client.setIdleTimeout(idleTimeout);
 
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
-        Connection connection1 = destination.acquire();
+        destination.start();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Connection connection1 = connectionPool.acquire();
         if (connection1 == null)
         {
             // There are no queued requests, so the newly created connection will be idle
@@ -180,13 +188,13 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             while (connection1 == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
             {
                 TimeUnit.MILLISECONDS.sleep(50);
-                connection1 = destination.getConnectionPool().getIdleConnections().peek();
+                connection1 = connectionPool.getIdleConnections().peek();
             }
             Assert.assertNotNull(connection1);
 
             TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
 
-            connection1 = destination.getConnectionPool().getIdleConnections().poll();
+            connection1 = connectionPool.getIdleConnections().poll();
             Assert.assertNull(connection1);
         }
     }
@@ -210,35 +218,23 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/one")
-                .onRequestQueued(new Request.QueuedListener()
+                .onRequestQueued(request ->
                 {
-                    @Override
-                    public void onQueued(Request request)
-                    {
-                        // This request exceeds the maximum queued, should fail
-                        client.newRequest("localhost", connector.getLocalPort())
-                                .scheme(scheme)
-                                .path("/two")
-                                .send(new Response.CompleteListener()
-                                {
-                                    @Override
-                                    public void onComplete(Result result)
-                                    {
-                                        Assert.assertTrue(result.isFailed());
-                                        Assert.assertThat(result.getRequestFailure(), Matchers.instanceOf(RejectedExecutionException.class));
-                                        failureLatch.countDown();
-                                    }
-                                });
-                    }
+                    // This request exceeds the maximum queued, should fail
+                    client.newRequest("localhost", connector.getLocalPort())
+                            .scheme(scheme)
+                            .path("/two")
+                            .send(result ->
+                            {
+                                Assert.assertTrue(result.isFailed());
+                                Assert.assertThat(result.getRequestFailure(), Matchers.instanceOf(RejectedExecutionException.class));
+                                failureLatch.countDown();
+                            });
                 })
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded())
-                            successLatch.countDown();
-                    }
+                    if (result.isSucceeded())
+                        successLatch.countDown();
                 });
 
         Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));

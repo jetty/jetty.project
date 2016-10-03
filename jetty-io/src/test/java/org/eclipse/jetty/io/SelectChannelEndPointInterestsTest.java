@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -62,10 +63,11 @@ public class SelectChannelEndPointInterestsTest
 
         selectorManager = new SelectorManager(threadPool, scheduler)
         {
+
             @Override
-            protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
             {
-                return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), 60000)
+                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler())
                 {
                     @Override
                     protected void onIncompleteFlush()
@@ -74,10 +76,13 @@ public class SelectChannelEndPointInterestsTest
                         interested.onIncompleteFlush();
                     }
                 };
+                        
+                endp.setIdleTimeout(60000);
+                return endp;
             }
 
             @Override
-            public Connection newConnection(SocketChannel channel, final EndPoint endPoint, Object attachment)
+            public Connection newConnection(SelectableChannel channel, final EndPoint endPoint, Object attachment)
             {
                 return new AbstractConnection(endPoint, getExecutor())
                 {
@@ -136,7 +141,7 @@ public class SelectChannelEndPointInterestsTest
                         connection.fillInterested();
 
                         ByteBuffer output = ByteBuffer.allocate(size.get());
-                        endPoint.write(new Callback.Adapter(), output);
+                        endPoint.write(new Callback(){}, output);
 
                         latch1.countDown();
                     }

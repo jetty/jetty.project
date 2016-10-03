@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.osgi</groupId>
+    <artifactId>jetty-osgi-project</artifactId>
+    <version>9.4.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>test-jetty-osgi-server</artifactId>
+  <name>Jetty :: OSGi :: Server</name>
+  <description>Test Jetty OSGi bundle with a Server</description>
+  <url>http://www.eclipse.org/jetty</url>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.testserver</bundle-symbolic-name>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-schemas</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+        <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
+            <Bundle-Name>Jetty OSGi Test Server</Bundle-Name>
+            <Bundle-Activator>com.acme.osgi.Activator</Bundle-Activator>
+            <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+            <!-- disable the uses directive: jetty will accommodate pretty much any versions
+            of the packages it uses; no need to reflect some tight dependency determined at
+            compilation time. -->
+            <_nouses>true</_nouses>
+            <Import-Package>
+ javax.servlet;version="[3.1,3.2)",
+ javax.servlet.resources;version="[3.1,3.2)",
+ org.osgi.framework,
+ org.osgi.service.cm;version="1.2.0",
+ org.osgi.service.packageadmin,
+ org.osgi.service.startlevel;version="1.0.o",
+ org.osgi.service.url;version="1.0.0",
+ org.osgi.util.tracker;version="1.3.0",
+ org.slf4j;resolution:=optional,
+ org.slf4j.spi;resolution:=optional,
+ org.slf4j.helpers;resolution:=optional,
+ org.xml.sax,
+ org.xml.sax.helpers,
+ *
+            </Import-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[9.1,10.0)"</DynamicImport-Package>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

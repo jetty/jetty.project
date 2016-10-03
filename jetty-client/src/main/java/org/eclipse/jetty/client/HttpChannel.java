@@ -129,6 +129,11 @@ public abstract class HttpChannel
         return getHttpReceiver().abort(exchange, failure);
     }
 
+    public Result exchangeTerminating(HttpExchange exchange, Result result)
+    {
+        return result;
+    }
+
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         disassociate(exchange);

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -31,8 +33,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.Props.Prop;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * Management of Properties.
@@ -374,5 +374,24 @@ public final class Props implements Iterable<Prop>
     {
         System.setProperty(key,value);
         sysPropTracking.add(key);
+    }
+    
+    @Override
+    public String toString()
+    {
+        return props.toString();
+    }
+
+    public void remove(String key, String value, String source)
+    {
+        Prop prop = props.get(key);
+        
+        if (prop!=null && value.equals(prop.value) && source.equals(prop.origin))
+        {
+            if (prop.overrides==null)
+                props.remove(key);
+            else
+                props.put(key,prop.overrides);
+        }
     }
 }

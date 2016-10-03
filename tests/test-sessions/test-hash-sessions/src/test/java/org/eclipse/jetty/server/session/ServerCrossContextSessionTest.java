@@ -22,11 +22,11 @@ import org.junit.Test;
 
 public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
 {
-    public AbstractTestServer createServer(int port)
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new HashTestServer(port);
+        return new HashTestServer(port,max,scavenge,evictionPolicy);
     }
-
     @Test
     public void testCrossContextDispatch() throws Exception
     {

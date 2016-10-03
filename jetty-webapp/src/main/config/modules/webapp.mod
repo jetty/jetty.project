@@ -1,6 +1,6 @@
-#
-# WebApp Support Module
-#
+[description]
+Adds support for servlet specification webapplication to the server
+classpath.  Without this, only Jetty specific handlers may be deployed.
 
 [depend]
 servlet

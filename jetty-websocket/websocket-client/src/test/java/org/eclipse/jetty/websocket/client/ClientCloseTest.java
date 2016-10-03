@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -284,19 +286,21 @@ public class ClientCloseTest
         }
 
         @Override
-        protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
         {
-            return new TestEndPoint(channel,selectSet,selectionKey,getScheduler(),getPolicy().getIdleTimeout());
+            TestEndPoint endp =  new TestEndPoint(channel,selectSet,selectionKey,getScheduler());
+            endp.setIdleTimeout(getPolicy().getIdleTimeout());
+            return endp;
         }
     }
 
-    public static class TestEndPoint extends SelectChannelEndPoint
+    public static class TestEndPoint extends SocketChannelEndPoint
     {
         public AtomicBoolean congestedFlush = new AtomicBoolean(false);
 
-        public TestEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
+        public TestEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
         {
-            super(channel,selector,key,scheduler,idleTimeout);
+            super((SocketChannel)channel,selector,key,scheduler);
         }
 
         @Override

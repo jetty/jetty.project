@@ -48,12 +48,12 @@ public class SameNodeLoadTest extends AbstractSameNodeLoadTest
     }
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int)
+     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port,int maxInactive, int scavenge, int evictionPolicy) throws Exception
     {
-        InfinispanTestSessionServer server = new InfinispanTestSessionServer(port, __testSupport.getCache());
+        InfinispanTestSessionServer server = new InfinispanTestSessionServer(port,maxInactive, scavenge, evictionPolicy, __testSupport.getCache());
         return server;
     }
 

@@ -48,6 +48,8 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     private int _refreshInterval = 0;
     private String _filename = DEFAULT_FILENAME;
 
+    
+   
     /**
      * Read contents of the configured property file.
      *
@@ -73,7 +75,6 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         {
             PropertyUserStore propertyUserStore = new PropertyUserStore();
             propertyUserStore.setConfig(_filename);
-            propertyUserStore.setRefreshInterval(_refreshInterval);
 
             PropertyUserStore prev = _propertyUserStores.putIfAbsent(_filename, propertyUserStore);
             if (prev == null)

@@ -30,11 +30,19 @@ public class ServletMapping
     private String[] _pathSpecs;
     private String _servletName;
     private boolean _default;
+    private Source _source;
+    
     
 
     /* ------------------------------------------------------------ */
     public ServletMapping()
     {
+        this (Source.EMBEDDED);
+    }
+    
+    public ServletMapping(Source source)
+    {
+        _source = source;
     }
     
     /* ------------------------------------------------------------ */
@@ -69,8 +77,8 @@ public class ServletMapping
     
     /* ------------------------------------------------------------ */
     /** Test if the list of path specs contains a particular one.
-     * @param pathSpec the test pathspec
-     * @return true if pathspec contains test spec
+     * @param pathSpec the path spec
+     * @return true if path spec matches something in mappings
      */
     public boolean containsPathSpec (String pathSpec)
     {
@@ -116,6 +124,12 @@ public class ServletMapping
     public void setDefault(boolean fromDefault)
     {
         _default = fromDefault;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Source getSource ()
+    {
+        return _source;
     }
 
     /* ------------------------------------------------------------ */

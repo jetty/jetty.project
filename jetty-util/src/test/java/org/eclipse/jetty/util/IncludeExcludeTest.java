@@ -32,7 +32,7 @@ public class IncludeExcludeTest
         IncludeExclude<String> ie = new IncludeExclude<>();
         
         assertThat("Empty IncludeExclude", ie.size(), is(0));
-        assertThat("Matches 'foo'",ie.matches("foo"),is(true));
+        assertThat("Matches 'foo'",ie.test("foo"),is(true));
     }
     
     @Test
@@ -43,10 +43,10 @@ public class IncludeExcludeTest
         ie.include("bar");
         
         assertThat("IncludeExclude.size", ie.size(), is(2));
-        assertEquals(false,ie.matches(""));
-        assertEquals(true,ie.matches("foo"));
-        assertEquals(true,ie.matches("bar"));
-        assertEquals(false,ie.matches("foobar"));
+        assertEquals(false,ie.test(""));
+        assertEquals(true,ie.test("foo"));
+        assertEquals(true,ie.test("bar"));
+        assertEquals(false,ie.test("foobar"));
     }
     
     @Test
@@ -58,11 +58,11 @@ public class IncludeExcludeTest
         
         assertEquals(2,ie.size());
         
-        assertEquals(false,ie.matches("foo"));
-        assertEquals(false,ie.matches("bar"));
-        assertEquals(true,ie.matches(""));
-        assertEquals(true,ie.matches("foobar"));
-        assertEquals(true,ie.matches("wibble"));
+        assertEquals(false,ie.test("foo"));
+        assertEquals(false,ie.test("bar"));
+        assertEquals(true,ie.test(""));
+        assertEquals(true,ie.test("foobar"));
+        assertEquals(true,ie.test("wibble"));
     }
     
     @Test
@@ -76,11 +76,11 @@ public class IncludeExcludeTest
         
         assertEquals(4,ie.size());
         
-        assertEquals(true,ie.matches("foo"));
-        assertEquals(false,ie.matches("bar"));
-        assertEquals(false,ie.matches(""));
-        assertEquals(false,ie.matches("foobar"));
-        assertEquals(false,ie.matches("xxx"));
+        assertEquals(true,ie.test("foo"));
+        assertEquals(false,ie.test("bar"));
+        assertEquals(false,ie.test(""));
+        assertEquals(false,ie.test("foobar"));
+        assertEquals(false,ie.test("xxx"));
     }
     
     
@@ -91,7 +91,7 @@ public class IncludeExcludeTest
         IncludeExclude<String> ie = new IncludeExclude<>(RegexSet.class);
         
         assertEquals(0,ie.size());
-        assertEquals(true,ie.matches("foo"));
+        assertEquals(true,ie.test("foo"));
     }
     
     @Test
@@ -102,13 +102,13 @@ public class IncludeExcludeTest
         ie.include("b((ar)|(oo))");
         
         assertEquals(2,ie.size());
-        assertEquals(false,ie.matches(""));
-        assertEquals(true,ie.matches("foo"));
-        assertEquals(true,ie.matches("far"));
-        assertEquals(true,ie.matches("bar"));
-        assertEquals(true,ie.matches("boo"));
-        assertEquals(false,ie.matches("foobar"));
-        assertEquals(false,ie.matches("xxx"));
+        assertEquals(false,ie.test(""));
+        assertEquals(true,ie.test("foo"));
+        assertEquals(true,ie.test("far"));
+        assertEquals(true,ie.test("bar"));
+        assertEquals(true,ie.test("boo"));
+        assertEquals(false,ie.test("foobar"));
+        assertEquals(false,ie.test("xxx"));
     }
     
     @Test
@@ -120,13 +120,13 @@ public class IncludeExcludeTest
         
         assertEquals(2,ie.size());
         
-        assertEquals(false,ie.matches("foo"));
-        assertEquals(false,ie.matches("far"));
-        assertEquals(false,ie.matches("bar"));
-        assertEquals(false,ie.matches("boo"));
-        assertEquals(true,ie.matches(""));
-        assertEquals(true,ie.matches("foobar"));
-        assertEquals(true,ie.matches("xxx"));
+        assertEquals(false,ie.test("foo"));
+        assertEquals(false,ie.test("far"));
+        assertEquals(false,ie.test("bar"));
+        assertEquals(false,ie.test("boo"));
+        assertEquals(true,ie.test(""));
+        assertEquals(true,ie.test("foobar"));
+        assertEquals(true,ie.test("xxx"));
     }
     
     @Test
@@ -139,14 +139,14 @@ public class IncludeExcludeTest
         ie.exclude("b((ar)|(oo))");
         
         assertEquals(4,ie.size());
-        assertEquals(false,ie.matches("foo"));
-        assertEquals(false,ie.matches("far"));
-        assertEquals(false,ie.matches("bar"));
-        assertEquals(false,ie.matches("boo"));
-        assertEquals(false,ie.matches(""));
-        assertEquals(false,ie.matches("xxx"));
+        assertEquals(false,ie.test("foo"));
+        assertEquals(false,ie.test("far"));
+        assertEquals(false,ie.test("bar"));
+        assertEquals(false,ie.test("boo"));
+        assertEquals(false,ie.test(""));
+        assertEquals(false,ie.test("xxx"));
 
-        assertEquals(true,ie.matches("foobar"));
-        assertEquals(true,ie.matches("Ant"));
+        assertEquals(true,ie.test("foobar"));
+        assertEquals(true,ie.test("Ant"));
     }
 }

@@ -25,7 +25,6 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
-import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 
@@ -47,7 +46,7 @@ import org.eclipse.jetty.start.Utils;
  * <dd>optional type and classifier requirement</dd>
  * </dl>
  */
-public class MavenLocalRepoFileInitializer extends UriFileInitializer implements FileInitializer
+public class MavenLocalRepoFileInitializer extends UriFileInitializer
 {
     public static class Coordinates
     {
@@ -105,7 +104,7 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer implements
         if (isFilePresent(file, baseHome.getPath(fileRef)))
         {
             // All done
-            return true;
+            return false;
         }
 
         // If using local repository

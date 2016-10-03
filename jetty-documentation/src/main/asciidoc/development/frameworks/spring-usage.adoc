@@ -28,7 +28,7 @@ For example:
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar start.jar --add-to-startd=spring
+$ java -jar start.jar --add-to-start=spring
 ....
 
 This (or the alternative link:#start-jar[--add-to-start]=spring command) creates a `${jetty.home}/lib/spring` directory and populates it with the jetty-spring integration jar.
@@ -42,7 +42,7 @@ The following is an example mimicking the default jetty startup configuration.
 
 [source, xml, subs="{sub-order}"]
 ----
-            
+
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 
@@ -98,5 +98,5 @@ The following is an example mimicking the default jetty startup configuration.
     </bean>
 </beans>
 
-        
+
 ----

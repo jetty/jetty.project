@@ -36,7 +36,6 @@ import org.junit.Test;
 
 import com.acme.Derived;
 
-
 public class ObjectMBeanTest
 {
     private static final Logger LOG = Log.getLogger(ObjectMBeanTest.class);
@@ -78,28 +77,28 @@ public class ObjectMBeanTest
 
         MBeanInfo info = mbean.getMBeanInfo();
 
-        Assert.assertEquals("name does not match", "com.acme.Derived", info.getClassName());
-        Assert.assertEquals("description does not match", "Test the mbean stuff", info.getDescription());
+        Assert.assertEquals("name does not match","com.acme.Derived",info.getClassName());
+        Assert.assertEquals("description does not match","Test the mbean stuff",info.getDescription());
 
-        //for ( MBeanAttributeInfo i : info.getAttributes())
-        //{
-        //    LOG.debug(i.toString());
-        //}
+        // for ( MBeanAttributeInfo i : info.getAttributes())
+        // {
+        // LOG.debug(i.toString());
+        // }
 
         /*
          * 2 attributes from lifecycle and 2 from Derived and 1 from MBean
          */
-        Assert.assertEquals("attribute count does not match", 6, info.getAttributes().length);
+        Assert.assertEquals("attribute count does not match",6,info.getAttributes().length);
 
-        Assert.assertEquals("attribute values does not match", "Full Name", mbean.getAttribute("fname") );
+        Assert.assertEquals("attribute values does not match","Full Name",mbean.getAttribute("fname"));
 
-        mbean.setAttribute( new Attribute("fname","Fuller Name"));
+        mbean.setAttribute(new Attribute("fname","Fuller Name"));
 
-        Assert.assertEquals("set attribute value does not match", "Fuller Name", mbean.getAttribute("fname") );
+        Assert.assertEquals("set attribute value does not match","Fuller Name",mbean.getAttribute("fname"));
 
-        Assert.assertEquals("proxy attribute values do not match", "goop", mbean.getAttribute("goop") );
+        Assert.assertEquals("proxy attribute values do not match","goop",mbean.getAttribute("goop"));
 
-        //Thread.sleep(100000);
+        // Thread.sleep(100000);
     }
 
     @Test
@@ -114,31 +113,31 @@ public class ObjectMBeanTest
 
         MBeanInfo info = mbean.getMBeanInfo();
 
-        Assert.assertEquals("operation count does not match", 5, info.getOperations().length);
+        Assert.assertEquals("operation count does not match",5,info.getOperations().length);
 
         MBeanOperationInfo[] opinfos = info.getOperations();
         boolean publish = false;
         boolean doodle = false;
         boolean good = false;
-        for ( int i = 0 ; i < opinfos.length; ++i )
+        for (int i = 0; i < opinfos.length; ++i)
         {
             MBeanOperationInfo opinfo = opinfos[i];
 
             if ("publish".equals(opinfo.getName()))
             {
                 publish = true;
-                Assert.assertEquals("description doesn't match", "publish something", opinfo.getDescription());
+                Assert.assertEquals("description doesn't match","publish something",opinfo.getDescription());
             }
 
             if ("doodle".equals(opinfo.getName()))
             {
                 doodle = true;
-                Assert.assertEquals("description doesn't match", "Doodle something", opinfo.getDescription());
+                Assert.assertEquals("description doesn't match","Doodle something",opinfo.getDescription());
 
                 MBeanParameterInfo[] pinfos = opinfo.getSignature();
 
-                Assert.assertEquals("parameter description doesn't match", "A description of the argument", pinfos[0].getDescription());
-                Assert.assertEquals("parameter name doesn't match", "doodle", pinfos[0].getName());
+                Assert.assertEquals("parameter description doesn't match","A description of the argument",pinfos[0].getDescription());
+                Assert.assertEquals("parameter name doesn't match","doodle",pinfos[0].getName());
             }
 
             // This is a proxied operation on the JMX wrapper
@@ -146,14 +145,14 @@ public class ObjectMBeanTest
             {
                 good = true;
 
-                Assert.assertEquals("description does not match", "test of proxy operations", opinfo.getDescription());
-                Assert.assertEquals("execution contexts wrong", "not bad", mbean.invoke("good", new Object[] {}, new String[] {}));
+                Assert.assertEquals("description does not match","test of proxy operations",opinfo.getDescription());
+                Assert.assertEquals("execution contexts wrong","not bad",mbean.invoke("good",new Object[] {},new String[] {}));
             }
         }
 
-        Assert.assertTrue("publish operation was not not found", publish);
-        Assert.assertTrue("doodle operation was not not found", doodle);
-        Assert.assertTrue("good operation was not not found", good);
+        Assert.assertTrue("publish operation was not not found",publish);
+        Assert.assertTrue("doodle operation was not not found",doodle);
+        Assert.assertTrue("good operation was not not found",good);
 
     }
 
@@ -174,11 +173,9 @@ public class ObjectMBeanTest
         container.beanAdded(null,mbean);
         container.beanAdded(null,managed);
 
-        //Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
-        //Assert.assertNotNull(managedInstance);
-        //Assert.assertEquals("managed instance returning nonsense", "foo", managedInstance.getManaged());
-
-
+        // Managed managedInstance = (Managed)mbean.getAttribute("managedInstance");
+        // Assert.assertNotNull(managedInstance);
+        // Assert.assertEquals("managed instance returning nonsense", "foo", managedInstance.getManaged());
 
     }
 
@@ -206,7 +203,6 @@ public class ObjectMBeanTest
         container.beanAdded(null,managed);
         container.beanAdded(null,qtp);
 
-
         Thread.sleep(10000000);
 
     }
@@ -226,6 +222,4 @@ public class ObjectMBeanTest
         Assert.assertEquals("fullName",mbean.toVariableName("fullName"));
     }
 
-
 }
-

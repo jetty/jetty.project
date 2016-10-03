@@ -23,27 +23,22 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -53,6 +48,9 @@ import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 
 /**
@@ -69,7 +67,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private final AtomicBoolean _committed = new AtomicBoolean();
-    private final AtomicInteger _requests = new AtomicInteger();
+    private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
     private final HttpConfiguration _configuration;
@@ -126,7 +124,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * @return the number of requests handled by this connection
      */
-    public int getRequests()
+    public long getRequests()
     {
         return _requests.get();
     }
@@ -345,70 +343,39 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ERROR_DISPATCH:
                     {
-                        Throwable ex = _state.getAsyncContextEvent().getThrowable();
-
-                        // Check for error dispatch loops
-                        Integer loop_detect = (Integer)_request.getAttribute("org.eclipse.jetty.server.ERROR_DISPATCH");
-                        if (loop_detect==null)
-                            loop_detect=1;
-                        else
-                            loop_detect=loop_detect+1;
-                        _request.setAttribute("org.eclipse.jetty.server.ERROR_DISPATCH",loop_detect);
-                        if (loop_detect > getHttpConfiguration().getMaxErrorDispatches())
+                        if (_response.isCommitted())
                         {
-                            LOG.warn("ERROR_DISPATCH loop detected on {} {}",_request,ex);
+                            LOG.warn("Error Dispatch already committed");
+                            _transport.abort((Throwable)_request.getAttribute(ERROR_EXCEPTION));
+                        }
+                        else
+                        {
+                            _response.reset();
+                            Integer icode = (Integer)_request.getAttribute(ERROR_STATUS_CODE);
+                            int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
+                            _response.setStatus(code);
+                            _request.setAttribute(ERROR_STATUS_CODE,code);
+                            if (icode==null)
+                                _request.setAttribute(ERROR_STATUS_CODE,code);
+                            _request.setHandled(false);
+                            _response.getHttpOutput().reopen();
+                            
                             try
                             {
-                                _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                                _request.setDispatcherType(DispatcherType.ERROR);
+                                getServer().handle(this);
                             }
                             finally
                             {
-                                _state.errorComplete();
+                                _request.setDispatcherType(null);
                             }
-                            break loop;
-                        }
-
-                        _request.setHandled(false);
-                        _response.resetBuffer();
-                        _response.getHttpOutput().reopen();
-
-
-                        String reason;
-                        if (ex == null || ex instanceof TimeoutException)
-                        {
-                            reason = "Async Timeout";
-                        }
-                        else
-                        {
-                            reason = HttpStatus.Code.INTERNAL_SERVER_ERROR.getMessage();
-                            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, ex);
-                        }
-
-                        _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
-                        _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, reason);
-                        _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, _request.getRequestURI());
-
-                        _response.setStatusWithReason(HttpStatus.INTERNAL_SERVER_ERROR_500, reason);
-
-                        ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(), _state.getContextHandler());
-                        if (eh instanceof ErrorHandler.ErrorPageMapper)
-                        {
-                            String error_page = ((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
-                            if (error_page != null)
-                                _state.getAsyncContextEvent().setDispatchPath(error_page);
-                        }
-
-
-                        try
-                        {
-                            _request.setDispatcherType(DispatcherType.ERROR);
-                            getServer().handleAsync(this);
-                        }
-                        finally
-                        {
-                            _request.setDispatcherType(null);
                         }
                         break;
+                    }
+
+                    case ASYNC_ERROR:
+                    {
+                        throw _state.getAsyncContextEvent().getThrowable();
                     }
 
                     case READ_CALLBACK:
@@ -431,24 +398,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         break;
                     }
 
-                    case ASYNC_ERROR:
-                    {
-                        _state.onError();
-                        break;
-                    }
-
                     case COMPLETE:
                     {
-                        // TODO do onComplete here for continuations to work
-//                        _state.onComplete();
-
                         if (!_response.isCommitted() && !_request.isHandled())
-                            _response.sendError(404);
-                        else
-                            _response.closeOutput();
+                            _response.sendError(HttpStatus.NOT_FOUND_404);
+                        _response.closeOutput();
                         _request.setHandled(true);
 
-                        // TODO do onComplete here to detect errors in final flush
                          _state.onComplete();
 
                         onCompleted();
@@ -462,26 +418,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     }
                 }
             }
-            catch (EofException|QuietServletException|BadMessageException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(e);
-                handleException(e);
-            }
-            catch (Throwable e)
-            {
-                if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
-                {
-                    LOG.ignore(e);
-                }
+            catch (Throwable failure)
+            {               
+                if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
+                    LOG.ignore(failure);
                 else
-                {
-                    if (_connector.isStarted())
-                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
-                    else
-                        LOG.debug(String.valueOf(_request.getHttpURI()), e);
-                    handleException(e);
-                }
+                    handleException(failure);
             }
 
             action = _state.unhandle();
@@ -494,6 +436,23 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return !suspended;
     }
 
+    protected void sendError(int code, String reason)
+    {
+        try
+        {
+            _response.sendError(code, reason);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not send error " + code + " " + reason, x);
+        }
+        finally
+        {
+            _state.errorComplete();
+        }
+    }
+
     /**
      * <p>Sends an error 500, performing a special logic to detect whether the request is suspended,
      * to avoid concurrent writes from the application.</p>
@@ -501,69 +460,61 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * spawned thread writes the response content; in such case, we attempt to commit the error directly
      * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
      *
-     * @param x the Throwable that caused the problem
+     * @param failure the Throwable that caused the problem
      */
-    protected void handleException(Throwable x)
+    protected void handleException(Throwable failure)
     {
-        if (_state.isAsyncStarted())
+        // Unwrap wrapping Jetty exceptions.
+        if (failure instanceof RuntimeIOException)
+            failure = failure.getCause();
+
+        if (failure instanceof QuietServletException || !getServer().isRunning())
         {
-            // Handle exception via AsyncListener onError
-            Throwable root = _state.getAsyncContextEvent().getThrowable();
-            if (root==null)
-            {
-                _state.error(x);
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug(_request.getRequestURI(), failure);
+        }
+        else if (failure instanceof BadMessageException)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(_request.getRequestURI(), failure);
             else
-            {
-                // TODO Can this happen?  Should this just be ISE???
-                // We've already processed an error before!
-                root.addSuppressed(x);
-                LOG.warn("Error while handling async error: ", root);
-                abort(x);
-                _state.errorComplete();
-            }
+                LOG.warn("{} {}",_request.getRequestURI(), failure);
         }
         else
         {
+            LOG.warn(_request.getRequestURI(), failure);
+        }
+
+        try
+        {
             try
             {
-                // Handle error normally
-                _request.setHandled(true);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, x);
-                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, x.getClass());
-
-                if (isCommitted())
+                _state.onError(failure);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+                // Error could not be handled, probably due to error thrown from error dispatch
+                if (_response.isCommitted())
                 {
-                    abort(x);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Could not send response error 500, already committed", x);
+                    LOG.warn("ERROR Dispatch failed: ",failure);
+                    _transport.abort(failure);
                 }
                 else
                 {
-                    _response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-
-                    if (x instanceof BadMessageException)
-                    {
-                        BadMessageException bme = (BadMessageException)x;
-                        _response.sendError(bme.getCode(), bme.getReason());
-                    }
-                    else if (x instanceof UnavailableException)
-                    {
-                        if (((UnavailableException)x).isPermanent())
-                            _response.sendError(HttpStatus.NOT_FOUND_404);
-                        else
-                            _response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
-                    }
-                    else
-                        _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    // Minimal response
+                    Integer code=(Integer)_request.getAttribute(ERROR_STATUS_CODE);
+                    _response.reset();
+                    _response.setStatus(code == null ? 500 : code);
+                    _response.flushBuffer();
                 }
             }
-            catch (Throwable e)
-            {
-                abort(e);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Could not commit response error 500", e);
-            }
+        }
+        catch(Exception e)
+        {
+            failure.addSuppressed(e);
+            LOG.warn("ERROR Dispatch failed: ",failure);
+            _transport.abort(failure);
         }
     }
 

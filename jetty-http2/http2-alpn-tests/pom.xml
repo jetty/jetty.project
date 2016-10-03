@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-parent</artifactId>
-        <version>9.3.13-SNAPSHOT</version>
+        <version>9.4.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -14,40 +14,49 @@
         <bundle-symbolic-name>${project.groupId}.alpn.tests</bundle-symbolic-name>
     </properties>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
+    <profiles>
+        <profile>
+            <id>jdk8</id>
+            <activation>
+                <jdk>[1.8,1.9)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.mortbay.jetty.alpn</groupId>
+                                            <artifactId>alpn-boot</artifactId>
+                                            <version>${alpn.version}</version>
+                                            <type>jar</type>
+                                            <overWrite>false</overWrite>
+                                            <outputDirectory>${project.build.directory}/alpn</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.mortbay.jetty.alpn</groupId>
-                                    <artifactId>alpn-boot</artifactId>
-                                    <version>${alpn.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>false</overWrite>
-                                    <outputDirectory>${project.build.directory}/alpn</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
+                            <argLine>-Xbootclasspath/p:${project.build.directory}/alpn/alpn-boot-${alpn.version}.jar
+                            </argLine>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>-Xbootclasspath/p:${project.build.directory}/alpn/alpn-boot-${alpn.version}.jar</argLine>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <dependencies>
         <dependency>
@@ -85,5 +94,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+
 </project>

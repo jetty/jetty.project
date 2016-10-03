@@ -23,7 +23,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
@@ -41,7 +43,7 @@ import com.google.cloud.datastore.testing.LocalDatastoreHelper;
  *
  */
 public class GCloudSessionTestSupport
-{
+{ 
     LocalDatastoreHelper _helper = LocalDatastoreHelper.create(1.0);
     Datastore _ds;
 
@@ -60,25 +62,44 @@ public class GCloudSessionTestSupport
     {
         _helper.start();
     }
-    
-    
+
+
     public Datastore getDatastore ()
     {
         return _ds;
     }
-    
-    
+
+
     public void tearDown()
-    throws Exception
+            throws Exception
     {
         _helper.stop();
     }
     
-   
+    
+    
+    public Set<String> getSessionIds () throws Exception
+    {
+        HashSet<String> ids = new HashSet<String>();
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionDataStore.EntityDataModel.KIND);
+       
+        Query<Entity> query = builder.build();
+    
+        QueryResults<Entity> results = _ds.run(query);
+        assertNotNull(results);
+        while (results.hasNext())
+        {
+            Entity e = results.next();
+            ids.add(e.getString("id"));
+        }
+        
+        return ids;
+    }
+    
     public void listSessions () throws Exception
     {
 
-        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionManager.KIND);
+        GqlQuery.Builder builder = Query.gqlQueryBuilder(ResultType.ENTITY, "select * from "+GCloudSessionDataStore.EntityDataModel.KIND);
        
         Query<Entity> query = builder.build();
     
@@ -96,7 +117,7 @@ public class GCloudSessionTestSupport
     
     public void assertSessions(int count) throws Exception
     {        
-        Query<Key> query = Query.keyQueryBuilder().kind(GCloudSessionManager.KIND).build();
+        Query<Key> query = Query.keyQueryBuilder().kind(GCloudSessionDataStore.EntityDataModel.KIND).build();
         QueryResults<Key> results = _ds.run(query);
         assertNotNull(results);
         int actual = 0;
@@ -110,7 +131,7 @@ public class GCloudSessionTestSupport
 
     public void deleteSessions () throws Exception
     {
-        Query<Key> query = Query.keyQueryBuilder().kind(GCloudSessionManager.KIND).build();
+        Query<Key> query = Query.keyQueryBuilder().kind(GCloudSessionDataStore.EntityDataModel.KIND).build();
         QueryResults<Key> results = _ds.run(query);
 
         if (results != null)
@@ -127,4 +148,5 @@ public class GCloudSessionTestSupport
 
         assertSessions(0);
     }
+
 }

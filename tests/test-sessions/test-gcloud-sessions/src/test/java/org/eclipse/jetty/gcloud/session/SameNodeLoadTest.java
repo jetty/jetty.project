@@ -38,13 +38,15 @@ public class SameNodeLoadTest extends AbstractSameNodeLoadTest
         GCloudTestSuite.__testSupport.deleteSessions();
     }
     
+  
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int)
+     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return  new GCloudTestServer(port);
+        return new GCloudTestServer(port, max, scavenge, evictionPolicy);
     }
 
     @Test

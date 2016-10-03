@@ -28,8 +28,8 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
-import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.servlet.ListenerHolder;
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -82,7 +82,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                 MetaData metaData = _context.getMetaData();
                 if (metaData.getOrigin(clazz.getName()+".listener") == Origin.NotSet)
                 {
-                    ListenerHolder h = _context.getServletHandler().newListenerHolder(Source.ANNOTATION);
+                    ListenerHolder h = _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz.getName()));
                     h.setListener(listener);
                     _context.getServletHandler().addListener(h);
                     _context.addEventListener(listener);

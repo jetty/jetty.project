@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,7 +76,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.session.AbstractSession;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.HostPort;
@@ -169,6 +169,7 @@ public class Request implements HttpServletRequest
     private final HttpInput _input;
 
     private MetaData.Request _metaData;
+    private String _originalURI;
 
     private String _contextPath;
     private String _servletPath;
@@ -196,10 +197,9 @@ public class Request implements HttpServletRequest
     private String _readerEncoding;
     private InetSocketAddress _remote;
     private String _requestedSessionId;
-    private Map<Object, HttpSession> _savedNewSessions;
     private UserIdentity.Scope _scope;
     private HttpSession _session;
-    private SessionManager _sessionManager;
+    private SessionHandler _sessionHandler;
     private long _timeStamp;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
@@ -215,9 +215,7 @@ public class Request implements HttpServletRequest
     public HttpFields getHttpFields()
     {
         MetaData.Request metadata=_metaData;
-        if (metadata==null)
-            throw new IllegalStateException();
-        return metadata.getFields();
+        return metadata==null?null:metadata.getFields();
     }
 
     /* ------------------------------------------------------------ */
@@ -235,7 +233,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public boolean isPushSupported()
     {
-        return getHttpChannel().getHttpTransport().isPushSupported();
+        return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
     /* ------------------------------------------------------------ */
@@ -687,9 +685,7 @@ public class Request implements HttpServletRequest
     public String getContentType()
     {
         MetaData.Request metadata = _metaData;
-        if (metadata==null)
-            return null;
-        String content_type = metadata.getFields().get(HttpHeader.CONTENT_TYPE);
+        String content_type = metadata==null?null:metadata.getFields().get(HttpHeader.CONTENT_TYPE);
         if (_characterEncoding==null && content_type!=null)
         {
             MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
@@ -945,22 +941,25 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalName()
     {
-        if (_channel==null)
+        if (_channel!=null)
         {
-            try
-            {
-                String name =InetAddress.getLocalHost().getHostName();
-                if (StringUtil.ALL_INTERFACES.equals(name))
-                    return null;
-                return name;
-            }
-            catch (java.net.UnknownHostException e)
-            {
-                LOG.ignore(e);
-            }
+            InetSocketAddress local=_channel.getLocalAddress();
+            if (local!=null)
+                return local.getHostString();
         }
-        InetSocketAddress local=_channel.getLocalAddress();
-        return local.getHostString();
+
+        try
+        {
+            String name =InetAddress.getLocalHost().getHostName();
+            if (StringUtil.ALL_INTERFACES.equals(name))
+                return null;
+            return name;
+        }
+        catch (java.net.UnknownHostException e)
+        {
+            LOG.ignore(e);
+        }
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -973,7 +972,7 @@ public class Request implements HttpServletRequest
         if (_channel==null)
             return 0;
         InetSocketAddress local=_channel.getLocalAddress();
-        return local.getPort();
+        return local==null?0:local.getPort();
     }
 
     /* ------------------------------------------------------------ */
@@ -1116,7 +1115,7 @@ public class Request implements HttpServletRequest
     public String getQueryString()
     {
         MetaData.Request metadata = _metaData;
-        return metadata.getURI().getQuery();
+        return metadata==null?null:metadata.getURI().getQuery();
     }
 
     /* ------------------------------------------------------------ */
@@ -1250,6 +1249,8 @@ public class Request implements HttpServletRequest
     {
         // path is encoded, potentially with query
         
+        path = URIUtil.compactPath(path);
+
         if (path == null || _context == null)
             return null;
 
@@ -1479,14 +1480,14 @@ public class Request implements HttpServletRequest
         if (session == null)
             throw new IllegalStateException("No session");
 
-        if (session instanceof AbstractSession)
+        if (session instanceof Session)
         {
-            AbstractSession abstractSession =  ((AbstractSession)session);
-            abstractSession.renewId(this);
+            Session s =  ((Session)session);
+            s.renewId(this);
             if (getRemoteUser() != null)
-                abstractSession.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-            if (abstractSession.isIdChanged())
-                _channel.getResponse().addCookie(_sessionManager.getSessionCookie(abstractSession, getContextPath(), isSecure()));
+                s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+            if (s.isIdChanged())
+                _channel.getResponse().addCookie(_sessionHandler.getSessionCookie(s, getContextPath(), isSecure()));
         }
 
         return session.getId();
@@ -1511,7 +1512,7 @@ public class Request implements HttpServletRequest
     {
         if (_session != null)
         {
-            if (_sessionManager != null && !_sessionManager.isValid(_session))
+            if (_sessionHandler != null && !_sessionHandler.isValid(_session))
                 _session = null;
             else
                 return _session;
@@ -1523,11 +1524,11 @@ public class Request implements HttpServletRequest
         if (getResponse().isCommitted())
             throw new IllegalStateException("Response is committed");
 
-        if (_sessionManager == null)
+        if (_sessionHandler == null)
             throw new IllegalStateException("No SessionManager");
 
-        _session = _sessionManager.newHttpSession(this);
-        HttpCookie cookie = _sessionManager.getSessionCookie(_session,getContextPath(),isSecure());
+        _session = _sessionHandler.newHttpSession(this);
+        HttpCookie cookie = _sessionHandler.getSessionCookie(_session,getContextPath(),isSecure());
         if (cookie != null)
             _channel.getResponse().addCookie(cookie);
 
@@ -1538,9 +1539,9 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the sessionManager.
      */
-    public SessionManager getSessionManager()
+    public SessionHandler getSessionHandler()
     {
-        return _sessionManager;
+        return _sessionHandler;
     }
 
     /* ------------------------------------------------------------ */
@@ -1564,6 +1565,14 @@ public class Request implements HttpServletRequest
         return metadata==null?null:metadata.getURI();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the original uri passed in metadata before customization/rewrite
+     */
+    public String getOriginalURI()
+    {
+        return _originalURI;
+    }
     /* ------------------------------------------------------------ */
     /**
      * @param uri the URI to set
@@ -1684,7 +1693,7 @@ public class Request implements HttpServletRequest
             return false;
 
         HttpSession session = getSession(false);
-        return (session != null && _sessionManager.getSessionIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionHandler.getSessionIdManager().getId(_requestedSessionId).equals(_sessionHandler.getId(session)));
     }
 
     /* ------------------------------------------------------------ */
@@ -1718,14 +1727,6 @@ public class Request implements HttpServletRequest
         return false;
     }
 
-    /* ------------------------------------------------------------ */
-    public HttpSession recoverNewSession(Object key)
-    {
-        if (_savedNewSessions == null)
-            return null;
-        return _savedNewSessions.get(key);
-    }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -1734,6 +1735,7 @@ public class Request implements HttpServletRequest
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
         _metaData=request;
+        _originalURI=_metaData.getURIString();
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
 
@@ -1790,6 +1792,7 @@ public class Request implements HttpServletRequest
     protected void recycle()
     {
         _metaData=null;
+        _originalURI=null;
 
         if (_context != null)
             throw new IllegalStateException("Request in context!");
@@ -1832,7 +1835,7 @@ public class Request implements HttpServletRequest
         _requestedSessionIdFromCookie = false;
         _secure=false;
         _session = null;
-        _sessionManager = null;
+        _sessionHandler = null;
         _scope = null;
         _servletPath = null;
         _timeStamp = 0;
@@ -1841,10 +1844,6 @@ public class Request implements HttpServletRequest
         _parameters = null;
         _contentParamsExtracted = false;
         _inputState = __NONE;
-
-        if (_savedNewSessions != null)
-            _savedNewSessions.clear();
-        _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
         _input.recycle();
@@ -1876,13 +1875,6 @@ public class Request implements HttpServletRequest
         _requestAttributeListeners.remove(listener);
     }
 
-    /* ------------------------------------------------------------ */
-    public void saveNewSession(Object key, HttpSession session)
-    {
-        if (_savedNewSessions == null)
-            _savedNewSessions = new HashMap<>();
-        _savedNewSessions.put(key,session);
-    }
 
     /* ------------------------------------------------------------ */
     public void setAsyncSupported(boolean supported,String source)
@@ -2009,7 +2001,7 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @return True if this is the first call of {@link #takeNewContext()} since the last
+     * @return True if this is the first call of <code>takeNewContext()</code> since the last
      *         {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context)} call.
      */
     public boolean takeNewContext()
@@ -2196,12 +2188,12 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param sessionManager
-     *            The sessionManager to set.
+     * @param sessionHandler
+     *            The SessionHandler to set.
      */
-    public void setSessionManager(SessionManager sessionManager)
+    public void setSessionHandler(SessionHandler sessionHandler)
     {
-        _sessionManager = sessionManager;
+        _sessionHandler = sessionHandler;
     }
 
     /* ------------------------------------------------------------ */

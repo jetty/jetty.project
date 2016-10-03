@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Configure a GCloud classpath exposed to webapps                       -->
+  <!-- ===================================================================== -->
+  <Call class="org.eclipse.jetty.webapp.WebAppContext" name="addDefaultServerClasses">
+    <Arg><Ref refid="Server"/></Arg>
+    <Arg>
+      <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+        <Arg><Property name="gcloud.serverclasses"><Default>file:${jetty.base}/lib/gcloud</Default></Property></Arg>
+      </Call>
+    </Arg>
+  </Call>
+
+</Configure>

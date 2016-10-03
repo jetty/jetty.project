@@ -41,8 +41,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
-import org.eclipse.jetty.start.graph.GraphException;
-import org.eclipse.jetty.start.graph.Selection;
 
 /**
  * Main start class.
@@ -68,38 +66,44 @@ public class Main
 
     public static void main(String[] args)
     {
+        boolean test=false;
         try
         {
             Main main = new Main();
             StartArgs startArgs = main.processCommandLine(args);
+            test=startArgs.isTestingModeEnabled();
             main.start(startArgs);
         }
         catch (UsageException e)
         {
-            System.err.println(e.getMessage());
-            usageExit(e.getCause(),e.getExitCode());
+            StartLog.warn(e.getMessage());
+            usageExit(e.getCause(),e.getExitCode(),test);
         }
         catch (Throwable e)
         {
-            usageExit(e,UsageException.ERR_UNKNOWN);
+            usageExit(e,UsageException.ERR_UNKNOWN,test);
         }
     }
 
     static void usageExit(int exit)
     {
-        usageExit(null,exit);
+        usageExit(null,exit, false);
     }
 
-    static void usageExit(Throwable t, int exit)
+    static void usageExit(Throwable t, int exit, boolean test)
     {
         if (t != null)
         {
             t.printStackTrace(System.err);
         }
         System.err.println();
-        System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
-        System.err.println("       java -jar start.jar --help  # for more information");
-        System.exit(exit);
+        System.err.println("Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]");
+        System.err.println("       java -jar $JETTY_HOME/start.jar --help  # for more information");
+        
+        if (test)
+            System.err.println("EXIT: "+exit);
+        else
+            System.exit(exit);
     }
 
     private BaseHome baseHome;
@@ -193,7 +197,7 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            System.out.println("WARNING: Nothing to start, exiting ...");
+            StartLog.warn("Nothing to start, exiting ...");
             StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;
@@ -250,7 +254,7 @@ public class Main
         System.out.println("Jetty Selected Module Ordering:");
         System.out.println("-------------------------------");
         Modules modules = args.getAllModules();
-        modules.dumpSelected();
+        modules.dumpEnabled();
     }
 
     /**
@@ -284,58 +288,59 @@ public class Main
         StartArgs args = new StartArgs();
         args.parse(baseHome.getConfigSources());
 
+        // ------------------------------------------------------------
+        // 3) Module Registration
+        Modules modules = new Modules(baseHome,args);
+        StartLog.debug("Registering all modules");
+        modules.registerAll();
+
+        // ------------------------------------------------------------
+        // 4) Active Module Resolution
+        for (String enabledModule : args.getEnabledModules())
+        {
+            for (String source : args.getSources(enabledModule))
+            {
+                String shortForm = baseHome.toShortForm(source);
+                modules.enable(enabledModule,shortForm);
+            }
+        }
+
+        StartLog.debug("Sorting Modules");
         try
         {
-            // ------------------------------------------------------------
-            // 3) Module Registration
-            Modules modules = new Modules(baseHome,args);
-            StartLog.debug("Registering all modules");
-            modules.registerAll();
-
-            // ------------------------------------------------------------
-            // 4) Active Module Resolution
-            for (String enabledModule : args.getEnabledModules())
-            {
-                for (String source : args.getSources(enabledModule))
-                {
-                    String shortForm = baseHome.toShortForm(source);
-                    modules.selectNode(enabledModule,new Selection(shortForm));
-                }
-            }
-
-            StartLog.debug("Building Module Graph");
-            modules.buildGraph();
-
-            args.setAllModules(modules);
-            List<Module> activeModules = modules.getSelected();
-            
-            final Version START_VERSION = new Version(StartArgs.VERSION);
-            
-            for(Module enabled: activeModules)
-            {
-                if(enabled.getVersion().isNewerThan(START_VERSION))
-                {
-                    throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion()
-                            + "] which is newer than this version of jetty [" + START_VERSION + "]");
-                }
-            }
-            
-            for(String name: args.getSkipFileValidationModules())
-            {
-                Module module = modules.get(name);
-                module.setSkipFilesValidation(true);
-            }
-
-            // ------------------------------------------------------------
-            // 5) Lib & XML Expansion / Resolution
-            args.expandLibs(baseHome);
-            args.expandModules(baseHome,activeModules);
-
+            modules.sort();
         }
-        catch (GraphException e)
+        catch (Exception e)
         {
             throw new UsageException(ERR_BAD_GRAPH,e);
         }
+
+        args.setAllModules(modules);
+        List<Module> activeModules = modules.getEnabled();
+
+
+        final Version START_VERSION = new Version(StartArgs.VERSION);
+
+        for(Module enabled: activeModules)
+        {
+            if(enabled.getVersion().isNewerThan(START_VERSION))
+            {
+                throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion()
+                        + "] which is newer than this version of jetty [" + START_VERSION + "]");
+            }
+        }
+
+        for(String name: args.getSkipFileValidationModules())
+        {
+            Module module = modules.get(name);
+            module.setSkipFilesValidation(true);
+        }
+
+        // ------------------------------------------------------------
+        // 5) Lib & XML Expansion / Resolution
+        args.expandLibs(baseHome);
+        args.expandModules(baseHome,activeModules);
+
 
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
@@ -344,7 +349,7 @@ public class Main
         // ------------------------------------------------------------
         // 9) Resolve Property Files
         args.resolvePropertyFiles(baseHome);
-
+        
         return args;
     }
     
@@ -403,14 +408,16 @@ public class Main
             doStop(args);
         }
         
+        // Check base directory
         BaseBuilder baseBuilder = new BaseBuilder(baseHome,args);
         if(baseBuilder.build())
-        {
-            // base directory changed.
             StartLog.info("Base directory was modified");
-            return;
-        }
-        
+        else if (args.isDownload() || !args.getStartModules().isEmpty())
+            StartLog.info("Base directory was not modified");
+
+        // Check module dependencies
+        args.getAllModules().checkEnabledModules();
+
         // Informational command line, don't run jetty
         if (!args.isRun())
         {
@@ -445,7 +452,7 @@ public class Main
 
         if (args.hasJvmArgs() || args.hasSystemProperties())
         {
-            System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
+            StartLog.warn("System properties and/or JVM args set.  Consider using --dry-run or --exec");
         }
 
         ClassLoader cl = classpath.getClassLoader();
@@ -458,7 +465,7 @@ public class Main
         }
         catch (Exception e)
         {
-            usageExit(e,ERR_INVOKE_MAIN);
+            usageExit(e,ERR_INVOKE_MAIN,startupArgs.isTestingModeEnabled());
         }
     }
 
@@ -500,13 +507,13 @@ public class Main
         {
             if (port <= 0)
             {
-                System.err.println("STOP.PORT system property must be specified");
+                StartLog.warn("STOP.PORT system property must be specified");
             }
             if (key == null)
             {
                 key = "";
-                System.err.println("STOP.KEY system property must be specified");
-                System.err.println("Using empty key");
+                StartLog.info("STOP.KEY system property must be specified");
+                StartLog.info("Using empty key");
             }
 
             try (Socket s = new Socket(InetAddress.getByName(host),port))
@@ -523,7 +530,7 @@ public class Main
 
                     if (timeout > 0)
                     {
-                        System.err.printf("Waiting %,d seconds for jetty to stop%n",timeout);
+                        StartLog.info("Waiting %,d seconds for jetty to stop%n",timeout);
                         LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
                         String response;
                         while ((response = lin.readLine()) != null)
@@ -540,16 +547,16 @@ public class Main
         }
         catch (SocketTimeoutException e)
         {
-            System.err.println("Timed out waiting for stop confirmation");
+            StartLog.warn("Timed out waiting for stop confirmation");
             System.exit(ERR_UNKNOWN);
         }
         catch (ConnectException e)
         {
-            usageExit(e,ERR_NOT_STOPPED);
+            usageExit(e,ERR_NOT_STOPPED,startupArgs.isTestingModeEnabled());
         }
         catch (Exception e)
         {
-            usageExit(e,ERR_UNKNOWN);
+            usageExit(e,ERR_UNKNOWN,startupArgs.isTestingModeEnabled());
         }
     }
 
@@ -558,7 +565,7 @@ public class Main
         StartLog.endStartLog();
         if(!printTextResource("org/eclipse/jetty/start/usage.txt"))
         {
-            System.err.println("ERROR: detailed usage resource unavailable");
+            StartLog.warn("detailed usage resource unavailable");
         }
         if (exit)
         {
@@ -585,7 +592,7 @@ public class Main
             }
             else
             {
-                System.out.println("Unable to find resource: " + resourceName);
+                StartLog.warn("Unable to find resource: " + resourceName);
             }
         }
         catch (IOException e)
@@ -606,12 +613,12 @@ public class Main
         }
         catch (UsageException e)
         {
-            System.err.println(e.getMessage());
-            usageExit(e.getCause(),e.getExitCode());
+            StartLog.warn(e.getMessage());
+            usageExit(e.getCause(),e.getExitCode(),startupArgs.isTestingModeEnabled());
         }
         catch (Throwable e)
         {
-            usageExit(e,UsageException.ERR_UNKNOWN);
+            usageExit(e,UsageException.ERR_UNKNOWN,startupArgs.isTestingModeEnabled());
         }
     }
 
