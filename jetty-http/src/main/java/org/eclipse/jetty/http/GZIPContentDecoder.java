@@ -41,7 +41,6 @@ public class GZIPContentDecoder
     private int _size;
     private int _value;
     private byte _flags;
-    private ByteBuffer _empty;
     private ByteBuffer _inflated;
 
     public GZIPContentDecoder()
@@ -123,10 +122,11 @@ public class GZIPContentDecoder
      * Inflate compressed data.
      * <p>Inflation continues until the compressed block end is reached, there is no 
      * more compressed data or a call to {@link #decodedChunk(ByteBuffer)} returns true.
-     * @param compressed
+     * @param compressed Buffer of compressed data to inflate
      */
     protected void decodeChunks(ByteBuffer compressed)
     {
+        ByteBuffer buffer = null;
         try
         {
             while (true)
@@ -169,23 +169,23 @@ public class GZIPContentDecoder
                     {
                         while (true)
                         {
-                            ByteBuffer chunk = _empty==null?acquire():_empty;
-                            _empty = chunk;
+                            if (buffer==null)
+                                buffer = acquire();
                             
                             try
                             {
-                                int length = _inflater.inflate(chunk.array(),chunk.arrayOffset(),chunk.capacity());
-                                chunk.limit(length);
+                                int length = _inflater.inflate(buffer.array(),buffer.arrayOffset(),buffer.capacity());
+                                buffer.limit(length);
                             }
                             catch (DataFormatException x)
                             {
-                                _empty=null;
                                 throw new ZipException(x.getMessage());
                             }
                             
-                            if (chunk.hasRemaining())
+                            if (buffer.hasRemaining())
                             {
-                                _empty=null;
+                                ByteBuffer chunk = buffer;
+                                buffer = null;
                                 if (decodedChunk(chunk))
                                     return;
                             }
@@ -367,8 +367,12 @@ public class GZIPContentDecoder
         {
             throw new RuntimeException(x);
         }
+        finally
+        {
+            if (buffer!=null)
+                release(buffer);
+        }
     }
-
 
     private void reset()
     {
@@ -377,9 +381,6 @@ public class GZIPContentDecoder
         _size = 0;
         _value = 0;
         _flags = 0;
-        if (_empty!=null)
-            release(_empty);
-        _empty = null;
     }
 
     public boolean isFinished()
