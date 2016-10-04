@@ -25,6 +25,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -46,6 +47,10 @@ import org.eclipse.jetty.util.log.Logger;
  * Content may arrive in patterns such as [content(), content(), messageComplete()] so that this class maintains two states: the content state that tells
  * whether there is content to consume and the EOF state that tells whether an EOF has arrived. Only once the content has been consumed the content state is
  * moved to the EOF state.
+ */
+/**
+ * @author gregw
+ *
  */
 public class HttpInput extends ServletInputStream implements Runnable
 {
@@ -267,7 +272,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                         LOG.debug("{} read {} from {}",this,l,item);
 
                     // Consume any following poison pills
-                    pollReadable();
+                    pollReadableContent();
 
                     return l;
                 }
@@ -298,41 +303,44 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     protected Content nextContent() throws IOException
     {
-        Content content = pollContent();
+        Content content = pollNonEmptyContent();
         if (content == null && !isFinished())
         {
             produceContent();
-            content = pollContent();
+            content = pollNonEmptyContent();
         }
         return content;
     }
 
     /**
-     * Poll the inputQ for Content. Consumed buffers and {@link PoisonPillContent}s are removed and EOF state updated if need be.
+     * Poll the inputQ for Content. Consumed buffers and {@link SentinelContent}s are removed and EOF state updated if need be.
      *
      * @return Content or null
      */
-    protected Content pollContent()
+    protected Content pollNonEmptyContent()
     {
         while (true)
         {            
             // Get the next content (or EOF)
-            Content content = pollReadable();
+            Content content = pollReadableContent();
             
             // If it is EOF, consume it here
-            if (content instanceof EofContent)
+            if (content instanceof SentinelContent)
             {
                 if (content == EARLY_EOF_CONTENT)
                     _state = EARLY_EOF;
-                else  if (_listener == null)
-                    _state = EOF;
-                else
+                else if (content instanceof EofContent)
                 {
-                    _state = AEOF;
-                    boolean woken = _channelState.onReadReady(); // force callback?
-                    if (woken)
-                        wake();
-                }    
+                    if (_listener == null)
+                        _state = EOF;
+                    else
+                    {
+                        _state = AEOF;
+                        boolean woken = _channelState.onReadReady(); // force callback?
+                        if (woken)
+                            wake();
+                    }   
+                }
                 
                 // Consume the EOF content, either if it was original content
                 // or if it was produced by interception
@@ -350,11 +358,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     }
 
     /**
-     * Poll the inputQ for Content or EOF. Consumed buffers and non EOF {@link PoisonPillContent}s are removed. EOF state is not updated.
+     * Poll the inputQ for Content or EOF. Consumed buffers and non EOF {@link SentinelContent}s are removed. EOF state is not updated.
      * Interception is done within this method.
-     * @return Content, EOF or null
+     * @return Content with remaining, a {@link SentinelContent},  or null
      */
-    protected Content pollReadable()
+    protected Content pollReadableContent()
     {
         // If we have a chunk produced by interception
         if (_intercepted!=null)
@@ -401,7 +409,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
 
             // If the content has content or is an EOF marker, use it
-            if (_content.hasContent() || _content instanceof EofContent)
+            if (_content.hasContent() || _content instanceof SentinelContent)
                 return _content;
             
             // The content is consumed, so get the next one.  Note that EOF
@@ -424,11 +432,11 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     protected Content nextReadable() throws IOException
     {
-        Content content = pollReadable();
+        Content content = pollReadableContent();
         if (content == null && !isFinished())
         {
             produceContent();
-            content = pollReadable();
+            content = pollReadableContent();
         }
         return content;
     }
@@ -467,8 +475,8 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l = content.skip(length);
 
         _contentConsumed += l;
-        if (l > 0 && !content.hasContent())
-            pollContent(); // hungry succeed
+        if (l > 0 && content.isEmpty())
+            pollNonEmptyContent(); // hungry succeed
 
     }
 
@@ -564,10 +572,13 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addContent {}",this,content);
 
-            if (_listener == null)
-                _inputQ.notify();
-            else
-                woken = _channelState.onReadPossible();
+            if (pollReadableContent()!=null)
+            {
+                if (_listener == null)
+                    _inputQ.notify();
+                else
+                    woken = _channelState.onReadPossible();
+            }
         }
         return woken;
     }
@@ -830,11 +841,16 @@ public class HttpInput extends ServletInputStream implements Runnable
             state);
     }
 
-    public static class PoisonPillContent extends Content
+    /**
+     * A Sentinel Content, which has zero length content but
+     * indicates some other event in the input stream (eg EOF)
+     *
+     */
+    public static class SentinelContent extends Content
     {
         private final String _name;
 
-        public PoisonPillContent(String name)
+        public SentinelContent(String name)
         {
             super(BufferUtil.EMPTY_BUFFER);
             _name = name;
@@ -847,7 +863,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    public static class EofContent extends PoisonPillContent
+    public static class EofContent extends SentinelContent
     {
         EofContent(String name)
         {
@@ -897,6 +913,11 @@ public class HttpInput extends ServletInputStream implements Runnable
         public int remaining()
         {
             return _content.remaining();
+        }
+        
+        public boolean isEmpty()
+        {
+            return !_content.hasRemaining();
         }
 
         @Override
