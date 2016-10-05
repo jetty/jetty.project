@@ -145,6 +145,7 @@ public class WebAppClassLoader extends URLClassLoader
     /** Run an action with access to ServerClasses
      * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
      * configured so as to allow server classes to be visible</p>
+     * @param <T> The type returned by the action
      * @param action The action to run
      * @return The return from the action
      * @throws Exception if thrown by the action

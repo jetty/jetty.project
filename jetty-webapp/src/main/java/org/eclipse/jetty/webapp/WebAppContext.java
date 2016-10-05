@@ -684,6 +684,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
+     * @return The ClasspathPattern used to match Server (hidden) classes
      */
     public ClasspathPattern getServerClasspathPattern()
     {
@@ -738,6 +739,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     
     /* ------------------------------------------------------------ */
     /**
+     * @return The ClasspathPattern used to match System (protected) classes
      */
     public ClasspathPattern getSystemClasspathPattern()
     {

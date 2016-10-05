@@ -515,7 +515,7 @@ public class ClasspathPattern extends AbstractSet<String>
     /**
      * Match the class name against the pattern
      *
-     * @param name name of the class to match
+     * @param clazz A class to try to match
      * @return true if class matches the pattern
      */
     public boolean match(Class<?> clazz)
