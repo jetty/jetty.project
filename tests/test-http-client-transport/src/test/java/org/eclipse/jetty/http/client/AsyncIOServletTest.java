@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
@@ -58,9 +59,12 @@ import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
@@ -68,6 +72,8 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -1038,4 +1044,174 @@ public class AsyncIOServletTest extends AbstractTest
         assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
+    
+
+    @Test
+    public void testAsyncIntercepted() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {                    
+                System.err.println("Service "+request);
+
+                final HttpInput httpInput = ((Request)request).getHttpInput();
+                httpInput.addInterceptor(new HttpInput.Interceptor()
+                {
+                    int state = 0;
+                    Content saved;
+                    
+                    @Override
+                    public Content readFrom(Content content)
+                    {
+                        // System.err.printf("readFrom s=%d saved=%b %s%n",state,saved!=null,content);
+                        switch(state)
+                        {
+                            case 0:
+                                // null transform
+                                if (content.isEmpty())
+                                    state++;
+                                return null;
+
+                            case 1:
+                            {
+                                // copy transform
+                                if (content.isEmpty())
+                                {
+                                    state++;
+                                    return content;      
+                                }
+                                ByteBuffer copy = wrap(toArray(content.getByteBuffer()));
+                                content.skip(copy.remaining());
+                                return new Content(copy);
+                            }
+
+                            case 2: 
+                                // byte by byte
+                                if (content.isEmpty())
+                                {
+                                    state++;
+                                    return content;      
+                                }
+                                byte[] b = new byte[1];
+                                int l = content.get(b,0,1);
+                                return new Content(wrap(b,0,l));
+                                
+                            case 3: 
+                            {
+                                // double vision
+                                if (content.isEmpty())
+                                {
+                                    if (saved==null)
+                                    {
+                                        state++;
+                                        return content;
+                                    }
+                                    Content copy = saved;
+                                    saved=null;
+                                    return copy;
+                                }
+                                
+                                byte[] data = toArray(content.getByteBuffer());
+                                content.skip(data.length);
+                                saved = new Content(wrap(data));
+                                return new Content(wrap(data));
+                            }
+
+                            default:
+                                return null;
+                        }
+                    }
+                });
+                
+                AsyncContext asyncContext = request.startAsync();
+                ServletInputStream input = request.getInputStream();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady() && !input.isFinished())
+                        {
+                            int b = input.read();
+                            if (b>0)
+                            {
+                                // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
+                                out.write(b);
+                            }
+                            else
+                                onAllDataRead();
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        response.getOutputStream().write(out.toByteArray());
+                        asyncContext.complete();
+                    }
+
+                    @Override
+                    public void onError(Throwable x)
+                    {
+                    }
+                });
+            }
+        });
+        
+        DeferredContentProvider contentProvider = new DeferredContentProvider();
+        CountDownLatch clientLatch = new CountDownLatch(1);
+
+        String expected = 
+            "S0" +
+            "S1" +
+            "S2" +
+            "S3S3" +
+            "S4" +
+            "S5" +
+            "S6";
+
+        client.newRequest(newURI())
+                .method(HttpMethod.POST)
+                .path(servletPath)
+                .content(contentProvider)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded())
+                        {
+                            Response response = result.getResponse();
+                            assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
+                            assertThat(getContentAsString(), Matchers.equalTo(expected));
+                            clientLatch.countDown();
+                        }
+                    }
+                });
+
+        contentProvider.offer(BufferUtil.toBuffer("S0"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S1"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S2"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S3"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S4"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S5"));
+        contentProvider.flush();
+        contentProvider.offer(BufferUtil.toBuffer("S6"));
+        contentProvider.close();
+        
+        
+        Assert.assertTrue(clientLatch.await(10,TimeUnit.SECONDS));
+        
+
+    }
+        
 }

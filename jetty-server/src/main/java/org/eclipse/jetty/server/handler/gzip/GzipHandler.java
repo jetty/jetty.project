@@ -65,6 +65,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
     private boolean _syncFlush = false;
+    private int _inflateBufferSize = -1;
     
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<>();
@@ -75,6 +76,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
     
     private HttpField _vary;
+
 
 
     /* ------------------------------------------------------------ */
@@ -400,6 +402,24 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /* ------------------------------------------------------------ */
     /**
+     * @return size in bytes of the buffer to inflate compressed request, or 0 for no inflation.
+     */
+    public int getInflateBufferSize()
+    {
+        return _inflateBufferSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param size size in bytes of the buffer to inflate compressed request, or 0 for no inflation.
+     */
+    public void setInflateBufferSize(int size)
+    {
+        _inflateBufferSize = size;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
@@ -408,6 +428,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         ServletContext context = baseRequest.getServletContext();
         String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
         LOG.debug("{} handle {} in {}",this,baseRequest,context);
+        
+        // Handle request inflation
+        if (_inflateBufferSize>0)
+        {
+            HttpField ce = baseRequest.getHttpFields().getField(HttpHeader.CONTENT_ENCODING);
+            if (ce!=null && "gzip".equalsIgnoreCase(ce.getValue()))
+            {
+                // TODO should check ce.contains and then remove just the gzip encoding
+                baseRequest.getHttpFields().remove(HttpHeader.CONTENT_ENCODING);
+                baseRequest.getHttpFields().add(new HttpField("X-Content-Encoding",ce.getValue()));
+                baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(),_inflateBufferSize));
+            }
+        }
         
         HttpOutput out = baseRequest.getResponse().getHttpOutput();   
         // Are we already being gzipped?
