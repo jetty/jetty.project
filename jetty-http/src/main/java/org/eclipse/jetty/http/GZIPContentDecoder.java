@@ -28,9 +28,9 @@ import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * Decoder for the "gzip" encoding.
- * <p>An Decode that inflates gzip compressed data that has been
+ * <p>
+ * A decoder that inflates gzip compressed data that has been
  * optimized for async usage with minimal data copies.
- * 
  */
 public class GZIPContentDecoder
 {
@@ -91,7 +91,9 @@ public class GZIPContentDecoder
     protected boolean decodedChunk(ByteBuffer chunk)
     {
         if (_inflated==null)
+        {
             _inflated=chunk;
+        }
         else
         {
             int size = _inflated.remaining() + chunk.remaining();
@@ -103,7 +105,7 @@ public class GZIPContentDecoder
             }
             else
             {
-                ByteBuffer bigger=_pool==null?BufferUtil.allocate(size):_pool.acquire(size,false);
+                ByteBuffer bigger=acquire(size);
                 int pos=BufferUtil.flipToFill(bigger);
                 BufferUtil.put(_inflated,bigger);
                 BufferUtil.put(chunk,bigger);
@@ -113,11 +115,9 @@ public class GZIPContentDecoder
                 _inflated = bigger;
             }
         }
-        
         return false;
     }
-    
-    
+
     /**
      * Inflate compressed data.
      * <p>Inflation continues until the compressed block end is reached, there is no 
@@ -170,7 +170,7 @@ public class GZIPContentDecoder
                         while (true)
                         {
                             if (buffer==null)
-                                buffer = acquire();
+                                buffer = acquire(_bufferSize);
                             
                             try
                             {
@@ -396,9 +396,9 @@ public class GZIPContentDecoder
     /**
      * @return An indirect buffer of the configured buffersize either from the pool or freshly allocated. 
      */
-    public ByteBuffer acquire()
+    public ByteBuffer acquire(int capacity)
     {
-        return _pool==null?BufferUtil.allocate(_bufferSize):_pool.acquire(_bufferSize,false);
+        return _pool==null?BufferUtil.allocate(capacity):_pool.acquire(capacity,false);
     }
     
     /**
