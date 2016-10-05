@@ -25,7 +25,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -47,10 +46,6 @@ import org.eclipse.jetty.util.log.Logger;
  * Content may arrive in patterns such as [content(), content(), messageComplete()] so that this class maintains two states: the content state that tells
  * whether there is content to consume and the EOF state that tells whether an EOF has arrived. Only once the content has been consumed the content state is
  * moved to the EOF state.
- */
-/**
- * @author gregw
- *
  */
 public class HttpInput extends ServletInputStream implements Runnable
 {
@@ -109,7 +104,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public Content readFrom(Content content)
         {
-            return _next.readFrom(_prev.readFrom(content));
+            return getNext().readFrom(getPrev().readFrom(content));
         }
     }
     
