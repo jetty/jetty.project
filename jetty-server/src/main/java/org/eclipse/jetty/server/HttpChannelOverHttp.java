@@ -127,7 +127,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     break;
 
                 case HOST:
-                    if (!(field instanceof HostPortHttpField))
+                    if (!(field instanceof HostPortHttpField) && value!=null && !value.isEmpty())
                         field = new HostPortHttpField(value);
                     break;
 
