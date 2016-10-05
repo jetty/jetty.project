@@ -20,4 +20,4 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 ## list of classnames, package names or file URIs (See ClasspathPattern)
 ## Eg. to hide all gcloud dependencies other than the com.google.guava package:
 ## Default is all jars in lib/gcloud are hidden 
-# gcloud.serverclasses=file:${jetty.base}/lib/gcloud,-com.google.guava.
+# gcloud.addServerClasses=file:${jetty.base}/lib/gcloud,-com.google.guava.

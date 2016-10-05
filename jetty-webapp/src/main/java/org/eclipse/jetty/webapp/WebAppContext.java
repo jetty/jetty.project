@@ -1638,7 +1638,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    public static void addDefaultServerClasses(Server server,String... pattern )
+    public static void addServerClasses(Server server,String... pattern )
     {
         // look for a Server attribute with the list of Server classes
         // to apply to every web application. If not present, use our defaults.
@@ -1662,7 +1662,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    public static void addDefaultSystemClasses(Server server,String... pattern )
+    public static void addSystemClasses(Server server,String... pattern )
     {
         // look for a Server attribute with the list of System classes
         // to apply to every web application. If not present, use our defaults.
