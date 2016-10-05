@@ -59,11 +59,23 @@ public class HttpInput extends ServletInputStream implements Runnable
      * <p>
      * Unlike inputstream wrappers that can be applied by filters, an interceptor
      * is entirely transparent and works with async IO APIs.
+     * <p>
+     * An Interceptor may consume data from the passed content and the interceptor 
+     * will continue to be called for the same content until the interceptor returns 
+     * null or an empty content.   Thus even if the passed content is completely consumed
+     * the interceptor will be called with the same content until it can no longer 
+     * produce more content. 
      * @see HttpInput#setInterceptor(Interceptor)
      * @see HttpInput#addInterceptor(Interceptor)
      */
     public interface Interceptor
     {
+        /**
+         * @param content The content to be intercepted (may be empty or a {@link SentinelContent}. 
+         * The content will be modified with any data the interceptor consumes, but there is no requirement
+         * that all the data is consumed by the interceptor.
+         * @return The intercepted content or null if interception is completed for that content.
+         */
         Content readFrom(Content content);
     }
     
