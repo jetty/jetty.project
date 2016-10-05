@@ -785,8 +785,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //because containerInitializerOrdering omits it
         for (ServletContainerInitializer sci:_loadedInitializers)
         { 
-            LOG.setDebugEnabled(true);
-            
             if (matchesExclusionPattern(sci)) 
             {
                 if (LOG.isDebugEnabled())
