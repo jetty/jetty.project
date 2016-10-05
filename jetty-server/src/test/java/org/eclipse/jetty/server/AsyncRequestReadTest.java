@@ -354,6 +354,7 @@ public class AsyncRequestReadTest
             for (int i=read;i-->0;)
             {
                 int c=in.read();
+                // System.err.println("in="+c);
                 if (c<0)
                     break;
                 out.write(c);

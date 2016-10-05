@@ -175,9 +175,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _interceptor;
     }
 
-    public void setInterceptor(Interceptor filter)
+    public void setInterceptor(Interceptor interceptor)
     {
-        _interceptor = filter;
+        _interceptor = interceptor;
     }
 
     public boolean isWritten()
