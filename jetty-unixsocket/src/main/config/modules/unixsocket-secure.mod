@@ -5,6 +5,9 @@ This looks for a secure scheme transported either by the
 unixsocket-forwarded, unixsocket-proxy-protocol or in a
 HTTP2 request.
 
+[Tags]
+connector
+
 [depend]
 unixsocket-http
 

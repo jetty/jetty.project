@@ -2,6 +2,10 @@
 Provides SLF4J simple logging implementation.
 To receive jetty logs enable the jetty-slf4j module.
 
+[tags]
+logging
+slf4j
+
 [depend]
 slf4j-api
 

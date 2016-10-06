@@ -1,6 +1,10 @@
 [description]
 Enables GCloud Datastore API and implementation
 
+[Tags]
+3rdparty
+gcloud
+
 [depends]
 gcloud
 jcl-api

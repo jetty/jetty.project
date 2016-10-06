@@ -2,6 +2,12 @@
 Enables HTTP2 protocol support on the TLS(SSL) Connector,
 using the ALPN extension to select which protocol to use.
 
+[Tags]
+connector
+http2
+http
+ssl
+
 [depend]
 ssl
 alpn

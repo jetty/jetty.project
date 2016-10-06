@@ -1,6 +1,9 @@
 [description]
 Enables session data store in a remote Infinispan cache
 
+[Tags]
+session
+
 [provides]
 session-store
 

@@ -2,6 +2,10 @@
 Provides a SLF4J implementation that logs to Logback classic   
 To receive jetty logs enable the jetty-slf4j module.
 
+[tags]
+logging
+slf4j
+
 [depend]
 slf4j-api
 logback-core

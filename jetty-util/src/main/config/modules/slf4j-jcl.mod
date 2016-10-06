@@ -3,6 +3,11 @@ Provides a SLF4J implementation that logs to the Java Commons Logging API.
 Requires another module that provides an JCL implementation.
 To receive jetty logs enable the jetty-slf4j module.
 
+[tags]
+logging
+jcl
+slf4j
+
 [depend]
 slf4j-api
 jcl-api

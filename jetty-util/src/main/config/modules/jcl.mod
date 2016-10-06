@@ -2,6 +2,10 @@
 Provides a Java Commons Logging implementation.  
 To receive jetty logs the jetty-slf4j and slf4j-jcl must also be enabled.
 
+[tags]
+logging
+jcl
+
 [depends]
 
 [provides]
