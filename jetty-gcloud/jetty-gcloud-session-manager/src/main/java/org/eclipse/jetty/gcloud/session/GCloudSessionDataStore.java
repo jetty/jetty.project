@@ -808,6 +808,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {
             //need to assume that the problem is the index doesn't exist, because there
             //is no specific code for that
+            if (LOG.isDebugEnabled())
+                LOG.debug("Check for indexes", e);
+
             return false;
         }
     }
