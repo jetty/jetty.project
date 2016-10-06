@@ -1,6 +1,9 @@
 [description]
 Deploys the Jolokia console as a web application.
 
+[Tags]
+3rdparty
+
 [depend]
 stats
 deploy

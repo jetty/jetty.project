@@ -170,7 +170,7 @@ public class StartArgs
 
     private boolean help = false;
     private boolean stopCommand = false;
-    private boolean listModules = false;
+    private List<String> listModules = null;
     private boolean listClasspath = false;
     private boolean listConfig = false;
     private boolean version = false;
@@ -750,7 +750,7 @@ public class StartArgs
         return listConfig;
     }
 
-    public boolean isListModules()
+    public List<String> getListModules()
     {
         return listModules;
     }
@@ -873,7 +873,7 @@ public class StartArgs
         if (arg.equals("--create-files"))
         {
             run = false;
-            download = true;
+            download = true;boolean
             licenseCheckRequired = true;
             return;
         }
@@ -939,9 +939,24 @@ public class StartArgs
         }
 
         // Module Management
+        if ("--list-all-modules".equals(arg))
+        {
+            listModules = Collections.singletonList("*");
+            run = false;
+            return;
+        }
+        
+        // Module Management
         if ("--list-modules".equals(arg))
         {
-            listModules = true;
+            listModules = Collections.singletonList("-verbose");
+            run = false;
+            return;
+        }
+        
+        if (arg.startsWith("--list-modules="))
+        {
+            listModules = Props.getValues(arg);
             run = false;
             return;
         }

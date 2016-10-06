@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -80,7 +81,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * {@link #readFrom(Content)} and then passes any {@link Content} returned 
      * to the next {@link Interceptor}.
      */
-    public static class ChainedInterceptor implements Interceptor
+    public static class ChainedInterceptor implements Interceptor, Destroyable
     {
         private final Interceptor _prev;
         private final Interceptor _next;
@@ -106,8 +107,16 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             return getNext().readFrom(getPrev().readFrom(content));
         }
+
+        @Override
+        public void destroy()
+        {
+            if (_prev instanceof Destroyable)
+                ((Destroyable)_prev).destroy();
+            if (_next instanceof Destroyable)
+                ((Destroyable)_next).destroy();
+        }
     }
-    
 
     private final static Logger LOG = Log.getLogger(HttpInput.class);
     private final static Content EOF_CONTENT = new EofContent("EOF");
@@ -155,6 +164,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             _contentConsumed = 0;
             _firstByteTimeStamp = -1;
             _blockUntil = 0;
+            if (_interceptor instanceof Destroyable)
+                ((Destroyable)_interceptor).destroy();
             _interceptor = null;
         }
     }

@@ -7,6 +7,9 @@ needless fragmentation and have better dispatch behaviours.
 When enabled with corresponding support modules, the connector can 
 accept HTTP, HTTPS or HTTP2C traffic.
 
+[Tags]
+connector
+
 [depend]
 server
 

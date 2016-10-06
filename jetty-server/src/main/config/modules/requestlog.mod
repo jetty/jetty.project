@@ -1,6 +1,9 @@
 [description]
 Enables a NCSA style request log.
 
+[Tags]
+requestlog
+
 [depend]
 server
 

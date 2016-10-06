@@ -1,6 +1,12 @@
 [description]
 Adds HTTPS protocol support to the TLS(SSL) Connector
 
+[Tags]
+connector
+https
+http
+ssl
+
 [depend]
 ssl
 

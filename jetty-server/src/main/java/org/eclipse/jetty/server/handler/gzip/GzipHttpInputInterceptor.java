@@ -24,18 +24,51 @@ import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
+import org.eclipse.jetty.util.component.Destroyable;
 
 /**
  * A HttpInput Interceptor that inflates GZIP encoded request content.
- *
  */
-public class GzipHttpInputInterceptor implements HttpInput.Interceptor
+public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroyable
 {
-    class Decoder extends GZIPContentDecoder
+    private final Decoder _decoder;
+    private ByteBuffer _chunk;
+
+    public GzipHttpInputInterceptor(ByteBufferPool pool, int bufferSize)
     {
-        public Decoder(ByteBufferPool pool, int bufferSize)
+        _decoder = new Decoder(pool, bufferSize);
+    }
+
+    @Override
+    public Content readFrom(Content content)
+    {
+        _decoder.decodeChunks(content.getByteBuffer());
+        final ByteBuffer chunk = _chunk;
+
+        if (chunk == null)
+            return null;
+
+        return new Content(chunk)
         {
-            super(pool,bufferSize);
+            @Override
+            public void succeeded()
+            {
+                _decoder.release(chunk);
+            }
+        };
+    }
+
+    @Override
+    public void destroy()
+    {
+        _decoder.destroy();
+    }
+
+    private class Decoder extends GZIPContentDecoder
+    {
+        private Decoder(ByteBufferPool pool, int bufferSize)
+        {
+            super(pool, bufferSize);
         }
 
         @Override
@@ -52,32 +85,4 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor
             super.decodeChunks(compressed);
         }
     }
-    
-    private final Decoder _decoder;
-    private ByteBuffer _chunk;
-    
-    public GzipHttpInputInterceptor(ByteBufferPool pool, int bufferSize)
-    {
-        _decoder = new Decoder(pool,bufferSize);
-    }
-
-    @Override
-    public Content readFrom(Content content)
-    {        
-        _decoder.decodeChunks(content.getByteBuffer());
-        final ByteBuffer chunk = _chunk;
-
-        if (chunk==null)
-            return null;
-        
-        return new Content(chunk)
-        {
-            @Override
-            public void succeeded()
-            {
-                _decoder.release(chunk);
-            }
-        };
-    }
-    
 }

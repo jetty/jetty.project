@@ -3,6 +3,13 @@ Provides a Log4j v2 implementation that logs to the SLF4J API.
 Requires another module that provides and SLF4J implementation.
 To receive jetty logs enable the jetty-slf4j module.
 
+[tags]
+logging
+log4j2
+log4j
+slf4j
+verbose
+
 [depends]
 log4j2-api
 slf4j-api

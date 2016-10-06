@@ -1,6 +1,9 @@
 [description]
 Enables session persistent storage in files.
 
+[Tags]
+session
+
 [provides]
 session-store
 

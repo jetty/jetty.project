@@ -1,6 +1,9 @@
 [description]
 Deploys the Hawtio console as a webapplication.
 
+[Tags]
+3rdparty
+
 [depend]
 stats
 deploy

@@ -25,6 +25,7 @@ import java.util.zip.ZipException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.component.Destroyable;
 
 /**
  * Decoder for the "gzip" encoding.
@@ -32,7 +33,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * A decoder that inflates gzip compressed data that has been
  * optimized for async usage with minimal data copies.
  */
-public class GZIPContentDecoder
+public class GZIPContentDecoder implements Destroyable
 {
     private final Inflater _inflater = new Inflater(true);
     private final ByteBufferPool _pool;
@@ -381,6 +382,12 @@ public class GZIPContentDecoder
         _size = 0;
         _value = 0;
         _flags = 0;
+    }
+
+    @Override
+    public void destroy()
+    {
+        _inflater.end();
     }
 
     public boolean isFinished()

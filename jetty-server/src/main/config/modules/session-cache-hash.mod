@@ -4,6 +4,9 @@ If not enabled, sessions will use a HashSessionCache by default, so enabling
 via this module is only needed if the configuration properties need to be
 changed.
 
+[Tags]
+session
+
 [provides]
 session-cache
 

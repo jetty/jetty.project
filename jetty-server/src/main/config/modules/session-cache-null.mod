@@ -1,6 +1,9 @@
 [description]
 A trivial SessionCache that does not actually cache sessions.
 
+[Tags]
+session
+
 [provides]
 session-cache
 

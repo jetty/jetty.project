@@ -2,6 +2,11 @@
 Provides a SLF4J implementation that logs to the Java Util Logging API.  
 To receive jetty logs enable the jetty-slf4j module.
 
+[tags]
+logging
+slf4j
+verbose
+
 [depend]
 slf4j-api
 

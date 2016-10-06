@@ -1,6 +1,10 @@
 [description]
 Control GCloud API classpath
 
+[Tags]
+3rdparty
+gcloud
+
 [files]
 basehome:modules/gcloud/gcloud.xml|etc/gcloud.xml
 
