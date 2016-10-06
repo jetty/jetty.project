@@ -324,7 +324,8 @@ public class GZIPContentDecoder implements ContentDecoder, Destroyable
     }
 
     @Override
-    public void destroy() {
+    public void destroy()
+    {
         inflater.end();
     }
 

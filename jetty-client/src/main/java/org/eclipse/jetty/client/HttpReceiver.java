@@ -466,9 +466,7 @@ public abstract class HttpReceiver
      */
     protected void reset()
     {
-        if (decoder instanceof Destroyable) {
-            ((Destroyable) decoder).destroy();
-        }
+        destroyDecoder(decoder);
         decoder = null;
     }
 
@@ -481,10 +479,16 @@ public abstract class HttpReceiver
      */
     protected void dispose()
     {
-        if (decoder instanceof Destroyable) {
-            ((Destroyable) decoder).destroy();
-        }
+        destroyDecoder(decoder);
         decoder = null;
+    }
+
+    private static void destroyDecoder(ContentDecoder decoder)
+    {
+        if (decoder instanceof Destroyable)
+        {
+            ((Destroyable)decoder).destroy();
+        }
     }
 
     public boolean abort(HttpExchange exchange, Throwable failure)
