@@ -29,13 +29,13 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -67,6 +67,8 @@ public class WebAppClassLoaderTest
         _loader.addJars(webapp.addPath("WEB-INF/lib"));
         _loader.addClassPath(webapp.addPath("WEB-INF/classes"));
         _loader.setName("test");
+        
+        _context.setServer(new Server());
     }
     
     public void assertCanLoadClass(String clazz) throws ClassNotFoundException
@@ -286,7 +288,7 @@ public class WebAppClassLoaderTest
         URL targetTestClasses = this.getClass().getClassLoader().getResource("org/acme/resource.txt");
 
         _context.setParentLoaderPriority(false);
-        dump(_context);
+        
         resources =Collections.list(_loader.getResources("org/acme/resource.txt"));
         
         expected.clear();
@@ -296,12 +298,6 @@ public class WebAppClassLoaderTest
         
         assertThat("Resources Found (Parent Loader Priority == false)",resources,ordered(expected));
         
-//        dump(resources);
-//        assertEquals(3,resources.size());
-//        assertEquals(0,resources.get(0).toString().indexOf("jar:file:"));
-//        assertEquals(-1,resources.get(1).toString().indexOf("test-classes"));
-//        assertEquals(0,resources.get(2).toString().indexOf("file:"));
-
         _context.setParentLoaderPriority(true);
         // dump(_context);
         resources =Collections.list(_loader.getResources("org/acme/resource.txt"));
@@ -356,49 +352,6 @@ public class WebAppClassLoaderTest
         
         assertThat("Resources Found (Parent Loader Priority == true) (with systemClasses filtering)",resources,ordered(expected));
         
-//        dump(resources);
-//        assertEquals(1,resources.size());
-//        assertEquals(0,resources.get(0).toString().indexOf("file:"));
     }
 
-    private void dump(WebAppContext wac)
-    {
-        System.err.println("--Dump WebAppContext - " + wac);
-        System.err.printf("  context.getClass().getClassLoader() = %s%n",wac.getClass().getClassLoader());
-        dumpClassLoaderHierarchy("  ",wac.getClass().getClassLoader());
-        System.err.printf("  context.getClassLoader() = %s%n",wac.getClassLoader());
-        dumpClassLoaderHierarchy("  ",wac.getClassLoader());
-    }
-
-    private void dumpClassLoaderHierarchy(String indent, ClassLoader classLoader)
-    {
-        if (classLoader != null)
-        {
-            if(classLoader instanceof URLClassLoader)
-            {
-                URLClassLoader urlCL = (URLClassLoader)classLoader;
-                URL urls[] = urlCL.getURLs();
-                for (URL url : urls)
-                {
-                    System.err.printf("%s url[] = %s%n",indent,url);
-                }
-            }
-            
-            ClassLoader parent = classLoader.getParent();
-            if (parent != null)
-            {
-                System.err.printf("%s .parent = %s%n",indent,parent);
-                dumpClassLoaderHierarchy(indent + "  ",parent);
-            }
-        }
-    }
-
-    private void dump(List<URL> resources)
-    {
-        System.err.println("--Dump--");
-        for(URL url: resources)
-        {
-            System.err.printf(" \"%s\"%n",url);
-        }
-    }
 }

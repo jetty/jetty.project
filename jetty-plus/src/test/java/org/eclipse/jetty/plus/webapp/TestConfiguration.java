@@ -50,8 +50,8 @@ public class TestConfiguration
             WebAppContext wac = new WebAppContext();
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
-            wac.addSystemClass("org.eclipse.jetty.jndi.");
-            wac.prependServerClass("-org.eclipse.jetty.jndi.");
+            wac.getSystemClasspathPattern().include("org.eclipse.jetty.jndi.");
+            wac.getServerClasspathPattern().exclude("org.eclipse.jetty.jndi.");
 
             MetaData metaData = new MetaData();
 

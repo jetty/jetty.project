@@ -19,8 +19,10 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -495,6 +497,39 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return keys;
     }
 
+    public int size()
+    {
+        int s=0;
+        for (int r=0;r<=_rows;r++)
+        {
+            if (_key[r]!=null && _value[r]!=null)
+                s++;
+        }
+        return s;
+    }
+    
+    public boolean isEmpty()
+    {
+        for (int r=0;r<=_rows;r++)
+        {
+            if (_key[r]!=null && _value[r]!=null)
+                return false;
+        }
+        return true;
+    }
+    
+    
+    public Set<Map.Entry<String,V>> entrySet()
+    {
+        Set<Map.Entry<String,V>> entries = new HashSet<>();
+        for (int r=0;r<=_rows;r++)
+        {
+            if (_key[r]!=null && _value[r]!=null)
+                entries.add(new AbstractMap.SimpleEntry<>(_key[r],_value[r]));
+        }
+        return entries;
+    }
+
     @Override
     public boolean isFull()
     {
@@ -524,4 +559,143 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         }
         
     }
+    
+    public static class Growing<V> implements Trie<V>
+    {
+        private final int _growby;
+        private ArrayTernaryTrie<V> _trie;
+
+        public Growing()
+        {
+            this(1024,1024);
+        }
+        
+        public Growing(int capacity, int growby)
+        {
+            _growby=growby;
+            _trie = new ArrayTernaryTrie<>(capacity);
+        }
+        
+        public Growing(boolean insensitive, int capacity, int growby)
+        {
+            _growby=growby;
+            _trie = new ArrayTernaryTrie<>(insensitive,capacity);
+        }
+
+        public boolean put(V v)
+        {
+            return put(v.toString(),v);
+        }
+
+        public int hashCode()
+        {
+            return _trie.hashCode();
+        }
+
+        public V remove(String s)
+        {
+            return _trie.remove(s);
+        }
+
+        public V get(String s)
+        {
+            return _trie.get(s);
+        }
+
+        public V get(ByteBuffer b)
+        {
+            return _trie.get(b);
+        }
+
+        public V getBest(byte[] b, int offset, int len)
+        {
+            return _trie.getBest(b,offset,len);
+        }
+
+        public boolean isCaseInsensitive()
+        {
+            return _trie.isCaseInsensitive();
+        }
+
+        public boolean equals(Object obj)
+        {
+            return _trie.equals(obj);
+        }
+
+        public void clear()
+        {
+            _trie.clear();
+        }
+
+        public boolean put(String s, V v)
+        {
+            boolean added = _trie.put(s,v);
+            while (!added)
+            {
+                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie._key.length+_growby);
+                for (Map.Entry<String,V> entry : _trie.entrySet())
+                    bigger.put(entry.getKey(),entry.getValue());
+                added = _trie.put(s,v);
+            }
+            
+            return true;
+        }
+
+        public V get(String s, int offset, int len)
+        {
+            return _trie.get(s,offset,len);
+        }
+
+        public V get(ByteBuffer b, int offset, int len)
+        {
+            return _trie.get(b,offset,len);
+        }
+
+        public V getBest(String s)
+        {
+            return _trie.getBest(s);
+        }
+
+        public V getBest(String s, int offset, int length)
+        {
+            return _trie.getBest(s,offset,length);
+        }
+
+        public V getBest(ByteBuffer b, int offset, int len)
+        {
+            return _trie.getBest(b,offset,len);
+        }
+
+        public String toString()
+        {
+            return _trie.toString();
+        }
+
+        public Set<String> keySet()
+        {
+            return _trie.keySet();
+        }
+
+        public boolean isFull()
+        {
+            return false;
+        }
+
+        public void dump()
+        {
+            _trie.dump();
+        }
+
+        public boolean isEmpty()
+        {
+            return _trie.isEmpty();
+        }
+
+        public int size()
+        {
+            return _trie.size();
+        }
+        
+    }
+
 }

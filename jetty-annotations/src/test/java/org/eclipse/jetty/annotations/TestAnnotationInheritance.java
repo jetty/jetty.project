@@ -74,6 +74,12 @@ public class TestAnnotationInheritance
                 return;
             annotatedMethods.add(info.getClassInfo().getClassName()+"."+info.getMethodName());
         }
+        
+        @Override
+        public String toString()
+        {
+            return annotatedClassNames.toString()+annotatedMethods+annotatedFields;
+        }
     }
 
     @After
@@ -93,18 +99,7 @@ public class TestAnnotationInheritance
 
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(Collections.singleton(handler), classNames, new ClassNameResolver ()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
+        parser.parse(Collections.singleton(handler), classNames);
 
         //check we got  2 class annotations
         assertEquals(2, handler.annotatedClassNames.size());
@@ -129,18 +124,7 @@ public class TestAnnotationInheritance
     {
         SampleHandler handler = new SampleHandler();
         AnnotationParser parser = new AnnotationParser();
-        parser.parse(Collections.singleton(handler), ClassB.class, new ClassNameResolver ()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        }, true);
+        parser.parse(Collections.singleton(handler), ClassB.class, true);
 
         //check we got  2 class annotations
         assertEquals(2, handler.annotatedClassNames.size());
@@ -161,46 +145,6 @@ public class TestAnnotationInheritance
     }
 
     @Test
-    public void testExclusions() throws Exception
-    {
-        AnnotationParser parser = new AnnotationParser();
-        SampleHandler handler = new SampleHandler();
-        parser.parse(Collections.singleton(handler), ClassA.class.getName(), new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return true;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
-        assertEquals (0, handler.annotatedClassNames.size());
-        assertEquals (0, handler.annotatedFields.size());
-        assertEquals (0, handler.annotatedMethods.size());
-
-        handler.annotatedClassNames.clear();
-        handler.annotatedFields.clear();
-        handler.annotatedMethods.clear();
-
-        parser.parse (Collections.singleton(handler), ClassA.class.getName(), new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
-        assertEquals (1, handler.annotatedClassNames.size());
-    }
-
-    @Test
     public void testTypeInheritanceHandling() throws Exception
     {
        ConcurrentHashMap<String, ConcurrentHashSet<String>> map = new ConcurrentHashMap<String, ConcurrentHashSet<String>>();
@@ -218,7 +162,7 @@ public class TestAnnotationInheritance
         classNames.add(InterfaceD.class.getName());
         classNames.add(Foo.class.getName());
 
-        parser.parse(Collections.singleton(handler), classNames, null);
+        parser.parse(Collections.singleton(handler), classNames);
 
         assertNotNull(map);
         assertFalse(map.isEmpty());

@@ -111,19 +111,7 @@ public class TestAnnotationParser
         }
 
         //long start = System.currentTimeMillis();
-        parser.parse(Collections.singleton(new SampleAnnotationHandler()), classNames,new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-
-        });
+        parser.parse(Collections.singleton(new SampleAnnotationHandler()), classNames);
         //long end = System.currentTimeMillis();
 
         //System.err.println("Time to parse class: " + ((end - start)));
@@ -162,7 +150,7 @@ public class TestAnnotationParser
             }
         }
 
-        parser.parse(Collections.singleton(new MultiAnnotationHandler()), classNames,null);
+        parser.parse(Collections.singleton(new MultiAnnotationHandler()), classNames);
     }
 
     @Test
@@ -171,7 +159,7 @@ public class TestAnnotationParser
         File badClassesJar = MavenTestingUtils.getTestResourceFile("bad-classes.jar");
         AnnotationParser parser = new AnnotationParser();
         Set<Handler> emptySet = Collections.emptySet();
-        parser.parse(emptySet, badClassesJar.toURI(),null);
+        parser.parse(emptySet, badClassesJar.toURI());
         // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
     }
 
@@ -196,7 +184,7 @@ public class TestAnnotationParser
         AnnotationParser parser = new AnnotationParser();
         
         // Parse
-        parser.parse(Collections.singleton(tracker), basedir.toURI(),null);
+        parser.parse(Collections.singleton(tracker), basedir.toURI());
         
         // Validate
         Assert.assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));

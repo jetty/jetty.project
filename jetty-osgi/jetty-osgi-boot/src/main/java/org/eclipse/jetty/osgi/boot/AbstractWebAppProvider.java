@@ -405,18 +405,23 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                         }
                     }
                 }
-                if (contextXmlUrl == null) return;
+                if (contextXmlUrl == null) 
+                    return;
 
                 // Apply it just as the standard jetty ContextProvider would do
                 LOG.info("Applying " + contextXmlUrl + " to " + _webApp);
 
                 XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUrl);
-                HashMap properties = new HashMap();
-                properties.put("Server", getDeploymentManager().getServer());
-                properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
-                properties.put(OSGiServerConstants.JETTY_HOME, getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
-                xmlConfiguration.getProperties().putAll(properties);
-                xmlConfiguration.configure(_webApp);
+                WebAppClassLoader.runWithServerClassAccess(()->
+                {
+                    HashMap<String,String> properties = new HashMap<>();
+                    xmlConfiguration.getIdMap().put("Server",getDeploymentManager().getServer());
+                    properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
+                    properties.put(OSGiServerConstants.JETTY_HOME, (String)getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
+                    xmlConfiguration.getProperties().putAll(properties);
+                    xmlConfiguration.configure(_webApp);
+                    return null;
+                });
             }
             finally
             {
