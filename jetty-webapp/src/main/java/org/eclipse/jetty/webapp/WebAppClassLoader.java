@@ -474,9 +474,6 @@ public class WebAppClassLoader extends URLClassLoader
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
-        LOG.setDebugEnabled(true);
-        WebAppContext.LOG.setDebugEnabled(true);
-        
         synchronized (getClassLoadingLock(name))
         {            
             ClassNotFoundException ex= null;

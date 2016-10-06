@@ -1642,10 +1642,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     public static void addServerClasses(Server server,String... pattern )
     {
-        // look for a Server attribute with the list of Server classes
-        // to apply to every web application. If not present, use our defaults.
-        Object o = server.getAttribute(SERVER_SRV_CLASSES);
+        if (pattern == null || pattern.length == 0)
+            return;
         
+        // look for a Server attribute with the list of Server classes
+        // to apply to every web application. If not present, use our defaults.        
+        Object o = server.getAttribute(SERVER_SRV_CLASSES);
         if (o instanceof ClasspathPattern)
         {
             ((ClasspathPattern)o).add(pattern);
@@ -1666,10 +1668,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     public static void addSystemClasses(Server server,String... pattern )
     {
+        if (pattern == null || pattern.length == 0)
+            return;
+        
         // look for a Server attribute with the list of System classes
         // to apply to every web application. If not present, use our defaults.
         Object o = server.getAttribute(SERVER_SYS_CLASSES);
-        
         if (o instanceof ClasspathPattern)
         {
             ((ClasspathPattern)o).add(pattern);
