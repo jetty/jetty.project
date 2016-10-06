@@ -10,7 +10,7 @@
     <Arg><Ref refid="Server"/></Arg>
     <Arg>
       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-        <Arg><Property name="gcloud.addServerClasses"><Default>file:${jetty.base}/lib/gcloud</Default></Property></Arg>
+        <Arg><Property name="gcloud.addServerClasses"><Default>file:<Property name="jetty.base"/>/lib/gcloud</Default></Property></Arg>
       </Call>
     </Arg>
   </Call>
