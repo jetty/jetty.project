@@ -1,0 +1,454 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-logging-modules]]
+=== Jetty Logging Integrations (Slf4j, Log4j, Logback, JCL, JUL)
+
+Jetty provides support for several logging frameworks including SLF4J, Java Commons Logging (jcl), Java Util Logging (jul), Log4j (including version 2), and Logback.
+This page includes examples of how to enable the associated modules for these different frameworks.
+Enabling these frameworks in the Jetty distribution is as easy as activating any other module, by adding `--add-to-start=<module name>` to the start command for your server, such as:
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=jetty-logging
+INFO : jetty-logging   initialised in ${jetty.base}/start.d/jetty-logging.ini
+INFO : Base directory was modified
+....
+
+As noted above, Jetty supports a wide array of logging technologies.
+The release of Jetty 9.4 made the implementation of these frameworks easier by providing logging modules that contain all the dependencies needed to implement a specific technology.
+If a particular logging framework requires additional jar files, Jetty will automatically download these as part of enabling the associated module.
+You can view a list of all the Jetty modules by running `java -jar <path-to-jetty.home>/start.jar --list-modules`.
+
+[[example-logging-slf4j]]
+==== Logging with SLF4J
+
+===== jetty-slf4j
+
+Jetty uses the Slf4j api as a bridge to provide logging information to additional frameworks such as Log4j or Logback.
+It can also be used itself to provide logging in conjunction with standard Jetty logging.
+Enabling the `jetty-slf4j` module by itself will prompt an error from the system which will instruct users to also implement a framework to provide the logs to.
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=jetty-slf4j
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO : slf4j-api       initialised (transitively) in ${jetty.base}/start.d/slf4j-api.ini
+INFO : jetty-slf4j     initialised in ${jetty.base}/start.d/jetty-slf4j.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+INFO : Base directory was modified
+WARN : Module jetty-slf4j requires slf4j-impl from one of [slf4j-simple, slf4j-logback, slf4j-jul, slf4j-jcl, slf4j-log4j2, slf4j-log4j]
+
+WARN : Unsatisfied module dependencies: jetty-slf4j
+
+Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
+       java -jar $JETTY_HOME/start.jar --help  # for more information
+....
+
+In this instance we just want to use Slf4j to capture Jetty logging, so we would just need to enable the `slf4j-simple` module.
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=slf4j-simple
+INFO : slf4j-simple    initialised in ${jetty.base}/start.d/slf4j-simple.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
+INFO : Base directory was modified
+....
+
+All logs produced by Jetty will now flow to Slf4j and be output in that format.
+
+[[example-logging-log4j]]
+==== Logging with Log4j and log4j2
+
+It is possible to have the Jetty Server logging configured so that Log4j or Log4j2 controls the output of logging events produced by Jetty.
+This is accomplished by configuring Jetty for logging to http://logging.apache.org/log4j/[Apache Log4j] via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for Log4j].
+Implementation of Log4j can be done by enabling the `jetty-log4j` and `log4j` modules.
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=jetty-log4j,log4j
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: log4j
+  + Log4j is released under the Apache 2.0 license.
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO : slf4j-api       initialised (transitively) in ${jetty.base}/start.d/slf4j-api.ini
+INFO : jetty-log4j     initialised in ${jetty.base}/start.d/jetty-log4j.ini
+INFO : log4j           initialised in ${jetty.base}/start.d/log4j.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-log4j12/1.7.21/slf4j-log4j12-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-log4j12-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17.jar to ${jetty.base}/lib/log4j/log4j-1.2.17.jar
+INFO : Base directory was modified
+....
+
+Or, to enable Log4j2, simply enable the `jetty-log4j2` module.
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=jetty-log4j2
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: log4j2-api
+  + Log4j is released under the Apache 2.0 license.
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO : slf4j-api       initialised (transitively) in ${jetty.base}/start.d/slf4j-api.ini
+INFO : jetty-log4j2    initialised in ${jetty.base}/start.d/jetty-log4j2.ini
+INFO : log4j2-api      initialised (transitively) in ${jetty.base}/start.d/log4j2-api.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.6.1/log4j-api-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-api-2.6.1.jar
+DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.6.1/log4j-slf4j-impl-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-slf4j-impl-2.6.1.jar
+INFO : Base directory was modified
+....
+
+In essence, Jetty is now configured to emit its own logging events to Slf4j, and Slf4j itself is using the static log binder found in `slf4j-log4j12.jar` (log4j) or `log4j-slf4j-impl.jar` (log4j2), making all Jetty + Slf4j + Log4j events emitted by the Jetty server go to Log4j for routing (to console, file, syslog, etc...).
+
+Log4j2 can also push logs to the Slf4j framework for routing.
+This is done by routing Log4j to Log4j2 and then Log4j2 to Slf4j, with Jetty logs being sent to Slf4j.
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=log4j-log4j2,log4j2-slf4j,slf4j-simple,jetty-slf4j
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: log4j2-api
+  + Log4j is released under the Apache 2.0 license.
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO : slf4j-api       initialised (transitively) in ${jetty.base}/start.d/slf4j-api.ini
+INFO : log4j-log4j2    initialised in ${jetty.base}/start.d/log4j-log4j2.ini
+INFO : slf4j-simple    initialised in ${jetty.base}/start.d/slf4j-simple.ini
+INFO : log4j2-api      initialised (transitively) in ${jetty.base}/start.d/log4j2-api.ini
+INFO : log4j2-slf4j    initialised in ${jetty.base}/start.d/log4j2-slf4j.ini
+INFO : jetty-slf4j     initialised in ${jetty.base}/start.d/jetty-slf4j.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-1.2-api/2.6.1/log4j-1.2-api-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-1.2-api-2.6.1.jar
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.6.1/log4j-api-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-api-2.6.1.jar
+DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-to-slf4j/2.6.1/log4j-to-slf4j-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-to-slf4j-2.6.1.jar
+INFO : Base directory was modified
+....
+
+[[example-logging-logback]]
+==== Logging with Logback
+
+It is possible to have the Jetty Server logging configured so that Logback controls the output of logging events produced by Jetty.
+This is accomplished by configuring Jetty for logging to `Logback`, which uses http://slf4j.org/manual.html[Slf4j] and the http://logback.qos.ch/[Logback Implementation for Slf4j].
+
+To set up Jetty logging via Logback, enable the `jetty-logback` module.
+
+[source, screen, subs="{sub-order}"]
+....
+java -jar ../start.jar --add-to-start=jetty-logback
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: logback-core
+  + Logback: the reliable, generic, fast and flexible logging framework.
+  + Copyright (C) 1999-2012, QOS.ch. All rights reserved.
+  + This program and the accompanying materials are dual-licensed under
+  + either:
+  + the terms of the Eclipse Public License v1.0
+  + as published by the Eclipse Foundation:
+  + http://www.eclipse.org/legal/epl-v10.html
+  + or (per the licensee's choosing) under
+  + the terms of the GNU Lesser General Public License version 2.1
+  + as published by the Free Software Foundation:
+  + http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO : slf4j-api       initialised (transitively) in ${jetty.base}/start.d/slf4j-api.ini
+INFO : logback-core    initialised (transitively) in ${jetty.base}/start.d/logback-core.ini
+INFO : jetty-logback   initialised in ${jetty.base}/start.d/jetty-logback.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-core/1.1.7/logback-core-1.1.7.jar to ${jetty.base}/lib/logback/logback-core-1.1.7.jar
+DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.1.7/logback-classic-1.1.7.jar to ${jetty.base}/lib/logback/logback-classic-1.1.7.jar
+INFO : Base directory was modified
+....
+
+At this point Jetty is configured so that the Jetty server itself will log using Logback, using the Logback configuration found in `{$jetty.base}/resources/logback.xml`.
+
+==== Logging with Java Util Logging
+
+[[example-logging-java-util-logging-native]]
+===== Native Java Util Logging
+
+It is possible to have the Jetty Server logging configured so that `java.util.logging` controls the output of logging events produced by Jetty.
+____
+[IMPORTANT]
+While this is a valid setup, the Jetty project recommends always using the link:#example-logging-java-util-logging[Slf4j to `java.util.logging` configuration] found below for memory and performance reasons.
+This native implementation is very non-performant and is not guaranteed to exist in the future.
+____
+
+[source, screen, subs="{sub-order}"]
+....
+java -jar ../start.jar --add-to-start=jetty-jul
+INFO : jetty-jul       initialised in ${jetty.base}/start.d/jetty-jul.ini
+INFO : Base directory was modified
+....
+
+In essence, Jetty is now configured to use `org.eclipse.jetty.util.log.JavaUtilLog`, which emit its own logging events to `java.util.logging`, making all Jetty and `java.util.logging` events emitted by the Jetty server go to `java.util.logging` for routing (to console, file, etc...).
+
+[[example-logging-java-util-logging]]
+===== Java Util Logging with SLF4J
+It is possible to have the Jetty Server logging configured so that `java.util.logging` controls the output of logging events produced by Jetty.
+
+This example demonstrates how to configuring Jetty for logging to `java.util.logging` via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for java.util.logging].
+If you want to use the built-in native `java.util.logging` implementation, see link:#example-logging-java-util-logging-native[Native Java Util Logging].
+
+[source, screen, subs="{sub-order}"]
+....
+java -jar ../start.jar --add-to-start=jetty-jul,slf4j-jul
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO : slf4j-api       initialised (transitively) in ${jetty.base}/start.d/slf4j-api.ini
+INFO : jetty-jul       initialised in ${jetty.base}/start.d/jetty-jul.ini
+INFO : slf4j-jul       initialised in ${jetty.base}/start.d/slf4j-jul.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-jdk14/1.7.21/slf4j-jdk14-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jdk14-1.7.21.jar
+INFO : Base directory was modified
+....
+
+==== Logging with Java Commons Logging
+Jetty provides support of the Java Commons Logging (jcl) through the `jcl` module.
+This can be enabled as shown below:
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=jcl
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: jcl
+  + Log4j is released under the Apache 2.0 license.
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO : jcl             initialised in ${jetty.base}/start.d/jcl.ini
+DOWNLOAD: http://central.maven.org/maven2/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar to ${jetty.base}/lib/jcl/commons-logging-1.1.3.jar
+INFO : Base directory was modified
+....
+
+To enable JCL to receive Jetty logs, both the `jetty-slf4j` and `slf4j-jcl` modules need enabled as well.
+
+[source, screen, subs="{sub-order}"]
+....
+$ java -jar ../start.jar --add-to-start=jetty-slf4j,slf4j-jcl
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO : slf4j-api       initialised (transitively) in ${jetty.base}/start.d/slf4j-api.ini
+INFO : slf4j-jcl       initialised in ${jetty.base}/start.d/slf4j-jcl.ini
+INFO : jetty-slf4j     initialised in ${jetty.base}/start.d/jetty-slf4j.ini
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-jcl/1.7.21/slf4j-jcl-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jcl-1.7.21.jar
+INFO : Base directory was modified
+....
+
+If you wish to log JCL to Slf4j, enabling the `jcl-slf4j` module will provide and implementation that provides this.
+Note that this will require an existing slf4j implementation, variations of which are outlined above.

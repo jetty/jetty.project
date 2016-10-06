@@ -20,7 +20,7 @@
 [[stderrlog-configuration]]
 ==== StdErrLog Configuration
 
-If you do nothing to configure a separate logging framework, Jetty will default to using an internal `org.eclipse.jetty.util.log.StdErrLog` implementation. 
+If you do nothing to configure a separate logging framework, Jetty will default to using an internal `org.eclipse.jetty.util.log.StdErrLog` implementation.
 This will output all logging events to STDERR (aka `System.err`).
 
 Simply use Jetty and `StdErrLog` based logging is output.
@@ -29,62 +29,55 @@ Included in the Jetty distribution is a logging module that is capable of perfor
 
 To enable on this feature via the command line:
 
-[source,bash]
-----
-[my-base]$ java -jar /opt/jetty/start.jar --module=logging
-----
-
-You can also include the `--module=logging` command in your `${jetty.base}/start.ini`.
-
-[source,bash]
-----
-[my-base]$ java -jar /opt/jetty/start.jar --add-to-start=logging
-----
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar /opt/jetty/start.jar --add-to-start=stderrout-logging
+....
 
 The default configuration for logging output will create a file `${jetty.logs}/yyyy_mm_dd.stderrout.log` which allows configuration of the output directory by setting the `jetty.logs` property.
 
 For more advanced logging configurations, please consider use of a separate logging library.
 
-The recommended way to configure `StdErrLog` is to create a `${jetty.home}/resources/jetty-logging.properties` file, specify the log implementation to `StdErrLog` and then setup logging levels.
+The recommended way to configure `StdErrLog` is to create a `${jetty.base}/resources/jetty-logging.properties` file, specify the log implementation to `StdErrLog` and then setup logging levels.
 
-[source,properties]
-----
+[source, properties, subs="{sub-order}"]
+....
 # Configure Jetty for StdErrLog Logging
 org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StrErrLog
 # Overall Logging Level is INFO
 org.eclipse.jetty.LEVEL=INFO
 # Detail Logging for WebSocket
 org.eclipse.jetty.websocket.LEVEL=DEBUG
-----
+....
 
 There are a number of properties that can be defined in the configuration that will affect the behavior of `StdErrLog`.
 
 `<name>.LEVEL=<level>`::
-  Sets the logging level for all loggers within the `name` specified to the level, which can be (in increasing order of restriction) `ALL`, `DEBUG`, `INFO`, `WARN`, `OFF`. 
+  Sets the logging level for all loggers within the `name` specified to the level, which can be (in increasing order of restriction) `ALL`, `DEBUG`, `INFO`, `WARN`, `OFF`.
   The name (or hierarchy) can be a specific fully qualified class or a package namespace.
-  For example, `org.eclipse.jetty.http.LEVEL=DEBUG` is a package namespace approach to turn all loggers in the Jetty HTTP package to DEBUG level, and  `org.eclipse.jetty.io.ChanelEndPoint.LEVEL=ALL` turns on all logging events for the specific class, including `DEBUG`, `INFO`, `WARN` (and even special internally ignored exception classes). 
+  For example, `org.eclipse.jetty.http.LEVEL=DEBUG` is a package namespace approach to turn all loggers in the Jetty HTTP package to DEBUG level, and  `org.eclipse.jetty.io.ChanelEndPoint.LEVEL=ALL` turns on all logging events for the specific class, including `DEBUG`, `INFO`, `WARN` (and even special internally ignored exception classes).
   If more than one system property specifies a logging level, the most specific one applies.
 `<name>.SOURCE=<boolean>`::
-  Named Logger specific, attempts to print the Java source file name and line number from where the logging event originated. 
-  Name must be a fully qualified class name (this configurable does not support package name hierarchy). 
-  Default is false. 
+  Named Logger specific, attempts to print the Java source file name and line number from where the logging event originated.
+  Name must be a fully qualified class name (this configurable does not support package name hierarchy).
+  Default is false.
   Be aware that this is a slow operation and has an impact on performance.
 `<name>.STACKS=<boolean>`::
-  Named Logger specific, controls the display of stacktraces. 
+  Named Logger specific, controls the display of stacktraces.
   Name must be a fully qualified class name (this configurable does not support package name hierarchy).
   Default is true.
 `org.eclipse.jetty.util.log.stderr.SOURCE=<boolean>`::
-  Special Global Configuration. 
-  Attempts to print the Java source file name and line number from where the logging event originated. 
+  Special Global Configuration.
+  Attempts to print the Java source file name and line number from where the logging event originated.
   Default is false.
 `org.eclipse.jetty.util.log.stderr.LONG=<boolean>`::
-  Special Global Configuration. 
-  When true, outputs logging events to `STDERR` using long form, fully qualified class names. 
+  Special Global Configuration.
+  When true, outputs logging events to `STDERR` using long form, fully qualified class names.
   When false, uses abbreviated package names.
   Default is false.
-  +
++
   * Example when set to false:
-  +
++
 [source, screen, subs="{sub-order}"]
 ....
 2014-06-03 14:36:16.013:INFO:oejs.Server:main: jetty-9.2.0.v20140526
@@ -93,9 +86,9 @@ There are a number of properties that can be defined in the configuration that w
 2014-06-03 14:36:17.880:INFO:oejs.ServerConnector:main: Started ServerConnector@34f2d11a{HTTP/1.1}{0.0.0.0:8080}
 2014-06-03 14:36:17.888:INFO:oejs.Server:main: Started @257ms
 ....
-  +
++
   * Example when set to true:
-  +
++
 [source, screen, subs="{sub-order}"]
 ....
 2014-06-03 14:38:19.019:INFO:org.eclipse.jetty.server.Server:main: jetty-9.2.0.v20140526
@@ -108,7 +101,7 @@ There are a number of properties that can be defined in the configuration that w
 [[deprecated-parameters]]
 ==== Deprecated Parameters
 
-These parameters existed in prior versions of Jetty, and are no longer supported. 
+These parameters existed in prior versions of Jetty, and are no longer supported.
 They are included here for historical (and search engine) reasons.
 
 `org.eclipse.jetty.util.log.DEBUG`::
