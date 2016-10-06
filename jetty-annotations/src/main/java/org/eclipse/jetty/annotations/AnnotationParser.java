@@ -544,7 +544,6 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to find class
      * @param className the class name to parse
-     * @param resolver the class name resolver to use 
      * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, String className)
@@ -575,7 +574,6 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for class in 
      * @param clazz the class to look for
-     * @param resolver the resolver to look up class with
      * @param visitSuperClasses if true, also visit super classes for parse 
      * @throws Exception if unable to parse class
      */
@@ -614,7 +612,6 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to look for class in 
      * @param classNames the class name
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, String[] classNames)
@@ -632,7 +629,6 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to look for class in 
      * @param classNames the class names
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, List<String> classNames)
@@ -672,7 +668,6 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to look for classes in 
      * @param dir the resource directory to look for classes
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     protected void parseDir (Set<? extends Handler> handlers, Resource dir)
@@ -736,7 +731,6 @@ public class AnnotationParser
      * @param loader the classloader for the classes
      * @param visitParents if true, visit parent classloaders too
      * @param nullInclusive if true, an empty pattern means all names match, if false, none match
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive)
@@ -777,7 +771,6 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param uris the uris for the jars
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, final URI[] uris)
@@ -807,7 +800,6 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in 
      * @param uri the uri for the jar 
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, URI uri)
@@ -825,7 +817,6 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param r the resource to parse
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     public void parse (final Set<? extends Handler> handlers, Resource r)
@@ -867,7 +858,6 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param jarResource the jar resource to parse
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     protected void parseJar (Set<? extends Handler> handlers, Resource jarResource)
@@ -922,7 +912,6 @@ public class AnnotationParser
      * @param handlers the handlers to look for classes in  
      * @param jar the jar resource to parse
      * @param entry the entry in the jar resource to parse
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
     protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry)
