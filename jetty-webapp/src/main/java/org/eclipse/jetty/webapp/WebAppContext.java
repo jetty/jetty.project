@@ -777,6 +777,19 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _serverClasses.getPatterns();
     }
 
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void addSystemClass(String clazz)
+    {
+        _systemClasses.add(clazz);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void addServerClass(String clazz)
+    {
+        _serverClasses.add(clazz);
+    }
 
     /* ------------------------------------------------------------ */
     @Override
