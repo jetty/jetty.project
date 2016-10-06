@@ -7,6 +7,7 @@ To receive jetty logs the jetty-slf4j and slf4j-log4j must also be enabled.
 logging
 log4j2
 log4j
+verbose
 
 [depends]
 log4j2-api

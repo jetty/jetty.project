@@ -6,6 +6,7 @@ Requires another module that provides and SLF4J implementation.
 logging
 jcl
 slf4j
+verbose
 
 [depends]
 slf4j-api

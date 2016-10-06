@@ -8,6 +8,7 @@ logging
 log4j2
 log4j
 slf4j
+verbose
 
 [depend]
 slf4j-api

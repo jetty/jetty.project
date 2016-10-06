@@ -4,6 +4,7 @@ and logback-access
 
 [tags]
 logging
+verbose
 
 [files]
 maven://ch.qos.logback/logback-core/${logback.version}|lib/logback/logback-core-${logback.version}.jar
