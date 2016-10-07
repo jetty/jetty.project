@@ -364,7 +364,7 @@ public class StartArgs
         }
         else
         {
-            System.out.printf(" %s = %s%n",key,properties.expand(prop.value));
+            System.out.printf(" %s = %s%n",key,prop.value);
             if (StartLog.isDebugEnabled())
             {
                 System.out.printf("   origin: %s%n",prop.origin);
@@ -372,7 +372,7 @@ public class StartArgs
                 {
                     prop = prop.overrides;
                     System.out.printf("   (overrides)%n");
-                    System.out.printf("     %s = %s%n",key,properties.expand(prop.value));
+                    System.out.printf("     %s = %s%n",key,prop.value);
                     System.out.printf("     origin: %s%n",prop.origin);
                 }
             }
@@ -398,7 +398,7 @@ public class StartArgs
         for (String key : sortedKeys)
         {
             String value = System.getProperty(key);
-            System.out.printf(" %s = %s%n",key,properties.expand(value));
+            System.out.printf(" %s = %s%n",key,value);
         }
     }
 
@@ -1050,13 +1050,33 @@ public class StartArgs
         }
 
         // Is this a raw property declaration?
-        int idx = arg.indexOf('=');
-        if (idx >= 0)
+        int equals = arg.indexOf('=');
+        if (equals >= 0)
         {
-            String key = arg.substring(0,idx);
-            String value = arg.substring(idx + 1);
+            String key = arg.substring(0,equals);
+            String value = arg.substring(equals + 1);
 
-            if (replaceProps)
+            if (key.endsWith("+"))
+            {
+                key = key.substring(0,key.length()-1);
+                String orig = getProperties().getString(key);
+                if (orig != null && !orig.isEmpty())
+                {
+                    value=orig+value;
+                    source=propertySource.get(key)+","+source;
+                }
+            }
+            else if (key.endsWith(","))
+            {
+                key = key.substring(0,key.length()-1);
+                String orig = getProperties().getString(key);
+                if (orig != null && !orig.isEmpty())
+                {
+                    value=value.isEmpty()?orig:(orig+","+value);
+                    source=propertySource.get(key)+","+source;
+                }
+            }
+            else if (replaceProps)
             {
                 if (propertySource.containsKey(key))
                 {
@@ -1065,21 +1085,10 @@ public class StartArgs
                 propertySource.put(key,source);
             }
 
-            if ("OPTION".equals(key) || "OPTIONS".equals(key))
-            {
-                StringBuilder warn = new StringBuilder();
-                warn.append("The behavior of the argument ");
-                warn.append(arg).append(" (seen in ").append(source);
-                warn.append(") has changed, and is now considered a normal property.  ");
-                warn.append(key).append(" no longer controls what libraries are on your classpath,");
-                warn.append(" use --module instead. See --help for details.");
-                StartLog.warn(warn.toString());
-            }
-
             setProperty(key,value,source,replaceProps);
             return;
         }
-
+        
         // Is this an xml file?
         if (FS.isXml(arg))
         {
@@ -1184,7 +1193,9 @@ public class StartArgs
             return;
         }
 
-        if (replaceProp || (!properties.containsKey(key)))
+        if (value==null || value.isEmpty())
+            properties.remove(key,value,source);
+        else if (replaceProp || (!properties.containsKey(key)))
         {
             properties.setProperty(key,value,source);
             if(key.equals("java.version"))

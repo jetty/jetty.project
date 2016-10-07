@@ -12,7 +12,6 @@ etc/stderrout-logging.xml
 logs/
 
 [lib]
-lib/logging/**.jar
 resources/
 
 [ini-template]

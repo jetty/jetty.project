@@ -1,7 +1,5 @@
 [description]
-Provides a SLF4J implementation that logs to the Log4j v2 API.  
-Requires another module that provides a Log4j2 implementation.
-To receive jetty logs enable the jetty-slf4j2 module.
+Provides a SLF4J to Log4j v2 logging bridge.
 
 [tags]
 logging

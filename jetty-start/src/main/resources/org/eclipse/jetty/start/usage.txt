@@ -147,6 +147,15 @@ Startup / Shutdown Command Line:
 
 Properties:
 
+    name=value
+      Set a property that can be expanded in XML files with the <Property> element.
+
+    name+=value
+      Add to an existing property.
+
+    name,=value
+      Add to an existing property as a comma separated list.
+
     STOP.HOST=[string]
       The host to use to stop the running Jetty server (defaults to 127.0.0.1)
       Required along with STOP.PORT if you want to use the --stop option above.

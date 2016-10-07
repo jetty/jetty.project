@@ -1,5 +1,5 @@
 [description]
-Provides the logback core implementation, used by slf4j-logback
+Provides the logback core implementation
 and logback-access
 
 [tags]

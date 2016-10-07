@@ -1,6 +1,5 @@
 [description]
-Provides a SLF4J implementation that logs to the Java Util Logging API.  
-To receive jetty logs enable the jetty-slf4j module.
+Provides a SLF4J to Java Util Logging (JUL) logging bridge.
 
 [tags]
 logging

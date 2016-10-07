@@ -1,6 +1,5 @@
 [description]
-Provides a Java Commons Logging implementation that logs to the SLF4J API.  
-Requires another module that provides and SLF4J implementation.
+Provides a Java Commons Logging (JCL) to SLF4J logging bridge.
 
 [tags]
 logging
