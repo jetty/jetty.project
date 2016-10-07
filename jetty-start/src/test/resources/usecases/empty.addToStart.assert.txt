@@ -14,7 +14,7 @@ LIB|${jetty.home}/lib/extra/extra1.jar
 
 # The Properties we expect (order is irrelevant)
 PROP|extra.prop=value0
-PROP|main.prop=valueT
+PROP|main.prop=value0
 PROP|optional.prop=value0
 
 # Files / Directories to create

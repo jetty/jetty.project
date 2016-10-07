@@ -158,6 +158,8 @@ public class Modules implements Iterable<Module>
                 index="";
                 name="";
             }
+            if (module.isTransitive() && module.hasIniTemplate())
+                System.out.printf("                       init template available with --add-to-start=%s%n",module.getName());
         }
     }
 
@@ -312,9 +314,6 @@ public class Modules implements Iterable<Module>
                     m.expandProperties(_args.getProperties());
             }
         }
-        else if (module.isTransitive() && module.hasIniTemplate())
-            newlyEnabled.add(module.getName());
-        
         
         // Process module dependencies (always processed as may be dynamic)
         for(String dependsOn:module.getDepends())
@@ -351,7 +350,7 @@ public class Modules implements Iterable<Module>
                 // Is there an obvious default?
                 Optional<Module> dftProvider = providers.stream().filter(m->m.getName().equals(dependsOn)).findFirst();
                 if (dftProvider.isPresent())
-                    enable(newlyEnabled,dftProvider.get(),"default provider of "+dependsOn+" for "+module.getName(),true);
+                    enable(newlyEnabled,dftProvider.get(),"transitive provider of "+dependsOn+" for "+module.getName(),true);
                 else if (StartLog.isDebugEnabled())
                     StartLog.debug("Module %s requires %s from one of %s",module,dependsOn,providers);
             }
