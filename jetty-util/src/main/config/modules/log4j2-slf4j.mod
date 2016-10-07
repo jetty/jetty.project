@@ -6,7 +6,7 @@ logging
 log4j2
 log4j
 slf4j
-verbose
+internal
 
 [depends]
 log4j2-api

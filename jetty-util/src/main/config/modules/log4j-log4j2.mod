@@ -5,7 +5,7 @@ Provides a Log4j v1.2 to Log4j v2 logging bridge.
 logging
 log4j2
 log4j
-verbose
+internal
 
 [depends]
 log4j2-api

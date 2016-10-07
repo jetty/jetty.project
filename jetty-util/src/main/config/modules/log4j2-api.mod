@@ -5,7 +5,7 @@ Provides the Log4j v2 API
 logging
 log4j2
 log4j
-verbose
+internal
 
 [files]
 maven://org.apache.logging.log4j/log4j-api/${log4j2.version}|lib/log4j/log4j-api-${log4j2.version}.jar

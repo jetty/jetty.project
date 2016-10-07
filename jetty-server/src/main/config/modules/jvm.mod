@@ -17,7 +17,7 @@ setting JVM arguments (eg -Xmx )
 # -XX:+CMSClassUnloadingEnabled
 # -XX:+UseCMSCompactAtFullCollection
 # -XX:CMSInitiatingOccupancyFraction=80
-# -verbose:gc
+# -internal:gc
 # -XX:+PrintGCDateStamps
 # -XX:+PrintGCTimeStamps
 # -XX:+PrintGCDetails

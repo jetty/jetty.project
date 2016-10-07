@@ -5,7 +5,7 @@ Provides a Java Commons Logging (JCL) to SLF4J logging bridge.
 logging
 jcl
 slf4j
-verbose
+internal
 
 [depends]
 slf4j-api

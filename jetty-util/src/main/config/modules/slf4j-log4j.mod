@@ -5,7 +5,7 @@ Provides a SLF4J to the Log4j v1.2 API logging bridge.
 logging
 log4j
 slf4j
-verbose
+internal
 
 [depend]
 slf4j-api

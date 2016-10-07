@@ -4,7 +4,7 @@ Provides a SLF4J to Logback logging bridge.
 [tags]
 logging
 slf4j
-verbose
+internal
 
 [depend]
 slf4j-api

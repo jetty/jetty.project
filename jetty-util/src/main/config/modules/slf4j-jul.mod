@@ -4,7 +4,7 @@ Provides a SLF4J to Java Util Logging (JUL) logging bridge.
 [tags]
 logging
 slf4j
-verbose
+internal
 
 [depend]
 slf4j-api

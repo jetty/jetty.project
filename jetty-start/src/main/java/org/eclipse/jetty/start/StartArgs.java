@@ -949,7 +949,7 @@ public class StartArgs
         // Module Management
         if ("--list-modules".equals(arg))
         {
-            listModules = Collections.singletonList("-verbose");
+            listModules = Collections.singletonList("-internal");
             run = false;
             return;
         }
