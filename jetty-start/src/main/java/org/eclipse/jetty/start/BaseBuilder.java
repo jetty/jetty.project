@@ -220,11 +220,11 @@ public class BaseBuilder
                 else if (module.isTransitive())
                 {
                     if (module.hasIniTemplate())
-                        StartLog.info("%-15s transitive, ini template available with --add-to-start=%s",
+                        StartLog.info("%-15s transitively enabled, ini template available with --add-to-start=%s",
                             module.getName(),
                             module.getName());
                     else
-                        StartLog.info("%-15s transitive",module.getName());
+                        StartLog.info("%-15s transitively enabled",module.getName());
                 }
                 else
                     StartLog.info("%-15s initialized in %s",
