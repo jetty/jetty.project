@@ -200,6 +200,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     progress=true;
                 }
 
+                if (_unwrapBuf.hasContent() && !_connection.isSuspended())
+                    progress=true;
+
                 _logger.debug("{} handle {} progress={}", _session, this, progress);
             }
         }
