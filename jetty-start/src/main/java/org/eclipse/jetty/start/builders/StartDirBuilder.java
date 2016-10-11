@@ -50,7 +50,7 @@ public class StartDirBuilder implements BaseBuilder.Config
     }
 
     @Override
-    public boolean addModule(Module module) throws IOException
+    public String addModule(Module module) throws IOException
     {
         if (module.isDynamic())
         {
@@ -59,28 +59,20 @@ public class StartDirBuilder implements BaseBuilder.Config
                 // warn
                 StartLog.warn("%-15s not adding [ini-template] from dynamic module",module.getName());
             }
-            return false;
-        }
-
-        String mode = "";
-        if (module.isTransitive())
-        {
-            mode = "(transitively) ";
+            return null;
         }
 
         if (module.hasIniTemplate() || !module.isTransitive())
         {
             // Create start.d/{name}.ini
             Path ini = startDir.resolve(module.getName() + ".ini");
-            StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(ini));
-
             try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
             {
                 module.writeIniSection(writer);
             }
-            return true;
+            return baseHome.toShortForm(ini);
         }
 
-        return false;
+        return null;
     }
 }

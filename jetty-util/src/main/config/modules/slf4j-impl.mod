@@ -5,7 +5,7 @@ To receive jetty logs enable the jetty-slf4j module.
 [tags]
 logging
 slf4j
-verbose
+internal
 
 [depend]
 slf4j-api

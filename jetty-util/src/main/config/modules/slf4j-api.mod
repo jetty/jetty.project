@@ -5,7 +5,7 @@ otherwise a noop implementation is used.
 [tags]
 logging
 slf4j
-verbose
+internal
 
 [files]
 maven://org.slf4j/slf4j-api/${slf4j.version}|lib/slf4j/slf4j-api-${slf4j.version}.jar

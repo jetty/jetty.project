@@ -24,5 +24,5 @@ lib/jetty-webapp-${jetty.version}.jar
 ##  + a directory of jars,resource or classes e.g. 'file:${jetty.base}/resources' 
 ##  + A pattern preceeded with a '-' is an exclusion, all other patterns are inclusions
 ##
-#jetty.webapp.addSystemClasses=
-#jetty.webapp.addServerClasses=
+jetty.webapp.addSystemClasses,=
+jetty.webapp.addServerClasses,=

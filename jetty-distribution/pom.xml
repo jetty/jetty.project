@@ -329,7 +329,7 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}</argument>
-                <argument>--add-to-start=deploy,websocket,ext,resources,jsp,jstl,http</argument>
+                <argument>--add-to-start=server,deploy,websocket,ext,resources,jsp,jstl,http</argument>
               </arguments>
             </configuration>
             <goals>
