@@ -176,8 +176,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             LOG.debug("Using RemoteEndpointFactory: {}", remoteEndpointFactory);
     
         this.endpointFunctions = newEndpointFunctions(this.endpoint);
-        addBean(this.endpointFunctions);
-        
+        addManaged(this.endpointFunctions);
+    
         super.doStart();
     }
 

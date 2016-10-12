@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.function;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 
@@ -28,7 +29,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
  *
  * @param <T> the Session object
  */
-public interface EndpointFunctions<T>
+public interface EndpointFunctions<T> extends LifeCycle
 {
     void onOpen(T session);
 

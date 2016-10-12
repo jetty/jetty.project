@@ -110,8 +110,8 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     protected void doStart() throws Exception
     {
-        super.doStart();
         discoverEndpointFunctions(this.endpoint);
+        super.doStart();
     }
     
     protected void discoverEndpointFunctions(Object endpoint)
