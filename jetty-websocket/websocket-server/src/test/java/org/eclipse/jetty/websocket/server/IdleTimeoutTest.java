@@ -88,7 +88,8 @@ public class IdleTimeoutTest
             client.expectUpgradeResponse();
 
             // This wait should be shorter than client timeout above, but
-            // longer than server timeout configured in TimeoutServlet
+            // longer than server timeout configured in FastTimeoutRFCSocket
+            // eg: websocket server endpoint timeout < this timeout < websocket client idle timeout
             client.sleep(TimeUnit.MILLISECONDS,1000);
 
             // Write to server
