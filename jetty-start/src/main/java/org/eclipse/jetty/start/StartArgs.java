@@ -752,11 +752,7 @@ public class StartArgs
 
     public List<String> getListModules()
     {
-        if (listModules == null || listModules.contains("internal") || listModules.contains("-internal"))
-            return listModules;
-        List<String> modules = new ArrayList<>(listModules);
-        modules.add("-internal");
-        return modules;
+        return listModules;
     }
 
     public boolean isRun()
@@ -953,7 +949,7 @@ public class StartArgs
         // Module Management
         if ("--list-modules".equals(arg))
         {
-            listModules = Collections.emptyList();
+            listModules = Collections.singletonList("-internal");
             run = false;
             return;
         }
@@ -1134,18 +1130,7 @@ public class StartArgs
             list.add(source);
         }
     }
-
-    public void parseModule(Module module)
-    {
-        if (module.hasDefaultConfig())
-        {
-            for (String line : module.getDefaultConfig())
-            {
-                parse(line,module.getName(),false);
-            }
-        }
-    }
-
+    
     public void resolveExtraXmls(BaseHome baseHome) throws IOException
     {
         // Find and Expand XML files

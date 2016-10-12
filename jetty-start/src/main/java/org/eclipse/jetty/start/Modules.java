@@ -273,7 +273,7 @@ public class Modules implements Iterable<Module>
             Set<Module> providers = _provided.get(name);
             if (providers!=null)
             {
-                providers.forEach(p-> 
+                for (Module p:providers)
                 { 
                     if (p!=module && p.isEnabled())
                     {
@@ -283,16 +283,14 @@ public class Modules implements Iterable<Module>
                             p.clearTransitiveEnable();
                             if (p.hasDefaultConfig())
                             {
-                                p.getDefaultConfig().forEach(a->
-                                {
+                                for (String a : p.getDefaultConfig())
                                     _args.removeProperty(a,p.getName());
-                                });
                             }
                         }
                         else
                             throw new UsageException("%s provides %s, which is already provided by %s enabled in %s",module.getName(),name,p.getName(),p.getEnableSources());
                     }
-                });
+                };
             }   
         }
       
