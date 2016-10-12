@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenSessionIntSocket;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandlerWrapper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -81,7 +82,7 @@ public class DeploymentExceptionTest
     @Test
     public void testDeploy_InvalidSignature() throws Exception
     {
-        MappedWebSocketCreator creator = new DummyCreator();
+        MappedWebSocketCreator creator = new WebSocketUpgradeHandlerWrapper();
         WebSocketServerFactory serverFactory = new WebSocketServerFactory();
         Executor executor = new QueuedThreadPool();
         ServerContainer container = new ServerContainer(creator, serverFactory, executor);
