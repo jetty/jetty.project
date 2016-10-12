@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -157,8 +158,54 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     
     private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
     {
+        assertIsValidEndpoint(config);
+        
         JsrCreator creator = new JsrCreator(this, config, webSocketServerFactory.getExtensionFactory());
         mappedCreator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+    }
+    
+    private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException
+    {
+        EndpointFunctions endpointFunctions = null;
+        try
+        {
+            // Test that endpoint can be instantiated
+            Object endpoint = config.getEndpointClass().newInstance();
+            
+            // Establish an EndpointFunctions to test validity of Endpoint declaration
+            AvailableEncoders availableEncoders = new AvailableEncoders(config);
+            AvailableDecoders availableDecoders = new AvailableDecoders(config);
+            Map<String, String> pathParameters = new HashMap<>();
+            endpointFunctions = newJsrEndpointFunction(endpoint, availableEncoders, availableDecoders, pathParameters, config);
+            endpointFunctions.start(); // this should trigger an exception if endpoint is invalid.
+        }
+        catch (InstantiationException e)
+        {
+            throw new DeploymentException("Unable to instantiate new instance of endpoint: " + config.getEndpointClass().getName(), e);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new DeploymentException("Unable access endpoint: " + config.getEndpointClass().getName(), e);
+        }
+        catch (Exception e)
+        {
+            throw new DeploymentException("Unable add endpoint: " + config.getEndpointClass().getName(), e);
+        }
+        finally
+        {
+            if (endpointFunctions != null)
+            {
+                try
+                {
+                    // Dispose of EndpointFunctions
+                    endpointFunctions.stop();
+                }
+                catch (Exception ignore)
+                {
+                    // ignore
+                }
+            }
+        }
     }
     
     @Override
