@@ -1,7 +1,7 @@
 [description]
 Enables GCloudDatastore session management.
 
-[Tags]
+[tags]
 session
 gcloud
 

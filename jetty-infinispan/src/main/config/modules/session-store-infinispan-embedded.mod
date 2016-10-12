@@ -1,7 +1,7 @@
 [description]
 Enables session data store in a local Infinispan cache
 
-[Tags]
+[tags]
 session
 
 [provides]

@@ -1,7 +1,7 @@
 [description]
 Enables GCloud Datastore API and implementation
 
-[Tags]
+[tags]
 3rdparty
 gcloud
 

@@ -5,7 +5,7 @@ created or by enabling other session-cache or session-store
 modules.  Without this module enabled, the server may still
 use sessions, but their management cannot be configured.
 
-[Tags]
+[tags]
 session
 
 [depends]

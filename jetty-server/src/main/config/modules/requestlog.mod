@@ -1,7 +1,7 @@
 [description]
 Enables a NCSA style request log.
 
-[Tags]
+[tags]
 requestlog
 
 [depend]

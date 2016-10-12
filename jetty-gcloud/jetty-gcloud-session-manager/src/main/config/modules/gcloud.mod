@@ -1,7 +1,7 @@
 [description]
 Control GCloud API classpath
 
-[Tags]
+[tags]
 3rdparty
 gcloud
 

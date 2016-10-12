@@ -3,7 +3,7 @@
 # Applies ThreadLimiteHandler to entire server
 #
 
-[Tags]
+[tags]
 handler
 
 [depend]

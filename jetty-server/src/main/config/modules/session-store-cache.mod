@@ -1,7 +1,7 @@
 [description]
 Enables caching of SessionData in front of a SessionDataStore.
 
-[Tags]
+[tags]
 session
 
 

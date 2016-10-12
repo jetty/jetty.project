@@ -2,7 +2,7 @@
 Enables the HTTP2C protocol on the HTTP Connector
 The connector will accept both HTTP/1 and HTTP/2 connections.
 
-[Tags]
+[tags]
 connector
 http2
 http

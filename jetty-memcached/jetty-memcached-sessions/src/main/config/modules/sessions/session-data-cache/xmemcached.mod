@@ -1,7 +1,7 @@
 [description]
 Memcache cache for SessionData
 
-[Tags]
+[tags]
 session
 
 [depends]
