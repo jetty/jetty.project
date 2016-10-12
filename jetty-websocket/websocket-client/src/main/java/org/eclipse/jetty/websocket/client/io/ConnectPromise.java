@@ -116,5 +116,6 @@ public abstract class ConnectPromise extends FuturePromise<Session> implements R
     public void setSession(WebSocketSession session)
     {
         this.session = session;
+        this.client.addManaged(session);
     }
 }

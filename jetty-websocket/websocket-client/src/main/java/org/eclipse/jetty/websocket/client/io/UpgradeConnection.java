@@ -320,7 +320,6 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
 
         // Wire up Session <-> Connection
         connection.addListener(session);
-        connectPromise.setSession(session);
 
         // Initialize / Negotiate Extensions
         ExtensionStack extensionStack = new ExtensionStack(connectPromise.getClient().getExtensionFactory());
@@ -338,7 +337,9 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
         extensionStack.setNextOutgoing(connection);
 
         session.addManaged(extensionStack);
-        connectPromise.getClient().addManaged(session);
+        
+        // let waiting client know about session
+        connectPromise.setSession(session);
 
         // Now swap out the connection
         endp.upgrade(connection);
