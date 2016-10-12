@@ -179,6 +179,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         addManaged(this.endpointFunctions);
     
         super.doStart();
+        
+        connection.setMaxIdleTimeout(this.policy.getIdleTimeout());
     }
 
     @Override

@@ -733,7 +733,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void setMaxIdleTimeout(long ms)
     {
-        getEndPoint().setIdleTimeout(ms);
+        if(ms >= 0)
+        {
+            getEndPoint().setIdleTimeout(ms);
+        }
     }
 
     @Override
