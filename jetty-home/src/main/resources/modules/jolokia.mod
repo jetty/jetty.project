@@ -14,6 +14,7 @@ etc/jolokia.xml
 
 [files]
 maven://org.jolokia/jolokia-war/1.3.3/war|lib/jolokia/jolokia.war
+basehome:modules/jolokia/jolokia.xml|etc/jolokia.xml
 
 [license]
 Jolokia is released under the Apache License 2.0

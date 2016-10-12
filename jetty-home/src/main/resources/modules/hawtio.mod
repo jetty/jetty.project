@@ -16,6 +16,7 @@ etc/hawtio.xml
 etc/hawtio/
 lib/hawtio/
 https://oss.sonatype.org/content/repositories/public/io/hawt/hawtio-default/1.4.16/hawtio-default-1.4.16.war|lib/hawtio/hawtio.war
+basehome:modules/hawtio/hawtio.xml|etc/hawtio.xml
 
 [license]
 Hawtio is a redhat JBoss project released under the Apache License, v2.0
