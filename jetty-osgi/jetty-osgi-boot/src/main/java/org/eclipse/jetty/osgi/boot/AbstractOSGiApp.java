@@ -47,18 +47,16 @@ public abstract class AbstractOSGiApp extends App
     private static final Logger LOG = Log.getLogger(AbstractOSGiApp.class);
     
     protected Bundle _bundle;
-    protected Dictionary _properties;
+    protected Dictionary<?,?> _properties;
     protected ServiceRegistration _registration;
 
     /* ------------------------------------------------------------ */
     public AbstractOSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, String originId)
     {
-        super(manager, provider, originId);
-        _properties = bundle.getHeaders();
-        _bundle = bundle;
+        this (manager, provider, bundle, bundle.getHeaders(), originId);
     }
     /* ------------------------------------------------------------ */
-    public AbstractOSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String originId)
+    public AbstractOSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary<?,?> properties, String originId)
     {
         super(manager, provider, originId);
         _properties = properties;

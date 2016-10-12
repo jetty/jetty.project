@@ -33,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Deprecated 
 public class GZIPContentDecoderTest
 {
     @Rule

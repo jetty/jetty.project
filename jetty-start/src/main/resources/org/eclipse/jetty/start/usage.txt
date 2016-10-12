@@ -59,7 +59,7 @@ Debug and Start Logging:
 Module Management:
 ------------------
 
-  --list-modules   List all modules defined by the system.
+  --list-modules   List non verbose modules defined by the system.
                    Looking for module files in ${jetty.base}/modules/*.mod and
                    then ${jetty.home}/modules/*.mod
                    Will also list enabled state based on information
@@ -67,6 +67,13 @@ Module Management:
                     o  The command line
                     o  The ${jetty.base}/start.ini
                     o  The ${jetty.base}/start.d/*.ini files
+  
+  --list-modules=<tag>(,<tag>)*
+                   List modules by tag. Use '*' for all tags. Prefix a tag 
+                   with '-' to exclude the tag.
+                   
+  --list-all-modules
+                   List all modules.
 
   --module=<modulename>(,<modulename>)*
                    Temporarily enable a module from the command line.
@@ -139,6 +146,15 @@ Startup / Shutdown Command Line:
                    property set and the stop command must have the same property.
 
 Properties:
+
+    name=value
+      Set a property that can be expanded in XML files with the <Property> element.
+
+    name+=value
+      Add to an existing property.
+
+    name,=value
+      Add to an existing property as a comma separated list.
 
     STOP.HOST=[string]
       The host to use to stop the running Jetty server (defaults to 127.0.0.1)

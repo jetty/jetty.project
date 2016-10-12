@@ -2,6 +2,11 @@
 Enables the HTTP2C protocol on the HTTP Connector
 The connector will accept both HTTP/1 and HTTP/2 connections.
 
+[Tags]
+connector
+http2
+http
+
 [depend]
 http
 
@@ -15,5 +20,5 @@ etc/jetty-http2c.xml
 ## Max number of concurrent streams per connection
 # jetty.http2c.maxConcurrentStreams=1024
 
-## Initial stream send (server to client) window
-# jetty.http2c.initialStreamSendWindow=65535
+## Initial stream receive window (client to server)
+# jetty.http2c.initialStreamRecvWindow=65535

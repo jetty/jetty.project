@@ -28,6 +28,8 @@ import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -933,6 +935,7 @@ public class HttpParser
                         break;
 
                     default: break;
+
                 }
 
                 if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)

@@ -3,6 +3,10 @@ Enables a HTTP connector on the server.
 By default HTTP/1 is support, but HTTP2C can
 be added to the connector with the http2c module.
 
+[Tags]
+connector
+http
+
 [depend]
 server
 

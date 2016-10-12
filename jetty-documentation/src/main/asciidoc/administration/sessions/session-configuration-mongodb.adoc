@@ -16,12 +16,15 @@
 
 [[configuring-sessions-mongo]]
 
-=== Configuring MongoDB Clustering
+=== Clustered Session Management: MongoDB
 
 When using the Jetty distribution, you will first need to enable the `session-store-mongo` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 [source, screen, subs="{sub-order}"]
 ----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
 $ java -jar ../start.jar --add-to-start=session-store-mongo
 
 ALERT: There are enabled module(s) with licenses.
@@ -44,11 +47,11 @@ INFO : Base directory was modified
 ----
 
 Doing this enables the MongoDB Session module and any dependent modules or files needed for it to run on the server.
-The example above is running an fresh `{$jetty.base}` with nothing enabled.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
 Because MongoDB is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
 When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-mongo` module as well as the `sessions` and `server` modules, which are required for MongoDB session management to operate..
 It also downloaded the needed Mongo-specific jar file and created a directory named `${jetty.base}/lib/nosql/` to house it.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
 
 ____
 [NOTE]
@@ -65,14 +68,20 @@ Opening the `start.d/session-store-mongo.ini` will show a list of all the config
 # ---------------------------------------
 --module=session-store-mongo
 
-#jetty.session.dbName=HttpSessions
-#jetty.session.collectionName=jettySessions
+#jetty.session.mongo.dbName=HttpSessions
+#jetty.session.mongo.collectionName=jettySessions
+#jetty.session.mongo.host=localhost
+#jetty.session.mongo.port=27017
 #jetty.session.gracePeriod.seconds=3600
 ----
 
-jetty.session.dbName::
+jetty.session.mongo.dbName::
 Name of the database in Mongo used to store the Session collection.
-jetty.session.collectionName::
+jetty.session.mongo.collectionName::
 Name of the collection in Mongo used to keep all of the Sessions.
+jetty.session.mongo.host::
+Host name or address for the remote Mongo instance.
+jetty.session.mongo.port::
+Port number for the remote Mongo instance.
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.

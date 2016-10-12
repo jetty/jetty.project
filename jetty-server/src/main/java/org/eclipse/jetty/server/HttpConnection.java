@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
@@ -125,9 +124,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpChannelOverHttp newHttpChannel()
     {
-        HttpChannelOverHttp httpChannel = new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
-
-        return httpChannel;
+        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
@@ -172,13 +169,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public int getMessagesIn()
+    public long getMessagesIn()
     {
         return getHttpChannel().getRequests();
     }
 
     @Override
-    public int getMessagesOut()
+    public long getMessagesOut()
     {
         return getHttpChannel().getRequests();
     }
@@ -286,9 +283,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         while (_parser.inContentState())
         {
             int filled = fillRequestBuffer();
-            boolean handle = parseRequestBuffer();
-            handled|=handle;
-            if (handle || filled<=0 || _channel.getRequest().getHttpInput().hasContent())
+            handled = parseRequestBuffer();
+            if (handled || filled<=0 || _channel.getRequest().getHttpInput().hasContent())
                 break;
         }
         return handled;

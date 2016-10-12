@@ -2,6 +2,9 @@
 Adds a forwarded request customizer to the HTTP Connector
 to process forwarded-for style headers from a proxy.
 
+[Tags]
+connector
+
 [depend]
 http
 

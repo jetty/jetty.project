@@ -17,12 +17,12 @@
 [[session-clustering-gcloud-datastore]]
 === Session Clustering with Google Cloud Datastore
 
-Jetty can support session clustering by persisting sessions to https://cloud.google.com/datastore/docs/concepts/overview[Google Cloud Datastore]. 
-Each Jetty instance locally caches sessions for which it has received requests, writing any changes to the session through to the Datastore as the request exits the server. 
+Jetty can support session clustering by persisting sessions to https://cloud.google.com/datastore/docs/concepts/overview[Google Cloud Datastore].
+Each Jetty instance locally caches sessions for which it has received requests, writing any changes to the session through to the Datastore as the request exits the server.
 Sessions must obey the Serialization contract, and servlets must call the `Session.setAttribute()` method to ensure that changes are persisted.
 
-The persistent session mechanism works in conjunction with a load balancer that supports stickiness. 
-Stickiness can be based on various data items, such as source IP address or characteristics of the session ID or a load-balancer specific mechanism. 
+The persistent session mechanism works in conjunction with a load balancer that supports stickiness.
+Stickiness can be based on various data items, such as source IP address or characteristics of the session ID or a load-balancer specific mechanism.
 For those load balancers that examine the session ID, the Jetty persistent session mechanism appends a node ID to the session ID, which can be used for routing.
 
 ==== Configuration
@@ -36,16 +36,16 @@ These managers also cooperate and collaborate with the `org.eclipse.jetty.server
 
 ==== The gcloud-sessions Module
 
-When using the jetty distribution, to enable Cloud Datastore session persistence, you will first need to enable the `gcloud-sessions` link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` or `--add-to-startd` argument to the link:#startup-overview[start.jar].
+When using the jetty distribution, to enable Cloud Datastore session persistence, you will first need to enable the `gcloud-sessions` link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` argument to the link:#startup-overview[start.jar].
 
-As part of the module installation, the necessary jars will be dynamically downloaded and installed to your `${jetty.base}/lib/gcloud` directory. 
-If you need to up or downgrade the version of the jars, then you can delete the jars that were automatically installed and replace them. 
-Once you've done that, you will need to prevent jetty's startup checks from detecting the missing jars. 
+As part of the module installation, the necessary jars will be dynamically downloaded and installed to your `${jetty.base}/lib/gcloud` directory.
+If you need to up or downgrade the version of the jars, then you can delete the jars that were automatically installed and replace them.
+Once you've done that, you will need to prevent jetty's startup checks from detecting the missing jars.
 To do that, you can use `--skip-file-validation=glcoud-sessions` argument to start.jar on the command line, or place that line inside `${jetty.base}/start.ini` to ensure it is used for every start.
 
 ===== Configuring the GCloudSessionIdManager
 
-The gcloud-sessions module will have installed file called `${jetty.home}/etc/jetty-gcloud-sessions.xml`. 
+The gcloud-sessions module will have installed file called `${jetty.home}/etc/jetty-gcloud-sessions.xml`.
 This file configures an instance of the `GCloudSessionIdManager` that will be shared across all webapps deployed on that server. It looks like this:
 
 [source, xml, subs="{sub-order}"]
@@ -53,13 +53,13 @@ This file configures an instance of the `GCloudSessionIdManager` that will be sh
 include::{SRCDIR}/jetty-gcloud/jetty-gcloud-session-manager/src/main/config/etc/jetty-gcloud-sessions.xml[]
 ----
 
-You configure it by setting values for properties. 
+You configure it by setting values for properties.
 The properties will either be inserted as commented out in your `start.ini`, or your `start.d/gcloud-sessions.ini` file, depending on how you enabled the module.
 
 The only property you always need to set is the name of the node in the cluster:
 
 jetty.gcloudSession.workerName::
-  The name that uniquely identifies this node in the cluster. 
+  The name that uniquely identifies this node in the cluster.
   This value will also be used by the sticky load balancer to identify the node.
   Don't forget to change the value of this property on *each* node on which you enable gcloud datastore session clustering.
 
@@ -95,7 +95,7 @@ Follow the instructions on the https://cloud.google.com/datastore/docs/tools/dat
 
 ===== Configuring the GCloudSessionManager
 
-As mentioned elsewhere, there must be one `SessionManager` per context (e.g. webapp). 
+As mentioned elsewhere, there must be one `SessionManager` per context (e.g. webapp).
 Each SessionManager needs to reference the single `GCloudSessionIdManager`.
 
 The way you configure a `GCloudSessionManager` depends on whether you're configuring from a context xml file, a `jetty-web.xml` file or code.
@@ -104,7 +104,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 From a context xml file, you reference the Server instance as a Ref:
 
 [source, xml, subs="{sub-order}"]
-----  
+----
   <!-- Get a reference to the GCloudSessionIdManager -->
   <Ref id="Server">
     <Call id="idMgr" name="getSessionIdManager"/>
@@ -152,23 +152,23 @@ From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance direc
 The `GCloudSessionManager` supports the following configuration setters:
 
 scavengeIntervalSec::
-  Time in seconds between runs of a scavenger task that looks for expired old sessions to delete. 
-  The default is 10 minutes. 
+  Time in seconds between runs of a scavenger task that looks for expired old sessions to delete.
+  The default is 10 minutes.
   If set to 0, no scavenging is done.
 staleIntervalSec::
   The length of time a session can be in memory without being checked against the cluster.
   A value of 0 indicates that the session is never checked against the cluster - the current node is considered to be the master for the session.
 maxQueryResults::
-  The maximum number of results to return for a query to find expired sessions. 
-  For efficiency it is important to limit the size of the result. 
-  The default is 100. 
+  The maximum number of results to return for a query to find expired sessions.
+  For efficiency it is important to limit the size of the result.
+  The default is 100.
   If 0 or negative numbers are set, the default is used instead.
 
 ===== The gcloud-memcached-sessions module
 
 As an optimization, you can have Jetty store your session data into GCloud Datastore but also cache it into memcached. This serves two purposes: faster read-accesses and also better support for non-sticky load balancers (although using a non-sticky load balancer is highly undesirable and not recommended).
 
-You will need to enable the `gcloud-memcached-sessions` link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` or `--add-to-startd` argument to the link:#startup-overview[start.jar].
+You will need to enable the `gcloud-memcached-sessions` link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` argument to the link:#startup-overview[start.jar].
 
 If you already enabled the gcloud-sessions module, that's fine as the gcloud-memcached-sessions module depends on it anyway.
 
@@ -191,7 +191,7 @@ If you have installed memcached on a host and port other than the defaults of `l
 
 *Note that* you will be configuring a `GCloudMemcachedSessionManager` 'instead of' a `GCloudSessionManager`.
 
-As usual, there must be only one per context (e.g. webapp). 
+As usual, there must be only one per context (e.g. webapp).
 Each GCloudMemcachedSessionManager needs to reference the single `GCloudSessionIdManager`.
 
 
@@ -201,7 +201,7 @@ The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.
 From a context xml file, you reference the Server instance as a Ref:
 
 [source, xml, subs="{sub-order}"]
-----  
+----
   <!-- Get a reference to the GCloudSessionIdManager -->
   <Ref id="Server">
     <Call id="idMgr" name="getSessionIdManager"/>
@@ -255,16 +255,16 @@ From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance direc
 The `GCloudMemcachedSessionManager` supports the following configuration setters:
 
 scavengeIntervalSec::
-  Time in seconds between runs of a scavenger task that looks for expired old sessions to delete. 
-  The default is 10 minutes. 
+  Time in seconds between runs of a scavenger task that looks for expired old sessions to delete.
+  The default is 10 minutes.
   If set to 0, no scavenging is done.
 staleIntervalSec::
   The length of time a session can be in memory without being checked against the cluster.
   A value of 0 indicates that the session is never checked against the cluster - the current node is considered to be the master for the session.
 maxQueryResults::
-  The maximum number of results to return for a query to find expired sessions. 
-  For efficiency it is important to limit the size of the result. 
-  The default is 100. 
+  The maximum number of results to return for a query to find expired sessions.
+  For efficiency it is important to limit the size of the result.
+  The default is 100.
   If 0 or negative numbers are set, the default is used instead.
 host::
   The address of the host where the memcached server is running. Defaults to "localhost".

@@ -36,13 +36,13 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
-        generateGoAway(lease, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());
+        return generateGoAway(lease, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());
     }
 
-    public void generateGoAway(ByteBufferPool.Lease lease, int lastStreamId, int error, byte[] payload)
+    public int generateGoAway(ByteBufferPool.Lease lease, int lastStreamId, int error, byte[] payload)
     {
         if (lastStreamId < 0)
             throw new IllegalArgumentException("Invalid last stream id: " + lastStreamId);
@@ -62,11 +62,11 @@ public class GoAwayGenerator extends FrameGenerator
         header.putInt(error);
 
         if (payload != null)
-        {
             header.put(payload);
-        }
 
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
+
+        return Frame.HEADER_LENGTH + length;
     }
 }

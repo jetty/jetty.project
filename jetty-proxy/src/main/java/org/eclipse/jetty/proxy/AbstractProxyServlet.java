@@ -40,7 +40,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
@@ -80,6 +82,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public abstract class AbstractProxyServlet extends HttpServlet
 {
+    protected static final String CLIENT_REQUEST_ATTRIBUTE = "org.eclipse.jetty.proxy.clientRequest";
     protected static final Set<String> HOP_HEADERS;
     static
     {
@@ -324,8 +327,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
             // Content must not be decoded, otherwise the client gets confused.
             client.getContentDecoderFactories().clear();
 
-            // No protocol handlers, pass everything to the client.
-            client.getProtocolHandlers().clear();
+            // Pass traffic to the client, only intercept what's necessary.
+            ProtocolHandlers protocolHandlers = client.getProtocolHandlers();
+            protocolHandlers.clear();
+            protocolHandlers.put(new ProxyContinueProtocolHandler());
 
             return client;
         }
@@ -425,6 +430,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
         return clientRequest.getContentLength() > 0 ||
                 clientRequest.getContentType() != null ||
                 clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
+    }
+
+    protected boolean expects100Continue(HttpServletRequest request)
+    {
+        return HttpHeaderValue.CONTINUE.asString().equals(request.getHeader(HttpHeader.EXPECT.asString()));
     }
 
     protected void copyRequestHeaders(HttpServletRequest clientRequest, Request proxyRequest)
@@ -638,6 +648,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
             int status = failure instanceof TimeoutException ?
                     HttpStatus.GATEWAY_TIMEOUT_504 :
                     HttpStatus.BAD_GATEWAY_502;
+            int serverStatus = serverResponse == null ? status : serverResponse.getStatus();
+            if (expects100Continue(clientRequest) && serverStatus >= HttpStatus.OK_200)
+                status = serverStatus;
             sendProxyResponseError(clientRequest, proxyResponse, status);
         }
     }
@@ -653,6 +666,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
         proxyResponse.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
         if (clientRequest.isAsyncStarted())
             clientRequest.getAsyncContext().complete();
+    }
+
+    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    {
+        if (_log.isDebugEnabled())
+            _log.debug("{} handling 100 Continue", getRequestId(clientRequest));
     }
 
     /**
@@ -731,6 +750,16 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 return null;
 
             return rewrittenURI.toString();
+        }
+    }
+
+    class ProxyContinueProtocolHandler extends ContinueProtocolHandler
+    {
+        @Override
+        protected void onContinue(Request request)
+        {
+            HttpServletRequest clientRequest = (HttpServletRequest)request.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
+            AbstractProxyServlet.this.onContinue(clientRequest, request);
         }
     }
 }

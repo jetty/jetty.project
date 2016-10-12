@@ -1,6 +1,9 @@
 [description]
 Enables NoSql session management with a MongoDB driver.
 
+[Tags]
+session
+
 [provides]
 session-store
 
@@ -23,6 +26,9 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 etc/sessions/mongo/session-store.xml
 
 [ini-template]
-#jetty.session.dbName=HttpSessions
-#jetty.session.collectionName=jettySessions
+#jetty.session.mongo.dbName=HttpSessions
+#jetty.session.mongo.collectionName=jettySessions
+#jetty.session.mongo.host=localhost
+#jetty.session.mongo.port=27017
 #jetty.session.gracePeriod.seconds=3600
+

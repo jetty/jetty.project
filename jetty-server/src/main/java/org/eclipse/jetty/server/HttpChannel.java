@@ -24,8 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.DispatcherType;
 
@@ -68,7 +67,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private final AtomicBoolean _committed = new AtomicBoolean();
-    private final AtomicInteger _requests = new AtomicInteger();
+    private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
     private final HttpConfiguration _configuration;
@@ -79,6 +78,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Response _response;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
+    private long _oldIdleTimeout;
 
     /** Bytes written after interception (eg after compression) */
     private long _written;
@@ -124,7 +124,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * @return the number of requests handled by this connection
      */
-    public int getRequests()
+    public long getRequests()
     {
         return _requests.get();
     }
@@ -265,8 +265,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         handle();
     }
 
-    AtomicReference<Action> caller = new AtomicReference<>();
-    
     /**
      * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
@@ -354,7 +352,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             _response.reset();
                             Integer icode = (Integer)_request.getAttribute(ERROR_STATUS_CODE);
-                            int code = icode!=null?icode.intValue():HttpStatus.INTERNAL_SERVER_ERROR_500;                        
+                            int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
                             _request.setAttribute(ERROR_STATUS_CODE,code);
                             if (icode==null)
@@ -478,9 +476,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         else if (failure instanceof BadMessageException)
         {
             if (LOG.isDebugEnabled())
-                LOG.warn(_request.getRequestURI(), failure);
+                LOG.debug(_request.getRequestURI(), failure);
             else
-                LOG.warn("{} {}",_request.getRequestURI(), failure.getMessage());
+                LOG.warn("{} {}",_request.getRequestURI(), failure);
         }
         else
         {
@@ -507,7 +505,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     // Minimal response
                     Integer code=(Integer)_request.getAttribute(ERROR_STATUS_CODE);
                     _response.reset();
-                    _response.setStatus(code==null?500:code.intValue());
+                    _response.setStatus(code == null ? 500 : code);
                     _response.flushBuffer();
                 }
             }
@@ -550,6 +548,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
             fields.put(_connector.getServer().getDateField());
 
+        long idleTO=_configuration.getIdleTimeout();
+        _oldIdleTimeout=getIdleTimeout();
+        if (idleTO>=0 && _oldIdleTimeout!=idleTO)
+            setIdleTimeout(idleTO);
+        
         _request.setMetaData(request);
 
         if (LOG.isDebugEnabled())
@@ -581,6 +584,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_requestLog!=null )
             _requestLog.log(_request, _response);
 
+        long idleTO=_configuration.getIdleTimeout();
+        if (idleTO>=0 && getIdleTimeout()!=_oldIdleTimeout)
+            setIdleTimeout(_oldIdleTimeout);
+        
         _transport.onCompleted();
     }
 

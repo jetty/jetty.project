@@ -1,6 +1,9 @@
 [description]
 Enables session persistent storage in files.
 
+[Tags]
+session
+
 [provides]
 session-store
 
@@ -14,6 +17,6 @@ etc/sessions/file/session-store.xml
 sessions/
 
 [ini-template]
-jetty.session.storeDir=${jetty.base}/sessions
-#jetty.session.deleteUnrestorableFiles=false
+jetty.session.file.storeDir=${jetty.base}/sessions
+#jetty.session.file.deleteUnrestorableFiles=false
 

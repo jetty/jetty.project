@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -470,6 +471,7 @@ public abstract class HttpReceiver
      */
     protected void reset()
     {
+        destroyDecoder(decoder);
         decoder = null;
     }
 
@@ -482,7 +484,16 @@ public abstract class HttpReceiver
      */
     protected void dispose()
     {
+        destroyDecoder(decoder);
         decoder = null;
+    }
+
+    private static void destroyDecoder(ContentDecoder decoder)
+    {
+        if (decoder instanceof Destroyable)
+        {
+            ((Destroyable)decoder).destroy();
+        }
     }
 
     public boolean abort(HttpExchange exchange, Throwable failure)

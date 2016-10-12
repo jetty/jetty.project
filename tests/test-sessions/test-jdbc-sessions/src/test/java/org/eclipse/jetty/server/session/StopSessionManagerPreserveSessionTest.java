@@ -52,7 +52,7 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
     }
 
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
         _server = new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
         return _server;

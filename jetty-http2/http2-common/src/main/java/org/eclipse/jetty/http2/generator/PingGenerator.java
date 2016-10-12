@@ -35,13 +35,13 @@ public class PingGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
         PingFrame pingFrame = (PingFrame)frame;
-        generatePing(lease, pingFrame.getPayload(), pingFrame.isReply());
+        return generatePing(lease, pingFrame.getPayload(), pingFrame.isReply());
     }
 
-    public void generatePing(ByteBufferPool.Lease lease, byte[] payload, boolean reply)
+    public int generatePing(ByteBufferPool.Lease lease, byte[] payload, boolean reply)
     {
         if (payload.length != PingFrame.PING_LENGTH)
             throw new IllegalArgumentException("Invalid payload length: " + payload.length);
@@ -52,5 +52,7 @@ public class PingGenerator extends FrameGenerator
 
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
+
+        return Frame.HEADER_LENGTH + PingFrame.PING_LENGTH;
     }
 }

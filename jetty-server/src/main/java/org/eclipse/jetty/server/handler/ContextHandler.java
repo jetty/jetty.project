@@ -169,13 +169,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         __serverInfo = serverInfo;
     }
 
-
-
     protected Context _scontext;
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
     private ClassLoader _classLoader;
     private String _contextPath = "/";
+    private String _contextPathEncoded = "/";
 
     private String _displayName;
 
@@ -507,12 +506,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the _contextPath.
+     * @return Returns the contextPath.
      */
     @ManagedAttribute("True if URLs are compacted to replace the multiple '/'s with a single '/'")
     public String getContextPath()
     {
         return _contextPath;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the encoded contextPath.
+     */
+    public String getContextPathEncoded()
+    {
+        return _contextPathEncoded;
     }
 
     /* ------------------------------------------------------------ */
@@ -1108,7 +1116,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (_contextPath.length() == 1)
                     baseRequest.setContextPath("");
                 else
-                    baseRequest.setContextPath(_contextPath);
+                    baseRequest.setContextPath(_contextPathEncoded);
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }
@@ -1485,6 +1493,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         _contextPath = contextPath;
+        _contextPathEncoded = URIUtil.encodePath(contextPath);
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {
@@ -2074,6 +2083,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
+            // uriInContext is encoded, potentially with query
+
             if (uriInContext == null)
                 return null;
 

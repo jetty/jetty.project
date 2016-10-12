@@ -40,13 +40,13 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
-        generatePushPromise(lease, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
+        return generatePushPromise(lease, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public void generatePushPromise(ByteBufferPool.Lease lease, int streamId, int promisedStreamId, MetaData metaData)
+    public int generatePushPromise(ByteBufferPool.Lease lease, int streamId, int promisedStreamId, MetaData metaData)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -73,5 +73,7 @@ public class PushPromiseGenerator extends FrameGenerator
 
         lease.append(header, true);
         lease.append(hpacked, true);
+
+        return Frame.HEADER_LENGTH + length;
     }
 }

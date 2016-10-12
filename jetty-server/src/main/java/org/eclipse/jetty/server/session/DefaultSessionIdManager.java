@@ -336,9 +336,9 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         {
             String inst = System.getenv("JETTY_WORKER_INSTANCE");
             _workerName = "node"+ (inst==null?"0":inst);
-            LOG.warn("No workerName configured for DefaultSessionIdManager, using {}",_workerName);
         }
         
+        LOG.info("DefaultSessionIdManager workerName={}",_workerName);
         _workerAttr=(_workerName!=null && _workerName.startsWith("$"))?_workerName.substring(1):null;
 
         if (_houseKeeper == null)

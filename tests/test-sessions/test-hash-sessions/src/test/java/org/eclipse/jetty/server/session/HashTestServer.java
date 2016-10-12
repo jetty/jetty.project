@@ -25,7 +25,7 @@ public class HashTestServer extends AbstractTestServer
 {
     
 
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
+    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }

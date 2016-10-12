@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.proxy;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.AsyncContext;
@@ -29,13 +32,16 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 
 /**
  * <p>Servlet 3.0 asynchronous proxy servlet.</p>
@@ -47,6 +53,8 @@ import org.eclipse.jetty.util.Callback;
  */
 public class ProxyServlet extends AbstractProxyServlet
 {
+    private static final String CONTINUE_ACTION_ATTRIBUTE = ProxyServlet.class.getName() + ".continueAction";
+
     @Override
     protected void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
@@ -83,7 +91,30 @@ public class ProxyServlet extends AbstractProxyServlet
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
 
         if (hasContent(request))
-            proxyRequest.content(proxyRequestContent(request, response, proxyRequest));
+        {
+            if (expects100Continue(request))
+            {
+                DeferredContentProvider deferred = new DeferredContentProvider();
+                proxyRequest.content(deferred);
+                proxyRequest.attribute(CLIENT_REQUEST_ATTRIBUTE, request);
+                proxyRequest.attribute(CONTINUE_ACTION_ATTRIBUTE, (Runnable)() ->
+                {
+                    try
+                    {
+                        ContentProvider provider = proxyRequestContent(request, response, proxyRequest);
+                        new DelegatingContentProvider(request, proxyRequest, response, provider, deferred).iterate();
+                    }
+                    catch (Throwable failure)
+                    {
+                        onClientRequestFailure(request, proxyRequest, response, failure);
+                    }
+                });
+            }
+            else
+            {
+                proxyRequest.content(proxyRequestContent(request, response, proxyRequest));
+            }
+        }
 
         sendProxyRequest(request, response, proxyRequest);
     }
@@ -112,6 +143,15 @@ public class ProxyServlet extends AbstractProxyServlet
         {
             callback.failed(x);
         }
+    }
+
+    @Override
+    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    {
+        super.onContinue(clientRequest, proxyRequest);
+        Runnable action = (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
+        Executor executor = getHttpClient().getExecutor();
+        executor.execute(action);
     }
 
     /**
@@ -238,6 +278,83 @@ public class ProxyServlet extends AbstractProxyServlet
         protected void onReadFailure(Throwable failure)
         {
             onClientRequestFailure(request, proxyRequest, response, failure);
+        }
+    }
+
+    private class DelegatingContentProvider extends IteratingCallback implements AsyncContentProvider.Listener
+    {
+        private final HttpServletRequest clientRequest;
+        private final Request proxyRequest;
+        private final HttpServletResponse proxyResponse;
+        private final Iterator<ByteBuffer> iterator;
+        private final DeferredContentProvider deferred;
+
+        private DelegatingContentProvider(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, ContentProvider provider, DeferredContentProvider deferred)
+        {
+            this.clientRequest = clientRequest;
+            this.proxyRequest = proxyRequest;
+            this.proxyResponse = proxyResponse;
+            this.iterator = provider.iterator();
+            this.deferred = deferred;
+            if (provider instanceof AsyncContentProvider)
+                ((AsyncContentProvider)provider).setListener(this);
+        }
+
+        @Override
+        protected Action process() throws Exception
+        {
+            if (!iterator.hasNext())
+                return Action.SUCCEEDED;
+
+            ByteBuffer buffer = iterator.next();
+            if (buffer == null)
+                return Action.IDLE;
+
+            deferred.offer(buffer, this);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            if (iterator instanceof Callback)
+                ((Callback)iterator).succeeded();
+            super.succeeded();
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            try
+            {
+                if (iterator instanceof Closeable)
+                    ((Closeable)iterator).close();
+                deferred.close();
+            }
+            catch (Throwable x)
+            {
+                _log.ignore(x);
+            }
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable failure)
+        {
+            if (iterator instanceof Callback)
+                ((Callback)iterator).failed(failure);
+            onClientRequestFailure(clientRequest, proxyRequest, proxyResponse, failure);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public void onContent()
+        {
+            iterate();
         }
     }
 }

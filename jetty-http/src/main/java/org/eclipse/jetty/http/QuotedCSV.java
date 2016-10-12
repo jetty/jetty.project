@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+
 /* ------------------------------------------------------------ */
 /**
  * Implements a quoted comma separated list of values
@@ -52,6 +54,9 @@ public class QuotedCSV implements Iterable<String>
     }
     
     /* ------------------------------------------------------------ */
+    /** Add and parse a value string(s) 
+     * @param value A value that may contain one or more Quoted CSV items.
+     */
     public void addValue(String value)
     {
         StringBuffer buffer = new StringBuffer();
@@ -241,6 +246,15 @@ public class QuotedCSV implements Iterable<String>
     {
     }
 
+    public int size()
+    {
+        return _values.size();
+    }
+
+    public boolean isEmpty()
+    {
+        return _values.isEmpty();
+    }
 
     public List<String> getValues()
     {
@@ -252,7 +266,7 @@ public class QuotedCSV implements Iterable<String>
     {
         return _values.iterator();
     }
-
+    
     public static String unquote(String s)
     {
         // handle trivial cases

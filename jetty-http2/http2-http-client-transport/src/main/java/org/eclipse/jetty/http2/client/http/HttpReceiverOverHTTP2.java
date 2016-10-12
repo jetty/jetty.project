@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Stream;
@@ -79,7 +80,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
 
             if (responseHeaders(exchange))
             {
-                if (frame.isEndStream())
+                int status = metaData.getStatus();
+                boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
+                if (frame.isEndStream() || informational)
                     responseSuccess(exchange);
             }
         }
@@ -159,8 +162,14 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             {
                 dataInfo = queue.poll();
             }
+
             if (dataInfo == null)
+            {
+                DataInfo prevDataInfo = this.dataInfo;
+                if (prevDataInfo != null && prevDataInfo.last)
+                    return Action.SUCCEEDED;
                 return Action.IDLE;
+            }
 
             this.dataInfo = dataInfo;
             responseContent(dataInfo.exchange, dataInfo.buffer, this);
@@ -173,9 +182,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
             byteBufferPool.release(dataInfo.buffer);
             dataInfo.callback.succeeded();
-            if (dataInfo.last)
-                responseSuccess(dataInfo.exchange);
             super.succeeded();
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            responseSuccess(dataInfo.exchange);
         }
 
         @Override

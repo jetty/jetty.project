@@ -1,6 +1,9 @@
 [description]
 Enables JDBC peristent/distributed session storage.
 
+[Tags]
+session
+
 [provides]
 session-store
 
@@ -23,27 +26,27 @@ db-connection-type=datasource
 
 ## Connection type:Datasource
 db-connection-type=datasource
-#jetty.session.datasourceName=/jdbc/sessions
+#jetty.session.jdbc.datasourceName=/jdbc/sessions
 
 ## Connection type:driver
 #db-connection-type=driver
-#jetty.session.driverClass=
-#jetty.session.driverUrl=
+#jetty.session.jdbc.driverClass=
+#jetty.session.jdbc.driverUrl=
 
 ## Session table schema
-#jetty.sessionTableSchema.accessTimeColumn=accessTime
-#jetty.sessionTableSchema.contextPathColumn=contextPath
-#jetty.sessionTableSchema.cookieTimeColumn=cookieTime
-#jetty.sessionTableSchema.createTimeColumn=createTime
-#jetty.sessionTableSchema.expiryTimeColumn=expiryTime
-#jetty.sessionTableSchema.lastAccessTimeColumn=lastAccessTime
-#jetty.sessionTableSchema.lastSavedTimeColumn=lastSavedTime
-#jetty.sessionTableSchema.idColumn=sessionId
-#jetty.sessionTableSchema.lastNodeColumn=lastNode
-#jetty.sessionTableSchema.virtualHostColumn=virtualHost
-#jetty.sessionTableSchema.maxIntervalColumn=maxInterval
-#jetty.sessionTableSchema.mapColumn=map
-#jetty.sessionTableSchema.table=JettySessions
+#jetty.session.jdbc.schema.accessTimeColumn=accessTime
+#jetty.session.jdbc.schema.contextPathColumn=contextPath
+#jetty.session.jdbc.schema.cookieTimeColumn=cookieTime
+#jetty.session.jdbc.schema.createTimeColumn=createTime
+#jetty.session.jdbc.schema.expiryTimeColumn=expiryTime
+#jetty.session.jdbc.schema.lastAccessTimeColumn=lastAccessTime
+#jetty.session.jdbc.schema.lastSavedTimeColumn=lastSavedTime
+#jetty.session.jdbc.schema.idColumn=sessionId
+#jetty.session.jdbc.schema.lastNodeColumn=lastNode
+#jetty.session.jdbc.schema.virtualHostColumn=virtualHost
+#jetty.session.jdbc.schema.maxIntervalColumn=maxInterval
+#jetty.session.jdbc.schema.mapColumn=map
+#jetty.session.jdbc.schema.table=JettySessions
 
 
 

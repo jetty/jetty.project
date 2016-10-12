@@ -24,29 +24,28 @@ This document provides an overview of how to configure SSL and TLS for Jetty.
 
 Which browser/OS supports which protocols can be https://en.wikipedia.org/wiki/Transport_Layer_Security#Web_browsers[found on Wikipedia].
 
-* TLS v1.1 and v1.2: The protocols which should be used wherever possible.
+* TLS v1.2: The protocol which should be used wherever possible.
 All CBC based ciphers are supported since Java 7, the new GCM modes are supported since Java 8.
 
 ===== Older Protocols
 
-Both TLS v1.0 and SSL v3 are no longer supported by default. If your Jetty implementation requires these protocols for legacy support, they can be enabled manually.
+TLS v1.0, v1.1 and SSL v3 are no longer supported by default. If your Jetty implementation requires these protocols for legacy support, they can be enabled manually.
 
 ____
 [NOTE]
-Once TLS v1.3 is released, there will be no workaround available for TLS v1.0.
+Once TLS v1.3 is released, there will be no workaround available for TLS v1.0 or v1.1.
 Plans for TLS v1.3 include banning ciphers with known vulnerabilities from being present at any level.
 It is recommended to upgrade any clients using these ciphers as soon as possible or face being locked into a outdated version of Jetty, Java or even OS.
 ____
 
-By default, Jetty exclused these ciphers in the link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/ssl/SslContextFactory.java#L253-L256[`SslContextFactory`.]
+By default, Jetty excludes these ciphers in the link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/ssl/SslContextFactory.java#L249-L256[`SslContextFactory`.]
 You can re-enable these by re-declaring the ciphers you want excluded in code:
 
 [source, java, subs="{sub-order}"]
 ----
 SslContextFactory sslContextFactory = new SslContextFactory();
 sslContextFactory.setExcludeCipherSuites(
-            "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-            "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+            "^.*_(MD5|SHA|SHA1)$");
 ----
 
 If, after making these changes, you still have issues using these ciphers they are likely being blocked at the JVM level.
@@ -355,6 +354,254 @@ $ keytool -importkeystore -srckeystore jetty.pkcs12 -srcstoretype PKCS12 -destke
 If you are updating your configuration to use a newer certificate, as when the old one is expiring, just load the newer certificate as described in the section, xref:loading-keys-and-certificates[].
 If you imported the key and certificate originally using the PKCS12 method, use an alias of "1" rather than "jetty", because that is the alias the PKCS12 process enters into the keystore.
 
+==== Configuring SSL in Jetty Distribution
+
+For those of you using the Jetty Distribution, enabling SSL support is as easy as activating the `ssl` module.
+
+An example of this setup:
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd /path/to/mybase
+$ java -jar /path/to/jetty-dist/start.jar --add-to-start=ssl
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
+INFO : Base directory was modified
+$ tree
+.
+├── etc
+│   └── keystore
+└── start.d
+    ├── server.ini
+    └── ssl.ini
+----
+
+When you open `start.d/ssl.ini`, you will see many commented properties ready for you to configure the `SslContextFactory` basics.
+
+To highlight some of the more commonly used properties:
+
+jetty.ssl.host::
+  Configures which interfaces the SSL/TLS Connector should listen on.
+jetty.ssl.port::
+  Configures which port the SSL/TLS Connector should listen on.
+jetty.httpConfig.securePort::
+  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
+jetty.sslContext.keyStorePath::
+  Sets the location of the `keystore` that you configured with your certificates.
+jetty.sslContext.keyStorePassword::
+  Sets the Password for the `keystore`.
+
+[[two-way-authentication]]
+==== Two Way Authentication
+
+To enable two-way authentication, you first need to activate the ssl module as shown in the previous section.
+
+[source%nowrap,ini,linenums]
+.start.d/ssl.ini
+----
+--module=ssl
+jetty.secure.port=8443
+jetty.keystore=etc/keystore
+jetty.keystore.password=OBF:
+jetty.keymanager.password=OBF:
+jetty.truststore=etc/truststore
+jetty.truststore.password=OBF:
+# enable two way authentication
+jetty.ssl.needClientAuth=true
+----
+
+[[layout-of-keystore-and-truststore]]
+===== Layout of `keystore` and `truststore`
+
+`keystore` only contains the server's private key and certificate.
+
+[source%nowrap,plain,linenums]
+----
+$ keytool -list -keystore keystore -storetype jks -storepass '' -v
+
+Keystore type: JKS
+Keystore provider: SUN
+
+Your keystore contains 1 entry
+
+Alias name: *.example.com
+Creation date: Sep 12, 2016
+Entry type: PrivateKeyEntry
+Certificate chain length: 1
+Certificate[1]:
+Owner: CN=*.example.com, OU=Web Servers, O="Example.com Co.,Ltd.", C=CN
+Issuer: CN="Example.com Co.,Ltd. ETP CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Serial number: b63af619ff0b4c368735113ba5db8997
+Valid from: Mon Sep 12 15:09:49 CST 2016 until: Wed Sep 12 15:09:49 CST 2018
+Certificate fingerprints:
+	 MD5:  D9:26:CC:27:77:9D:26:FE:67:4C:BE:FF:E3:95:1E:97
+	 SHA1: AF:DC:D2:65:6A:33:42:E3:81:9E:4D:19:0D:22:20:C7:6F:2F:11:D0
+	 SHA256: 43:E8:21:5D:C6:FB:A0:7D:5D:7B:9C:8B:8D:E9:4B:52:BF:50:0D:90:4F:61:C2:18:9E:89:AA:4C:C2:93:BD:32
+	 Signature algorithm name: SHA256withRSA
+	 Version: 3
+
+Extensions:
+
+#1: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: 44 9B AD 31 E7 FE CA D5   5A 8E 17 55 F9 F0 1D 6B  D..1....Z..U...k
+0010: F5 A5 8F C1                                        ....
+]
+]
+
+#2: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:false
+  PathLen: undefined
+]
+
+#3: ObjectId: 2.5.29.37 Criticality=true
+ExtendedKeyUsages [
+  serverAuth
+  clientAuth
+]
+
+#4: ObjectId: 2.5.29.15 Criticality=true
+KeyUsage [
+  DigitalSignature
+  Key_Encipherment
+  Data_Encipherment
+]
+
+#5: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: 7D 26 36 73 61 5E 08 94   AD 25 13 46 DB DB 95 25  .&6sa^...%.F...%
+0010: BF 82 5A CA                                        ..Z.
+]
+]
+
+
+
+*******************************************
+*******************************************
+
+----
+
+`truststore` contains intermediary CA and root CA.
+
+[source%nowrap,plain,linenums]
+----
+$ keytool -list -keystore truststore -storetype jks -storepass '' -v
+
+Keystore type: JKS
+Keystore provider: SUN
+
+Your keystore contains 2 entries
+
+Alias name: example.com co.,ltd. etp ca
+Creation date: Sep 12, 2016
+Entry type: trustedCertEntry
+
+Owner: CN="Example.com Co.,Ltd. ETP CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Issuer: CN="Example.com Co.,Ltd. Root CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Serial number: f6e7b86f6fdb467f9498fb599310198f
+Valid from: Wed Nov 18 00:00:00 CST 2015 until: Sun Nov 18 00:00:00 CST 2035
+Certificate fingerprints:
+	 MD5:  ED:A3:91:57:D8:B8:6E:B1:01:58:55:5C:33:14:F5:99
+	 SHA1: D9:A4:93:9D:A6:F8:A3:F9:FD:85:51:E2:C5:2E:0B:EE:80:E7:D0:22
+	 SHA256: BF:54:7A:F6:CA:0C:FA:EF:93:B6:6B:6E:2E:D7:44:A8:40:00:EC:69:3A:2C:CC:9A:F7:FE:8E:6F:C0:FA:22:38
+	 Signature algorithm name: SHA256withRSA
+	 Version: 3
+
+Extensions:
+
+#1: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: A6 BD 5F B3 E8 7D 74 3D   20 44 66 1A 16 3B 1B DF  .._...t= Df..;..
+0010: E6 E6 04 46                                        ...F
+]
+]
+
+#2: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:true
+  PathLen:2147483647
+]
+
+#3: ObjectId: 2.5.29.15 Criticality=true
+KeyUsage [
+  Key_CertSign
+  Crl_Sign
+]
+
+#4: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: 44 9B AD 31 E7 FE CA D5   5A 8E 17 55 F9 F0 1D 6B  D..1....Z..U...k
+0010: F5 A5 8F C1                                        ....
+]
+]
+
+
+
+*******************************************
+*******************************************
+
+
+Alias name: example.com co.,ltd. root ca
+Creation date: Sep 12, 2016
+Entry type: trustedCertEntry
+
+Owner: CN="Example.com Co.,Ltd. Root CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Issuer: CN="Example.com Co.,Ltd. Root CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Serial number: f0a45bc9972c458cbeae3f723055f1ac
+Valid from: Wed Nov 18 00:00:00 CST 2015 until: Sun Nov 18 00:00:00 CST 2114
+Certificate fingerprints:
+	 MD5:  50:61:62:22:71:60:F7:69:2E:27:42:6B:62:31:82:79
+	 SHA1: 7A:6D:A6:48:B1:43:03:3B:EA:A0:29:2F:19:65:9C:9B:0E:B1:03:1A
+	 SHA256: 05:3B:9C:5B:8E:18:61:61:D1:9C:AA:0E:8C:B1:EA:44:C2:6E:67:5D:96:30:EC:8C:F6:6F:E1:EC:AD:00:60:F1
+	 Signature algorithm name: SHA256withRSA
+	 Version: 3
+
+Extensions:
+
+#1: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: A6 BD 5F B3 E8 7D 74 3D   20 44 66 1A 16 3B 1B DF  .._...t= Df..;..
+0010: E6 E6 04 46                                        ...F
+]
+]
+
+#2: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:true
+  PathLen:2147483647
+]
+
+#3: ObjectId: 2.5.29.15 Criticality=true
+KeyUsage [
+  Key_CertSign
+  Crl_Sign
+]
+
+#4: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: A6 BD 5F B3 E8 7D 74 3D   20 44 66 1A 16 3B 1B DF  .._...t= Df..;..
+0010: E6 E6 04 46                                        ...F
+]
+]
+
+
+
+*******************************************
+*******************************************
+----
+
+____
+[NOTE]
+If you use a keystore which contains only one `PrivateKeyEntry` item as the `keystore` and the `truststore`, you may get a `javax.net.ssl.SSLHandshakeException` with `null cert chain` message.
+____
+
 [[configuring-sslcontextfactory]]
 ==== Configuring the Jetty SslContextFactory
 
@@ -401,51 +648,16 @@ setExcludeProtocols / setIncludeProtocols::
 
 ____
 [NOTE]
-When working with Includes / Excludes, it is important to know that Excludes will always win.
+When working with Includes / Excludes, it is important to know that *Excludes will always win.*
 The selection process is to process the JVM list of available Cipher Suites or Protocols against the include list, then remove the excluded ones.
 Be aware that each Include / Exclude list has a Set method (replace the list) or Add method (append the list).
 ____
 
 ____
 [CAUTION]
-The key and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` `org.eclipse.jetty.ssl.password`.
+The keystore and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` `org.eclipse.jetty.ssl.password`.
 This is _not_ a recommended usage.
 ____
-
-==== Configuring SSL in Jetty Distribution
-
-For those of you using the Jetty Distribution, the provided modules for https and http2 will automatically setup the `SslContextFactory`, the appropriate `SslConnectionFactory`, and associated `ServerConnectors` for you in the correct order.
-
-An example of this setup:
-
-[source, plain, subs="{sub-order}"]
-----
-$ cd /path/to/mybase
-$ java -jar /path/to/jetty-dist/start.jar --add-to-start=https
-INFO: ssl             initialised (transitively) in ${jetty.base}/start.ini
-INFO: https           initialised in ${jetty.base}/start.ini
-INFO: Base directory was modified
-$ ls -l
-drwxrwxr-x.  2 user group  4096 Feb  2 11:47 etc/
--rw-rw-r--.  1 user group  4259 Feb  2 11:47 start.ini
-$ ls -l etc
--rw-rw-r--.  1 user group  3697 Feb  2 11:47 keystore
-----
-
-When you check the `start.ini`, you'll see many commented properties ready for you to configure the `SslContextFactory` basics.
-
-To highlight some of the more commonly used properties:
-
-jetty.ssl.host::
-  Configures which interfaces the SSL/TLS Connector should listen on.
-jetty.ssl.port::
-  Configures which port the SSL/TLS Connector should listen on.
-jetty.httpConfig.securePort::
-  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
-jetty.sslContext.keyStorePath::
-  Sets the location of the `keystore` that you configured with your certificates.
-jetty.sslContext.keyStorePassword::
-  Sets the Password for the `keystore`.
 
 ==== Configuring SNI
 

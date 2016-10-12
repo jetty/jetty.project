@@ -14,7 +14,6 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[example-logging-java-util-logging-native]]
 === Example: Logging with Java's java.util.logging via JavaUtilLog
 
 It is possible to have the Jetty Server logging configured so that
@@ -26,7 +25,7 @@ This example demonstrates how to configuring Jetty for logging to
 
 ____
 [IMPORTANT]
-While this is a valid setup, the Jetty project recommends always using the link:#example-logging-java-util-logging[slf4j to java.util.logging configuration] for memory and performance reasons. 
+While this is a valid setup, the Jetty project recommends always using the link:#example-logging-java-util-logging[slf4j to java.util.logging configuration] for memory and performance reasons.
 This native implementation is very non-performant and is not guaranteed to exist in the future.
 ____
 

@@ -1,6 +1,9 @@
 [description]
 Enables session data store in a remote Infinispan cache
 
+[Tags]
+session
+
 [provides]
 session-store
 
@@ -22,6 +25,6 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 
 [ini-template]
-#jetty.session.remoteInfinispanCache.name=sessions
-#jetty.session.infinispanIdleTimeout.seconds=0
+#jetty.session.infinispan.remoteCacheName=sessions
+#jetty.session.infinispan.idleTimeout.seconds=0
 #jetty.session.gracePeriod.seconds=3600

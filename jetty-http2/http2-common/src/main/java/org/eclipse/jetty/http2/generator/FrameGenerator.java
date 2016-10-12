@@ -33,7 +33,7 @@ public abstract class FrameGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public abstract void generate(ByteBufferPool.Lease lease, Frame frame);
+    public abstract int generate(ByteBufferPool.Lease lease, Frame frame);
 
     protected ByteBuffer generateHeader(ByteBufferPool.Lease lease, FrameType frameType, int length, int flags, int streamId)
     {

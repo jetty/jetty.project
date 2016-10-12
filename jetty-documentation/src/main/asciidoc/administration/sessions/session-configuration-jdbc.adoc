@@ -16,12 +16,15 @@
 
 [[configuring-sessions-jdbc]]
 
-=== Configuring JDBC Clustering
+=== Clustered Session Management: JDBC
 
 When using the Jetty distribution, you will first need to enable the `session-store-jdbc` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 [source, screen, subs="{sub-order}"]
 ----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
 $ java -jar ../start.jar --add-to-start=session-store-jdbc
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
 INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
@@ -30,9 +33,9 @@ INFO : Base directory was modified
 ----
 
 Doing this enables the JDBC Session module and any dependent modules or files needed for it to run on the server.
-The example above is running an fresh `{$jetty.base}` with nothing enabled.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
 When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-jdbc` module as well as the `sessions` and `server` modules, which are required for JDBC session management to operate.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
 
 Opening the `start.d/session-store-jdbc.ini` will show a list of all the configurable options for the JDBC module:
 
@@ -52,49 +55,40 @@ Opening the `start.d/session-store-jdbc.ini` will show a list of all the configu
 
 ## Connection type:Datasource
 db-connection-type=datasource
-#jetty.session.datasourceName=/jdbc/sessions
+#jetty.session.jdbc.datasourceName=/jdbc/sessions
 
 ## Connection type:driver
 #db-connection-type=driver
-#jetty.session.driverClass=
-#jetty.session.driverUrl=
+#jetty.session.jdbc.driverClass=
+#jetty.session.jdbc.driverUrl=
 
 ## Session table schema
-#jetty.sessionTableSchema.accessTimeColumn=accessTime
-#jetty.sessionTableSchema.contextPathColumn=contextPath
-#jetty.sessionTableSchema.cookieTimeColumn=cookieTime
-#jetty.sessionTableSchema.createTimeColumn=createTime
-#jetty.sessionTableSchema.expiryTimeColumn=expiryTime
-#jetty.sessionTableSchema.lastAccessTimeColumn=lastAccessTime
-#jetty.sessionTableSchema.lastSavedTimeColumn=lastSavedTime
-#jetty.sessionTableSchema.idColumn=sessionId
-#jetty.sessionTableSchema.lastNodeColumn=lastNode
-#jetty.sessionTableSchema.virtualHostColumn=virtualHost
-#jetty.sessionTableSchema.maxIntervalColumn=maxInterval
-#jetty.sessionTableSchema.mapColumn=map
-#jetty.sessionTableSchema.table=JettySessions
+#jetty.session.jdbc.schema.accessTimeColumn=accessTime
+#jetty.session.jdbc.schema.contextPathColumn=contextPath
+#jetty.session.jdbc.schema.cookieTimeColumn=cookieTime
+#jetty.session.jdbc.schema.createTimeColumn=createTime
+#jetty.session.jdbc.schema.expiryTimeColumn=expiryTime
+#jetty.session.jdbc.schema.lastAccessTimeColumn=lastAccessTime
+#jetty.session.jdbc.schema.lastSavedTimeColumn=lastSavedTime
+#jetty.session.jdbc.schema.idColumn=sessionId
+#jetty.session.jdbc.schema.lastNodeColumn=lastNode
+#jetty.session.jdbc.schema.virtualHostColumn=virtualHost
+#jetty.session.jdbc.schema.maxIntervalColumn=maxInterval
+#jetty.session.jdbc.schema.mapColumn=map
+#jetty.session.jdbc.schema.table=JettySessions
 ----
 
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
 
 db-connection-type::
-jetty.session.datasourceName::
+Set to either `datasource` or `driver` depending on the type of connection being used.
+jetty.session.jdbc.datasourceName::
+Name of the remote datasource.
+jetty.session.jdbc.driverClass::
+Name of the JDBC driver that controls access to the remote database, such as `com.mysql.jdbc.Driver`
+jetty.session.jdbc.driverUrl::
+Url of the database which includes the driver type, host name and port, service name and any specific attributes unique to the database, such as a username.
+As an example, here is a mysql connection with the username appended: `jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin`.
 
-db-connection-type::
-jetty.session.driverClass::
-jetty.session.driverUrl::
-
-jetty.sessionTableSchema.accessTimeColumn::
-jetty.sessionTableSchema.contextPathColumn::
-jetty.sessionTableSchema.cookieTimeColumn::
-jetty.sessionTableSchema.createTimeColumn::
-jetty.sessionTableSchema.expiryTimeColumn::
-jetty.sessionTableSchema.lastAccessTimeColumn::
-jetty.sessionTableSchema.lastSavedTimeColumn::
-jetty.sessionTableSchema.idColumn::
-jetty.sessionTableSchema.lastNodeColumn::
-jetty.sessionTableSchema.virtualHostColumn::
-jetty.sessionTableSchema.maxIntervalColumn::
-jetty.sessionTableSchema.mapColumn::
-jetty.sessionTableSchema.table::
+The `jetty.sessionTableSchema` values represent the names for the columns in the JDBC database and can be changed to suit your environment.

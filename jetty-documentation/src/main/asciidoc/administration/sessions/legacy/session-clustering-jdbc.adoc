@@ -17,16 +17,16 @@
 [[session-clustering-jdbc]]
 === Session Clustering with a Database
 
-Jetty can support session clustering by persisting sessions to a shared database. 
-Each Jetty instance locally caches sessions for which it has received requests, writing any changes to the session through to the database as the request exits the server. 
+Jetty can support session clustering by persisting sessions to a shared database.
+Each Jetty instance locally caches sessions for which it has received requests, writing any changes to the session through to the database as the request exits the server.
 Sessions must obey the Serialization contract, and servlets must call the `Session.setAttribute()` method to ensure that changes are persisted.
 
-The persistent session mechanism works in conjunction with a load balancer that supports stickiness. 
-Stickiness can be based on various data items, such as source IP address or characteristics of the session ID or a load-balancer specific mechanism. 
+The persistent session mechanism works in conjunction with a load balancer that supports stickiness.
+Stickiness can be based on various data items, such as source IP address or characteristics of the session ID or a load-balancer specific mechanism.
 For those load balancers that examine the session ID, the Jetty persistent session mechanism appends a node ID to the session ID, which can be used for routing.
 
-In this type of solution, the database can become both a bottleneck and a single point of failure. 
-Jetty takes steps to reduce the load on the database (discussed below), but in a heavily loaded environment you might need to investigate other optimization strategies such as local caching and database replication. 
+In this type of solution, the database can become both a bottleneck and a single point of failure.
+Jetty takes steps to reduce the load on the database (discussed below), but in a heavily loaded environment you might need to investigate other optimization strategies such as local caching and database replication.
 You should also consult your database vendor's documentation for information on how to ensure high availability and failover of your database.
 
 ==== Configuration
@@ -40,7 +40,7 @@ These managers also cooperate and collaborate with the `org.eclipse.jetty.server
 
 ==== The jdbc-session Module
 
-When using the jetty distribution, to enable jdbc session persistence, you will first need to enable the jdbc-session link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` or `--add-to-startd` argument to the link:#startup-overview[start.jar].
+When using the jetty distribution, to enable jdbc session persistence, you will first need to enable the jdbc-session link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` argument to the link:#startup-overview[start.jar].
 
 You will also find the following properties, either in your base's start.d/jdbc-session.ini file or appended to your start.ini, depending on how you enabled the module:
 
@@ -56,26 +56,26 @@ jetty.jdbcSession.connectionURL=jdbc:derby:sessions;create=true
 ----
 
 jetty.jdbcSession.workerName::
-  The name that uniquely identifies this node in the cluster. 
+  The name that uniquely identifies this node in the cluster.
   This value will also be used by the sticky load balancer to identify the node.
   Don't forget to change the value of this property on *each* node on which you enable jdbc session clustering.
 jetty.jdbcSession.scavenge::
-  The time in seconds between sweeps of a task which scavenges old expired sessions. 
-  The default is 10 minutess. 
+  The time in seconds between sweeps of a task which scavenges old expired sessions.
+  The default is 10 minutess.
   Increasing the frequency is not recommended as doing so increases the load on the database with very little gain.
 jetty.jdbcSession.datasource::
-  The name of a `javax.sql.DataSource` that gives access to the database that holds the session information. 
+  The name of a `javax.sql.DataSource` that gives access to the database that holds the session information.
   You should configure *either* this or the jdbc driver information described next.
 jetty.jdbcSession.datasource and jetty.jdbcSession.connectionURL::
-  This is the name of the jdbc driver class, and a jdbc connection url suitable for that driver. 
+  This is the name of the jdbc driver class, and a jdbc connection url suitable for that driver.
   You should configure *either* this or the jdbc datasource name described above.
 
 These properties are applied to the `JDBCSessionIdManager` described below.
 
 ===== Configuring the JDBCSessionIdManager
 
-The jdbc-session module will have installed file called `$\{jetty.home}/etc/jetty-jdbc-sessions.xml`. 
-This file configures an instance of the `JDBCSessionIdManager` that will be shared across all webapps deployed on that server. 
+The jdbc-session module will have installed file called `$\{jetty.home}/etc/jetty-jdbc-sessions.xml`.
+This file configures an instance of the `JDBCSessionIdManager` that will be shared across all webapps deployed on that server.
 It looks like this:
 
 [source, xml, subs="{sub-order}"]
@@ -88,7 +88,7 @@ As well as uncommenting and setting up appropriate values for the properties dis
 As Jetty configuration files are direct mappings of XML to Java, it is straight forward to do this in code:
 
 [source, java, subs="{sub-order}"]
-----    
+----
 Server server = new Server();
      ...
 JDBCSessionIdManager idMgr = new JDBCSessionIdManager(server);
@@ -96,7 +96,7 @@ idMgr.setWorkerName("node1");
 idMgr.setDriverInfo("com.mysql.jdbc.Driver", "jdbc:mysql://127.0.0.1:3306/sessions?user=janb");
 idMgr.setScavengeInterval(600);
 server.setSessionIdManager(idMgr);
- 
+
 ----
 
 ====== Configuring the Database Schema
@@ -108,7 +108,7 @@ The defaults used are:
 [options="header"]
 |===========================
 |table name |JettySessionIds
-|columns |id 
+|columns |id
 |===========================
 
 .Default Values for Session Table
@@ -121,10 +121,10 @@ accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime,
 expiryTime, maxInterval, map
 |=======================================================================
 
-To change these values, use the link:{JDURL}/org/eclipse/jetty/server/session/SessionIdTableSchema.html[org.eclipse.jetty.server.session.SessionIdTableSchema] and link:{JDURL}/org/eclipse/jetty/server/session/SessionTableSchema.html[org.eclipse.jetty.server.session.SessionTableSchema] classes. 
+To change these values, use the link:{JDURL}/org/eclipse/jetty/server/session/SessionIdTableSchema.html[org.eclipse.jetty.server.session.SessionIdTableSchema] and link:{JDURL}/org/eclipse/jetty/server/session/SessionTableSchema.html[org.eclipse.jetty.server.session.SessionTableSchema] classes.
 These classes have getter/setter methods for the table name and all columns.
 
-Here's an example of changing the name of `JettySessionsId` table and its single column. 
+Here's an example of changing the name of `JettySessionsId` table and its single column.
 This example will use java code, but as explained above, you may also do this via a Jetty xml configuration file:
 
 [source, java, subs="{sub-order}"]
@@ -137,7 +137,7 @@ idTableSchema.setIdColumn("theid");
 idManager.setSessionIdTableSchema(idTableSchema);
 ----
 
-In a similar fashion, you can change the names of the table and columns for the `JettySessions` table. 
+In a similar fashion, you can change the names of the table and columns for the `JettySessions` table.
 *Note* that both the `SessionIdTableSchema` and the `SessionTableSchema` instances are set on the `JDBCSessionIdManager` class.
 
 [source, java, subs="{sub-order}"]
@@ -156,13 +156,13 @@ sessionTableSchema.setLastAccessTimeColumn("latime");
 sessionTableSchema.setLastNodeColumn("lnode");
 sessionTableSchema.setLastSavedTimeColumn("lstime");
 sessionTableSchema.setMapColumn("mo");
-sessionTableSchema.setMaxIntervalColumn("mi");           
+sessionTableSchema.setMaxIntervalColumn("mi");
 idManager.setSessionTableSchema(sessionTableSchema);
 ----
 
 ===== Configuring the JDBCSessionManager
 
-As mentioned elsewhere, there should be one `JDBCSessionManager` per context (e.g. webapp). 
+As mentioned elsewhere, there should be one `JDBCSessionManager` per context (e.g. webapp).
 It will need to reference the single `JDBCSessionIdManager` configured previously for the Server.
 
 The way you configure a `JDBCSessionManager` depends on whether you're configuring from a context xml file, a `jetty-web.xml` file or code.
@@ -192,7 +192,7 @@ From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance direc
 
 [source, xml, subs="{sub-order}"]
 ----
-  
+
 <Get name="server">
   <Get id="idMgr" name="sessionIdManager"/>
 </Get>
@@ -216,7 +216,7 @@ If you're embedding this in code:
 
 //assuming you have already set up the JDBCSessionIdManager as shown earlier
 //and have a reference to the Server instance:
- 
+
 WebAppContext wac = new WebAppContext();
  ... //configure your webapp context
 JDBCSessionManager jdbcMgr = new JDBCSessionManager();

@@ -55,7 +55,7 @@ public class RemoteClientCrossContextSessionTest extends AbstractClientCrossCont
     
     
     @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavenge, int evictionPolicy) throws Exception
     {
         return new InfinispanTestSessionServer(port, maxInactiveMs, scavenge, evictionPolicy, __testSupport.getCache());
     }

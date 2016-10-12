@@ -122,7 +122,7 @@ public class FileTestServer extends AbstractTestServer
     
   
 
-    public FileTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
+    public FileTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }

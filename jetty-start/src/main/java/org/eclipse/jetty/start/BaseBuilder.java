@@ -50,11 +50,10 @@ public class BaseBuilder
          *
          * @param module
          *            the module to add
-         * @return true if module was added, false if module was not added
-         *         (because that module already exists)
+         * @return The ini file if module was added, null if module was not added.
          * @throws IOException if unable to add the module
          */
-        public boolean addModule(Module module) throws IOException;
+        public String addModule(Module module) throws IOException;
     }
 
     private static final String EXITING_LICENSE_NOT_ACKNOWLEDGED = "Exiting: license not acknowledged!";
@@ -118,7 +117,15 @@ public class BaseBuilder
         if (!startArgs.getStartModules().isEmpty())
         {
             for (String name:startArgs.getStartModules())
+            {
                 newly_added.addAll(modules.enable(name,"--add-to-start"));
+                if (!newly_added.contains(name))
+                {
+                    Set<String> sources = modules.get(name).getEnableSources();
+                    sources.remove("--add-to-start");
+                    StartLog.info("%s already enabled by %s",name,sources);
+                }
+            }
         }
 
         if (StartLog.isDebugEnabled())
@@ -173,7 +180,6 @@ public class BaseBuilder
         
         if (!newly_added.isEmpty())
         {
-            
             if (Files.exists(startini) && Files.exists(startd)) 
                 StartLog.warn("Use both %s and %s is deprecated",getBaseHome().toShortForm(startd),getBaseHome().toShortForm(startini));
             
@@ -181,6 +187,7 @@ public class BaseBuilder
             builder.set(useStartD?new StartDirBuilder(this):new StartIniBuilder(this));
             newly_added.stream().map(n->modules.get(n)).forEach(module ->
             {
+                String ini=null;
                 try
                 {
                     if (module.isSkipFilesValidation())
@@ -189,8 +196,13 @@ public class BaseBuilder
                     } 
                     else 
                     {
-                        if (builder.get().addModule(module))
-                            modified.set(true);
+                        // if (explictly added and ini file modified)
+                        if (startArgs.getStartModules().contains(module.getName()))
+                        {
+                            ini=builder.get().addModule(module);
+                            if (ini!=null)
+                                modified.set(true);
+                        }
                         for (String file : module.getFiles())
                             files.add(new FileArg(module,startArgs.getProperties().expand(file)));
                     }
@@ -199,6 +211,26 @@ public class BaseBuilder
                 {
                     throw new RuntimeException(e);
                 }
+
+                if (module.isDynamic())
+                {
+                    for (String s:module.getEnableSources())
+                        StartLog.info("%-15s %s",module.getName(),s);
+                }
+                else if (module.isTransitive())
+                {
+                    if (module.hasIniTemplate())
+                        StartLog.info("%-15s transitively enabled, ini template available with --add-to-start=%s",
+                            module.getName(),
+                            module.getName());
+                    else
+                        StartLog.info("%-15s transitively enabled",module.getName());
+                }
+                else
+                    StartLog.info("%-15s initialized in %s",
+                    module.getName(),
+                    ini);
+                    
             });            
         }
 

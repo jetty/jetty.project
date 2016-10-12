@@ -20,7 +20,9 @@ node {
   {
     stage 'Compile'
     withEnv(mvnEnv) {
-      sh "mvn -B clean install -Dtest=None"
+      timeout(15) {
+        sh "mvn -B clean install -Dtest=None"
+      }
     }
   } catch(Exception e) {
     notifyBuild("Compile Failure")
@@ -31,7 +33,9 @@ node {
   {
     stage 'Javadoc'
     withEnv(mvnEnv) {
-      sh "mvn -B javadoc:javadoc"
+      timeout(15) {
+        sh "mvn -B javadoc:javadoc"
+      }
     }
   } catch(Exception e) {
     notifyBuild("Javadoc Failure")
@@ -41,8 +45,8 @@ node {
   try
   {
     stage 'Test'
-    timeout(60) {
-      withEnv(mvnEnv) {
+    withEnv(mvnEnv) {
+      timeout(60) {
         // Run test phase / ignore test failures
         sh "mvn -B install -Dmaven.test.failure.ignore=true"
         // Report failures in the jenkins UI

@@ -57,7 +57,7 @@ public class CreateAndInvalidateTest extends AbstractCreateAndInvalidateTest
      * @see org.eclipse.jetty.server.session.AbstractCreateAndInvalidateTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy)
+    public AbstractTestServer createServer(final int port, final int max, final int scavenge, final int evictionPolicy) throws Exception
     {
         return  new MongoTestServer(port,max,scavenge, evictionPolicy);
     }

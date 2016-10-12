@@ -50,13 +50,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
-        generateHeaders(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), headersFrame.getPriority(), headersFrame.isEndStream());
+        return generateHeaders(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), headersFrame.getPriority(), headersFrame.isEndStream());
     }
 
-    public void generateHeaders(ByteBufferPool.Lease lease, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream)
+    public int generateHeaders(ByteBufferPool.Lease lease, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -87,9 +87,10 @@ public class HeadersGenerator extends FrameGenerator
             generatePriority(header, priority);
             BufferUtil.flipToFlush(header, 0);
             lease.append(header, true);
-
             hpacked.limit(maxHeaderBlockFragment);
             lease.append(hpacked.slice(), false);
+
+            int totalLength = Frame.HEADER_LENGTH + length;
 
             int position = maxHeaderBlockFragment;
             int limit = position + maxHeaderBlockFragment;
@@ -102,6 +103,7 @@ public class HeadersGenerator extends FrameGenerator
                 lease.append(hpacked.slice(), false);
                 position += maxHeaderBlockFragment;
                 limit += maxHeaderBlockFragment;
+                totalLength += Frame.HEADER_LENGTH + maxHeaderBlockFragment;
             }
 
             hpacked.position(position).limit(hpackedLength);
@@ -109,6 +111,9 @@ public class HeadersGenerator extends FrameGenerator
             BufferUtil.flipToFlush(header, 0);
             lease.append(header, true);
             lease.append(hpacked, true);
+            totalLength += Frame.HEADER_LENGTH + hpacked.remaining();
+
+            return totalLength;
         }
         else
         {
@@ -125,6 +130,8 @@ public class HeadersGenerator extends FrameGenerator
             BufferUtil.flipToFlush(header, 0);
             lease.append(header, true);
             lease.append(hpacked, true);
+
+            return Frame.HEADER_LENGTH + length;
         }
     }
 

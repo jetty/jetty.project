@@ -46,6 +46,7 @@ public class HouseKeeper extends AbstractLifeCycle
     protected boolean _ownScheduler = false;
     private long _intervalMs =  DEFAULT_PERIOD_MS;
    
+   
     
    
     
@@ -93,26 +94,85 @@ public class HouseKeeper extends AbstractLifeCycle
         if (_sessionIdManager == null)
             throw new IllegalStateException ("No SessionIdManager for Housekeeper");
         
-
-        if (_sessionIdManager instanceof DefaultSessionIdManager)
-        {
-            //try and use a common scheduler, fallback to own
-            _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
-        }
-
-        if (_scheduler == null)
-        {
-            _scheduler = new ScheduledExecutorScheduler();
-            _ownScheduler = true;
-            _scheduler.start();
-        }
-        else if (!_scheduler.isStarted())
-            throw new IllegalStateException("Shared scheduler not started");
-
         setIntervalSec(getIntervalSec());
         
         super.doStart();
     }
+
+    
+    /**
+     * Get a scheduler. First try a common scheduler, failing that
+     * create our own.
+     * 
+     * @throws Exception
+     */
+    protected void findScheduler () throws Exception
+    {
+        if (_scheduler == null)
+        {
+            if (_sessionIdManager instanceof DefaultSessionIdManager)
+            {
+                //try and use a common scheduler, fallback to own
+                _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getBean(Scheduler.class);
+            }
+
+            if (_scheduler == null)
+            {
+                _scheduler = new ScheduledExecutorScheduler();
+                _ownScheduler = true;
+                _scheduler.start();
+                if (LOG.isDebugEnabled()) LOG.debug("Using own scheduler for scavenging");
+            }
+            else if (!_scheduler.isStarted())
+                throw new IllegalStateException("Shared scheduler not started");
+        }
+    }
+    
+    /**
+     * If scavenging is not scheduled, schedule it.
+     * @throws Exception
+     */
+    protected void startScavenging()  throws Exception
+    {
+        synchronized (this)
+        {
+            if (_scheduler != null)
+            {
+                //cancel any previous task
+                if (_task!=null)
+                    _task.cancel();
+                if (_runner == null)
+                    _runner = new Runner();
+                LOG.info("Scavenging every {}ms", _intervalMs);
+                _task = _scheduler.schedule(_runner,_intervalMs,TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+
+    /**
+     * If scavenging is scheduled, stop it.
+     * 
+     * @throws Exception
+     */
+    protected void stopScavenging() throws Exception
+    {
+        synchronized (this)
+        {   
+            if (_task!=null)
+            {
+                _task.cancel();
+                LOG.info("Stopped scavenging");
+            }
+            _task = null;
+            if (_ownScheduler) 
+            {
+                _scheduler.stop();
+                _scheduler = null;
+            }
+        }
+        _runner = null;
+    }
+
 
     /** 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
@@ -122,13 +182,8 @@ public class HouseKeeper extends AbstractLifeCycle
     {
         synchronized(this)
         {
-            if (_task != null)
-                _task.cancel();
-            _task=null;
-            if (_ownScheduler && _scheduler !=null)
-                _scheduler.stop();
+            stopScavenging();
             _scheduler = null;
-            _runner = null;
         }
         super.doStop();
     }
@@ -137,37 +192,43 @@ public class HouseKeeper extends AbstractLifeCycle
     /**
      * Set the period between scavenge cycles
      * @param sec the interval (in seconds)
+     * @throws Exception 
      */
-    public void setIntervalSec (long sec)
+    public void setIntervalSec (long sec) throws Exception
     {
-        if (sec<=0)
-            sec=60;
-
-        long old_period=_intervalMs;
-        long period=sec*1000L;
-
-        _intervalMs=period;
-
-        //add a bit of variability into the scavenge time so that not all
-        //nodes with the same scavenge interval sync up
-        long tenPercent = _intervalMs/10;
-        if ((System.currentTimeMillis()%2) == 0)
-            _intervalMs += tenPercent;
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Scavenging every "+_intervalMs+" ms");
-        
-        synchronized (this)
+        if (isStarted() || isStarting())
         {
-            if (_scheduler != null && (period!=old_period || _task==null))
+            if (sec <= 0)
             {
-                if (_task!=null)
-                    _task.cancel();
-                if (_runner == null)
-                    _runner = new Runner();
-                _task = _scheduler.schedule(_runner,_intervalMs,TimeUnit.MILLISECONDS);
+                _intervalMs = 0L;
+                LOG.info("Scavenging disabled");
+                stopScavenging();
+            }
+            else
+            {
+                if (sec < 10)
+                    LOG.warn("Short interval of {}sec for session scavenging.", sec);
+                
+                _intervalMs=sec*1000L;
+
+                //add a bit of variability into the scavenge time so that not all
+                //nodes with the same scavenge interval sync up
+                long tenPercent = _intervalMs/10;
+                if ((System.currentTimeMillis()%2) == 0)
+                    _intervalMs += tenPercent;
+                
+                if (isStarting() || isStarted())
+                {
+                    findScheduler();
+                    startScavenging();
+                }
             }
         }
+        else
+        {
+            _intervalMs=sec*1000L;
+        }
+
     }
 
     
@@ -182,6 +243,8 @@ public class HouseKeeper extends AbstractLifeCycle
         return _intervalMs/1000;
     }
     
+    
+  
     
     
     /**

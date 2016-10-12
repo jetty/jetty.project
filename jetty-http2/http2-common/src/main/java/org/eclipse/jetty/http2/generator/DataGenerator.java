@@ -63,7 +63,7 @@ public class DataGenerator
             data.limit(limit);
             generateFrame(lease, streamId, slice, false);
         }
-        return length;
+        return Frame.HEADER_LENGTH + length;
     }
 
     private void generateFrame(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last)
@@ -75,10 +75,9 @@ public class DataGenerator
             flags |= Flags.END_STREAM;
 
         ByteBuffer header = headerGenerator.generate(lease, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
-
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
-
+        // Skip empty data buffers.
         if (data.remaining() > 0)
             lease.append(data, false);
     }

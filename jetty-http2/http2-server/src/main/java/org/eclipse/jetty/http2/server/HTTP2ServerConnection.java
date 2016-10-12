@@ -20,10 +20,12 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -53,13 +55,10 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
-    
     /**
      * @param protocol A HTTP2 protocol variant
      * @return True if the protocol version is supported
@@ -84,16 +83,30 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
     
-    private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
+    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
+    private final List<Frame> upgradeFrames = new ArrayList<>();
+    private final AtomicLong totalRequests = new AtomicLong();
+    private final AtomicLong totalResponses = new AtomicLong();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
-    private final List<Frame> upgradeFrames = new ArrayList<>();
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
+    }
+
+    @Override
+    public long getMessagesIn()
+    {
+        return totalRequests.get();
+    }
+
+    @Override
+    public long getMessagesOut()
+    {
+        return totalResponses.get();
     }
 
     @Override
@@ -154,9 +167,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        boolean result = !channel.isRequestHandled();
+        boolean result = channel.onStreamTimeout(failure);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processing" : "Ignoring", stream, failure);
+            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
         return result;
     }
 
@@ -178,7 +191,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             result &= !channel.isRequestHandled();
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processing" : "Ignoring", session, failure);
+            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
         return result;
     }
 
@@ -203,7 +216,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
     {
-        HttpChannelOverHTTP2 channel = channels.poll();
+        HttpChannelOverHTTP2 channel = pollChannel();
         if (channel != null)
         {
             channel.getHttpTransport().setStream(stream);
@@ -220,6 +233,22 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
         stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
         return channel;
+    }
+
+    private void offerChannel(HttpChannelOverHTTP2 channel)
+    {
+        synchronized (this)
+        {
+            channels.offer(channel);
+        }
+    }
+
+    private HttpChannelOverHTTP2 pollChannel()
+    {
+        synchronized (this)
+        {
+            return channels.poll();
+        }
     }
 
     public boolean upgrade(Request request)
@@ -264,19 +293,27 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
-        public void recycle()
+        public Runnable onRequest(HeadersFrame frame)
         {
-            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
-            super.recycle();
-            channels.offer(this);
+            totalRequests.incrementAndGet();
+            return super.onRequest(frame);
         }
 
         @Override
         public void onCompleted()
         {
+            totalResponses.incrementAndGet();
             super.onCompleted();
             if (!getStream().isReset())
                 recycle();
+        }
+
+        @Override
+        public void recycle()
+        {
+            getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
+            super.recycle();
+            offerChannel(this);
         }
 
         @Override

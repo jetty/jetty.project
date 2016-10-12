@@ -25,12 +25,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
-/**
- * AbstractTestServer
- *
- *
- */
 public abstract class AbstractTestServer
 {
     public static int DEFAULT_MAX_INACTIVE = 30;
@@ -38,7 +32,7 @@ public abstract class AbstractTestServer
     public static int DEFAULT_EVICTIONPOLICY = SessionCache.NEVER_EVICT;
     
     protected static int __workers=0;
-    
+
     protected final Server _server;
     protected final int _maxInactivePeriod;
     protected final int _evictionPolicy;
@@ -48,8 +42,6 @@ public abstract class AbstractTestServer
     private HouseKeeper _housekeeper;
     protected Object _config;
 
-  
-    
     public static String extractSessionId (String sessionCookie)
     {
         if (sessionCookie == null)
@@ -66,14 +58,12 @@ public abstract class AbstractTestServer
         return sessionCookie;
     }
 
-    
-
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
     {
         this (port, maxInactivePeriod, scavengePeriod, evictionPolicy, null);
     }
     
-    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, Object cfg)
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy, Object cfg) throws Exception
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
@@ -88,12 +78,7 @@ public abstract class AbstractTestServer
         _housekeeper.setIntervalSec(_scavengePeriod);
         ((DefaultSessionIdManager)_sessionIdManager).setSessionHouseKeeper(_housekeeper);
     }
-    
 
-
-    /**
-     * @return
-     */
     public SessionIdManager newSessionIdManager()
     {
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(getServer());
@@ -101,9 +86,7 @@ public abstract class AbstractTestServer
         return idManager;
     }
 
-
     public abstract SessionHandler newSessionHandler();
-
 
     public void start() throws Exception
     {
@@ -137,11 +120,6 @@ public abstract class AbstractTestServer
     public void stop() throws Exception
     {
         _server.stop();
-    }
-
-    public void join() throws Exception
-    {
-        _server.join();
     }
 
     public WebAppContext addWebAppContext(String warPath, String contextPath)

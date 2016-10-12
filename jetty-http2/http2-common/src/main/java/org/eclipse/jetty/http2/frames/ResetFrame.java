@@ -24,6 +24,8 @@ import org.eclipse.jetty.http2.ErrorCode;
 
 public class ResetFrame extends Frame
 {
+    public static final int RESET_LENGTH = 4;
+
     private final int streamId;
     private final int error;
 

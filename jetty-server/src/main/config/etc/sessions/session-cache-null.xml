@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for NullSessionCache                              -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New class="org.eclipse.jetty.server.session.NullSessionCacheFactory">
+     <Set name="saveOnCreate"><Property name="jetty.session.saveOnCreate" default="false" /></Set>
+     <Set name="removeUnloadableSessions"><Property name="jetty.session.removeUnloadableSessions" default="false"/></Set>
+    </New>
+   </Arg>
+  </Call>
+
+</Configure>

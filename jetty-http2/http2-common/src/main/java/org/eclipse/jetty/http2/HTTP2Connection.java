@@ -20,8 +20,10 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -29,12 +31,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
@@ -42,12 +42,13 @@ public class HTTP2Connection extends AbstractConnection
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
-    private final Queue<Runnable> tasks = new ConcurrentArrayQueue<>();
+    private final Queue<Runnable> tasks = new ArrayDeque<>();
+    private final HTTP2Producer producer = new HTTP2Producer();
+    private final AtomicLong bytesIn = new AtomicLong();
     private final ByteBufferPool byteBufferPool;
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
-    private final HTTP2Producer producer = new HTTP2Producer();
     private final ExecutionStrategy blockingStrategy;
     private final ExecutionStrategy nonBlockingStrategy;
 
@@ -62,11 +63,22 @@ public class HTTP2Connection extends AbstractConnection
         this.nonBlockingStrategy = new ProduceExecuteConsume(producer, executor);
     }
 
+    @Override
+    public long getBytesIn()
+    {
+        return bytesIn.get();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return session.getBytesWritten();
+    }
+
     public ISession getSession()
     {
         return session;
     }
-
 
     protected Parser getParser()
     {
@@ -95,20 +107,19 @@ public class HTTP2Connection extends AbstractConnection
         super.onClose();
     }
 
-
     @Override
     public void onFillable()
     {
         throw new UnsupportedOperationException();
     }
-    
+
     private void onFillableBlocking()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 onFillableBlocking {} ", this);
         blockingStrategy.produce();
     }
-    
+
     private void onFillableNonBlocking()
     {
         if (LOG.isDebugEnabled())
@@ -146,12 +157,12 @@ public class HTTP2Connection extends AbstractConnection
 
     protected void offerTask(Runnable task, boolean dispatch)
     {
-        tasks.offer(task);
-        
+        offerTask(task);
+
         // Because producing calls parse and parse can call offerTask, we have to make sure
         // we use the same strategy otherwise produce can be reentrant and that messes with 
         // the release mechanism.  TODO is this test sufficient to protect from this?
-        ExecutionStrategy s = Invocable.isNonBlockingInvocation()?nonBlockingStrategy:blockingStrategy;
+        ExecutionStrategy s = Invocable.isNonBlockingInvocation() ? nonBlockingStrategy : blockingStrategy;
         if (dispatch)
             // TODO Why again is this necessary?
             s.dispatch();
@@ -167,6 +178,22 @@ public class HTTP2Connection extends AbstractConnection
         session.close(ErrorCode.NO_ERROR.code, "close", Callback.NOOP);
     }
 
+    private void offerTask(Runnable task)
+    {
+        synchronized (this)
+        {
+            tasks.offer(task);
+        }
+    }
+
+    private Runnable pollTask()
+    {
+        synchronized (this)
+        {
+            return tasks.poll();
+        }
+    }
+
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private final Callback fillableCallback = new FillableCallback();
@@ -174,8 +201,8 @@ public class HTTP2Connection extends AbstractConnection
 
         @Override
         public synchronized Runnable produce()
-        {            
-            Runnable task = tasks.poll();
+        {
+            Runnable task = pollTask();
             if (LOG.isDebugEnabled())
                 LOG.debug("Dequeued task {}", task);
             if (task != null)
@@ -194,7 +221,7 @@ public class HTTP2Connection extends AbstractConnection
                     while (buffer.hasRemaining())
                         parser.parse(buffer);
 
-                    task = tasks.poll();
+                    task = pollTask();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Dequeued new task {}", task);
                     if (task != null)
@@ -220,6 +247,10 @@ public class HTTP2Connection extends AbstractConnection
                     session.onShutdown();
                     return null;
                 }
+                else
+                {
+                    bytesIn.addAndGet(filled);
+                }
 
                 looping = true;
             }
@@ -238,12 +269,6 @@ public class HTTP2Connection extends AbstractConnection
     private class FillableCallback implements Callback
     {
         @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.EITHER;
-        }
-        
-        @Override
         public void succeeded()
         {
             if (Invocable.isNonBlockingInvocation())
@@ -256,6 +281,12 @@ public class HTTP2Connection extends AbstractConnection
         public void failed(Throwable x)
         {
             onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.EITHER;
         }
     }
 }

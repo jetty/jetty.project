@@ -41,7 +41,7 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
     }
     
 
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
         return new FileTestServer(port, max, scavenge, evictionPolicy);
     }

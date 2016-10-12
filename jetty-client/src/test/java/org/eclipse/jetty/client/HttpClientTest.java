@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -89,6 +88,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Rule;
@@ -811,10 +811,23 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testConnectThrowsUnknownHostException() throws Exception
     {
+        String host = "idontexist";
+        int port = 80;
+
+        try
+        {
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress(host, port), 1000);
+            Assume.assumeTrue("Host must not be resolvable", false);
+        }
+        catch (IOException ignored)
+        {
+        }
+
         start(new EmptyServerHandler());
 
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("idontexist", 80)
+        client.newRequest(host, port)
                 .send(result ->
                 {
                     Assert.assertTrue(result.isFailed());
@@ -828,19 +841,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testConnectHostWithMultipleAddresses() throws Exception
     {
-        String host = "google.com";
-        try
-        {
-            // Likely that the DNS for google.com returns multiple addresses.
-            Assume.assumeTrue(InetAddress.getAllByName(host).length > 1);
-        }
-        catch (Throwable x)
-        {
-            Assume.assumeNoException(x);
-        }
+        start(new EmptyServerHandler());
 
-        startClient();
-        client.setFollowRedirects(false); // Avoid redirects from 80 to 443.
         client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), client.getConnectTimeout())
         {
             @Override
@@ -853,7 +855,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     {
                         // Add as first address an invalid address so that we test
                         // that the connect operation iterates over the addresses.
-                        result.add(0, new InetSocketAddress("idontexist", 80));
+                        result.add(0, new InetSocketAddress("idontexist", port));
                         promise.succeeded(result);
                     }
 
@@ -866,9 +868,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        // Response code may be 200 or 302;
-        // if no exceptions the test passes.
-        client.newRequest(host, 80)
+        // If no exceptions the test passes.
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
                 .header(HttpHeader.CONNECTION, "close")
                 .send();
     }
@@ -1232,7 +1234,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             // before closing the connection, so we need to wait before checking
             // that the connection is closed to avoid races.
             Thread.sleep(1000);
-            Assert.assertTrue(((HttpConnectionOverHTTP)connection).isClosed());
+            Assert.assertTrue(connection.isClosed());
         }
     }
 
@@ -1533,6 +1535,93 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 listener.get(5, TimeUnit.SECONDS);
             }
         }
+    }
+
+    @Test
+    public void test_IPv6_Host() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentType("text/plain");
+                response.getOutputStream().print(request.getHeader("Host"));
+            }
+        });
+
+        URI uri = URI.create(scheme + "://[::1]:" + connector.getLocalPort() + "/path");
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.PUT)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1),Matchers.startsWith("[::1]:"));
+    }
+
+    @Test
+    public void testCopyRequest()
+            throws Exception
+    {
+        startClient();
+
+        assertCopyRequest(client.newRequest("http://example.com/some/url")
+                .method(HttpMethod.HEAD)
+                .version(HttpVersion.HTTP_2)
+                .content(new StringContentProvider("some string"))
+                .timeout(321, TimeUnit.SECONDS)
+                .idleTimeout(2221, TimeUnit.SECONDS)
+                .followRedirects(true)
+                .header(HttpHeader.CONTENT_TYPE, "application/json")
+                .header("X-Some-Custom-Header", "some-value"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .method(HttpMethod.POST)
+                .version(HttpVersion.HTTP_1_0)
+                .content(new StringContentProvider("some other string"))
+                .timeout(123231, TimeUnit.SECONDS)
+                .idleTimeout(232342, TimeUnit.SECONDS)
+                .followRedirects(false)
+                .header(HttpHeader.ACCEPT, "application/json")
+                .header("X-Some-Other-Custom-Header", "some-other-value"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header(HttpHeader.ACCEPT, "application/json")
+                .header(HttpHeader.ACCEPT, "application/xml")
+                .header("x-same-name", "value1")
+                .header("x-same-name", "value2"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header(HttpHeader.ACCEPT, "application/json")
+                .header(HttpHeader.CONTENT_TYPE, "application/json"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header("X-Custom-Header-1", "value1")
+                .header("X-Custom-Header-2", "value2"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header("X-Custom-Header-1", "value")
+                .header("X-Custom-Header-2", "value"));
+    }
+
+    private void assertCopyRequest(Request original)
+    {
+        Request copy = client.copyRequest((HttpRequest) original, original.getURI());
+        Assert.assertEquals(original.getURI(), copy.getURI());
+        Assert.assertEquals(original.getMethod(), copy.getMethod());
+        Assert.assertEquals(original.getVersion(), copy.getVersion());
+        Assert.assertEquals(original.getContent(), copy.getContent());
+        Assert.assertEquals(original.getIdleTimeout(), copy.getIdleTimeout());
+        Assert.assertEquals(original.getTimeout(), copy.getTimeout());
+        Assert.assertEquals(original.isFollowRedirects(), copy.isFollowRedirects());
+        Assert.assertEquals(original.getHeaders(), copy.getHeaders());
     }
 
     private void consume(InputStream input, boolean eof) throws IOException

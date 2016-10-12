@@ -50,45 +50,26 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 public class SharedBlockingCallback
 {
     static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
-    private static Throwable IDLE = new Throwable()
-    {
-        @Override
-        public String toString()
-        {
-            return "IDLE";
-        }
-    };
-    private static Throwable SUCCEEDED = new Throwable()
-    {
-        @Override
-        public String toString()
-        {
-            return "SUCCEEDED";
-        }
-    };
-    private static Throwable FAILED = new Throwable()
-    {
-        @Override
-        public String toString()
-        {
-            return "FAILED";
-        }
-    };
+
+    private static Throwable IDLE = new ConstantThrowable("IDLE");
+    private static Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
+
+    private static Throwable FAILED = new ConstantThrowable("FAILED");
 
     private final ReentrantLock _lock = new ReentrantLock();
     private final Condition _idle = _lock.newCondition();
     private final Condition _complete = _lock.newCondition();
     private Blocker _blocker = new Blocker();
-    
+
     protected long getIdleTimeout()
     {
         return -1;
     }
-    
+
     public Blocker acquire() throws IOException
     {
-        _lock.lock();
         long idle = getIdleTimeout();
+        _lock.lock();
         try
         {
             while (_blocker._state != IDLE)
@@ -103,8 +84,9 @@ public class SharedBlockingCallback
                     _idle.await();
             }
             _blocker._state = null;
+            return _blocker;
         }
-        catch (final InterruptedException e)
+        catch (InterruptedException x)
         {
             throw new InterruptedIOException();
         }
@@ -112,7 +94,6 @@ public class SharedBlockingCallback
         {
             _lock.unlock();
         }
-        return _blocker;
     }
 
     protected void notComplete(Blocker blocker)
@@ -180,8 +161,15 @@ public class SharedBlockingCallback
                         _state=cause;
                     _complete.signalAll();
                 }
-                else 
+                else if (_state instanceof BlockerTimeoutException)
+                {
+                    // Failure arrived late, block() already
+                    // modified the state, nothing more to do.
+                }
+                else
+                {
                     throw new IllegalStateException(_state);
+                }
             }
             finally
             {
@@ -198,19 +186,24 @@ public class SharedBlockingCallback
          */
         public void block() throws IOException
         {
-            _lock.lock();
             long idle = getIdleTimeout();
+            _lock.lock();
             try
             {
                 while (_state == null)
                 {
-                    if (idle>0 && (idle < Long.MAX_VALUE/2))
+                    if (idle > 0)
                     {
-                        // Wait a little bit longer than expected callback idle timeout
-                        if (!_complete.await(idle+idle/2,TimeUnit.MILLISECONDS))
-                            // The callback has not arrived in sufficient time.
-                            // We will synthesize a TimeoutException 
-                            _state=new BlockerTimeoutException();
+                        // Waiting here may compete with the idle timeout mechanism,
+                        // so here we wait a little bit longer to favor the normal
+                        // idle timeout mechanism that will call failed(Throwable).
+                        long excess = Math.min(idle / 2, 1000);
+                        if (!_complete.await(idle + excess, TimeUnit.MILLISECONDS))
+                        {
+                            // Method failed(Throwable) has not been called yet,
+                            // so we will synthesize a special TimeoutException.
+                            _state = new BlockerTimeoutException();
+                        }
                     }
                     else
                     {

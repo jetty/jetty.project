@@ -31,7 +31,7 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
         return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }

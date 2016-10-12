@@ -108,6 +108,7 @@ public class DataGenerateParseTest
             while (true)
             {
                 generated += generator.generateData(lease, 13, slice, true, slice.remaining());
+                generated -= Frame.HEADER_LENGTH;
                 if (generated == data.remaining())
                     break;
             }
@@ -147,6 +148,7 @@ public class DataGenerateParseTest
             while (true)
             {
                 generated += generator.generateData(lease, 13, slice, true, slice.remaining());
+                generated -= Frame.HEADER_LENGTH;
                 if (generated == data.remaining())
                     break;
             }

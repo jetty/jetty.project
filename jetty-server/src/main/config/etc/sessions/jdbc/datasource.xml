@@ -5,7 +5,7 @@
 
 
     <New id="databaseAdaptor" class="org.eclipse.jetty.server.session.DatabaseAdaptor">
-         <Set name="DatasourceName"><Property name="jetty.session.datasourceName" default="/jdbc/sessions" /></Set>
+         <Set name="DatasourceName"><Property name="jetty.session.jdbc.datasourceName" default="/jdbc/sessions" /></Set>
     </New>
 
 </Configure>

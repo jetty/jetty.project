@@ -5,6 +5,9 @@ created or by enabling other session-cache or session-store
 modules.  Without this module enabled, the server may still
 use sessions, but their management cannot be configured.
 
+[Tags]
+session
+
 [depends]
 server
 
@@ -16,4 +19,4 @@ etc/sessions/id-manager.xml
 #jetty.sessionIdManager.workerName=node1
 
 ## Period between runs of the session scavenger (in seconds)
-#jetty.sessionScavengeInterval.seconds=60
+#jetty.sessionScavengeInterval.seconds=600

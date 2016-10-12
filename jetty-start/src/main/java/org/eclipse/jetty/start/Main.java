@@ -243,16 +243,19 @@ public class Main
 
     public void listModules(StartArgs args)
     {
+        List<String> tags = args.getListModules();
+        
         StartLog.endStartLog();
         System.out.println();
-        System.out.println("Jetty All Available Modules:");
-        System.out.println("----------------------------");
-        args.getAllModules().dump();
+        System.out.println("Available Modules:");
+        System.out.println("==================");
+        System.out.println("tags: "+tags);
+        args.getAllModules().dump(tags);
 
         // Dump Enabled Modules
         System.out.println();
-        System.out.println("Jetty Selected Module Ordering:");
-        System.out.println("-------------------------------");
+        System.out.println("Enabled Modules:");
+        System.out.println("================");
         Modules modules = args.getAllModules();
         modules.dumpEnabled();
     }
@@ -381,7 +384,7 @@ public class Main
         }
 
         // Show modules
-        if (args.isListModules())
+        if (args.getListModules()!=null)
         {
             listModules(args);
         }

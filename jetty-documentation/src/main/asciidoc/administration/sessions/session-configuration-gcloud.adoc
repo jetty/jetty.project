@@ -15,26 +15,71 @@
 //  ========================================================================
 
 [[configuring-sessions-gcloud]]
+=== Clustered Session Management: Google Cloud DataStore
 
-=== Configuring Google Cloud DataStore
+==== Preparation
+
+You will first need to create a project and enable the Google Cloud api: https://cloud.google.com/docs/authentication#preparation.
+Take note of the project id that you create in this step as you need to supply it in later steps.
+
+===== Communicating with GCloudDataStore
+
+====== When running Jetty outside of google infrastructure
+
+Before running Jetty, you will need to choose one of the following methods to set up the local environment to enable remote GCloud DataStore communications.
+
+1. Using the GCloud SDK:
+  * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en.
+  * Use the GCloud tool to set up the project you created in the preparation step: `gcloud config set project PROJECT_ID`
+  * Use the GCloud tool to authenticate a google account associated with the project created in the preparation step: `gcloud auth login ACCOUNT`
+
+2. Using environment variables
+  * Define the environment variable `GCLOUD_PROJECT` with the project id you created in the preparation step.
+  * Generate a JSON link:https://cloud.google.com/storage/docs/authentication?hl=en#service_accounts[service account key] and then define the environment variable `GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/key.json`
+
+
+====== When Running Jetty Inside of Google Infrastructure
+
+The Google deployment tools will automatically configure the project and authentication information for you.
+
+==== Configuring Indexes for Session Data
+
+Regardless of whether you're running inside or outside google infrastructure you will need to upload a file that defines some indexes that are needed by the GCloud datastore session data store.
+This file is named `index.yaml` and you can find it in your distribution in `${jetty.base}/etc/sessions/gcloud/index.yaml`.
+
+//TODO - Add index.yaml properties? Test with new 9.4.x. It needs uploaded to Google as part of config
+
+Follow the instructions link:https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
+
+===== Communicating with the GCloudDataStore Emulator
+
+To enable communication using the GCloud Emulator:
+
+   * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en
+   * Follow the instructions link:https://cloud.google.com/datastore/docs/tools/datastore-emulator[here] on how to start the GCloud datastore emulator, and how to propagate the environment variables that it creates to the terminal in which you run Jetty.
+
+==== Configuring the Google Cloud DataStore Module
 
 When using the Jetty distribution, you will first need to enable the `session-store-gcloud` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 
 [source, screen, subs="{sub-order}"]
 ----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
 $ java -jar ../start.jar --add-to-start=session-store-gcloud
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
- + contains software not provided by the Eclipse Foundation!
- + contains software not covered by the Eclipse Public License!
- + has not been audited for compliance with its license
++ contains software not provided by the Eclipse Foundation!
++ contains software not covered by the Eclipse Public License!
++ has not been audited for compliance with its license
 
- Module: session-store-gcloud
-  + GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.
-  + https://github.com/GoogleCloudPlatform/gcloud-java
-  + http://www.apache.org/licenses/LICENSE-2.0.html
+Module: session-store-gcloud
+ + GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.
+ + https://github.com/GoogleCloudPlatform/gcloud-java
+ + http://www.apache.org/licenses/LICENSE-2.0.html
 
 Proceed (y/N)? y
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
@@ -79,11 +124,11 @@ WARN : Module session-store-gcloud requires jcl-api from one of [jcl, jcl-slf4j]
 WARN : Unsatisfied module dependencies: session-store-gcloud,session-store-gcloud
 
 Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
-       java -jar $JETTY_HOME/start.jar --help  # for more information
+      java -jar $JETTY_HOME/start.jar --help  # for more information
 ----
 
 Doing this enables the GCloud Session module and any dependent session modules or files needed for it to run on the server.
-The example above is running an fresh `{$jetty.base}` with nothing enabled.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
 Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
 You will notice, however, that the above output presented a warning: GCloud requires certain Java Commons Logging features to work correctly.
 As such, you will also need to enable either the `jcl` or `jcl-slf4j` module.
@@ -94,13 +139,13 @@ $ java -jar ../start.jar --add-to-start=jcl
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
- + contains software not provided by the Eclipse Foundation!
- + contains software not covered by the Eclipse Public License!
- + has not been audited for compliance with its license
++ contains software not provided by the Eclipse Foundation!
++ contains software not covered by the Eclipse Public License!
++ has not been audited for compliance with its license
 
- Module: jcl
-  + Log4j is released under the Apache 2.0 license.
-  + http://www.apache.org/licenses/LICENSE-2.0.html
+Module: jcl
+ + Log4j is released under the Apache 2.0 license.
+ + http://www.apache.org/licenses/LICENSE-2.0.html
 
 Proceed (y/N)? y
 INFO : jcl             initialised in ${jetty.base}/start.d/jcl.ini
@@ -109,14 +154,14 @@ INFO : Base directory was modified
 ----
 
 When the `--add-to-start` argument was added to the command line the first time, it enabled the the `session-store-gcloud` module as well as the `sessions` and `server` modules, which are required for GCloud session management to operate; the `jcl` module was added when we ran it the second time.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `{$jetty.base}`.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
 
 ____
 [NOTE]
 If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 ____
 
-Opening the `start.d/session-store-gcloud.ini` will show a list of all the configurable options for the Google Cloud DataStore module:
+Opening the `start.d/session-store-gcloud.ini` will show a list of all the configurable properties for the Google Cloud DataStore module:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -128,13 +173,23 @@ Opening the `start.d/session-store-gcloud.ini` will show a list of all the confi
 
 
 ## GCloudDatastore Session config
-#jetty.gcloudSession.maxRetries=5
-#jetty.gcloudSession.backoffMs=1000
+#jetty.session.gcloud.maxRetries=5
+#jetty.session.gcloud.backoffMs=1000
+#jetty.session.gcloud.model.kind=GCloudSession
+#jetty.session.gcloud.model.id=id
+#jetty.session.gcloud.model.contextPath=contextPath
+#jetty.session.gcloud.model.vhost=vhost
+#jetty.session.gcloud.model.accessed=accessed
+#jetty.session.gcloud.model.lastAccessed=lastAccessed
+#jetty.session.gcloud.model.createTime=createTime
+#jetty.session.gcloud.model.cookieSetTime=cookieSetTime
+#jetty.session.gcloud.model.lastNode=lastNode
+#jetty.session.gcloud.model.expiry=expiry
+#jetty.session.gcloud.model.maxInactive=maxInactive
+#jetty.session.gcloud.model.attributes=attributes
 ----
 
-jetty.gcloudSession.maxRetries::
+jetty.session.gcloud.maxRetries::
 Maxmium number of tries to connect to GCloud DataStore to write sessions.
-jetty.gcloudSession.backoffMs::
+jetty.session.gcloud.backoffMs::
 Amount of time, in milliseconds, between attempts to connect to the GCloud DataStore to write sessions.
-
-//TODO - Add index.yaml properties?

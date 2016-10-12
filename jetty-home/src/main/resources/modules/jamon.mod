@@ -1,6 +1,9 @@
 [description]
 Deploys the JAMon webapplication
 
+[Tags]
+3rdparty
+
 [depend]
 stats
 deploy
@@ -12,8 +15,9 @@ etc/jamon.xml
 
 [files]
 lib/jamon/
-maven://com.jamonapi/jamon/2.79|lib/jamon/jamon-2.79.jar
-maven://com.jamonapi/jamon_war/2.79/war|lib/jamon/jamon.war
+maven://com.jamonapi/jamon/2.81|lib/jamon/jamon-2.81.jar
+maven://com.jamonapi/jamon_war/2.81/war|lib/jamon/jamon.war
+basehome:modules/jamon/jamon.xml|etc/jamon.xml
 
 [lib]
 lib/jamon/**.jar

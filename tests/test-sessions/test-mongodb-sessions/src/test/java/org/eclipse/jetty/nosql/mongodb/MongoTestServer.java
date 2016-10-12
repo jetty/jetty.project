@@ -57,7 +57,7 @@ public class MongoTestServer extends AbstractTestServer
     }
     
     
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }
@@ -65,7 +65,7 @@ public class MongoTestServer extends AbstractTestServer
    
     
     
-    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, boolean saveAllAttributes)
+    public MongoTestServer(int port, int maxInactivePeriod, int scavengePeriod, int idlePassivatePeriod, boolean saveAllAttributes) throws Exception
     {
         super(port, maxInactivePeriod, scavengePeriod, idlePassivatePeriod);
     }

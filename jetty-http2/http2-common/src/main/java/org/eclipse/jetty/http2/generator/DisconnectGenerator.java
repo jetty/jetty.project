@@ -29,7 +29,8 @@ public class DisconnectGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame)
     {
+        return 0;
     }
 }

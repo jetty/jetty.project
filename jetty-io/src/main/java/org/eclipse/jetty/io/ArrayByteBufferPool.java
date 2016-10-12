@@ -20,8 +20,6 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
-
 public class ArrayByteBufferPool implements ByteBufferPool
 {
     private final int _min;
@@ -63,8 +61,8 @@ public class ArrayByteBufferPool implements ByteBufferPool
         for (int i=0;i<_direct.length;i++)
         {
             size+=_inc;
-            _direct[i]=new ByteBufferPool.Bucket(size,_maxQueue);
-            _indirect[i]=new ByteBufferPool.Bucket(size,_maxQueue);
+            _direct[i]=new ByteBufferPool.Bucket(this,size,_maxQueue);
+            _indirect[i]=new ByteBufferPool.Bucket(this,size,_maxQueue);
         }
     }
 
@@ -73,7 +71,7 @@ public class ArrayByteBufferPool implements ByteBufferPool
     {
         ByteBufferPool.Bucket bucket = bucketFor(size,direct);
         if (bucket==null)
-            return direct ? BufferUtil.allocateDirect(size) : BufferUtil.allocate(size);
+            return newByteBuffer(size,direct);
             
         return bucket.acquire(direct);
             

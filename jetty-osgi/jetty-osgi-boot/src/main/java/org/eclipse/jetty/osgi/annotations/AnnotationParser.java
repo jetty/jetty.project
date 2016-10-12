@@ -29,7 +29,6 @@ import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.resource.Resource;
@@ -85,7 +84,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
      * 
      */
     @Override
-    public void parse (Set<? extends Handler> handlers, URI[] uris, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, URI[] uris)
     throws Exception
     {
         for (URI uri : uris)
@@ -99,16 +98,16 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 }
                 //a jar in WEB-INF/lib or the WEB-INF/classes
                 //use the behavior of the super class for a standard jar.
-                super.parse(handlers, new URI[] {uri},resolver);
+                super.parse(handlers, new URI[] {uri});
             }
             else
             {
-                parse(handlers, associatedBundle,resolver);
+                parse(handlers, associatedBundle);
             }
         }
     }
     
-    protected void parse(Set<? extends Handler> handlers, Bundle bundle, ClassNameResolver resolver)
+    protected void parse(Set<? extends Handler> handlers, Bundle bundle)
     throws Exception
     {
         URI uri = _bundleToUri.get(bundle);
@@ -205,7 +204,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
             }
             //transform into a classname to pass to the resolver
             String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-            if ((resolver == null) || (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+            if (!isParsed(shortName))
             {
                 try (InputStream classInputStream = classUrl.openStream())
                 {

@@ -21,6 +21,8 @@ package org.eclipse.jetty.http.client;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.http.HttpServlet;
+
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -40,11 +42,14 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -61,14 +66,18 @@ public abstract class AbstractTest
     @Rule
     public final TestTracker tracker = new TestTracker();
 
+    protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected final Transport transport;
     protected SslContextFactory sslContextFactory;
     protected Server server;
     protected ServerConnector connector;
+    protected ServletContextHandler context;
+    protected String servletPath = "/servlet";
     protected HttpClient client;
 
     public AbstractTest(Transport transport)
     {
+        Assume.assumeNotNull(transport);
         this.transport = transport;
     }
 
@@ -76,6 +85,22 @@ public abstract class AbstractTest
     {
         startServer(handler);
         startClient();
+    }
+
+    public void start(HttpServlet servlet) throws Exception
+    {
+        startServer(servlet);
+        startClient();
+    }
+
+    protected void startServer(HttpServlet servlet) throws Exception
+    {
+        context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder holder = new ServletHolder(servlet);
+        holder.setAsyncSupported(true);
+        context.addServlet(holder, servletPath);
+        startServer(context);
     }
 
     protected void startServer(Handler handler) throws Exception
@@ -101,7 +126,7 @@ public abstract class AbstractTest
         return new ServerConnector(server, provideServerConnectionFactory(transport));
     }
 
-    private void startClient() throws Exception
+    protected void startClient() throws Exception
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
@@ -118,14 +143,13 @@ public abstract class AbstractTest
         {
             case HTTP:
             {
-                result.add(new HttpConnectionFactory(new HttpConfiguration()));
+                result.add(new HttpConnectionFactory(httpConfig));
                 break;
             }
             case HTTPS:
             {
-                HttpConfiguration configuration = new HttpConfiguration();
-                configuration.addCustomizer(new SecureRequestCustomizer());
-                HttpConnectionFactory http = new HttpConnectionFactory(configuration);
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
                 result.add(ssl);
                 result.add(http);
@@ -133,14 +157,13 @@ public abstract class AbstractTest
             }
             case H2C:
             {
-                result.add(new HTTP2CServerConnectionFactory(new HttpConfiguration()));
+                result.add(new HTTP2CServerConnectionFactory(httpConfig));
                 break;
             }
             case H2:
             {
-                HttpConfiguration configuration = new HttpConfiguration();
-                configuration.addCustomizer(new SecureRequestCustomizer());
-                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(configuration);
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
                 ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
                 result.add(ssl);
@@ -150,7 +173,7 @@ public abstract class AbstractTest
             }
             case FCGI:
             {
-                result.add(new ServerFCGIConnectionFactory(new HttpConfiguration()));
+                result.add(new ServerFCGIConnectionFactory(httpConfig));
                 break;
             }
             default:
@@ -228,8 +251,18 @@ public abstract class AbstractTest
     @After
     public void stop() throws Exception
     {
+        stopClient();
+        stopServer();
+    }
+
+    protected void stopClient() throws Exception
+    {
         if (client != null)
             client.stop();
+    }
+
+    protected void stopServer() throws Exception
+    {
         if (server != null)
             server.stop();
     }

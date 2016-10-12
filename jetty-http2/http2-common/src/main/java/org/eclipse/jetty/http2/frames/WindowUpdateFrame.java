@@ -20,6 +20,8 @@ package org.eclipse.jetty.http2.frames;
 
 public class WindowUpdateFrame extends Frame
 {
+    public static final int WINDOW_UPDATE_LENGTH = 4;
+
     private final int streamId;
     private final int windowDelta;
 

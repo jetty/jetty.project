@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 public class HttpChannelOverHTTP2 extends HttpChannel
 {
@@ -70,6 +69,18 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public boolean isExpecting100Continue()
     {
         return _expect100Continue;
+    }
+
+    @Override
+    public void setIdleTimeout(long timeoutMs)
+    {
+        getStream().setIdleTimeout(timeoutMs);
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return getStream().getIdleTimeout();
     }
 
     public Runnable onRequest(HeadersFrame frame)
@@ -256,11 +267,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                     handle);
         }
 
-        boolean delayed = _delayedUntilContent;
+        boolean wasDelayed = _delayedUntilContent;
         _delayedUntilContent = false;
-        if (delayed)
+        if (wasDelayed)
             _handled = true;
-        return handle || delayed ? this : null;
+        return handle || wasDelayed ? this : null;
     }
 
     public boolean isRequestHandled()
@@ -268,10 +279,27 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return _handled;
     }
 
+    public boolean onStreamTimeout(Throwable failure)
+    {
+        if (!_handled)
+            return true;
+
+        HttpInput input = getRequest().getHttpInput();
+        boolean readFailed = input.failed(failure);
+        if (readFailed)
+            handle();
+
+        boolean writeFailed = getHttpTransport().onStreamTimeout(failure);
+
+        return readFailed || writeFailed;
+    }
+
     public void onFailure(Throwable failure)
     {
-        onEarlyEOF();
-        getState().asyncError(failure);
+        if (onEarlyEOF())
+            handle();
+        else
+            getState().asyncError(failure);
     }
 
     protected void consumeInput()

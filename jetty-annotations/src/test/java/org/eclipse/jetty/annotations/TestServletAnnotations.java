@@ -73,18 +73,7 @@ public class TestServletAnnotations
 
         TestWebServletAnnotationHandler handler = new TestWebServletAnnotationHandler(wac, results);
 
-        parser.parse(Collections.singleton(handler), classes, new ClassNameResolver ()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
+        parser.parse(Collections.singleton(handler), classes);
 
 
         assertEquals(1, results.size());
