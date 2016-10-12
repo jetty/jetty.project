@@ -752,7 +752,11 @@ public class StartArgs
 
     public List<String> getListModules()
     {
-        return listModules;
+        if (listModules == null || listModules.contains("internal") || listModules.contains("-internal"))
+            return listModules;
+        List<String> modules = new ArrayList<>(listModules);
+        modules.add("-internal");
+        return modules;
     }
 
     public boolean isRun()
@@ -873,7 +877,7 @@ public class StartArgs
         if (arg.equals("--create-files"))
         {
             run = false;
-            download = true;boolean
+            download = true;
             licenseCheckRequired = true;
             return;
         }
@@ -949,7 +953,7 @@ public class StartArgs
         // Module Management
         if ("--list-modules".equals(arg))
         {
-            listModules = Collections.singletonList("-internal");
+            listModules = Collections.emptyList();
             run = false;
             return;
         }

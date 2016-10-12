@@ -70,7 +70,8 @@ Module Management:
   
   --list-modules=<tag>(,<tag>)*
                    List modules by tag. Use '*' for all tags. Prefix a tag 
-                   with '-' to exclude the tag.
+                   with '-' to exclude the tag.  The special tag "internal"
+                   is always excluded unless it is explicitly included.
                    
   --list-all-modules
                    List all modules.
