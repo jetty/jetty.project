@@ -2,6 +2,9 @@
 Redirects JVMs stderr and stdout to a log file,
 including output from Jetty's default StdErrLog logging.
 
+[tags]
+logging
+
 [xml]
 etc/stderrout-logging.xml
 
@@ -9,7 +12,6 @@ etc/stderrout-logging.xml
 logs/
 
 [lib]
-lib/logging/**.jar
 resources/
 
 [ini-template]

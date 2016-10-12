@@ -3,6 +3,10 @@ Adds a HTTP2C connetion factory to the Unix Domain Socket Connector
 It can be used when either the proxy forwards direct
 HTTP/2C (unecrypted) or decrypted HTTP/2 traffic.
 
+[Tags]
+connector
+http2
+
 [depend]
 unixsocket-http
 

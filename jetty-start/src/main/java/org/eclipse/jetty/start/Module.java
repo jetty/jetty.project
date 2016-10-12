@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
  * A module may be enabled, either directly by name or transiently via a dependency
  * from another module by name or provided capability.
  */
-public class Module
+public class Module implements Comparable<Module>
 {
     private static final String VERSION_UNSPECIFIED = "9.2";
     private static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
@@ -95,6 +95,9 @@ public class Module
     
     /** List of provides for this Module */
     private final Set<String> _provides=new HashSet<>();
+    
+    /** List of tags for this Module */
+    private final List<String> _tags=new ArrayList<>();
     
     /** Boolean true if directly enabled, false if all selections are transitive */
     private boolean _notTransitive;
@@ -328,6 +331,10 @@ public class Module
                             case "FILES":
                                 _files.add(line);
                                 break;
+                            case "TAG":
+                            case "TAGS":
+                                _tags.add(line);
+                                break;
                             case "DEFAULTS": // old name introduced in 9.2.x
                             case "INI": // new name for 9.3+
                                 _defaultConfig.add(line);
@@ -446,6 +453,16 @@ public class Module
         return _description;
     }
     
+    public List<String> getTags()
+    {
+        return _tags;
+    }
+    
+    public String getPrimaryTag()
+    {
+        return _tags.isEmpty()?"*":_tags.get(0);
+    }
+    
     public boolean isEnabled()
     {
         return !_enables.isEmpty();
@@ -503,5 +520,14 @@ public class Module
             out.println(line);
         out.println();
         out.flush();
+    }
+
+    @Override
+    public int compareTo(Module m)
+    {
+        int by_tag = getPrimaryTag().compareTo(m.getPrimaryTag());
+        if (by_tag!=0)
+            return by_tag;
+        return getName().compareTo(m.getName());
     }
 }

@@ -19,13 +19,30 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.AbstractList;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
+import java.io.File;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /**
@@ -45,21 +62,59 @@ import org.eclipse.jetty.util.StringUtil;
  * in this string should be separated by ':' (semicolon) or ',' (comma).
  */
 
-public class ClasspathPattern extends AbstractList<String>
+public class ClasspathPattern extends AbstractSet<String>
 {
+    private static final Logger LOG = Log.getLogger(ClasspathPattern.class);
+    
+    enum Type { PACKAGE, CLASSNAME, LOCATION }
+
     private static class Entry
     {
-        public final String _pattern;
-        public final String _name;
-        public final boolean _inclusive;
-        public final boolean _package;     
+        private final String _pattern;
+        private final String _name;
+        private final boolean _inclusive;
+        private final Type _type;
         
         Entry(String pattern)
         {
             _pattern=pattern;
             _inclusive = !pattern.startsWith("-");
-            _package = pattern.endsWith(".");
             _name = _inclusive ? pattern : pattern.substring(1).trim();
+            _type = (_name.startsWith("file:"))?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
+        }
+        
+        Entry(String name, boolean include)
+        {
+            _pattern=include?name:("-"+name);
+            _inclusive = include;
+            _name = name;
+            _type = (_name.startsWith("file:"))?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
+        }
+        
+
+        public String getPattern()
+        {
+            return _pattern;
+        }
+        
+        public boolean isPackage()
+        {
+            return _type==Type.PACKAGE;
+        }
+        
+        public boolean isClassName()
+        {
+            return _type==Type.CLASSNAME;
+        }
+        
+        public boolean isLocation()
+        {
+            return _type==Type.LOCATION;
+        }
+
+        public String getName()
+        {
+            return _name;
         }
         
         @Override
@@ -67,86 +122,356 @@ public class ClasspathPattern extends AbstractList<String>
         {
             return _pattern;
         }
+        
+        @Override 
+        public int hashCode()
+        {
+            return _pattern.hashCode();
+        }
+        
+        @Override 
+        public boolean equals(Object o)
+        {
+            return (o instanceof Entry) 
+                && _pattern.equals(((Entry)o)._pattern);
+        }
+
+        public boolean isInclusive()
+        {
+            return _inclusive;
+        }
     }
     
-    final private List<Entry> _entries = new ArrayList<Entry>();
     
-    /* ------------------------------------------------------------ */
+    public static class ByPackage extends AbstractSet<Entry> implements Predicate<String> 
+    {
+        private final ArrayTernaryTrie.Growing<Entry> _entries = new ArrayTernaryTrie.Growing<>(false,512,512);
+
+        @Override
+        public boolean test(String name)
+        {
+            return _entries.getBest(name)!=null;
+        }
+
+        @Override
+        public Iterator<Entry> iterator()
+        {
+            return _entries.keySet().stream().map(k->_entries.get(k)).iterator();
+        }
+
+        @Override
+        public int size()
+        {
+            return _entries.size();
+        }
+        
+        @Override
+        public boolean isEmpty()
+        {
+            return _entries.isEmpty();
+        }
+        
+        @Override
+        public boolean add(Entry entry)
+        {
+            String name = entry.getName();
+            if (entry.isClassName())
+                name+="$";
+            else if (entry.isLocation())
+                throw new IllegalArgumentException(entry.toString());
+            else if (".".equals(name))
+                name="";
+                
+            if (_entries.get(name)!=null)
+                return false;
+            
+            _entries.put(name,entry);
+            return true;
+        }
+        
+        @Override
+        public boolean remove(Object entry)
+        {
+            if (!(entry instanceof Entry))
+                return false;
+
+            return _entries.remove(((Entry)entry).getName())!=null;
+        }
+        
+        @Override
+        public void clear()
+        {
+            _entries.clear();
+        }
+    }
+    
+    @SuppressWarnings("serial")
+    public static class ByName extends HashSet<Entry> implements Predicate<String> 
+    {
+        private final Map<String,Entry> _entries = new HashMap<>();
+
+        @Override
+        public boolean test(String name)
+        {
+            return _entries.containsKey(name);
+        }
+
+        @Override
+        public Iterator<Entry> iterator()
+        {
+            return _entries.values().iterator();
+        }
+
+        @Override
+        public int size()
+        {
+            return _entries.size();
+        }
+        
+        @Override
+        public boolean add(Entry entry)
+        {
+            if (!entry.isClassName())
+                throw new IllegalArgumentException(entry.toString());
+            return _entries.put(entry.getName(),entry)==null;
+        }
+        
+        @Override
+        public boolean remove(Object entry)
+        {
+            if (!(entry instanceof Entry))
+                return false;
+
+            return _entries.remove(((Entry)entry).getName())!=null;
+        }
+    }
+
+    public static class ByPackageOrName extends AbstractSet<Entry> implements Predicate<String> 
+    {
+        private final ByName _byName = new ByName();
+        private final ByPackage _byPackage = new ByPackage();
+        
+        @Override
+        public boolean test(String name)
+        {
+            return  _byPackage.test(name) 
+                || _byName.test(name) ;
+        }
+
+        @Override
+        public Iterator<Entry> iterator()
+        {
+            // by package contains all entries (classes are also $ packages).
+            return _byPackage.iterator();
+        }
+
+        @Override
+        public int size()
+        {
+            return _byPackage.size();
+        }
+
+        @Override
+        public boolean add(Entry e)
+        {
+            if (e.isLocation())
+                throw new IllegalArgumentException();
+            
+            if (e.isPackage())
+                return _byPackage.add(e);
+            
+            // Add class name to packages also as classes act
+            // as packages for nested classes.
+            boolean added = _byPackage.add(e);
+            added = _byName.add(e) || added;
+            return added;
+        }
+
+        @Override
+        public boolean remove(Object o)
+        {
+            if (!(o instanceof Entry))
+                return false;
+
+            boolean removed = _byPackage.remove(o);
+            
+            if (!((Entry)o).isPackage())
+                removed = _byName.remove(o) || removed;
+            
+            return removed;
+        }
+
+        @Override
+        public void clear()
+        {
+            _byPackage.clear();
+            _byName.clear();
+        }
+    }
+    
+    @SuppressWarnings("serial")
+    public static class ByLocation extends HashSet<File> implements Predicate<Path>
+    {        
+        @Override
+        public boolean test(Path path)
+        {
+            for (File file: this)
+            {
+                if (file.isDirectory())
+                {
+                    if (path.startsWith(file.toPath()))
+                        return true;
+                }
+                else
+                {
+                    if (path.equals(file.toPath()))
+                        return true;
+                }
+            }
+                
+            return false;
+        }
+    }
+    
+    
+    Map<String,Entry> _entries = new HashMap<>();
+    Set<String> _classes = new HashSet<>();
+    
+    IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
+    IncludeExcludeSet<File,Path> _locations = new IncludeExcludeSet<>(ByLocation.class);
+    
     public ClasspathPattern()
     {
     }
     
-    /* ------------------------------------------------------------ */
     public ClasspathPattern(String[] patterns)
     {
         setAll(patterns);
     }
     
-    /* ------------------------------------------------------------ */
     public ClasspathPattern(String pattern)
     {
         add(pattern);
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    public String get(int index)
+    public boolean include(String name)
     {
-        return _entries.get(index)._pattern;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public String set(int index, String element)
-    {
-        Entry e = _entries.set(index,new Entry(element));
-        return e==null?null:e._pattern;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void add(int index, String element)
-    {
-        _entries.add(index,new Entry(element));
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void addPattern(String element)
-    {
-        add(element);
+        if (name==null)
+            return false;
+        return add(new Entry(name,true));
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    public String remove(int index)
+    public boolean include(String... name)
     {
-        Entry e = _entries.remove(index);
-        return e==null?null:e._pattern;
+        boolean added = false;
+        for (String n:name)
+            if (n!=null)
+                added = add(new Entry(n,true)) || added;
+        return added;
     }
     
-    /* ------------------------------------------------------------ */
-    public boolean remove(String pattern)
+    public boolean exclude(String name)
     {
-        for (int i=_entries.size();i-->0;)
+        if (name==null)
+            return false;
+        return add(new Entry(name,false));
+    }
+    
+    public boolean exclude(String... name)
+    {
+        boolean added = false;
+        for (String n:name)
+            if (n!=null)
+                added = add(new Entry(n,false)) || added;
+        return added;
+    }
+    
+    @Override
+    public boolean add(String pattern)
+    {
+        if (pattern==null)
+            return false;
+        return add(new Entry(pattern));
+    }
+    
+    public boolean add(String... pattern)
+    {
+        boolean added = false;
+        for (String p:pattern)
+            if (p!=null)
+                added = add(new Entry(p)) || added;
+        return added;
+    }
+    
+    protected boolean add(Entry entry)
+    {
+        if (_entries.containsKey(entry.getPattern()))
+            return false;
+        _entries.put(entry.getPattern(),entry);
+
+        if (entry.isLocation())
         {
-            if (pattern.equals(_entries.get(i)._pattern))
+            try
             {
-                _entries.remove(i);
-                return true;
+                File file = Resource.newResource(entry.getName()).getFile().getAbsoluteFile().getCanonicalFile();
+                if (entry.isInclusive())
+                    _locations.include(file);
+                else
+                    _locations.exclude(file);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalArgumentException(e);
             }
         }
-        return false;
+        else
+        {
+            if (entry.isInclusive())
+                _patterns.include(entry);
+            else
+                _patterns.exclude(entry);
+        }
+        return true;
     }
 
-    /* ------------------------------------------------------------ */
+    @Override
+    public boolean remove(Object o)
+    {
+        if (!(o instanceof String))
+            return false;
+        String pattern = (String)o;
+
+        Entry entry = _entries.remove(pattern);
+        if (entry==null)
+            return false;
+
+        List<Entry> saved = new ArrayList<>(_entries.values());
+        clear();
+        for (Entry e:saved)
+            add(e);
+        return true;
+    }
+
+    @Override
+    public void clear()
+    {
+        _entries.clear();
+        _patterns.clear();
+        _locations.clear();
+    }
+
+    @Override
+    public Iterator<String> iterator()
+    {
+        return _entries.keySet().iterator();
+    }
+
     @Override
     public int size()
     {
         return _entries.size();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Initialize the matcher by parsing each classpath pattern in an array
      * 
@@ -158,7 +483,6 @@ public class ClasspathPattern extends AbstractList<String>
         addAll(classes);
     }
     
-    /* ------------------------------------------------------------ */
     /**
      * @param classes array of classpath patterns
      */
@@ -168,30 +492,6 @@ public class ClasspathPattern extends AbstractList<String>
             addAll(Arrays.asList(classes));
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @param classes array of classpath patterns
-     */
-    public void prepend(String[] classes)
-    {
-        if (classes != null)
-        {
-            int i=0;
-            for (String c : classes)
-            {
-                add(i,c);
-                i++;
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void prependPattern(String pattern)
-    {
-        add(0,pattern);
-    }
-    
-    /* ------------------------------------------------------------ */
     /**
      * @return array of classpath patterns
      */
@@ -200,22 +500,7 @@ public class ClasspathPattern extends AbstractList<String>
         return toArray(new String[_entries.size()]);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return List of classes excluded class exclusions and package patterns
-     */
-    public List<String> getClasses()
-    {
-        List<String> list = new ArrayList<>();
-        for (Entry e:_entries)
-        {
-            if (e._inclusive && !e._package)
-                list.add(e._name);
-        }
-        return list;
-    }
     
-    /* ------------------------------------------------------------ */
     /**
      * Match the class name against the pattern
      *
@@ -224,65 +509,66 @@ public class ClasspathPattern extends AbstractList<String>
      */
     public boolean match(String name)
     {       
-        name = name.replace('/','.');
-
-        for (Entry entry : _entries)
+        return _patterns.test(name);
+    }
+    
+    /**
+     * Match the class name against the pattern
+     *
+     * @param clazz A class to try to match
+     * @return true if class matches the pattern
+     */
+    public boolean match(Class<?> clazz)
+    {       
+        try
         {
-            if (entry==null)
-                continue;
-            if (entry._package)
-            {
-                if (name.startsWith(entry._name) || ".".equals(entry._pattern))
-                    return entry._inclusive;
-            }
-            else
-            {
-                if (name.equals(entry._name))
-                    return entry._inclusive;
-                
-                if (name.length()>entry._name.length() && '$'==name.charAt(entry._name.length()) && name.startsWith(entry._name))
-                    return entry._inclusive;
-            }
+            Resource resource = TypeUtil.getLoadedFrom(clazz);
+            Path path = resource.getFile().toPath();
+            
+            Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
+            Boolean byLocation = _locations.isIncludedAndNotExcluded(path);
+            
+            // Combine the tri-state match of both IncludeExclude Sets
+            boolean included = byName==TRUE || byLocation==TRUE
+                || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
+            boolean excluded = byName==FALSE || byLocation==FALSE;
+            return included && !excluded;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
         }
         return false;
     }
 
-    public void addAfter(String afterPattern,String... patterns)
+    public boolean match(String name, URL url)
     {
-        if (patterns!=null && afterPattern!=null)
-        {
-            ListIterator<String> iter = listIterator();
-            while (iter.hasNext())
-            {
-                String cc=iter.next();
-                if (afterPattern.equals(cc))
-                {
-                    for (int i=0;i<patterns.length;i++)
-                        iter.add(patterns[i]);
-                    return;
-                }
-            }
-        }
-        throw new IllegalArgumentException("after '"+afterPattern+"' not found in "+this);
-    }
+        // Strip class suffix for name matching
+        if (name.endsWith(".class"))
+            name=name.substring(0,name.length()-6);
+        
+        // Treat path elements as packages for name matching
+        name=name.replace("/",".");
 
-    public void addBefore(String beforePattern,String... patterns)
-    {
-        if (patterns!=null && beforePattern!=null)
+        Boolean byName = _patterns.isIncludedAndNotExcluded(name);
+        
+        // Try to find a file path for location matching
+        Boolean byLocation = null;
+        try
         {
-            ListIterator<String> iter = listIterator();
-            while (iter.hasNext())
-            {
-                String cc=iter.next();
-                if (beforePattern.equals(cc))
-                {
-                    iter.previous();
-                    for (int i=0;i<patterns.length;i++)
-                        iter.add(patterns[i]);
-                    return;
-                }
-            }
+            Resource resource = Resource.newResource(URIUtil.getJarSource(url.toURI()));
+            File file = resource.getFile();
+            byLocation = _locations.isIncludedAndNotExcluded(file.toPath());
         }
-        throw new IllegalArgumentException("before '"+beforePattern+"' not found in "+this);
+        catch(Exception e)
+        {
+            LOG.ignore(e);
+        }
+
+        // Combine the tri-state match of both IncludeExclude Sets
+        boolean included = byName==TRUE || byLocation==TRUE
+            || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
+        boolean excluded = byName==FALSE || byLocation==FALSE;
+        return included && !excluded;
     }
 }

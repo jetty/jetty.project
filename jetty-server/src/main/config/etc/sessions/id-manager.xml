@@ -12,7 +12,18 @@
       <Arg>
         <Ref refid="Server"/>
       </Arg>
-      <Set name="workerName"><Property name="jetty.sessionIdManager.workerName"><Default>node<Env name="JETTY_WORKER_INSTANCE" default="0"/></Default></Property></Set>
+      <Set name="workerName">
+        <Property name="jetty.sessionIdManager.workerName">
+          <Default>node<Env name="JETTY_WORKER_INSTANCE">
+                         <Default>
+                           <Env name="GAE_MODULE_INSTANCE">
+                             <Default>0</Default>
+                           </Env>
+                         </Default>
+                       </Env>
+          </Default>
+        </Property>
+      </Set>
 
       <!-- ===================================================================== -->
       <!-- Configure a session housekeeper to help with scavenging               -->

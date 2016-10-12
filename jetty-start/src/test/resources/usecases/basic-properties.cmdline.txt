@@ -1,2 +1,8 @@
 other=value
 port=9090
+add+=beginning
+add+=middle
+add+=end
+list,=one
+list,=two
+list,=three

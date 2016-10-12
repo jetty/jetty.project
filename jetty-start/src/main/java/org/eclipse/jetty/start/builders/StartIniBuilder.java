@@ -21,7 +21,6 @@ package org.eclipse.jetty.start.builders;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,13 +85,13 @@ public class StartIniBuilder implements BaseBuilder.Config
     }
 
     @Override
-    public boolean addModule(Module module) throws IOException
+    public String addModule(Module module) throws IOException
     {
         if (modulesPresent.contains(module.getName()))
         {
             StartLog.info("%-15s already initialised in %s",module.getName(),baseHome.toShortForm(startIni));
             // skip, already present
-            return false;
+            return null;
         }
 
         if (module.isDynamic())
@@ -102,27 +101,19 @@ public class StartIniBuilder implements BaseBuilder.Config
                 // warn
                 StartLog.warn("%-15s not adding [ini-template] from dynamic module",module.getName());
             }
-            return false;
-        }
-
-        String mode = "";
-        if (module.isTransitive())
-        {
-            mode = "(transitively) ";
+            return null;
         }
 
         if (module.hasIniTemplate() || !module.isTransitive())
         {
-            StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
-
             // Append to start.ini
             try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
             {
                 module.writeIniSection(writer);
             }
-            return true;
+            return baseHome.toShortForm(startIni);
         }
 
-        return false;
+        return null;
     }
 }

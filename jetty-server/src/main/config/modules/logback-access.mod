@@ -1,6 +1,11 @@
 [description]
 Enables logback request log.
 
+[Tags]
+requestlog
+logging
+logback
+
 [depend]
 server
 logback-core

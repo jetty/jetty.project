@@ -1,6 +1,9 @@
 [description]
 Deploys the Jminix JMX Console within the server
 
+[Tags]
+3rdparty
+
 [depend]
 stats
 jmx
@@ -26,6 +29,7 @@ maven://commons-collections/commons-collections/3.2|lib/jminix/commons-collectio
 maven://net.sf.ezmorph/ezmorph/1.0.6|lib/jminix/ezmorph-1.0.6.jar
 maven://org.jgroups/jgroups/2.12.1.3.Final|lib/jminix/jgroups-2.12.1.3.Final.jar
 maven://org.jasypt/jasypt/1.8|lib/jminix/jasypt-1.8.jar
+basehome:modules/jminix/jminix.xml|etc/jminix.xml
 
 [lib]
 lib/jminix/**.jar

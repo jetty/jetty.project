@@ -3,6 +3,10 @@ Enables a TLS(SSL) Connector on the server.
 This may be used for HTTPS and/or HTTP2 by enabling
 the associated support modules.
 
+[Tags]
+connector
+ssl
+
 [depend]
 server
 

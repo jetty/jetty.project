@@ -1,6 +1,9 @@
 [description]
 Deploys the Jolokia console as a web application.
 
+[Tags]
+3rdparty
+
 [depend]
 stats
 deploy
@@ -11,6 +14,7 @@ etc/jolokia.xml
 
 [files]
 maven://org.jolokia/jolokia-war/1.2.2/war|lib/jolokia/jolokia.war
+basehome:modules/jolokia/jolokia.xml|etc/jolokia.xml
 
 [license]
 Jolokia is released under the Apache License 2.0

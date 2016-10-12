@@ -2,6 +2,11 @@
 Provides SLF4J API.  Requires a slf4j implementation (eg slf4j-simple)
 otherwise a noop implementation is used.
 
+[tags]
+logging
+slf4j
+internal
+
 [files]
 maven://org.slf4j/slf4j-api/${slf4j.version}|lib/slf4j/slf4j-api-${slf4j.version}.jar
 

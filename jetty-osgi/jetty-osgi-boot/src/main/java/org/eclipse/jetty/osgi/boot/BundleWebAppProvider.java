@@ -175,7 +175,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         String contextPath = null;
         try 
         {
-            Dictionary headers = bundle.getHeaders();
+            Dictionary<String,String> headers = bundle.getHeaders();
 
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
             String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
@@ -217,7 +217,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             {
                 //Could be a static webapp with no web.xml
                 String base = ".";
-                contextPath = (String)headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+                contextPath = headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
                 String originId = getOriginId(bundle,base);
                 
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, originId);

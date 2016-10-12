@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -118,5 +119,13 @@ public class TypeUtilTest
         Assert.assertFalse(TypeUtil.isFalse("true"));
         Assert.assertFalse(TypeUtil.isFalse("blargle"));
         Assert.assertFalse(TypeUtil.isFalse(new Object(){@Override public String toString(){return "true";}}));
+    }
+    
+    @Test
+    public void testLoadedFrom() throws Exception
+    {
+        Assert.assertThat(TypeUtil.getLoadedFrom(String.class).toString(),Matchers.containsString("/rt.jar"));
+        Assert.assertThat(TypeUtil.getLoadedFrom(Assert.class).toString(),Matchers.containsString(".jar"));
+        Assert.assertThat(TypeUtil.getLoadedFrom(TypeUtil.class).toString(),Matchers.containsString("/classes/"));
     }
 }

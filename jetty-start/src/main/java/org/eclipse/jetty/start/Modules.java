@@ -21,7 +21,6 @@ package org.eclipse.jetty.start;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,59 +57,92 @@ public class Modules implements Iterable<Module>
         }        
     }
 
-    public void dump()
+    public void dump(List<String> tags)
     {
-        List<String> ordered = _modules.stream().map(m->{return m.getName();}).collect(Collectors.toList());
-        Collections.sort(ordered);
-        ordered.stream().map(n->{return get(n);}).forEach(module->
-        {
-            String status = "[ ]";
-            if (module.isTransitive())
+        Set<String> exclude = tags.stream().filter(t->t.startsWith("-")).map(t->t.substring(1)).collect(Collectors.toSet());
+        Set<String> include = tags.stream().filter(t->!t.startsWith("-")).collect(Collectors.toSet());
+        boolean all = include.contains("*") || include.isEmpty();
+        AtomicReference<String> tag = new AtomicReference<>();
+        
+        _modules.stream()
+            .filter(m->
             {
-                status = "[t]";
-            }
-            else if (module.isEnabled())
+                boolean included = all || m.getTags().stream().anyMatch(t->include.contains(t));
+                boolean excluded = m.getTags().stream().anyMatch(t->exclude.contains(t));
+                return included && !excluded;
+            })
+            .sorted()
+            .forEach(module->
             {
-                status = "[x]";
-            }
-
-            System.out.printf("%n %s Module: %s%n",status,module.getName());
-            if (module.getProvides().size()>1)
-            {
-                System.out.printf("   Provides: %s%n",module.getProvides());
-            }
-            for (String description : module.getDescription())
-            {
-                System.out.printf("           : %s%n",description);
-            }
-            for (String parent : module.getDepends())
-            {
-                System.out.printf("     Depend: %s%n",parent);
-            }
-            for (String optional : module.getOptional())
-            {
-                System.out.printf("   Optional: %s%n",optional);
-            }
-            for (String lib : module.getLibs())
-            {
-                System.out.printf("        LIB: %s%n",lib);
-            }
-            for (String xml : module.getXmls())
-            {
-                System.out.printf("        XML: %s%n",xml);
-            }
-            for (String jvm : module.getJvmArgs())
-            {
-                System.out.printf("        JVM: %s%n",jvm);
-            }
-            if (module.isEnabled())
-            {
-                for (String selection : module.getEnableSources())
+                if (!module.getPrimaryTag().equals(tag.get()))
                 {
-                    System.out.printf("    Enabled: %s%n",selection);
+                    tag.set(module.getPrimaryTag());
+                    System.out.printf("%nModules for tag '%s':%n",module.getPrimaryTag());
+                    System.out.print("-------------------");
+                    for (int i=module.getPrimaryTag().length();i-->0;)
+                        System.out.print("-");
+                    System.out.println();
+                    
                 }
-            }
-        });
+
+                String label;
+                Set<String> provides = module.getProvides();
+                provides.remove(module.getName());
+                System.out.printf("%n     Module: %s %s%n",module.getName(),provides.size()>0?provides:"");
+                for (String description : module.getDescription())
+                {
+                    System.out.printf("           : %s%n",description);
+                }
+                if (!module.getTags().isEmpty())
+                {
+                    label="       Tags: %s";
+                    for (String t : module.getTags())
+                    {
+                        System.out.printf(label,t);
+                        label=", %s";
+                    }
+                    System.out.println();
+                }
+                if (!module.getDepends().isEmpty())
+                {
+                    label="     Depend: %s";
+                    for (String parent : module.getDepends())
+                    {
+                        System.out.printf(label,parent);
+                        label=", %s";
+                    }
+                    System.out.println();
+                }
+                if (!module.getOptional().isEmpty())
+                {
+                    label="   Optional: %s";
+                    for (String parent : module.getOptional())
+                    {
+                        System.out.printf(label,parent);
+                        label=", %s";
+                    }
+                    System.out.println();
+                }
+                for (String lib : module.getLibs())
+                {
+                    System.out.printf("        LIB: %s%n",lib);
+                }
+                for (String xml : module.getXmls())
+                {
+                    System.out.printf("        XML: %s%n",xml);
+                }
+                for (String jvm : module.getJvmArgs())
+                {
+                    System.out.printf("        JVM: %s%n",jvm);
+                }
+                if (module.isEnabled())
+                {
+                    for (String selection : module.getEnableSources())
+                    {
+                        System.out.printf("    Enabled: %s%n",selection);
+                    }
+                }
+            });
     }
 
     public void dumpEnabled()
@@ -125,6 +158,8 @@ public class Modules implements Iterable<Module>
                 index="";
                 name="";
             }
+            if (module.isTransitive() && module.hasIniTemplate())
+                System.out.printf("                       init template available with --add-to-start=%s%n",module.getName());
         }
     }
 
@@ -279,9 +314,6 @@ public class Modules implements Iterable<Module>
                     m.expandProperties(_args.getProperties());
             }
         }
-        else if (module.isTransitive() && module.hasIniTemplate())
-            newlyEnabled.add(module.getName());
-        
         
         // Process module dependencies (always processed as may be dynamic)
         for(String dependsOn:module.getDepends())
@@ -318,7 +350,7 @@ public class Modules implements Iterable<Module>
                 // Is there an obvious default?
                 Optional<Module> dftProvider = providers.stream().filter(m->m.getName().equals(dependsOn)).findFirst();
                 if (dftProvider.isPresent())
-                    enable(newlyEnabled,dftProvider.get(),"default provider of "+dependsOn+" for "+module.getName(),true);
+                    enable(newlyEnabled,dftProvider.get(),"transitive provider of "+dependsOn+" for "+module.getName(),true);
                 else if (StartLog.isDebugEnabled())
                     StartLog.debug("Module %s requires %s from one of %s",module,dependsOn,providers);
             }

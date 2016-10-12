@@ -78,8 +78,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
 
     private Bundle _contributor;
 
-    private boolean _lookInOsgiFirst = true;
-
     /* ------------------------------------------------------------ */
     /**
      * @param parent The parent classloader.
@@ -96,11 +94,26 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     }
     
     
-    
+
+    /* ------------------------------------------------------------ */
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException
     {
-        return super.loadClass(name);
+        try
+        {
+            return _osgiBundleClassLoader.loadClass(name);
+        }
+        catch (ClassNotFoundException cne)
+        {
+            try
+            {
+                return super.loadClass(name);
+            }
+            catch (ClassNotFoundException cne2)
+            {
+                throw cne;
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -121,35 +134,17 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     {
         Enumeration<URL> osgiUrls = _osgiBundleClassLoader.getResources(name);
         Enumeration<URL> urls = super.getResources(name);
-        if (_lookInOsgiFirst)
-        {
-            return Collections.enumeration(toList(osgiUrls, urls));
-        }
-        else
-        {
-            return Collections.enumeration(toList(urls, osgiUrls));
-        }
+        List<URL> resources = toList(osgiUrls, urls);
+        return Collections.enumeration(resources);
     }
-    
-    
     
     /* ------------------------------------------------------------ */
     @Override
     public URL getResource(String name)
     {
-        if (_lookInOsgiFirst)
-        {
-            URL url = _osgiBundleClassLoader.getResource(name);
-            return url != null ? url : super.getResource(name);
-        }
-        else
-        {
-            URL url = super.getResource(name);
-            return url != null ? url : _osgiBundleClassLoader.getResource(name);
-        }
+        URL url = _osgiBundleClassLoader.getResource(name);
+        return url != null ? url : super.getResource(name);
     }
-    
-    
     
     /* ------------------------------------------------------------ */
     private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
@@ -160,30 +155,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         while (e2 != null && e2.hasMoreElements())
             list.add(e2.nextElement());
         return list;
-    }
-
-    
-    /* ------------------------------------------------------------ */
-    protected Class<?> findClass(String name) throws ClassNotFoundException
-    {
-        try
-        {
-            return _lookInOsgiFirst ? _osgiBundleClassLoader.loadClass(name) : super.findClass(name);
-        }
-        catch (ClassNotFoundException cne)
-        {
-            try
-            {
-                return _lookInOsgiFirst ? super.findClass(name) : _osgiBundleClassLoader.loadClass(name);
-            }
-            catch (ClassNotFoundException cne2)
-            {
-                throw cne;
-            }
-        }
-    }
-    
-    
+    } 
     
     /* ------------------------------------------------------------ */
     /**

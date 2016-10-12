@@ -1,6 +1,9 @@
 [description]
 Memcache cache for SessionData
 
+[Tags]
+session
+
 [depends]
 session-store
 slf4j-api

@@ -1,6 +1,10 @@
 [description]
-Provides the logback core implementation, used by slf4j-logback
+Provides the logback core implementation
 and logback-access
+
+[tags]
+logging
+internal
 
 [files]
 maven://ch.qos.logback/logback-core/${logback.version}|lib/logback/logback-core-${logback.version}.jar
