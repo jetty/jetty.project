@@ -46,7 +46,7 @@ public class TestABCase6_GoodUTF extends AbstractABCase
 {
     private static final Logger LOG = Log.getLogger(TestABCase6_GoodUTF.class);
 
-    @Parameters
+    @Parameters(name = "{0} - {1}")
     public static Collection<String[]> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
