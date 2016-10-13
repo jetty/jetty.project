@@ -1517,7 +1517,7 @@ public class ServletHandler extends ScopedHandler
                             finalMapping = mapping;
                         else if (isAllowDuplicateMappings())
                         {
-                            LOG.warn("Multiple servlets map to path: "+pathSpec+": "+finalMapping.getServletName()+","+mapping.getServletName());
+                            LOG.warn("Multiple servlets map to path {}: {} and {}, choosing {}", pathSpec, finalMapping.getServletName(), mapping.getServletName(), mapping);
                             finalMapping = mapping;
                         }
                         else
