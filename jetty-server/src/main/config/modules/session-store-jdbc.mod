@@ -15,7 +15,7 @@ sessions/jdbc/${db-connection-type}
 etc/sessions/jdbc/session-store.xml
 
 [ini]
-db-connection-type=datasource
+db-connection-type?=datasource
 
 [ini-template]
 ##

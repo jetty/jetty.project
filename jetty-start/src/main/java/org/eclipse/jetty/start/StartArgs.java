@@ -752,11 +752,7 @@ public class StartArgs
 
     public List<String> getListModules()
     {
-        if (listModules == null || listModules.contains("internal") || listModules.contains("-internal"))
-            return listModules;
-        List<String> modules = new ArrayList<>(listModules);
-        modules.add("-internal");
-        return modules;
+        return listModules;
     }
 
     public boolean isRun()
@@ -797,11 +793,6 @@ public class StartArgs
         }
     }
 
-    public void parse(final String rawarg, String source)
-    {
-        parse(rawarg,source,true);
-    }
-
     /**
      * Parse a single line of argument.
      *
@@ -809,17 +800,15 @@ public class StartArgs
      *            the raw argument to parse
      * @param source
      *            the origin of this line of argument
-     * @param replaceProps
-     *            true if properties in this parse replace previous ones, false to not replace.
      */
-    public void parse(final String rawarg, String source, boolean replaceProps)
+    public void parse(final String rawarg, String source)
     {
         if (rawarg == null)
         {
             return;
         }
 
-        StartLog.debug("parse(\"%s\", \"%s\", %b)",rawarg,source,replaceProps);
+        StartLog.debug("parse(\"%s\", \"%s\")",rawarg,source);
 
         final String arg = rawarg.trim();
 
@@ -953,7 +942,7 @@ public class StartArgs
         // Module Management
         if ("--list-modules".equals(arg))
         {
-            listModules = Collections.emptyList();
+            listModules = Collections.singletonList("-internal");
             run = false;
             return;
         }
@@ -1030,11 +1019,11 @@ public class StartArgs
             {
                 case 2:
                     System.setProperty(assign[0],assign[1]);
-                    setProperty(assign[0],assign[1],source,replaceProps);
+                    setProperty(assign[0],assign[1],source);
                     break;
                 case 1:
                     System.setProperty(assign[0],"");
-                    setProperty(assign[0],"",source,replaceProps);
+                    setProperty(assign[0],"",source);
                     break;
                 default:
                     break;
@@ -1064,32 +1053,32 @@ public class StartArgs
             {
                 key = key.substring(0,key.length()-1);
                 String orig = getProperties().getString(key);
-                if (orig != null && !orig.isEmpty())
+                if (orig == null || orig.isEmpty())
+                {
+                    if (value.startsWith(","))
+                        value=value.substring(1);
+                }
+                else
                 {
                     value=orig+value;
                     source=propertySource.get(key)+","+source;
                 }
             }
-            else if (key.endsWith(","))
+            if (key.endsWith("?"))
             {
                 key = key.substring(0,key.length()-1);
-                String orig = getProperties().getString(key);
-                if (orig != null && !orig.isEmpty())
-                {
-                    value=value.isEmpty()?orig:(orig+","+value);
-                    source=propertySource.get(key)+","+source;
-                }
+                if (getProperties().containsKey(key))
+                    return;
+                
             }
-            else if (replaceProps)
+            else if (propertySource.containsKey(key)) 
             {
-                if (propertySource.containsKey(key))
-                {
+                if(!propertySource.get(key).endsWith("[ini]"))
                     StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
-                }
                 propertySource.put(key,source);
             }
 
-            setProperty(key,value,source,replaceProps);
+            setProperty(key,value,source);
             return;
         }
         
@@ -1134,18 +1123,7 @@ public class StartArgs
             list.add(source);
         }
     }
-
-    public void parseModule(Module module)
-    {
-        if (module.hasDefaultConfig())
-        {
-            for (String line : module.getDefaultConfig())
-            {
-                parse(line,module.getName(),false);
-            }
-        }
-    }
-
+    
     public void resolveExtraXmls(BaseHome baseHome) throws IOException
     {
         // Find and Expand XML files
@@ -1181,7 +1159,7 @@ public class StartArgs
         this.allModules = allModules;
     }
 
-    public void setProperty(String key, String value, String source, boolean replaceProp)
+    public void setProperty(String key, String value, String source)
     {
         // Special / Prevent override from start.ini's
         if (key.equals("jetty.home"))
@@ -1197,33 +1175,18 @@ public class StartArgs
             return;
         }
 
-        if (value==null || value.isEmpty())
-            properties.remove(key,value,source);
-        else if (replaceProp || (!properties.containsKey(key)))
+        properties.setProperty(key,value,source);
+        if(key.equals("java.version"))
         {
-            properties.setProperty(key,value,source);
-            if(key.equals("java.version"))
-            {
-                Version ver = new Version(value);
+            Version ver = new Version(value);
 
-                properties.setProperty("java.version",ver.toShortString(),source);
-                properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
-                properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
-                properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
-                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
-            }
+            properties.setProperty("java.version",ver.toShortString(),source);
+            properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
+            properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
+            properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
+            properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
         }
     }
-
-    public void removeProperty(String rawPropValue, String source)
-    {
-        int idx = rawPropValue.indexOf('=');
-        String key = rawPropValue.substring(0,idx);
-        String value = rawPropValue.substring(idx + 1);
-        
-        properties.remove(key,value,source);
-    }
-    
     
     public void setRun(boolean run)
     {

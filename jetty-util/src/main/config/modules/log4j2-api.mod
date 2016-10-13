@@ -20,6 +20,3 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 [ini]
 log4j2.version=2.6.1
 
-[ini-template]
-## After changing versions, run 'java -jar $JETTY_HOME/start.jar --create-files' 
-#log4j2.version=2.6.1

@@ -153,9 +153,12 @@ Properties:
 
     name+=value
       Add to an existing property.
-
-    name,=value
+      
+    name+=,value
       Add to an existing property as a comma separated list.
+
+    name?=value
+      Set a property only if it is not already set.
 
     STOP.HOST=[string]
       The host to use to stop the running Jetty server (defaults to 127.0.0.1)
