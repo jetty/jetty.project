@@ -26,6 +26,7 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.junit.Before;
@@ -48,6 +49,15 @@ public class ServletHandlerTest
     FilterHolder fh5 = new FilterHolder(Source.JAVAX_API);
     FilterMapping fm5 = new FilterMapping();
     
+    
+    ServletHolder sh1 = new ServletHolder(Source.DESCRIPTOR);
+    ServletMapping sm1 = new ServletMapping();
+    
+    ServletHolder sh2 = new ServletHolder(Source.DESCRIPTOR);
+    ServletMapping sm2 = new ServletMapping();
+    
+    ServletHolder sh3 = new ServletHolder(Source.DESCRIPTOR);
+    ServletMapping sm3 = new ServletMapping();
     
 
     @Before
@@ -72,6 +82,111 @@ public class ServletHandlerTest
         fh5.setName("fh5");
         fm5.setPathSpec("/*");
         fm5.setFilterHolder(fh5);
+        
+        sh1.setName("s1");
+        sm1.setDefault(false);
+        sm1.setPathSpec("/foo/*");
+        sm1.setServletName("s1");
+        
+        sh2.setName("s2");
+        sm2.setDefault(false);
+        sm2.setPathSpec("/foo/*");
+        sm2.setServletName("s2");
+        
+        sh3.setName("s3");
+        sm3.setDefault(true);
+        sm3.setPathSpec("/foo/*");
+        sm3.setServletName("s3");
+        
+        
+    }
+    
+    @Test
+    public void testDuplicateMappingsForbidden() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(false);
+        handler.addServlet(sh1);
+        handler.addServlet(sh2);
+        handler.updateNameMappings();
+        
+        handler.addServletMapping(sm1);
+        handler.addServletMapping(sm2);
+
+        try
+        {
+            handler.updateMappings();
+        }
+        catch (IllegalStateException e)
+        {
+            //expected error
+        }
+    }
+
+
+    @Test
+    public void testDuplicateMappingsWithDefaults() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(false);
+        handler.addServlet(sh1);
+        handler.addServlet(sh3);
+        handler.updateNameMappings();
+
+        handler.addServletMapping(sm3);
+        handler.addServletMapping(sm1);
+       
+
+        handler.updateMappings();
+
+        PathMap.MappedEntry<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+        assertNotNull(entry);
+        assertEquals("s1", entry.getValue().getName());
+    }
+    
+    
+    @Test
+    public void testDuplicateMappingsSameServlet() throws Exception
+    {
+        ServletHolder sh4 = new ServletHolder();
+       
+        sh4.setName("s1");
+        
+        ServletMapping sm4 = new ServletMapping();
+        sm4.setPathSpec("/foo/*");
+        sm4.setServletName("s1");
+        
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(true);
+        handler.addServlet(sh1);
+        handler.addServlet(sh4);
+        handler.updateNameMappings();
+
+        handler.addServletMapping(sm1);
+        handler.addServletMapping(sm4);
+       
+
+        handler.updateMappings();
+    }
+
+
+    
+    @Test
+    public void testDuplicateMappingsAllowed() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(true);
+        handler.addServlet(sh1);
+        handler.addServlet(sh2);
+        handler.updateNameMappings();
+        
+        handler.addServletMapping(sm1);
+        handler.addServletMapping(sm2);
+        handler.updateMappings();
+        
+       PathMap.MappedEntry<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+       assertNotNull(entry);
+       assertEquals("s2", entry.getValue().getName());
     }
 
     @Test

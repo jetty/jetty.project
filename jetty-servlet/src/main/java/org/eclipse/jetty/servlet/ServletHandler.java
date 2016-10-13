@@ -109,6 +109,7 @@ public class ServletHandler extends ScopedHandler
     private boolean _startWithUnavailable=false;
     private boolean _ensureDefaultServlet=true;
     private IdentityService _identityService;
+    private boolean _allowDuplicateMappings=false;
 
     private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
@@ -825,6 +826,22 @@ public class ServletHandler extends ScopedHandler
         _startWithUnavailable=start;
     }
 
+    /**
+     * @return the allowDuplicateMappings
+     */
+    public boolean isAllowDuplicateMappings()
+    {
+        return _allowDuplicateMappings;
+    }
+
+    /**
+     * @param allowDuplicateMappings the allowDuplicateMappings to set
+     */
+    public void setAllowDuplicateMappings(boolean allowDuplicateMappings)
+    {
+        _allowDuplicateMappings = allowDuplicateMappings;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if this handler will start with unavailable servlets
@@ -1452,7 +1469,7 @@ public class ServletHandler extends ScopedHandler
             Map<String,ServletMapping> servletPathMappings = new HashMap<String,ServletMapping>();
             
             //create a map of paths to set of ServletMappings that define that mapping
-            HashMap<String, Set<ServletMapping>> sms = new HashMap<String, Set<ServletMapping>>();
+            HashMap<String, List<ServletMapping>> sms = new HashMap<String, List<ServletMapping>>();
             for (ServletMapping servletMapping : _servletMappings)
             {
                 String[] pathSpecs = servletMapping.getPathSpecs();
@@ -1460,10 +1477,10 @@ public class ServletHandler extends ScopedHandler
                 {
                     for (String pathSpec : pathSpecs)
                     {
-                        Set<ServletMapping> mappings = sms.get(pathSpec);
+                        List<ServletMapping> mappings = sms.get(pathSpec);
                         if (mappings == null)
                         {
-                            mappings = new HashSet<ServletMapping>();
+                            mappings = new ArrayList<ServletMapping>();
                             sms.put(pathSpec, mappings);
                         }
                         mappings.add(servletMapping);
@@ -1476,7 +1493,7 @@ public class ServletHandler extends ScopedHandler
             {
                 //for each path, look at the mappings where it is referenced
                 //if a mapping is for a servlet that is not enabled, skip it
-                Set<ServletMapping> mappings = sms.get(pathSpec);
+                List<ServletMapping> mappings = sms.get(pathSpec);
 
                 ServletMapping finalMapping = null;
                 for (ServletMapping mapping : mappings)
@@ -1494,9 +1511,15 @@ public class ServletHandler extends ScopedHandler
                         finalMapping = mapping;
                     else
                     {
-                        //already have a candidate - only accept another one if the candidate is a default
+                        //already have a candidate - only accept another one 
+                        //if the candidate is a default, or we're allowing duplicate mappings
                         if (finalMapping.isDefault())
                             finalMapping = mapping;
+                        else if (isAllowDuplicateMappings())
+                        {
+                            LOG.warn("Multiple servlets map to path: "+pathSpec+": "+finalMapping.getServletName()+","+mapping.getServletName());
+                            finalMapping = mapping;
+                        }
                         else
                         {
                             //existing candidate isn't a default, if the one we're looking at isn't a default either, then its an error
