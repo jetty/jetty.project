@@ -9,6 +9,7 @@ internal
 
 [depends]
 resources
+stderrout-logging
 
 [provides]
 jcl-api
