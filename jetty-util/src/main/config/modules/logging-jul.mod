@@ -7,6 +7,7 @@ logging
 
 [depends]
 slf4j-jul
+jul-impl
 
 [provide]
 logging
