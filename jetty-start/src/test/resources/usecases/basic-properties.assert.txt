@@ -14,3 +14,4 @@ PROP|other=value
 PROP|jetty.http.port=9090
 PROP|add=beginningmiddleend
 PROP|list=one,two,three
+PROP|name=value

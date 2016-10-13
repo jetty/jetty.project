@@ -157,7 +157,7 @@ Properties:
     name+=,value
       Add to an existing property as a comma separated list.
 
-    name|=value
+    name?=value
       Set a property only if it is not already set.
 
     STOP.HOST=[string]

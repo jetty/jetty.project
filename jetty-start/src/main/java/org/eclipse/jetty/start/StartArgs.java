@@ -1064,7 +1064,7 @@ public class StartArgs
                     source=propertySource.get(key)+","+source;
                 }
             }
-            if (key.endsWith("|"))
+            if (key.endsWith("?"))
             {
                 key = key.substring(0,key.length()-1);
                 if (getProperties().containsKey(key))
