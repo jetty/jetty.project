@@ -9,8 +9,16 @@ org.eclipse.jetty.servlet.WebApplicationContext object
 -->
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
-  <Call name="prependServerClass"><Arg>-org.eclipse.jetty.util.</Arg></Call>
-  <Call name="prependServerClass"><Arg>-org.eclipse.jetty.servlets.</Arg></Call>
+  <Get name="ServerClasspathPattern">
+    <Call name="exclude">
+      <Arg>
+        <Array type="String">
+	  <Item>org.eclipse.jetty.util.</Item>
+	  <Item>org.eclipse.jetty.servlets.</Item>
+	</Array>
+      </Arg>
+    </Call>
+  </Get>
   <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
     <Call name="warn"><Arg>test webapp is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
   </Get>
