@@ -16,10 +16,6 @@ lib/slf4j/slf4j-api-${slf4j.version}.jar
 [ini]
 slf4j.version=1.7.21
 
-[ini-template]
-## After changing versions, run 'java -jar $JETTY_HOME/start.jar --create-files' 
-#slf4j.version=1.7.21
-
 [license]
 SLF4J is distributed under the MIT License.
 Copyright (c) 2004-2013 QOS.ch

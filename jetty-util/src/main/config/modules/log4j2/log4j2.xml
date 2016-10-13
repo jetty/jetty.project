@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
-    <Appenders>
-        <Console name="console" target="SYSTEM_ERR">
-            <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"/>
-        </Console>
-    </Appenders>
-    <Loggers>
-        <Root level="info" additivity="false">
-            <AppenderRef ref="console"/>
-        </Root>
-    </Loggers>
+<Configuration status="warn" name="Jetty" >
+  <Appenders>
+    <RollingFile name="RollingFile" fileName="logs/jetty.log" filePattern="logs/jetty-%d{MM-dd-yyyy}.log.gz" ignoreExceptions="false">
+      <PatternLayout>
+        <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+      </PatternLayout>
+      <TimeBasedTriggeringPolicy />
+    </RollingFile>
+    <Console name="Console" target="SYSTEM_ERR">
+      <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="RollingFile"/>
+    </Root>
+  </Loggers>
 </Configuration>
 

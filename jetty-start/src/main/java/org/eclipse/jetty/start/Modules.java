@@ -50,11 +50,15 @@ public class Modules implements Iterable<Module>
         this._baseHome = basehome;
         this._args = args;
         
-        String java_version = System.getProperty("java.version");
-        if (java_version!=null)
+        // Allow override mostly for testing
+        if (!args.getProperties().containsKey("java.version"))
         {
-            args.setProperty("java.version",java_version,"<internal>",false);
-        }        
+            String java_version = System.getProperty("java.version");
+            if (java_version!=null)
+            {
+                args.setProperty("java.version",java_version,"<internal>");
+            }   
+        }
     }
 
     public void dump(List<String> tags)
@@ -279,14 +283,7 @@ public class Modules implements Iterable<Module>
                     {
                         // If the already enabled module is transitive and this enable is not
                         if (p.isTransitive() && !transitive)
-                        {
                             p.clearTransitiveEnable();
-                            if (p.hasDefaultConfig())
-                            {
-                                for (String a : p.getDefaultConfig())
-                                    _args.removeProperty(a,p.getName());
-                            }
-                        }
                         else
                             throw new UsageException("%s provides %s, which is already provided by %s enabled in %s",module.getName(),name,p.getName(),p.getEnableSources());
                     }
@@ -307,7 +304,7 @@ public class Modules implements Iterable<Module>
             if (module.hasDefaultConfig())
             {
                 for(String line:module.getDefaultConfig())
-                    _args.parse(line,module.getName(),false);
+                    _args.parse(line,module.getName()+"[ini]");
                 for (Module m:_modules)
                     m.expandProperties(_args.getProperties());
             }
