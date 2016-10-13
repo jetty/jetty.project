@@ -29,7 +29,7 @@ public class Arg
     private final Class<?> type;
     private Method method;
     private int index;
-    private Object tag;
+    private String tag;
     private boolean required = false;
 
     public Arg(Class<?> type)
@@ -87,7 +87,12 @@ public class Arg
     {
         return type.getName();
     }
-
+    
+    public String getTag()
+    {
+        return tag;
+    }
+    
     public Class<?> getType()
     {
         return type;

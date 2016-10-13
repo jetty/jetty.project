@@ -23,14 +23,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -122,36 +120,10 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
     }
     
-    /**
-     * Represents a static value (as seen from a URI PathParam)
-     * <p>
-     * The decoding of the raw String to a object occurs later,
-     * when the callable/sink/function is created for a method
-     * that needs it converted to an object.
-     * </p>
-     */
-    protected static class StaticArg implements Comparable<StaticArg>
-    {
-        public final String name;
-        public final String value;
-        
-        public StaticArg(String name, String value)
-        {
-            this.name = name;
-            this.value = value;
-        }
-        
-        @Override
-        public int compareTo(StaticArg o)
-        {
-            return this.name.compareTo(o.name);
-        }
-    }
-    
     protected final AvailableEncoders encoders;
     protected final AvailableDecoders decoders;
     private final EndpointConfig endpointConfig;
-    private List<StaticArg> staticArgs;
+    private Map<String, String> staticArgs;
     
     public JsrEndpointFunctions(Object endpoint, WebSocketPolicy policy, Executor executor,
                                 AvailableEncoders encoders, AvailableDecoders decoders,
@@ -164,11 +136,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         
         if (uriParams != null)
         {
-            this.staticArgs = new ArrayList<>();
-            this.staticArgs.addAll(uriParams.entrySet().stream()
-                    .map(entry -> new StaticArg(entry.getKey(), entry.getValue()))
-                    .sorted()
-                    .collect(Collectors.toList()));
+            this.staticArgs = Collections.unmodifiableMap(uriParams);
         }
     }
     
@@ -606,7 +574,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 StringBuilder err = new StringBuilder();
                 err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
                 err.append(" not valid for PongMesssage types: ");
-                ReflectUtils.append(err,onMsg);
+                ReflectUtils.append(err, onMsg);
                 LOG.warn(err.toString());
             }
             return true;
@@ -644,7 +612,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                     StringBuilder err = new StringBuilder();
                     err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
                     err.append(" not valid for Streaming Binary types: ");
-                    ReflectUtils.append(err,onMsg);
+                    ReflectUtils.append(err, onMsg);
                     LOG.warn(err.toString());
                 }
                 return true;
@@ -683,7 +651,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                     StringBuilder err = new StringBuilder();
                     err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
                     err.append(" not valid for Streaming Text types: ");
-                    ReflectUtils.append(err,onMsg);
+                    ReflectUtils.append(err, onMsg);
                     LOG.warn(err.toString());
                 }
                 return true;
@@ -721,7 +689,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 StringBuilder err = new StringBuilder();
                 err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
                 err.append(" not valid for Partial Binary Buffer types: ");
-                ReflectUtils.append(err,onMsg);
+                ReflectUtils.append(err, onMsg);
                 LOG.warn(err.toString());
             }
             return true;
@@ -757,7 +725,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 StringBuilder err = new StringBuilder();
                 err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
                 err.append(" not valid for Partial Binary Array types: ");
-                ReflectUtils.append(err,onMsg);
+                ReflectUtils.append(err, onMsg);
                 LOG.warn(err.toString());
             }
             return true;
@@ -794,7 +762,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 StringBuilder err = new StringBuilder();
                 err.append("@OnMessage.maxMessageSize=").append(annotation.maxMessageSize());
                 err.append(" not valid for Partial Text types: ");
-                ReflectUtils.append(err,onMsg);
+                ReflectUtils.append(err, onMsg);
                 LOG.warn(err.toString());
             }
             return true;
@@ -914,6 +882,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             return;
         }
         
+        // Test specific return type to ensure we have a compatible encoder for it
         Class<? extends Encoder> encoderClass = encoders.getEncoderFor(returnType);
         if (encoderClass == null)
         {
@@ -930,26 +899,16 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         Object[] args = new Object[callArgs.length];
         for (int i = 0; i < len; i++)
         {
-            Object staticValue = getDecodedStaticValue(callArgs[i].getName(), callArgs[i].getType());
-            if (staticValue != null)
-            {
-                args[i] = staticValue;
-            }
+            String staticRawValue = staticArgs.get(callArgs[i].getTag());
+            args[i] = AvailableDecoders.decodePrimitive(staticRawValue, callArgs[i].getType());
         }
         return args;
     }
     
     private Object getDecodedStaticValue(String name, Class<?> type) throws DecodeException
     {
-        for (StaticArg args : staticArgs)
-        {
-            if (args.name.equals(name))
-            {
-                return AvailableDecoders.decodePrimitive(args.value, type);
-            }
-        }
-        
-        return null;
+        String value = staticArgs.get(name);
+        return AvailableDecoders.decodePrimitive(value, type);
     }
     
     private DynamicArgs.Builder createDynamicArgs(Arg... args)
@@ -975,12 +934,9 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         
         if (this.staticArgs != null)
         {
-            for (StaticArg staticArg : this.staticArgs)
+            for (Map.Entry<String, String> entry : staticArgs.entrySet())
             {
-                // TODO: translate from UriParam String to method param type?
-                // TODO: shouldn't this be the Arg seen in the method?
-                // TODO: use static decoder?
-                callArgs[idx++] = new Arg(staticArg.value.getClass()).setTag(staticArg.name);
+                callArgs[idx++] = new Arg(entry.getValue().getClass()).setTag(entry.getKey());
             }
         }
         return callArgs;

@@ -251,15 +251,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             ServerContainer jettyContainer = configureContext(context,jettyContext);
             context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
             
-//            // Establish the DecoratedObjectFactory thread local
-//            // for various ServiceLoader initiated components to use.
-//            DecoratedObjectFactory instantiation = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
-//            if (instantiation == null)
-//            {
-//                LOG.info("Using WebSocket local DecoratedObjectFactory - none found in ServletContext");
-//                instantiation = new DecoratedObjectFactory();
-//            }
-            
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Found {} classes",c.size());

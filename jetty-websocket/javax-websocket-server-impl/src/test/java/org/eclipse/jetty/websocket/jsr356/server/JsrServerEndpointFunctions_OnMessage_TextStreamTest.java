@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.function;
+package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -26,10 +26,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
+import javax.websocket.server.PathParam;
+import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -42,13 +43,12 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class JsrEndpointFunctions_OnMessage_TextStreamTest
+public class JsrServerEndpointFunctions_OnMessage_TextStreamTest
 {
     private static ClientContainer container;
     
@@ -66,17 +66,18 @@ public class JsrEndpointFunctions_OnMessage_TextStreamTest
     private Map<String, String> uriParams = new HashMap<>();
     private EndpointConfig endpointConfig;
     
-    public JsrEndpointFunctions_OnMessage_TextStreamTest()
+    public JsrServerEndpointFunctions_OnMessage_TextStreamTest()
     {
         endpointConfig = new EmptyClientEndpointConfig();
         encoders = new AvailableEncoders(endpointConfig);
         decoders = new AvailableDecoders(endpointConfig);
         uriParams = new HashMap<>();
+        uriParams.put("param", "foo");
     }
     
     public JsrSession newSession(Object websocket)
     {
-        String id = JsrEndpointFunctions_OnMessage_TextStreamTest.class.getSimpleName();
+        String id = JsrServerEndpointFunctions_OnMessage_TextStreamTest.class.getSimpleName();
         URI requestURI = URI.create("ws://localhost/" + id);
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         DummyConnection connection = new DummyConnection(policy);
@@ -89,7 +90,7 @@ public class JsrEndpointFunctions_OnMessage_TextStreamTest
     private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<EndpointFunctions, Void> func) throws Exception
     {
         // Establish endpoint function
-        JsrEndpointFunctions endpointFunctions = new JsrEndpointFunctions(
+        JsrServerEndpointFunctions endpointFunctions = new JsrServerEndpointFunctions(
                 socket, container.getPolicy(),
                 container.getExecutor(),
                 encoders,
@@ -107,7 +108,7 @@ public class JsrEndpointFunctions_OnMessage_TextStreamTest
         return socket;
     }
 
-    @ClientEndpoint
+    @ServerEndpoint("/msg")
     public static class MessageStreamSocket extends TrackingSocket
     {
         @OnMessage
@@ -135,4 +136,35 @@ public class JsrEndpointFunctions_OnMessage_TextStreamTest
         });
         socket.assertEvent("onMessage(MessageReader) = \"Hello World\"");
     }
+    
+    @ServerEndpoint("/msg/{param}")
+    public static class MessageStreamParamSocket extends TrackingSocket
+    {
+        @OnMessage
+        public String onMessage(Reader stream, @PathParam("param") String param) throws IOException
+        {
+            try
+            {
+                String msg = IO.toString(stream);
+                addEvent("onMessage(%s,%s) = \"%s\"", stream.getClass().getSimpleName(), param, msg);
+                return msg;
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+    
+    @Test
+    public void testInvokeMessageStreamParam() throws Exception
+    {
+        TrackingSocket socket = performOnMessageInvocation(new MessageStreamParamSocket(), (endpoint) ->
+        {
+            endpoint.onText(BufferUtil.toBuffer("Hello World", StandardCharsets.UTF_8), true);
+            return null;
+        });
+        socket.assertEvent("onMessage(MessageReader,foo) = \"Hello World\"");
+    }
+    
 }
