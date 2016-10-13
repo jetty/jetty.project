@@ -171,6 +171,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             AvailableEncoders availableEncoders = new AvailableEncoders(config);
             AvailableDecoders availableDecoders = new AvailableDecoders(config);
             Map<String, String> pathParameters = new HashMap<>();
+            
+            // if any pathspec has a URI Template with variables, we should include them (as empty String value)
+            // in the test for validity of the declared @OnMessage methods that use @PathParam annotation
+            for (String variable : new UriTemplatePathSpec(config.getPath()).getVariables())
+            {
+                pathParameters.put(variable, "");
+            }
+            
             endpointFunctions = newJsrEndpointFunction(endpoint, availableEncoders, availableDecoders, pathParameters, config);
             endpointFunctions.start(); // this should trigger an exception if endpoint is invalid.
         }
