@@ -1,7 +1,7 @@
 [description]
 Enables session persistent storage in files.
 
-[Tags]
+[tags]
 session
 
 [provides]

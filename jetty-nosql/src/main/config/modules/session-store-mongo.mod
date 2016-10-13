@@ -1,7 +1,7 @@
 [description]
 Enables NoSql session management with a MongoDB driver.
 
-[Tags]
+[tags]
 session
 
 [provides]

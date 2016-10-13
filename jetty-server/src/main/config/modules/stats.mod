@@ -2,7 +2,7 @@
 Enable detailed statistics collection for the server,
 available via JMX.
 
-[Tags]
+[tags]
 handler
 
 [depend]

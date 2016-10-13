@@ -1,7 +1,7 @@
 [description]
 Deploys the Jolokia console as a web application.
 
-[Tags]
+[tags]
 3rdparty
 
 [depend]

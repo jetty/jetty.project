@@ -2,7 +2,7 @@
 Deprecated Debug Log using the DebugHandle.
 Replaced with the debug module.
 
-[Tags]
+[tags]
 debug
 
 [depend]

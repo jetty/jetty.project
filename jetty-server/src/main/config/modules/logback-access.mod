@@ -1,7 +1,7 @@
 [description]
 Enables logback request log.
 
-[Tags]
+[tags]
 requestlog
 logging
 logback

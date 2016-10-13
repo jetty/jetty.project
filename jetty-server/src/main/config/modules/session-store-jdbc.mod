@@ -1,7 +1,7 @@
 [description]
 Enables JDBC peristent/distributed session storage.
 
-[Tags]
+[tags]
 session
 
 [provides]

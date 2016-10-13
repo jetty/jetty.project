@@ -1,7 +1,7 @@
 [description]
 Deploys the JAMon webapplication
 
-[Tags]
+[tags]
 3rdparty
 
 [depend]

@@ -5,7 +5,7 @@ This allows a Proxy operating in TCP mode to transport
 details of the proxied connection to the server.
 Both V1 and V2 versions of the protocol are supported.
 
-[Tags]
+[tags]
 connector
 ssl
 
