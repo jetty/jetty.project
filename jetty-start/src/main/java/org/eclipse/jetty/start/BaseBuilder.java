@@ -163,7 +163,10 @@ public class BaseBuilder
         if (startArgs.isCreateStartd() && !Files.exists(startd))
         {
             if(FS.ensureDirectoryExists(startd))
+            {
+                StartLog.log("MKDIR",baseHome.toShortForm(startd));
                 modified.set(true);
+            }
             if (Files.exists(startini)) 
             {
                 int ini=0;
@@ -273,6 +276,8 @@ public class BaseBuilder
         {
             // make the directories in ${jetty.base} that we need
             boolean modified = FS.ensureDirectoryExists(file.getParent());
+            if (modified)
+                StartLog.log("MKDIR",baseHome.toShortForm(file.getParent()));
             
             URI uri = URI.create(arg.uri);
 
@@ -324,8 +329,10 @@ public class BaseBuilder
             if (isDir)
             {
                 // Create directory
-                StartLog.log("MKDIR",baseHome.toShortForm(file));
-                return FS.ensureDirectoryExists(file);
+                boolean mkdir = FS.ensureDirectoryExists(file);
+                if (mkdir)
+                    StartLog.log("MKDIR",baseHome.toShortForm(file));
+                return mkdir;
             }
             else
             {

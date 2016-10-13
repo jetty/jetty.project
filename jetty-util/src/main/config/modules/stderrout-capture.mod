@@ -6,10 +6,11 @@ including output from Jetty's default StdErrLog logging.
 logging
 
 [xml]
-etc/stderrout-logging.xml
+etc/stderrout-capture.xml
 
 [files]
 logs/
+basehome:modules/stderrout-capture/stderrout-capture.xml|etc/stderrout-capture.xml
 
 [lib]
 resources/
