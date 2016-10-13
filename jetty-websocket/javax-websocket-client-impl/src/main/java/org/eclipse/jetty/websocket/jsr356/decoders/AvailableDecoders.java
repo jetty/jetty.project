@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.decoders;
 
+import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -68,6 +69,21 @@ public class AvailableDecoders implements Predicate<Class<?>>
         {
             return objectType.isAssignableFrom(type);
         }
+    
+        @Override
+        public String toString()
+        {
+            StringBuilder str = new StringBuilder();
+            str.append(RegisteredDecoder.class.getSimpleName());
+            str.append('[').append(decoder.getName());
+            str.append(',').append(interfaceType.getName());
+            str.append(',').append(objectType.getName());
+            if(primitive) {
+                str.append(",PRIMITIVE");
+            }
+            str.append(']');
+            return str.toString();
+        }
     }
     
     private final EndpointConfig config;
@@ -106,7 +122,7 @@ public class AvailableDecoders implements Predicate<Class<?>>
         
         // STREAMING based
         registerPrimitive(ReaderDecoder.class, Decoder.TextStream.class, Reader.class);
-        registerPrimitive(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStreamDecoder.class);
+        registerPrimitive(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStream.class);
         
         // Config Based
         registerAll(config.getDecoders());

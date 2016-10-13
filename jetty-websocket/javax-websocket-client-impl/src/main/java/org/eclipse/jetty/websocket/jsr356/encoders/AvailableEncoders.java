@@ -66,6 +66,21 @@ public class AvailableEncoders implements Predicate<Class<?>>
         {
             return objectType.isAssignableFrom(type);
         }
+    
+        @Override
+        public String toString()
+        {
+            StringBuilder str = new StringBuilder();
+            str.append(AvailableEncoders.RegisteredEncoder.class.getSimpleName());
+            str.append('[').append(encoder.getName());
+            str.append(',').append(interfaceType.getName());
+            str.append(',').append(objectType.getName());
+            if(primitive) {
+                str.append(",PRIMITIVE");
+            }
+            str.append(']');
+            return str.toString();
+        }
     }
     
     private final EndpointConfig config;
