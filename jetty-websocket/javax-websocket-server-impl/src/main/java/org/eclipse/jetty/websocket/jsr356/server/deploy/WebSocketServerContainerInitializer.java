@@ -95,6 +95,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     {
         // Create Filter
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
+        filter.getFactory().init(context);
 
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),context.getServer().getThreadPool());
@@ -121,6 +122,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     {
         // Create Filter
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
+        filter.getFactory().init(context);
 
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),jettyContext.getServer().getThreadPool());
@@ -207,8 +209,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
             // Create the Jetty ServerContainer implementation
             ServerContainer jettyContainer = configureContext(context,jettyContext);
-            
-            context.addListener(new ContextDestroyListener()); //make sure context is cleaned up when the context stops
+            context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
             
 //            // Establish the DecoratedObjectFactory thread local
 //            // for various ServiceLoader initiated components to use.
