@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
-#
+
+# LSB Tags
+### BEGIN INIT INFO
+# Provides:          jetty
+# Required-Start:    $local_fs $network
+# Required-Stop:     $local_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Jetty start script.
+# Description:       Start Jetty web server.
+### END INIT INFO
+
 # Startup script for jetty under *nix systems (it works under NT/cygwin too).
 
 ##################################################
