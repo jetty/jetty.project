@@ -607,7 +607,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
                 if (content)
                     woken = _channelState.onReadReady();
-                else
+                else if (_state != AEOF && _state != EOF)
                     _channelState.onReadUnready();
             }
         }
