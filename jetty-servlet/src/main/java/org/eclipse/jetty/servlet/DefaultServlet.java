@@ -767,7 +767,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (ifnm!=null && etag!=null)
                     {
                         // Handle special case of exact match OR gzip exact match
-                        if (etag.equals(ifnm) || ifnm.endsWith(ETAG_GZIP_QUOTE) && ifnm.indexOf(',')<0 && etag.equals(removeGzipFromETag(etag)))
+                        if (etag.equals(ifnm) || ifnm.endsWith(ETAG_GZIP_QUOTE) && ifnm.indexOf(',')<0 && etag.equals(removeGzipFromETag(ifnm)))
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),ifnm);
