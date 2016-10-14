@@ -11,9 +11,6 @@ internal
 slf4j-api
 resources
 
-[provide]
-slf4j-impl
-
 [files]
 maven://org.slf4j/slf4j-simple/${slf4j.version}|lib/slf4j/slf4j-simple-${slf4j.version}.jar
 basehome:modules/slf4j/simplelogger.properties|resources/simplelogger.properties

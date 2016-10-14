@@ -9,7 +9,7 @@ internal
 
 [depend]
 slf4j-api
-jcl-api
+jcl-impl
 
 [provide]
 slf4j-impl
