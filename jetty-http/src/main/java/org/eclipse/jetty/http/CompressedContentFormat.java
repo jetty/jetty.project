@@ -61,9 +61,8 @@ public class CompressedContentFormat
             return true;
 
         int dashdash = tag.indexOf("--");
-        
         if (dashdash>0)
-            return tag.charAt(0)== '"' && etag.charAt(0)=='"' && etag.regionMatches(1,tag,1,dashdash-2);
+            return etag.regionMatches(0,tag,0,dashdash-2);
         return false;
     }
 }
