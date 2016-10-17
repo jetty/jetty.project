@@ -83,6 +83,9 @@ public class ConnectionStatisticsTest extends AbstractTest
         // Close all connections.
         stop();
 
+        // Give some time to process the stop event.
+        Thread.sleep(1000);
+
         Assert.assertThat(serverStats.getConnectionsMax(), Matchers.greaterThan(0L));
         Assert.assertThat(serverStats.getReceivedBytes(), Matchers.greaterThan(contentLength));
         Assert.assertThat(serverStats.getSentBytes(), Matchers.greaterThan(contentLength));
