@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,6 +46,7 @@ public class Modules implements Iterable<Module>
     private final Map<String,Set<Module>> _provided = new HashMap<>();
     private final BaseHome _baseHome;
     private final StartArgs _args;
+    private final Properties _deprecated = new Properties();
 
     public Modules(BaseHome basehome, StartArgs args)
     {
@@ -58,6 +61,19 @@ public class Modules implements Iterable<Module>
             {
                 args.setProperty("java.version",java_version,"<internal>");
             }   
+        }
+        
+        try
+        {
+            Path deprecated_path = _baseHome.getPath("modules/deprecated.properties");
+            if (deprecated_path!=null && FS.exists(deprecated_path))
+            {
+                _deprecated.load(new FileInputStream(deprecated_path.toFile()));
+            }
+        }
+        catch (IOException e)
+        {
+            StartLog.debug(e);
         }
     }
 
@@ -260,7 +276,7 @@ public class Modules implements Iterable<Module>
     {
         Module module = get(name);
         if (module==null)
-            throw new UsageException(UsageException.ERR_UNKNOWN,"Unknown module='%s'",name);
+            throw new UsageException(UsageException.ERR_UNKNOWN,"Unknown module='%s. List available with --list-modules",name);
 
         Set<String> enabled = new HashSet<>();
         enable(enabled,module,enabledFrom,false);
@@ -354,7 +370,14 @@ public class Modules implements Iterable<Module>
     
     public Module get(String name)
     {
-        return _names.get(name);
+        Module module = _names.get(name);
+        if (module==null)
+        {
+            String reason = _deprecated.getProperty(name);
+            if (reason!=null)
+                StartLog.warn("Deprecated module '%s' is %s",name,reason);
+        }
+        return module;
     }
 
     @Override

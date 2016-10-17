@@ -238,10 +238,13 @@ public class ThreadLimitHandlerTest
         latch.countDown();
 
         while(total.get()<10 && System.nanoTime()<wait) 
-            Thread.sleep(1);
-        
-        assertThat(count.get(),is(0));
+            Thread.sleep(10);
         assertThat(total.get(),is(10));
+
+        while(count.get()>0 && System.nanoTime()<wait) 
+            Thread.sleep(10);
+        assertThat(count.get(),is(0));
+        
     }
     
     

@@ -24,7 +24,7 @@
     </New>
 
     <Get name="rootLogger">
-      <Call name="info"><Arg>Redirecting stderr/stdout to <Ref refid="ServerLogName"/></Arg></Call>
+      <Call name="info"><Arg>Capturing stderr/stdout to <Ref refid="ServerLogName"/></Arg></Call>
     </Get>
     <Call class="java.lang.System" name="setErr"><Arg><Ref refid="ServerLog"/></Arg></Call>
     <Call class="java.lang.System" name="setOut"><Arg><Ref refid="ServerLog"/></Arg></Call>

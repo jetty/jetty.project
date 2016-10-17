@@ -45,7 +45,7 @@ function gitFindRemoteByUrl() {
     return 0
 }
 
-GIT_REMOTE_URL="git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git"
+GIT_REMOTE_URL="github.com:eclipse/jetty.project.git"
 GIT_REMOTE_ID=$(gitFindRemoteByUrl "$GIT_REMOTE_URL")
 GIT_BRANCH_ID=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 

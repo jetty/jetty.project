@@ -77,6 +77,15 @@ public class GZIPContentDecoderTest
         assertEquals(0,buffers.get());
     }
     
+    @Test
+    public void testCompresedContentFormat() throws Exception
+    {
+        assertTrue(CompressedContentFormat.tagEquals("tag","tag"));
+        assertTrue(CompressedContentFormat.tagEquals("\"tag\"","\"tag\""));
+        assertTrue(CompressedContentFormat.tagEquals("\"tag\"","\"tag--gzip\""));
+        assertFalse(CompressedContentFormat.tagEquals("Zag","Xag--gzip"));
+        assertFalse(CompressedContentFormat.tagEquals("xtag","tag"));
+    }
     
     @Test
     public void testStreamNoBlocks() throws Exception

@@ -45,7 +45,6 @@ import java.util.TreeSet;
  * 
  * @param <T> The type to be sorted. It must be able to be added to a {@link HashSet}
  */
-@SuppressWarnings("Duplicates")
 public class TopologicalSort<T>
 {
     private final Map<T,Set<T>> _dependencies = new HashMap<>();
@@ -126,8 +125,15 @@ public class TopologicalSort<T>
                 ordered_deps.addAll(dependencies);
                 
                 // recursively visit each dependency
-                for (T d:ordered_deps)
-                    visit(d,visited,sorted,comparator);
+                try
+                {
+                    for (T d:ordered_deps)
+                        visit(d,visited,sorted,comparator);
+                }
+                catch (CyclicException e)
+                {
+                    throw new CyclicException(item,e);
+                }
             }
             
             // Now that we have visited all our dependencies, they and their 
@@ -138,7 +144,7 @@ public class TopologicalSort<T>
         else if (!sorted.contains(item))
             // If we have already visited an item, but it has not yet been put in the
             // sorted list, then we must be in a cycle!
-            throw new IllegalStateException("cyclic at "+item);
+            throw new CyclicException(item);
     }
     
     
@@ -181,5 +187,18 @@ public class TopologicalSort<T>
     public String toString()
     {
         return "TopologicalSort "+_dependencies;
+    }
+    
+    private static class CyclicException extends IllegalStateException
+    {
+        CyclicException(Object item)
+        {
+            super("cyclic at "+item);
+        }
+        
+        CyclicException(Object item,CyclicException e)
+        {
+            super("cyclic at "+item,e);
+        }
     }
 }

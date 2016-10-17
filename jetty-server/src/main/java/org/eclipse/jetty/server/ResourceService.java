@@ -517,7 +517,7 @@ public class ResourceService
                             QuotedCSV quoted = new QuotedCSV(true,ifm);
                             for (String tag : quoted)
                             {
-                                if (tagEquals(etag, tag))
+                                if (CompressedContentFormat.tagEquals(etag, tag))
                                 {
                                     match=true;
                                     break;
@@ -535,7 +535,7 @@ public class ResourceService
                     if (ifnm!=null && etag!=null)
                     {
                         // Handle special case of exact match OR gzip exact match
-                        if (tagEquals(etag, ifnm) && ifnm.indexOf(',')<0)
+                        if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',')<0)
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),ifnm);
@@ -546,7 +546,7 @@ public class ResourceService
                         QuotedCSV quoted = new QuotedCSV(true,ifnm);
                         for (String tag : quoted)
                         {
-                            if (tagEquals(etag, tag))
+                            if (CompressedContentFormat.tagEquals(etag, tag))
                             {
                                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                                 response.setHeader(HttpHeader.ETAG.asString(),tag);
@@ -600,21 +600,6 @@ public class ResourceService
             throw iae;
         }
         return true;
-    }
-
-    protected boolean tagEquals(String etag, String tag)
-    {
-        if (etag.equals(tag))
-            return true;
-        if (tag.endsWith(GZIP._etagQuote)) {
-            int i = tag.indexOf(GZIP._etagQuote);
-            return etag.equals(tag.substring(0,i) + '"');
-        }
-        if (tag.endsWith(BR._etagQuote)) {
-            int i = tag.indexOf(BR._etagQuote);
-            return etag.equals(tag.substring(0,i) + '"');
-        }
-        return false;
     }
 
     /* ------------------------------------------------------------------- */

@@ -24,5 +24,7 @@ lib/jetty-webapp-${jetty.version}.jar
 ##  + a directory of jars,resource or classes e.g. 'file:${jetty.base}/resources' 
 ##  + A pattern preceeded with a '-' is an exclusion, all other patterns are inclusions
 ##
-jetty.webapp.addSystemClasses,=
-jetty.webapp.addServerClasses,=
+## The +=, operator appends to a CSV list with a comma as needed.
+##
+#jetty.webapp.addSystemClasses+=,org.example.
+#jetty.webapp.addServerClasses+=,org.example.

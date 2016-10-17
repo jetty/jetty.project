@@ -66,7 +66,8 @@ public class UriFileInitializer implements FileInitializer
     {
         StartLog.log("DOWNLOAD","%s to %s",uri,baseHome.toShortForm(file));
 
-        FS.ensureDirectoryExists(file.getParent());
+        if (FS.ensureDirectoryExists(file.getParent()))
+            StartLog.log("MKDIR",baseHome.toShortForm(file.getParent()));
         
         HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
         http.setInstanceFollowRedirects(true);

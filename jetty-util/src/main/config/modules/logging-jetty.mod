@@ -7,7 +7,7 @@ logging
 
 [depends]
 resources
-stderrout-logging
+stderrout-capture
 
 [provide]
 logging

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
+import org.eclipse.jetty.start.StartLog;
 
 /**
  * Copy a file found in {@link BaseHome} from a URI of the form
@@ -51,7 +52,10 @@ public class BaseHomeFileInitializer implements FileInitializer
 
         if (FS.exists(source) && !FS.exists(file))
         {
-            FS.ensureDirectoryExists(file.getParent());
+            if (FS.ensureDirectoryExists(file.getParent()))
+                StartLog.log("MKDIR",_basehome.toShortForm(file.getParent()));
+
+            StartLog.log("COPY ","%s to %s",_basehome.toShortForm(source),_basehome.toShortForm(file));
             Files.copy(source,file);
             return true;
         }
