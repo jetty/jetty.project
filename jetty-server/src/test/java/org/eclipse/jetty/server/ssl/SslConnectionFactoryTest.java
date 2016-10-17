@@ -185,6 +185,14 @@ public class SslConnectionFactoryTest
         Assert.assertEquals(0, history.size());
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testServerWithoutHttpConnectionFactory() throws Exception
+    {
+        _server.stop();
+        Assert.assertNotNull(_connector.removeConnectionFactory(HttpVersion.HTTP_1_1.asString()));
+        _server.start();
+    }
+
     private String getResponse(String host, String cn) throws Exception
     {
         String response = getResponse(host, host, cn);

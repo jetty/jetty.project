@@ -61,6 +61,11 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         return _sslContextFactory;
     }
 
+    public String getNextProtocol()
+    {
+        return _nextProtocol;
+    }
+
     @Override
     protected void doStart() throws Exception
     {

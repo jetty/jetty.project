@@ -256,6 +256,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
         if(_defaultConnectionFactory==null)
             throw new IllegalStateException("No protocol factory for default protocol: "+_defaultProtocol);
+        SslConnectionFactory ssl = getConnectionFactory(SslConnectionFactory.class);
+        if (ssl != null)
+        {
+            String next = ssl.getNextProtocol();
+            ConnectionFactory cf = getConnectionFactory(next);
+            if (cf == null)
+                throw new IllegalStateException("No protocol factory for SSL next protocol: " + next);
+        }
 
         super.doStart();
 
