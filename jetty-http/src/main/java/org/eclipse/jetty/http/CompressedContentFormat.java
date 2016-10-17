@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.http;
 
+
 /* ------------------------------------------------------------ */
 public class CompressedContentFormat
 {
     public static final CompressedContentFormat GZIP = new CompressedContentFormat("gzip", ".gz");
     public static final CompressedContentFormat BR = new CompressedContentFormat("br", ".br");
     public static final CompressedContentFormat[] NONE = new CompressedContentFormat[0];
-
 
     public final String _encoding;
     public final String _extension;
@@ -53,5 +53,17 @@ public class CompressedContentFormat
             return false;
         
         return  _encoding.equalsIgnoreCase(ccf._encoding) && _extension.equalsIgnoreCase(ccf._extension);
+    }
+
+    public static boolean tagEquals(String etag, String tag)
+    {
+        if (etag.equals(tag))
+            return true;
+
+        int dashdash = tag.indexOf("--");
+        
+        if (dashdash>0)
+            return tag.charAt(0)== '"' && etag.charAt(0)=='"' && etag.regionMatches(1,tag,1,dashdash-2);
+        return false;
     }
 }
