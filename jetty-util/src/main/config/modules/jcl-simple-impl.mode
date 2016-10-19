@@ -9,7 +9,7 @@ internal
 
 [depends]
 resources
-stderrout-capture
+console-capture
 
 [provides]
 jcl-api

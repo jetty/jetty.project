@@ -168,7 +168,8 @@ public class Modules implements Iterable<Module>
     public void dumpEnabled()
     {
         int i=0;
-        for (Module module:getEnabled())
+        List<Module> enabled = getEnabled();
+        for (Module module:enabled)
         {
             String name=module.getName();
             String index=(i++)+")";
@@ -240,31 +241,31 @@ public class Modules implements Iterable<Module>
         return str.toString();
     }
 
-    public void sort()
+    public List<Module> getEnabled()
     {
+        List<Module> enabled = _modules.stream().filter(m->{return m.isEnabled();}).collect(Collectors.toList());
+
         TopologicalSort<Module> sort = new TopologicalSort<>();
-        for (Module module: _modules)
+        for (Module module: enabled)
         {
             Consumer<String> add = name ->
             {
                 Module dependency = _names.get(name);
-                if (dependency!=null)
+                if (dependency!=null && dependency.isEnabled())
                     sort.addDependency(module,dependency);
                 
                 Set<Module> provided = _provided.get(name);
                 if (provided!=null)
-                    provided.forEach(p->sort.addDependency(module,p));
+                    for (Module p : provided)
+                        if (p.isEnabled())
+                            sort.addDependency(module,p);
             };
             module.getDepends().forEach(add);
             module.getOptional().forEach(add);
         }
-        
-        sort.sort(_modules);
-    }
 
-    public List<Module> getEnabled()
-    {
-        return _modules.stream().filter(m->{return m.isEnabled();}).collect(Collectors.toList());
+        sort.sort(enabled);
+        return enabled;
     }
 
     /** Enable a module
@@ -276,7 +277,7 @@ public class Modules implements Iterable<Module>
     {
         Module module = get(name);
         if (module==null)
-            throw new UsageException(UsageException.ERR_UNKNOWN,"Unknown module='%s. List available with --list-modules",name);
+            throw new UsageException(UsageException.ERR_UNKNOWN,"Unknown module='%s'. List available with --list-modules",name);
 
         Set<String> enabled = new HashSet<>();
         enable(enabled,module,enabledFrom,false);
@@ -286,6 +287,12 @@ public class Modules implements Iterable<Module>
     private void enable(Set<String> newlyEnabled, Module module, String enabledFrom, boolean transitive)
     {
         StartLog.debug("enable %s from %s transitive=%b",module,enabledFrom,transitive);
+        
+        if (newlyEnabled.contains(module.getName()))
+        {
+            StartLog.debug("Cycle at %s",module);
+            return;
+        }
         
         // Check that this is not already provided by another module!
         for (String name:module.getProvides())
@@ -341,7 +348,6 @@ public class Modules implements Iterable<Module>
                 {
                     Path file = _baseHome.getPath("modules/" + dependsOn + ".mod");
                     registerModule(file).expandProperties(_args.getProperties());
-                    sort();
                     providers = _provided.get(dependsOn);
                     if (providers==null || providers.isEmpty())
                         throw new UsageException("Module %s does not provide %s",_baseHome.toShortForm(file),dependsOn);
@@ -363,7 +369,7 @@ public class Modules implements Iterable<Module>
                 if (dftProvider.isPresent())
                     enable(newlyEnabled,dftProvider.get(),"transitive provider of "+dependsOn+" for "+module.getName(),true);
                 else if (StartLog.isDebugEnabled())
-                    StartLog.debug("Module %s requires %s from one of %s",module,dependsOn,providers);
+                    StartLog.debug("Module %s requires a %s implementation from one of %s",module,dependsOn,providers);
             }
         }
     }
@@ -375,7 +381,7 @@ public class Modules implements Iterable<Module>
         {
             String reason = _deprecated.getProperty(name);
             if (reason!=null)
-                StartLog.warn("Deprecated module '%s' is %s",name,reason);
+                StartLog.warn("Module '%s' is no longer available: %s",name,reason);
         }
         return module;
     }
@@ -405,7 +411,7 @@ public class Modules implements Iterable<Module>
                     if (unsatisfied.length()>0)
                         unsatisfied.append(',');
                     unsatisfied.append(m.getName());
-                    StartLog.warn("Module %s requires %s from one of %s%n",m.getName(),d,providers);
+                    StartLog.error("Module %s requires a `%s` module from one of %s%n",m.getName(),d,providers);
                 }
             });
         });

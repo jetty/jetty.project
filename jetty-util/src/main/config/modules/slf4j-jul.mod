@@ -1,5 +1,5 @@
 [description]
-Provides a SLF4J to Java Util Logging (JUL) logging bridge.
+Provides a SLF4J binding to Java Util Logging (JUL) logging.
 
 [tags]
 logging

@@ -1,4 +1,6 @@
 <configuration>
+  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
+
   <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>logs/jetty.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">

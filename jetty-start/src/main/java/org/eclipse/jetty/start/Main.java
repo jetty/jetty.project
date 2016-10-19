@@ -76,7 +76,7 @@ public class Main
         }
         catch (UsageException e)
         {
-            StartLog.warn(e.getMessage());
+            StartLog.error(e.getMessage());
             usageExit(e.getCause(),e.getExitCode(),test);
         }
         catch (Throwable e)
@@ -197,7 +197,7 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            StartLog.warn("Nothing to start, exiting ...");
+            StartLog.error("Nothing to start, exiting ...");
             StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;
@@ -308,19 +308,8 @@ public class Main
             }
         }
 
-        StartLog.debug("Sorting Modules");
-        try
-        {
-            modules.sort();
-        }
-        catch (Exception e)
-        {
-            throw new UsageException(ERR_BAD_GRAPH,e);
-        }
-
         args.setAllModules(modules);
         List<Module> activeModules = modules.getEnabled();
-
 
         final Version START_VERSION = new Version(StartArgs.VERSION);
 
@@ -466,8 +455,9 @@ public class Main
         {
             invokeMain(cl, args);
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
+            e.printStackTrace();
             usageExit(e,ERR_INVOKE_MAIN,startupArgs.isTestingModeEnabled());
         }
     }
@@ -510,7 +500,7 @@ public class Main
         {
             if (port <= 0)
             {
-                StartLog.warn("STOP.PORT system property must be specified");
+                StartLog.error("STOP.PORT system property must be specified");
             }
             if (key == null)
             {
@@ -616,7 +606,7 @@ public class Main
         }
         catch (UsageException e)
         {
-            StartLog.warn(e.getMessage());
+            StartLog.error(e.getMessage());
             usageExit(e.getCause(),e.getExitCode(),startupArgs.isTestingModeEnabled());
         }
         catch (Throwable e)

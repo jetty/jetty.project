@@ -168,7 +168,6 @@ public class ModulesTest
         // Enable 2 modules
         modules.enable("base",TEST_SOURCE);
         modules.enable("optional",TEST_SOURCE);
-        modules.sort();
 
         // Collect active module list
         List<Module> active = modules.getEnabled();

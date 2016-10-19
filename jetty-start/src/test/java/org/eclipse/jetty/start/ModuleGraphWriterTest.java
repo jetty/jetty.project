@@ -62,7 +62,6 @@ public class ModuleGraphWriterTest
 
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
-        modules.sort();
 
         Path outputFile = basehome.getBasePath("graph.dot");
 

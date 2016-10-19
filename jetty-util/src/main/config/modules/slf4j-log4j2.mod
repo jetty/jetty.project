@@ -1,5 +1,5 @@
 [description]
-Provides a SLF4J to Log4j v2 logging bridge.
+Provides a SLF4J binding to Log4j v2 logging.
 
 [tags]
 logging
@@ -11,6 +11,7 @@ internal
 [depend]
 slf4j-api
 log4j2-api
+log4j2-impl
 
 [provide]
 slf4j-impl

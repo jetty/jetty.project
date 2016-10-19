@@ -23,4 +23,4 @@ EXISTS|start.d/extra.ini
 EXISTS|start.d/optional.ini
 
 # Output Assertions [regex!] (order is irrelevant)
-OUTPUT|MKDIR: \$\{jetty.base\}/maindir
+OUTPUT|MKDIR : \$\{jetty.base\}/maindir

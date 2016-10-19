@@ -6,6 +6,7 @@ Any slf4j-impl implementation is used
 logging
 
 [depends]
+slf4j-api
 slf4j-impl
 
 [provide]

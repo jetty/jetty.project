@@ -1,5 +1,5 @@
 [description]
-Provides a SLF4J to Logback logging bridge.
+Provides a SLF4J binding to Logback logging.
 
 [tags]
 logging
