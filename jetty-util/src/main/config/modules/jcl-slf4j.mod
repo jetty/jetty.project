@@ -1,5 +1,5 @@
 [description]
-Provides a Java Commons Logging (JCL) to SLF4J logging bridge.
+Provides a Java Commons Logging (JCL) binding to SLF4J logging. 
 
 [tags]
 logging

@@ -1,5 +1,5 @@
 [description]
-Provides a Log4j v1.2 to Log4j v2 logging bridge.  
+Provides a Log4j v1.2 binding to Log4j v2 logging.  
 
 [tags]
 logging

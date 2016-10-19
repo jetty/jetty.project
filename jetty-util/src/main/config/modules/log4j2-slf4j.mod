@@ -1,5 +1,5 @@
 [description]
-Provides a Log4j v2 to SLF4J logging bridge.  
+Provides a Log4j v2 binding to SLF4J logging.  
 
 [tags]
 logging

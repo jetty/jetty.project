@@ -1,6 +1,6 @@
 [description]
 Configure jetty logging to use Logback Logging. 
-Uses SLF4j as a logging bridge.
+SLF4J is used as the core logging mechanism.
 
 [tags]
 logging

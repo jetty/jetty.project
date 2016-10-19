@@ -1,5 +1,5 @@
 [description]
-Provides a SLF4J to the Log4j v1.2 API logging bridge.
+Provides a SLF4J binding to the Log4j v1.2 API logging.
 
 [tags]
 logging
