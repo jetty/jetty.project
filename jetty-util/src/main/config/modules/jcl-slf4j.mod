@@ -8,7 +8,7 @@ slf4j
 internal
 
 [depends]
-slf4j-api
+slf4j-impl
 
 [provides]
 jcl-api

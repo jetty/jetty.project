@@ -8,7 +8,6 @@ gcloud
 [depends]
 gcloud
 jcl-slf4j
-slf4j-impl
 
 [files]
 maven://com.google.cloud/google-cloud-datastore/0.4.0|lib/gcloud/google-cloud-datastore-0.4.0.jar

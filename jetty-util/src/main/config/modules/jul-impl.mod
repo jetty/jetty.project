@@ -14,7 +14,7 @@ jul-api
 jul-impl
 
 [files]
-basehome:modules/jul/java-util-logging.properties|etc/java-util-logging.properties
+basehome:modules/jul-impl/java-util-logging.properties|etc/java-util-logging.properties
 logs/
 
 [exec]
