@@ -7,11 +7,11 @@ jcl
 slf4j
 internal
 
-[depend]
+[depends]
 slf4j-api
 jcl-impl
 
-[provide]
+[provides]
 slf4j-impl
 
 [files]

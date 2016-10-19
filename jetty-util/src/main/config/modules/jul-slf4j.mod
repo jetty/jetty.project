@@ -6,11 +6,11 @@ logging
 slf4j
 internal
 
-[depend]
+[depends]
 slf4j-api
 slf4j-impl
 
-[provide]
+[provides]
 jul-impl
 
 [files]

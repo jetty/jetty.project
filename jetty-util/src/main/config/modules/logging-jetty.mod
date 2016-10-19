@@ -9,7 +9,7 @@ logging
 resources
 console-capture
 
-[provide]
+[provides]
 logging
 
 [files]

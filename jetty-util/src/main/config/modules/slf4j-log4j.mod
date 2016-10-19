@@ -7,12 +7,12 @@ log4j
 slf4j
 internal
 
-[depend]
+[depends]
 slf4j-api
 log4j-api
 log4j-impl
 
-[provide]
+[provides]
 slf4j-impl
 
 [files]

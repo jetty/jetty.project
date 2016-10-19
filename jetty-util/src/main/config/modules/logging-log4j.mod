@@ -9,7 +9,7 @@ logging
 slf4j-log4j
 log4j-impl
 
-[provide]
+[provides]
 logging
 
 [exec]

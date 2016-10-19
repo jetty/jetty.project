@@ -15,7 +15,7 @@ basehome:modules/logback/logback.xml|resources/logback.xml
 logs/
 
 [lib]
-lib/logback/*.jar
+lib/logback/logback-core-${logback.version}.jar
 
 [license]
 Logback: the reliable, generic, fast and flexible logging framework.
