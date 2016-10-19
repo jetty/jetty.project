@@ -12,6 +12,7 @@ slf4j-impl
 
 [provides]
 jul-impl
+slf4j+jul
 
 [files]
 maven://org.slf4j/jul-to-slf4j/${slf4j.version}|lib/slf4j/jul-to-slf4j-${slf4j.version}.jar

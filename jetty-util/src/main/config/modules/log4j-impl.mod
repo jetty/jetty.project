@@ -15,7 +15,7 @@ log4j-api
 log4j-impl
 
 [files]
-basehome:modules/log4j/log4j.properties|resources/log4j.properties
+basehome:modules/log4j/log4j.xml|resources/log4j.xml
 maven://log4j/log4j/${log4j.version}|lib/log4j/log4j-${log4j.version}.jar
 logs/
 

@@ -15,37 +15,74 @@
 //  ========================================================================
 
 [[configuring-logging-modules]]
-=== Jetty Logging Integrations (Slf4j, Log4j, Logback, JCL, JUL)
+=== Jetty Logging Integrations (SLF4J, Log4j, Logback, JCL, JUL)
 
-Jetty provides support for several logging frameworks including SLF4J, Java Commons Logging (jcl), Java Util Logging (jul), Log4j (including version 2), and Logback.
+Jetty provides support for several logging frameworks including SLF4J, Java Commons Logging (JCL), Java Util Logging (JUL), Log4j (including version 2), and Logback.
 This page includes examples of how to enable the associated modules for these different frameworks.
+These modules are designed to capture container/server logs; link:#configuring-jetty-request-logs[request logs] and application logs need to be configured separately.
+Please note that enabling these modules provides typical and basic functionality for each framework; advanced implementations may require their link:#startup-modules[own modules] or additional configuration.
+
 Enabling these frameworks in the Jetty distribution is as easy as activating any other module, by adding `--add-to-start=<module name>` to the start command for your server, such as:
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --add-to-start=logging-jetty
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jetty
 INFO : logging-jetty   initialized in ${jetty.base}/start.d/logging-jetty.ini
 INFO : resources       transitive
 INFO : Base directory was modified
 ....
 
 As noted above, Jetty supports a wide array of logging technologies.
-The release of Jetty 9.4 made the implementation of these frameworks easier by providing logging modules that contain all the dependencies needed to implement a specific technology.
-If a particular logging framework requires additional jar files, Jetty will automatically download these as part of enabling the associated module.
-You can view a list of all the Jetty modules by running `java -jar <path-to-jetty.home>/start.jar --list-modules`.
+If a particular logging framework requires additional jar files, Jetty will automatically download these as part of enabling the associated module and any dependent modules will be transitively enabled.
+
+A list of the base Jetty logging modules by running `java -jar <path-to-jetty.home>/start.jar --list-modules=logging,-internal`.
+
+logging-jcl::
+Configures Jetty logging to use Java Commons Logging (JCL), using SLF4J as a binding.
+logging-jetty::
+Standard Jetty logging that captures `System.err` and `System.out` output.
+logging-jul::
+Configures Jetty logging to use Java Util Logging (JUL), using SLF4J as a binding.
+logging-log4j::
+Configures Jetty logging to use Log4j as the logging implementation, using SLF4J as a binding.
+logging-log4j2::
+Configures Jetty logging to use Log4j2 as the logging implementation, using SLF4J as a binding.
+logging-logback::
+Configures Jetty logging to use Logback as the logging implementation, using SLF4J as a binding.
+logging-slf4j::
+Configures Jetty logging to use SLF4J and provides a `slf4j-impl` which can be used by other logging frameworks.
+If no other logging is configured, `slf4j-simple` is used.
+
+You can view a list of *all* the Jetty logging modules by running `java -jar <path-to-jetty.home>/start.jar --list-modules=logging`.
+This will display all logging modules, including implementation and binding modules.
+
+All these modules (with the exception of `logging-jetty`) arrange for the Jetty private logging API to be routed to the named technology to actually be logged.
+For example, enabling the `logging-log4j` module will do several things:
+
+* it enables an internal Log4j API module so that any container code that uses Log4j will find the API.
+* it enables an internal Log4j Implementation so that any container code that uses the Log4j API will also use a Log4j implementation to handle the logs (and all the normal Log4j configuration mechanisms etc.)
+* it enables the internal `slf4j-log4j` logging binding so that any container code that uses the SLF4j API to also use the Log4j implementation via the Log4j API.
+* it configures the Jetty logging API to use the SLF4J API, which is then bound to Log4j.
+
+So, after enabling `logging-log4j`, within the server container there are 3 logging APIs available: Jetty, SLF4J and Log4J.
+But there is only a single logging *implementation* - Log4j; the 3 APIs act only as facades over the Log4j implementation.
+
+Note that you can add additional APIs to this configuration.
+For example, enabling the internal module `jcl-slf4j` would add in a Java Commons Logging facade that also would use the Log4j implementation via the SLF4J binding.
+
+Most other top level logging modules work in the same way: `logging-jcl`, `logging-jul`, `logging-slf4j`, `logging-log4j2` and `logging-logback` all bind their implementation via SLF4J.
 
 [[example-logging-slf4j]]
 ==== Logging with SLF4J
 
-===== jetty-slf4j
-
-Jetty uses the Slf4j api as a bridge to provide logging information to additional frameworks such as Log4j or Logback.
-It can also be used itself to provide logging in conjunction with standard Jetty logging.
-To enable the Slf4j framework, you need to activate the `logging-slf4j` module.
+Jetty uses the SLF4J api as a binding to provide logging information to additional frameworks such as Log4j or Logback.
+It can also be used on it's own to provide simple server logging.
+To enable the SLF4J framework, you need to activate the `logging-slf4j` module.
+By default, log files will be stored in `${jetty.base}/logs`.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --add-to-start=logging-slf4j
+[my-base]$ java -jar ../start.jar --add-to-start=logging-slf4j
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -75,34 +112,59 @@ The following 1 module(s):
   + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Proceed (y/N)? y
-INFO : slf4j-api       transitive, ini template available with --add-to-start=slf4j-api
-INFO : logging-slf4j   initialized in ${jetty.base}/start.d/logging-slf4j.ini
-INFO : slf4j-impl      transitive
+INFO  : slf4j-api       transitively enabled
+INFO  : logging-slf4j   initialized in ${jetty.base}/start.d/logging-slf4j.ini
+MKDIR : ${jetty.base}/lib/slf4j
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
-DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
-INFO : Base directory was modified
+INFO  : Base directory was modified
+ERROR : Module logging-slf4j requires a `slf4j-impl` module from one of [slf4j-simple-impl, slf4j-logback, slf4j-jul, slf4j-jcl, slf4j-log4j2, slf4j-log4j]
 
-$ tree
+ERROR : Unsatisfied module dependencies: logging-slf4j
+
+Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
+       java -jar $JETTY_HOME/start.jar --help  # for more information
+....
+
+As you probably noticed, the system gives an `ERROR` when trying to enable the `logging-slf4j` on it's own.
+The `logging-slf4j` module itself provides the SLF4J api, but as SLF4J is often used as a binding for other logging frameworks does not by default provide an implementation.
+To enable the simple SLF4J implementation, we will also need to activate the `slf4j-simple-impl` module.
+
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=slf4j-simple-impl
+INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
+INFO  : resources       transitively enabled
+DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/slf4j/simplelogger.properties to ${jetty.base}/resources/simplelogger.properties
+MKDIR : ${jetty.base}/logs
+INFO  : Base directory was modified
+
+[my-base]$ tree
 .
 ├── lib
 │   └── slf4j
 │       ├── slf4j-api-1.7.21.jar
 │       └── slf4j-simple-1.7.21.jar
+├── logs
+├── resources
+│   └── simplelogger.properties
 └── start.d
     ├── logging-slf4j.ini
+    └── slf4j-simple-impl.ini
 ....
 
-
 [[example-logging-log4j]]
-==== Logging with Log4j and log4j2
+==== Logging with Log4j and Log4j2
 
 It is possible to have the Jetty Server logging configured so that Log4j or Log4j2 controls the output of logging events produced by Jetty.
 This is accomplished by configuring Jetty for logging to http://logging.apache.org/log4j/[Apache Log4j] via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for Log4j].
 Implementation of Log4j can be done by enabling the `logging-log4j` module.
+By default, log files will be stored in `${jetty.base}/logs`.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --add-to-start=logging-log4j
+[my-base]$ java -jar ../start.jar --add-to-start=logging-log4j
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -136,17 +198,22 @@ The following 2 module(s):
   + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Proceed (y/N)? y
-INFO : slf4j-api       transitive, ini template available with --add-to-start=slf4j-api
-INFO : log4j-impl      transitive, ini template available with --add-to-start=log4j-impl
-INFO : resources       transitive
-INFO : slf4j-log4j     transitive
-INFO : logging-log4j   initialized in ${jetty.base}/start.d/logging-log4j.ini
+INFO  : slf4j-api       transitively enabled
+INFO  : log4j-impl      transitively enabled
+INFO  : resources       transitively enabled
+INFO  : slf4j-log4j     transitively enabled
+INFO  : logging-log4j   initialized in ${jetty.base}/start.d/logging-log4j.ini
+MKDIR : ${jetty.base}/lib/slf4j
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/log4j/log4j.properties to ${jetty.base}/resources/log4j.properties
+MKDIR : ${jetty.base}/lib/log4j
 DOWNLOAD: http://central.maven.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17.jar to ${jetty.base}/lib/log4j/log4j-1.2.17.jar
+MKDIR : ${jetty.base}/logs
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-log4j12/1.7.21/slf4j-log4j12-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-log4j12-1.7.21.jar
-INFO : Base directory was modified
+INFO  : Base directory was modified
 
-$ tree
+[my-base]$ tree
 .
 ├── lib
 │   ├── log4j
@@ -154,17 +221,19 @@ $ tree
 │   └── slf4j
 │       ├── slf4j-api-1.7.21.jar
 │       └── slf4j-log4j12-1.7.21.jar
+├── logs
 ├── resources
 │   └── log4j.properties
 └── start.d
-    ├── logging-log4j.ini
+    └── logging-log4j.ini
 ....
 
 Or, to enable Log4j2, simply enable the `logging-log4j2` module.
+By default, log files will be stored in `${jetty.base}/logs`.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --add-to-start=logging-log4j2
+[my-base]$  java -jar ../start.jar --add-to-start=logging-log4j2
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -198,32 +267,39 @@ The following 2 module(s):
   + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Proceed (y/N)? y
-INFO : slf4j-api       transitive, ini template available with --add-to-start=slf4j-api
-INFO : logging-log4j2  initialized in ${jetty.base}/start.d/logging-log4j2.ini
-INFO : log4j2-api      transitive, ini template available with --add-to-start=log4j2-api
-INFO : resources       transitive
-INFO : slf4j-log4j2    transitive
-INFO : log4j2-impl     transitive
+INFO  : slf4j-api       transitively enabled
+INFO  : logging-log4j2  initialized in ${jetty.base}/start.d/logging-log4j2.ini
+INFO  : log4j2-api      transitively enabled
+INFO  : resources       transitively enabled
+INFO  : slf4j-log4j2    transitively enabled
+INFO  : log4j2-impl     transitively enabled
+MKDIR : ${jetty.base}/lib/slf4j
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+MKDIR : ${jetty.base}/lib/log4j
 DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-api/2.6.1/log4j-api-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-api-2.6.1.jar
-MKDIR: ${jetty.base}/resources
+MKDIR : ${jetty.base}/resources
 DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.6.1/log4j-slf4j-impl-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-slf4j-impl-2.6.1.jar
-DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.6.1/log4j-core-2.6.1.jar to ${jetty.base}/lib/log4j/log4j-core-2.6.1.jar
-INFO : Base directory was modified
+MKDIR : ${jetty.base}/lib/log4j2
+DOWNLOAD: http://central.maven.org/maven2/org/apache/logging/log4j/log4j-core/2.6.1/log4j-core-2.6.1.jar to ${jetty.base}/lib/log4j2/log4j-core-2.6.1.jar
+COPY  : ${jetty.home}/modules/log4j2/log4j2.xml to ${jetty.base}/resources/log4j2.xml
+MKDIR : ${jetty.base}/logs
+INFO  : Base directory was modified
 
-$ tree
+[my-base]$ tree
 .
 ├── lib
 │   ├── log4j
 │   │   ├── log4j-api-2.6.1.jar
-│   │   ├── log4j-core-2.6.1.jar
 │   │   └── log4j-slf4j-impl-2.6.1.jar
+│   ├── log4j2
+│   │   └── log4j-core-2.6.1.jar
 │   └── slf4j
 │       └── slf4j-api-1.7.21.jar
+├── logs
 ├── resources
 │   └── log4j2.xml
 └── start.d
-    ├── logging-log4j2.ini
+    └── logging-log4j2.ini
 ....
 
 [[example-logging-logback]]
@@ -233,10 +309,11 @@ It is possible to have the Jetty Server logging configured so that Logback contr
 This is accomplished by configuring Jetty for logging to `Logback`, which uses http://slf4j.org/manual.html[Slf4j] and the http://logback.qos.ch/[Logback Implementation for Slf4j].
 
 To set up Jetty logging via Logback, enable the `logging-logback` module.
+By default, log files will be stored in `${jetty.base}/logs`.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --add-to-start=logging-logback
+[my-base]$ java -jar ../start.jar --add-to-start=logging-logback
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -279,17 +356,22 @@ The following 2 module(s):
   + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Proceed (y/N)? y
-INFO : slf4j-api       transitive, ini template available with --add-to-start=slf4j-api
-INFO : logback-impl    transitive, ini template available with --add-to-start=logback-impl
-INFO : slf4j-logback   transitive
-INFO : logging-logback initialized in ${jetty.base}/start.d/logging-logback.ini
-INFO : resources       transitive
+INFO  : slf4j-api       transitively enabled
+INFO  : logback-impl    transitively enabled
+INFO  : slf4j-logback   transitively enabled
+INFO  : logging-logback initialized in ${jetty.base}/start.d/logging-logback.ini
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/lib/slf4j
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+MKDIR : ${jetty.base}/lib/logback
 DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-core/1.1.7/logback-core-1.1.7.jar to ${jetty.base}/lib/logback/logback-core-1.1.7.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/logback/logback.xml to ${jetty.base}/resources/logback.xml
+MKDIR : ${jetty.base}/logs
 DOWNLOAD: http://central.maven.org/maven2/ch/qos/logback/logback-classic/1.1.7/logback-classic-1.1.7.jar to ${jetty.base}/lib/logback/logback-classic-1.1.7.jar
-INFO : Base directory was modified
+INFO  : Base directory was modified
 
-$ tree
+[my-base]$ tree
 .
 ├── lib
 │   ├── logback
@@ -297,13 +379,15 @@ $ tree
 │   │   └── logback-core-1.1.7.jar
 │   └── slf4j
 │       └── slf4j-api-1.7.21.jar
+├── logs
 ├── resources
 │   └── logback.xml
 └── start.d
-    ├── logging-logback.ini
+    └── logging-logback.ini
 ....
 
 At this point Jetty is configured so that the Jetty server itself will log using Logback, using the Logback configuration found in `{$jetty.base}/resources/logback.xml`.
+Log files will be stored in `${jetty.base}/logs`.
 
 ==== Logging with Java Util Logging
 
@@ -312,11 +396,11 @@ At this point Jetty is configured so that the Jetty server itself will log using
 It is possible to have the Jetty Server logging configured so that `java.util.logging` controls the output of logging events produced by Jetty.
 
 This example demonstrates how to configuring Jetty for logging to `java.util.logging` via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for java.util.logging].
-If you want to use the built-in native `java.util.logging` implementation, see link:#example-logging-java-util-logging-native[Native Java Util Logging].
+By default, log files will be stored in `${jetty.base}/logs`.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --add-to-start=logging-jul
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jul
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -346,30 +430,43 @@ The following 1 module(s):
   + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Proceed (y/N)? y
-INFO : slf4j-api       transitive, ini template available with --add-to-start=slf4j-api
-INFO : slf4j-jul       transitive
-INFO : logging-jul     initialized in ${jetty.base}/start.d/logging-jul.ini
+INFO  : jul-impl        transitively enabled
+INFO  : slf4j-api       transitively enabled
+INFO  : slf4j-jul       transitively enabled
+INFO  : logging-jul     initialized in ${jetty.base}/start.d/logging-jul.ini
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/jul-impl/java-util-logging.properties to ${jetty.base}/etc/java-util-logging.properties
+MKDIR : ${jetty.base}/logs
+MKDIR : ${jetty.base}/lib/slf4j
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-jdk14/1.7.21/slf4j-jdk14-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jdk14-1.7.21.jar
-INFO : Base directory was modified
+MKDIR : ${jetty.base}/resources
+INFO  : Base directory was modified
 
-$ tree
+[my-base]$ tree
 .
+├── etc
+│   └── java-util-logging.properties
 ├── lib
 │   └── slf4j
 │       ├── slf4j-api-1.7.21.jar
 │       └── slf4j-jdk14-1.7.21.jar
+├── logs
+├── resources
 └── start.d
-    ├── logging-jul.ini
+    └── logging-jul.ini
 ....
 
+[[example-logging-java-commons-logging]]
 ==== Logging with Java Commons Logging
-Jetty provides support of the Java Commons Logging (jcl) through the `logging-jcl` module, using Slf4j as a bridge.
-This can be enabled as shown below:
+Jetty provides support of the Java Commons Logging (jcl) through the `logging-jcl` module, using Slf4j as a binding.
+This is enabled by activating the `logging-jcl` module.
+By default, log files will be stored in `${jetty.base}/logs`.
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --add-to-start=logging-jcl
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jcl
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -403,16 +500,18 @@ The following 2 module(s):
   + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Proceed (y/N)? y
-INFO : slf4j-api       transitive, ini template available with --add-to-start=slf4j-api
-INFO : jcl-impl        transitive, ini template available with --add-to-start=jcl-impl
-INFO : slf4j-jcl       transitive
+INFO : slf4j-api       transitively enabled
+INFO : jcl-impl        transitively enabled
+INFO : resources       transitively enabled
+INFO : slf4j-jcl       transitively enabled
 INFO : logging-jcl     initialized in ${jetty.base}/start.d/logging-jcl.ini
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 DOWNLOAD: http://central.maven.org/maven2/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar to ${jetty.base}/lib/jcl/commons-logging-1.1.3.jar
+MKDIR: ${jetty.base}/logs
 DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-jcl/1.7.21/slf4j-jcl-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jcl-1.7.21.jar
 INFO : Base directory was modified
 
-$ tree
+[my-base]$ tree
 .
 ├── lib
 │   ├── jcl
@@ -420,6 +519,9 @@ $ tree
 │   └── slf4j
 │       ├── slf4j-api-1.7.21.jar
 │       └── slf4j-jcl-1.7.21.jar
+├── logs
+├── resources
+│   └── commons-logging.properties
 └── start.d
-    ├── logging-jcl.ini
+    └── logging-jcl.ini
 ....

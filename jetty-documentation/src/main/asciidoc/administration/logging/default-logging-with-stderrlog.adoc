@@ -23,15 +23,30 @@
 If you do nothing to configure a separate logging framework, Jetty will default to using an internal `org.eclipse.jetty.util.log.StdErrLog` implementation.
 This will output all logging events to STDERR (aka `System.err`).
 
-Simply use Jetty and `StdErrLog` based logging is output.
+Simply use Jetty and `StdErrLog` based logging is output to the console.
 
-Included in the Jetty distribution is a logging module that is capable of performing simple capturing of all STDOUT and STDERR output to a file that is rotated daily.
+Included in the Jetty distribution is a logging module that is capable of performing simple capturing of all STDOUT (`System.out`) and STDERR (`System.err`) output to a file that is rotated daily.
 
 To enable on this feature via the command line:
 
 [source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /opt/jetty/start.jar --add-to-start=logging-jetty
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jetty
+INFO  : logging-jetty   initialized in ${jetty.base}/start.d/logging-jetty.ini
+INFO  : console-capture transitively enabled, ini template available with --add-to-start=console-capture
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/logging-jetty/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
+MKDIR : ${jetty.base}/logs
+INFO  : Base directory was modified
+
+[my-base]$ tree
+.
+├── logs
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    └── logging-jetty.ini
 ....
 
 The default configuration for logging output will create a file `${jetty.base}/logs/yyyy_mm_dd.stderrout.log` which allows configuration of the output directory by setting the `jetty.logs` property.

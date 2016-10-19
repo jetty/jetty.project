@@ -13,6 +13,7 @@ jcl-impl
 
 [provides]
 slf4j-impl
+slf4j+jcl
 
 [files]
 maven://org.slf4j/slf4j-jcl/${slf4j.version}|lib/slf4j/slf4j-jcl-${slf4j.version}.jar

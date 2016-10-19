@@ -11,6 +11,7 @@ slf4j-api
 
 [provides]
 slf4j-impl
+slf4j+jul
 
 [files]
 maven://org.slf4j/slf4j-jdk14/${slf4j.version}|lib/slf4j/slf4j-jdk14-${slf4j.version}.jar
