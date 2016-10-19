@@ -50,7 +50,20 @@ node {
         // Run test phase / ignore test failures
         sh "mvn -B install -Dmaven.test.failure.ignore=true"
         // Report failures in the jenkins UI
-        step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+        step([$class: 'JUnitResultArchiver', 
+            testResults: '**/target/surefire-reports/TEST-*.xml'])
+        // Collect up the jacoco execution results
+        step([$class: 'JacocoPublisher', 
+            execPattern: '**/target/jacoco.exec', 
+            classPattern: '**/target/classes', 
+            sourcePattern: '**/src/main/java'])
+        // Report on Maven and Javadoc warnings
+        step([$class: 'WarningsPublisher', 
+            consoleParsers: [
+                [parserName: 'Maven'],
+                [parserName: 'JavaDoc'],
+                [parserName: 'JavaC']
+            ]])
       }
       if(isUnstable())
       {
