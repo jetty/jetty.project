@@ -181,20 +181,22 @@ public class LdapLoginModule extends AbstractLoginModule
     
     public class LDAPUserInfo extends UserInfo
     {
-
+    	Attributes attributes;
+    	
         /**
          * @param userName
          * @param credential
          */
-        public LDAPUserInfo(String userName, Credential credential)
+        public LDAPUserInfo(String userName, Credential credential, Attributes attributes)
         {
             super(userName, credential);
+            this.attributes = attributes;
         }
 
         @Override
         public List<String> doFetchRoles() throws Exception
         {
-            return getUserRoles(_rootContext, getUserName());
+            return getUserRoles(_rootContext, getUserName(), attributes);
         }
         
     }
@@ -214,7 +216,8 @@ public class LdapLoginModule extends AbstractLoginModule
      */
     public UserInfo getUserInfo(String username) throws Exception
     {
-        String pwdCredential = getUserCredentials(username);
+    	Attributes attributes = getUserAttributes(username);
+        String pwdCredential = getUserCredentials(attributes);
 
         if (pwdCredential == null)
         {
@@ -223,7 +226,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         pwdCredential = convertCredentialLdapToJetty(pwdCredential);
         Credential credential = Credential.getCredential(pwdCredential);
-        return new LDAPUserInfo(username, credential);
+        return new LDAPUserInfo(username, credential, attributes);
     }
 
     protected String doRFC2254Encoding(String inputString)
@@ -258,7 +261,7 @@ public class LdapLoginModule extends AbstractLoginModule
     }
 
     /**
-     * attempts to get the users credentials from the users context
+     * attempts to get the users LDAP attributes from the users context
      * <p>
      * NOTE: this is not an user authenticated operation
      *
@@ -266,53 +269,39 @@ public class LdapLoginModule extends AbstractLoginModule
      * @return
      * @throws LoginException
      */
-    private String getUserCredentials(String username) throws LoginException
+    private Attributes getUserAttributes(String username) throws LoginException
     {
-        String ldapCredential = null;
+    	Attributes attributes = null;
 
-        SearchControls ctls = new SearchControls();
-        ctls.setCountLimit(1);
-        ctls.setDerefLinkFlag(true);
-        ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-
-        String filter = "(&(objectClass={0})({1}={2}))";
-
-        LOG.debug("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
-
-        try
-        {
-            Object[] filterArguments = {_userObjectClass, _userIdAttribute, username};
-            NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
-
-            LOG.debug("Found user?: " + results.hasMoreElements());
-
-            if (!results.hasMoreElements())
-            {
-                throw new LoginException("User not found.");
-            }
-
-            SearchResult result = findUser(username);
-
-            Attributes attributes = result.getAttributes();
-
-            Attribute attribute = attributes.get(_userPasswordAttribute);
-            if (attribute != null)
-            {
-                try
-                {
-                    byte[] value = (byte[]) attribute.get();
-
-                    ldapCredential = new String(value);
-                }
-                catch (NamingException e)
-                {
-                    LOG.debug("no password available under attribute: " + _userPasswordAttribute);
-                }
-            }
-        }
-        catch (NamingException e)
-        {
+    	SearchResult result;
+		try {
+			result = findUser(username);
+	        attributes = result.getAttributes();
+		}
+		catch (NamingException e) {
             throw new LoginException("Root context binding failure.");
+		}
+    	
+    	return attributes;
+	}
+    
+    private String getUserCredentials(Attributes attributes) throws LoginException
+    {
+    	String ldapCredential = null;
+
+        Attribute attribute = attributes.get(_userPasswordAttribute);
+        if (attribute != null)
+        {
+            try
+            {
+                byte[] value = (byte[]) attribute.get();
+
+                ldapCredential = new String(value);
+            }
+            catch (NamingException e)
+            {
+                LOG.debug("no password available under attribute: " + _userPasswordAttribute);
+            }
         }
 
         LOG.debug("user cred is: " + ldapCredential);
@@ -330,9 +319,22 @@ public class LdapLoginModule extends AbstractLoginModule
      * @return
      * @throws LoginException
      */
-    private List<String> getUserRoles(DirContext dirContext, String username) throws LoginException, NamingException
+    private List<String> getUserRoles(DirContext dirContext, String username, Attributes attributes) throws LoginException, NamingException
     {
-        String userDn = _userRdnAttribute + "=" + username + "," + _userBaseDn;
+        String rdnValue = username;
+        Attribute attribute = attributes.get(_userRdnAttribute);
+		if (attribute != null)
+		{
+		    try
+		    {
+		        rdnValue = (String) attribute.get();	// switch to the value stored in the _userRdnAttribute if we can
+		    }
+		    catch (NamingException e)
+		    {
+		    }
+		}
+
+        String userDn = _userRdnAttribute + "=" + rdnValue + "," + _userBaseDn;
 
         return getUserRolesByDn(dirContext, userDn);
     }
@@ -537,7 +539,7 @@ public class LdapLoginModule extends AbstractLoginModule
         String filter = "(&(objectClass={0})({1}={2}))";
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
+            LOG.debug("Searching for user " + username + " with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
 
         Object[] filterArguments = new Object[]{
                                                 _userObjectClass,
