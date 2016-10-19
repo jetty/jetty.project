@@ -56,6 +56,7 @@ node('linux') {
             testResults: '**/target/surefire-reports/TEST-*.xml'])
         // Collect up the jacoco execution results
         step([$class: 'JacocoPublisher', 
+            inclusionPattern: "**/org/eclipse/jetty/**/*.class",
             execPattern: '**/target/jacoco.exec', 
             classPattern: '**/target/classes', 
             sourcePattern: '**/src/main/java'])
