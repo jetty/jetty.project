@@ -14,6 +14,7 @@ slf4j-impl
 [provides]
 jcl-api
 jcl-impl
+slf4j+jcl
 
 [files]
 maven://org.slf4j/jcl-over-slf4j/${slf4j.version}|lib/slf4j/jcl-over-slf4j-${slf4j.version}.jar

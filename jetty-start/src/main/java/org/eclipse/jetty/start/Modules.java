@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -308,7 +309,7 @@ public class Modules implements Iterable<Module>
                         if (p.isTransitive() && !transitive)
                             p.clearTransitiveEnable();
                         else
-                            throw new UsageException("%s provides %s, which is already provided by %s enabled in %s",module.getName(),name,p.getName(),p.getEnableSources());
+                            throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s",module.getName(),name,p.getName(),p.getEnableSources());
                     }
                 };
             }   
@@ -337,11 +338,12 @@ public class Modules implements Iterable<Module>
         for(String dependsOn:module.getDepends())
         {
             // Look for modules that provide that dependency
-            Set<Module> providers = _provided.get(dependsOn);
-            StartLog.debug("%s depends on %s provided by ",module,dependsOn,providers);
+            Set<Module> providers = getAvailableProviders(dependsOn);
+                
+            StartLog.debug("Module %s depends on %s provided by ",module,dependsOn,providers);
             
             // If there are no known providers of the module
-            if ((providers==null||providers.isEmpty()))
+            if (providers.isEmpty())
             {
                 // look for a dynamic module
                 if (dependsOn.contains("/"))
@@ -359,13 +361,15 @@ public class Modules implements Iterable<Module>
             }
             
             // If a provider is already enabled, then add a transitive enable
-            long enabled=providers.stream().filter(Module::isEnabled).count();
-            if (enabled>0)
+            if (providers.stream().filter(Module::isEnabled).count()!=0)
                 providers.stream().filter(m->m.isEnabled()&&m!=module).forEach(m->enable(newlyEnabled,m,"transitive provider of "+dependsOn+" for "+module.getName(),true));
             else
             {
                 // Is there an obvious default?
-                Optional<Module> dftProvider = providers.stream().filter(m->m.getName().equals(dependsOn)).findFirst();
+                Optional<Module> dftProvider = (providers.size()==1)
+                    ?providers.stream().findFirst()
+                    :providers.stream().filter(m->m.getName().equals(dependsOn)).findFirst();
+
                 if (dftProvider.isPresent())
                     enable(newlyEnabled,dftProvider.get(),"transitive provider of "+dependsOn+" for "+module.getName(),true);
                 else if (StartLog.isDebugEnabled())
@@ -374,6 +378,47 @@ public class Modules implements Iterable<Module>
         }
     }
     
+    private Set<Module> getAvailableProviders(String name)
+    {
+        // Get all available providers 
+        
+        Set<Module> providers = _provided.get(name);
+        if (providers==null || providers.isEmpty())
+            return Collections.emptySet();
+        
+        providers = new HashSet<>(providers);
+        
+        // find all currently provided names by other modules
+        Set<String> provided = new HashSet<>();
+        for (Module m : _modules)
+        {
+            if (m.isEnabled())
+            {
+                provided.add(m.getName());
+                provided.addAll(m.getProvides());
+            }
+        }
+        
+        // Remove any that cannot be selected
+        for (Iterator<Module> i = providers.iterator(); i.hasNext();)
+        {
+            Module provider = i.next();
+            if (!provider.isEnabled())
+            {    
+                for (String p : provider.getProvides())
+                {
+                    if (provided.contains(p))
+                    {
+                        i.remove();
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return providers;
+    }
+
     public Module get(String name)
     {
         Module module = _names.get(name);
@@ -381,7 +426,7 @@ public class Modules implements Iterable<Module>
         {
             String reason = _deprecated.getProperty(name);
             if (reason!=null)
-                StartLog.warn("Module '%s' is no longer available: %s",name,reason);
+                StartLog.warn("Module %s is no longer available: %s",name,reason);
         }
         return module;
     }
@@ -405,13 +450,13 @@ public class Modules implements Iterable<Module>
             // Check dependencies
             m.getDepends().forEach(d->
             {
-                Set<Module> providers =_provided.get(d);
+                Set<Module> providers = getAvailableProviders(d);
                 if (providers.stream().filter(Module::isEnabled).count()==0)
                 { 
                     if (unsatisfied.length()>0)
                         unsatisfied.append(',');
                     unsatisfied.append(m.getName());
-                    StartLog.error("Module %s requires a `%s` module from one of %s%n",m.getName(),d,providers);
+                    StartLog.error("Module %s requires a module providing %s from one of %s%n",m.getName(),d,providers);
                 }
             });
         });
