@@ -792,13 +792,13 @@ public class SessionHandler extends ScopedHandler
         session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
         session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
         
-        if (request.isSecure())
-            session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
         try
         {
-
             _sessionCache.put(id, session);
-            _sessionsCreatedStats.increment();         
+            _sessionsCreatedStats.increment();  
+            
+            if (request.isSecure())
+                session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             
             if (_sessionListeners!=null)
             {
