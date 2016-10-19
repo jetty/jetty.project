@@ -1,5 +1,5 @@
 [description]
-Provides SLF4J API.  Requires a slf4j implementation (eg slf4j-simple)
+Provides SLF4J API.  Requires a slf4j implementation (eg slf4j-simple-impl)
 otherwise a noop implementation is used.
 
 [tags]

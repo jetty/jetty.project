@@ -20,7 +20,7 @@ maven://log4j/log4j/${log4j.version}|lib/log4j/log4j-${log4j.version}.jar
 logs/
 
 [lib]
-lib/log4j/*.jar
+lib/log4j/log4j-${log4j.version}.jar
 
 [license]
 Log4j is released under the Apache 2.0 license.

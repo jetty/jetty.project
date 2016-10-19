@@ -7,11 +7,11 @@ logging
 slf4j
 internal
 
-[depend]
+[depends]
 slf4j-api
 resources
 
-[provide]
+[provides]
 slf4j-impl
 
 [files]
@@ -20,4 +20,4 @@ basehome:modules/slf4j/simplelogger.properties|resources/simplelogger.properties
 logs/
 
 [lib]
-lib/slf4j/*.jar
+lib/slf4j/slf4j-simple-${slf4j.version}.jar

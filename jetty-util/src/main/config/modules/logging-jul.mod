@@ -9,7 +9,7 @@ logging
 slf4j-jul
 jul-impl
 
-[provide]
+[provides]
 logging
 
 [exec]

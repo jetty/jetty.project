@@ -1,0 +1,77 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+=== Upgrading from Jetty 9.3 to Jetty 9.4
+
+==== jetty.sh
+
+The file `jetty.sh`, typically used to start Jetty as a service in Linux/Unix
+machines underwent only small changes, such as the addition of
+https://wiki.debian.org/LSBInitScripts[LSB tags].
+
+You can safely replace Jetty 9.3's `jetty.sh` with 9.4's.
+
+==== Modules No Longer Available
+
+[cols="1,1", options="header"]
+|===
+| 9.3 Module | 9.4 Module
+| logging    | console-capture
+|===
+
+The module `logging` is no longer available in Jetty 9.4.
+
+The logging module structure present in Jetty 9.3 has been replaced with
+a more fine-grained structure in Jetty 9.4, so that you have now more choices
+available that are also easier to configure.
+
+The migration path is different depending on whether you have completely
+customized this module or not.
+
+If you have a Jetty 9.3 installation, and you have both
+`$jetty.base/modules/logging.mod` and `$jetty.base/etc/jetty-logging.xml`,
+then this module is local to your `$jetty.base` setup and will be used
+by Jetty 9.4 as before.
+No changes required on your part.
+
+If either `$jetty.base/modules/logging.mod` or `$jetty.base/etc/jetty-logging.xml`
+are missing, then you were relying on those present in `$jetty.home`,
+which were present in Jetty 9.3, but are no longer available in Jetty 9.4.
+
+The Jetty 9.3 `logging` module has been renamed to `console-capture` in Jetty 9.4.
+You need to open your Jetty 9.3 `start.ini` and replace the references to the
+`logging` modules with `console-capture`.
+
+For example:
+
+.start.ini
+----
+--module=logging
+jetty.logging.retainDays=7
+----
+
+should be replaced by:
+
+.start.ini
+----
+--module=console-capture
+jetty.console-capture.retainDays=7
+----
+
+The properties that may be present in your Jetty 9.3's `start.ini`, such as
+`jetty.logging.retainDays` will still be working in Jetty 9.4, but a warning
+will be printed at Jetty 9.4 startup, saying to replace them with correspondent
+`jetty.console-capture.*` properties such as `jetty.console-capture.retainDays`.

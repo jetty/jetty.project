@@ -147,6 +147,27 @@
         </dependencies>
       </plugin>
       <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.7.7.201606060606</version>
+        <executions>
+          <execution>
+            <id>jacoco-initialize</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-site</id>
+            <phase>package</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-pmd-plugin</artifactId>
         <executions>
           <execution>
@@ -520,9 +541,9 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.19.1</version>
           <configuration>
-            <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
+            <argLine>@{argLine} -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
-	    <runOrder>random</runOrder>
+            <forkCount>1</forkCount>
             <systemProperties>
               <property>
                 <name>java.io.tmpdir</name>
