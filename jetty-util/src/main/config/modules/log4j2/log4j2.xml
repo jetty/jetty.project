@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="warn" name="Jetty" >
   <Appenders>
-    <RollingFile name="RollingFile" fileName="logs/jetty.log" filePattern="logs/jetty-%d{MM-dd-yyyy}.log.gz" ignoreExceptions="false">
+    <RollingFile name="RollingFile" 
+      fileName="${jetty.logging.dir}/jetty.log" 
+      filePattern="${jetty.logging.dir}/jetty-%d{MM-dd-yyyy}.log.gz" 
+      ignoreExceptions="false">
       <PatternLayout>
-        <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+        <Pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n</Pattern>
       </PatternLayout>
-      <TimeBasedTriggeringPolicy />
+      <SizeBasedTriggeringPolicy size="10MB"/>
+      <DefaultRolloverStrategy max="10"/>
     </RollingFile>
-    <Console name="Console" target="SYSTEM_ERR">
-      <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"/>
-    </Console>
   </Appenders>
   <Loggers>
     <Root level="info">
