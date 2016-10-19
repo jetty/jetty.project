@@ -81,7 +81,6 @@ Module Management:
                    Note: this can also be used in the ${jetty.base}/start.ini
                    or ${jetty.base}/start.d/*.ini files.
                    
-  --add=<modulename>(,<modulename>)*
   --add-to-start=<modulename>(,<modulename>)*
                    Add the modules to the list of modules enabled at start. 
                    Transitive dependencies are followed and dependent

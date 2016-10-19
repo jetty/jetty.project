@@ -308,19 +308,8 @@ public class Main
             }
         }
 
-        StartLog.debug("Sorting Modules");
-        try
-        {
-            modules.sort();
-        }
-        catch (Exception e)
-        {
-            throw new UsageException(ERR_BAD_GRAPH,e);
-        }
-
         args.setAllModules(modules);
         List<Module> activeModules = modules.getEnabled();
-
 
         final Version START_VERSION = new Version(StartArgs.VERSION);
 
@@ -466,8 +455,9 @@ public class Main
         {
             invokeMain(cl, args);
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
+            e.printStackTrace();
             usageExit(e,ERR_INVOKE_MAIN,startupArgs.isTestingModeEnabled());
         }
     }
