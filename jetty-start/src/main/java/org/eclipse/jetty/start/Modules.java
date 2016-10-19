@@ -381,7 +381,7 @@ public class Modules implements Iterable<Module>
         {
             String reason = _deprecated.getProperty(name);
             if (reason!=null)
-                StartLog.warn("Deprecated module '%s': %s",name,reason);
+                StartLog.warn("Module '%s' is no longer available: %s",name,reason);
         }
         return module;
     }
