@@ -10,7 +10,6 @@ etc/console-capture.xml
 
 [files]
 logs/
-basehome:modules/console-capture/console-capture.xml|etc/console-capture.xml
 
 [lib]
 resources/
