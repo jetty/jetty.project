@@ -21,19 +21,16 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
-
 
 
 /**
@@ -50,6 +47,18 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     protected static int COUNTER = 0; 
     protected Resource _originalResourceBase;
     protected List<Resource>  _unpackedOverlayResources;
+
+    public MavenWebInfConfiguration()
+    {
+        hide("org.apache.maven.",
+             "org.codehaus.plexus.");
+    }
+
+    @Override
+    public Class<? extends Configuration> replaces()
+    {
+        return WebInfConfiguration.class;
+    }
     
     /** 
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
@@ -59,55 +68,23 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         JettyWebAppContext jwac = (JettyWebAppContext)context;
         
         //put the classes dir and all dependencies into the classpath
-        if (jwac.getClassPathFiles() != null)
+        if (jwac.getClassPathFiles() != null && context.getClassLoader() instanceof WebAppClassLoader)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Setting up classpath ...");
-            Iterator itor = jwac.getClassPathFiles().iterator();
-            while (itor.hasNext())
-                ((WebAppClassLoader)context.getClassLoader()).addClassPath(((File)itor.next()).getCanonicalPath());
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("Setting up classpath ...");
+            WebAppClassLoader loader=(WebAppClassLoader)context.getClassLoader();
+            for (File classpath:jwac.getClassPathFiles())
+                loader.addClassPath(classpath.getCanonicalPath());
         }
         
         super.configure(context);
-        
-        // knock out environmental maven and plexus classes from webAppContext
-        String[] existingServerClasses = context.getServerClasses();
-        String[] newServerClasses = new String[2+(existingServerClasses==null?0:existingServerClasses.length)];
-        newServerClasses[0] = "org.apache.maven.";
-        newServerClasses[1] = "org.codehaus.plexus.";
-        System.arraycopy( existingServerClasses, 0, newServerClasses, 2, existingServerClasses.length );
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Server classes:");
-            for (int i=0;i<newServerClasses.length;i++)
-                LOG.debug(newServerClasses[i]);
-        }
-        context.setServerClasses( newServerClasses ); 
     }
 
     
     
-
-    /** 
-     * @see org.eclipse.jetty.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
-     */
-    public void preConfigure(WebAppContext context) throws Exception
-    {
-        super.preConfigure(context);
-
-    }
     
     
     
-    
-    /** 
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#postConfigure(org.eclipse.jetty.webapp.WebAppContext)
-     */
-    public void postConfigure(WebAppContext context) throws Exception
-    {
-        super.postConfigure(context);
-    }
-
-
     
     
     /** 
@@ -182,85 +159,6 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         
         jwac.setAttribute(RESOURCE_BASES_POST_OVERLAY, jwac.getBaseResource());
     }
-
-
-    /**
-     * Get the jars to examine from the files from which we have
-     * synthesized the classpath. Note that the classpath is not
-     * set at this point, so we cannot get them from the classpath.
-     * @param context the web app context
-     * @return the list of jars found
-     */
-    @Override
-    protected List<Resource> findJars (WebAppContext context)
-    throws Exception
-    {
-        List<Resource> list = new ArrayList<Resource>();
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
-        if (jwac.getClassPathFiles() != null)
-        {
-            for (File f: jwac.getClassPathFiles())
-            {
-                if (f.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
-                {
-                    try
-                    {
-                        list.add(Resource.newResource(f.toURI()));
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Bad url ", e);
-                    }
-                }
-            }
-        }
-
-        List<Resource> superList = super.findJars(context);
-        if (superList != null)
-            list.addAll(superList);
-        return list;
-    }
-    
-    
-    
-    
-
-    /** 
-     * Add in the classes dirs from test/classes and target/classes
-     * @see org.eclipse.jetty.webapp.WebInfConfiguration#findClassDirs(org.eclipse.jetty.webapp.WebAppContext)
-     */
-    @Override
-    protected List<Resource> findClassDirs(WebAppContext context) throws Exception
-    {
-        List<Resource> list = new ArrayList<Resource>();
-        
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
-        if (jwac.getClassPathFiles() != null)
-        {
-            for (File f: jwac.getClassPathFiles())
-            {
-                if (f.exists() && f.isDirectory())
-                {
-                    try
-                    {
-                        list.add(Resource.newResource(f.toURI()));
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Bad url ", e);
-                    }
-                }
-            }
-        }
-        
-        List<Resource> classesDirs = super.findClassDirs(context);
-        if (classesDirs != null)
-            list.addAll(classesDirs);
-        return list;
-    }
-
-
-
 
 
     protected  Resource unpackOverlay (WebAppContext context, Overlay overlay)

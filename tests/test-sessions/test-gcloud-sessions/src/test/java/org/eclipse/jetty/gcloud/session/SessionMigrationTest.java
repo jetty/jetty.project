@@ -37,16 +37,16 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
     {
         GCloudTestSuite.__testSupport.deleteSessions();
     }
+
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionMigrationTest#createServer(int)
+     * @see org.eclipse.jetty.server.session.AbstractSessionMigrationTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy) throws Exception
     {
-        return  new GCloudTestServer(port);
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
     }
-
     
     @Test
     @Override

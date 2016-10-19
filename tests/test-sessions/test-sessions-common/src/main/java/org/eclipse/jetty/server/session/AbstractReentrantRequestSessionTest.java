@@ -31,22 +31,26 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Test;
 
 
 /**
  * AbstractReentrantRequestSessionTest
+ * 
+ * While a request is still active in a context, make another 
+ * request to it to ensure both share same session.
  */
-public abstract class AbstractReentrantRequestSessionTest
+public abstract class AbstractReentrantRequestSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port);
+    
 
     @Test
     public void testReentrantRequestSession() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server = createServer(0);
+        AbstractTestServer server = createServer(0, 100, 400, SessionCache.NEVER_EVICT);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
         {
@@ -57,8 +61,22 @@ public abstract class AbstractReentrantRequestSessionTest
             client.start();
             try
             {
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
+                //create the session
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create&port=" + port + "&path=" + contextPath + servletMapping);
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
+                assertTrue(sessionCookie != null);
+                // Mangle the cookie, replacing Path with $Path, etc.
+                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+                
+                //make a request that will make a simultaneous request for the same session
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
+                request.header("Cookie", sessionCookie);
+                response = request.send();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+  
+                
             }
             finally
             {
@@ -82,9 +100,16 @@ public abstract class AbstractReentrantRequestSessionTest
         @Override
         protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            HttpSession session = request.getSession(false);
+
 
             String action = request.getParameter("action");
+            if ("create".equals(action))
+            {
+                request.getSession(true);
+                return;
+            }
+            
+            HttpSession session = request.getSession(false);
             if ("reenter".equals(action))
             {
                 if (session == null)

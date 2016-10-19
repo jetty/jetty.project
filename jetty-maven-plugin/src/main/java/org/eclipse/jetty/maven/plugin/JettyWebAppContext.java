@@ -34,8 +34,10 @@ import java.util.TreeSet;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.quickstart.PreconfigureDescriptorProcessor;
-import org.eclipse.jetty.quickstart.QuickStartDescriptorGenerator;
+import org.eclipse.jetty.quickstart.ExtraXmlDescriptorProcessor;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
+import org.eclipse.jetty.quickstart.QuickStartGeneratorConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -66,33 +68,11 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 public class JettyWebAppContext extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(JettyWebAppContext.class);
-    
-   
 
     private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
     
-    
-    public  static final String[] DEFAULT_CONFIGURATION_CLASSES = {
-                                                           "org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration",
-                                                           "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                                                           "org.eclipse.jetty.webapp.MetaInfConfiguration",
-                                                           "org.eclipse.jetty.webapp.FragmentConfiguration",
-                                                           "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                                                           "org.eclipse.jetty.plus.webapp.PlusConfiguration",
-                                                           "org.eclipse.jetty.annotations.AnnotationConfiguration",
-                                                           "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
-                                                           };
-
-
-    private final String[] QUICKSTART_CONFIGURATION_CLASSES = {
-                                                                "org.eclipse.jetty.maven.plugin.MavenQuickStartConfiguration",
-                                                                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                                                                "org.eclipse.jetty.plus.webapp.PlusConfiguration",
-                                                                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
-                                                               };
-
     private File _classes = null;
     private File _testClasses = null;
     private final List<File> _webInfClasses = new ArrayList<File>();
@@ -102,9 +82,6 @@ public class JettyWebAppContext extends WebAppContext
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
     private Resource _quickStartWebXml;
-   
-    
- 
     
     /**
      * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
@@ -130,7 +107,7 @@ public class JettyWebAppContext extends WebAppContext
 
 
     private boolean _isGenerateQuickStart;
-    private PreconfigureDescriptorProcessor _preconfigProcessor;
+    private ExtraXmlDescriptorProcessor _preconfigProcessor;
    
 
   
@@ -141,6 +118,11 @@ public class JettyWebAppContext extends WebAppContext
         super();   
         // Turn off copyWebInf option as it is not applicable for plugin.
         super.setCopyWebInf(false);
+        addConfiguration(new MavenWebInfConfiguration());
+        addConfiguration(new MavenMetaInfConfiguration());
+        addConfiguration(new EnvConfiguration());
+        addConfiguration(new PlusConfiguration());
+        addConfiguration(new AnnotationConfiguration());
     }
     
     /* ------------------------------------------------------------ */
@@ -301,40 +283,6 @@ public class JettyWebAppContext extends WebAppContext
     }
     
    
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void startWebapp() throws Exception
-    {
-        if (isGenerateQuickStart())
-        {
-            if (getQuickStartWebDescriptor() == null)
-                throw new IllegalStateException ("No location to generate quickstart descriptor");
-
-            QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, _preconfigProcessor.getXML());
-            try (FileOutputStream fos = new FileOutputStream(getQuickStartWebDescriptor().getFile()))
-            {
-                generator.generateQuickStartWebXml(fos);
-            }
-        }
-        else
-        {
-            if (LOG.isDebugEnabled()) { LOG.debug("Calling full start on webapp");}
-            super.startWebapp();
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void stopWebapp() throws Exception
-    {
-        if (isGenerateQuickStart())
-            return;
-
-        if (LOG.isDebugEnabled()) { LOG.debug("Calling stop of fully started webapp");}
-        super.stopWebapp();
-    }
-    
     /* ------------------------------------------------------------ */
     @Override
     public void doStart () throws Exception
@@ -342,14 +290,17 @@ public class JettyWebAppContext extends WebAppContext
         //choose if this will be a quickstart or normal start
         if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
         {
-            setConfigurationClasses(QUICKSTART_CONFIGURATION_CLASSES);
+            QuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
+            quickStart.setMode(Mode.QUCKSTART);
+            addConfiguration(quickStart);
         }
         else
         { 
             if (isGenerateQuickStart())
             {
-                _preconfigProcessor = new PreconfigureDescriptorProcessor();
-                getMetaData().addDescriptorProcessor(_preconfigProcessor);
+                QuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
+                quickStart.setMode(Mode.GENERATE);
+                addConfiguration(quickStart);
             }
         }
 
@@ -400,17 +351,24 @@ public class JettyWebAppContext extends WebAppContext
     
     
     @Override
-    protected void loadConfigurations() throws Exception
+    protected void loadConfigurations()
     {
         super.loadConfigurations();
         
-        //inject configurations with config from maven plugin    
-        for (Configuration c:getConfigurations())
+        try
         {
-            if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
-                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
+            //inject configurations with config from maven plugin    
+            for (Configuration c:getWebAppConfigurations())
+            {
+                if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
+                    ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
+                else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
+                    ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
+            }
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
         }
     }
 

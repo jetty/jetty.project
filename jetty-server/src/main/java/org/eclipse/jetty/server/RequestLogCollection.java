@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.ArrayList;
-
 import static java.util.Arrays.asList;
+
+import java.util.ArrayList;
 
 class RequestLogCollection
     implements RequestLog

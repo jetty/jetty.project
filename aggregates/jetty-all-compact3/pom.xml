@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -78,32 +78,22 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>package</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <archive>
-                <manifest>
-                </manifest>
-                <manifestEntries>
-                  <mode>development</mode>
-                  <url>http://eclipse.org/jetty</url>
-                  <Built-By>${user.name}</Built-By>
-                  <package>org.eclipse.jetty</package>
-                  <Bundle-License>https://raw.githubusercontent.com/eclipse/jetty.project/master/NOTICE.txt</Bundle-License>
-                  <Bundle-Name>Jetty</Bundle-Name>
-                </manifestEntries>
-              </archive>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <archive>
+            <manifest>
+            </manifest>
+            <manifestEntries>
+              <mode>development</mode>
+              <url>https://eclipse.org/jetty</url>
+              <Built-By>${user.name}</Built-By>
+              <package>org.eclipse.jetty</package>
+              <Bundle-License>https://raw.githubusercontent.com/eclipse/jetty.project/master/NOTICE.txt</Bundle-License>
+              <Bundle-Name>Jetty</Bundle-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

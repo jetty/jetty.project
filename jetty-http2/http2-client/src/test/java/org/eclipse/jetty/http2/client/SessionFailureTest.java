@@ -118,6 +118,14 @@ public class SessionFailureTest extends AbstractTest
         Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertFalse(((HTTP2Session)session).getEndPoint().isOpen());
+        long start = System.nanoTime();
+        long now = System.nanoTime();
+        while (((HTTP2Session)session).getEndPoint().isOpen())
+        {
+            if (TimeUnit.NANOSECONDS.toSeconds(now-start)>5)
+                Assert.fail();
+            Thread.sleep(10);
+            now = System.nanoTime();
+        }
     }
 }

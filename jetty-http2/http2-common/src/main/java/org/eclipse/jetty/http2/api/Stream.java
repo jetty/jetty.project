@@ -125,7 +125,7 @@ public interface Stream
     /**
      * @param idleTimeout the stream idle timeout
      * @see #getIdleTimeout()
-     * @see Stream.Listener#onTimeout(Stream, Throwable)
+     * @see Stream.Listener#onIdleTimeout(Stream, Throwable)
      */
     public void setIdleTimeout(long idleTimeout);
 
@@ -150,7 +150,7 @@ public interface Stream
          *
          * @param stream the stream
          * @param frame  the PUSH_PROMISE frame received
-         * @return a {@link Stream.Listener} that will be notified of pushed stream events
+         * @return a Stream.Listener that will be notified of pushed stream events
          */
         public Listener onPush(Stream stream, PushPromiseFrame frame);
 
@@ -178,26 +178,9 @@ public interface Stream
          * @param stream the stream
          * @param x      the timeout failure
          * @see #getIdleTimeout()
-         * @deprecated use {@link #onIdleTimeout(Stream, Throwable)} instead
-         */
-        @Deprecated
-        public default void onTimeout(Stream stream, Throwable x)
-        {
-        }
-
-        /**
-         * <p>Callback method invoked when the stream exceeds its idle timeout.</p>
-         *
-         * @param stream the stream
-         * @param x      the timeout failure
-         * @see #getIdleTimeout()
          * @return true to reset the stream, false to ignore the idle timeout
          */
-        public default boolean onIdleTimeout(Stream stream, Throwable x)
-        {
-            onTimeout(stream, x);
-            return true;
-        }
+        public boolean onIdleTimeout(Stream stream, Throwable x);
 
         /**
          * <p>Empty implementation of {@link Listener}</p>
@@ -227,14 +210,8 @@ public interface Stream
             }
 
             @Override
-            public void onTimeout(Stream stream, Throwable x)
-            {
-            }
-
-            @Override
             public boolean onIdleTimeout(Stream stream, Throwable x)
             {
-                onTimeout(stream, x);
                 return true;
             }
         }

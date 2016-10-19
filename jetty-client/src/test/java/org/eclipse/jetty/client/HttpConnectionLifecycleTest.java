@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -69,35 +70,24 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(3);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .onRequestSuccess(new Request.SuccessListener()
+                .onRequestSuccess(request -> successLatch.countDown())
+                .onResponseHeaders(response ->
                 {
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                        successLatch.countDown();
-                    }
-                })
-                .onResponseHeaders(new Response.HeadersListener()
-                {
-                    @Override
-                    public void onHeaders(Response response)
-                    {
-                        Assert.assertEquals(0, idleConnections.size());
-                        Assert.assertEquals(1, activeConnections.size());
-                        headersLatch.countDown();
-                    }
+                    Assert.assertEquals(0, idleConnections.size());
+                    Assert.assertEquals(1, activeConnections.size());
+                    headersLatch.countDown();
                 })
                 .send(new Response.Listener.Adapter()
                 {
@@ -130,12 +120,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch beginLatch = new CountDownLatch(1);
@@ -145,7 +135,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             @Override
             public void onBegin(Request request)
             {
-                activeConnections.peek().close();
+                activeConnections.iterator().next().close();
                 beginLatch.countDown();
             }
 
@@ -181,12 +171,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
         final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch successLatch = new CountDownLatch(3);
@@ -241,12 +231,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final long delay = 1000;
@@ -314,12 +304,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         server.stop();
@@ -327,22 +317,11 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         final CountDownLatch failureLatch = new CountDownLatch(2);
         client.newRequest(host, port)
                 .scheme(scheme)
-                .onRequestFailure(new Request.FailureListener()
+                .onRequestFailure((request, failure) -> failureLatch.countDown())
+                .send(result ->
                 {
-                    @Override
-                    public void onFailure(Request request, Throwable failure)
-                    {
-                        failureLatch.countDown();
-                    }
-                })
-                .send(new Response.Listener.Adapter()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        failureLatch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    failureLatch.countDown();
                 });
 
         Assert.assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
@@ -367,12 +346,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -415,12 +394,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             String host = "localhost";
             int port = connector.getLocalPort();
             HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-            DuplexConnectionPool connectionPool = destination.getConnectionPool();
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-            final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+            final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
             Assert.assertEquals(0, idleConnections.size());
 
-            final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+            final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
             Assert.assertEquals(0, activeConnections.size());
 
             Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
@@ -461,12 +440,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         ContentResponse response = client.newRequest(host, port)
@@ -493,25 +472,21 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Collection<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Collection<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         client.setStrictEventOrdering(false);
         ContentResponse response = client.newRequest(host, port)
                 .scheme(scheme)
-                .onResponseBegin(new Response.BeginListener()
+                .onResponseBegin(response1 ->
                 {
-                    @Override
-                    public void onBegin(Response response)
-                    {
-                        // Simulate a HTTP 1.0 response has been received.
-                        ((HttpResponse)response).version(HttpVersion.HTTP_1_0);
-                    }
+                    // Simulate a HTTP 1.0 response has been received.
+                    ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
                 })
                 .send();
 

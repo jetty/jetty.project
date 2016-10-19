@@ -24,9 +24,9 @@ public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAnd
 {
 
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new HashTestServer(port,max,scavenge);
+        return new HashTestServer(port,max,scavenge,evictionPolicy);
     }
     
     @Test

@@ -166,15 +166,15 @@ public class MetaData
         {
             Ordering ordering = getOrdering();
             if (ordering == null)
-               ordering = new Ordering.AbsoluteOrdering(this);
+               ordering = new AbsoluteOrdering(this);
 
             List<String> order = _webDefaultsRoot.getOrdering();
             for (String s:order)
             {
                 if (s.equalsIgnoreCase("others"))
-                    ((Ordering.AbsoluteOrdering)ordering).addOthers();
+                    ((AbsoluteOrdering)ordering).addOthers();
                 else
-                    ((Ordering.AbsoluteOrdering)ordering).add(s);
+                    ((AbsoluteOrdering)ordering).add(s);
             }
             
             //(re)set the ordering to cause webinf jar order to be recalculated
@@ -193,15 +193,15 @@ public class MetaData
         {
             Ordering ordering = getOrdering();
             if (ordering == null)
-                ordering = new Ordering.AbsoluteOrdering(this);
+                ordering = new AbsoluteOrdering(this);
 
             List<String> order = _webXmlRoot.getOrdering();
             for (String s:order)
             {
                 if (s.equalsIgnoreCase("others"))
-                    ((Ordering.AbsoluteOrdering)ordering).addOthers();
+                    ((AbsoluteOrdering)ordering).addOthers();
                 else
-                    ((Ordering.AbsoluteOrdering)ordering).add(s);
+                    ((AbsoluteOrdering)ordering).add(s);
             }
             
             //(re)set the ordering to cause webinf jar order to be recalculated
@@ -233,15 +233,15 @@ public class MetaData
             Ordering ordering = getOrdering();
             
             if (ordering == null)
-               ordering = new Ordering.AbsoluteOrdering(this);
+               ordering = new AbsoluteOrdering(this);
 
             List<String> order = webOverrideRoot.getOrdering();
             for (String s:order)
             {
                 if (s.equalsIgnoreCase("others"))
-                    ((Ordering.AbsoluteOrdering)ordering).addOthers();
+                    ((AbsoluteOrdering)ordering).addOthers();
                 else
-                    ((Ordering.AbsoluteOrdering)ordering).add(s);
+                    ((AbsoluteOrdering)ordering).add(s);
             }
             
             //set or reset the ordering to cause the webinf jar ordering to be recomputed
@@ -286,7 +286,7 @@ public class MetaData
         //only accept an ordering from the fragment if there is no ordering already established
         if (_ordering == null && descriptor.isOrdered())
         {
-            setOrdering(new Ordering.RelativeOrdering(this));
+            setOrdering(new RelativeOrdering(this));
             return;
         }
         

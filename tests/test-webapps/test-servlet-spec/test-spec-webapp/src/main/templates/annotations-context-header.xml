@@ -14,30 +14,6 @@
     </Arg>
   </New>
 
-
-  <!-- =============================================================== -->
-  <!-- Configure the webapp                                            -->
-  <!-- =============================================================== -->
-  <!-- Only uncomment this if you are not using the plus and 
-       annotations sections of start.ini
-
-  <Set name="configurationClasses">
-    <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="serverDefault">
-      <Arg><Ref refid="Server" /></Arg>
-      <Call name="addAfter">
-        <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
-        <Arg>
-          <Array type="String">
-            <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
-            <Item>org.eclipse.jetty.plus.webapp.PlusConfiguration</Item>
-            <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
-          </Array>
-        </Arg>
-      </Call>
-    </Call>
-  </Set>
-  -->
-
   <Set name="contextPath">/test-spec</Set>
   <Set name="war"><Property name="jetty.webapps"/>/test-spec.war</Set>
   <Set name="configurationDiscovered">true</Set>

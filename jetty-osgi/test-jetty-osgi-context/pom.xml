@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-context</artifactId>
@@ -34,65 +34,41 @@
     </dependency>
   </dependencies>
 
-      <build> 
-        <resources>
-          <resource>
-            <directory>src/main/resources</directory>
-          </resource>
-          <resource>
-            <directory>src/main/context</directory>
-          </resource>
-        </resources>
+  <build> 
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    <resource>
+      <directory>src/main/context</directory>
+    </resource>
+    </resources>
 
-        <plugins>
-          <plugin> 
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-deploy-plugin</artifactId>
-              <configuration>
-              <!-- DO NOT DEPLOY (or Release) -->
-                <skip>true</skip>
-              </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId> 
-                <artifactId>maven-jar-plugin</artifactId> 
-                <executions>
-                    <execution>
-                        <id>artifact-jar</id> 
-                        <goals>
-                            <goal>jar</goal> 
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>test-jar</id> 
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archive>
-                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile> 
-                    </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>org.eclipse.jetty.osgi.testcontext;singleton:=true</Bundle-SymbolicName>
-                        <Bundle-Name>Jetty OSGi Test Context</Bundle-Name>
-                        <Bundle-Activator>com.acme.osgi.Activator</Bundle-Activator>
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                        <!-- disable the uses directive: jetty will accomodate pretty much any versions
-                        of the packages it uses; no need to reflect some tight dependency determined at
-                        compilation time. --> 
-                        <_nouses>true</_nouses>
-                        <Import-Package>
- javax.servlet;version="[3.1,3.2)",
- javax.servlet.resources;version="[3.1,3.2)",
+    <plugins>
+      <plugin> 
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>org.eclipse.jetty.osgi.testcontext;singleton:=true</Bundle-SymbolicName>
+            <Bundle-Name>Jetty OSGi Test Context</Bundle-Name>
+            <Bundle-Activator>com.acme.osgi.Activator</Bundle-Activator>
+            <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+            <!-- disable the uses directive: jetty will accommodate pretty much any versions
+            of the packages it uses; no need to reflect some tight dependency determined at
+            compilation time. --> 
+            <_nouses>true</_nouses>
+            <Import-Package>
+ javax.servlet;version="[3.1,4.1)",
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
@@ -105,12 +81,12 @@
  org.xml.sax,
  org.xml.sax.helpers,
  *
-                        </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[9.1,10.0)"</DynamicImport-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+            </Import-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
   
 </project>

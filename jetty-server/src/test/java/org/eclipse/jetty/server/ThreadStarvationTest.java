@@ -18,50 +18,48 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
-import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 public class ThreadStarvationTest
 {
+    final static int BUFFER_SIZE=1024*1024;
+    final static int BUFFERS=64;
+    final static int CLIENTS=10;
+    final static int THREADS=5;
     @Rule
     public TestTracker tracker = new TestTracker();
     private QueuedThreadPool _threadPool;
     private Server _server;
     private ServerConnector _connector;
-    private int _availableThreads;
 
     private Server prepareServer(Handler handler)
     {
-        int threads = 4;
         _threadPool = new QueuedThreadPool();
-        _threadPool.setMinThreads(threads);
-        _threadPool.setMaxThreads(threads);
+        _threadPool.setMinThreads(THREADS);
+        _threadPool.setMaxThreads(THREADS);
         _threadPool.setDetailedDump(true);
         _server = new Server(_threadPool);
         int acceptors = 1;
@@ -69,7 +67,6 @@ public class ThreadStarvationTest
         _connector = new ServerConnector(_server, acceptors, selectors);
         _server.addConnector(_connector);
         _server.setHandler(handler);
-        _availableThreads = threads - acceptors - selectors;
         return _server;
     }
 
@@ -83,46 +80,36 @@ public class ThreadStarvationTest
     public void testReadInput() throws Exception
     {
         prepareServer(new ReadHandler()).start();
+        
+        try(Socket client = new Socket("localhost", _connector.getLocalPort()))
+        {
+            client.setSoTimeout(10000);
+            OutputStream os = client.getOutputStream();
+            InputStream is = client.getInputStream();
 
-        Socket client = new Socket("localhost", _connector.getLocalPort());
+            String request = "" +
+                    "GET / HTTP/1.0\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: 10\r\n" +
+                    "\r\n" +
+                    "0123456789\r\n";
+            os.write(request.getBytes(StandardCharsets.UTF_8));
+            os.flush();
 
-        OutputStream os = client.getOutputStream();
-        InputStream is = client.getInputStream();
-
-        String request = "" +
-                "GET / HTTP/1.0\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Length: 10\r\n" +
-                "\r\n" +
-                "0123456789\r\n";
-        os.write(request.getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        String response = IO.toString(is);
-        assertEquals(-1, is.read());
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Read Input 10"));
+            String response = IO.toString(is);
+            assertEquals(-1, is.read());
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, containsString("Read Input 10"));
+        }
     }
 
     @Test
-    public void testEPCStarvation() throws Exception
-    {
-        testStarvation(new ExecuteProduceConsume.Factory());
-    }
-
-    @Test
-    public void testPECStarvation() throws Exception
-    {
-        testStarvation(new ProduceExecuteConsume.Factory());
-    }
-
-    private void testStarvation(ExecutionStrategy.Factory executionFactory) throws Exception
+    public void testReadStarvation() throws Exception
     {
         prepareServer(new ReadHandler());
-        _connector.setExecutionStrategyFactory(executionFactory);
         _server.start();
 
-        Socket[] client = new Socket[_availableThreads + 1];
+        Socket[] client = new Socket[CLIENTS];
         OutputStream[] os = new OutputStream[client.length];
         InputStream[] is = new InputStream[client.length];
 
@@ -163,81 +150,6 @@ public class ThreadStarvationTest
         }
     }
 
-    @Test
-    public void testEPCExitsLowThreadsMode() throws Exception
-    {
-        prepareServer(new ReadHandler());
-        _threadPool.setMaxThreads(5);
-        _connector.setExecutionStrategyFactory(new ExecuteProduceConsume.Factory());
-        _server.start();
-
-        // Three idle threads in the pool here.
-        // The server will accept the socket in normal mode.
-        Socket client = new Socket("localhost", _connector.getLocalPort());
-        client.setSoTimeout(10000);
-
-        Thread.sleep(500);
-
-        // Now steal two threads.
-        CountDownLatch[] latches = new CountDownLatch[2];
-        for (int i = 0; i < latches.length; ++i)
-        {
-            CountDownLatch latch = latches[i] = new CountDownLatch(1);
-            _threadPool.execute(() ->
-            {
-                try
-                {
-                    latch.await();
-                }
-                catch (InterruptedException ignored)
-                {
-                }
-            });
-        }
-
-        InputStream is = client.getInputStream();
-        OutputStream os = client.getOutputStream();
-
-        String request = "" +
-                "PUT / HTTP/1.0\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Length: 10\r\n" +
-                "\r\n" +
-                "1";
-        os.write(request.getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        Thread.sleep(500);
-
-        // Request did not send the whole body, Handler
-        // is blocked reading, zero idle threads here,
-        // EPC is in low threads mode.
-        for (ManagedSelector selector : _connector.getSelectorManager().getBeans(ManagedSelector.class))
-        {
-            ExecuteProduceConsume executionStrategy = (ExecuteProduceConsume)selector.getExecutionStrategy();
-            assertTrue(executionStrategy.isLowOnThreads());
-        }
-
-        // Release the stolen threads.
-        for (CountDownLatch latch : latches)
-            latch.countDown();
-        Thread.sleep(500);
-
-        // Send the rest of the body to unblock the reader thread.
-        // This will be run directly by the selector thread,
-        // which then will exit the low threads mode.
-        os.write("234567890".getBytes(StandardCharsets.UTF_8));
-        os.flush();
-
-        Thread.sleep(500);
-
-        for (ManagedSelector selector : _connector.getSelectorManager().getBeans(ManagedSelector.class))
-        {
-            ExecuteProduceConsume executionStrategy = (ExecuteProduceConsume)selector.getExecutionStrategy();
-            assertFalse(executionStrategy.isLowOnThreads());
-        }
-    }
-
     protected static class ReadHandler extends AbstractHandler
     {
         @Override
@@ -250,11 +162,152 @@ public class ThreadStarvationTest
             int r = 0;
             while (r < l)
             {
-                if (request.getInputStream().read() >= 0)
-                    r++;
+                if (request.getInputStream().read() < 0)
+                    break;
+                r++;
             }
 
             response.getOutputStream().write(("Read Input " + r + "\r\n").getBytes());
         }
     }
+    
+
+    @Test
+    public void testWriteStarvation() throws Exception
+    {
+        prepareServer(new WriteHandler());
+        _server.start();
+
+        Socket[] client = new Socket[CLIENTS];
+        OutputStream[] os = new OutputStream[client.length];
+        final InputStream[] is = new InputStream[client.length];
+
+        for (int i = 0; i < client.length; i++)
+        {
+            client[i] = new Socket("localhost", _connector.getLocalPort());
+            client[i].setSoTimeout(10000);
+
+            os[i] = client[i].getOutputStream();
+            is[i] = client[i].getInputStream();
+
+            String request =
+                    "GET / HTTP/1.0\r\n" +
+                    "host: localhost\r\n" +
+                    "\r\n";
+            os[i].write(request.getBytes(StandardCharsets.UTF_8));
+            os[i].flush();
+        }
+
+        Thread.sleep(100);
+
+        final AtomicLong total=new AtomicLong();
+        final CountDownLatch latch=new CountDownLatch(client.length);
+        
+        for (int i = client.length; i-->0;)
+        {
+            final int c=i;
+            new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    byte[] content=new byte[BUFFER_SIZE];
+                    int content_length=0;
+                    String header= "No HEADER!";
+                    try
+                    {
+                        // Read an initial content buffer
+                        int len=0;
+
+                        while (len<BUFFER_SIZE)
+                        {
+                            int l=is[c].read(content,len,content.length-len);
+                            if (l<0)
+                                throw new IllegalStateException();
+                            len+=l;
+                            content_length+=l;
+                        }
+
+                        // Look for the end of the header
+                        int state=0;
+                        loop: for(int j=0;j<len;j++)
+                        {
+                            content_length--;
+                            switch(content[j])
+                            {
+                                case '\r':
+                                    state++;
+                                    break;
+
+                                case '\n':
+                                    switch(state)
+                                    {
+                                        case 1: 
+                                            state=2;
+                                            break;
+                                        case 3: 
+                                            header=new String(content,0,j,StandardCharsets.ISO_8859_1);
+                                            assertThat(header,containsString(" 200 OK"));
+                                            break loop;
+                                    }
+                                    break;
+
+                                default:
+                                    state=0;
+                                    break;
+                            }
+                        }
+
+                        // Read the rest of the body
+                        while(len>0) 
+                        {
+                            len=is[c].read(content);
+                            if (len>0)
+                                content_length+=len;
+                        }
+
+                        // System.err.printf("client %d cl=%d %n%s%n",c,content_length,header);
+                        total.addAndGet(content_length);
+                    }
+                    catch(Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                    finally
+                    {
+                        latch.countDown();
+                    }
+                }
+            }.start();
+
+        }
+
+        latch.await();
+        assertEquals(CLIENTS*BUFFERS*BUFFER_SIZE,total.get());
+    }
+    
+
+    protected static class WriteHandler extends AbstractHandler
+    {
+        byte[] content=new byte[BUFFER_SIZE];
+        {
+            Arrays.fill(content,(byte)'x');
+        }
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+
+            OutputStream out = response.getOutputStream();
+            for (int i=0;i<BUFFERS;i++)
+            {
+                out.write(content);
+                out.flush();
+            }
+        }
+    }
+
+    
 }

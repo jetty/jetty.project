@@ -26,9 +26,9 @@ import org.junit.Test;
 public class NewSessionTest extends AbstractNewSessionTest
 {
 
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new HashTestServer(port,max,scavenge);
+        return new HashTestServer(port,max,scavenge,evictionPolicy);
     }
 
     @Test

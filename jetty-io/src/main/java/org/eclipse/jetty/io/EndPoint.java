@@ -94,7 +94,7 @@ import org.eclipse.jetty.util.IteratingCallback;
  * </pre></blockquote>
  */
 public interface EndPoint extends Closeable
-{
+{    
     /* ------------------------------------------------------------ */
     /**
      * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>

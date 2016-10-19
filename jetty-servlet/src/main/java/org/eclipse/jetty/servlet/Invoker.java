@@ -32,6 +32,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PathMap.MappedEntry;
+import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -71,7 +73,7 @@ public class Invoker extends HttpServlet
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
-    private Map.Entry<String, ServletHolder> _invokerEntry;
+    private MappedResource<ServletHolder> _invokerEntry;
     private Map<String, String> _parameters;
     private boolean _nonContextServlets;
     private boolean _verbose;
@@ -170,12 +172,12 @@ public class Invoker extends HttpServlet
 
                 // Check for existing mapping (avoid threaded race).
                 String path=URIUtil.addPaths(servlet_path,servlet);
-                Map.Entry<String, ServletHolder> entry = _servletHandler.getHolderEntry(path);
+                MappedResource<ServletHolder> entry = _servletHandler.getHolderEntry(path);
 
                 if (entry!=null && !entry.equals(_invokerEntry))
                 {
                     // Use the holder
-                    holder=(ServletHolder)entry.getValue();
+                    holder=(ServletHolder)entry.getResource();
                 }
                 else
                 {

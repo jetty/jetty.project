@@ -101,6 +101,16 @@ public enum HttpHeader
     WWW_AUTHENTICATE("WWW-Authenticate"),
 
     /* ------------------------------------------------------------ */
+    /** WebSocket Fields.
+     */
+    ORIGIN("Origin"),
+    SEC_WEBSOCKET_KEY("Sec-WebSocket-Key"),
+    SEC_WEBSOCKET_VERSION("Sec-WebSocket-Version"),
+    SEC_WEBSOCKET_EXTENSIONS("Sec-WebSocket-Extensions"),
+    SEC_WEBSOCKET_SUBPROTOCOL("Sec-WebSocket-Protocol"),
+    SEC_WEBSOCKET_ACCEPT("Sec-WebSocket-Accept"),
+
+    /* ------------------------------------------------------------ */
     /** Other Fields.
      */
     COOKIE("Cookie"),
@@ -127,7 +137,7 @@ public enum HttpHeader
 
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(560);
+    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(630);
     static
     {
         for (HttpHeader header : HttpHeader.values())

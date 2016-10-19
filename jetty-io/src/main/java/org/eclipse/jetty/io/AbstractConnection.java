@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>A convenience base implementation of {@link Connection}.</p>
@@ -82,15 +83,9 @@ public abstract class AbstractConnection implements Connection
         return _executor;
     }
 
-    @Deprecated
-    public boolean isDispatchIO()
-    {
-        return false;
-    }
-
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        if (callback.isNonBlocking())
+        Runnable failCallback = () ->
         {
             try
             {
@@ -100,32 +95,29 @@ public abstract class AbstractConnection implements Connection
             {
                 LOG.warn(e);
             }
-        }
-        else
+        };
+        
+        switch(Invocable.getInvocationType(callback))
         {
-            try
-            {
-                getExecutor().execute(new Runnable()
+            case BLOCKING:
+                try
                 {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            callback.failed(x);
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.warn(e);
-                        }
-                    }
-                });
-            }
-            catch(RejectedExecutionException e)
-            {
-                LOG.debug(e);
-                callback.failed(x);
-            }
+                    getExecutor().execute(failCallback); 
+                }
+                catch(RejectedExecutionException e)
+                {
+                    LOG.debug(e);
+                    callback.failed(x);
+                }
+                break;
+                
+            case NON_BLOCKING:
+                failCallback.run();
+                break;
+                
+            case EITHER:
+                Invocable.invokeNonBlocking(failCallback);
+
         }
     }
 
@@ -227,13 +219,13 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
-    public int getMessagesIn()
+    public long getMessagesIn()
     {
         return -1;
     }
 
     @Override
-    public int getMessagesOut()
+    public long getMessagesOut()
     {
         return -1;
     }

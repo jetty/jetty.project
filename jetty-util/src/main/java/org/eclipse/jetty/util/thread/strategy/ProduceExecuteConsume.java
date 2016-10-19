@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 
@@ -40,12 +41,17 @@ public class ProduceExecuteConsume extends ExecutingExecutionStrategy implements
 
     public ProduceExecuteConsume(Producer producer, Executor executor)
     {
-        super(executor);
+        this(producer,executor,Invocable.InvocationType.NON_BLOCKING);
+    }
+    
+    public ProduceExecuteConsume(Producer producer, Executor executor, Invocable.InvocationType preferred)
+    {
+        super(executor,preferred);
         this._producer = producer;
     }
 
     @Override
-    public void execute()
+    public void produce()
     {
         try (Lock locked = _locker.lock())
         {
@@ -96,7 +102,7 @@ public class ProduceExecuteConsume extends ExecutingExecutionStrategy implements
     @Override
     public void dispatch()
     {
-        execute();
+        produce();
     }
 
     public static class Factory implements ExecutionStrategy.Factory

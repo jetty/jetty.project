@@ -137,8 +137,14 @@ public abstract class AbstractHttpTest
             this.throwException = throwException;
         }
 
-        @Override
+        @Override final 
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            super.handle(target,baseRequest,request,response);
+        }
+
+        @Override
+        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
                 throw new TestCommitException();

@@ -18,41 +18,27 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
-
 /**
  * @version $Revision$ $Date$
  */
 public class HashTestServer extends AbstractTestServer
 {
+    
 
-    public HashTestServer(int port)
+    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
     {
-        super(port, 30, 10);
-    }
-
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod)
-    {
-        super(port, maxInactivePeriod, scavengePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
     }
 
 
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        return new HashSessionIdManager();
-    }
 
-    public SessionManager newSessionManager()
+    public SessionHandler newSessionHandler()
     {
-        HashSessionManager manager = new HashSessionManager();
-        manager.setScavengePeriod(_scavengePeriod);
-        return manager;
-    }
-
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
-    {
-        return new SessionHandler(sessionManager);
+        SessionHandler handler = new SessionHandler();
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        handler.setSessionCache(ss);
+        ss.setSessionDataStore(new NullSessionDataStore());
+        return handler;
     }
 
 }

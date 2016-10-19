@@ -31,8 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
@@ -121,14 +119,7 @@ public class HttpClientUploadDuringServerShutdown
                     int length = 16 * 1024 * 1024 + random.nextInt(16 * 1024 * 1024);
                     client.newRequest("localhost", 8888)
                             .content(new BytesContentProvider(new byte[length]))
-                            .send(new Response.CompleteListener()
-                            {
-                                @Override
-                                public void onComplete(Result result)
-                                {
-                                    latch.countDown();
-                                }
-                            });
+                            .send(result -> latch.countDown());
                     long sleep = 1 + random.nextInt(10);
                     TimeUnit.MILLISECONDS.sleep(sleep);
                 }
@@ -244,35 +235,24 @@ public class HttpClientUploadDuringServerShutdown
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .timeout(10, TimeUnit.SECONDS)
-                .onRequestBegin(new org.eclipse.jetty.client.api.Request.BeginListener()
+                .onRequestBegin(request ->
                 {
-                    @Override
-                    public void onBegin(org.eclipse.jetty.client.api.Request request)
+                    try
                     {
-                        try
-                        {
-                            beginLatch.countDown();
-                            completeLatch.await(5, TimeUnit.SECONDS);
-                        }
-                        catch (InterruptedException x)
-                        {
-                            x.printStackTrace();
-                        }
+                        beginLatch.countDown();
+                        completeLatch.await(5, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        x.printStackTrace();
                     }
                 })
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        completeLatch.countDown();
-                    }
-                });
+                .send(result -> completeLatch.countDown());
 
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", connector.getLocalPort());
-        DuplexConnectionPool pool = destination.getConnectionPool();
+        DuplexConnectionPool pool = (DuplexConnectionPool)destination.getConnectionPool();
         Assert.assertEquals(0, pool.getConnectionCount());
         Assert.assertEquals(0, pool.getIdleConnections().size());
         Assert.assertEquals(0, pool.getActiveConnections().size());

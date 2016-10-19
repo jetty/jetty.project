@@ -1,0 +1,195 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-sessions-gcloud]]
+=== Clustered Session Management: Google Cloud DataStore
+
+==== Preparation
+
+You will first need to create a project and enable the Google Cloud api: https://cloud.google.com/docs/authentication#preparation.
+Take note of the project id that you create in this step as you need to supply it in later steps.
+
+===== Communicating with GCloudDataStore
+
+====== When running Jetty outside of google infrastructure
+
+Before running Jetty, you will need to choose one of the following methods to set up the local environment to enable remote GCloud DataStore communications.
+
+1. Using the GCloud SDK:
+  * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en.
+  * Use the GCloud tool to set up the project you created in the preparation step: `gcloud config set project PROJECT_ID`
+  * Use the GCloud tool to authenticate a google account associated with the project created in the preparation step: `gcloud auth login ACCOUNT`
+
+2. Using environment variables
+  * Define the environment variable `GCLOUD_PROJECT` with the project id you created in the preparation step.
+  * Generate a JSON link:https://cloud.google.com/storage/docs/authentication?hl=en#service_accounts[service account key] and then define the environment variable `GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/key.json`
+
+
+====== When Running Jetty Inside of Google Infrastructure
+
+The Google deployment tools will automatically configure the project and authentication information for you.
+
+==== Configuring Indexes for Session Data
+
+Regardless of whether you're running inside or outside google infrastructure you will need to upload a file that defines some indexes that are needed by the GCloud datastore session data store.
+This file is named `index.yaml` and you can find it in your distribution in `${jetty.base}/etc/sessions/gcloud/index.yaml`.
+
+//TODO - Add index.yaml properties? Test with new 9.4.x. It needs uploaded to Google as part of config
+
+Follow the instructions link:https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
+
+===== Communicating with the GCloudDataStore Emulator
+
+To enable communication using the GCloud Emulator:
+
+   * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en
+   * Follow the instructions link:https://cloud.google.com/datastore/docs/tools/datastore-emulator[here] on how to start the GCloud datastore emulator, and how to propagate the environment variables that it creates to the terminal in which you run Jetty.
+
+==== Configuring the Google Cloud DataStore Module
+
+When using the Jetty distribution, you will first need to enable the `session-store-gcloud` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
+$ java -jar ../start.jar --add-to-start=session-store-gcloud
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
++ contains software not provided by the Eclipse Foundation!
++ contains software not covered by the Eclipse Public License!
++ has not been audited for compliance with its license
+
+Module: session-store-gcloud
+ + GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.
+ + https://github.com/GoogleCloudPlatform/gcloud-java
+ + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
+INFO : session-store-gcloud initialised in ${jetty.base}/start.d/session-store-gcloud.ini
+DOWNLOAD: http://central.maven.org/maven2/com/google/cloud/gcloud-java-datastore/0.2.3/gcloud-java-datastore-0.2.3.jar to ${jetty.base}/lib/gcloud/gcloud-java-datastore-0.2.3.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/cloud/gcloud-java-core/0.2.3/gcloud-java-core-0.2.3.jar to ${jetty.base}/lib/gcloud/gcloud-java-core-0.2.3.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/auth/google-auth-library-credentials/0.3.1/google-auth-library-credentials-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-credentials-0.3.1.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/auth/google-auth-library-oauth2-http/0.3.1/google-auth-library-oauth2-http-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-oauth2-http-0.3.1.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/http-client/google-http-client-jackson2/1.19.0/google-http-client-jackson2-1.19.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson2-1.19.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.1.3/jackson-core-2.1.3.jar to ${jetty.base}/lib/gcloud/jackson-core-2.1.3.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/http-client/google-http-client/1.21.0/google-http-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar to ${jetty.base}/lib/gcloud/jsr305-1.3.9.jar
+DOWNLOAD: http://central.maven.org/maven2/org/apache/httpcomponents/httpclient/4.0.1/httpclient-4.0.1.jar to ${jetty.base}/lib/gcloud/httpclient-4.0.1.jar
+DOWNLOAD: http://central.maven.org/maven2/org/apache/httpcomponents/httpcore/4.0.1/httpcore-4.0.1.jar to ${jetty.base}/lib/gcloud/httpcore-4.0.1.jar
+DOWNLOAD: http://central.maven.org/maven2/commons-codec/commons-codec/1.3/commons-codec-1.3.jar to ${jetty.base}/lib/gcloud/commons-codec-1.3.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/oauth-client/google-oauth-client/1.21.0/google-oauth-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/guava/guava/19.0/guava-19.0.jar to ${jetty.base}/lib/gcloud/guava-19.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/api-client/google-api-client-appengine/1.21.0/google-api-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-appengine-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/oauth-client/google-oauth-client-appengine/1.21.0/google-oauth-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-appengine-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/oauth-client/google-oauth-client-servlet/1.21.0/google-oauth-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-servlet-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/http-client/google-http-client-jdo/1.21.0/google-http-client-jdo-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jdo-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/api-client/google-api-client-servlet/1.21.0/google-api-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-servlet-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb.jar to ${jetty.base}/lib/gcloud/jdo2-api-2.3-eb.jar
+DOWNLOAD: http://central.maven.org/maven2/javax/transaction/transaction-api/1.1/transaction-api-1.1.jar to ${jetty.base}/lib/gcloud/transaction-api-1.1.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/http-client/google-http-client-appengine/1.21.0/google-http-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-appengine-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/http-client/google-http-client-jackson/1.21.0/google-http-client-jackson-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson-1.21.0.jar
+DOWNLOAD: http://central.maven.org/maven2/org/codehaus/jackson/jackson-core-asl/1.9.11/jackson-core-asl-1.9.11.jar to ${jetty.base}/lib/gcloud/jackson-core-asl-1.9.11.jar
+DOWNLOAD: http://central.maven.org/maven2/joda-time/joda-time/2.9.2/joda-time-2.9.2.jar to ${jetty.base}/lib/gcloud/joda-time-2.9.2.jar
+DOWNLOAD: http://central.maven.org/maven2/org/json/json/20151123/json-20151123.jar to ${jetty.base}/lib/gcloud/json-20151123.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/cloud/datastore/datastore-v1beta3-protos/1.0.0-beta/datastore-v1beta3-protos-1.0.0-beta.jar to ${jetty.base}/lib/gcloud/datastore-v1beta3-protos-1.0.0-beta.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/protobuf/protobuf-java/3.0.0-beta-1/protobuf-java-3.0.0-beta-1.jar to ${jetty.base}/lib/gcloud/protobuf-java-3.0.0-beta-1.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/cloud/datastore/datastore-v1beta3-proto-client/1.0.0-beta.2/datastore-v1beta3-proto-client-1.0.0-beta.2.jar to ${jetty.base}/lib/gcloud/datastore-v1beta3-proto-client-1.0.0-beta.2.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/http-client/google-http-client-protobuf/1.20.0/google-http-client-protobuf-1.20.0.jar to ${jetty.base}/lib/gcloud/google-http-client-protobuf-1.20.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/api-client/google-api-client/1.20.0/google-api-client-1.20.0.jar to ${jetty.base}/lib/gcloud/google-api-client-1.20.0.jar
+DOWNLOAD: http://central.maven.org/maven2/com/google/guava/guava-jdk5/13.0/guava-jdk5-13.0.jar to ${jetty.base}/lib/gcloud/guava-jdk5-13.0.jar
+INFO : Base directory was modified
+WARN : Module session-store-gcloud requires jcl-impl from one of [jcl, jcl-slf4j]
+
+WARN : Module session-store-gcloud requires jcl-api from one of [jcl, jcl-slf4j]
+
+WARN : Unsatisfied module dependencies: session-store-gcloud,session-store-gcloud
+
+Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
+      java -jar $JETTY_HOME/start.jar --help  # for more information
+----
+
+Doing this enables the GCloud Session module and any dependent session modules or files needed for it to run on the server.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
+Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+You will notice, however, that the above output presented a warning: GCloud requires certain Java Commons Logging features to work correctly.
+As such, you will also need to enable either the `jcl` or `jcl-slf4j` module.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --add-to-start=jcl
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
++ contains software not provided by the Eclipse Foundation!
++ contains software not covered by the Eclipse Public License!
++ has not been audited for compliance with its license
+
+Module: jcl
+ + Log4j is released under the Apache 2.0 license.
+ + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO : jcl             initialised in ${jetty.base}/start.d/jcl.ini
+DOWNLOAD: http://central.maven.org/maven2/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar to ${jetty.base}/lib/jcl/commons-logging-1.1.3.jar
+INFO : Base directory was modified
+----
+
+When the `--add-to-start` argument was added to the command line the first time, it enabled the the `session-store-gcloud` module as well as the `sessions` and `server` modules, which are required for GCloud session management to operate; the `jcl` module was added when we ran it the second time.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
+
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+Opening the `start.d/session-store-gcloud.ini` will show a list of all the configurable properties for the Google Cloud DataStore module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-gcloud
+# Enables GCloudDatastore session management.
+# ---------------------------------------
+--module=session-store-gcloud
+
+
+## GCloudDatastore Session config
+#jetty.session.gcloud.maxRetries=5
+#jetty.session.gcloud.backoffMs=1000
+#jetty.session.gcloud.model.kind=GCloudSession
+#jetty.session.gcloud.model.id=id
+#jetty.session.gcloud.model.contextPath=contextPath
+#jetty.session.gcloud.model.vhost=vhost
+#jetty.session.gcloud.model.accessed=accessed
+#jetty.session.gcloud.model.lastAccessed=lastAccessed
+#jetty.session.gcloud.model.createTime=createTime
+#jetty.session.gcloud.model.cookieSetTime=cookieSetTime
+#jetty.session.gcloud.model.lastNode=lastNode
+#jetty.session.gcloud.model.expiry=expiry
+#jetty.session.gcloud.model.maxInactive=maxInactive
+#jetty.session.gcloud.model.attributes=attributes
+----
+
+jetty.session.gcloud.maxRetries::
+Maxmium number of tries to connect to GCloud DataStore to write sessions.
+jetty.session.gcloud.backoffMs::
+Amount of time, in milliseconds, between attempts to connect to the GCloud DataStore to write sessions.

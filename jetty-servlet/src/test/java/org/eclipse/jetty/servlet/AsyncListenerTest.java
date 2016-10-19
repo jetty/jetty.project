@@ -18,631 +18,427 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.Writer;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.junit.Ignore;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.junit.After;
 import org.junit.Test;
 
-@Ignore("Not handling Exceptions during Async very well")
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
 public class AsyncListenerTest
 {
-    // Unique named RuntimeException to help during debugging / assertions
-    @SuppressWarnings("serial")
-    public static class FooRuntimeException extends RuntimeException
+    private Server server;
+    private LocalConnector connector;
+
+    public void startServer(ServletContextHandler context) throws Exception
     {
-    }
-
-    // Unique named Exception to help during debugging / assertions
-    @SuppressWarnings("serial")
-    public static class FooException extends Exception
-    {
-    }
-
-    // Unique named Throwable to help during debugging / assertions
-    @SuppressWarnings("serial")
-    public static class FooThrowable extends Throwable
-    {
-    }
-
-    // Unique named Error to help during debugging / assertions
-    @SuppressWarnings("serial")
-    public static class FooError extends Error
-    {
-    }
-
-    /**
-     * Basic AsyncListener adapter that simply logs (and makes testcase writing easier) 
-     */
-    public static class AsyncListenerAdapter implements AsyncListener
-    {
-        private static final Logger LOG = Log.getLogger(AsyncListenerTest.AsyncListenerAdapter.class);
-
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
-        {
-            LOG.info("onComplete({})",event);
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            LOG.info("onTimeout({})",event);
-        }
-
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            LOG.info("onError({})",event);
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-            LOG.info("onStartAsync({})",event);
-        }
-    }
-
-    /**
-     * Common ErrorContext for normal and async error handling
-     */
-    public static class ErrorContext implements AsyncListener
-    {
-        private static final Logger LOG = Log.getLogger(AsyncListenerTest.ErrorContext.class);
-
-        public void report(Throwable t, ServletRequest req, ServletResponse resp) throws IOException
-        {
-            if (resp instanceof HttpServletResponse)
-            {
-                ((HttpServletResponse)resp).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
-            resp.setContentType("text/plain");
-            resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            PrintWriter out = resp.getWriter();
-            t.printStackTrace(out);
-        }
-
-        private void reportThrowable(AsyncEvent event) throws IOException
-        {
-            Throwable t = event.getThrowable();
-            if (t == null)
-            {
-                return;
-            }
-            ServletRequest req = event.getAsyncContext().getRequest();
-            ServletResponse resp = event.getAsyncContext().getResponse();
-            report(t,req,resp);
-        }
-
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
-        {
-            LOG.info("onComplete({})",event);
-            reportThrowable(event);
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            LOG.info("onTimeout({})",event);
-            reportThrowable(event);
-        }
-
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            LOG.info("onError({})",event);
-            reportThrowable(event);
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-            LOG.info("onStartAsync({})",event);
-            reportThrowable(event);
-        }
-    }
-
-    /**
-     * Common filter for all test cases that should handle Errors in a consistent way
-     * regardless of how the exception / error occurred in the servlets in the chain.
-     */
-    public static class ErrorFilter implements Filter
-    {
-        private final List<ErrorContext> tracking;
-
-        public ErrorFilter(List<ErrorContext> tracking)
-        {
-            this.tracking = tracking;
-        }
-
-        @Override
-        public void destroy()
-        {
-        }
-
-        @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            ErrorContext err = new ErrorContext();
-            tracking.add(err);
-            try
-            {
-                chain.doFilter(request,response);
-            }
-            catch (Throwable t)
-            {
-                err.report(t,request,response);
-            }
-            finally
-            {
-                if (request.isAsyncStarted())
-                {
-                    request.getAsyncContext().addListener(err);
-                }
-            }
-        }
-
-        @Override
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
-        }
-    }
-
-    /**
-     * Normal non-async testcase of error handling from a filter
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFilterErrorNoAsync() throws Exception
-    {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
-        {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-            {
-                throw new FooRuntimeException();
-            }
-        };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
-
+        server = new Server();
+        connector = new LocalConnector(server);
+        connector.setIdleTimeout(20 * 60 * 1000L);
+        server.addConnector(connector);
         server.setHandler(context);
-
-        try
-        {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
-        }
-        finally
-        {
-            server.stop();
-        }
+        server.start();
     }
 
-    /**
-     * async testcase of error handling from a filter.
-     * 
-     * Async Started, then application Exception
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFilterErrorAsyncStart_Exception() throws Exception
+    @After
+    public void dispose() throws Exception
     {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
+        if (server != null)
+            server.stop();
+    }
 
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
+    @Test
+    public void test_StartAsync_Throw_OnError_Dispatch() throws Exception
+    {
+        test_StartAsync_Throw_OnError(event -> event.getAsyncContext().dispatch("/dispatch"));
+        String httpResponse = connector.getResponse("" +
+                "GET /ctx/path HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 200 "));
+    }
+
+    @Test
+    public void test_StartAsync_Throw_OnError_Complete() throws Exception
+    {
+        test_StartAsync_Throw_OnError(event ->
         {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            ServletOutputStream output = response.getOutputStream();
+            output.println(event.getThrowable().getClass().getName());
+            if (event.getThrowable().getCause()!=null)
+                output.println(event.getThrowable().getCause().getClass().getName());
+            output.println("COMPLETE");
+            event.getAsyncContext().complete();
+        });
+        String httpResponse = connector.getResponse("" +
+                "GET /ctx/path HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 500 "));
+        assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
+        assertThat(httpResponse, containsString("COMPLETE"));
+    }
+
+    @Test
+    public void test_StartAsync_Throw_OnError_Throw() throws Exception
+    {
+        test_StartAsync_Throw_OnError(event ->
+        {
+            throw new IOException();
+        });
+        String httpResponse = connector.getResponse("" +
+                "GET /ctx/path HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 500 "));
+        assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
+    }
+
+    @Test
+    public void test_StartAsync_Throw_OnError_Nothing() throws Exception
+    {
+        test_StartAsync_Throw_OnError(event -> {});
+        String httpResponse = connector.getResponse("" +
+                "GET /ctx/path HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 500 "));
+        assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
+    }
+
+    @Test
+    public void test_StartAsync_Throw_OnError_SendError() throws Exception
+    {
+        test_StartAsync_Throw_OnError(event ->
+        {
+            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            response.sendError(HttpStatus.BAD_GATEWAY_502);
+        });
+        String httpResponse = connector.getResponse("" +
+                "GET /ctx/path HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 502 "));
+        assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
+    }
+
+    @Test
+    public void test_StartAsync_Throw_OnError_SendError_CustomErrorPage() throws Exception
+    {
+        test_StartAsync_Throw_OnError(event ->
+        {
+            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            response.sendError(HttpStatus.BAD_GATEWAY_502);
+        });
+
+        // Add a custom error page.
+        ErrorHandler errorHandler = new ErrorHandler()
+        {
+            @Override
+            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
             {
-                req.startAsync();
-                // before listeners are added, toss Exception
-                throw new FooRuntimeException();
+                writer.write("CUSTOM\n");
+                super.writeErrorPageMessage(request,writer,code,message,uri);
             }
+            
         };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
+        server.setErrorHandler(errorHandler);
 
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
-        }
-        finally
-        {
-            server.stop();
-        }
+        String httpResponse = connector.getResponse("" +
+                "GET /ctx/path HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n", 10, TimeUnit.MINUTES);
+        assertThat(httpResponse, containsString("HTTP/1.1 502 "));
+        assertThat(httpResponse, containsString("CUSTOM"));
     }
 
-    /**
-     * async testcase of error handling from a filter.
-     * 
-     * Async Started, add listener that does nothing, then application Exception
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFilterErrorAsyncStart_AddEmptyListener_Exception() throws Exception
+    private void test_StartAsync_Throw_OnError(IOConsumer<AsyncEvent> consumer) throws Exception
     {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
-
         ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
+        context.setContextPath("/ctx");
+        context.addServlet(new ServletHolder(new HttpServlet()
         {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                AsyncContext ctx = req.startAsync();
-                ctx.addListener(new AsyncListenerAdapter());
-                throw new FooRuntimeException();
-            }
-        };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
-
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
-        }
-        finally
-        {
-            server.stop();
-        }
-    }
-
-    /**
-     * async testcase of error handling from a filter.
-     * 
-     * Async Started, add listener that completes only, then application Exception
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFilterErrorAsyncStart_AddListener_Exception() throws Exception
-    {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
-        {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-            {
-                AsyncContext ctx = req.startAsync();
-                ctx.addListener(new AsyncListenerAdapter()
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override
                     public void onError(AsyncEvent event) throws IOException
                     {
-                        System.err.println("### ONERROR");
-                        event.getThrowable().printStackTrace(System.err);
-                        event.getAsyncContext().complete();
+                        consumer.accept(event);
                     }
                 });
-                throw new FooRuntimeException();
+                throw new QuietServletException(new TestRuntimeException());
             }
-        };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
-
-        server.setHandler(context);
-
-        try
+        }), "/path/*");
+        context.addServlet(new ServletHolder(new HttpServlet()
         {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
-        }
-        finally
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setStatus(HttpStatus.OK_200);
+            }
+        }), "/dispatch/*");
+        context.addServlet(new ServletHolder(new HttpServlet()
         {
-            server.stop();
-        }
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.getOutputStream().print("CUSTOM");
+            }
+        }), "/error/*");
+
+        startServer(context);
     }
 
-    /**
-     * async testcase of error handling from a filter.
-     * 
-     * Async Started, add listener, in onStartAsync throw Exception
-     * 
-     * @throws Exception
-     *             on test failure
-     */
     @Test
-    public void testFilterErrorAsyncStart_AddListener_ExceptionDuringOnStart() throws Exception
+    public void test_StartAsync_OnTimeout_Dispatch() throws Exception
     {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
-        {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-            {
-                AsyncContext ctx = req.startAsync();
-                ctx.addListener(new AsyncListenerAdapter()
-                {
-                    @Override
-                    public void onStartAsync(AsyncEvent event) throws IOException
-                    {
-                        throw new FooRuntimeException();
-                    }
-                });
-            }
-        };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
-
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
-        }
-        finally
-        {
-            server.stop();
-        }
-    }
-    
-    /**
-     * async testcase of error handling from a filter.
-     * 
-     * Async Started, add listener, in onComplete throw Exception
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFilterErrorAsyncStart_AddListener_ExceptionDuringOnComplete() throws Exception
-    {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
-        {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-            {
-                AsyncContext ctx = req.startAsync();
-                ctx.addListener(new AsyncListenerAdapter()
-                {
-                    @Override
-                    public void onComplete(AsyncEvent event) throws IOException
-                    {
-                        throw new FooRuntimeException();
-                    }
-                });
-                ctx.complete();
-            }
-        };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
-
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
-        }
-        finally
-        {
-            server.stop();
-        }
+        test_StartAsync_OnTimeout(500, event -> event.getAsyncContext().dispatch("/dispatch"));
+        String httpResponse = connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 200 "));
     }
 
-    /**
-     * async testcase of error handling from a filter.
-     * 
-     * Async Started, add listener, in onTimeout throw Exception
-     * 
-     * @throws Exception
-     *             on test failure
-     */
     @Test
-    public void testFilterErrorAsyncStart_AddListener_ExceptionDuringOnTimeout() throws Exception
+    public void test_StartAsync_OnTimeout_Complete() throws Exception
     {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
+        test_StartAsync_OnTimeout(500, event ->
         {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            response.setStatus(HttpStatus.OK_200);
+            ServletOutputStream output = response.getOutputStream();
+            output.println("COMPLETE");
+            event.getAsyncContext().complete();
+
+        });
+        String httpResponse = connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 200 "));
+        assertThat(httpResponse, containsString("COMPLETE"));
+    }
+
+    @Test
+    public void test_StartAsync_OnTimeout_Throw() throws Exception
+    {
+        test_StartAsync_OnTimeout(500, event ->
+        {
+            throw new TestRuntimeException();
+        });
+        String httpResponse = connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 500 "));
+        assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
+    }
+
+    @Test
+    public void test_StartAsync_OnTimeout_Nothing() throws Exception
+    {
+        test_StartAsync_OnTimeout(500, event -> {
+        });
+        String httpResponse = connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 500 "));
+    }
+
+    @Test
+    public void test_StartAsync_OnTimeout_SendError() throws Exception
+    {
+        test_StartAsync_OnTimeout(500, event ->
+        {
+            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            response.sendError(HttpStatus.BAD_GATEWAY_502);
+        });
+        String httpResponse = connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 502 "));
+    }
+
+    @Test
+    public void test_StartAsync_OnTimeout_SendError_CustomErrorPage() throws Exception
+    {
+        test_StartAsync_OnTimeout(500, event ->
+        {
+            AsyncContext asyncContext = event.getAsyncContext();
+            HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
+            response.sendError(HttpStatus.BAD_GATEWAY_502);
+            asyncContext.complete();
+        });
+
+        // Add a custom error page.
+        ErrorHandler errorHandler = new ErrorHandler()
+        {
+            @Override
+            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
             {
-                AsyncContext ctx = req.startAsync();
-                ctx.setTimeout(1000);
-                ctx.addListener(new AsyncListenerAdapter()
+                writer.write("CUSTOM\n");
+                super.writeErrorPageMessage(request,writer,code,message,uri);
+            }
+            
+        };
+        errorHandler.setServer(server);
+        server.setErrorHandler(errorHandler);
+
+        String httpResponse = connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 502 "));
+        assertThat(httpResponse, containsString("CUSTOM"));
+    }
+
+    private void test_StartAsync_OnTimeout(long timeout, IOConsumer<AsyncEvent> consumer) throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(timeout);
+                asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override
                     public void onTimeout(AsyncEvent event) throws IOException
                     {
-                        throw new FooRuntimeException();
+                        consumer.accept(event);
                     }
                 });
             }
-        };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
-
-        server.setHandler(context);
-
-        try
+        }), "/*");
+        context.addServlet(new ServletHolder(new HttpServlet()
         {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setStatus(HttpStatus.OK_200);
+            }
+        }), "/dispatch/*");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.getOutputStream().print("CUSTOM");
+            }
+        }), "/error/*");
+
+        startServer(context);
+    }
+
+    @Test
+    public void test_StartAsync_OnComplete_Throw() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                asyncContext.addListener(new AsyncListenerAdapter()
+                {
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
+                    {
+                        throw new TestRuntimeException();
+                    }
+                });
+                response.getOutputStream().print("DATA");
+                asyncContext.complete();
+            }
+        }), "/*");
+
+        startServer(context);
+
+        String httpResponse = connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+        assertThat(httpResponse, containsString("HTTP/1.1 200 "));
+        assertThat(httpResponse, containsString("DATA"));
+    }
+
+
+    // Unique named RuntimeException to help during debugging / assertions.
+    public static class TestRuntimeException extends RuntimeException
+    {
+    }
+
+    public static class AsyncListenerAdapter implements AsyncListener
+    {
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
         }
-        finally
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
         {
-            server.stop();
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
         }
     }
 
-    /**
-     * async testcase of error handling from a filter.
-     * 
-     * Async Started, no listener, in start() throw Exception
-     * 
-     * @throws Exception
-     *             on test failure
-     */
-    @Test
-    public void testFilterErrorAsyncStart_NoListener_ExceptionDuringStart() throws Exception
+    @FunctionalInterface
+    private interface IOConsumer<T>
     {
-        Server server = new Server();
-        LocalConnector conn = new LocalConnector(server);
-        conn.setIdleTimeout(10000);
-        server.addConnector(conn);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        @SuppressWarnings("serial")
-        HttpServlet servlet = new HttpServlet()
-        {
-            public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-            {
-                AsyncContext ctx = req.startAsync();
-                ctx.setTimeout(1000);
-                ctx.start(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        throw new FooRuntimeException();
-                    }
-                });
-            }
-        };
-        ServletHolder holder = new ServletHolder(servlet);
-        holder.setAsyncSupported(true);
-        context.addServlet(holder,"/err/*");
-        List<ErrorContext> tracking = new LinkedList<ErrorContext>();
-        ErrorFilter filter = new ErrorFilter(tracking);
-        context.addFilter(new FilterHolder(filter),"/*",EnumSet.allOf(DispatcherType.class));
-
-        server.setHandler(context);
-
-        try
-        {
-            server.start();
-            String resp = conn.getResponses("GET /err/ HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
-            assertThat("Response status",resp,containsString("HTTP/1.1 500 Server Error"));
-            assertThat("Response",resp,containsString(FooRuntimeException.class.getName()));
-        }
-        finally
-        {
-            server.stop();
-        }
+        void accept(T t) throws IOException;
     }
 }

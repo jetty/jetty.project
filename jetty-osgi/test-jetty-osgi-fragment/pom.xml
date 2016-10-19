@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -13,23 +13,6 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.fragment</bundle-symbolic-name>
   </properties>
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
-    </dependency>
-    <dependency>
-    	<groupId>org.eclipse.osgi</groupId>
-    	<artifactId>org.eclipse.osgi</artifactId>
-        <scope>provided</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.eclipse.osgi</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
-        <scope>provided</scope>
-    </dependency>
-  </dependencies>
-
       <build> 
         <resources>
           <resource>
@@ -46,29 +29,6 @@
                <skip>true</skip>
              </configuration>
             </plugin> 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId> 
-                <artifactId>maven-jar-plugin</artifactId> 
-                <executions>
-                    <execution>
-                        <id>artifact-jar</id> 
-                        <goals>
-                            <goal>jar</goal> 
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>test-jar</id> 
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archive>
-                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile> 
-                    </archive>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>

@@ -26,11 +26,11 @@ import org.junit.Test;
 public class ScatterGunLoadTest extends AbstractScatterGunLoadTest
 {
 
-    public AbstractTestServer createServer(int port)
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new HashTestServer(port);
+        return new HashTestServer(port,max,scavenge,evictionPolicy);
     }
-
     @Test
     public void testLightLoad() throws Exception
     {

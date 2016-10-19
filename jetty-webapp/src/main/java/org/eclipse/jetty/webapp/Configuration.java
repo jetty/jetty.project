@@ -18,33 +18,92 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.ListIterator;
+import java.util.ServiceLoader;
 
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
 
-
 /* ------------------------------------------------------------------------------- */
-/** Base Class for WebApplicationContext Configuration.
- * This class can be extended to customize or extend the configuration
- * of the WebApplicationContext. 
+/** A pluggable Configuration for {@link WebAppContext}s.
+ * <p>
+ * A {@link WebAppContext} is configured by the application of one or more {@link Configuration}
+ * instances.  Typically each implemented Configuration is responsible for an aspect of the 
+ * servlet specification (eg {@link WebXmlConfiguration}, {@link FragmentConfiguration}, etc.)
+ * or feature (eg {@link WebSocketConfiguration}, {@link JmxConfiguration} etc.)
+ * </p>
+ * <p>Configuration instances are discovered by the {@link Configurations} class using either the 
+ * {@link ServiceLoader} mechanism or by an explicit call to {@link Configurations#setKnown(String...)}.
+ * By default, all Configurations that do not implement the {@link DisabledByDefault} interface
+ * are applied to all {@link WebAppContext}s within the JVM.  However a Server wide default {@link Configurations}
+ * collection may also be defined with {@link Configurations#setServerDefault(org.eclipse.jetty.server.Server)}.
+ * Furthermore, each individual Context may have its Configurations list explicitly set and/or amended with
+ * {@link WebAppContext#setConfigurations(Configuration[])}, {@link WebAppContext#addConfiguration(Configuration...)}
+ * or {@link WebAppContext#getWebAppConfigurations()}.
+ * </p>
+ * <p>Since Jetty-9.4, Configurations are self ordering using the {@link #getConfigurationsBeforeThis()} and
+ * {@link #getConfigurationsAfterThis()} methods for a {@link TopologicalSort} initiated by {@link Configurations#sort()}
+ * when a {@link WebAppContext} is started.  This means that feature configurations 
+ * (eg {@link JndiConfiguration}, {@link JaasConfiguration}} etc.) can be added or removed without concern 
+ * for ordering.
+ * </p>
+ * <p>Also since Jetty-9.4, Configurations are responsible for providing {@link #getServerClasses()} and
+ * {@link #getSystemClasses()} to configure the {@link WebAppClassLoader} for each context.
+ * </p> 
+ *  
  */
 public interface Configuration 
 {
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
     
     /* ------------------------------------------------------------------------------- */
+    /** Get a class that this class replaces/extends.
+     * If this is added to {@link Configurations} collection that already contains a 
+     * configuration of the replaced class or that reports to replace the same class, then
+     * it is replaced with this instance. 
+     * @return The class this Configuration replaces/extends or null if it replaces no other configuration
+     */
+    public default Class<? extends Configuration> replaces() { return null; } 
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get known Configuration Dependencies.
+     * @return The names of Configurations that {@link TopologicalSort} must order 
+     * before this configuration.
+     */
+    public default Collection<String> getConfigurationsBeforeThis() { return Collections.emptyList(); }
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get known Configuration Dependents.
+     * @return The names of Configurations that {@link TopologicalSort} must order 
+     * after this configuration.
+     */
+    public default Collection<String> getConfigurationsAfterThis(){ return Collections.emptyList(); }
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get the system classes associated with this Configuration.
+     * @return ClasspathPattern of system classes.
+     */
+    public default ClasspathPattern getSystemClasses() { return new ClasspathPattern();  }
+
+    /* ------------------------------------------------------------------------------- */
+    /** Get the system classes associated with this Configuration.
+     * @return ClasspathPattern of server classes.
+     */
+    public default ClasspathPattern getServerClasses() { return new ClasspathPattern();  }
+    
+    /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
      * <p>
-     * Typically this step discovers configuration resources
+     * Typically this step discovers configuration resources.
+     * Calls to preConfigure may alter the Configurations configured on the
+     * WebAppContext, so long as configurations prior to this configuration
+     * are not altered.
      * @param context The context to configure
      * @throws Exception if unable to pre configure
      */
     public void preConfigure (WebAppContext context) throws Exception;
-    
     
     /* ------------------------------------------------------------------------------- */
     /** Configure WebApp.
@@ -82,94 +141,36 @@ public interface Configuration
      */
     public void destroy (WebAppContext context) throws Exception;
     
-
-    /* ------------------------------------------------------------------------------- */
-    /** Clone configuration instance.
-     * <p>
-     * Configure an instance of a WebAppContext, based on a template WebAppContext that 
-     * has previously been configured by this Configuration.
-     * @param template The template context
-     * @param context The context to configure
-     * @throws Exception if unable to clone
+    /**
+     * A Configuration that is not added by default to a context
+     *
      */
-    public void cloneConfigure (WebAppContext template, WebAppContext context) throws Exception;
+    interface DisabledByDefault extends Configuration {}
     
+    /**
+     * A Configuration that will cause {@link Configurations#configure(WebAppContext)} to abort with a false return
+     */
+    interface AbortConfiguration extends DisabledByDefault,Configuration {}
     
-    public class ClassList extends ArrayList<String>
-    {        
-        /* ------------------------------------------------------------ */
-        /** Get/Set/Create the server default Configuration ClassList.
-         * <p>Get the class list from: a Server bean; or the attribute (which can
-         * either be a ClassList instance or an String[] of class names); or a new instance
-         * with default configuration classes.</p>
-         * <p>This method also adds the obtained ClassList instance as a dependent bean
-         * on the server and clears the attribute</p>
-         * @param server The server the default is for
-         * @return the server default ClassList instance of the configuration classes for this server. Changes to this list will change the server default instance.
-         */
-        public static ClassList setServerDefault(Server server)
-        {
-            ClassList cl=server.getBean(ClassList.class);
-            if (cl!=null)
-                return cl;
-            cl=serverDefault(server);
-            server.addBean(cl);
-            server.setAttribute(ATTR,null);
-            return cl;
-        }
-
-        /* ------------------------------------------------------------ */
-        /** Get/Create the server default Configuration ClassList.
-         * <p>Get the class list from: a Server bean; or the attribute (which can
-         * either be a ClassList instance or an String[] of class names); or a new instance
-         * with default configuration classes.
-         * @param server The server the default is for
-         * @return A copy of the server default ClassList instance of the configuration classes for this server. Changes to the returned list will not change the server default.
-         */
-        public static ClassList serverDefault(Server server)
-        {
-            ClassList cl=null;
-            if (server!=null)
-            {
-                cl= server.getBean(ClassList.class);
-                if (cl!=null)
-                    return new ClassList(cl);
-                Object attr = server.getAttribute(ATTR);
-                if (attr instanceof ClassList)
-                    return new ClassList((ClassList)attr);
-                if (attr instanceof String[])
-                    return new ClassList((String[])attr);
-            }
-            return new ClassList();
-        }
-        
-        public ClassList()
-        {
-            this(WebAppContext.DEFAULT_CONFIGURATION_CLASSES);
-        }
-        
-        public ClassList(String[] classes)
-        {
-            addAll(Arrays.asList(classes));
-        }
-
-        public ClassList(List<String> classes)
-        {
-            addAll(classes);
-        }
-        
+    /**
+     * @deprecated Use {@link Configurations}
+     */
+    public class ClassList extends Configurations
+    {
+        @Deprecated
         public void addAfter(@Name("afterClass") String afterClass,@Name("configClass")String... configClass)
         {
             if (configClass!=null && afterClass!=null)
             {
-                ListIterator<String> iter = listIterator();
+                ListIterator<Configuration> iter = _configurations.listIterator();
                 while (iter.hasNext())
                 {
-                    String cc=iter.next();
-                    if (afterClass.equals(cc))
+                    Configuration c=iter.next();
+                    
+                    if (afterClass.equals(c.getClass().getName()) || afterClass.equals(c.replaces().getName()))
                     {
-                        for (int i=0;i<configClass.length;i++)
-                            iter.add(configClass[i]);
+                        for (String cc: configClass)
+                            iter.add(newConfiguration(cc));
                         return;
                     }
                 }
@@ -177,25 +178,27 @@ public interface Configuration
             throw new IllegalArgumentException("afterClass '"+afterClass+"' not found in "+this);
         }
 
+        @Deprecated
         public void addBefore(@Name("beforeClass") String beforeClass,@Name("configClass")String... configClass)
         {
             if (configClass!=null && beforeClass!=null)
             {
-                ListIterator<String> iter = listIterator();
+                ListIterator<Configuration> iter = _configurations.listIterator();
                 while (iter.hasNext())
                 {
-                    String cc=iter.next();
-                    if (beforeClass.equals(cc))
+                    Configuration c=iter.next();
+                    
+                    if (beforeClass.equals(c.getClass().getName()) || beforeClass.equals(c.replaces().getName()))
                     {
                         iter.previous();
-                        for (int i=0;i<configClass.length;i++)
-                            iter.add(configClass[i]);
+                        for (String cc: configClass)
+                            iter.add(newConfiguration(cc));
                         return;
                     }
                 }
             }
+            
             throw new IllegalArgumentException("beforeClass '"+beforeClass+"' not found in "+this);
         }
-        
     }
 }

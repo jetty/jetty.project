@@ -19,9 +19,9 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -32,9 +32,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = Log.getLogger(AbstractEndPoint.class);
+
+    private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final long _created=System.currentTimeMillis();
-    private final InetSocketAddress _local;
-    private final InetSocketAddress _remote;
     private volatile Connection _connection;
 
     private final FillInterest _fillInterest = new FillInterest()
@@ -55,29 +55,253 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         }
     };
 
-    protected AbstractEndPoint(Scheduler scheduler,InetSocketAddress local,InetSocketAddress remote)
+    protected AbstractEndPoint(Scheduler scheduler)
     {
         super(scheduler);
-        _local=local;
-        _remote=remote;
+    }
+
+    protected final void shutdownInput()
+    {
+        while(true)
+        {
+            State s = _state.get();
+            switch(s)
+            {
+                case OPEN:
+                    if (!_state.compareAndSet(s,State.ISHUTTING))
+                        continue;
+                    try
+                    {
+                        doShutdownInput();
+                    }
+                    finally
+                    {
+                        if(!_state.compareAndSet(State.ISHUTTING,State.ISHUT))
+                        {
+                            // If somebody else switched to CLOSED while we were ishutting,
+                            // then we do the close for them
+                            if (_state.get()==State.CLOSED)
+                                doOnClose(null);
+                            else
+                                throw new IllegalStateException();
+                        }
+                    }
+                    return;
+
+                case ISHUTTING:  // Somebody else ishutting
+                case ISHUT: // Already ishut
+                    return;
+
+                case OSHUTTING:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // The thread doing the OSHUT will close
+                    return;
+
+                case OSHUT:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // Already OSHUT so we close
+                    doOnClose(null);
+                    return;
+
+                case CLOSED: // already closed
+                    return;
+            }
+        }
+    }
+
+    @Override
+    public final void shutdownOutput()
+    {
+        while(true)
+        {
+            State s = _state.get();
+            switch(s)
+            {
+                case OPEN:
+                    if (!_state.compareAndSet(s,State.OSHUTTING))
+                        continue;
+                    try
+                    {
+                        doShutdownOutput();
+                    }
+                    finally
+                    {
+                        if(!_state.compareAndSet(State.OSHUTTING,State.OSHUT))
+                        {
+                            // If somebody else switched to CLOSED while we were oshutting,
+                            // then we do the close for them
+                            if (_state.get()==State.CLOSED)
+                                doOnClose(null);
+                            else
+                                throw new IllegalStateException();
+                        }
+                    }
+                    return;
+
+                case ISHUTTING:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // The thread doing the ISHUT will close
+                    return;
+
+                case ISHUT:
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // Already ISHUT so we close
+                    doOnClose(null);
+                    return;
+
+                case OSHUTTING:  // Somebody else oshutting
+                case OSHUT: // Already oshut
+                    return;
+
+                case CLOSED: // already closed
+                    return;
+            }
+        }
+    }
+
+    @Override
+    public final void close()
+    {
+        close(null);
+    }
+
+    protected final void close(Throwable failure)
+    {
+        while(true)
+        {
+            State s = _state.get();
+            switch(s)
+            {
+                case OPEN:
+                case ISHUT: // Already ishut
+                case OSHUT: // Already oshut
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    doOnClose(failure);
+                    return;
+
+                case ISHUTTING: // Somebody else ishutting
+                case OSHUTTING: // Somebody else oshutting
+                    if (!_state.compareAndSet(s,State.CLOSED))
+                        continue;
+                    // The thread doing the IO SHUT will call doOnClose
+                    return;
+
+                case CLOSED: // already closed
+                    return;
+            }
+        }
+    }
+
+    protected void doShutdownInput()
+    {
+    }
+
+    protected void doShutdownOutput()
+    {
+    }
+
+    private void doOnClose(Throwable failure)
+    {
+        try
+        {
+            doClose();
+        }
+        finally
+        {
+            if (failure == null)
+                onClose();
+            else
+                onClose(failure);
+        }
+    }
+
+    protected void doClose()
+    {
+    }
+
+    protected void onClose(Throwable failure)
+    {
+        super.onClose();
+        _writeFlusher.onFail(failure);
+        _fillInterest.onFail(failure);
+    }
+
+    @Override
+    public boolean isOutputShutdown()
+    {
+        switch(_state.get())
+        {
+            case CLOSED:
+            case OSHUT:
+            case OSHUTTING:
+                return true;
+            default:
+                return false;
+        }
+    }
+    @Override
+    public boolean isInputShutdown()
+    {
+        switch(_state.get())
+        {
+            case CLOSED:
+            case ISHUT:
+            case ISHUTTING:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        switch(_state.get())
+        {
+            case CLOSED:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    public void checkFlush() throws IOException
+    {
+        State s=_state.get();
+        switch(s)
+        {
+            case OSHUT:
+            case OSHUTTING:
+            case CLOSED:
+                throw new IOException(s.toString());
+            default:
+                break;
+        }
+    }
+
+    public void checkFill() throws IOException
+    {
+        State s=_state.get();
+        switch(s)
+        {
+            case ISHUT:
+            case ISHUTTING:
+            case CLOSED:
+                throw new IOException(s.toString());
+            default:
+                break;
+        }
     }
 
     @Override
     public long getCreatedTimeStamp()
     {
         return _created;
-    }
-
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return _local;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return _remote;
     }
 
     @Override
@@ -98,27 +322,28 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         return false;
     }
 
+    protected void reset()
+    {
+        _state.set(State.OPEN);
+        _writeFlusher.onClose();
+        _fillInterest.onClose();
+    }
+
     @Override
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen {}",this);
-        super.onOpen();
+        if (_state.get()!=State.OPEN)
+            throw new IllegalStateException();
     }
 
     @Override
-    public void close()
+    public void onClose()
     {
-        onClose();
+        super.onClose();
         _writeFlusher.onClose();
         _fillInterest.onClose();
-    }
-
-    protected void close(Throwable failure)
-    {
-        onClose();
-        _writeFlusher.onFail(failure);
-        _fillInterest.onFail(failure);
     }
 
     @Override
@@ -212,19 +437,22 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         }
 
         Connection connection = getConnection();
-        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d/%d,%s@%x}",
+        return String.format("%s@%x{%s<->%s,%s,%s|%s,%d/%d,%s@%x}",
                 name,
                 hashCode(),
                 getRemoteAddress(),
-                getLocalAddress().getPort(),
-                isOpen()?"Open":"CLOSED",
-                isInputShutdown()?"ISHUT":"in",
-                isOutputShutdown()?"OSHUT":"out",
+                getLocalAddress(),
+                _state.get(),
                 _fillInterest.toStateString(),
                 _writeFlusher.toStateString(),
                 getIdleFor(),
                 getIdleTimeout(),
                 connection == null ? null : connection.getClass().getSimpleName(),
                 connection == null ? 0 : connection.hashCode());
+    }
+
+    private enum State
+    {
+        OPEN, ISHUTTING, ISHUT, OSHUTTING, OSHUT, CLOSED
     }
 }

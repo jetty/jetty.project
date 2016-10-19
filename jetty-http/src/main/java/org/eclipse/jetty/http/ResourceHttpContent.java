@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.BufferUtil;
@@ -39,7 +41,7 @@ public class ResourceHttpContent implements HttpContent
     final Resource _resource;
     final String _contentType;
     final int _maxBuffer;
-    HttpContent _gzip;
+    Map<CompressedContentFormat, HttpContent> _precompressedContents;
     String _etag;
 
     /* ------------------------------------------------------------ */
@@ -55,12 +57,23 @@ public class ResourceHttpContent implements HttpContent
     }
     
     /* ------------------------------------------------------------ */
-    public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, HttpContent gzip)
+    public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
         _resource=resource;
         _contentType=contentType;
-        _maxBuffer=maxBuffer;
-        _gzip=gzip;
+        _maxBuffer = maxBuffer;
+        if (precompressedContents == null)
+        {
+            _precompressedContents = null;
+        }
+        else
+        {
+            _precompressedContents = new HashMap<>(precompressedContents.size());
+            for (Map.Entry<CompressedContentFormat, HttpContent> entry : precompressedContents.entrySet())
+            {
+                _precompressedContents.put(entry.getKey(),new PrecompressedHttpContent(this,entry.getValue(),entry.getKey()));
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -214,14 +227,14 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,gz=%b}",this.getClass().getSimpleName(),hashCode(),_resource,_gzip!=null);
+        return String.format("%s@%x{r=%s,c=%b}",this.getClass().getSimpleName(),hashCode(),_resource,_precompressedContents!=null);
     }
 
     /* ------------------------------------------------------------ */
     @Override
-    public HttpContent getGzipContent()
+    public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {
-        return _gzip==null?null:new GzipHttpContent(this,_gzip);
+        return _precompressedContents;
     }
 
 }

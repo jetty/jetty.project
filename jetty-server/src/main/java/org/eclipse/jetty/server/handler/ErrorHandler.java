@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import javax.servlet.ServletContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /** Handler for Error pages
  * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
- * {@link org.eclipse.jetty.server.Server#addBean(Object)}.
+ * {@link Server#setErrorHandler(ErrorHandler)}.
  * It is called by the HttpResponse.sendError method to write a error page via {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
  * or via {@link #badMessageError(int, String, HttpFields)} for bad requests for which a dispatch cannot be done.
  *
@@ -61,6 +62,11 @@ public class ErrorHandler extends AbstractHandler
     boolean _showStacks=true;
     boolean _showMessageInTitle=true;
     String _cacheControl="must-revalidate,no-cache,no-store";
+
+    /* ------------------------------------------------------------ */
+    public ErrorHandler()
+    {
+    }
 
     /* ------------------------------------------------------------ */
     /*
@@ -79,22 +85,35 @@ public class ErrorHandler extends AbstractHandler
         if (this instanceof ErrorPageMapper)
         {
             String error_page=((ErrorPageMapper)this).getErrorPage(request);
-            if (error_page!=null && request.getServletContext()!=null)
+            if (error_page!=null)
             {
                 String old_error_page=(String)request.getAttribute(ERROR_PAGE);
-                if (old_error_page==null || !old_error_page.equals(error_page))
+                ServletContext servlet_context = request.getServletContext();
+                if (servlet_context==null)
+                    servlet_context=ContextHandler.getCurrentContext();
+                if (servlet_context==null)
+                {
+                    LOG.warn("No ServletContext for error page {}",error_page);       
+                }
+                else if (old_error_page!=null && old_error_page.equals(error_page))
+                {
+                    LOG.warn("Error page loop {}",error_page); 
+                }
+                else
                 {
                     request.setAttribute(ERROR_PAGE, error_page);
 
-                    Dispatcher dispatcher = (Dispatcher) request.getServletContext().getRequestDispatcher(error_page);
+                    Dispatcher dispatcher = (Dispatcher) servlet_context.getRequestDispatcher(error_page);
                     try
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("error page dispatch {}->{}",error_page,dispatcher);
                         if(dispatcher!=null)
                         {
                             dispatcher.error(request, response);
                             return;
                         }
-                        LOG.warn("No error page "+error_page);
+                        LOG.warn("No error page found "+error_page);
                     }
                     catch (ServletException e)
                     {

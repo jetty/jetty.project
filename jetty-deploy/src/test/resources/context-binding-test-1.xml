@@ -1,7 +1,9 @@
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
-  <Call name="addServerClass">
-    <Arg>org.eclipse.foo.</Arg>
+  <Call name="getServerClasspathPattern">
+    <Call name="include">
+      <Arg>org.eclipse.foo.</Arg>
+    </Call>`
   </Call>
 
   <!-- Array id="serverClasses" type="java.lang.String">

@@ -44,10 +44,11 @@ public class FileArg
             final String LN = System.lineSeparator();
             err.append("Unrecognized [file] argument: ").append(uriLocation);
             err.append(LN).append("Valid Syntaxes: ");
-            err.append(LN).append("          <relative-path> - eg: resources/");
-            err.append(LN).append(" or       <absolute-path> - eg: /var/run/jetty.pid");
-            err.append(LN).append(" or <uri>|<relative-path> - eg: http://machine/my.conf|resources/my.conf");
-            err.append(LN).append(" or <uri>|<absolute-path> - eg: http://machine/glob.dat|/opt/run/glob.dat");
+            err.append(LN).append("    <relative-path>       - eg: resources/");
+            err.append(LN).append(" or <absolute-path>       - eg: /var/run/jetty.pid");
+            err.append(LN).append(" or <uri>|<rel-path>      - eg: http://machine/my.conf|resources/my.conf");
+            err.append(LN).append(" or <uri>|<abs-path>      - eg: http://machine/glob.dat|/opt/run/glob.dat");
+            err.append(LN).append("Known uri schemes: http, maven, home");
             throw new IllegalArgumentException(err.toString());
         }
         if (parts.length == 2)

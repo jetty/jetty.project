@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,8 +43,12 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
+import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
 /**
  * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
@@ -53,7 +56,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
  * with the channel.</p>
  */
-public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
+public class ManagedSelector extends AbstractLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
 
@@ -63,37 +66,99 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
+    private final ExecutionStrategy _lowPriorityStrategy;
     private Selector _selector;
+
+    private final Runnable _runStrategy = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            _strategy.produce();
+        }
+    };
+    
+    private final Runnable _runLowPriorityStrategy = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            Thread current = Thread.currentThread();
+            String name = current.getName();
+            int priority = current.getPriority();
+            try
+            {
+                while (isRunning())
+                {
+                    try
+                    {
+                        current.setPriority(Thread.MIN_PRIORITY);
+                        current.setName(name+"-lowPrioSelector");
+                        _lowPriorityStrategy.produce(); 
+                    }
+                    catch (Throwable th)
+                    {
+                        LOG.warn(th);
+                    }
+                }
+            }
+            finally
+            {
+                current.setPriority(priority);
+                current.setName(name);
+            }
+        }
+    };
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
-        this(selectorManager, id, ExecutionStrategy.Factory.getDefault());
-    }
-
-    public ManagedSelector(SelectorManager selectorManager, int id, ExecutionStrategy.Factory executionFactory)
-    {
         _selectorManager = selectorManager;
         _id = id;
-        _strategy = executionFactory.newExecutionStrategy(new SelectorProducer(), selectorManager.getExecutor());
-        setStopTimeout(5000);
-    }
+        SelectorProducer producer = new SelectorProducer();
+        _strategy = new ExecuteProduceConsume(producer, selectorManager.getExecutor(), Invocable.InvocationType.BLOCKING);
+        _lowPriorityStrategy = new ProduceExecuteConsume(producer, selectorManager.getExecutor(), Invocable.InvocationType.BLOCKING)
+        {
+            @Override
+            protected boolean execute(Runnable task)
+            {
+                try
+                {
+                    Invocable.InvocationType invocation=Invocable.getInvocationType(task);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Low Prio Selector execute {} {}",invocation,task);                    
+                    switch (Invocable.getInvocationType(task))
+                    {
+                        case NON_BLOCKING:
+                            task.run();
+                            return true;
 
-    public ExecutionStrategy getExecutionStrategy()
-    {
-        return _strategy;
+                        case EITHER:
+                            Invocable.invokeNonBlocking(task);
+                            return true;
+
+                        default:
+                    }
+                    return super.execute(task);
+                }
+                finally
+                {
+                    // Allow opportunity for main strategy to take over
+                    Thread.yield();
+                }
+            }
+            
+
+        };
+        setStopTimeout(5000);
     }
 
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-        _selector = newSelector();
-        _selectorManager.execute(this);
-    }
-
-    protected Selector newSelector() throws IOException
-    {
-        return Selector.open();
+        _selector = _selectorManager.newSelector();
+        _selectorManager.execute(_runStrategy);
+        _selectorManager.execute(_runLowPriorityStrategy);
     }
 
     public int size()
@@ -141,17 +206,11 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             selector.wakeup();
     }
 
-    @Override
-    public void run()
-    {
-        _strategy.execute();
-    }
-
     /**
-     * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be
+     * A {@link Selectable} is an {@link EndPoint} that wish to be
      * notified of non-blocking events by the {@link ManagedSelector}.
      */
-    public interface SelectableEndPoint extends EndPoint
+    public interface Selectable
     {
         /**
          * Callback method invoked when a read or write events has been
@@ -174,7 +233,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         private Iterator<SelectionKey> _cursor = Collections.emptyIterator();
 
         @Override
-        public Runnable produce()
+        public synchronized Runnable produce()
         {
             while (true)
             {
@@ -182,7 +241,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                 if (task != null)
                     return task;
 
-                Runnable action = runActions();
+                Runnable action = nextAction();
                 if (action != null)
                     return action;
 
@@ -193,7 +252,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             }
         }
 
-        private Runnable runActions()
+        private Runnable nextAction()
         {
             while (true)
             {
@@ -209,25 +268,20 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                     }
                 }
 
-                if (action instanceof Product)
+                if (Invocable.getInvocationType(action)==InvocationType.BLOCKING)
                     return action;
 
-                // Running the change may queue another action.
-                runChange(action);
-            }
-        }
-
-        private void runChange(Runnable change)
-        {
-            try
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Running change {}", change);
-                change.run();
-            }
-            catch (Throwable x)
-            {
-                LOG.debug("Could not run change " + change, x);
+                try
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Running action {}", action);
+                    // Running the change may queue another action.
+                    action.run();
+                }
+                catch (Throwable x)
+                {
+                    LOG.debug("Could not run action " + action, x);
+                }
             }
         }
 
@@ -275,12 +329,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                 if (key.isValid())
                 {
                     Object attachment = key.attachment();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("selected {} {} ",key,attachment);
                     try
                     {
-                        if (attachment instanceof SelectableEndPoint)
+                        if (attachment instanceof Selectable)
                         {
                             // Try to produce a task
-                            Runnable task = ((SelectableEndPoint)attachment).onSelected();
+                            Runnable task = ((Selectable)attachment).onSelected();
                             if (task != null)
                                 return task;
                         }
@@ -334,22 +390,27 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         private void updateKey(SelectionKey key)
         {
             Object attachment = key.attachment();
-            if (attachment instanceof SelectableEndPoint)
-                ((SelectableEndPoint)attachment).updateKey();
+            if (attachment instanceof Selectable)
+                ((Selectable)attachment).updateKey();
         }
     }
-
-    private interface Product extends Runnable
+    
+    private abstract static class NonBlockingAction implements Runnable, Invocable
     {
+        @Override
+        public final InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
     }
 
     private Runnable processConnect(SelectionKey key, final Connect connect)
     {
-        SocketChannel channel = (SocketChannel)key.channel();
+        SelectableChannel channel = key.channel();
         try
         {
             key.attach(connect.attachment);
-            boolean connected = _selectorManager.finishConnect(channel);
+            boolean connected = _selectorManager.doFinishConnect(channel);
             if (LOG.isDebugEnabled())
                 LOG.debug("Connected {} {}", connected, channel);
             if (connected)
@@ -386,14 +447,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
     private void processAccept(SelectionKey key)
     {
-        ServerSocketChannel server = (ServerSocketChannel)key.channel();
-        SocketChannel channel = null;
+        SelectableChannel server = key.channel();
+        SelectableChannel channel = null;
         try
         {
-            while ((channel = server.accept()) != null)
-            {
+            channel = _selectorManager.doAccept(server);
+            if (channel!=null)
                 _selectorManager.accepted(channel);
-            }
         }
         catch (Throwable x)
         {
@@ -415,9 +475,10 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private EndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
+    private EndPoint createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
+        endPoint.onOpen();
         _selectorManager.endPointOpened(endPoint);
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
@@ -431,17 +492,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     public void destroyEndPoint(final EndPoint endPoint)
     {
         final Connection connection = endPoint.getConnection();
-        submit(new Product()
+        submit((Runnable)() ->
         {
-            @Override
-            public void run()
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Destroyed {}", endPoint);
-                if (connection != null)
-                    _selectorManager.connectionClosed(connection);
-                _selectorManager.endPointClosed(endPoint);
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Destroyed {}", endPoint);
+            if (connection != null)
+                _selectorManager.connectionClosed(connection);
+            _selectorManager.endPointClosed(endPoint);
         });
     }
 
@@ -526,11 +583,11 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    class Acceptor implements Runnable
+    class Acceptor extends NonBlockingAction
     {
-        private final ServerSocketChannel _channel;
+        private final SelectableChannel _channel;
 
-        public Acceptor(ServerSocketChannel channel)
+        public Acceptor(SelectableChannel channel)
         {
             this._channel = channel;
         }
@@ -552,12 +609,12 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    class Accept implements Runnable, Closeable
+    class Accept extends NonBlockingAction implements Closeable
     {
-        private final SocketChannel channel;
+        private final SelectableChannel channel;
         private final Object attachment;
 
-        Accept(SocketChannel channel, Object attachment)
+        Accept(SelectableChannel channel, Object attachment)
         {
             this.channel = channel;
             this.attachment = attachment;
@@ -586,12 +643,12 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private class CreateEndPoint implements Product, Closeable
+    private class CreateEndPoint implements Runnable, Closeable
     {
-        private final SocketChannel channel;
+        private final SelectableChannel channel;
         private final SelectionKey key;
 
-        public CreateEndPoint(SocketChannel channel, SelectionKey key)
+        public CreateEndPoint(SelectableChannel channel, SelectionKey key)
         {
             this.channel = channel;
             this.key = key;
@@ -625,14 +682,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    class Connect implements Runnable
+    class Connect extends NonBlockingAction
     {
         private final AtomicBoolean failed = new AtomicBoolean();
-        private final SocketChannel channel;
+        private final SelectableChannel channel;
         private final Object attachment;
         private final Scheduler.Task timeout;
 
-        Connect(SocketChannel channel, Object attachment)
+        Connect(SelectableChannel channel, Object attachment)
         {
             this.channel = channel;
             this.attachment = attachment;
@@ -663,7 +720,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private class ConnectTimeout implements Runnable
+    private class ConnectTimeout extends NonBlockingAction
     {
         private final Connect connect;
 
@@ -675,8 +732,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         @Override
         public void run()
         {
-            SocketChannel channel = connect.channel;
-            if (channel.isConnectionPending())
+            SelectableChannel channel = connect.channel;
+            if (_selectorManager.isConnectionPending(channel))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Channel {} timed out while connecting, closing it", channel);
@@ -685,7 +742,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private class CloseEndPoints implements Runnable
+    private class CloseEndPoints extends NonBlockingAction
     {
         private final CountDownLatch _latch = new CountDownLatch(1);
         private CountDownLatch _allClosed;
@@ -732,7 +789,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private class EndPointCloser implements Product
+    private class EndPointCloser implements Runnable
     {
         private final EndPoint _endPoint;
         private final CountDownLatch _latch;
@@ -751,7 +808,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
-    private class CloseSelector implements Runnable
+    private class CloseSelector extends NonBlockingAction
     {
         private CountDownLatch _latch = new CountDownLatch(1);
 

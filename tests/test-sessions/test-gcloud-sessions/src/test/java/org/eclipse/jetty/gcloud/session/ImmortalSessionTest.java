@@ -40,12 +40,12 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
         GCloudTestSuite.__testSupport.deleteSessions();
     }
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractImmortalSessionTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractImmortalSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy) throws Exception
     {
-       return new GCloudTestServer(port, port, scavengeMs);
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
     }
 
     @Test

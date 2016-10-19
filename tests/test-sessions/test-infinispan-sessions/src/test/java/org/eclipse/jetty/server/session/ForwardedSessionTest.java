@@ -49,11 +49,11 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
     }
     
     
+
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavenge, int evictionPolicy) throws Exception
     {
-        InfinispanTestSessionServer server = new InfinispanTestSessionServer(port, __testSupport.getCache());
-        return server;
+        return new InfinispanTestSessionServer(port, maxInactiveMs, scavenge, evictionPolicy, __testSupport.getCache());
     }
 
     @Test

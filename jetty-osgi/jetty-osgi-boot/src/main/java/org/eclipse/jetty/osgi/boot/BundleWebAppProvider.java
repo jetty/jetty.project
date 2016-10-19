@@ -26,11 +26,15 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.Util;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.BundleTracker;
 
 /**
  * BundleWebAppProvider
@@ -48,6 +52,62 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     
     private ServiceRegistration _serviceRegForBundles;
     
+    private WebAppTracker _webappTracker;
+    
+    
+    public class WebAppTracker extends BundleTracker
+    {
+        protected String _managedServerName;
+        
+        public WebAppTracker (BundleContext bundleContext, String managedServerName)
+        {
+            super (bundleContext, Bundle.ACTIVE | Bundle.STOPPING,null);
+            _managedServerName = managedServerName;
+        }
+
+        /** 
+         * @see org.osgi.util.tracker.BundleTracker#addingBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent)
+         */
+        @Override
+        public Object addingBundle(Bundle bundle, BundleEvent event)
+        {
+            try
+            {
+                String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
+                     || (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
+                {
+                    if (bundleAdded (bundle))
+                        return bundle;
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+            return null;
+        }
+
+   
+
+        /** 
+         * @see org.osgi.util.tracker.BundleTracker#removedBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent, java.lang.Object)
+         */
+        @Override
+        public void removedBundle(Bundle bundle, BundleEvent event, Object object)
+        {
+            try
+            {
+                bundleRemoved(bundle);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
+        
+        
+    }
 
     /* ------------------------------------------------------------ */
     public BundleWebAppProvider (ServerInstanceWrapper wrapper)
@@ -61,6 +121,8 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
      */
     protected void doStart() throws Exception
     {
+        _webappTracker = new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServerInstanceWrapper().getManagedServerName());
+        _webappTracker.open();
         //register as an osgi service for deploying bundles, advertising the name of the jetty Server instance we are related to
         Dictionary<String,String> properties = new Hashtable<String,String>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
@@ -75,6 +137,8 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     @Override
     protected void doStop() throws Exception
     {
+        _webappTracker.close();
+        
         //unregister ourselves
         if (_serviceRegForBundles != null)
         {
@@ -111,7 +175,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         String contextPath = null;
         try 
         {
-            Dictionary headers = bundle.getHeaders();
+            Dictionary<String,String> headers = bundle.getHeaders();
 
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
             String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
@@ -153,7 +217,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             {
                 //Could be a static webapp with no web.xml
                 String base = ".";
-                contextPath = (String)headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+                contextPath = headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
                 String originId = getOriginId(bundle,base);
                 
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, originId);

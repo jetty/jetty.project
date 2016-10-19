@@ -60,7 +60,6 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -162,17 +161,21 @@ public class ServletContextHandler extends ContextHandler
         if (contextPath!=null)
             setContextPath(contextPath);
         
-        if (parent instanceof HandlerWrapper)
-            ((HandlerWrapper)parent).setHandler(this);
-        else if (parent instanceof HandlerCollection)
-            ((HandlerCollection)parent).addHandler(this);
-        
+        setParent(parent);
         
         // Link the handlers
         relinkHandlers();
         
         if (errorHandler!=null)
             setErrorHandler(errorHandler);
+    }
+    
+    protected void setParent(HandlerContainer parent)
+    {
+        if (parent instanceof HandlerWrapper)
+            ((HandlerWrapper)parent).setHandler(this);
+        else if (parent instanceof HandlerCollection)
+            ((HandlerCollection)parent).addHandler(this);
     }
     
     @Override
@@ -1339,7 +1342,7 @@ public class ServletContextHandler extends ContextHandler
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
         {
             if (_sessionHandler!=null)
-                return _sessionHandler.getSessionManager().getDefaultSessionTrackingModes();
+                return _sessionHandler.getDefaultSessionTrackingModes();
             return null;
         }
 
@@ -1347,7 +1350,7 @@ public class ServletContextHandler extends ContextHandler
         public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
         {
             if (_sessionHandler!=null)
-                return _sessionHandler.getSessionManager().getEffectiveSessionTrackingModes();
+                return _sessionHandler.getEffectiveSessionTrackingModes();
             return null;
         }
 
@@ -1412,7 +1415,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
 
             if (_sessionHandler!=null)
-                return _sessionHandler.getSessionManager().getSessionCookieConfig();
+                return _sessionHandler.getSessionCookieConfig();
             return null;
         }
 
@@ -1426,7 +1429,7 @@ public class ServletContextHandler extends ContextHandler
 
 
             if (_sessionHandler!=null)
-                _sessionHandler.getSessionManager().setSessionTrackingModes(sessionTrackingModes);
+                _sessionHandler.setSessionTrackingModes(sessionTrackingModes);
         }
 
         @Override

@@ -233,9 +233,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         boolean handle = onContent(new HttpInput.Content(copy)
         {
             @Override
-            public boolean isNonBlocking()
+            public InvocationType getInvocationType()
             {
-                return callback.isNonBlocking();
+                return callback.getInvocationType();
             }
 
             @Override

@@ -59,7 +59,7 @@ public class Holder<T> extends BaseHolder<T>
     protected Holder(Source source)
     {
         super(source);
-        switch(_source)
+        switch(_source.getOrigin())
         {
             case JAVAX_API:
             case DESCRIPTOR:

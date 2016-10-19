@@ -133,7 +133,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
-        if (!_methods.matches(baseRequest.getMethod()))
+        if (!_methods.test(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}",this,request);
             _handler.handle(target,baseRequest, request, response);
@@ -173,7 +173,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     protected boolean isMimeTypeBufferable(String mimetype)
     {
-        return _mimeTypes.matches(mimetype);
+        return _mimeTypes.test(mimetype);
     }
 
     /* ------------------------------------------------------------ */
@@ -182,7 +182,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         if (requestURI == null)
             return true;
 
-        return _paths.matches(requestURI);
+        return _paths.test(requestURI);
     }
 
     /* ------------------------------------------------------------ */

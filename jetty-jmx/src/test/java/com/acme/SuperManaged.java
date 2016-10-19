@@ -20,10 +20,10 @@ package com.acme;
 
 public class SuperManaged extends Managed
 {
-    
+
     public String superized()
     {
         return "super";
     }
-    
+
 }

@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -205,26 +204,7 @@ public class StatisticsServlet extends HttpServlet
             }
             else
             {
-                ConnectorStatistics connectorStats = null;
-                if (connector instanceof AbstractConnector)
-                    connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
-                if (connectorStats != null)
-                {
-                    sb.append("      <statsOn>true</statsOn>\n");
-                    sb.append("      <connections>").append(connectorStats.getConnections()).append("</connections>\n");
-                    sb.append("      <connectionsOpen>").append(connectorStats.getConnectionsOpen()).append("</connectionsOpen>\n");
-                    sb.append("      <connectionsOpenMax>").append(connectorStats.getConnectionsOpenMax()).append("</connectionsOpenMax>\n");
-                    sb.append("      <connectionsDurationMean>").append(connectorStats.getConnectionDurationMean()).append("</connectionsDurationMean>\n");
-                    sb.append("      <connectionsDurationMax>").append(connectorStats.getConnectionDurationMax()).append("</connectionsDurationMax>\n");
-                    sb.append("      <connectionsDurationStdDev>").append(connectorStats.getConnectionDurationStdDev()).append("</connectionsDurationStdDev>\n");
-                    sb.append("      <messagesIn>").append(connectorStats.getMessagesIn()).append("</messagesIn>\n");
-                    sb.append("      <messagesOut>").append(connectorStats.getMessagesIn()).append("</messagesOut>\n");
-                    sb.append("      <elapsedMs>").append(connectorStats.getStartedMillis()).append("</elapsedMs>\n");
-                }
-                else
-                {
-                    sb.append("      <statsOn>false</statsOn>\n");
-                }
+                sb.append("      <statsOn>false</statsOn>\n");
             }
             sb.append("    </connector>\n");
         }
@@ -274,25 +254,7 @@ public class StatisticsServlet extends HttpServlet
             }
             else
             {
-                ConnectorStatistics connectorStats = null;
-                if (connector instanceof AbstractConnector)
-                    connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
-                if (connectorStats != null)
-                {
-                    sb.append("Statistics gathering started ").append(connectorStats.getStartedMillis()).append("ms ago").append("<br />\n");
-                    sb.append("Total connections: ").append(connectorStats.getConnections()).append("<br />\n");
-                    sb.append("Current connections open: ").append(connectorStats.getConnectionsOpen()).append("<br />\n");
-                    sb.append("Max concurrent connections open: ").append(connectorStats.getConnectionsOpenMax()).append("<br />\n");
-                    sb.append("Mean connection duration: ").append(connectorStats.getConnectionDurationMean()).append("<br />\n");
-                    sb.append("Max connection duration: ").append(connectorStats.getConnectionDurationMax()).append("<br />\n");
-                    sb.append("Connection duration standard deviation: ").append(connectorStats.getConnectionDurationStdDev()).append("<br />\n");
-                    sb.append("Total messages in: ").append(connectorStats.getMessagesIn()).append("<br />\n");
-                    sb.append("Total messages out: ").append(connectorStats.getMessagesOut()).append("<br />\n");
-                }
-                else
-                {
-                    sb.append("Statistics gathering off.\n");
-                }
+                sb.append("Statistics gathering off.\n");
             }
         }
 

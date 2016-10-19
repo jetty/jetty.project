@@ -77,6 +77,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -168,13 +169,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         __serverInfo = serverInfo;
     }
 
-
-
     protected Context _scontext;
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
     private ClassLoader _classLoader;
     private String _contextPath = "/";
+    private String _contextPathEncoded = "/";
 
     private String _displayName;
 
@@ -195,6 +195,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<EventListener> _eventListeners=new CopyOnWriteArrayList<>();
     private final List<EventListener> _programmaticListeners=new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners=new CopyOnWriteArrayList<>();
+    private final List<ServletContextListener> _destroySerletContextListeners=new ArrayList<>();
     private final List<ServletContextAttributeListener> _servletContextAttributeListeners=new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners=new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners=new CopyOnWriteArrayList<>();
@@ -505,12 +506,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the _contextPath.
+     * @return Returns the contextPath.
      */
     @ManagedAttribute("True if URLs are compacted to replace the multiple '/'s with a single '/'")
     public String getContextPath()
     {
         return _contextPath;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the encoded contextPath.
+     */
+    public String getContextPathEncoded()
+    {
+        return _contextPathEncoded;
     }
 
     /* ------------------------------------------------------------ */
@@ -809,14 +819,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         super.doStart();
 
         // Call context listeners
+        _destroySerletContextListeners.clear();
         if (!_servletContextListeners.isEmpty())
         {
             ServletContextEvent event = new ServletContextEvent(_scontext);
             for (ServletContextListener listener:_servletContextListeners)
+            {
                 callContextInitialized(listener, event);
+                _destroySerletContextListeners.add(listener);
+            }
         }
     }
-
 
     /* ------------------------------------------------------------ */
     protected void stopContext () throws Exception
@@ -825,12 +838,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         super.doStop();
 
         //Call the context listeners
-        if (!_servletContextListeners.isEmpty())
+        ServletContextEvent event = new ServletContextEvent(_scontext);
+        Collections.reverse(_destroySerletContextListeners);
+        MultiException ex = new MultiException();
+        for (ServletContextListener listener:_destroySerletContextListeners)
         {
-            ServletContextEvent event = new ServletContextEvent(_scontext);
-            for (int i = _servletContextListeners.size(); i-->0;)
-                callContextDestroyed(_servletContextListeners.get(i),event);
+            try
+            {
+                callContextDestroyed(listener,event);
+            }
+            catch(Exception x)
+            {
+                ex.add(x);
+            }
         }
+        ex.ifExceptionThrow();
     }
 
 
@@ -1094,7 +1116,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (_contextPath.length() == 1)
                     baseRequest.setContextPath("");
                 else
-                    baseRequest.setContextPath(_contextPath);
+                    baseRequest.setContextPath(_contextPathEncoded);
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }
@@ -1165,11 +1187,30 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             }
 
-            if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
+            switch(dispatch)
             {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                baseRequest.setHandled(true);
-                return;
+                case REQUEST:
+                    if (isProtectedTarget(target))
+                    {
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                        baseRequest.setHandled(true);
+                        return;
+                    }
+                    break;
+                    
+                case ERROR:
+                    // If this is already a dispatch to an error page, proceed normally
+                    if (Boolean.TRUE.equals(baseRequest.getAttribute(Dispatcher.__ERROR_DISPATCH)))
+                        break;
+                    
+                    Object error = request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+                    // We can just call sendError here.  If there is no error page, then one will
+                    // be generated. If there is an error page, then a RequestDispatcher will be
+                    // used to route the request through appropriate filters etc.
+                    response.sendError((error instanceof Integer)?((Integer)error).intValue():500);
+                    return;
+                default:
+                    break;
             }
 
             // start manual inline of nextHandle(target,baseRequest,request,response);
@@ -1452,6 +1493,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         _contextPath = contextPath;
+        _contextPathEncoded = URIUtil.encodePath(contextPath);
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {
@@ -1676,7 +1718,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
 
         if (_classLoader == null)
-            return Loader.loadClass(this.getClass(),className);
+            return Loader.loadClass(className);
 
         return _classLoader.loadClass(className);
     }
@@ -2325,7 +2367,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 @SuppressWarnings({ "unchecked", "rawtypes" })
-                Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):(Class)_classLoader.loadClass(className);
+                Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(className):(Class)_classLoader.loadClass(className);
                 addListener(clazz);
             }
             catch (ClassNotFoundException e)
@@ -2418,7 +2460,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 //classloader, or a parent of it
                 try
                 {
-                    Class<?> reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
+                    Class<?> reflect = Loader.loadClass("sun.reflect.Reflection");
                     Method getCallerClass = reflect.getMethod("getCallerClass", Integer.TYPE);
                     Class<?> caller = (Class<?>)getCallerClass.invoke(null, 2);
 
@@ -2896,7 +2938,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /**
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
-         * @param reason An object that indicates the reason the scope is being entered
+         * @param reason An object that indicates the reason the scope is being entered.
          */
         void enterScope(Context context, Request request, Object reason);
 

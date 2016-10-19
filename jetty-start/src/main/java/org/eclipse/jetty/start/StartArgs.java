@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +27,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,8 +42,6 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * The Arguments required to start Jetty.
@@ -114,7 +113,7 @@ public class StartArgs
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     /** List of enabled modules */
-    private Set<String> modules = new HashSet<>();
+    private List<String> modules = new ArrayList<>();
 
     /** List of modules to skip [files] section validation */
     private Set<String> skipFileValidationModules = new HashSet<>();
@@ -151,17 +150,16 @@ public class StartArgs
     private List<String> rawLibs = new ArrayList<>();
 
     // jetty.base - build out commands
-    /** --add-to-startd=[module,[module]] */
-    private List<String> addToStartdIni = new ArrayList<>();
-    /** --add-to-start=[module,[module]] */
-    private List<String> addToStartIni = new ArrayList<>();
-
+    /** --add-to-start[d]=[module,[module]] */
+    private List<String> startModules = new ArrayList<>();
+    
     // module inspection commands
     /** --write-module-graph=[filename] */
     private String moduleGraphFilename;
 
     /** Collection of all modules */
     private Modules allModules;
+    
     /** Should the server be run? */
     private boolean run = true;
 
@@ -172,15 +170,17 @@ public class StartArgs
 
     private boolean help = false;
     private boolean stopCommand = false;
-    private boolean listModules = false;
+    private List<String> listModules = null;
     private boolean listClasspath = false;
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+    private boolean createStartd = false;
 
     private boolean exec = false;
     private String exec_properties;
     private boolean approveAllLicenses = false;
+   
 
     public StartArgs()
     {
@@ -364,7 +364,7 @@ public class StartArgs
         }
         else
         {
-            System.out.printf(" %s = %s%n",key,properties.expand(prop.value));
+            System.out.printf(" %s = %s%n",key,prop.value);
             if (StartLog.isDebugEnabled())
             {
                 System.out.printf("   origin: %s%n",prop.origin);
@@ -372,7 +372,7 @@ public class StartArgs
                 {
                     prop = prop.overrides;
                     System.out.printf("   (overrides)%n");
-                    System.out.printf("     %s = %s%n",key,properties.expand(prop.value));
+                    System.out.printf("     %s = %s%n",key,prop.value);
                     System.out.printf("     origin: %s%n",prop.origin);
                 }
             }
@@ -398,7 +398,7 @@ public class StartArgs
         for (String key : sortedKeys)
         {
             String value = System.getProperty(key);
-            System.out.printf(" %s = %s%n",key,properties.expand(value));
+            System.out.printf(" %s = %s%n",key,value);
         }
     }
 
@@ -513,14 +513,9 @@ public class StartArgs
         }
     }
 
-    public List<String> getAddToStartdIni()
+    public List<String> getStartModules()
     {
-        return addToStartdIni;
-    }
-
-    public List<String> getAddToStartIni()
-    {
-        return addToStartIni;
+        return startModules;
     }
 
     public Modules getAllModules()
@@ -533,7 +528,7 @@ public class StartArgs
         return classpath;
     }
 
-    public Set<String> getEnabledModules()
+    public List<String> getEnabledModules()
     {
         return this.modules;
     }
@@ -755,7 +750,7 @@ public class StartArgs
         return listConfig;
     }
 
-    public boolean isListModules()
+    public List<String> getListModules()
     {
         return listModules;
     }
@@ -779,7 +774,12 @@ public class StartArgs
     {
         return version;
     }
-
+    
+    public boolean isCreateStartd()
+    {
+        return createStartd;
+    }
+    
     public void parse(ConfigSources sources)
     {
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
@@ -793,11 +793,6 @@ public class StartArgs
         }
     }
 
-    public void parse(final String rawarg, String source)
-    {
-        parse(rawarg,source,true);
-    }
-
     /**
      * Parse a single line of argument.
      *
@@ -805,17 +800,15 @@ public class StartArgs
      *            the raw argument to parse
      * @param source
      *            the origin of this line of argument
-     * @param replaceProps
-     *            true if properties in this parse replace previous ones, false to not replace.
      */
-    private void parse(final String rawarg, String source, boolean replaceProps)
+    public void parse(final String rawarg, String source)
     {
         if (rawarg == null)
         {
             return;
         }
 
-        StartLog.debug("parse(\"%s\", \"%s\", %b)",rawarg,source,replaceProps);
+        StartLog.debug("parse(\"%s\", \"%s\")",rawarg,source);
 
         final String arg = rawarg.trim();
 
@@ -939,29 +932,51 @@ public class StartArgs
         }
 
         // Module Management
-        if ("--list-modules".equals(arg))
+        if ("--list-all-modules".equals(arg))
         {
-            listModules = true;
+            listModules = Collections.singletonList("*");
             run = false;
             return;
         }
-
-        // jetty.base build-out : add to ${jetty.base}/start.d/
-        if (arg.startsWith("--add-to-startd="))
+        
+        // Module Management
+        if ("--list-modules".equals(arg))
         {
-            List<String> moduleNames = Props.getValues(arg);
-            addToStartdIni.addAll(moduleNames);
+            listModules = Collections.singletonList("-internal");
+            run = false;
+            return;
+        }
+        
+        if (arg.startsWith("--list-modules="))
+        {
+            listModules = Props.getValues(arg);
+            run = false;
+            return;
+        }
+       
+        // jetty.base build-out : add to ${jetty.base}/start.ini
+        if ("--create-startd".equals(arg))
+        {
+            createStartd=true;
             run = false;
             download = true;
             licenseCheckRequired = true;
             return;
         }
-
-        // jetty.base build-out : add to ${jetty.base}/start.ini
+        if (arg.startsWith("--add-to-startd="))
+        {
+            String value = Props.getValue(arg);
+            StartLog.warn("--add-to-startd is deprecated! Instead use: --create-startd --add-to-start=%s",value);
+            createStartd=true;
+            startModules.addAll(Props.getValues(arg));
+            run = false;
+            download = true;
+            licenseCheckRequired = true;
+            return;
+        }
         if (arg.startsWith("--add-to-start="))
         {
-            List<String> moduleNames = Props.getValues(arg);
-            addToStartIni.addAll(moduleNames);
+            startModules.addAll(Props.getValues(arg));
             run = false;
             download = true;
             licenseCheckRequired = true;
@@ -1004,11 +1019,11 @@ public class StartArgs
             {
                 case 2:
                     System.setProperty(assign[0],assign[1]);
-                    setProperty(assign[0],assign[1],source,replaceProps);
+                    setProperty(assign[0],assign[1],source);
                     break;
                 case 1:
                     System.setProperty(assign[0],"");
-                    setProperty(assign[0],"",source,replaceProps);
+                    setProperty(assign[0],"",source);
                     break;
                 default:
                     break;
@@ -1028,36 +1043,45 @@ public class StartArgs
         }
 
         // Is this a raw property declaration?
-        int idx = arg.indexOf('=');
-        if (idx >= 0)
+        int equals = arg.indexOf('=');
+        if (equals >= 0)
         {
-            String key = arg.substring(0,idx);
-            String value = arg.substring(idx + 1);
+            String key = arg.substring(0,equals);
+            String value = arg.substring(equals + 1);
 
-            if (replaceProps)
+            if (key.endsWith("+"))
             {
-                if (propertySource.containsKey(key))
+                key = key.substring(0,key.length()-1);
+                String orig = getProperties().getString(key);
+                if (orig == null || orig.isEmpty())
                 {
-                    StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
+                    if (value.startsWith(","))
+                        value=value.substring(1);
                 }
+                else
+                {
+                    value=orig+value;
+                    source=propertySource.get(key)+","+source;
+                }
+            }
+            if (key.endsWith("?"))
+            {
+                key = key.substring(0,key.length()-1);
+                if (getProperties().containsKey(key))
+                    return;
+                
+            }
+            else if (propertySource.containsKey(key)) 
+            {
+                if(!propertySource.get(key).endsWith("[ini]"))
+                    StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
                 propertySource.put(key,source);
             }
 
-            if ("OPTION".equals(key) || "OPTIONS".equals(key))
-            {
-                StringBuilder warn = new StringBuilder();
-                warn.append("The behavior of the argument ");
-                warn.append(arg).append(" (seen in ").append(source);
-                warn.append(") has changed, and is now considered a normal property.  ");
-                warn.append(key).append(" no longer controls what libraries are on your classpath,");
-                warn.append(" use --module instead. See --help for details.");
-                StartLog.warn(warn.toString());
-            }
-
-            setProperty(key,value,source,replaceProps);
+            setProperty(key,value,source);
             return;
         }
-
+        
         // Is this an xml file?
         if (FS.isXml(arg))
         {
@@ -1083,6 +1107,8 @@ public class StartArgs
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
+
+    
     private void enableModules(String source, List<String> moduleNames)
     {
         for (String moduleName : moduleNames)
@@ -1097,18 +1123,7 @@ public class StartArgs
             list.add(source);
         }
     }
-
-    public void parseModule(Module module)
-    {
-        if (module.hasDefaultConfig())
-        {
-            for (String line : module.getDefaultConfig())
-            {
-                parse(line,module.getFilesystemRef(),false);
-            }
-        }
-    }
-
+    
     public void resolveExtraXmls(BaseHome baseHome) throws IOException
     {
         // Find and Expand XML files
@@ -1144,7 +1159,7 @@ public class StartArgs
         this.allModules = allModules;
     }
 
-    public void setProperty(String key, String value, String source, boolean replaceProp)
+    public void setProperty(String key, String value, String source)
     {
         // Special / Prevent override from start.ini's
         if (key.equals("jetty.home"))
@@ -1160,27 +1175,25 @@ public class StartArgs
             return;
         }
 
-        if (replaceProp || (!properties.containsKey(key)))
+        properties.setProperty(key,value,source);
+        if(key.equals("java.version"))
         {
-            properties.setProperty(key,value,source);
-            if(key.equals("java.version"))
-            {
-                Version ver = new Version(value);
+            Version ver = new Version(value);
 
-                properties.setProperty("java.version",ver.toShortString(),source);
-                properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
-                properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
-                properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
-                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
-            }
+            properties.setProperty("java.version",ver.toShortString(),source);
+            properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
+            properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
+            properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
+            properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
         }
     }
-
+    
     public void setRun(boolean run)
     {
         this.run = run;
     }
-
+    
+    
     @Override
     public String toString()
     {
@@ -1196,4 +1209,6 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
+
+
 }

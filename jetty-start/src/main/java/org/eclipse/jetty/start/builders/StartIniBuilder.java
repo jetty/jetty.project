@@ -21,7 +21,6 @@ package org.eclipse.jetty.start.builders;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Module;
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartLog;
-import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
 
 /**
  * Management of the <code>${jetty.base}/start.ini</code> based configuration.
@@ -87,13 +85,13 @@ public class StartIniBuilder implements BaseBuilder.Config
     }
 
     @Override
-    public boolean addModule(Module module) throws IOException
+    public String addModule(Module module) throws IOException
     {
         if (modulesPresent.contains(module.getName()))
         {
             StartLog.info("%-15s already initialised in %s",module.getName(),baseHome.toShortForm(startIni));
             // skip, already present
-            return false;
+            return null;
         }
 
         if (module.isDynamic())
@@ -103,46 +101,19 @@ public class StartIniBuilder implements BaseBuilder.Config
                 // warn
                 StartLog.warn("%-15s not adding [ini-template] from dynamic module",module.getName());
             }
-            return false;
+            return null;
         }
 
-        String mode = "";
-        boolean isTransitive = module.matches(OnlyTransitivePredicate.INSTANCE);
-        if (isTransitive)
+        if (module.hasIniTemplate() || !module.isTransitive())
         {
-            mode = "(transitively) ";
-        }
-
-        if (module.hasIniTemplate() || !isTransitive)
-        {
-            StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
-
             // Append to start.ini
             try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
             {
-                writeModuleSection(writer,module);
+                module.writeIniSection(writer);
             }
-            return true;
+            return baseHome.toShortForm(startIni);
         }
 
-        return false;
-    }
-
-    protected void writeModuleSection(BufferedWriter writer, Module module)
-    {
-        PrintWriter out = new PrintWriter(writer);
-
-        out.println("# --------------------------------------- ");
-        out.println("# Module: " + module.getName());
-        out.println("--module=" + module.getName());
-        out.println();
-
-        for (String line : module.getIniTemplate())
-        {
-            out.println(line);
-        }
-
-        out.println();
-        out.flush();
+        return null;
     }
 }

@@ -129,8 +129,21 @@ public class ObjectMBean implements DynamicMBean
                 String mName = pName + ".jmx." + cName + "MBean";
 
                 try
-                {
-                    Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName);
+                { 
+                    Class<?> mClass;
+                    try
+                    {
+                        // Look for an MBean class from the same loader that loaded the original class
+                        mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName);
+                    }
+                    catch (ClassNotFoundException e)
+                    {
+                        // Not found, so if not the same as the thread context loader, try that.
+                        if (Thread.currentThread().getContextClassLoader()==oClass.getClassLoader())
+                            throw e;
+                        LOG.ignore(e);
+                        mClass=Loader.loadClass(oClass,mName);
+                    }
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("ObjectMbean: mbeanFor {} mClass={}", o, mClass);

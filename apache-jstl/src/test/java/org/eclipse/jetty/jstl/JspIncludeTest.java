@@ -30,6 +30,7 @@ import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -37,6 +38,8 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
+import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -66,13 +69,7 @@ public class JspIncludeTest
         JAR.create(testTagLibDir, new File(libDir, "testtaglib.jar"));
         
         // Configure WebAppContext
-
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
-
-        classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+        Configurations.setServerDefault(server).add(new JettyWebXmlConfiguration(),new AnnotationConfiguration());
         
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");

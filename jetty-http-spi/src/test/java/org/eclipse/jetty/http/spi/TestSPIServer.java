@@ -32,20 +32,17 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-
 public class TestSPIServer
 {
     public static void main(String[] args) throws Exception
     {
-        String host="localhost";
+        String host = "localhost";
         int port = 8080;
-        
-        HttpServer server = new JettyHttpServerProvider().createHttpServer(new
-                InetSocketAddress(host, port), 10);
+
+        HttpServer server = new JettyHttpServerProvider().createHttpServer(new InetSocketAddress(host,port),10);
         server.start();
-        
-        final HttpContext httpContext = server.createContext("/",
-                new HttpHandler()
+
+        final HttpContext httpContext = server.createContext("/",new HttpHandler()
         {
 
             public void handle(HttpExchange exchange) throws IOException
@@ -69,7 +66,7 @@ public class TestSPIServer
 
             }
         });
-        
+
         httpContext.setAuthenticator(new BasicAuthenticator("Test")
         {
             @Override
@@ -80,9 +77,8 @@ public class TestSPIServer
                 return false;
             }
         });
-          
-        
+
         Thread.sleep(10000000);
-                
+
     }
 }

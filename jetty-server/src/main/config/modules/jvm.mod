@@ -1,3 +1,7 @@
+[description]
+A noop module that creates an ini template useful for
+setting JVM arguments (eg -Xmx )
+
 [ini-template]
 ## JVM Configuration
 ## If JVM args are include in an ini file then --exec is needed
@@ -13,7 +17,7 @@
 # -XX:+CMSClassUnloadingEnabled
 # -XX:+UseCMSCompactAtFullCollection
 # -XX:CMSInitiatingOccupancyFraction=80
-# -verbose:gc
+# -internal:gc
 # -XX:+PrintGCDateStamps
 # -XX:+PrintGCTimeStamps
 # -XX:+PrintGCDetails

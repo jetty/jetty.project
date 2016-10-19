@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
@@ -71,7 +72,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
     @Override
-    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
+    protected Connection newConnection(SelectableChannel channel, EndPoint endpoint)
     {
         SSLEngine engine = __sslCtxFactory.newSSLEngine();
         engine.setUseClientMode(false);

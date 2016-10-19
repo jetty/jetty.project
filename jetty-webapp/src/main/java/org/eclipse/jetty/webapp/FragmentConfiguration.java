@@ -31,6 +31,13 @@ import org.eclipse.jetty.util.resource.Resource;
 public class FragmentConfiguration extends AbstractConfiguration
 {
     public final static String FRAGMENT_RESOURCES="org.eclipse.jetty.webFragments";
+
+    public FragmentConfiguration()
+    {
+        beforeThis(MetaInfConfiguration.class,WebXmlConfiguration.class);
+    }
+
+   
     
     @Override
     public void preConfigure(WebAppContext context) throws Exception
@@ -40,7 +47,6 @@ public class FragmentConfiguration extends AbstractConfiguration
 
         //find all web-fragment.xmls
         findWebFragments(context, context.getMetaData());
-        
     }
 
 

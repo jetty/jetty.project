@@ -36,6 +36,23 @@ import org.junit.Test;
 public class HttpURITest
 {
     @Test
+    public void testExample() throws Exception
+    {
+        HttpURI uri = new HttpURI("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment");
+        
+        assertThat(uri.getScheme(),is("http"));
+        assertThat(uri.getUser(),is("user:password"));
+        assertThat(uri.getHost(),is("host"));
+        assertThat(uri.getPort(),is(8888));
+        assertThat(uri.getPath(),is("/ignored/../p%61th;ignored/info;param"));
+        assertThat(uri.getDecodedPath(),is("/path/info"));
+        assertThat(uri.getParam(),is("param"));
+        assertThat(uri.getQuery(),is("query=value"));
+        assertThat(uri.getFragment(),is("fragment"));
+        assertThat(uri.getAuthority(),is("host:8888"));
+    }
+
+    @Test
     public void testInvalidAddress() throws Exception
     {
         assertInvalidURI("http://[ffff::1:8080/", "Invalid URL; no closing ']' -- should throw exception");
@@ -250,4 +267,39 @@ public class HttpURITest
         assertEquals(uri.getAuthority(), "example.com:8888");
         assertEquals(uri.getUser(), "user:password");
     }
+
+    @Test
+    public void testCanonicalDecoded() throws Exception
+    {
+        HttpURI uri = new HttpURI("/path/.info");
+        assertEquals("/path/.info",uri.getDecodedPath());
+        
+        uri = new HttpURI("/path/./info");
+        assertEquals("/path/info",uri.getDecodedPath());
+        
+        uri = new HttpURI("/path/../info");
+        assertEquals("/info",uri.getDecodedPath());
+        
+        uri = new HttpURI("/./path/info.");
+        assertEquals("/path/info.",uri.getDecodedPath());
+        
+        uri = new HttpURI("./path/info/.");
+        assertEquals("path/info/",uri.getDecodedPath());
+        
+        uri = new HttpURI("http://host/path/.info");
+        assertEquals("/path/.info",uri.getDecodedPath());
+        
+        uri = new HttpURI("http://host/path/./info");
+        assertEquals("/path/info",uri.getDecodedPath());
+        
+        uri = new HttpURI("http://host/path/../info");
+        assertEquals("/info",uri.getDecodedPath());
+        
+        uri = new HttpURI("http://host/./path/info.");
+        assertEquals("/path/info.",uri.getDecodedPath());
+        
+        uri = new HttpURI("http:./path/info/.");
+        assertEquals("path/info/",uri.getDecodedPath());
+    }
+    
 }

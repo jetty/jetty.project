@@ -216,13 +216,8 @@ public class JdbcLoginServiceTest
          }
      }
 
-     protected void startClient()
+     protected void startClient(String user, String pwd)
          throws Exception
-     {
-         startClient("jetty", "jetty");
-     }
-     
-     protected void startClient(String user, String pwd) throws Exception
      {
          _client = new HttpClient();
          QueuedThreadPool executor = new QueuedThreadPool();
@@ -232,6 +227,13 @@ public class JdbcLoginServiceTest
          authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, user, pwd));
          _client.start();
      }
+
+     protected void startClient()
+         throws Exception
+     {
+         startClient("jetty", "jetty");
+     }
+
 
      protected void stopClient()
          throws Exception

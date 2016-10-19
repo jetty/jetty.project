@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -333,7 +334,7 @@ public class SslConnection extends AbstractConnection
         public DecryptedEndPoint()
         {
             // Disable idle timeout checking: no scheduler and -1 timeout for this instance.
-            super(null, getEndPoint().getLocalAddress(), getEndPoint().getRemoteAddress());
+            super(null);
             super.setIdleTimeout(-1);
         }
 
@@ -353,6 +354,18 @@ public class SslConnection extends AbstractConnection
         public boolean isOpen()
         {
             return getEndPoint().isOpen();
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            return getEndPoint().getLocalAddress();
+        }
+
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            return getEndPoint().getRemoteAddress();
         }
 
         @Override
@@ -879,8 +892,8 @@ public class SslConnection extends AbstractConnection
                                 case FINISHED:
                                     throw new IllegalStateException();
                             }
-                        }
                     }
+                }
                 }
             }
             catch (SSLHandshakeException x)
@@ -912,7 +925,7 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        public void shutdownOutput()
+        public void doShutdownOutput()
         {
             try
             {
@@ -958,20 +971,12 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        public void close()
+        public void doClose()
         {
             // First send the TLS Close Alert, then the FIN.
-            shutdownOutput();
+            doShutdownOutput();
             getEndPoint().close();
-            super.close();
-        }
-
-        protected void close(Throwable failure)
-        {
-            // First send the TLS Close Alert, then the FIN.
-            shutdownOutput();
-            getEndPoint().close();
-            super.close(failure);
+            super.doClose();
         }
 
         @Override

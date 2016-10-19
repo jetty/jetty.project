@@ -136,7 +136,7 @@ public class BrowserSocket
         if (message.charAt(0) == '@')
         {
             String name = message.substring(1);
-            URL url = Loader.getResource(BrowserSocket.class,name);
+            URL url = Loader.getResource(name);
             if (url == null)
             {
                 writeMessage("Unable to find resource: " + name);

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the remote cache.                                  -->
+  <!-- ===================================================================== -->
+  <New id="hotrodMgr" class="org.infinispan.client.hotrod.RemoteCacheManager">
+    <Call id="remoteCache" name="getCache">
+      <Arg><Property name="jetty.session.infinispan.remoteCacheName" default="sessions"/></Arg>
+    </Call>
+  </New>
+  
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for InfinispanSessionDataStore using an           -->
+  <!-- Infinispan remote cache                                               -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory">
+       <Set name="cache"><Ref id="remoteCache"/></Set>
+       <Set name="infinispanIdleTimeoutSec"><Property name="jetty.session.infinispan.idleTimeout.seconds" default="0" /></Set>
+       <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+    </New>
+   </Arg>
+  </Call>
+</Configure> 

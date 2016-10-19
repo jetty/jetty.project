@@ -30,7 +30,11 @@ import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.eclipse.jetty.webapp.FragmentConfiguration;
+import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 
 /**
@@ -44,6 +48,12 @@ public class PlusConfiguration extends AbstractConfiguration
 
     private Integer _key;
 
+    public PlusConfiguration()
+    {
+        beforeThis(EnvConfiguration.class,WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class);
+        afterThis(JettyWebXmlConfiguration.class);
+    }    
+    
     @Override
     public void preConfigure (WebAppContext context)
     throws Exception

@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -34,9 +35,11 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -86,13 +89,15 @@ public class ReloadedSessionMissingClassTest
         URLClassLoader loaderWithoutFoo = new URLClassLoader(barUrls, Thread.currentThread().getContextClassLoader());
 
        
-        AbstractTestServer server1 = new JdbcTestServer(0);
+        AbstractTestServer server1 = new JdbcTestServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE, AbstractTestServer.DEFAULT_SCAVENGE_SEC, AbstractTestServer.DEFAULT_EVICTIONPOLICY);
+        
         WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.getCanonicalPath(), contextPath);
+        webApp.getSessionHandler().getSessionCache().setRemoveUnloadableSessions(true);
         webApp.setClassLoader(loaderWithFoo);
         webApp.addServlet("Bar", "/bar");
         server1.start();
         int port1 = server1.getPort();
-        try (StacklessLogging stackless = new StacklessLogging(JDBCSessionManager.class))
+        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -116,13 +121,15 @@ public class ReloadedSessionMissingClassTest
                 
                 //restart webapp
                 webApp.start();
-                
+
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + "/bar?action=get");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
-                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-                String afterStopSessionId = (String)webApp.getServletContext().getAttribute("foo.session");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());  
                 
+                String afterStopSessionId = (String)webApp.getServletContext().getAttribute("foo.session");
+                Boolean fooPresent = (Boolean)webApp.getServletContext().getAttribute("foo.present");
+                assertFalse(fooPresent);
                 assertNotNull(afterStopSessionId);
                 assertTrue(!afterStopSessionId.equals(sessionId));  
 
@@ -137,4 +144,11 @@ public class ReloadedSessionMissingClassTest
             server1.stop();
         }
     }
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
+    
 }

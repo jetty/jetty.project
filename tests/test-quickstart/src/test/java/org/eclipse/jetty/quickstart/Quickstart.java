@@ -41,7 +41,7 @@ public class Quickstart
         Server server = new Server(8080);
         
         QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setAutoPreconfigure(true);
+        webapp.setAutoGenerate(true);
         webapp.setWar(war);
         webapp.setContextPath("/");
 

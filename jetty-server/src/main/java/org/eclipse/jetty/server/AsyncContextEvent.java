@@ -127,11 +127,6 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         return _throwable;
     }
 
-//    public void setThrowable(Throwable throwable)
-//    {
-//        _throwable=throwable;
-//    }
-
     public void setDispatchContext(ServletContext context)
     {
         _dispatchContext=context;
@@ -169,8 +164,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     {
         if (_throwable==null)
             _throwable=e;
-        else
+        else if (_throwable != e)
             _throwable.addSuppressed(e);
     }
-
 }

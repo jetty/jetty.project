@@ -24,9 +24,13 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.regex.Pattern;
 
 public class ReflectUtils
 {
+
+    private static final Pattern JAVAX_CLASSNAME_PATTERN = Pattern.compile("^javax*\\..*");
+
     private static class GenericRef
     {
         // The base class reference lookup started from
@@ -236,7 +240,7 @@ public class ReflectUtils
             Class<?> clazz = (Class<?>)type;
             // prevent spinning off into Serialization and other parts of the
             // standard tree that we could care less about
-            if (clazz.getName().matches("^javax*\\..*"))
+            if (JAVAX_CLASSNAME_PATTERN.matcher(clazz.getName()).matches())
             {
                 return false;
             }

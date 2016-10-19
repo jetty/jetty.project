@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -36,19 +38,25 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.server.session.Session.SessionInactivityTimeout;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
 
-public abstract class AbstractSessionExpiryTest
+/**
+ * AbstractSessionExpiryTest
+ *
+ *
+ */
+public abstract class AbstractSessionExpiryTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
 
-    public void pause(int scavengePeriod)
+    public void pause(int period)
     {
         try
         {
-            Thread.sleep(scavengePeriod * 2500L);
+            Thread.sleep(period * 1000L);
         }
         catch (InterruptedException e)
         {
@@ -73,14 +81,18 @@ public abstract class AbstractSessionExpiryTest
     };
     
 
+    /**
+     * Check session is preserved over stop/start
+     * @throws Exception
+     */
     @Test
     public void testSessionNotExpired() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 100;
+        int inactivePeriod = 20;
         int scavengePeriod = 10;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
@@ -104,6 +116,7 @@ public abstract class AbstractSessionExpiryTest
 
             //now stop the server
             server1.stop();
+   
 
             //start the server again, before the session times out
             server1.start();
@@ -125,6 +138,11 @@ public abstract class AbstractSessionExpiryTest
     }
     
 
+    /**
+     * Check that a session that expires whilst the server is stopped will not be
+     * able to be used when the server restarts
+     * @throws Exception
+     */
     @Test
     public void testSessionExpiry() throws Exception
     {
@@ -132,9 +150,9 @@ public abstract class AbstractSessionExpiryTest
         
         String contextPath = "";
         String servletMapping = "/server";
-        int inactivePeriod = 2;
+        int inactivePeriod = 4;
         int scavengePeriod = 1;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -161,30 +179,32 @@ public abstract class AbstractSessionExpiryTest
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
             String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
-            
+
             verifySessionCreated(listener,sessionId);
             
             //now stop the server
             server1.stop();
-
-            //and wait until the expiry time has passed
+            
+            //and wait until the session should have expired
             pause(inactivePeriod);
 
             //restart the server
             server1.start();
             
+            //and wait until the scavenger has run
+            pause(inactivePeriod+(scavengePeriod*2));
+            
             port1 = server1.getPort();
             url = "http://localhost:" + port1 + contextPath + servletMapping;
-
+            
             //make another request, the session should have expired
             Request request = client.newRequest(url + "?action=test");
             request.getHeaders().add("Cookie", sessionCookie);
             ContentResponse response2 = request.send();
+
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-            
-            //and wait until the expiry time has passed
-            pause(inactivePeriod);
-            
+            String cookie2 = response2.getHeaders().get("Set-Cookie");
+            assertTrue (!cookie2.equals(sessionCookie));
             verifySessionDestroyed (listener, sessionId);
         }
         finally
@@ -192,6 +212,73 @@ public abstract class AbstractSessionExpiryTest
             server1.stop();
         }     
     }
+    
+    
+    @Test
+    public void testRequestForSessionWithChangedTimeout () throws Exception
+    {
+      String contextPath = "";
+      String servletMapping = "/server";
+      int inactivePeriod = 5;
+      int scavengePeriod = 1;
+      AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+      ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
+      ServletHolder holder = new ServletHolder(servlet);
+      ServletContextHandler context = server1.addContext(contextPath);
+      context.addServlet(holder, servletMapping);
+      TestHttpSessionListener listener = new TestHttpSessionListener();
+      
+      context.getSessionHandler().addEventListener(listener);
+      
+      server1.start();
+      int port1 = server1.getPort();
+
+      try
+      {
+          HttpClient client = new HttpClient();
+          client.start();
+          String url = "http://localhost:" + port1 + contextPath + servletMapping;
+
+          //make a request to set up a session on the server with the session manager's inactive timeout
+          ContentResponse response = client.GET(url + "?action=init");
+          assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+          String sessionCookie = response.getHeaders().get("Set-Cookie");
+          assertTrue(sessionCookie != null);
+          // Mangle the cookie, replacing Path with $Path, etc.
+          sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+             
+         
+          //make another request to change the session timeout to a larger value
+          int newInactivePeriod = 100;
+          Request request = client.newRequest(url + "?action=change&val="+newInactivePeriod);
+          request.getHeaders().add("Cookie", sessionCookie);
+          response = request.send();
+          assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+          
+          //stop and restart the session manager to ensure it needs to reload the session
+          context.stop();
+          context.start();
+
+          //wait until the session manager timeout has passed and re-request the session
+          //which should still be valid
+          pause(inactivePeriod);
+
+          request = client.newRequest(url + "?action=check");
+          request.getHeaders().add("Cookie", sessionCookie);
+          response = request.send();
+          assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+          String sessionCookie2 = response.getHeaders().get("Set-Cookie");
+          assertNull(sessionCookie2);
+          
+      }
+      finally
+      {
+          server1.stop();
+      }     
+    }
+    
+    
+    
     public void verifySessionCreated (TestHttpSessionListener listener, String sessionId)
     {
         assertTrue(listener.createdSessions.contains(sessionId));
@@ -232,4 +319,34 @@ public abstract class AbstractSessionExpiryTest
 
         }
     }
+    
+    
+    public static class ChangeTimeoutServlet extends HttpServlet
+    {
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        {
+            String action = request.getParameter("action");
+            if ("init".equals(action))
+            {
+                HttpSession session = request.getSession(true);
+                session.setAttribute("test", "test");
+            }
+            else if ("change".equals(action))
+            {
+                String tmp = request.getParameter("val");
+                int val = (StringUtil.isBlank(tmp)?0:Integer.valueOf(tmp.trim()));
+                HttpSession session = request.getSession(false);
+                assertNotNull(session);
+                session.setMaxInactiveInterval(val);
+            }
+            else if ("check".equals(action))
+            {
+                HttpSession session = request.getSession(false);
+                assertNotNull(session);
+            }
+        }
+    }
+    
 }

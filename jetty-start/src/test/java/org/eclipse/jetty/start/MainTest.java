@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -29,6 +30,7 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -136,9 +138,9 @@ public class MainTest
         cmdLineArgs.add(lib.toString());
 
         // Arbitrary XMLs
-        cmdLineArgs.add("jetty.xml");
-        cmdLineArgs.add("jetty-jmx.xml");
-        cmdLineArgs.add("jetty-logging.xml");
+        cmdLineArgs.add("config.xml");
+        cmdLineArgs.add("config-foo.xml");
+        cmdLineArgs.add("config-bar.xml");
 
         Main main = new Main();
 
@@ -152,7 +154,7 @@ public class MainTest
     }
     
     @Test
-    public void testWithHttp2() throws Exception
+    public void testWithModules() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
@@ -162,8 +164,7 @@ public class MainTest
         cmdLineArgs.add("java.version=1.8.0_31");
 
         // Modules
-        cmdLineArgs.add("--module=deploy");
-        cmdLineArgs.add("--module=http2");
+        cmdLineArgs.add("--module=optional,extra");
 
         Main main = new Main();
 
@@ -173,17 +174,21 @@ public class MainTest
         assertThat("jetty.home",baseHome.getHome(),is(homePath.toString()));
         assertThat("jetty.base",baseHome.getBase(),is(homePath.toString()));
 
-        ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-http2.txt");
+        ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-module.txt");
     }
 
     @Test
     public void testJettyHomeWithSpaces() throws Exception
     {
-        List<String> cmdLineArgs = new ArrayList<>();
+        Path distPath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
+        Path homePath = MavenTestingUtils.getTargetTestingPath().resolve("dist home with spaces");
+        IO.copy(distPath.toFile(),homePath.toFile());
+        homePath.resolve("lib/a library.jar").toFile().createNewFile();
 
-        Path homePath = MavenTestingUtils.getTestResourceDir("jetty home with spaces").toPath().toRealPath();
+        List<String> cmdLineArgs = new ArrayList<>();
         cmdLineArgs.add("user.dir=" + homePath);
         cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("--lib=lib/a library.jar");
 
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));

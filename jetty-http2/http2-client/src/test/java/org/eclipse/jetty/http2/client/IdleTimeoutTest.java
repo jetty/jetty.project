@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -460,8 +461,13 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 sleep(idleTimeout / 2);
                 final boolean last = ++sends == 2;
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Callback.NonBlocking()
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Callback()
                 {
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return InvocationType.NON_BLOCKING;
+                    }
                     @Override
                     public void succeeded()
                     {
@@ -514,12 +520,20 @@ public class IdleTimeoutTest extends AbstractTest
         session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         final Stream stream = promise.get(5, TimeUnit.SECONDS);
 
+        Callback.Completable completable1 = new Callback.Completable();
         sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
-        sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
-        sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), completable1);
+        completable1.thenCompose(nil ->
+        {
+            Callback.Completable completable2 = new Callback.Completable();
+            sleep(idleTimeout / 2);
+            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), completable2);
+            return completable2;
+        }).thenRun(() ->
+        {
+            sleep(idleTimeout / 2);
+            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
+        });
 
         Assert.assertFalse(resetLatch.await(1, TimeUnit.SECONDS));
     }

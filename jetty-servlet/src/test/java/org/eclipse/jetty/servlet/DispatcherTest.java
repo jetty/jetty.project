@@ -86,6 +86,7 @@ public class DispatcherTest
         _contextCollection.addHandler(_contextHandler);
         _resourceHandler = new ResourceHandler();
         _resourceHandler.setResourceBase(MavenTestingUtils.getTestResourceDir("dispatchResourceTest").getAbsolutePath());
+        _resourceHandler.setPathInfoOnly(true);
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(_resourceHandler);
         _contextCollection.addHandler(resourceContextHandler);

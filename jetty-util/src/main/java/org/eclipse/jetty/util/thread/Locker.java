@@ -33,8 +33,9 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Locker
 {
+    private static final Lock LOCKED = new Lock();
     private final ReentrantLock _lock = new ReentrantLock();
-    private final Lock _unlock = new Lock();
+    private final Lock _unlock = new UnLock();
 
     public Locker()
     {
@@ -47,13 +48,29 @@ public class Locker
         _lock.lock();
         return _unlock;
     }
+    
+    public Lock lockIfNotHeld ()
+    {
+        if (_lock.isHeldByCurrentThread())
+            return LOCKED;
+        _lock.lock();
+        return _unlock;
+    }
 
     public boolean isLocked()
     {
         return _lock.isLocked();
     }
-
-    public class Lock implements AutoCloseable
+    
+    public static class Lock implements AutoCloseable
+    {
+        @Override
+        public void close()
+        {
+        }
+    }
+    
+    public class UnLock extends Lock
     {
         @Override
         public void close()

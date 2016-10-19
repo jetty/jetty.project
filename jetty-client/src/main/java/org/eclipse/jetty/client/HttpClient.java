@@ -492,7 +492,8 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination destinationFor(String scheme, String host, int port)
     {
-        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
+        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
+                !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
         scheme = scheme.toLowerCase(Locale.ENGLISH);
@@ -1037,12 +1038,25 @@ public class HttpClient extends ContainerLifeCycle
 
     public static int normalizePort(String scheme, int port)
     {
-        return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
+        if (port > 0)
+            return port;
+        else if (isSchemeSecure(scheme))
+            return 443;
+        else
+            return 80;
     }
 
     public boolean isDefaultPort(String scheme, int port)
     {
-        return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
+        if (isSchemeSecure(scheme))
+            return port == 443;
+        else
+            return port == 80;
+    }
+
+    static boolean isSchemeSecure(String scheme)
+    {
+        return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
@@ -197,7 +196,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 HttpClient client = destination.getHttpClient();
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
-                if (HttpScheme.HTTPS.is(destination.getScheme()))
+                if (destination.isSecure())
                     connectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
                 org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
                 getEndPoint().upgrade(newConnection);

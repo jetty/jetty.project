@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for MongoSessionDataStores                        -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory">      
+       <Set name="dbName"><Property name="jetty.session.mongo.dbName" default="HttpSessions" /></Set>
+       <Set name="collectionName"><Property name="jetty.session.mongo.collectionName" default="jettySessions" /></Set>
+       <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+       <Set name="host"><Property name="jetty.session.mongo.host" default="localhost"/></Set>
+       <Set name="port"><Property name="jetty.session.mongo.port" default="27017"/></Set>
+    </New>
+   </Arg>
+  </Call>
+  
+</Configure>

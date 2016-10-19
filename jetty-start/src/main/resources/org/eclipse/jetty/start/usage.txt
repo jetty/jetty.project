@@ -59,7 +59,7 @@ Debug and Start Logging:
 Module Management:
 ------------------
 
-  --list-modules   List all modules defined by the system.
+  --list-modules   List non verbose modules defined by the system.
                    Looking for module files in ${jetty.base}/modules/*.mod and
                    then ${jetty.home}/modules/*.mod
                    Will also list enabled state based on information
@@ -67,6 +67,14 @@ Module Management:
                     o  The command line
                     o  The ${jetty.base}/start.ini
                     o  The ${jetty.base}/start.d/*.ini files
+  
+  --list-modules=<tag>(,<tag>)*
+                   List modules by tag. Use '*' for all tags. Prefix a tag 
+                   with '-' to exclude the tag.  The special tag "internal"
+                   is always excluded unless it is explicitly included.
+                   
+  --list-all-modules
+                   List all modules.
 
   --module=<modulename>(,<modulename>)*
                    Temporarily enable a module from the command line.
@@ -74,24 +82,35 @@ Module Management:
                    or ${jetty.base}/start.d/*.ini files.
                    
   --add-to-start=<modulename>(,<modulename>)*
-                   Enable a module by appending lines to the
-                   ${jetty.base}/start.ini file.
+                   Add the modules to the list of modules enabled at start. 
+                   Transitive dependencies are followed and dependent
+                   modules may also explicitly added.
+                   Modules are added to the start by creating an ini file
+                   that contains the --module argument and any other parameters
+                   defined in the modules ini template.                    
+                   If the directory ${jetty.base}/start.d 
+                   exists then <modulename>.ini files are created within
+                   that directory, otherwise then enabling configuration
+                   is appended to the ${jetty.base}/start.ini file.
+                   
+        FS.ensureDirectoryExists(startDir);
+        FS.ensureDirectoryExists(startDir);
+                   modules that the specified module depends on are also
+       .
+       If the directory ${jetty.base}/start.d 
+                   exists then <modulename>.ini files are created within
+                   that directory, otherwise then enabling configuration
+                   is appended to the ${jetty.base}/start.ini file.
                    Lines that are added come from the ini template that
                    the module itself maintains.
-                   Transitive module dependencies are followed and all
-                   modules that the specified module depends on are also
-                   enabled in the ${jetty.base}/start.ini using the same
-                   techniques.
-                   Note: not all modules have ini templates.
+       
+                   Note: not all modules have ini templates and thus may
+                   be transitively enabled and not explicitly enabled in
+                   a ini file.
 
-  --add-to-startd=<modulename>(,<modulename>)*
-                   Enable a module via creation of an ini file in the
-                   ${jetty.base}/start.d/ directory.
-                   Uses ini template that the module itself maintains.
-                   Transitive module dependencies are followed and all
-                   modules that the specified module depends on are also
-                   enabled via their own ini files in the same directory.
-                   Note: not all modules have ini templates.
+  --create-startd  Ensure that a start.d directory exists for use by
+                   subsequent --add-to-start=*. If a start.ini file exists
+                   it is moved to the start.d directory
 
   --write-module-graph=<filename>
                    Create a graphviz *.dot file of the module graph as it
@@ -126,26 +145,6 @@ Startup / Shutdown Command Line:
                    The server must have been started with a STOP.PORT=<port>
                    property set and the stop command must have the same property.
 
-Properties:
-
-    STOP.HOST=[string]
-      The host to use to stop the running Jetty server (defaults to 127.0.0.1)
-      Required along with STOP.PORT if you want to use the --stop option above.
-      
-    STOP.PORT=[number]
-      The port to use to stop the running Jetty server.
-      Required along with STOP.KEY if you want to use the --stop option above.
-
-    STOP.KEY=[alphanumeric]
-      The passphrase defined to stop the server.
-      Required along with STOP.PORT if you want to use the --stop option above.
-
-    STOP.WAIT=[number]
-      The time (in seconds) to wait for confirmation that the running
-      Jetty server has stopped. If not specified, the stopper will wait
-      indefinitely. Use in conjunction with the --stop option.
-
-
 Advanced Commands:
 ------------------
 
@@ -169,11 +168,26 @@ Advanced Commands:
 
 Properties:
 -----------
+  Properties are used to parameterize:
+    + XML files using the <Property name="pname"/> element 
+    + Module files using the ${pname} syntax
 
-  These are set with a command line like "java -jar start.jar name=value"
-  and only affect the start mechanism.  Some of these are defined in the
-  default start.config and will not be available if another configuration
-  file is used. NOTE: Not all properties are listed here:
+  Propertues may be set on the command line, in a ini file or in a [ini]
+  section of a module using the following syntax:
+
+    name=value
+      Set a property that can be expanded in XML files with the <Property> element.
+
+    name+=value
+      Append value to an existing property value.
+      
+    name+=,value
+      Append value to an existing property value, using a comma separator if needed.
+
+    name?=value
+      Set a property only if it is not already set.
+
+  Each module may definte it's own properties. Start properties defined include:
 
     jetty.home=[directory]
       Set the home directory of the jetty distribution.
@@ -182,6 +196,23 @@ Properties:
       Set the jetty configuration directory.  This is where the etc, webapps and start
       files will be looked for. If not found in jetty.base, they are looked for in
       jetty.home.
+
+    STOP.HOST=[string]
+      The host to use to stop the running Jetty server (defaults to 127.0.0.1)
+      Required along with STOP.PORT if you want to use the --stop option above.
+      
+    STOP.PORT=[number]
+      The port to use to stop the running Jetty server.
+      Required along with STOP.KEY if you want to use the --stop option above.
+
+    STOP.KEY=[alphanumeric]
+      The passphrase defined to stop the server.
+      Required along with STOP.PORT if you want to use the --stop option above.
+
+    STOP.WAIT=[number]
+      The time (in seconds) to wait for confirmation that the running
+      Jetty server has stopped. If not specified, the stopper will wait
+      indefinitely. Use in conjunction with the --stop option.
 
 
 Defaults:

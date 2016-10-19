@@ -1,30 +1,17 @@
-# The XMLs we expect (order is important)
-XML|${jetty.home}/etc/jetty.xml
-XML|${jetty.home}/etc/jetty-http.xml
+## The XMLs we expect (order is important)
+XML|${jetty.home}/etc/base.xml
+XML|${jetty.home}/etc/main.xml
 
 # The LIBs we expect (order is irrelevant)
-LIB|${jetty.home}/lib/jetty-http-9.3.jar
-LIB|${jetty.home}/lib/jetty-io-9.3.jar
-LIB|${jetty.home}/lib/jetty-schemas-3.1.jar
-LIB|${jetty.home}/lib/jetty-server-9.3.jar
-LIB|${jetty.home}/lib/jetty-util-9.3.jar
-LIB|${jetty.home}/lib/jetty-xml-9.3.jar
-LIB|${jetty.home}/lib/servlet-api-3.1.jar
+LIB|${jetty.home}/lib/base.jar
+LIB|${jetty.home}/lib/main.jar
+LIB|${jetty.home}/lib/other.jar
 
 # The Properties we expect (order is irrelevant)
-# (this is the property we actually set in jetty.base)
-PROP|jetty.http.port=9090
+PROP|main.prop=value0
 PROP|port=9090
-# (these are the ones set by default from jetty.home modules)
-# PROP|jetty.http.idleTimeout=30000
-# PROP|jetty.httpConfig.delayDispatchUntilContent=false
-# PROP|jetty.server.dumpAfterStart=false
-# PROP|jetty.server.dumpBeforeStop=false
-# PROP|jetty.httpConfig.outputBufferSize=32768
-# PROP|jetty.httpConfig.requestHeaderSize=8192
-# PROP|jetty.httpConfig.responseHeaderSize=8192
-# PROP|jetty.httpConfig.sendDateHeader=false
-# PROP|jetty.httpConfig.sendServerVersion=true
-# PROP|jetty.threadPool.maxThreads=200
-# PROP|jetty.threadPool.minThreads=10
-# PROP|jetty.threadPool.idleTimeout=60000
+PROP|other=value
+PROP|jetty.http.port=9090
+PROP|add=beginningmiddleend
+PROP|list=one,two,three
+PROP|name=value

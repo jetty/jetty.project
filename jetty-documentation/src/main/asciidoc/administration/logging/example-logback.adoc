@@ -14,10 +14,9 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[example-logging-logback]]
 === Example: Logging with Logback
 
-It is possible to have the Jetty Server logging configured so that Logback controls the output of logging events produced by Jetty. 
+It is possible to have the Jetty Server logging configured so that Logback controls the output of logging events produced by Jetty.
 This is accomplished by configuring Jetty for logging to `Logback`, which uses http://slf4j.org/manual.html[Slf4j] and the http://logback.qos.ch/[Logback Implementation for Slf4j].
 
 A convenient replacement `logging` module has been created to bootstrap the `${jetty.base}` directory for logging with logback.

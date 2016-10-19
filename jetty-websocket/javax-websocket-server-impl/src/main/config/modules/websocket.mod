@@ -1,6 +1,5 @@
-#
-# WebSocket Module
-#
+[description]
+Enable websockets for deployed web applications
 
 [depend]
 # javax.websocket needs annotations

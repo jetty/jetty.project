@@ -103,7 +103,15 @@ public class DataGenerateParseTest
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateData(lease, 13, data.slice(), true, data.remaining());
+            ByteBuffer slice = data.slice();
+            int generated = 0;
+            while (true)
+            {
+                generated += generator.generateData(lease, 13, slice, true, slice.remaining());
+                generated -= Frame.HEADER_LENGTH;
+                if (generated == data.remaining())
+                    break;
+            }
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -135,7 +143,15 @@ public class DataGenerateParseTest
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             ByteBuffer data = ByteBuffer.wrap(largeContent);
-            generator.generateData(lease, 13, data.slice(), true, data.remaining());
+            ByteBuffer slice = data.slice();
+            int generated = 0;
+            while (true)
+            {
+                generated += generator.generateData(lease, 13, slice, true, slice.remaining());
+                generated -= Frame.HEADER_LENGTH;
+                if (generated == data.remaining())
+                    break;
+            }
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())

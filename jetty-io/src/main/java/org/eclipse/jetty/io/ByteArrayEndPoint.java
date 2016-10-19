@@ -20,7 +20,10 @@ package org.eclipse.jetty.io;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
@@ -36,7 +39,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-
 /* ------------------------------------------------------------ */
 /** ByteArrayEndPoint.
  *
@@ -44,7 +46,28 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
     static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
-    public final static InetSocketAddress NOIP=new InetSocketAddress(0);
+    static final InetAddress  NOIP;
+    static final InetSocketAddress NOIPPORT;
+    
+    static
+    {
+        InetAddress noip=null;
+        try
+        {
+            noip = Inet4Address.getByName("0.0.0.0");
+        }
+        catch (UnknownHostException e)
+        {
+            LOG.warn(e);
+        }
+        finally
+        {
+            NOIP=noip;
+            NOIPPORT=new InetSocketAddress(NOIP,0);
+        }
+    }
+    
+    
     private static final ByteBuffer EOF = BufferUtil.allocate(0);
 
     private final Runnable _runFillable = new Runnable()
@@ -60,9 +83,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private final Condition _hasOutput = _locker.newCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
     private ByteBuffer _out;
-    private boolean _ishut;
-    private boolean _oshut;
-    private boolean _closed;
     private boolean _growOutput;
 
     /* ------------------------------------------------------------ */
@@ -115,11 +135,48 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     /* ------------------------------------------------------------ */
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
     {
-        super(timer,NOIP,NOIP);
+        super(timer);
         if (BufferUtil.hasContent(input))
             addInput(input);
         _out=output==null?BufferUtil.allocate(1024):output;
         setIdleTimeout(idleTimeoutMs);
+        onOpen();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void doShutdownOutput()
+    {
+        super.doShutdownOutput(); 
+        try(Locker.Lock lock = _locker.lock())
+        {
+            _hasOutput.signalAll();
+        }  
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void doClose()
+    {
+        super.doClose();
+        try(Locker.Lock lock = _locker.lock())
+        {
+            _hasOutput.signalAll();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return NOIPPORT;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return NOIPPORT;
     }
 
     /* ------------------------------------------------------------ */
@@ -141,7 +198,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         try(Locker.Lock lock = _locker.lock())
         {
-            if (_closed)
+            if (!isOpen())
                 throw new ClosedChannelException();
 
             ByteBuffer in = _inQ.peek();
@@ -282,7 +339,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
         try(Locker.Lock lock = _locker.lock())
         {
-            while (BufferUtil.isEmpty(_out) && !_closed && !_oshut)
+            while (BufferUtil.isEmpty(_out) && !isOutputShutdown())
             {
                 _hasOutput.await(time,unit);
             }
@@ -327,95 +384,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#isOpen()
-     */
-    @Override
-    public boolean isOpen()
-    {
-        try(Locker.Lock lock = _locker.lock())
-        {
-            return !_closed;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     */
-    @Override
-    public boolean isInputShutdown()
-    {
-        try(Locker.Lock lock = _locker.lock())
-        {
-            return _ishut||_closed;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     */
-    @Override
-    public boolean isOutputShutdown()
-    {
-        try(Locker.Lock lock = _locker.lock())
-        {
-            return _oshut||_closed;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void shutdownInput()
-    {
-        boolean close=false;
-        try(Locker.Lock lock = _locker.lock())
-        {
-            _ishut=true;
-            if (_oshut && !_closed)
-                close=_closed=true;
-        }
-        if (close)
-            super.close();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#shutdownOutput()
-     */
-    @Override
-    public void shutdownOutput()
-    {
-        boolean close=false;
-        try(Locker.Lock lock = _locker.lock())
-        {
-            _oshut=true;
-            _hasOutput.signalAll();
-            if (_ishut && !_closed)
-                close=_closed=true;
-        }
-        if (close)
-            super.close();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#close()
-     */
-    @Override
-    public void close()
-    {
-        boolean close=false;
-        try(Locker.Lock lock = _locker.lock())
-        {
-            if (!_closed)
-                close=_closed=_ishut=_oshut=true;
-
-            _hasOutput.signalAll();
-        }
-        if (close)
-            super.close();
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @return <code>true</code> if there are bytes remaining to be read from the encoded input
      */
@@ -432,15 +400,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public int fill(ByteBuffer buffer) throws IOException
     {
         int filled=0;
-        boolean close=false;
         try(Locker.Lock lock = _locker.lock())
         {
             while(true)
             {
-                if (_closed)
+                if (!isOpen())
                     throw new EofException("CLOSED");
 
-                if (_ishut)
+                if (isInputShutdown())
                     return -1;
 
                 if (_inQ.isEmpty())
@@ -449,9 +416,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 ByteBuffer in= _inQ.peek();
                 if (in==EOF)
                 {
-                    _ishut=true;
-                    if (_oshut)
-                        close=_closed=true;
                     filled=-1;
                     break;
                 }
@@ -467,10 +431,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             }
         }
 
-        if (close)
-            super.close();
         if (filled>0)
             notIdle();
+        else if (filled<0)
+            shutdownInput();
         return filled;
     }
 
@@ -484,11 +448,11 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         boolean flushed=true;
         try(Locker.Lock lock = _locker.lock())
         {
-            if (_closed)
+            if (!isOpen())
                 throw new IOException("CLOSED");
-            if (_oshut)
+            if (isOutputShutdown())
                 throw new IOException("OSHUT");
-
+            
             boolean idle=true;
 
             for (ByteBuffer b : buffers)
@@ -533,14 +497,11 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         try(Locker.Lock lock = _locker.lock())
         {
-            getFillInterest().onClose();
-            getWriteFlusher().onClose();
-            _ishut=false;
-            _oshut=false;
-            _closed=false;
             _inQ.clear();
+            _hasOutput.signalAll();
             BufferUtil.clear(_out);
         }
+        super.reset();
     }
 
     /* ------------------------------------------------------------ */

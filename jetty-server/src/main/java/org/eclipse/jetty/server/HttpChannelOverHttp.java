@@ -127,11 +127,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     break;
 
                 case HOST:
-                    if (!_metadata.getURI().isAbsolute() && field instanceof HostPortHttpField)
-                    {
-                        HostPortHttpField hp = (HostPortHttpField)field;
-                        _metadata.getURI().setAuthority(hp.getHost(), hp.getPort());
-                    }
+                    if (!(field instanceof HostPortHttpField) && value!=null && !value.isEmpty())
+                        field = new HostPortHttpField(value);
                     break;
 
                 case EXPECT:

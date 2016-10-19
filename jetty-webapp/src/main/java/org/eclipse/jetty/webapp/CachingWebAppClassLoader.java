@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -36,6 +38,8 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject
 public class CachingWebAppClassLoader extends WebAppClassLoader
 {
+    private static final Logger LOG = Log.getLogger(CachingWebAppClassLoader.class);
+    
     private final ConcurrentHashSet<String> _notFound = new ConcurrentHashSet<>();
     private final ConcurrentHashMap<String,URL> _cache = new ConcurrentHashMap<>();
     
@@ -53,7 +57,11 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     public URL getResource(String name)
     {
         if (_notFound.contains(name))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not found cache hit resource {}",name);
             return null;
+        }
         
         URL url = _cache.get(name);
         
@@ -63,6 +71,8 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         
             if (url==null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Caching not found resource {}",name);
                 _notFound.add(name);
             }
             else
@@ -75,33 +85,26 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     }
 
     @Override
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
+    public Class<?> loadClass(String name) throws ClassNotFoundException
     {
         if (_notFound.contains(name))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not found cache hit resource {}",name);
             throw new ClassNotFoundException(name+": in notfound cache");
+        }
         try
         {
-            return super.loadClass(name,resolve);
+            return super.loadClass(name);
         }
         catch (ClassNotFoundException nfe)
         {
-            _notFound.add(name);
-            throw nfe; 
-        }
-    }
-
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException
-    {
-        if (_notFound.contains(name))
-            throw new ClassNotFoundException(name+": in notfound cache");
-        try
-        {
-            return super.findClass(name);
-        }
-        catch (ClassNotFoundException nfe)
-        {
-            _notFound.add(name);
+            if (_notFound.add(name))
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Caching not found {}",name);
+                    LOG.debug(nfe);
+                }
             throw nfe; 
         }
     }

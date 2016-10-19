@@ -27,14 +27,19 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * ServiceContextProvider
@@ -50,6 +55,55 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     private Map<ServiceReference, App> _serviceMap = new HashMap<ServiceReference, App>();
     
     private ServiceRegistration _serviceRegForServices;
+    
+    ServiceTracker _tracker;
+    
+    
+    /**
+     * ContextTracker
+     *
+     *
+     */
+    public class ContextTracker extends ServiceTracker
+    {
+        
+        public ContextTracker (BundleContext bundleContext, Filter filter)
+        {
+            super(bundleContext, filter, null);
+        }
+
+        /** 
+         * @see org.osgi.util.tracker.ServiceTracker#addingService(org.osgi.framework.ServiceReference)
+         */
+        @Override
+        public Object addingService(ServiceReference reference)
+        {
+            ContextHandler h = (ContextHandler)context.getService(reference);
+            serviceAdded (reference, h);                      
+            return h;
+        }
+
+        /** 
+         * @see org.osgi.util.tracker.ServiceTracker#modifiedService(org.osgi.framework.ServiceReference, java.lang.Object)
+         */
+        @Override
+        public void modifiedService(ServiceReference reference, Object service)
+        {
+            removedService(reference,service);
+            addingService(reference);
+        }
+
+        /** 
+         * @see org.osgi.util.tracker.ServiceTracker#removedService(org.osgi.framework.ServiceReference, java.lang.Object)
+         */
+        @Override
+        public void removedService(ServiceReference reference, Object service)
+        {
+            context.ungetService(reference);
+            serviceRemoved(reference, (ContextHandler)service);
+        }
+    }
+    
     
     
     /**
@@ -162,6 +216,15 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     @Override
     protected void doStart() throws Exception
     {
+
+        BundleContext bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
+
+        //Start a tracker to find webapps that are osgi services that are targetted to my server name
+        _tracker = new ContextTracker (bundleContext, 
+                                       Util.createFilter(bundleContext, ContextHandler.class.getName(), getServerInstanceWrapper().getManagedServerName()));
+        _tracker.open();
+
+        
         //register as an osgi service for deploying contexts defined in a bundle, advertising the name of the jetty Server instance we are related to
         Dictionary<String,String> properties = new Hashtable<String,String>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
@@ -175,6 +238,9 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
     @Override
     protected void doStop() throws Exception
     {
+        if (_tracker != null)
+            _tracker.close();
+        
         //unregister ourselves 
         if (_serviceRegForServices != null)
         {

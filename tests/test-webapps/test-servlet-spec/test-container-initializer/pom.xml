@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-container-initializer</artifactId>
   <packaging>jar</packaging>
@@ -13,29 +13,6 @@
   </properties>
   <build>
     <plugins>
-       <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <verbose>false</verbose>
-        </configuration>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-            <execution>
-                <id>artifact-jar</id>
-                <goals>
-                    <goal>jar</goal>
-                </goals>
-            </execution>
-        </executions>
-        <configuration>
-            <archive>
-                <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
-            </archive>
-        </configuration>
-      </plugin>
       <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>

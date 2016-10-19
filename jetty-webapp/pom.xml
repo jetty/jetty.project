@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.13-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-webapp</artifactId>
@@ -40,6 +40,19 @@
         <configuration>
           <forkCount>1</forkCount>
           <reuseForks>false</reuseForks>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Require-Capability>
+              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)",
+              osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.webapp.Configuration)";cardinality:=multiple
+            </Require-Capability>
+          </instructions>
         </configuration>
       </plugin>
     </plugins>

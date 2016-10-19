@@ -26,18 +26,16 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.BaseHolder.Source;
+import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ServletHandlerTest
 {
-    FilterHolder fh1 = new FilterHolder(Source.DESCRIPTOR);
+    FilterHolder fh1 = new FilterHolder( new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
     FilterMapping fm1 = new FilterMapping();
     
-    FilterHolder fh2 = new FilterHolder(Source.DESCRIPTOR);
+    FilterHolder fh2 = new FilterHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
     FilterMapping fm2 = new FilterMapping();
     
     FilterHolder fh3 = new FilterHolder(Source.JAVAX_API);
@@ -50,13 +48,13 @@ public class ServletHandlerTest
     FilterMapping fm5 = new FilterMapping();
     
     
-    ServletHolder sh1 = new ServletHolder(Source.DESCRIPTOR);
+    ServletHolder sh1 = new ServletHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
     ServletMapping sm1 = new ServletMapping();
     
-    ServletHolder sh2 = new ServletHolder(Source.DESCRIPTOR);
+    ServletHolder sh2 = new ServletHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
     ServletMapping sm2 = new ServletMapping();
     
-    ServletHolder sh3 = new ServletHolder(Source.DESCRIPTOR);
+    ServletHolder sh3 = new ServletHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
     ServletMapping sm3 = new ServletMapping();
     
 
@@ -139,9 +137,9 @@ public class ServletHandlerTest
 
         handler.updateMappings();
 
-        PathMap.MappedEntry<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+        MappedResource<ServletHolder> entry=handler.getHolderEntry("/foo/*");
         assertNotNull(entry);
-        assertEquals("s1", entry.getValue().getName());
+        assertEquals("s1", entry.getResource().getName());
     }
     
     
@@ -184,9 +182,9 @@ public class ServletHandlerTest
         handler.addServletMapping(sm2);
         handler.updateMappings();
         
-       PathMap.MappedEntry<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+       MappedResource<ServletHolder> entry=handler.getHolderEntry("/foo/*");
        assertNotNull(entry);
-       assertEquals("s2", entry.getValue().getName());
+       assertEquals("s2", entry.getResource().getName());
     }
 
     @Test
@@ -206,7 +204,7 @@ public class ServletHandlerTest
         assertTrue(fm2 == mappings[1]);
         
         //add another ordinary mapping
-        FilterHolder of1 = new FilterHolder(Source.DESCRIPTOR);
+        FilterHolder of1 = new FilterHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
         FilterMapping ofm1 = new FilterMapping();
         ofm1.setFilterHolder(of1);
         ofm1.setPathSpec("/*");

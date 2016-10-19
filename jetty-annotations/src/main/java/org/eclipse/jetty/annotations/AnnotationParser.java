@@ -544,28 +544,24 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to find class
      * @param className the class name to parse
-     * @param resolver the class name resolver to use 
      * @throws Exception if unable to parse
      */
-    public void parse (Set<? extends Handler> handlers, String className, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, String className)
     throws Exception
     {
         if (className == null)
             return;
 
-        if (!resolver.isExcluded(className))
+        if (!isParsed(className))
         {
-            if (!isParsed(className) || resolver.shouldOverride(className))
+            className = className.replace('.', '/')+".class";
+            URL resource = Loader.getResource(className);
+            if (resource!= null)
             {
-                className = className.replace('.', '/')+".class";
-                URL resource = Loader.getResource(this.getClass(), className);
-                if (resource!= null)
+                Resource r = Resource.newResource(resource);
+                try (InputStream is = r.getInputStream())
                 {
-                    Resource r = Resource.newResource(resource);
-                    try (InputStream is = r.getInputStream())
-                    {
-                        scanClass(handlers, null, is);
-                    }
+                    scanClass(handlers, null, is);
                 }
             }
         }
@@ -578,32 +574,29 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for class in 
      * @param clazz the class to look for
-     * @param resolver the resolver to look up class with
      * @param visitSuperClasses if true, also visit super classes for parse 
      * @throws Exception if unable to parse class
      */
-    public void parse (Set<? extends Handler> handlers, Class<?> clazz, ClassNameResolver resolver, boolean visitSuperClasses)
+    public void parse (Set<? extends Handler> handlers, Class<?> clazz, boolean visitSuperClasses)
     throws Exception
     {
         Class<?> cz = clazz;
         while (cz != null)
         {
-            if (!resolver.isExcluded(cz.getName()))
+            if (!isParsed(cz.getName()))
             {
-                if (!isParsed(cz.getName()) || resolver.shouldOverride(cz.getName()))
+                String nameAsResource = cz.getName().replace('.', '/')+".class";
+                URL resource = Loader.getResource(nameAsResource);
+                if (resource!= null)
                 {
-                    String nameAsResource = cz.getName().replace('.', '/')+".class";
-                    URL resource = Loader.getResource(this.getClass(), nameAsResource);
-                    if (resource!= null)
+                    Resource r = Resource.newResource(resource);
+                    try (InputStream is =  r.getInputStream())
                     {
-                        Resource r = Resource.newResource(resource);
-                        try (InputStream is =  r.getInputStream())
-                        {
-                            scanClass(handlers, null, is);
-                        }
+                        scanClass(handlers, null, is);
                     }
                 }
             }
+
 
             if (visitSuperClasses)
                 cz = cz.getSuperclass();
@@ -619,16 +612,15 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to look for class in 
      * @param classNames the class name
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    public void parse (Set<? extends Handler> handlers, String[] classNames, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, String[] classNames)
     throws Exception
     {
         if (classNames == null)
             return;
 
-        parse(handlers, Arrays.asList(classNames), resolver);
+        parse(handlers, Arrays.asList(classNames));
     }
 
     
@@ -637,10 +629,9 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to look for class in 
      * @param classNames the class names
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    public void parse (Set<? extends Handler> handlers, List<String> classNames, ClassNameResolver resolver)
+    public void parse (Set<? extends Handler> handlers, List<String> classNames)
     throws Exception
     {
         MultiException me = new MultiException();
@@ -649,10 +640,10 @@ public class AnnotationParser
         {
             try
             {
-                if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
+                if (!isParsed(s))
                 {
                     s = s.replace('.', '/')+".class";
-                    URL resource = Loader.getResource(this.getClass(), s);
+                    URL resource = Loader.getResource(s);
                     if (resource!= null)
                     {
                         Resource r = Resource.newResource(resource);
@@ -677,10 +668,9 @@ public class AnnotationParser
      * 
      * @param handlers the set of handlers to look for classes in 
      * @param dir the resource directory to look for classes
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    protected void parseDir (Set<? extends Handler> handlers, Resource dir, ClassNameResolver resolver)
+    protected void parseDir (Set<? extends Handler> handlers, Resource dir)
     throws Exception
     {
         // skip dirs whose name start with . (ie hidden)
@@ -696,7 +686,7 @@ public class AnnotationParser
         {
             Resource res = dir.addPath(files[f]);
             if (res.isDirectory())
-                parseDir(handlers, res, resolver);
+                parseDir(handlers, res);
             else
             {
                 //we've already verified the directories, so just verify the class file name
@@ -706,7 +696,7 @@ public class AnnotationParser
                     try
                     {
                         String name = res.getName();
-                        if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
+                        if (!isParsed(name))
                         {
                             Resource r = Resource.newResource(res.getURL());
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
@@ -741,10 +731,9 @@ public class AnnotationParser
      * @param loader the classloader for the classes
      * @param visitParents if true, visit parent classloaders too
      * @param nullInclusive if true, an empty pattern means all names match, if false, none match
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive)
     throws Exception
     {
         if (loader==null)
@@ -762,7 +751,7 @@ public class AnnotationParser
             {
                 try
                 {
-                    parseJarEntry(handlers, Resource.newResource(jarUri), entry, resolver);
+                    parseJarEntry(handlers, Resource.newResource(jarUri), entry);
                 }
                 catch (Exception e)
                 {
@@ -782,10 +771,9 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param uris the uris for the jars
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    public void parse (final Set<? extends Handler> handlers, final URI[] uris, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, final URI[] uris)
     throws Exception
     {
         if (uris==null)
@@ -797,7 +785,7 @@ public class AnnotationParser
         {
             try
             {
-                parse(handlers, uri, resolver);
+                parse(handlers, uri);
             }
             catch (Exception e)
             {
@@ -812,16 +800,15 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in 
      * @param uri the uri for the jar 
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    public void parse (final Set<? extends Handler> handlers, URI uri, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, URI uri)
     throws Exception
     {
         if (uri == null)
             return;
 
-        parse (handlers, Resource.newResource(uri), resolver);
+        parse (handlers, Resource.newResource(uri));
     }
 
     
@@ -830,10 +817,9 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param r the resource to parse
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    public void parse (final Set<? extends Handler> handlers, Resource r, final ClassNameResolver resolver)
+    public void parse (final Set<? extends Handler> handlers, Resource r)
     throws Exception
     {
         if (r == null)
@@ -841,14 +827,14 @@ public class AnnotationParser
         
         if (r.exists() && r.isDirectory())
         {
-            parseDir(handlers, r, resolver);
+            parseDir(handlers, r);
             return;
         }
 
         String fullname = r.toString();
         if (fullname.endsWith(".jar"))
         {
-            parseJar(handlers, r, resolver);
+            parseJar(handlers, r);
             return;
         }
 
@@ -872,10 +858,9 @@ public class AnnotationParser
      * 
      * @param handlers the handlers to look for classes in  
      * @param jarResource the jar resource to parse
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    protected void parseJar (Set<? extends Handler> handlers, Resource jarResource,  final ClassNameResolver resolver)
+    protected void parseJar (Set<? extends Handler> handlers, Resource jarResource)
     throws Exception
     {
         if (jarResource == null)
@@ -899,7 +884,7 @@ public class AnnotationParser
                 {      
                     try
                     {
-                        parseJarEntry(handlers, jarResource, entry, resolver);                        
+                        parseJarEntry(handlers, jarResource, entry);                        
                     }
                     catch (Exception e)
                     {
@@ -927,10 +912,9 @@ public class AnnotationParser
      * @param handlers the handlers to look for classes in  
      * @param jar the jar resource to parse
      * @param entry the entry in the jar resource to parse
-     * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry, final ClassNameResolver resolver)
+    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry)
     throws Exception
     {
         if (jar == null || entry == null)
@@ -947,9 +931,7 @@ public class AnnotationParser
         {
             String shortName =  name.replace('/', '.').substring(0,name.length()-6);
 
-            if ((resolver == null)
-                    ||
-               (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+            if (!isParsed(shortName))
             {
                 Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};

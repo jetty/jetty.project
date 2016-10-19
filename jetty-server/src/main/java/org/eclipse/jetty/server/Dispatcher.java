@@ -31,16 +31,15 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
 
 public class Dispatcher implements RequestDispatcher
 {
+    public final static String __ERROR_DISPATCH="org.eclipse.jetty.server.Dispatcher.ERROR";
+    
     /** Dispatch include attribute names */
     public final static String __INCLUDE_PREFIX="javax.servlet.include.";
 
@@ -76,7 +75,15 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        forward(request, response, DispatcherType.ERROR);
+        try
+        {
+            request.setAttribute(__ERROR_DISPATCH,Boolean.TRUE);
+            forward(request, response, DispatcherType.ERROR);
+        }
+        finally
+        {
+            request.setAttribute(__ERROR_DISPATCH,null);
+        }
     }
 
     @Override
@@ -129,7 +136,7 @@ public class Dispatcher implements RequestDispatcher
 
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
-        Request baseRequest=Request.getBaseRequest(request);
+        Request baseRequest=Request.getBaseRequest(request);                
         Response base_response=baseRequest.getResponse();
         base_response.resetForForward();
 
@@ -137,21 +144,18 @@ public class Dispatcher implements RequestDispatcher
             request = new ServletRequestHttpWrapper(request);
         if (!(response instanceof HttpServletResponse))
             response = new ServletResponseHttpWrapper(response);
-
-        final boolean old_handled=baseRequest.isHandled();
-
+      
         final HttpURI old_uri=baseRequest.getHttpURI();
         final String old_context_path=baseRequest.getContextPath();
         final String old_servlet_path=baseRequest.getServletPath();
         final String old_path_info=baseRequest.getPathInfo();
-
+        
         final MultiMap<String> old_query_params=baseRequest.getQueryParameters();
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
 
         try
         {
-            baseRequest.setHandled(false);
             baseRequest.setDispatcherType(dispatch);
 
             if (_named!=null)
@@ -182,18 +186,18 @@ public class Dispatcher implements RequestDispatcher
                     attr._contextPath=old_context_path;
                     attr._servletPath=old_servlet_path;
                 }
-
+                
                 HttpURI uri = new HttpURI(old_uri.getScheme(),old_uri.getHost(),old_uri.getPort(),
                         _uri.getPath(),_uri.getParam(),_uri.getQuery(),_uri.getFragment());
-
+                
                 baseRequest.setHttpURI(uri);
-
+                
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_pathInContext);
                 if (_uri.getQuery()!=null || old_uri.getQuery()!=null)
                     baseRequest.mergeQueryParameters(old_uri.getQuery(),_uri.getQuery(), true);
-
+                
                 baseRequest.setAttributes(attr);
 
                 _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
@@ -204,7 +208,6 @@ public class Dispatcher implements RequestDispatcher
         }
         finally
         {
-            baseRequest.setHandled(old_handled);
             baseRequest.setHttpURI(old_uri);
             baseRequest.setContextPath(old_context_path);
             baseRequest.setServletPath(old_servlet_path);
@@ -215,35 +218,7 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.setDispatcherType(old_type);
         }
     }
-
-    /**
-     * <p>Pushes a secondary resource identified by this dispatcher.</p>
-     *
-     * @param request the primary request
-     * @deprecated Use {@link Request#getPushBuilder()} instead
-     */
-    @Deprecated
-    public void push(ServletRequest request)
-    {
-        Request baseRequest = Request.getBaseRequest(request);
-        HttpFields fields = new HttpFields(baseRequest.getHttpFields());
-
-        String query=baseRequest.getQueryString();
-        if (_uri.hasQuery())
-        {
-            if (query==null)
-                query=_uri.getQuery();
-            else
-                query=query+"&"+_uri.getQuery(); // TODO is this correct semantic?
-        }
-
-        HttpURI uri = HttpURI.createHttpURI(request.getScheme(),request.getServerName(),request.getServerPort(),_uri.getPath(),baseRequest.getHttpURI().getParam(),query,null);
-
-        MetaData.Request push = new MetaData.Request(HttpMethod.GET.asString(),uri,baseRequest.getHttpVersion(),fields);
-
-        baseRequest.getHttpChannel().getHttpTransport().push(push);
-    }
-
+    
     @Override
     public String toString()
     {

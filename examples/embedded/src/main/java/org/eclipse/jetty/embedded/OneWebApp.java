@@ -52,9 +52,8 @@ public class OneWebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         File warFile = new File(
-                "../../jetty-distribution/target/distribution/test/webapps/test/");
+                "../../tests/test-jmx/jmx-webapp/target/jmx-webapp");
         webapp.setWar(warFile.getAbsolutePath());
-        webapp.addAliasCheck(new AllowSymLinkAliasChecker());
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to send the appropriate requests.
@@ -62,6 +61,8 @@ public class OneWebApp
 
         // Start things up! 
         server.start();
+        
+        server.dumpStdErr();
 
         // The use of server.join() the will make the current thread join and
         // wait until the server is done executing.

@@ -27,11 +27,15 @@ import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.BundleTracker;
 
 /**
  * BundleContextProvider
@@ -47,6 +51,62 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     private Map<Bundle, List<App>> _bundleMap = new HashMap<Bundle, List<App>>();
     
     private ServiceRegistration _serviceRegForBundles;
+    
+    private BundleTracker _tracker;
+    
+    
+    public class ContextBundleTracker extends BundleTracker
+    {
+        protected String _managedServerName;
+        
+        public ContextBundleTracker (BundleContext bundleContext, String managedServerName)
+        {
+            super (bundleContext, Bundle.ACTIVE | Bundle.STOPPING,null);
+            _managedServerName = managedServerName;
+        }
+
+        /** 
+         * @see org.osgi.util.tracker.BundleTracker#addingBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent)
+         */
+        @Override
+        public Object addingBundle(Bundle bundle, BundleEvent event)
+        {
+            try
+            {
+                String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
+                     || (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
+                {
+                    if (bundleAdded (bundle))
+                        return bundle;
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+            return null;
+        }
+
+      
+
+        /** 
+         * @see org.osgi.util.tracker.BundleTracker#removedBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent, java.lang.Object)
+         */
+        @Override
+        public void removedBundle(Bundle bundle, BundleEvent event, Object object)
+        {
+            try
+            {
+                bundleRemoved(bundle);
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
+
+    }
   
     /* ------------------------------------------------------------ */
     public BundleContextProvider(ServerInstanceWrapper wrapper)
@@ -59,6 +119,10 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     @Override
     protected void doStart() throws Exception
     {
+        //Track bundles that are ContextHandlers that should be deployed
+        _tracker = new ContextBundleTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServerInstanceWrapper().getManagedServerName());
+        _tracker.open();
+        
         //register as an osgi service for deploying contexts defined in a bundle, advertising the name of the jetty Server instance we are related to
         Dictionary<String,String> properties = new Hashtable<String,String>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
@@ -70,6 +134,8 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     @Override
     protected void doStop() throws Exception
     {
+        _tracker.close();
+        
         //unregister ourselves
         if (_serviceRegForBundles != null)
         {

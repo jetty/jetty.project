@@ -33,7 +33,7 @@ import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.AbstractSession;
+import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -89,7 +89,7 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
         if (security!=null)
             security.logout(this);
         if (_session!=null)
-            _session.removeAttribute(AbstractSession.SESSION_CREATED_SECURE);
+            _session.removeAttribute(Session.SESSION_CREATED_SECURE);
     }
 
     @Override

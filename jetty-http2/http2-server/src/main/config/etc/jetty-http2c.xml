@@ -10,7 +10,7 @@
       <New class="org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory">
         <Arg name="config"><Ref refid="httpConfig"/></Arg>
         <Set name="maxConcurrentStreams"><Property name="jetty.http2c.maxConcurrentStreams" deprecated="http2.maxConcurrentStreams" default="1024"/></Set>
-        <Set name="initialStreamRecvWindow"><Property name="jetty.http2c.initialStreamRecvWindow" deprecated="jetty.http2c.initialStreamSendWindow" default="65535"/></Set>
+        <Set name="initialStreamRecvWindow"><Property name="jetty.http2c.initialStreamRecvWindow" default="65535"/></Set>
       </New>
     </Arg>
   </Call>

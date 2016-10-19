@@ -119,7 +119,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     protected void doStop() throws Exception
     {
         super.doStop();
-        close(ErrorCode.NO_ERROR.code, "stop", new Callback.NonBlocking()
+        close(ErrorCode.NO_ERROR.code, "stop", new Callback()
         {
             @Override
             public void succeeded()
@@ -131,6 +131,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             public void failed(Throwable x)
             {
                 disconnect();
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
             }
         });
     }
@@ -1115,22 +1121,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             super(frame, stream, callback);
         }
 
-        public Throwable generate(ByteBufferPool.Lease lease)
+        protected boolean generate(ByteBufferPool.Lease lease)
         {
-            try
-            {
-                bytes = generator.control(lease, frame);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Generated {}", frame);
-                prepare();
-                return null;
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure generating frame " + frame, x);
-                return x;
-            }
+            bytes = generator.control(lease, frame);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Generated {}", frame);
+            prepare();
+            return true;
         }
 
         /**
@@ -1223,72 +1220,62 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private class DataEntry extends HTTP2Flusher.Entry
     {
-        private int length;
         private int bytes;
+        private int dataRemaining;
+        private int dataWritten;
 
         private DataEntry(DataFrame frame, IStream stream, Callback callback)
         {
             super(frame, stream, callback);
-        }
-
-        @Override
-        public int dataRemaining()
-        {
             // We don't do any padding, so the flow control length is
             // always the data remaining. This simplifies the handling
             // of data frames that cannot be completely written due to
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
-            return ((DataFrame)frame).remaining();
+            dataRemaining = frame.remaining();
         }
 
-        public Throwable generate(ByteBufferPool.Lease lease)
+        @Override
+        public int dataRemaining()
         {
-            try
-            {
-                int flowControlLength = dataRemaining();
+            return dataRemaining;
+        }
 
-                int sessionSendWindow = getSendWindow();
-                if (sessionSendWindow < 0)
-                    throw new IllegalStateException();
+        protected boolean generate(ByteBufferPool.Lease lease)
+        {
+            int dataRemaining = dataRemaining();
 
-                int streamSendWindow = stream.updateSendWindow(0);
-                if (streamSendWindow < 0)
-                    throw new IllegalStateException();
+            int sessionSendWindow = getSendWindow();
+            int streamSendWindow = stream.updateSendWindow(0);
+            int window = Math.min(streamSendWindow, sessionSendWindow);
+            if (window <= 0 && dataRemaining > 0)
+                return false;
 
-                int window = Math.min(streamSendWindow, sessionSendWindow);
+            int length = Math.min(dataRemaining, window);
 
-                int length = this.length = Math.min(flowControlLength, window);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Generated {}, length/window={}/{}", frame, length, window);
+            // Only one DATA frame is generated.
+            bytes = generator.data(lease, (DataFrame)frame, length);
+            int written = bytes - Frame.HEADER_LENGTH;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, written, window, dataRemaining);
 
-                bytes = generator.data(lease, (DataFrame)frame, length);
-                flowControl.onDataSending(stream, length);
-                return null;
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure generating frame " + frame, x);
-                return x;
-            }
+            this.dataWritten = written;
+            this.dataRemaining -= written;
+
+            flowControl.onDataSending(stream, written);
+
+            return true;
         }
 
         @Override
         public void succeeded()
         {
             bytesWritten.addAndGet(bytes);
-            flowControl.onDataSent(stream, length);
+            flowControl.onDataSent(stream, dataWritten);
+
             // Do we have more to send ?
             DataFrame dataFrame = (DataFrame)frame;
-            if (dataFrame.remaining() > 0)
-            {
-                // We have written part of the frame, but there is more to write.
-                // We need to keep the correct ordering of frames, to avoid that other
-                // frames for the same stream are written before this one is finished.
-                flusher.prepend(this);
-            }
-            else
+            if (dataRemaining() == 0)
             {
                 // Only now we can update the close state
                 // and eventually remove the stream.

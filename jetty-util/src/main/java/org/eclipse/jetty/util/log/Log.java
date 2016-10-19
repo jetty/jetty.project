@@ -132,7 +132,7 @@ public class Log
     
     static void loadProperties(String resourceName, Properties props)
     {
-        URL testProps = Loader.getResource(Log.class,resourceName);
+        URL testProps = Loader.getResource(resourceName);
         if (testProps != null)
         {
             try (InputStream in = testProps.openStream())
@@ -171,7 +171,7 @@ public class Log
 
             try
             {
-                Class<?> log_class = __logClass==null?null:Loader.loadClass(Log.class, __logClass);
+                Class<?> log_class = __logClass==null?null:Loader.loadClass(__logClass);
                 if (LOG == null || (log_class!=null && !LOG.getClass().equals(log_class)))
                 {
                     LOG = (Logger)log_class.newInstance();
@@ -189,7 +189,7 @@ public class Log
 
             if (announce && LOG!=null)
             {
-                LOG.info(String.format("Logging initialized @%dms", Uptime.getUptime()));
+                LOG.info(String.format("Logging initialized @%dms to %s",Uptime.getUptime(),LOG.getClass().getName()));
             }
         }
     }

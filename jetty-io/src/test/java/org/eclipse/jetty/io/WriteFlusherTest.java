@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -45,10 +36,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,6 +50,15 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class WriteFlusherTest
@@ -414,7 +415,7 @@ public class WriteFlusherTest
         Arrays.fill(chunk1, (byte)2);
         ByteBuffer buffer2 = ByteBuffer.wrap(chunk2);
 
-        _flusher.write(new Callback.Adapter(), buffer1, buffer2);
+        _flusher.write(Callback.NOOP, buffer1, buffer2);
         assertTrue(_flushIncomplete.get());
         assertFalse(buffer1.hasRemaining());
 
@@ -585,7 +586,7 @@ public class WriteFlusherTest
                     stalled.set(true);
                     return false;
                 }
-                
+
                 // make sure failed is called before we go on
                 try
                 {
@@ -624,15 +625,15 @@ public class WriteFlusherTest
             @Override
             protected void onIncompleteFlush()
             {
-                executor.submit(new Runnable() 
-                { 
-                    public void run() 
+                executor.submit(new Runnable()
+                {
+                    public void run()
                     {
                         try
                         {
                             while(window.get()==0)
                                 window.addAndGet(exchange.exchange(0));
-                            completeWrite(); 
+                            completeWrite();
                         }
                         catch(Throwable th)
                         {
@@ -644,28 +645,30 @@ public class WriteFlusherTest
             }
         };
 
-        BlockingCallback callback = new BlockingCallback();
-        writeFlusher.write(callback,BufferUtil.toBuffer("How "),BufferUtil.toBuffer("now "),BufferUtil.toBuffer("brown "),BufferUtil.toBuffer("cow."));
-        exchange.exchange(0);
-        
-        Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("How now br"));
-        
-        exchange.exchange(1);
-        exchange.exchange(0);
-        
-        Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("o"));
-        
-        exchange.exchange(8);
-        callback.block();
-        
+        try(Blocker blocker = new SharedBlockingCallback().acquire())
+        {
+            writeFlusher.write(blocker,BufferUtil.toBuffer("How "),BufferUtil.toBuffer("now "),BufferUtil.toBuffer("brown "),BufferUtil.toBuffer("cow."));
+            exchange.exchange(0);
+
+            Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("How now br"));
+
+            exchange.exchange(1);
+            exchange.exchange(0);
+
+            Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("o"));
+
+            exchange.exchange(8);
+            blocker.block();
+        }
+
         Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("wn cow."));
-        
+
     }
 
     private static class EndPointIterationOnNonBlockedStallMock extends ByteArrayEndPoint
     {
         final AtomicInteger _window;
-        
+
         public EndPointIterationOnNonBlockedStallMock(AtomicInteger window)
         {
             _window=window;
@@ -675,7 +678,7 @@ public class WriteFlusherTest
         public boolean flush(ByteBuffer... buffers) throws IOException
         {
             ByteBuffer byteBuffer = buffers[0];
-            
+
             if (_window.get()>0 && byteBuffer.hasRemaining())
             {
                 // consume 1 byte
@@ -692,7 +695,7 @@ public class WriteFlusherTest
             return true;
         }
     }
-    
+
 
     private static class FailedCaller implements Callable<FutureCallback>
     {

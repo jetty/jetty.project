@@ -55,7 +55,6 @@ public class QueueBenchmarkTest
         final int iterations = 16 * 1024 * 1024;
 
         final List<Queue<Runnable>> queues = new ArrayList<>();
-        queues.add(new ConcurrentArrayQueue<>()); // Jetty lock-free queue, allocating array blocks
         queues.add(new ConcurrentLinkedQueue<>()); // JDK lock-free queue, allocating nodes
         queues.add(new ArrayBlockingQueue<>(iterations * writers)); // JDK lock-based, circular array queue
         queues.add(new BlockingArrayQueue<>(iterations * writers)); // Jetty lock-based, circular array queue

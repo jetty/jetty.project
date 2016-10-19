@@ -123,7 +123,8 @@ public class StreamCloseTest extends AbstractTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(response, Callback.NOOP);
+                Callback.Completable completable = new Callback.Completable();
+                stream.headers(response, completable);
                 return new Stream.Listener.Adapter()
                 {
                     @Override
@@ -135,17 +136,19 @@ public class StreamCloseTest extends AbstractTest
                         ByteBuffer data = frame.getData();
                         ByteBuffer copy = ByteBuffer.allocate(data.remaining());
                         copy.put(data).flip();
-                        stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), new Callback()
-                        {
-                            @Override
-                            public void succeeded()
-                            {
-                                Assert.assertTrue(stream.isClosed());
-                                Assert.assertEquals(0, stream.getSession().getStreams().size());
-                                callback.succeeded();
-                                serverDataLatch.countDown();
-                            }
-                        });
+
+                        completable.thenRun(() ->
+                                stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), new Callback()
+                                {
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        Assert.assertTrue(stream.isClosed());
+                                        Assert.assertEquals(0, stream.getSession().getStreams().size());
+                                        callback.succeeded();
+                                        serverDataLatch.countDown();
+                                    }
+                                }));
                     }
                 };
             }
