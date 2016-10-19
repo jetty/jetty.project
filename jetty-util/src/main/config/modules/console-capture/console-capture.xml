@@ -5,11 +5,13 @@
     <New id="ServerLog" class="java.io.PrintStream">
       <Arg>
         <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
-          <Arg><Property name="jetty.logging.dir" deprecated="jetty.logs" default="./logs"/>/yyyy_mm_dd.jetty.log</Arg>
-          <Arg type="boolean"><Property name="jetty.logging.append" default="false"/></Arg>
-          <Arg type="int"><Property name="jetty.logging.retainDays" default="90"/></Arg>
+          <Arg><Property name="jetty.console-capture.dir" deprecated="jetty.logging.dir" default="./logs"/>/yyyy_mm_dd.jetty.log</Arg>
+          <Arg type="boolean"><Property name="jetty.console-capture.append" deprecated="jetty.logging.append" default="false"/></Arg>
+          <Arg type="int"><Property name="jetty.console-capture.retainDays" deprecated="jetty.logging.retainDays" default="90"/></Arg>
           <Arg>
-              <Call class="java.util.TimeZone" name="getTimeZone"><Arg><Property name="jetty.logging.timezone" default="GMT"/></Arg></Call>
+            <Call class="java.util.TimeZone" name="getTimeZone">
+              <Arg><Property name="jetty.console-capture.timezone" deprecated="jetty.logging.timezone" default="GMT"/></Arg>
+            </Call>
           </Arg>
           <Get id="ServerLogName" name="datedFilename"/>
         </New>
@@ -22,6 +24,3 @@
     <Call class="java.lang.System" name="setErr"><Arg><Ref refid="ServerLog"/></Arg></Call>
     <Call class="java.lang.System" name="setOut"><Arg><Ref refid="ServerLog"/></Arg></Call>
 </Configure>
-
-
-

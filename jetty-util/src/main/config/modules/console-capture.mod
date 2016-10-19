@@ -17,13 +17,13 @@ resources/
 
 [ini-template]
 ## Logging directory (relative to $jetty.base)
-# jetty.logging.dir=logs
+# jetty.console-capture.dir=logs
 
 ## Whether to append to existing file
-# jetty.logging.append=false
+# jetty.console-capture.append=false
 
 ## How many days to retain old log files
-# jetty.logging.retainDays=90
+# jetty.console-capture.retainDays=90
 
 ## Timezone of the log timestamps
-# jetty.logging.timezone=GMT
+# jetty.console-capture.timezone=GMT
