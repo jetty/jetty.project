@@ -1,16 +1,16 @@
 [description]
-Redirects JVMs stderr and stdout to a log file,
+Redirects JVMs console stderr and stdout to a log file,
 including output from Jetty's default StdErrLog logging.
 
 [tags]
 logging
 
 [xml]
-etc/stderrout-capture.xml
+etc/console-capture.xml
 
 [files]
 logs/
-basehome:modules/stderrout-capture/stderrout-capture.xml|etc/stderrout-capture.xml
+basehome:modules/console-capture/console-capture.xml|etc/console-capture.xml
 
 [lib]
 resources/

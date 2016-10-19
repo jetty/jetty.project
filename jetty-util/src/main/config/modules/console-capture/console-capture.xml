@@ -1,14 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Configure stderr and stdout to a Jetty rollover log file        -->
-<!-- this configuration file should be used in combination with      -->
-<!-- other configuration files.  e.g.                                -->
-<!--    java -jar start.jar etc/jetty-logging.xml                    -->
-<!-- =============================================================== -->
 <Configure id="logging" class="org.eclipse.jetty.util.log.Log">
-
     <New id="ServerLog" class="java.io.PrintStream">
       <Arg>
         <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
@@ -24,11 +17,10 @@
     </New>
 
     <Get name="rootLogger">
-      <Call name="info"><Arg>Capturing stderr/stdout to <Ref refid="ServerLogName"/></Arg></Call>
+      <Call name="info"><Arg>Console stderr/stdout captured to <Ref refid="ServerLogName"/></Arg></Call>
     </Get>
     <Call class="java.lang.System" name="setErr"><Arg><Ref refid="ServerLog"/></Arg></Call>
     <Call class="java.lang.System" name="setOut"><Arg><Ref refid="ServerLog"/></Arg></Call>
-
 </Configure>
 
 
