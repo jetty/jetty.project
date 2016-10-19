@@ -46,7 +46,7 @@ public class Modules implements Iterable<Module>
     private final Map<String,Set<Module>> _provided = new HashMap<>();
     private final BaseHome _baseHome;
     private final StartArgs _args;
-    private final Map<String,String> _deprecated = new HashMap<>();
+    private final Properties _deprecated = new Properties();
 
     public Modules(BaseHome basehome, StartArgs args)
     {
@@ -379,7 +379,7 @@ public class Modules implements Iterable<Module>
         Module module = _names.get(name);
         if (module==null)
         {
-            String reason = _deprecated.get(name);
+            String reason = _deprecated.getProperty(name);
             if (reason!=null)
                 StartLog.warn("Deprecated module '%s': %s",name,reason);
         }
