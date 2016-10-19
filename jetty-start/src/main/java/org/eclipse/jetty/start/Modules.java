@@ -363,7 +363,7 @@ public class Modules implements Iterable<Module>
                 if (dftProvider.isPresent())
                     enable(newlyEnabled,dftProvider.get(),"transitive provider of "+dependsOn+" for "+module.getName(),true);
                 else if (StartLog.isDebugEnabled())
-                    StartLog.debug("Module %s requires %s from one of %s",module,dependsOn,providers);
+                    StartLog.debug("Module %s requires a %s implementation from one of %s",module,dependsOn,providers);
             }
         }
     }
@@ -375,7 +375,7 @@ public class Modules implements Iterable<Module>
         {
             String reason = _deprecated.getProperty(name);
             if (reason!=null)
-                StartLog.warn("Deprecated module '%s' is %s",name,reason);
+                StartLog.warn("Deprecated module '%s': %s",name,reason);
         }
         return module;
     }
@@ -405,7 +405,7 @@ public class Modules implements Iterable<Module>
                     if (unsatisfied.length()>0)
                         unsatisfied.append(',');
                     unsatisfied.append(m.getName());
-                    StartLog.warn("Module %s requires %s from one of %s%n",m.getName(),d,providers);
+                    StartLog.error("Module %s requires a `%s` module from one of %s%n",m.getName(),d,providers);
                 }
             });
         });

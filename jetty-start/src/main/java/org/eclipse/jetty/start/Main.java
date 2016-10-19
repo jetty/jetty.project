@@ -76,7 +76,7 @@ public class Main
         }
         catch (UsageException e)
         {
-            StartLog.warn(e.getMessage());
+            StartLog.error(e.getMessage());
             usageExit(e.getCause(),e.getExitCode(),test);
         }
         catch (Throwable e)
@@ -197,7 +197,7 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            StartLog.warn("Nothing to start, exiting ...");
+            StartLog.error("Nothing to start, exiting ...");
             StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;
@@ -510,7 +510,7 @@ public class Main
         {
             if (port <= 0)
             {
-                StartLog.warn("STOP.PORT system property must be specified");
+                StartLog.error("STOP.PORT system property must be specified");
             }
             if (key == null)
             {
@@ -616,7 +616,7 @@ public class Main
         }
         catch (UsageException e)
         {
-            StartLog.warn(e.getMessage());
+            StartLog.error(e.getMessage());
             usageExit(e.getCause(),e.getExitCode(),startupArgs.isTestingModeEnabled());
         }
         catch (Throwable e)
