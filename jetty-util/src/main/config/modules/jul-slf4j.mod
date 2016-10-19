@@ -7,6 +7,7 @@ slf4j
 internal
 
 [depend]
+slf4j-api
 slf4j-impl
 
 [provide]

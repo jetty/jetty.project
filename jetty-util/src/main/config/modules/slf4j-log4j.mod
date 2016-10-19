@@ -10,6 +10,7 @@ internal
 [depend]
 slf4j-api
 log4j-api
+log4j-impl
 
 [provide]
 slf4j-impl

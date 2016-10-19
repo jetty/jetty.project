@@ -11,6 +11,7 @@ internal
 [depend]
 slf4j-api
 log4j2-api
+log4j2-impl
 
 [provide]
 slf4j-impl
