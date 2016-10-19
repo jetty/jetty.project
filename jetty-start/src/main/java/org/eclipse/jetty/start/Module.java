@@ -353,7 +353,7 @@ public class Module implements Comparable<Module>
                                 _license.add(line);
                                 break;
                             case "NAME":
-                                StartLog.warn("Deprecated [Name] used in %s",basehome.toShortForm(_path));
+                                StartLog.warn("Deprecated [name] used in %s",basehome.toShortForm(_path));
                                 _provides.add(line);
                                 break;
                             case "PROVIDE":
@@ -377,7 +377,7 @@ public class Module implements Comparable<Module>
                                 _xmls.add(line);
                                 break;
                             default:
-                                throw new IOException("Unrecognized Module section: [" + sectionType + "]");
+                                throw new IOException("Unrecognized module section: [" + sectionType + "]");
                         }
                     }
                 }
