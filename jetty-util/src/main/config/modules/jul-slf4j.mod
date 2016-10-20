@@ -11,12 +11,13 @@ slf4j-api
 slf4j-impl
 
 [provides]
+jul-api
 jul-impl
 slf4j+jul
 
 [files]
 maven://org.slf4j/jul-to-slf4j/${slf4j.version}|lib/slf4j/jul-to-slf4j-${slf4j.version}.jar
-basehome:modules/jul-slf4j/java-util-logging.properties|etc/java-util-logging.properties
+basehome:modules/jul-slf4j
 
 [lib]
 lib/slf4j/jul-to-slf4j-${slf4j.version}.jar

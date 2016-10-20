@@ -1,0 +1,15 @@
+
+DOWNLOAD|basehome:modules/withfiles/test.txt|one/renamed.txt
+DOWNLOAD|basehome:modules/withfiles/test.txt|two/
+DOWNLOAD|basehome:modules/withfiles/test.txt|three
+DOWNLOAD|basehome:modules/withfiles|null
+DOWNLOAD|basehome:modules/withfiles/four/|five/
+DOWNLOAD|basehome:modules/withfiles/four/sub|six
+
+EXISTS|test.txt
+EXISTS|one/renamed.txt
+EXISTS|two/test.txt
+EXISTS|three/test.txt
+EXISTS|four/sub/dir/test.txt
+EXISTS|five/sub/dir/test.txt
+EXISTS|six/sub/dir/test.txt

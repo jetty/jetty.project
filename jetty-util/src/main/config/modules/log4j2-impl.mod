@@ -17,8 +17,7 @@ log4j2-impl
 
 [files]
 maven://org.apache.logging.log4j/log4j-core/${log4j2.version}|lib/log4j2/log4j-core-${log4j2.version}.jar
-basehome:modules/log4j2/log4j2.xml|resources/log4j2.xml
-logs/
+basehome:modules/log4j2-impl
 
 [lib]
 lib/log4j2/*.jar

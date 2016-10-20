@@ -33,33 +33,66 @@ import org.eclipse.jetty.start.StartLog;
  * "basehome:some/path"
  * {@link FileInitializer}
  */
-public class BaseHomeFileInitializer implements FileInitializer
-{
-    private final BaseHome _basehome;
-    
+public class BaseHomeFileInitializer extends FileInitializer
+{    
     public BaseHomeFileInitializer(BaseHome basehome)
     {
-        _basehome=basehome;
+        super(basehome,"basehome");
     }
     
     @Override
-    public boolean init(URI uri, Path file, String fileRef) throws IOException
+    public boolean create(URI uri, String location) throws IOException
     {
-        if (!"basehome".equalsIgnoreCase(uri.getScheme()) || uri.getSchemeSpecificPart().startsWith("/"))
-            return false;
+        if (uri.getSchemeSpecificPart().startsWith("/"))
+            throw new IllegalArgumentException(String.format("Bad file arg: %s",uri));
         
         Path source = _basehome.getPath(uri.getSchemeSpecificPart());
 
-        if (FS.exists(source) && !FS.exists(file))
-        {
-            if (FS.ensureDirectoryExists(file.getParent()))
-                StartLog.log("MKDIR",_basehome.toShortForm(file.getParent()));
-
-            StartLog.log("COPY ","%s to %s",_basehome.toShortForm(source),_basehome.toShortForm(file));
-            Files.copy(source,file);
-            return true;
-        }
+        if (!FS.exists(source))
+            throw new IllegalArgumentException(String.format("File does not exist: %s",uri));
         
-        return false;
+        Path destination = location==null?_basehome.getBasePath():getDestination(uri,location);
+     
+        boolean modified=false;
+        
+        if (Files.isDirectory(source))
+        {
+            // Check destination
+            if (destination!=null && Files.exists(destination))
+            {
+                if (!Files.isDirectory(destination))
+                {
+                    StartLog.error("Cannot copy directory %s to file %s",source,destination);
+                    return false;
+                }
+            }
+            else if (FS.ensureDirectoryExists(destination))
+            {
+                modified = true;
+                StartLog.log("MKDIR",_basehome.toShortForm(destination));
+            }
+
+            copyDirectory(source,destination);
+        }
+        else
+        {
+            if (FS.ensureDirectoryExists(destination.getParent()))
+            {
+                modified = true;
+                StartLog.log("MKDIR",_basehome.toShortForm(destination.getParent()));
+            }
+
+            if (!FS.exists(destination))
+            {
+                StartLog.log("COPY ","%s to %s",_basehome.toShortForm(source),_basehome.toShortForm(destination));
+                Files.copy(source,destination);
+                modified = true;
+            }
+        }
+
+        return modified;
     }
+
+
+
 }

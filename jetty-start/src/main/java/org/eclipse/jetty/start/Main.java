@@ -404,7 +404,7 @@ public class Main
         BaseBuilder baseBuilder = new BaseBuilder(baseHome,args);
         if(baseBuilder.build())
             StartLog.info("Base directory was modified");
-        else if (args.isDownload() || !args.getStartModules().isEmpty())
+        else if (args.isCreateFiles() || !args.getStartModules().isEmpty())
             StartLog.info("Base directory was not modified");
 
         // Check module dependencies

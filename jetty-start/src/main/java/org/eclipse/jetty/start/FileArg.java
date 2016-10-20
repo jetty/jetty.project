@@ -46,6 +46,7 @@ public class FileArg
             err.append(LN).append("Valid Syntaxes: ");
             err.append(LN).append("    <relative-path>       - eg: resources/");
             err.append(LN).append(" or <absolute-path>       - eg: /var/run/jetty.pid");
+            err.append(LN).append(" or <uri>                 - eg: basehome:some/path");
             err.append(LN).append(" or <uri>|<rel-path>      - eg: http://machine/my.conf|resources/my.conf");
             err.append(LN).append(" or <uri>|<abs-path>      - eg: http://machine/glob.dat|/opt/run/glob.dat");
             err.append(LN).append("Known uri schemes: http, maven, home");
@@ -55,6 +56,11 @@ public class FileArg
         {
             this.uri = parts[0];
             this.location = parts[1];
+        }
+        else if (uriLocation.contains(":"))
+        {
+            this.uri = uriLocation;
+            this.location = null;
         }
         else
         {
@@ -118,11 +124,7 @@ public class FileArg
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("DownloadArg [uri=");
-        builder.append(uri);
-        builder.append(", location=");
-        builder.append(location);
-        builder.append("]");
+        builder.append("DownloadArg [uri=").append(uri).append(", location=").append(location).append("]");
         return builder.toString();
     }
 }
