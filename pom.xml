@@ -175,26 +175,6 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.7.7.201606060606</version>
-        <configuration>
-          <includes>
-            <include>**/org/eclipse/jetty/**/*.class</include>
-          </includes>
-          <excludes>
-            <!-- build tools -->
-            <exclude>**/org/eclipse/jetty/ant/**</exclude>
-            <exclude>**/org/eclipse/jetty/maven/**</exclude>
-            <exclude>**/org/eclipse/jetty/jspc/**</exclude>
-            <!-- special environments -->
-            <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
-            <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
-            <exclude>**/org/eclipse/jetty/osgi/**</exclude>
-            <exclude>**/org/eclipse/jetty/spring/**</exclude>
-            <exclude>**/org/eclipse/jetty/http/spi/**</exclude>
-            <!-- test classes -->
-            <exclude>**/org/eclipse/jetty/tests/**</exclude>
-            <exclude>**/org/eclipse/jetty/test/**</exclude>
-          </excludes>
-        </configuration>
         <executions>
           <execution>
             <id>jacoco-initialize</id>
@@ -202,6 +182,31 @@
             <goals>
               <goal>prepare-agent</goal>
             </goals>
+            <configuration>
+              <!-- Coverage Exclusions list that Agent uses.
+                   The following classes will not be included
+                   in the jacoco.exec files.
+                   The list specified here is what classes in
+                   this multi-module project are not relevant
+                   to capture coverage information on.
+                   Don't worry about 3rd party libraries here.
+                    -->
+              <excludes>
+                <!-- build tools -->
+                <exclude>**/org/eclipse/jetty/ant/**</exclude>
+                <exclude>**/org/eclipse/jetty/maven/**</exclude>
+                <exclude>**/org/eclipse/jetty/jspc/**</exclude>
+                <!-- special environments -->
+                <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
+                <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
+                <exclude>**/org/eclipse/jetty/osgi/**</exclude>
+                <exclude>**/org/eclipse/jetty/spring/**</exclude>
+                <exclude>**/org/eclipse/jetty/http/spi/**</exclude>
+                <!-- test classes -->
+                <exclude>**/org/eclipse/jetty/tests/**</exclude>
+                <exclude>**/org/eclipse/jetty/test/**</exclude>
+              </excludes>
+            </configuration>
           </execution>
           <execution>
             <id>jacoco-site</id>
@@ -209,6 +214,16 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <!-- list of classes that you want to see in the report.
+                   Specify a narrow list of multi-module project
+                   classes you want to see here. 
+                   This is useful to remove 3rd party library classes
+                   from the report. -->
+              <includes>
+                <include>**/org/eclipse/jetty/**</include>
+              </includes>
+            </configuration>
           </execution>
         </executions>
       </plugin>
