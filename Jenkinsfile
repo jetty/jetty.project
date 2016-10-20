@@ -58,8 +58,27 @@ node('linux') {
           step([$class: 'JUnitResultArchiver', 
               testResults: '**/target/surefire-reports/TEST-*.xml'])
           // Collect up the jacoco execution results
+          def jacocoExcludes = 
+              // build tools
+              "**/org/eclipse/jetty/ant/**" +
+              ",**/org/eclipse/jetty/maven/**" +
+              ",**/org/eclipse/jetty/jspc/**" +
+              // example code / documentation
+              ",**/org/eclipse/jetty/embedded/**" +
+              ",**/org/eclipse/jetty/asyncrest/**" +
+              ",**/org/eclipse/jetty/demo/**" +
+              // special environments / late integrations
+              ",**/org/eclipse/jetty/gcloud/**" +
+              ",**/org/eclipse/jetty/infinispan/**" +
+              ",**/org/eclipse/jetty/osgi/**" +
+              ",**/org/eclipse/jetty/spring/**" +
+              ",**/org/eclipse/jetty/http/spi/**" +
+              // test classes
+              ",**/org/eclipse/jetty/tests/**" +
+              ",**/org/eclipse/jetty/test/**";
           step([$class: 'JacocoPublisher', 
               inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+              exclusionPattern: jacocoExcludes,
               execPattern: '**/target/jacoco.exec', 
               classPattern: '**/target/classes', 
               sourcePattern: '**/src/main/java'])
