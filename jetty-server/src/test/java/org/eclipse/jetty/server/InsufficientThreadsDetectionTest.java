@@ -34,7 +34,7 @@ public class InsufficientThreadsDetectionTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldCorrectlyDetectInsufficientThreadsIfConnectorUsesServerExecutor() throws Exception
+    public void testConnectorUsesServerExecutorWithNotEnoughThreads() throws Exception
     {
         // server has 3 threads in the executor
         _server = new Server(new QueuedThreadPool(3));
@@ -51,7 +51,7 @@ public class InsufficientThreadsDetectionTest {
     }
 
     @Test
-    public void shouldNotWorryAboutConnectorWithDedicatedExecutor() throws Exception
+    public void testConnectorWithDedicatedExecutor() throws Exception
     {
         // server has 3 threads in the executor
         _server = new Server(new QueuedThreadPool(3));
@@ -68,7 +68,7 @@ public class InsufficientThreadsDetectionTest {
     }
 
     @Test // Github issue #586
-    public void shouldCorrectlyCheckCaseForMultipleConnectors() throws Exception {
+    public void testCaseForMultipleConnectors() throws Exception {
         // server has 3 threads in the executor
         _server = new Server(new QueuedThreadPool(3));
 
