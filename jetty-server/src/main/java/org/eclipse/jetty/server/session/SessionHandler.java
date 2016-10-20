@@ -1681,5 +1681,15 @@ public class SessionHandler extends ScopedHandler
             baseRequest.setSession(session);
     }
 
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s%d==dftMaxIdleSec=%d", this.getClass().getName(),this.hashCode(),_dftMaxIdleSecs);
+    }
+
   
 }

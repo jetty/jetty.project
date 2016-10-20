@@ -302,5 +302,14 @@ public class DatabaseAdaptor
         else
             return DriverManager.getConnection(_connectionUrl);
     }
-    
+
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[jndi=%s,driver=%s]", super.toString(),_jndiName, _driverClassName);
+    } 
 }

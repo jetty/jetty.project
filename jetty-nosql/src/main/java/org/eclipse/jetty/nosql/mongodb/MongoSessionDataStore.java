@@ -689,4 +689,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         return true;
     }
 
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[collection=%s]", super.toString(),getDBCollection());
+    }
+
+    
 }

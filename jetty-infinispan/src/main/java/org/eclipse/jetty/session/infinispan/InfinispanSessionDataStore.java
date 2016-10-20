@@ -311,4 +311,17 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     {
         return _infinispanIdleTimeoutSec;
     }
+
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[cache=%s,idleTimeoutSec=%d]",super.toString(), (_cache==null?"":_cache.getName()),_infinispanIdleTimeoutSec);
+    }
+    
+    
 }

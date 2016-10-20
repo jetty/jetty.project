@@ -53,6 +53,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     protected boolean _initialized = false;
     private DatabaseAdaptor _dbAdaptor;
     private SessionTableSchema _sessionTableSchema;
+    private boolean _schemaProvided;
 
 
     
@@ -616,6 +617,19 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                     statement.executeUpdate(getCreateIndexOverSessionStatementAsString(index2));
             }
         }
+        /** 
+         * @see java.lang.Object#toString()
+         */
+        @Override
+        public String toString()
+        {
+            return String.format("%s[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]",super.toString(),
+                                 _schemaName,_tableName,_idColumn,_contextPathColumn,_virtualHostColumn,_cookieTimeColumn,_createTimeColumn,
+                                 _expiryTimeColumn,_accessTimeColumn,_lastAccessTimeColumn,_lastNodeColumn,_lastSavedTimeColumn,_maxIntervalColumn);
+        }
+        
+        
+        
     }
     
     
@@ -647,6 +661,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     protected void doStop() throws Exception
     {
         super.doStop();
+        _initialized = false;
+        if (!_schemaProvided)
+            _sessionTableSchema = null;
     }
 
 
@@ -660,7 +677,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
    
             //taking the defaults if one not set
             if (_sessionTableSchema == null)
+            {
                 _sessionTableSchema = new SessionTableSchema();
+                addBean(_sessionTableSchema,true);
+            }
             
             _dbAdaptor.initialize();
             _sessionTableSchema.setDatabaseAdaptor(_dbAdaptor);
@@ -981,13 +1001,16 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public void setDatabaseAdaptor (DatabaseAdaptor dbAdaptor)
     {
         checkStarted();
+        updateBean(_dbAdaptor, dbAdaptor);
         _dbAdaptor = dbAdaptor;
     }
     
     public void setSessionTableSchema (SessionTableSchema schema)
     {
-        checkStarted();
+        checkStarted();       
+        updateBean(_sessionTableSchema, schema);
         _sessionTableSchema = schema;
+        _schemaProvided = true;
     }
 
   
