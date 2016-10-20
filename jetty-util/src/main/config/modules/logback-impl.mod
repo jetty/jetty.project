@@ -11,8 +11,7 @@ resources
 
 [files]
 maven://ch.qos.logback/logback-core/${logback.version}|lib/logback/logback-core-${logback.version}.jar
-basehome:modules/logback/logback.xml|resources/logback.xml
-logs/
+basehome:modules/logback-impl
 
 [lib]
 lib/logback/logback-core-${logback.version}.jar

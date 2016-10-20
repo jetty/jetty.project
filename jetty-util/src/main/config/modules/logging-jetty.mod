@@ -12,4 +12,4 @@ resources
 logging
 
 [files]
-basehome:modules/logging-jetty/jetty-logging.properties|resources/jetty-logging.properties
+basehome:modules/logging-jetty

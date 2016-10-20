@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -376,29 +377,39 @@ public class Server extends HandlerWrapper implements Attributes
         }
         
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
-        MultiException mex=new MultiException();
+
 
         // check size of thread pool
         SizedThreadPool pool = getBean(SizedThreadPool.class);
         int max=pool==null?-1:pool.getMaxThreads();
         int selectors=0;
         int acceptors=0;
-        if (mex.size()==0)
-        {
-            for (Connector connector : _connectors)
-            {
-                if (connector instanceof AbstractConnector)
-                    acceptors+=((AbstractConnector)connector).getAcceptors();
 
-                if (connector instanceof ServerConnector)
-                    selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
-            }
+        for (Connector connector : _connectors)
+        {
+            if (!(connector instanceof AbstractConnector))
+                continue;
+
+            AbstractConnector abstractConnector = (AbstractConnector) connector;
+            Executor connectorExecutor = connector.getExecutor();
+
+            if (connectorExecutor != pool)
+                // Do not count the selectors and acceptors from this connector at server level, because connector uses dedicated executor.
+                continue;
+
+            acceptors += abstractConnector.getAcceptors();
+
+            if (connector instanceof ServerConnector)
+                selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
+
         }
+
 
         int needed=1+selectors+acceptors;
         if (max>0 && needed>max)
             throw new IllegalStateException(String.format("Insufficient threads: max=%d < needed(acceptors=%d + selectors=%d + request=1)",max,acceptors,selectors));
 
+        MultiException mex=new MultiException();
         try
         {
             super.doStart();

@@ -71,6 +71,10 @@ public class FS
     {
         if (exists(dir))
         {
+            // Is it a directory?
+            if (!Files.isDirectory(dir))
+                throw new IOException("Path is not directory: " + dir.toAbsolutePath());
+            
             // exists already, nothing to do
             return false;
         }

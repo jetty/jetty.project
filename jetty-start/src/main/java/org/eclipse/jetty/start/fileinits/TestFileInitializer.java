@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
@@ -31,14 +32,33 @@ import org.eclipse.jetty.start.StartLog;
  * or initialize a file, this implementation is merely a no-op for the
  * {@link FileInitializer}
  */
-public class TestFileInitializer implements FileInitializer
+public class TestFileInitializer extends FileInitializer
 {
-    @Override
-    public boolean init(URI uri, Path file, String fileRef) throws IOException
+    public TestFileInitializer(BaseHome basehome)
     {
-        FS.ensureDirectoryExists(file.getParent());
+        super(basehome);
+    }
 
-        StartLog.log("TESTING MODE","Skipping download of " + uri);
+    @Override
+    public boolean isApplicable(URI uri)
+    {
         return true;
+    }
+
+
+    @Override
+    public boolean create(URI uri, String location) throws IOException
+    {
+        Path destination = getDestination(uri,location);
+        if (destination!=null)
+        {
+            if (location.endsWith("/"))
+                FS.ensureDirectoryExists(destination);
+            else
+                FS.ensureDirectoryExists(destination.getParent());
+        }
+        
+        StartLog.log("TESTING MODE","Skipping download of " + uri);
+        return Boolean.TRUE;
     }
 }

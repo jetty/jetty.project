@@ -16,7 +16,6 @@ slf4j-impl
 
 [files]
 maven://ch.qos.logback/logback-classic/${logback.version}|lib/logback/logback-classic-${logback.version}.jar
-basehome:modules/logback/logback.xml|resources/logback.xml
 
 [lib]
 lib/logback/logback-classic-${logback.version}.jar
