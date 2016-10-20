@@ -62,11 +62,8 @@ public abstract class FileInitializer
      *            the URI of the resource acting as its source
      * @param location
      *            the simple string reference to the output file, suitable for searching
-     *            for the file in other locations (like ${jetty.home} or ${jetty.dir})
-     * @param create if True, create the file if missing, otherwise just check for existance.
-     * 
-     * @return True if local file is initialized (resulted in a change on disk), False if
-               could not be initialized or null if it does not apply.
+     *            for the file in other locations (like ${jetty.home} or ${jetty.dir})     * 
+     * @return true if local file system is modified.
      * @throws IOException
      *             if there was an attempt to initialize, but an error occurred.
      */
