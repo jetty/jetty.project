@@ -150,6 +150,27 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.7.7.201606060606</version>
+        <configuration>
+          <excludes>
+            <!-- build tools -->
+            <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>**/org/eclipse/jetty/maven/**</exclude>
+            <exclude>**/org/eclipse/jetty/jspc/**</exclude>
+            <!-- example code / documentation -->
+            <exclude>**/org/eclipse/jetty/embedded/**</exclude>
+            <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
+            <exclude>**/org/eclipse/jetty/demo/**</exclude>
+            <!-- special environments / late integrations -->
+            <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
+            <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
+            <exclude>**/org/eclipse/jetty/osgi/**</exclude>
+            <exclude>**/org/eclipse/jetty/spring/**</exclude>
+            <exclude>**/org/eclipse/jetty/http/spi/**</exclude>
+            <!-- test classes -->
+            <exclude>**/org/eclipse/jetty/tests/**</exclude>
+            <exclude>**/org/eclipse/jetty/test/**</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>jacoco-initialize</id>
@@ -164,6 +185,16 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <!-- list of classes that you want to see in the report.
+                   Specify a narrow list of multi-module project
+                   classes you want to see here. 
+                   This is useful to remove 3rd party library classes
+                   from the report. -->
+              <includes>
+                <include>**/org/eclipse/jetty/**</include>
+              </includes>
+            </configuration>
           </execution>
         </executions>
       </plugin>
