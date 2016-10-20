@@ -175,6 +175,26 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.7.7.201606060606</version>
+        <configuration>
+          <includes>
+            <include>**/org/eclipse/jetty/**/*.class</include>
+          </includes>
+          <excludes>
+            <!-- build tools -->
+            <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>**/org/eclipse/jetty/maven/**</exclude>
+            <exclude>**/org/eclipse/jetty/jspc/**</exclude>
+            <!-- special environments -->
+            <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
+            <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
+            <exclude>**/org/eclipse/jetty/osgi/**</exclude>
+            <exclude>**/org/eclipse/jetty/spring/**</exclude>
+            <exclude>**/org/eclipse/jetty/http/spi/**</exclude>
+            <!-- test classes -->
+            <exclude>**/org/eclipse/jetty/tests/**</exclude>
+            <exclude>**/org/eclipse/jetty/test/**</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>jacoco-initialize</id>
