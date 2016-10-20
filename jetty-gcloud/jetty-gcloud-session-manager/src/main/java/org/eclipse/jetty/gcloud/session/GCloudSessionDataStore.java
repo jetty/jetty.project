@@ -73,6 +73,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected boolean _dsProvided = false;
     protected boolean _indexesPresent = false;
     protected EntityDataModel _model;
+    protected boolean _modelProvided;
 
 
     private String _namespace;
@@ -300,6 +301,18 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             checkNotNull(attributes);
             _attributes = attributes;
         }
+
+        /** 
+         * @see java.lang.Object#toString()
+         */
+        @Override
+        public String toString()
+        {
+            return String.format("%s==%s:%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",this.getClass().getName(),
+                                 _kind,_accessed,_attributes,_contextPath,_cookieSetTime,_createTime,_expiry,_id,_lastAccessed,_lastNode,_maxInactive,_vhost);
+        }
+        
+        
         
     }
     
@@ -356,7 +369,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     
     public void setEntityDataModel(EntityDataModel model)
     {
+        updateBean(_model, model);
         _model = model;
+        _modelProvided = true;
     }
     
     
@@ -413,7 +428,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
 
         if (_model == null)
+        {
             _model = new EntityDataModel();
+            addBean(_model,true);
+        }
 
         _keyFactory = _datastore.newKeyFactory().kind(_model.getKind());   
         
@@ -430,15 +448,17 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     @Override
     protected void doStop() throws Exception
     {
+        super.doStop();
         if (!_dsProvided)
             _datastore = null;
-        super.doStop();
+        if (!_modelProvided)
+            _model = null;
     }
     
     public void setDatastore (Datastore datastore)
     {
         _datastore = datastore;
-        _dsProvided  = true;
+        _dsProvided = true;
     }
     
     public int getMaxResults()
@@ -925,6 +945,16 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public boolean isPassivating()
     {
        return true;
+    }
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[namespace=%s,backoff=%d,maxRetries=%d,maxResults=%d,indexes=%b]",super.toString(), _namespace, _backoff, _maxRetries, _maxResults,_indexesPresent);
     }
     
     

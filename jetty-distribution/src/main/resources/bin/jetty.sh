@@ -344,24 +344,11 @@ then
 fi
 
 #####################################################
-# See if JETTY_LOGS is defined
+# See if Deprecated JETTY_LOGS is defined
 #####################################################
-if [ -z "$JETTY_LOGS" ] && [ -d $JETTY_BASE/logs ]
-then
-  JETTY_LOGS=$JETTY_BASE/logs
-fi
-if [ -z "$JETTY_LOGS" ] && [ -d $JETTY_HOME/logs ]
-then
-  JETTY_LOGS=$JETTY_HOME/logs
-fi
 if [ "$JETTY_LOGS" ]
 then
-
-  case "`uname`" in
-  CYGWIN*) JETTY_LOGS="`cygpath -w $JETTY_LOGS`";;
-  esac
-
-  JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.logging.dir=$JETTY_LOGS")
+  echo "** WARNING: JETTY_LOGS is Deprecated. Please configure logging within the jetty base." >&2
 fi
 
 #####################################################

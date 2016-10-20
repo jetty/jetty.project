@@ -455,6 +455,15 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
     }
 
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[dir=%s,deleteUnrestorableFiles=%b]",super.toString(),_storeDir,_deleteUnrestorableFiles);
+    }
+
 
 
 }

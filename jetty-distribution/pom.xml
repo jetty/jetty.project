@@ -347,7 +347,7 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-startd=continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https</argument>
+                <argument>--add-to-startd=server,continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https</argument>
               </arguments>
             </configuration>
             <goals>

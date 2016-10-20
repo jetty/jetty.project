@@ -7,7 +7,6 @@ logging
 
 [depends]
 resources
-console-capture
 
 [provides]
 logging

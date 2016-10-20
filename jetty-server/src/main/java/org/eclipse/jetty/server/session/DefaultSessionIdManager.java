@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -48,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * @see HouseKeeper
  */
-public class DefaultSessionIdManager extends AbstractLifeCycle implements SessionIdManager
+public class DefaultSessionIdManager extends ContainerLifeCycle implements SessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -63,6 +64,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     protected long _reseed=100000L;
     protected Server _server;
     protected HouseKeeper _houseKeeper;
+    protected boolean _ownHouseKeeper;
     
 
     /* ------------------------------------------------------------ */
@@ -112,8 +114,9 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
      */
     public void setSessionHouseKeeper (HouseKeeper houseKeeper)
     {
+        updateBean(_houseKeeper, houseKeeper);
         _houseKeeper = houseKeeper;
-        _houseKeeper.setSessionIdManager(this);
+        _houseKeeper.setSessionIdManager(this);    
     }
    
     
@@ -344,8 +347,10 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         if (_houseKeeper == null)
         {
             LOG.warn("No SessionScavenger set, using defaults");
+            _ownHouseKeeper = true;
             _houseKeeper = new HouseKeeper();
             _houseKeeper.setSessionIdManager(this);
+            addBean(_houseKeeper,true);
         }
 
         _houseKeeper.start();
@@ -359,6 +364,11 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     protected void doStop() throws Exception
     {
         _houseKeeper.stop();
+        if (_ownHouseKeeper)
+        {
+            _houseKeeper = null;
+        }
+        _random = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -499,4 +509,15 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         }
         return handlers;
     }
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[worker=%s]", super.toString(),_workerName);
+    }
+    
+    
 }
