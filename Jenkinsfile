@@ -11,8 +11,9 @@ node('linux') {
 
   try
   {
-    stage 'Checkout'
-    checkout scm
+    stage('Checkout') {
+      checkout scm
+    }
   } catch (Exception e) {
     notifyBuild("Checkout Failure")
     throw e
@@ -20,10 +21,11 @@ node('linux') {
 
   try
   {
-    stage 'Compile'
-    withEnv(mvnEnv) {
-      timeout(time: 15, unit: 'MINUTES') {
-        sh "mvn -B clean install -Dtest=None"
+    stage('Compile') {
+      withEnv(mvnEnv) {
+        timeout(time: 15, unit: 'MINUTES') {
+          sh "mvn -B clean install -Dtest=None"
+        }
       }
     }
   } catch(Exception e) {
@@ -33,10 +35,11 @@ node('linux') {
 
   try
   {
-    stage 'Javadoc'
-    withEnv(mvnEnv) {
-      timeout(time: 15, unit: 'MINUTES') {
-        sh "mvn -B javadoc:javadoc"
+    stage('Javadoc') {
+      withEnv(mvnEnv) {
+        timeout(time: 15, unit: 'MINUTES') {
+          sh "mvn -B javadoc:javadoc"
+        }
       }
     }
   } catch(Exception e) {
@@ -46,30 +49,31 @@ node('linux') {
 
   try
   {
-    stage 'Test'
-    withEnv(mvnEnv) {
-      timeout(time: 60, unit: 'MINUTES') {
-        // Run test phase / ignore test failures
-        sh "mvn -B install -Dmaven.test.failure.ignore=true"
-        // Report failures in the jenkins UI
-        step([$class: 'JUnitResultArchiver', 
-            testResults: '**/target/surefire-reports/TEST-*.xml'])
-        // Collect up the jacoco execution results
-        step([$class: 'JacocoPublisher', 
-            execPattern: '**/target/jacoco.exec', 
-            classPattern: '**/target/classes', 
-            sourcePattern: '**/src/main/java'])
-        // Report on Maven and Javadoc warnings
-        step([$class: 'WarningsPublisher', 
-            consoleParsers: [
-                [parserName: 'Maven'],
-                [parserName: 'JavaDoc'],
-                [parserName: 'JavaC']
-            ]])
-      }
-      if(isUnstable())
-      {
-        notifyBuild("Unstable / Test Errors")
+    stage('Test') {
+      withEnv(mvnEnv) {
+        timeout(time: 60, unit: 'MINUTES') {
+          // Run test phase / ignore test failures
+          sh "mvn -B install -Dmaven.test.failure.ignore=true"
+          // Report failures in the jenkins UI
+          step([$class: 'JUnitResultArchiver', 
+              testResults: '**/target/surefire-reports/TEST-*.xml'])
+          // Collect up the jacoco execution results
+          step([$class: 'JacocoPublisher', 
+              execPattern: '**/target/jacoco.exec', 
+              classPattern: '**/target/classes', 
+              sourcePattern: '**/src/main/java'])
+          // Report on Maven and Javadoc warnings
+          step([$class: 'WarningsPublisher', 
+              consoleParsers: [
+                  [parserName: 'Maven'],
+                  [parserName: 'JavaDoc'],
+                  [parserName: 'JavaC']
+              ]])
+        }
+        if(isUnstable())
+        {
+          notifyBuild("Unstable / Test Errors")
+        }
       }
     }
   } catch(Exception e) {
