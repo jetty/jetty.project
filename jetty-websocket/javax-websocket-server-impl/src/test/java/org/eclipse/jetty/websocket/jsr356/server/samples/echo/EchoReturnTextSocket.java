@@ -16,33 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.samples.beans;
+package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import javax.websocket.OnMessage;
+import javax.websocket.server.ServerEndpoint;
 
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
-
-/**
- * Encode Date
- */
-public class DateEncoder implements Encoder.Text<Date>
+@ServerEndpoint("/echo/text/return")
+public class EchoReturnTextSocket
 {
-    @Override
-    public void destroy()
+    @OnMessage
+    public String onText(String msg)
     {
-    }
-
-    @Override
-    public String encode(Date object) throws EncodeException
-    {
-        return new SimpleDateFormat("[yyyy/MM/dd]").format(object);
-    }
-
-    @Override
-    public void init(EndpointConfig config)
-    {
+        return msg;
     }
 }

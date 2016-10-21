@@ -16,53 +16,45 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.samples.beans;
+package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import java.io.IOException;
-import java.util.Date;
 
-import javax.websocket.OnError;
+import javax.websocket.CloseReason;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.util.StackUtil;
-
-@ServerEndpoint(value = "/echo/beans/date", decoders = { DateDecoder.class }, encoders = { DateEncoder.class })
-public class DateTextSocket
+@ServerEndpoint("/echo/text/basic")
+public class EchoBasicTextSocket
 {
-    private static final Logger LOG = Log.getLogger(DateTextSocket.class);
-
     private Session session;
-
+    
     @OnOpen
     public void onOpen(Session session)
     {
         this.session = session;
     }
-
-    // The decoder declared in the @ServerEndpoint will be used
+    
     @OnMessage
-    public void onMessage(Date d) throws IOException
+    public void onText(String msg)
     {
-        if (d == null)
+        try
         {
-            session.getAsyncRemote().sendText("Error: Date is null");
+            session.getBasicRemote().sendText(msg);
         }
-        else
+        catch (IOException esend)
         {
-            // The encoder declared in the @ServerEndpoint will be used
-            session.getAsyncRemote().sendObject(d);
+            esend.printStackTrace(System.err);
+            try
+            {
+                session.close(new CloseReason(CloseReason.CloseCodes.getCloseCode(4001), "Unable to echo msg"));
+            }
+            catch (IOException eclose)
+            {
+                eclose.printStackTrace();
+            }
         }
-    }
-
-    @OnError
-    public void onError(Throwable cause) throws IOException
-    {
-        LOG.warn("Error",cause);
-        session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }
