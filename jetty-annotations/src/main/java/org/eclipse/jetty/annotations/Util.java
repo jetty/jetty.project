@@ -20,12 +20,14 @@ package org.eclipse.jetty.annotations;
 
 import java.lang.reflect.Array;
 
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.objectweb.asm.Type;
 
 /**
  * Annotation Processing Utilities
+ * @deprecated and replaced by extra methods in {@link ResourceAnnotationHandler}, {@link PreDestroyAnnotationHandler}, {@link PostConstructAnnotationHandler} and {@link ServletPathSpec}
  */
 public class Util
 { 

@@ -21,6 +21,8 @@ package org.eclipse.jetty.annotations;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 import javax.annotation.Resource;
@@ -39,6 +41,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     private static final Logger LOG = Log.getLogger(ResourceAnnotationHandler.class);
+    
+    protected static final List<Class<?>> ENV_ENTRY_TYPES = 
+            Arrays.asList(new Class[] {String.class, Character.class, Integer.class, Boolean.class, Double.class, Byte.class, Short.class, Long.class, Float.class});
+            
 
     protected WebAppContext _context;
 
@@ -57,7 +63,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      */
     public void doHandle(Class<?> clazz)
     {
-        if (Util.supportsResourceInjection(clazz))
+        if (supportsResourceInjection(clazz))
         {
             handleClass(clazz);
 
@@ -182,7 +188,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
                         metaData.setOrigin("resource-ref."+name+".injection",resource,clazz);
                     }
-                    else if (!Util.isEnvEntryType(type))
+                    else if (!isEnvEntryType(type))
                     {
                         //if this is an env-entry type resource and there is no value bound for it, it isn't
                         //an error, it just means that perhaps the code will use a default value instead
@@ -196,7 +202,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     //if this is an env-entry type resource and there is no value bound for it, it isn't
                     //an error, it just means that perhaps the code will use a default value instead
                     // JavaEE Spec. sec 5.4.1.3
-                    if (!Util.isEnvEntryType(type))
+                    if (!isEnvEntryType(type))
                         throw new IllegalStateException(e);
                 }
             }
@@ -339,7 +345,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
                         metaData.setOrigin("resource-ref."+name+".injection",resource,clazz);
                     }
-                    else if (!Util.isEnvEntryType(paramType))
+                    else if (!isEnvEntryType(paramType))
                     {
 
                         //if this is an env-entry type resource and there is no value bound for it, it isn't
@@ -353,11 +359,47 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     //if this is an env-entry type resource and there is no value bound for it, it isn't
                     //an error, it just means that perhaps the code will use a default value instead
                     // JavaEE Spec. sec 5.4.1.3
-                    if (!Util.isEnvEntryType(paramType))
+                    if (!isEnvEntryType(paramType))
                         throw new IllegalStateException(e);
                 }
             }
 
         }
+    }
+    
+    /**
+     * Check if the given Class is one that the specification allows to have a Resource annotation.
+     * 
+     * @param c the class
+     * @return true if Resource annotation permitted, false otherwise
+     */
+    public boolean supportsResourceInjection (Class<?> c)
+    {
+        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
+                javax.servlet.Filter.class.isAssignableFrom(c) || 
+                javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
+                javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+            return true;
+        
+        return false;
+    }
+    
+    
+    /**
+     * Check if the class is one of the basic java types permitted as 
+     * env-entries.
+     * @param clazz the class to check
+     * @return true if class is permitted by the spec to be an env-entry value
+     */
+    public boolean isEnvEntryType (Class<?> clazz)
+    {
+        return ENV_ENTRY_TYPES.contains(clazz);
     }
 }
