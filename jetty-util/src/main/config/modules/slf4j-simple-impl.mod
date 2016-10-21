@@ -16,7 +16,7 @@ slf4j-impl
 
 [files]
 maven://org.slf4j/slf4j-simple/${slf4j.version}|lib/slf4j/slf4j-simple-${slf4j.version}.jar
-basehome:modules/slf4j-impl
+basehome:modules/slf4j-simple-impl
 
 [lib]
 lib/slf4j/slf4j-simple-${slf4j.version}.jar
