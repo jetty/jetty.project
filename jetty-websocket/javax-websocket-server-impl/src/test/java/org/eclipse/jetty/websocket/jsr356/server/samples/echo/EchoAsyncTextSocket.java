@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,33 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server.samples.beans;
+package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
 
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
-
-/**
- * Encode Date
- */
-public class DateEncoder implements Encoder.Text<Date>
+@ServerEndpoint("/echo/text/async")
+public class EchoAsyncTextSocket
 {
-    @Override
-    public void destroy()
+    private Session session;
+    
+    @OnOpen
+    public void onOpen(Session session)
     {
+        this.session = session;
     }
-
-    @Override
-    public String encode(Date object) throws EncodeException
+    
+    @OnMessage
+    public void onText(String msg)
     {
-        return new SimpleDateFormat("[yyyy/MM/dd]").format(object);
-    }
-
-    @Override
-    public void init(EndpointConfig config)
-    {
+        session.getAsyncRemote().sendText(msg);
     }
 }

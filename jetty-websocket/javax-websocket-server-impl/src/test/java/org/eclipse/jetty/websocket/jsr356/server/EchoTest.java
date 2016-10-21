@@ -37,22 +37,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialBinary;
 import org.eclipse.jetty.websocket.jsr356.server.EchoCase.PartialText;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseReasonSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseSessionReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicCloseSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSessionThrowableSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorThrowableSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicErrorThrowableSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSessionSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicPongMessageSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.BasicTextMessageStringSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.StatelessTextMessageStringSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.binary.ByteBufferSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoAsyncTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoBasicTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoReturnTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoStatelessAsyncTextSocket;
+import org.eclipse.jetty.websocket.jsr356.server.samples.echo.EchoStatelessBasicTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSessionSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.partial.PartialTextSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.primitives.BooleanObjectTextSocket;
@@ -200,8 +191,11 @@ public class EchoTest
         EchoCase.add(TESTCASES,IntParamTextSocket.class).requestPath("/echo/primitives/integer/params/5678").addMessage(1234).expect("1234|5678");
         
         // Text based
-        EchoCase.add(TESTCASES,BasicTextMessageStringSocket.class).addMessage("Hello").expect("Hello");
-        EchoCase.add(TESTCASES,StatelessTextMessageStringSocket.class).addMessage("Hello").expect("Hello");
+        EchoCase.add(TESTCASES,EchoBasicTextSocket.class).addMessage("Hello").expect("Hello");
+        EchoCase.add(TESTCASES,EchoStatelessBasicTextSocket.class).addMessage("Hello").expect("Hello");
+        EchoCase.add(TESTCASES,EchoAsyncTextSocket.class).addMessage("Hello").expect("Hello");
+        EchoCase.add(TESTCASES,EchoStatelessAsyncTextSocket.class).addMessage("Hello").expect("Hello");
+        EchoCase.add(TESTCASES,EchoReturnTextSocket.class).addMessage("Hello").expect("Hello");
         
         // ByteBuffer based
         EchoCase.add(TESTCASES,ByteBufferSocket.class).addMessage(BufferUtil.toBuffer("Hello World")).expect("Hello World");
@@ -224,27 +218,7 @@ public class EchoTest
           .expect("('Built',false)(' for',false)(' the',false)(' future',true)");
         
         // Beans
-        EchoCase.add(TESTCASES, DateTextSocket.class).addMessage("Ooops").expect("");
-        
-        // Pong
-        EchoCase.add(TESTCASES, BasicPongMessageSocket.class).addMessage("send-ping").expect("Pong[]");
-        
-        // Open Events
-        EchoCase.add(TESTCASES, BasicOpenSocket.class).expect("Open[]");
-        EchoCase.add(TESTCASES, BasicOpenSessionSocket.class).expect("Open[Session]");
-        
-        // Close Events
-        EchoCase.add(TESTCASES, BasicCloseSocket.class).expect("Close[]");
-        EchoCase.add(TESTCASES, BasicCloseReasonSocket.class).expect("Close[Reason]");
-        EchoCase.add(TESTCASES, BasicCloseReasonSessionSocket.class).expect("Close[Reason,Session]");
-        EchoCase.add(TESTCASES, BasicCloseSessionReasonSocket.class).expect("Close[Session,Reason]");
-        
-        // Error Events
-        EchoCase.add(TESTCASES, BasicErrorSocket.class).expect("Error[]");
-        EchoCase.add(TESTCASES, BasicErrorSessionSocket.class).expect("Error[Session]");
-        EchoCase.add(TESTCASES, BasicErrorSessionThrowableSocket.class).expect("Error[Session,Throwable]");
-        EchoCase.add(TESTCASES, BasicErrorThrowableSocket.class).expect("Error[Throwable]");
-        EchoCase.add(TESTCASES, BasicErrorThrowableSessionSocket.class).expect("Error[Throwable,Session]");
+        EchoCase.add(TESTCASES, DateTextSocket.class).addMessage("1995.08.01").expect("[1995/08/01]");
     }
 
     @BeforeClass
