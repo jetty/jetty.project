@@ -18,10 +18,26 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 public class ServletPathSpec extends PathSpec
 {
+    /**
+     * If a servlet or filter path mapping isn't a suffix mapping, ensure
+     * it starts with '/'
+     * 
+     * @param pathSpec the servlet or filter mapping pattern
+     * @return the pathSpec prefixed by '/' if appropriate
+     */
+    public static String normalize(String pathSpec)
+    {
+        if (StringUtil.isNotBlank(pathSpec) && !pathSpec.startsWith("/") && !pathSpec.startsWith("*")) 
+            return "/" + pathSpec;
+        return pathSpec;
+    }
+    
+    
     public ServletPathSpec(String servletPathSpec)
     {
         super();
