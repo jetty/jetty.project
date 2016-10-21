@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.4.0-SNAPSHOT</version>
+    <version>9.4.0.RC1</version>
   </parent>
   <name>Jetty Tests :: WebApp :: Mock Resources</name>
   <artifactId>test-mock-resources</artifactId>
