@@ -81,8 +81,6 @@ Jetty uses the SLF4J api as a binding to provide logging information to addition
 It can also be used on it's own to provide simple server logging.
 To enable the SLF4J framework, you need to activate the `logging-slf4j` module.
 
-//TODO - Update after 1019 is resolved
-
 [source, screen, subs="{sub-order}"]
 ....
 [my-base]$ java -jar ../start.jar --add-to-start=logging-slf4j
@@ -137,10 +135,9 @@ To enable the simple SLF4J implementation, we will also need to activate the `sl
 [my-base]$ java -jar ../start.jar --add-to-start=slf4j-simple-impl
 INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
 INFO  : resources       transitively enabled
-DOWNLOAD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
 MKDIR : ${jetty.base}/resources
-COPY  : ${jetty.home}/modules/slf4j/simplelogger.properties to ${jetty.base}/resources/simplelogger.properties
-MKDIR : ${jetty.base}/logs
+COPY  : ${jetty.home}/modules/slf4j-simple-impl/resources/simplelogger.properties to ${jetty.base}/resources/simplelogger.properties
 INFO  : Base directory was modified
 
 [my-base]$ tree
@@ -149,7 +146,6 @@ INFO  : Base directory was modified
 │   └── slf4j
 │       ├── slf4j-api-1.7.21.jar
 │       └── slf4j-simple-1.7.21.jar
-├── logs
 ├── resources
 │   └── simplelogger.properties
 └── start.d
@@ -394,9 +390,7 @@ At this point Jetty is configured so that the Jetty server itself will log using
 ===== Java Util Logging with SLF4J
 It is possible to have the Jetty Server logging configured so that `java.util.logging` controls the output of logging events produced by Jetty.
 
-This example demonstrates how to configuring Jetty for logging to `java.util.logging` via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for java.util.logging].
-
-//TODO - Review after 1020 is resolved
+This example demonstrates how to configuring Jetty for logging to `java.util.logging` via http://slf4j.org/manual.html[SLF4J] as a binding layer.
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -440,7 +434,6 @@ COPY  : ${jetty.home}/modules/jul-impl/etc/java-util-logging.properties to ${jet
 MKDIR : ${jetty.base}/lib/slf4j
 DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-jdk14/1.7.21/slf4j-jdk14-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-jdk14-1.7.21.jar
-MKDIR : ${jetty.base}/resources
 INFO  : Base directory was modified
 
 [my-base]$ tree
@@ -451,7 +444,6 @@ INFO  : Base directory was modified
 │   └── slf4j
 │       ├── slf4j-api-1.7.21.jar
 │       └── slf4j-jdk14-1.7.21.jar
-├── resources
 └── start.d
     └── logging-jul.ini
 ....
@@ -490,7 +482,7 @@ As an example, here is the output from Logback before using the `console-capture
 575  [main] INFO  org.eclipse.jetty.server.Server - Started @668ms
 ....
 
-After enabling `console-capture`, the output is as follows:
+After enabling `console-capture`, the output is as follows, which displays the location the log is being saved to:
 
 [source, screen, subs="{sub-order}"]
 ....
