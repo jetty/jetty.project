@@ -760,7 +760,7 @@ public class MultiPartInputStreamParser
                     int bufInSize;
                     while(true) {
                         //If mark is not supported the stream must ensure that we will
-                        //never read to much, i.e. not more than the boundary (excluding the trailing new line
+                        //never read too much, i.e. not more than the boundary (excluding the trailing new line
                         // or double dash).
                         if(partInput.markSupported()) {
                             partInput.mark(bufin.length);
