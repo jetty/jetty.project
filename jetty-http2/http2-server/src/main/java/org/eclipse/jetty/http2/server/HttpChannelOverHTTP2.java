@@ -126,7 +126,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                 LOG.debug("HTTP2 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
                         stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                         _delayedUntilContent, System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getVersion(),
+                        request.getMethod(), request.getURI(), request.getHttpVersion(),
                         System.lineSeparator(), fields);
             }
 
@@ -157,7 +157,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                 Stream stream = getStream();
                 LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
                         stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getVersion(),
+                        request.getMethod(), request.getURI(), request.getHttpVersion(),
                         System.lineSeparator(), request.getFields());
             }
 
@@ -199,7 +199,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         {
             Stream stream = getStream();
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getVersion(), info.getStatus(), info.getReason(),
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
                     System.lineSeparator(), info.getFields());
         }
     }
