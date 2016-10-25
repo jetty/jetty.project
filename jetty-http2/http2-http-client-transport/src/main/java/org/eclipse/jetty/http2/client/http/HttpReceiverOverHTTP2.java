@@ -67,7 +67,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
 
         HttpResponse response = exchange.getResponse();
         MetaData.Response metaData = (MetaData.Response)frame.getMetaData();
-        response.version(metaData.getVersion()).status(metaData.getStatus()).reason(metaData.getReason());
+        response.version(metaData.getHttpVersion()).status(metaData.getStatus()).reason(metaData.getReason());
 
         if (responseBegin(exchange))
         {

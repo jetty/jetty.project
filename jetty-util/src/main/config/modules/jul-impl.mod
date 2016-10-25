@@ -6,9 +6,6 @@ logging
 jul
 internal
 
-[depends]
-resources
-
 [provides]
 jul-api
 jul-impl
