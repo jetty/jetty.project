@@ -659,6 +659,17 @@ public class MultiPartInputStreamTest
         IO.copy(p2.getInputStream(), baos);
         assertThat(baos.toString("UTF-8"), is("Other"));
     }
+    
+    @Test
+    public void checkVaryingChunkSize() throws Exception {
+        for(int i = 1; i < 2048; i++) {
+            MultiPartInputStreamParser.CHUNK_READ_SIZE = 1;
+            System.err.println(i);
+            testCRandLFMixRequest();
+            testCROnlyRequest();
+            testLFOnlyRequest();
+        }
+    }
 
     @Test
     public void testCRandLFMixRequest()
