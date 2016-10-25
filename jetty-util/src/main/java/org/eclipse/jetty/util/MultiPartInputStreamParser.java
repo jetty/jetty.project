@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.SequenceInputStream;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -175,8 +176,8 @@ public class MultiPartInputStreamParser
                 _out.flush();
                 _bout.writeTo(bos);
                 _out.close();
-                _bout = null;
             }
+            _bout = null;
             _out = bos;
         }
 
@@ -536,7 +537,6 @@ public class MultiPartInputStreamParser
 
         String boundary="--"+contentTypeBoundary;
         String lastBoundary=boundary+"--";
-        byte[] byteBoundary=lastBoundary.getBytes(StandardCharsets.ISO_8859_1);
         
         byte[] boundaryWithNewLinePrefix=("\n--"+contentTypeBoundary).getBytes(StandardCharsets.ISO_8859_1);
 
@@ -580,7 +580,7 @@ public class MultiPartInputStreamParser
             
             ReadLineInputStream is = (ReadLineInputStream) _in;
             
-            byte[] extraBytes = null;
+            
             outer:while(!lastPart)
             {
                 String contentDisposition=null;
@@ -589,12 +589,7 @@ public class MultiPartInputStreamParser
 
                 MultiMap<String> headers = new MultiMap<>();
                 
-                //If we have left over bytes change the stream used to include those bytes.
-                if(extraBytes != null) {
-                is = new ReadLineInputStream(new SequenceInputStream(new ByteArrayInputStream(extraBytes), _in), 1);
-                } else {
-                    is = (ReadLineInputStream) _in;
-                }
+                
                 while(true)
                 {
                     line=is.readLine();
@@ -715,11 +710,38 @@ public class MultiPartInputStreamParser
                             }
                             return i;
                         }
+                        
+                        @Override
+                        public void mark(int readlimit) {
+                            this.in.mark(readlimit);
+                        }
+
+                        @Override
+                        public void reset() throws IOException {
+                            this.in.reset();
+                        }
+
+                        @Override
+                        public boolean markSupported() {
+                            return this.in.markSupported();
+                        }
+                        
+                        
+                        @Override
+                        public long skip(long n) throws IOException {
+                            for(long i = 0; i < n; i++) {
+                                if(this.read() == -1) return i;
+                            }
+                            return n;
+                        }
+                        
+                        
                     };
                 }
                 else
                     partInput = is;
 
+                boolean trimLastChar = false;
 
                 try
                 {
@@ -731,21 +753,25 @@ public class MultiPartInputStreamParser
                     int chr = -1;
                     int bi = 0;
                     
+                    int lastCharWritten = -1;
+                    
                     //A buffer used when reading from the input stream.
                     byte[] bufin = new byte[CHUNK_READ_SIZE];
                     int offsetIntoBufin = -1;
                     int bufInSize;
                     while(true) {
+                        //If mark is not supported the stream must ensure that we will
+                        //never read to much, i.e. not more than the boundary (excluding the trailing new line
+                        // or double dash).
+                        if(partInput.markSupported()) {
+                            partInput.mark(bufin.length);
+                        }
                         //read a chunk
-                        partInput.mark(bufin.length);
                         bufInSize = partInput.read(bufin);
                         if(bufInSize == -1) break;
-                        boolean hasWrittenPrevChr = false;
                         for(offsetIntoBufin = 0; offsetIntoBufin < bufInSize;offsetIntoBufin++) {
 
                             chr = bufin[offsetIntoBufin];
-                            
-                            System.out.print(new String(new byte[]{bufin[offsetIntoBufin]}).replace('\r', 'R').replace("\n", "\\n\n"));
 
                             //We allow boundaries to start with either CR or LF
                             if(chr == '\r' || chr == '\n') {
@@ -756,6 +782,7 @@ public class MultiPartInputStreamParser
                                     if (offsetIntoBufin < bi) {
                                         //write all of the boundary up to the point the boundary is in this array.
                                         part.write(boundaryWithNewLinePrefix,0,bi - offsetIntoBufin);
+                                        lastCharWritten = boundaryWithNewLinePrefix[bi - offsetIntoBufin-1];
                                         total += bi - offsetIntoBufin;
                                         if (total > maxRequestSize)
                                             throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
@@ -765,19 +792,21 @@ public class MultiPartInputStreamParser
                                 //Remember what this boundary started with.
                                 boundaryWithNewLinePrefix[bi] = (byte) chr;
                                 bi++;
-                            } else if(/*bi < boundaryWithNewLinePrefix.length && */boundaryWithNewLinePrefix[bi] == chr) {
+                            } else if(boundaryWithNewLinePrefix[bi] == chr) {
                                 bi++;
                                 if(bi == boundaryWithNewLinePrefix.length) {
                                     //boundary found
+                                    //As we leave the loop early we need to increase offsetIntoBuffin
+                                    //to ensure where we are up to into the buffer is consistent.
+                                    offsetIntoBufin++;
                                     break;
                                 }
                             } else {
-                                hasWrittenPrevChr = true;
-
                                 if(bi != 0) {
                                     if (offsetIntoBufin < bi) {
                                         //write all of the boundary up to the point the boundary is in this array.
                                         part.write(boundaryWithNewLinePrefix,0,bi - offsetIntoBufin);
+                                        lastCharWritten = boundaryWithNewLinePrefix[bi - offsetIntoBufin-1];
                                         total += bi - offsetIntoBufin;
                                         if (total > maxRequestSize)
                                             throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
@@ -793,13 +822,13 @@ public class MultiPartInputStreamParser
                             //boundary starts, again this will not include the prevchar which we may write out
                             //later on.
                             toWrite = offsetIntoBufin - bi;
-                            offsetIntoBufin++; //As we left the loop early we need to skip the last read char here.
                         }
 
                         if (toWrite > 0) {
                             total += toWrite;
                             if (total > maxRequestSize)
                                 throw new IllegalStateException("Request exceeds maxRequestSize ("+_config.getMaxRequestSize()+")");
+                            lastCharWritten = bufin[toWrite-1];
                             part.write(bufin, 0, toWrite);
                         }
 
@@ -808,34 +837,33 @@ public class MultiPartInputStreamParser
                             break;
                         }
                     }
-                    partInput.reset();
-                    partInput.skip(offsetIntoBufin);
-
-                    ByteArrayInputStream leftOverBytes = null;
-
-//                    if (bufInSize != -1 && offsetIntoBufin >= 0
-//                        && offsetIntoBufin+1 < bufInSize) {
-//                        offsetIntoBufin++;
-//
-//                        leftOverBytes = new ByteArrayInputStream(bufin, offsetIntoBufin, bufInSize-offsetIntoBufin);
-//                        partInput = new SequenceInputStream(leftOverBytes, partInput);
-//                    }
+                    if(partInput.markSupported()) {
+                        partInput.reset();
+                        long actuallySkipped = partInput.skip(offsetIntoBufin);
+                        for(; actuallySkipped<offsetIntoBufin; actuallySkipped++) {
+                            partInput.read();
+                        }
+                    }
 
                     if(bi != boundaryWithNewLinePrefix.length) {
                         throw new IllegalArgumentException("Missing trailing boundary");
                     }
 
                     //backup if the boundary was preceeded with \r\n, as we wrote out the \r
-                    if(boundaryWithNewLinePrefix[0] == '\n') {
-                        int lastchar = part._bout.getCount() - 1;
-                        if(lastchar > 0 && part._bout.getBuf()[lastchar] == '\r') {
-                            //It ended with \r\n remobe the written out \r
+                    if(boundaryWithNewLinePrefix[0] == '\n' && lastCharWritten == '\r') {
+                        //It ended with \r\n remove the extra written out \r
+                        if(part._bout == part._out) {
+                            //We are not writing to a file.
+                            int lastchar = part._bout.getCount() - 1;
                             part._bout.setCount(lastchar);
+                            part._size--;
+                        } else {
+                            //we are writing to a file, we will trim the last char file.
+                            trimLastChar = true;
                         }
                     }
 
                     
-                    int readTooFarChar = -1;
                     //Is this the end?
                     if( chr == -1) { 
                         lastPart = true;
@@ -852,9 +880,21 @@ public class MultiPartInputStreamParser
                             //This ends well enough but we need to check the next char.
                             //we need to be careful what we do here this might be the end it or we may find we have
                             //more to deal with
-                            readTooFarChar = partInput.read();
-                            if(readTooFarChar == '\n') {
-                                readTooFarChar = -1;
+                            if(partInput.markSupported()) {
+                                partInput.mark(1);
+                            }
+                            int lastchar = partInput.read();
+                            if(lastchar == '\n') {
+                                
+                            } else if (lastchar == -1) {
+                                lastPart = true;
+                            } else {
+                                if(partInput.markSupported()) {
+                                    partInput.reset();
+                                } else {
+                                    throw new RuntimeException("The stream must support marking or "
+                                        + "ensure the boundary is not terminated with \\r.");
+                                }
                             }
                         } else if (c2ndLastChar == '\n') {
                             //ok as well
@@ -863,27 +903,18 @@ public class MultiPartInputStreamParser
                         }
 
                     }
-
-                    //New we need to fix up the input, we don't want to forget about the bytes we already read.
-                    if(leftOverBytes != null && leftOverBytes.available() > 0) {
-                        int leftOverCount = leftOverBytes.available();
-                        if(readTooFarChar != -1) {
-                            //We read one to many chars backup.
-                            leftOverCount++;
-                        }
-                        extraBytes = new byte[leftOverCount];
-                        System.arraycopy(bufin, bufInSize-leftOverCount, extraBytes, 0, leftOverCount);
-                    } else if (readTooFarChar != -1){
-                        //Read one to many chars.
-                        extraBytes = new byte[1];
-                        extraBytes[0] = (byte) readTooFarChar;
-                    } else {
-                        extraBytes = null;
-                    }
                 }
                 finally
                 {
                     part.close();
+                    //In the case of a file we may need to trim the last char.
+                    if(trimLastChar && part._file != null && part._file.exists()) {
+                        File f = part._file;
+                        FileChannel outChan = new FileOutputStream(f, true).getChannel();
+                        outChan.truncate(f.length() - 1);
+                        outChan.close();
+                        part._size--;
+                    }
                 }
             }
             if (lastPart)
@@ -965,7 +996,19 @@ public class MultiPartInputStreamParser
         String _line;
         byte[] _buffer;
         int _pos;
+        String returnNext = null;
 
+        public long skip(long n) throws IOException {
+            return _in.skip(n);
+        }
+
+        public boolean markSupported() {
+            return false;
+        }
+
+        public void close() throws IOException {
+            _in.close();
+        }
 
         public Base64InputStream(ReadLineInputStream rlis)
         {
@@ -975,16 +1018,25 @@ public class MultiPartInputStreamParser
         private boolean fillBuffer() throws IOException {
             if (_buffer==null || _pos>= _buffer.length)
             {
-                //Any CR and LF will be consumed by the readLine() call.
-                //We need to put them back into the bytes returned from this
-                //method because the parsing of the multipart content uses them
-                //as markers to determine when we've reached the end of a part.
+                
+                if(returnNext != null) {
+                    _buffer= returnNext.getBytes();
+                    _pos = 0;
+                    returnNext = null;
+                    return true;
+                }
                 _line = _in.readLine();
                 if (_line==null)
                     return false;  //nothing left
-                if (_line.startsWith("--"))
-                    _buffer=(_line+"\r\n").getBytes(); //boundary marking end of part
-                else if (_line.length()==0)
+                if (_line.startsWith("--")) {
+                    //Ensure the next call returns the parts after the boundary.
+                    if(_line.endsWith("--")) {
+                        returnNext = "--\r\n";
+                    } else {
+                        returnNext = "\r\n";
+                    }
+                    _buffer=(_line).getBytes(); //boundary marking end of part
+                } else if (_line.length()==0)
                     _buffer="\r\n".getBytes(); //blank line
                 else
                 {
@@ -1026,5 +1078,6 @@ public class MultiPartInputStreamParser
             }
             return i;
         }
+        
     }
 }

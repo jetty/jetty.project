@@ -44,7 +44,6 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.MultiPartInputStreamParser.MultiPart;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 /**
@@ -661,13 +660,22 @@ public class MultiPartInputStreamTest
     }
     
     @Test
-    public void checkVaryingChunkSize() throws Exception {
-        for(int i = 1; i < 2048; i++) {
-            MultiPartInputStreamParser.CHUNK_READ_SIZE = 1;
-            System.err.println(i);
-            testCRandLFMixRequest();
-            testCROnlyRequest();
-            testLFOnlyRequest();
+    public void testVaryingChunkSize() throws Exception {
+        int initalChunkSize = MultiPartInputStreamParser.CHUNK_READ_SIZE;
+        try {
+            for(int i = 1; i < 1024; i++) {
+                MultiPartInputStreamParser.CHUNK_READ_SIZE = i;
+                try {
+                    testCRandLFMixRequest();
+                    testCROnlyRequest();
+                    testLFOnlyRequest();
+                    testLeadingWhitespaceBodyWithCRLF();
+                } catch (Throwable e) {
+                    throw new Exception("Failed on number " + i, e);
+                }
+            } 
+        } finally {
+            MultiPartInputStreamParser.CHUNK_READ_SIZE = initalChunkSize;
         }
     }
 
@@ -909,6 +917,9 @@ public class MultiPartInputStreamTest
         assertThat(stuff.getHeaders("content-type").size(),is(1));
         assertThat(stuff.getHeader("content-disposition"),is("form-data; name=\"stuff\"; filename=\"" + filename + "\""));
         assertThat(stuff.getHeaderNames().size(),is(2));
+        os = new ByteArrayOutputStream();
+        IO.copy(is, os);
+        new String(os.toByteArray());
         assertThat(stuff.getSize(),is(51L));
         
         File tmpfile = ((MultiPartInputStreamParser.MultiPart)stuff).getFile();
@@ -1015,6 +1026,28 @@ public class MultiPartInputStreamTest
     }
     
     @Test
+    public void testBase64EncodedContentSinglePart() throws Exception {
+        String boundary = "AaB03x";
+        String content = "--" + boundary + "\r\n"+
+            "Content-disposition: form-data; name=\"stuff\"; filename=\"stuff.txt\"\r\n"+
+            "Content-Transfer-Encoding: base64\r\n"+
+            "Content-Type: application/octet-stream\r\n\r\n"+
+            B64Code.encode("hello jetty") +
+            "\r\n--" + boundary + "--\r\n\r\n";
+        
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 1024);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(content.getBytes()),
+                                                                         _contentType,
+                                                                         config,
+                                                                         _tmpDir);
+        Part p2 = mpis.getPart("stuff");
+        assertNotNull(p2);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IO.copy(p2.getInputStream(), baos);
+        assertEquals("hello jetty", baos.toString("US-ASCII"));
+    }
+    
+    @Test
     public void testQuotedPrintableEncoding () throws Exception
     {
         String contentWithEncodedPart = 
@@ -1064,11 +1097,12 @@ public class MultiPartInputStreamTest
             name = filename.substring(0,10);
         StringBuffer filler = new StringBuffer();
         int i = name.length();
-        while (i < 51)
+        while (i < 50)
         {
             filler.append("0");
             i++;
         }
+        filler.append("1");
         
         return "--AaB03x\r\n"+
         "content-disposition: form-data; name=\"field1\"; filename=\"frooble.txt\"\r\n"+
