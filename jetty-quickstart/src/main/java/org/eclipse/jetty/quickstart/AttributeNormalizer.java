@@ -181,6 +181,10 @@ public class AttributeNormalizer
             attributes.add(new PathAttribute("jetty.home", "jetty.home").weight(8));
             attributes.add(new PathAttribute("user.home", "user.home").weight(7));
             attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
+            if(warURI != null && warURI.getScheme().equals("file"))
+            {
+                attributes.add(new PathAttribute("WAR", new File(warURI).toPath().toAbsolutePath()).weight(10));
+            }
             
             Collections.sort(attributes, new PathAttributeComparator());
 
