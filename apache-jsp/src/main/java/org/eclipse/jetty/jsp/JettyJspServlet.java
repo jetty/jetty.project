@@ -19,6 +19,9 @@
 package org.eclipse.jetty.jsp;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -26,9 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.jasper.servlet.JspServlet;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
+
 
 /**
  * JettyJspServlet
@@ -76,7 +77,7 @@ public class JettyJspServlet extends JspServlet
             pathInfo = request.getPathInfo();
         }
         
-        String pathInContext = URIUtil.addPaths(servletPath,pathInfo);
+        String pathInContext = addPaths(servletPath,pathInfo);
     
         String jspFile = getInitParameter("jspFile");
 
@@ -84,7 +85,7 @@ public class JettyJspServlet extends JspServlet
         //otherwise the default servlet might handle it
         if (jspFile == null)
         {
-            if (pathInContext.endsWith("/"))
+            if (pathInContext != null && pathInContext.endsWith("/"))
             {
                 //dispatch via forward to the default servlet
                 getServletContext().getNamedDispatcher("default").forward(req, resp);
@@ -93,13 +94,16 @@ public class JettyJspServlet extends JspServlet
             else
             {      
                 //check if it resolves to a directory
-                Resource resource = ((ContextHandler.Context)getServletContext()).getContextHandler().getResource(pathInContext);    
-
-                if (resource!=null && resource.isDirectory())
+                String realPath = getServletContext().getRealPath(pathInContext);
+                if (realPath != null)
                 {
-                    //dispatch via forward to the default servlet
-                    getServletContext().getNamedDispatcher("default").forward(req, resp);
-                    return;
+                    Path asPath = Paths.get(realPath);
+                    if (Files.exists(asPath) && Files.isDirectory(asPath))
+                    {
+                        //dispatch via forward to the default servlet
+                        getServletContext().getNamedDispatcher("default").forward(req, resp);
+                        return;
+                    }
                 }
             }
         }
@@ -108,5 +112,19 @@ public class JettyJspServlet extends JspServlet
         super.service(req, resp);
     }
 
-    
+    /**
+     * @param servletPath the servletPath of the request
+     * @param pathInfo the pathInfo of the request
+     * @return servletPath with pathInfo appended
+     */
+    private String addPaths(String servletPath, String pathInfo)
+    {
+        if (servletPath.length()==0)
+            return pathInfo;
+       
+        if (pathInfo==null)
+            return servletPath;
+        
+        return servletPath+pathInfo;
+    }
 }
