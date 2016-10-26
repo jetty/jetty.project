@@ -24,13 +24,19 @@ https://wiki.debian.org/LSBInitScripts[LSB tags].
 
 You can safely replace Jetty 9.3's `jetty.sh` with 9.4's.
 
-==== Modules No Longer Available
+==== Module Changes in Jetty 9.4
 
 [cols="1,1", options="header"]
 |===
 | 9.3 Module | 9.4 Module
-| logging    | console-capture
+| `logging`    | `console-capture`
+| `infinispan` | `session-store-infinispan-embedded` or `session-store-infinispan-remote`
+| `jdbc-sessions` | `session-store-jdbc`
+| `gcloud-memcached-sessions`, `gcloud-session-idmgr` and `gcloud-sessions` | `gcloud`, `gcloud-datastore` and `session-store-gcloud`
+| `nosql` | `session-store-mongo`
 |===
+
+===== Logging Modules
 
 The module `logging` is no longer available in Jetty 9.4.
 
@@ -45,7 +51,7 @@ If you have a Jetty 9.3 installation, and you have both
 `$jetty.base/modules/logging.mod` and `$jetty.base/etc/jetty-logging.xml`,
 then this module is local to your `$jetty.base` setup and will be used
 by Jetty 9.4 as before.
-No changes required on your part.
+No changes are required for your implementation.
 
 If either `$jetty.base/modules/logging.mod` or `$jetty.base/etc/jetty-logging.xml`
 are missing, then you were relying on those present in `$jetty.home`,
@@ -55,7 +61,7 @@ The Jetty 9.3 `logging` module has been renamed to `console-capture` in Jetty 9.
 You need to open your Jetty 9.3 `start.ini` and replace the references to the
 `logging` modules with `console-capture`.
 
-For example:
+For example, in an existing 9.3 `start.ini` file the module declaration for logging would look like this:
 
 .start.ini
 ----
@@ -63,7 +69,7 @@ For example:
 jetty.logging.retainDays=7
 ----
 
-should be replaced by:
+In 9.4, it should be replaced by:
 
 .start.ini
 ----
@@ -75,3 +81,15 @@ The properties that may be present in your Jetty 9.3's `start.ini`, such as
 `jetty.logging.retainDays` will still be working in Jetty 9.4, but a warning
 will be printed at Jetty 9.4 startup, saying to replace them with correspondent
 `jetty.console-capture.*` properties such as `jetty.console-capture.retainDays`.
+
+For information on logging modules in the Jetty 9.4 architecture please see the section on link:#configuring-logging-modules[configuring logging modules.]
+
+===== Session Management
+
+//TODO - More info.
+
+Session management received a significant overhaul in Jetty 9.4. Whereas in prior versions of Jetty uses needed to implement individual instances of both `SessionIdManager` and `SessionManager`, now one instance of both handles sessions for the server.
+
+As part of these changes, modules for individual technologies were re-named to make configuration more transparent.
+
+For more information, please refer to the documentation on link:#jetty-sessions-architecture[Jetty Session Architecture.]
