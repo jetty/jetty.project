@@ -1161,6 +1161,7 @@
         <alpn.version>8.1.9.v20160720</alpn.version>
       </properties>
     </profile>
+<<<<<<< HEAD
     <profile>
       <id>8u111</id>
       <activation>
@@ -1184,26 +1185,6 @@
       <properties>
         <alpn.version>8.1.10.v20161026</alpn.version>
       </properties>
-    </profile>
-    <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>1.9</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <source>1.9</source>
-              <target>1.9</target>
-              <testSource>1.9</testSource>
-              <testTarget>1.9</testTarget>
-              <compilerArgument>-Xlint:all</compilerArgument>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
   </profiles>
 </project>
