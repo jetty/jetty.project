@@ -46,6 +46,18 @@
               <goal>test-jar</goal>
             </goals>
           </execution>
+          <execution>
+            <id>nolog-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>nolog</classifier>
+              <excludes>
+                <exclude>META-INF/services/org.apache.juli.logging.Log</exclude>
+              </excludes>
+            </configuration>
+          </execution>
         </executions>
         <configuration>
           <archive>
