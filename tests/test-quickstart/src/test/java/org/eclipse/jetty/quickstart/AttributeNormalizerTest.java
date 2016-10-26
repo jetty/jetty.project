@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.io.IOException;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -26,6 +25,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 
@@ -35,7 +35,7 @@ import org.junit.Test;
 public class AttributeNormalizerTest
 {
     @Test
-    public void testNormalizeOrder() throws MalformedURLException
+    public void testNormalizeOrder() throws IOException
     {
         String oldJettyHome = System.getProperty("jetty.home");
         String oldJettyBase = System.getProperty("jetty.base");
