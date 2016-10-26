@@ -28,6 +28,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
 
@@ -60,12 +61,12 @@ public class AttributeNormalizerTest
             
             // Normalize as URI
             result = normalizer.normalize(testWarURI);
-            assertThat(result, is("file:${WAR}"));
+            assertThat(result, is("${WAR}"));
             
             // Normalize deep path as File
             File testWarDeep = new File(new File(testWar), "deep/ref").getAbsoluteFile();
             result = normalizer.normalize(testWarDeep);
-            assertThat(result, is("file:${WAR}/deep/ref"));
+            assertThat(result, is("${WAR}/deep/ref"));
             
             // Normalize deep path as String
             result = normalizer.normalize(testWarDeep.toString());
@@ -73,7 +74,7 @@ public class AttributeNormalizerTest
             
             // Normalize deep path as URI
             result = normalizer.normalize(testWarDeep.toURI());
-            assertThat(result, is("file:${WAR}/deep/ref"));
+            assertThat(result, is("${WAR}/deep/ref"));
         }
         finally
         {
@@ -83,18 +84,29 @@ public class AttributeNormalizerTest
     }
     
     @Test
-    public void testNormalizeWAR() throws MalformedURLException
+    public void testNormalizeExpandWAR() throws MalformedURLException
     {
-        String webref = "http://localhost/resource/webapps/root";
+        String webref = MavenTestingUtils.getTargetDir().getAbsolutePath() + "/bogus.war";
         Resource webresource = Resource.newResource(webref);
         AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
         String result = null;
         
-        result = normalizer.normalize(URI.create(webref));
-        assertThat(result, is("${WAR}"));
+        File webrefFile = new File(webref);
+        URI uri = webrefFile.toURI();
+        // As normal URI ref
+        result = normalizer.normalize(uri);
+        assertThat("normalize(" + uri + ")", result, is("${WAR}"));
         
-        result = normalizer.normalize(URI.create(webref + "/deep/ref"));
-        assertThat(result, is("${WAR}/deep/ref"));
+        // as jar internal resource reference
+        uri = URI.create("jar:" + webrefFile.toURI().toASCIIString() + "!/deep/ref");
+        result = normalizer.normalize(uri);
+        assertThat("normalize(" + uri + ")", result, is("jar:${WAR}!/deep/ref"));
+        
+        // as jar internal resource reference
+        String line = "jar:${WAR}!/other/file";
+        result = normalizer.expand(line);
+        uri = URI.create("jar:" + webrefFile.toPath().toUri().toASCIIString() + "!/other/file");
+        assertThat("expand(\"" + line + "\")", URI.create(result), is(uri));
     }
     
     @Test

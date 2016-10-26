@@ -21,6 +21,7 @@ package org.eclipse.jetty.quickstart;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,7 +47,6 @@ public class AttributeNormalizerPathTest
     public static List<String[]> data()
     {
         String[][] tests = {
-                { "WAR", testRoot.toString() },
                 { "jetty.home", EnvUtils.toSystemPath("/opt/jetty-distro") },
                 { "jetty.base", EnvUtils.toSystemPath("/opt/jetty-distro/demo.base") },
                 { "user.home", EnvUtils.toSystemPath("/home/user") },
@@ -117,7 +117,8 @@ public class AttributeNormalizerPathTest
     @Test
     public void testExpandEqual()
     {
-        assertExpand("file:${" + key + "}", "file:" + path);
+        String expectedPath = new File(path).toPath().toUri().getRawSchemeSpecificPart();
+        assertExpand("file:${" + key + "}", "file:" + expectedPath);
     }
     
     @Test
@@ -189,7 +190,8 @@ public class AttributeNormalizerPathTest
     @Test
     public void testExpandJarFileEquals_FileBangFile()
     {
-        assertExpand("jar:file:${" + key + "}/file!/file", "jar:file:" + path + "/file!/file");
+        String expectedPath = new File(path).toPath().toUri().getRawSchemeSpecificPart();
+        assertExpand("jar:file:${" + key + "}/file!/file", "jar:file:" + expectedPath + "/file!/file");
     }
 
     @Test

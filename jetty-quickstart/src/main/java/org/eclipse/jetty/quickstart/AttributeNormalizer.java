@@ -53,20 +53,21 @@ public class AttributeNormalizer
 {
     private static final Logger LOG = Log.getLogger(AttributeNormalizer.class);
     private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
-
+    
     private static class PathAttribute
     {
         public final Path path;
         public final String key;
+        private boolean isUriBased = false;
         private int weight = -1;
-
+        
         public PathAttribute(String key, Path path) throws IOException
         {
             this.key = key;
             this.path = toCanonicalPath(path);
             // TODO: Don't allow non-directory paths? (but what if the path doesn't exist?)
         }
-
+        
         public PathAttribute(String key, String systemPropertyKey) throws IOException
         {
             this(key, toCanonicalPath(System.getProperty(systemPropertyKey)));
@@ -93,7 +94,41 @@ public class AttributeNormalizer
             }
             return path.toAbsolutePath();
         }
-
+        
+        public String toUri()
+        {
+            if (isUriBased)
+            {
+                // Return "{KEY}" -> "<uri>" (including scheme)
+                return path.toUri().toASCIIString();
+            }
+            else
+            {
+                // Return "{KEY}" -> "<path>" (excluding scheme)
+                return path.toUri().getSchemeSpecificPart();
+            }
+        }
+        
+        public String getNormalizedScheme()
+        {
+            if (isUriBased)
+            {
+                // If we are treating the {KEY} -> "<uri>" (scheme is expanded)
+                return "";
+            }
+            else
+            {
+                // If we are treating the {KEY} -> "<path>" (scheme is not part of KEY)
+                return "file:";
+            }
+        }
+        
+        public PathAttribute treatAsUri()
+        {
+            this.isUriBased = true;
+            return this;
+        }
+        
         public PathAttribute weight(int newweight)
         {
             this.weight = newweight;
@@ -195,7 +230,7 @@ public class AttributeNormalizer
             attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
             if(warURI != null && warURI.getScheme().equals("file"))
             {
-                attributes.add(new PathAttribute("WAR", new File(warURI).toPath().toAbsolutePath()).weight(10));
+                attributes.add(new PathAttribute("WAR", new File(warURI).toPath().toAbsolutePath()).treatAsUri().weight(10));
             }
             
             Collections.sort(attributes, new PathAttributeComparator());
@@ -245,7 +280,7 @@ public class AttributeNormalizer
             }
             else if ("file".equalsIgnoreCase(uri.getScheme()))
             {
-                return "file:" + normalizePath(new File(uri.getRawSchemeSpecificPart()).toPath());
+                return normalizePath(new File(uri.getRawSchemeSpecificPart()).toPath());
             }
             else
             {
@@ -284,7 +319,7 @@ public class AttributeNormalizer
             {
                 if (path.startsWith(attr.path) || path.equals(attr.path) || Files.isSameFile(path,attr.path))
                 {
-                    return uriSeparators(URIUtil.addPaths("${" + attr.key + "}",attr.path.relativize(path).toString()));
+                    return attr.getNormalizedScheme() + uriSeparators(URIUtil.addPaths("${" + attr.key + "}", attr.path.relativize(path).toString()));
                 }
             }
             catch (IOException ignore)
@@ -385,15 +420,7 @@ public class AttributeNormalizer
         {
             if (attr.key.equalsIgnoreCase(property))
             {
-                String path = uriSeparators(attr.path.toString());
-                if (path.endsWith("/"))
-                {
-                    return path.substring(0, path.length() - 1);
-                }
-                else
-                {
-                    return path;
-                }
+                return attr.toUri();
             }
         }
 
