@@ -471,7 +471,7 @@ public class MultipartFilterTest
         "Content-Transfer-Encoding: base64\r\n"+
         "Content-Type: application/octet-stream\r\n\r\n"+
         "SG93IG5vdyBicm93biBjb3cuCg=="+
-        "\r\n--" + boundary + "--";
+        "\r\n--" + boundary + "--\r\n\r\n";
 
         request.setContent(content);
 
