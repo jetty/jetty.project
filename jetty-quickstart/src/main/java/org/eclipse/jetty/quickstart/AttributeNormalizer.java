@@ -21,6 +21,7 @@ package org.eclipse.jetty.quickstart;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -53,20 +54,21 @@ public class AttributeNormalizer
 {
     private static final Logger LOG = Log.getLogger(AttributeNormalizer.class);
     private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
-
+    
     private static class PathAttribute
     {
         public final Path path;
         public final String key;
+        private boolean isUriBased = false;
         private int weight = -1;
-
+        
         public PathAttribute(String key, Path path) throws IOException
         {
             this.key = key;
             this.path = toCanonicalPath(path);
             // TODO: Don't allow non-directory paths? (but what if the path doesn't exist?)
         }
-
+        
         public PathAttribute(String key, String systemPropertyKey) throws IOException
         {
             this(key, toCanonicalPath(System.getProperty(systemPropertyKey)));
@@ -93,7 +95,41 @@ public class AttributeNormalizer
             }
             return path.toAbsolutePath();
         }
-
+        
+        public String toUri()
+        {
+            if (isUriBased)
+            {
+                // Return "{KEY}" -> "<uri>" (including scheme)
+                return path.toUri().toASCIIString();
+            }
+            else
+            {
+                // Return "{KEY}" -> "<path>" (excluding scheme)
+                return path.toUri().getSchemeSpecificPart();
+            }
+        }
+        
+        public String getNormalizedScheme()
+        {
+            if (isUriBased)
+            {
+                // If we are treating the {KEY} -> "<uri>" (scheme is expanded)
+                return "";
+            }
+            else
+            {
+                // If we are treating the {KEY} -> "<path>" (scheme is not part of KEY)
+                return "file:";
+            }
+        }
+        
+        public PathAttribute treatAsUri()
+        {
+            this.isUriBased = true;
+            return this;
+        }
+        
         public PathAttribute weight(int newweight)
         {
             this.weight = newweight;
@@ -195,7 +231,7 @@ public class AttributeNormalizer
             attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
             if(warURI != null && warURI.getScheme().equals("file"))
             {
-                attributes.add(new PathAttribute("WAR", new File(warURI).toPath().toAbsolutePath()).weight(10));
+                attributes.add(new PathAttribute("WAR", new File(warURI).toPath().toAbsolutePath()).treatAsUri().weight(10));
             }
             
             Collections.sort(attributes, new PathAttributeComparator());
@@ -215,6 +251,12 @@ public class AttributeNormalizer
         }
     }
 
+    /**
+     * Normalize a URI, URL, or File reference by replacing known attributes with ${key} attributes.
+     *
+     * @param o the object to normalize into a string
+     * @return the string representation of the object, with expansion keys.
+     */
     public String normalize(Object o)
     {
         try
@@ -230,9 +272,23 @@ public class AttributeNormalizer
             else
             {
                 String s = o.toString();
-                uri = new URI(s);
-                if (uri.getScheme() == null)
+                try
+                {
+                    uri = new URI(s);
+                    if (uri.getScheme() == null)
+                    {
+                        // Unknown scheme? not relevant to normalize
+                        return s;
+                    }
+                }
+                catch(URISyntaxException e)
+                {
+                    // This path occurs for many reasons, but most common is when this
+                    // is executed on MS Windows, on a string like "D:\jetty"
+                    // and the new URI() fails for
+                    // java.net.URISyntaxException: Illegal character in opaque part at index 2: D:\jetty
                     return s;
+                }
             }
 
             if ("jar".equalsIgnoreCase(uri.getScheme()))
@@ -245,7 +301,7 @@ public class AttributeNormalizer
             }
             else if ("file".equalsIgnoreCase(uri.getScheme()))
             {
-                return "file:" + normalizePath(new File(uri.getRawSchemeSpecificPart()).toPath());
+                return normalizePath(new File(uri.getRawSchemeSpecificPart()).toPath());
             }
             else
             {
@@ -275,6 +331,8 @@ public class AttributeNormalizer
 
     public String normalizePath(Path path)
     {
+        String uriPath = path.toUri().getSchemeSpecificPart();
+
         for (PathAttribute attr : attributes)
         {
             if (attr.path == null)
@@ -284,7 +342,7 @@ public class AttributeNormalizer
             {
                 if (path.startsWith(attr.path) || path.equals(attr.path) || Files.isSameFile(path,attr.path))
                 {
-                    return uriSeparators(URIUtil.addPaths("${" + attr.key + "}",attr.path.relativize(path).toString()));
+                    return attr.getNormalizedScheme() + uriSeparators(URIUtil.addPaths("${" + attr.key + "}", attr.path.relativize(path).toString()));
                 }
             }
             catch (IOException ignore)
@@ -380,18 +438,12 @@ public class AttributeNormalizer
             return null;
         }
 
-        // Use war path (if known)
-        if("WAR".equalsIgnoreCase(property))
-        {
-            return warURI.toASCIIString();
-        }
-        
         // Use known path attributes
         for (PathAttribute attr : attributes)
         {
             if (attr.key.equalsIgnoreCase(property))
             {
-                return uriSeparators(attr.path.toString());
+                return attr.toUri();
             }
         }
 
