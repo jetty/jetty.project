@@ -380,18 +380,20 @@ public class AttributeNormalizer
             return null;
         }
 
-        // Use war path (if known)
-        if("WAR".equalsIgnoreCase(property))
-        {
-            return warURI.toASCIIString();
-        }
-        
         // Use known path attributes
         for (PathAttribute attr : attributes)
         {
             if (attr.key.equalsIgnoreCase(property))
             {
-                return uriSeparators(attr.path.toString());
+                String path = uriSeparators(attr.path.toString());
+                if (path.endsWith("/"))
+                {
+                    return path.substring(0, path.length() - 1);
+                }
+                else
+                {
+                    return path;
+                }
             }
         }
 

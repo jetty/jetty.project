@@ -41,9 +41,9 @@ public class AttributeNormalizerTest
         
         try
         {
-            String testJettyHome = AttributeNormalizerPathTest.toSystemPath("/opt/jetty-distro");
-            String testJettyBase = AttributeNormalizerPathTest.toSystemPath("/opt/jetty-distro/demo.base");
-            String testWar = AttributeNormalizerPathTest.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOO");
+            String testJettyHome = EnvUtils.toSystemPath("/opt/jetty-distro");
+            String testJettyBase = EnvUtils.toSystemPath("/opt/jetty-distro/demo.base");
+            String testWar = EnvUtils.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOO");
             
             System.setProperty("jetty.home", testJettyHome);
             System.setProperty("jetty.base", testJettyBase);
@@ -77,20 +77,8 @@ public class AttributeNormalizerTest
         }
         finally
         {
-            restoreSystemProperty("jetty.home", oldJettyHome);
-            restoreSystemProperty("jetty.base", oldJettyBase);
-        }
-    }
-    
-    private void restoreSystemProperty(String key, String value)
-    {
-        if (value == null)
-        {
-            System.clearProperty(key);
-        }
-        else
-        {
-            System.setProperty(key, value);
+            EnvUtils.restoreSystemProperty("jetty.home", oldJettyHome);
+            EnvUtils.restoreSystemProperty("jetty.base", oldJettyBase);
         }
     }
     
@@ -119,7 +107,7 @@ public class AttributeNormalizerTest
         
         // Setup example from windows
         String javaUserHome = System.getProperty("user.home");
-        String realUserHome = AttributeNormalizerPathTest.toSystemPath(javaUserHome);
+        String realUserHome = EnvUtils.toSystemPath(javaUserHome);
         String userHome = AttributeNormalizer.uriSeparators(realUserHome);
         String path = "jar:file:" + userHome + "/.m2/repository/something/somejar.jar!/META-INF/some.tld";
         

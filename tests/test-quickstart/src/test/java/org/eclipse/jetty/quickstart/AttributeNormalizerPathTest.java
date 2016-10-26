@@ -18,17 +18,19 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.io.IOException;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -37,65 +39,34 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 @RunWith(Parameterized.class)
 public class AttributeNormalizerPathTest
 {
     @Parameters(name="{0} = {1}")
     public static List<String[]> data()
     {
-        String[][] tests = { 
-                // Can't test 'WAR' property, as its not a Path (which this testcase works with)
-                // { "WAR", toSystemPath("http://localhost/resources/webapps/root") }, 
-                { "jetty.home", toSystemPath("/opt/jetty-distro") },
-                { "jetty.base", toSystemPath("/opt/jetty-distro/demo.base") }, 
-                { "user.home", toSystemPath("/home/user") }, 
-                { "user.dir", toSystemPath("/etc/init.d") }, 
+        String[][] tests = {
+                { "WAR", testRoot.toString() },
+                { "jetty.home", EnvUtils.toSystemPath("/opt/jetty-distro") },
+                { "jetty.base", EnvUtils.toSystemPath("/opt/jetty-distro/demo.base") },
+                { "user.home", EnvUtils.toSystemPath("/home/user") },
+                { "user.dir", EnvUtils.toSystemPath("/etc/init.d") },
         };
 
         return Arrays.asList(tests);
     }
 
-    /**
-     * As the declared paths in this testcase might be actual paths on the system
-     * running these tests, the expected paths should be cleaned up to represent
-     * the actual system paths.
-     * <p>
-     * Eg: on fedora /etc/init.d is a symlink to /etc/rc.d/init.d
-     */
-    public static String toSystemPath(String rawpath)
-    {
-        Path path = FileSystems.getDefault().getPath(rawpath);
-        if (Files.exists(path))
-        {
-            // It exists, resolve it to the real path
-            try
-            {
-                path = path.toRealPath();
-            }
-            catch (IOException e)
-            {
-                // something prevented us from resolving to real path, fallback to
-                // absolute path resolution (not as accurate)
-                path = path.toAbsolutePath();
-                e.printStackTrace();
-            }
-        }
-        else
-        {
-            // File doesn't exist, resolve to absolute path
-            // We can't rely on File.toCanonicalPath() here
-            path = path.toAbsolutePath();
-        }
-        return path.toString();
-    }
-
+    private static Path testRoot;
     private static String origJettyBase;
     private static String origJettyHome;
     private static String origUserHome;
     private static String origUserDir;
+    
+    static
+    {
+        testRoot = MavenTestingUtils.getTargetTestingPath(AttributeNormalizerPathTest.class.getSimpleName());
+        FS.ensureEmpty(testRoot);
+    }
 
     @BeforeClass
     public static void initProperties()
@@ -129,15 +100,26 @@ public class AttributeNormalizerPathTest
     {
         this.key = key;
         this.path = AttributeNormalizer.uriSeparators(path);
-        this.normalizer = new AttributeNormalizer(Resource.newResource("/opt/jetty-distro/demo.base/webapps/root"));
+        this.normalizer = new AttributeNormalizer(Resource.newResource(testRoot.toFile()));
     }
-
+    
+    private void assertExpand(String line, String expected)
+    {
+        assertThat("normalizer.expand(\"" + line + "\")", normalizer.expand(line), is(expected));
+    }
+    
     @Test
     public void testEqual()
     {
         assertThat(normalizer.normalize("file:" + path), is("file:${" + key + "}"));
     }
-
+    
+    @Test
+    public void testExpandEqual()
+    {
+        assertExpand("file:${" + key + "}", "file:" + path);
+    }
+    
     @Test
     public void testEqualsSlash()
     {
@@ -202,6 +184,12 @@ public class AttributeNormalizerPathTest
     public void testJarFileEquals_FileBangFile()
     {
         assertThat(normalizer.normalize("jar:file:" + path + "/file!/file"), is("jar:file:${" + key + "}/file!/file"));
+    }
+    
+    @Test
+    public void testExpandJarFileEquals_FileBangFile()
+    {
+        assertExpand("jar:file:${" + key + "}/file!/file", "jar:file:" + path + "/file!/file");
     }
 
     @Test
