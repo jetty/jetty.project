@@ -21,6 +21,7 @@ package org.eclipse.jetty.quickstart;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -250,6 +251,12 @@ public class AttributeNormalizer
         }
     }
 
+    /**
+     * Normalize a URI, URL, or File reference by replacing known attributes with ${key} attributes.
+     *
+     * @param o the object to normalize into a string
+     * @return the string representation of the object, with expansion keys.
+     */
     public String normalize(Object o)
     {
         try
@@ -265,9 +272,23 @@ public class AttributeNormalizer
             else
             {
                 String s = o.toString();
-                uri = new URI(s);
-                if (uri.getScheme() == null)
+                try
+                {
+                    uri = new URI(s);
+                    if (uri.getScheme() == null)
+                    {
+                        // Unknown scheme? not relevant to normalize
+                        return s;
+                    }
+                }
+                catch(URISyntaxException e)
+                {
+                    // This path occurs for many reasons, but most common is when this
+                    // is executed on MS Windows, on a string like "D:\jetty"
+                    // and the new URI() fails for
+                    // java.net.URISyntaxException: Illegal character in opaque part at index 2: D:\jetty
                     return s;
+                }
             }
 
             if ("jar".equalsIgnoreCase(uri.getScheme()))
@@ -310,6 +331,8 @@ public class AttributeNormalizer
 
     public String normalizePath(Path path)
     {
+        String uriPath = path.toUri().getSchemeSpecificPart();
+
         for (PathAttribute attr : attributes)
         {
             if (attr.path == null)
