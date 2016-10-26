@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -146,7 +145,20 @@ public class AttributeNormalizer
             return o2.weight - o1.weight;
         }
     }
-
+    
+    private static class PathAttributes extends ArrayList<AttributeNormalizer.PathAttribute>
+    {
+        @Override
+        public boolean add(AttributeNormalizer.PathAttribute pathAttribute)
+        {
+            if (pathAttribute.path == null)
+            {
+                return false;
+            }
+            return super.add(pathAttribute);
+        }
+    }
+    
     public static String uriSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -165,7 +177,7 @@ public class AttributeNormalizer
     }
 
     private URI warURI;
-    private List<PathAttribute> attributes = new ArrayList<>();
+    private PathAttributes attributes = new PathAttributes();
 
     public AttributeNormalizer(Resource baseResource)
     {
