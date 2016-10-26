@@ -29,8 +29,9 @@ import javax.servlet.ServletContext;
 import org.apache.jasper.servlet.JasperInitializer;
 import org.apache.jasper.servlet.TldPreScanned;
 import org.apache.jasper.servlet.TldScanner;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
+
 import org.xml.sax.SAXException;
 
 /**
@@ -38,8 +39,7 @@ import org.xml.sax.SAXException;
  */
 public class JettyJasperInitializer extends JasperInitializer
 {
-   private static final Logger LOG = Log.getLogger(JettyJasperInitializer.class);
-    
+   private static final Log LOG = LogFactory.getLog(JasperInitializer.class);
     /**
      * NullTldScanner
      *
@@ -111,6 +111,4 @@ public class JettyJasperInitializer extends JasperInitializer
         if (LOG.isDebugEnabled()) LOG.debug("Defaulting to jasper tld scanning");
         return super.newTldScanner(context, namespaceAware, validate, blockExternal);
     }
-    
-
 }
