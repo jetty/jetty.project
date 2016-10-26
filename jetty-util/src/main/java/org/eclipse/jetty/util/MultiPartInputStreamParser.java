@@ -736,7 +736,8 @@ public class MultiPartInputStreamParser
                         @Override
                         public long skip(long n) throws IOException 
                         {
-                            for(long i = 0; i < n; i++) {
+                            for(long i = 0; i < n; i++) 
+                            {
                                 if(this.read() == -1) return i;
                             }
                             return n;
@@ -771,13 +772,15 @@ public class MultiPartInputStreamParser
                         //If mark is not supported the stream must ensure that we will
                         //never read too much, i.e. not more than the boundary (excluding the trailing new line
                         // or double dash).
-                        if(partInput.markSupported()) {
+                        if(partInput.markSupported()) 
+                        {
                             partInput.mark(bufin.length);
                         }
                         //read a chunk
                         bufInSize = partInput.read(bufin);
                         if(bufInSize == -1) break;
-                        for(offsetIntoBufin = 0; offsetIntoBufin < bufInSize;offsetIntoBufin++) {
+                        for(offsetIntoBufin = 0; offsetIntoBufin < bufInSize;offsetIntoBufin++) 
+                        {
 
                             chr = bufin[offsetIntoBufin];
 
@@ -831,7 +834,8 @@ public class MultiPartInputStreamParser
                         }
                         //write up to boundary limit
                         int toWrite = offsetIntoBufin;
-                        if(bi > 0) {
+                        if(bi > 0) 
+                        {
                             //if we are looking at a boundary only write up to just before we think the
                             //boundary starts, again this will not include the prevchar which we may write out
                             //later on.
@@ -853,7 +857,8 @@ public class MultiPartInputStreamParser
                             break;
                         }
                     }
-                    if(partInput.markSupported()) {
+                    if(partInput.markSupported()) 
+                    {
                         partInput.reset();
                         long actuallySkipped = partInput.skip(offsetIntoBufin);
                         for(; actuallySkipped<offsetIntoBufin; actuallySkipped++) 
@@ -889,7 +894,8 @@ public class MultiPartInputStreamParser
                     if( chr == -1) 
                     { 
                         lastPart = true;
-                    } else {
+                    } else 
+                    {
                         int c2ndLastChar = partInput.read();
                         if(c2ndLastChar == -1) 
                         {
@@ -929,7 +935,8 @@ public class MultiPartInputStreamParser
                         } else if (c2ndLastChar == '\n') 
                         {
                             //ok as well
-                        } else {
+                        } else 
+                        {
                             throw new IllegalArgumentException("Boundary must be followed by a new line.");
                         }
 
@@ -1034,11 +1041,13 @@ public class MultiPartInputStreamParser
             return _in.skip(n);
         }
 
-        public boolean markSupported() {
+        public boolean markSupported() 
+        {
             return false;
         }
 
-        public void close() throws IOException {
+        public void close() throws IOException 
+        {
             _in.close();
         }
 
@@ -1047,7 +1056,8 @@ public class MultiPartInputStreamParser
             _in = rlis;
         }
         
-        private boolean fillBuffer() throws IOException {
+        private boolean fillBuffer() throws IOException 
+        {
             if (_buffer==null || _pos>= _buffer.length)
             {
                 
@@ -1060,9 +1070,11 @@ public class MultiPartInputStreamParser
                 _line = _in.readLine();
                 if (_line==null)
                     return false;  //nothing left
-                if (_line.startsWith("--")) {
+                if (_line.startsWith("--")) 
+                {
                     //Ensure the next call returns the parts after the boundary.
-                    if(_line.endsWith("--")) {
+                    if(_line.endsWith("--")) 
+                    {
                         returnNext = "--\r\n";
                     } else {
                         returnNext = "\r\n";
@@ -1087,19 +1099,22 @@ public class MultiPartInputStreamParser
         @Override
         public int read() throws IOException
         {
-            if(fillBuffer()) {
+            if(fillBuffer()) 
+            {
                 return _buffer[_pos++];
             } 
             return -1;
         }
         
         @Override
-        public int read(byte b[]) throws IOException {
+        public int read(byte b[]) throws IOException 
+        {
             return read(b, 0, b.length);
         }
         
         @Override
-        public int read(byte b[], int off, int len) throws IOException {
+        public int read(byte b[], int off, int len) throws IOException 
+        {
             int i = 0;
             if(!fillBuffer()) {
                 return -1;
