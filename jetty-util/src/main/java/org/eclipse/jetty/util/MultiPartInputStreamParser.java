@@ -1117,10 +1117,12 @@ public class MultiPartInputStreamParser
         public int read(byte b[], int off, int len) throws IOException 
         {
             int i = 0;
-            if(!fillBuffer()) {
+            if(!fillBuffer()) 
+            {
                 return -1;
             }
-            for(i = 0; i < len && _pos < _buffer.length ; i++) {
+            for(i = 0; i < len && _pos < _buffer.length ; i++) 
+            {
                 b[off + i] = _buffer[_pos];
                 _pos++;
             }
