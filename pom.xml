@@ -1437,7 +1437,6 @@
         <alpn.version>8.1.9.v20160720</alpn.version>
       </properties>
     </profile>
-<<<<<<< HEAD
     <profile>
       <id>8u111</id>
       <activation>
