@@ -31,6 +31,21 @@
             </configuration>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>artifact-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>test-jar</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
           <execution>
             <id>nolog-jar</id>
             <goals>
@@ -43,6 +58,9 @@
               </excludes>
             </configuration>
           </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <configuration>
