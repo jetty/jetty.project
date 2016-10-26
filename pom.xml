@@ -1162,6 +1162,30 @@
       </properties>
     </profile>
     <profile>
+      <id>8u111</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_111</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.9.v20160720</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u112</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_112</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.10.v20161026</alpn.version>
+      </properties>
+    </profile>
+    <profile>
       <id>jdk9</id>
       <activation>
         <jdk>1.9</jdk>
