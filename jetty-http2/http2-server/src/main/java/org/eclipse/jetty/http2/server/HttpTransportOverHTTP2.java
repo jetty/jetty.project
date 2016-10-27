@@ -215,7 +215,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         // Consume the existing queued data frames to
         // avoid stalling the session flow control.
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        channel.consumeInput();
+        if (channel != null)
+            channel.consumeInput();
     }
 
     @Override
