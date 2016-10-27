@@ -29,9 +29,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Stack;
+import java.util.jar.Attributes;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -55,199 +61,118 @@ public class AttributeNormalizer
     private static final Logger LOG = Log.getLogger(AttributeNormalizer.class);
     private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
     
-    private static class PathAttribute
+    private static class Attribute
     {
-        public final Path path;
-        public final String key;
-        private boolean isUriBased = false;
-        private int weight = -1;
+        final String key;
+        final String value;
         
-        public PathAttribute(String key, Path path) throws IOException
+        public Attribute(String key, String value)
         {
             this.key = key;
-            this.path = toCanonicalPath(path);
-            // TODO: Don't allow non-directory paths? (but what if the path doesn't exist?)
+            this.value = value;
         }
-        
-        public PathAttribute(String key, String systemPropertyKey) throws IOException
+    }
+    
+    private static Path toCanonicalPath(String path)
+    {
+        if (path == null)
         {
-            this(key, toCanonicalPath(System.getProperty(systemPropertyKey)));
+            return null;
         }
-        
-        private static Path toCanonicalPath(String path) throws IOException
+        return toCanonicalPath(FileSystems.getDefault().getPath(path));
+    }
+    
+    private static Path toCanonicalPath(Path path)
+    {
+        if (path == null)
         {
-            if (path == null)
-            {
-                return null;
-            }
-            return toCanonicalPath(FileSystems.getDefault().getPath(path));
+            return null;
         }
-        
-        private static Path toCanonicalPath(Path path) throws IOException
+        if (Files.exists(path))
         {
-            if (path == null)
-            {
-                return null;
-            }
-            if (Files.exists(path))
+            try
             {
                 return path.toRealPath();
             }
-            return path.toAbsolutePath();
-        }
-        
-        public String toUri()
-        {
-            if (isUriBased)
+            catch (IOException e)
             {
-                // Return "{KEY}" -> "<uri>" (including scheme)
-                return path.toUri().toASCIIString();
-            }
-            else
-            {
-                // Return "{KEY}" -> "<path>" (excluding scheme)
-                return path.toUri().getSchemeSpecificPart();
+                throw new IllegalArgumentException(e);
             }
         }
+        return path.toAbsolutePath();
+    }
+    
+    private static class PathAttribute extends Attribute
+    {
+        public final Path path;
         
-        public String getNormalizedScheme()
+        public PathAttribute(String key, Path path)
         {
-            if (isUriBased)
-            {
-                // If we are treating the {KEY} -> "<uri>" (scheme is expanded)
-                return "";
-            }
-            else
-            {
-                // If we are treating the {KEY} -> "<path>" (scheme is not part of KEY)
-                return "file:";
-            }
-        }
-        
-        public PathAttribute treatAsUri()
-        {
-            this.isUriBased = true;
-            return this;
-        }
-        
-        public PathAttribute weight(int newweight)
-        {
-            this.weight = newweight;
-            return this;
+            super(key,path.toString());
+            this.path = path;
         }
         
         @Override
         public String toString()
         {
-            return String.format("PathAttribute[%s=>%s,%d]",key,path,weight);
-        }
-    }
-
-    private static class PathAttributeComparator implements Comparator<PathAttribute>
-    {
-        @Override
-        public int compare(PathAttribute o1, PathAttribute o2)
-        {
-            if( (o1.path == null) && (o2.path != null) )
-            {
-                return -1;
-            }
-            
-            if( (o1.path != null) && (o2.path == null) )
-            {
-                return 1;
-            }
-            
-            if( (o1.path == null) && (o2.path == null) )
-            {
-                return 0;
-            }
-            
-            // Different lengths?
-            int diff = o2.path.getNameCount() - o1.path.getNameCount();
-            if(diff != 0)
-            {
-                return diff;
-            }
-            
-            // Different names?
-            diff = o2.path.compareTo(o1.path);
-            if(diff != 0)
-            {
-                return diff;
-            }
-            
-            // The paths are the same, base now on weight
-            return o2.weight - o1.weight;
+            return String.format("PathAttribute[%s=>%s]",key,path);
         }
     }
     
-    private static class PathAttributes extends ArrayList<AttributeNormalizer.PathAttribute>
+    private static class URIAttribute extends Attribute
     {
-        @Override
-        public boolean add(AttributeNormalizer.PathAttribute pathAttribute)
+        public final URI uri;
+        
+        public URIAttribute(String key, URI uri)
         {
-            if (pathAttribute.path == null)
-            {
-                return false;
-            }
-            return super.add(pathAttribute);
+            super(key,uri.toASCIIString());
+            this.uri = uri;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("URIAttribute[%s=>%s]",key,uri);
         }
     }
     
-    public static String uriSeparators(String path)
+    private static void addPath(List<PathAttribute>paths,String key)
     {
-        StringBuilder ret = new StringBuilder();
-        for (char c : path.toCharArray())
-        {
-            if ((c == '/') || (c == '\\'))
-            {
-                ret.append('/');
-            }
-            else
-            {
-                ret.append(c);
-            }
-        }
-        return ret.toString();
+        String value = System.getProperty(key);
+        if (value!=null)
+            paths.add(new PathAttribute(key,toCanonicalPath(value)));
     }
 
     private URI warURI;
-    private PathAttributes attributes = new PathAttributes();
+    private Map<String,Attribute> attributes = new HashMap<>();
+    private List<PathAttribute> paths = new ArrayList<>();
+    private List<URIAttribute> uris = new ArrayList<>();
 
+    
     public AttributeNormalizer(Resource baseResource)
     {
-        // WAR URI is always evaluated before paths.
-        warURI = baseResource == null ? null : baseResource.getURI();
-        // We don't normalize or resolve the baseResource URI
+        if (baseResource==null)
+            throw new IllegalArgumentException("No base resource!");
+            
+        warURI = baseResource.getURI().normalize();
         if (!warURI.isAbsolute())
             throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
-        try
-        {
-            // Track path attributes for expansion
-            attributes.add(new PathAttribute("jetty.base", "jetty.base").weight(9));
-            attributes.add(new PathAttribute("jetty.home", "jetty.home").weight(8));
-            attributes.add(new PathAttribute("user.home", "user.home").weight(7));
-            attributes.add(new PathAttribute("user.dir", "user.dir").weight(6));
-            if(warURI != null && warURI.getScheme().equals("file"))
-            {
-                attributes.add(new PathAttribute("WAR", new File(warURI).toPath().toAbsolutePath()).treatAsUri().weight(10));
-            }
-            
-            Collections.sort(attributes, new PathAttributeComparator());
+        
+        addPath(paths,"jetty.base");
+        addPath(paths,"jetty.home");
+        addPath(paths,"user.home");
+        addPath(paths,"user.dir");
+        
+        uris.add(new URIAttribute("WAR", warURI));
+        
+        Stream.concat(paths.stream(),uris.stream()).forEach(a->attributes.put(a.key,a));        
 
-            if (LOG.isDebugEnabled())
-            {
-                int i = 0;
-                for (PathAttribute attr : attributes)
-                {
-                    LOG.debug(" [{}] {}", i++, attr);
-                }
-            }
-        }
-        catch (Exception e)
+        if (LOG.isDebugEnabled())
         {
-            throw new IllegalArgumentException(e);
+            for (Attribute attr : attributes.values())
+            {
+                LOG.debug(attr.toString());
+            }
         }
     }
 
@@ -264,11 +189,11 @@ public class AttributeNormalizer
             // Find a URI
             URI uri = null;
             if (o instanceof URI)
-                uri = (URI)o;
+                uri = ((URI)o).normalize();
             else if (o instanceof URL)
-                uri = ((URL)o).toURI();
+                uri = ((URL)o).toURI().normalize();
             else if (o instanceof File)
-                uri = ((File)o).toURI();
+                uri = ((File)o).toURI().normalize();
             else
             {
                 String s = o.toString();
@@ -299,10 +224,6 @@ public class AttributeNormalizer
                 String suffix = raw.substring(bang);
                 return "jar:" + normal + suffix;
             }
-            else if ("file".equalsIgnoreCase(uri.getScheme()))
-            {
-                return normalizePath(new File(uri.getRawSchemeSpecificPart()).toPath());
-            }
             else
             {
                 if(uri.isAbsolute())
@@ -320,30 +241,49 @@ public class AttributeNormalizer
     
     public String normalizeUri(URI uri)
     {
-        String uriStr = uri.toASCIIString();
-        String warStr = warURI.toASCIIString();
-        if (uriStr.startsWith(warStr))
+        for (URIAttribute a : uris)
         {
-            return "${WAR}" + uriStr.substring(warStr.length());
+            try
+            {
+                if (uri.compareTo(a.uri)==0)
+                    return String.format("${%s}",a.key);
+
+                if (!a.uri.getScheme().equalsIgnoreCase(uri.getScheme()))
+                    continue;
+                if (a.uri.getHost()==null && uri.getHost()!=null)
+                    continue;
+                if (a.uri.getHost()!=null && !a.uri.getHost().equals(uri.getHost()))
+                    continue;
+
+                if (a.uri.getPath().equals(uri.getPath()))
+                    return a.value;
+
+                if (!uri.getPath().startsWith(a.uri.getPath()))
+                    continue;
+
+                String s = uri.getPath().substring(a.uri.getPath().length());
+
+                if (s.charAt(0)!='/')
+                    continue;
+
+                return String.format("${%s}%s",a.key,new URI(s).toASCIIString());
+            }
+            catch(URISyntaxException e)
+            {
+                LOG.ignore(e);
+            }
         }
-        return uriStr;
+        return uri.toASCIIString();
     }
 
     public String normalizePath(Path path)
     {
-        String uriPath = path.toUri().getSchemeSpecificPart();
-
-        for (PathAttribute attr : attributes)
+        for (PathAttribute a : paths)
         {
-            if (attr.path == null)
-                continue;
-            
             try
             {
-                if (path.startsWith(attr.path) || path.equals(attr.path) || Files.isSameFile(path,attr.path))
-                {
-                    return attr.getNormalizedScheme() + uriSeparators(URIUtil.addPaths("${" + attr.key + "}", attr.path.relativize(path).toString()));
-                }
+                if (path.startsWith(a.path) || path.equals(a.path) || Files.isSameFile(path,a.path))
+                    return String.format("${%s}%s",a.key,a.path.relativize(path).toString());
             }
             catch (IOException ignore)
             {
@@ -351,7 +291,7 @@ public class AttributeNormalizer
             }
         }
 
-        return uriSeparators(path.toString());
+        return path.toString();
     }
 
     public String expand(String str)
@@ -433,19 +373,14 @@ public class AttributeNormalizer
 
     private String getString(String property)
     {
-        if(property == null)
+        if(property==null)
         {
             return null;
         }
 
-        // Use known path attributes
-        for (PathAttribute attr : attributes)
-        {
-            if (attr.key.equalsIgnoreCase(property))
-            {
-                return attr.toUri();
-            }
-        }
+        Attribute a = attributes.get(property);
+        if (a!=null)
+            return a.value;
 
         // Use system properties next
         return System.getProperty(property);
