@@ -18,138 +18,241 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.Resource;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.resource.Resource;
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+@RunWith(Parameterized.class)
 public class AttributeNormalizerTest
 {
-    @Test
-    public void testNormalizeOrder() throws IOException
+    @Parameterized.Parameters(name = "[{index}] {0} - {1}")
+    public static List<Object[]> data()
     {
-        String oldJettyHome = System.getProperty("jetty.home");
-        String oldJettyBase = System.getProperty("jetty.base");
+        List<Object[]> data = new ArrayList<>();
+    
+        String arch = String.format("%s/%s", System.getProperty("os.name"), System.getProperty("os.arch"));
         
-        try
-        {
-            String testJettyHome = EnvUtils.toSystemPath("/opt/jetty-distro");
-            String testJettyBase = EnvUtils.toSystemPath("/opt/jetty-distro/demo.base");
-            String testWar = EnvUtils.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOO");
-            
-            System.setProperty("jetty.home", testJettyHome);
-            System.setProperty("jetty.base", testJettyBase);
-            
-            Resource webresource = Resource.newResource(testWar);
-            AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
-            String result = null;
-            
-            // Normalize as String path
-            result = normalizer.normalize(testWar);
-            assertThat(result, is(testWar)); // only URL, File, URI are supported
-            
-            // Normalize as URI
-            URI testWarURI = new File(testWar).toURI();
-            result = normalizer.normalize(testWarURI);
-            assertThat(result, is("${WAR}"));
-            
-            // Normalize deep path as File
-            File testWarDeep = new File(new File(testWar), "deep/ref").getAbsoluteFile();
-            result = normalizer.normalize(testWarDeep);
-            assertThat(result, is("${WAR}/deep/ref"));
-            
-            // Normalize deep path as String
-            result = normalizer.normalize(testWarDeep.toString());
-            assertThat(result, is(testWarDeep.toString()));
-            
-            // Normalize deep path as URI
-            result = normalizer.normalize(testWarDeep.toURI());
-            assertThat(result, is("${WAR}/deep/ref"));
-            
-        }
-        finally
-        {
-            EnvUtils.restoreSystemProperty("jetty.home", oldJettyHome);
-            EnvUtils.restoreSystemProperty("jetty.base", oldJettyBase);
-        }
+        String title;
+        Map<String, String> env;
+        
+        // ------
+        title = "Typical Setup";
+        
+        env = new HashMap<>();
+        env.put("jetty.home", asTargetPath(title,"jetty-distro"));
+        env.put("jetty.base", asTargetPath(title,"jetty-distro/demo.base"));
+        env.put("WAR", asTargetPath(title,"jetty-distro/demo.base/webapps/FOO"));
+        
+        data.add(new Object[]{arch, title, env});
+        
+        // ------
+        // This puts the jetty.home inside of the jetty.base
+        title = "Overlap Setup";
+        env = new HashMap<>();
+        env.put("jetty.home", asTargetPath(title,"app/dist"));
+        env.put("jetty.base", asTargetPath(title,"app"));
+        env.put("WAR", asTargetPath(title,"app/webapps/FOO"));
+        
+        data.add(new Object[]{arch, title, env});
+        
+        // ------
+        // This tests a path scenario often seen on various automatic deployments tooling
+        // such as Kubernetes, CircleCI, TravisCI, and Jenkins.
+        title = "Nasty Path Setup";
+        env = new HashMap<>();
+        env.put("jetty.home", asTargetPath(title,"app%2Fnasty/dist"));
+        env.put("jetty.base", asTargetPath(title,"app%2Fnasty/base"));
+        env.put("WAR", asTargetPath(title,"app%2Fnasty/base/webapps/FOO"));
+        
+        data.add(new Object[]{arch, title, env});
+        return data;
     }
     
-    
-    @Test
-    public void testNormalizeURIs() throws Exception
+    private static final String asTargetPath(String title, String subpath)
     {
-        String testWar = EnvUtils.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOO");
-
-        Resource webresource = Resource.newResource(testWar);
-        AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
-        String result = null;
-
-        // Normalize as String path
-        result = normalizer.normalize(testWar);
-        assertThat(result, is(testWar)); // only URL, File, URI are supported
-
-        // Normalize as URI
-        URI testWarURI = new File(testWar).toURI();
-        result = normalizer.normalize(testWarURI);
-        assertThat(result, is("${WAR}"));
+        Path rootPath = MavenTestingUtils.getTargetTestingPath(title);
+        FS.ensureDirExists(rootPath);
+        Path path = rootPath.resolve(OS.separators(subpath));
+        FS.ensureDirExists(path);
         
-        // Normalize as URI
-        URI subURI = new File(testWar,"WEB-INF/web.xml").toURI();
-        result = normalizer.normalize(subURI);
-        assertThat(result, is("${WAR}/WEB-INF/web.xml"));
-        
-        // Normalize fake prefix
-        URI fakeURI = Resource.newResource(EnvUtils.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOOBAR")).getURI();
-        result = normalizer.normalize(fakeURI);
-        assertThat(result, is(fakeURI.toASCIIString()));
-        
-        // Normalize as no host
-        result = normalizer.normalize("file:"+testWarURI.getRawPath());
-        assertThat(result, is("${WAR}"));
-        
-        // Normalize as null host
-        result = normalizer.normalize("file://"+testWarURI.getRawPath());
-        assertThat(result, is("${WAR}"));
-        
-        // Normalize jar file
-        result = normalizer.normalize("jar:file:"+testWarURI.getRawPath()+"!/some/path");
-        assertThat(result, is("jar:${WAR}!/some/path"));
-        
+        return path.toString();
     }
     
+    private Map<String, String> oldValues = new HashMap<>();
+    private final String jettyHome;
+    private final String jettyBase;
+    private final String war;
+    private final String arch;
+    private final String title;
+    private final Map<String, String> env;
+    private final AttributeNormalizer normalizer;
+    
+    public AttributeNormalizerTest(String arch, String title, Map<String, String> env) throws IOException
+    {
+        this.arch = arch;
+        this.title = title;
+        this.env = env;
+        
+        // Remember old values
+        env.keySet().stream().forEach((key) ->
+        {
+            String old = System.getProperty(key);
+            oldValues.put(key, old);
+        });
+        
+        // Grab specific values of interest in general
+        jettyHome = env.get("jetty.home");
+        jettyBase = env.get("jetty.base");
+        war = env.get("WAR");
+        
+        // Set environment (skipping null and WAR)
+        env.entrySet().stream()
+                .filter((e) -> e.getValue() != null && !e.getKey().equalsIgnoreCase("WAR"))
+                .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
+        
+        // Setup normalizer
+        Resource webresource = Resource.newResource(war);
+        this.normalizer = new AttributeNormalizer(webresource);
+    }
+    
+    @After
+    public void restoreEnv()
+    {
+        // Restore old values
+        oldValues.entrySet().stream().forEach((entry) ->
+                EnvUtils.restoreSystemProperty(entry.getKey(), entry.getValue())
+        );
+    }
+    
+    private void assertNormalize(Object o, String expected)
+    {
+        String result = normalizer.normalize(o);
+        assertThat("normalize((" + o.getClass().getSimpleName() + ") " + o.toString() + ")",
+                result, is(expected));
+    }
+    
+    private void assertExpandPath(String line, String expected)
+    {
+        String result = normalizer.expand(line);
+        
+        // Treat output as strings
+        assertThat("expand('" + line + "')", result, is(expected));
+    }
+    
+    private void assertExpandURI(String line, URI expected)
+    {
+        String result = normalizer.expand(line);
+        
+        URI resultURI = URI.create(result);
+        assertThat("expand('" + line + "')", resultURI.getScheme(), is(expected.getScheme()));
+        assertThat("expand('" + line + "')", resultURI.getPath(), is(expected.getPath()));
+    }
     
     @Test
-    public void testNormalizeExpandWAR() throws IOException
+    public void testNormalizeWarAsString()
     {
-        String webref = MavenTestingUtils.getTargetDir().getAbsolutePath() + "/bogus.war";
-        Resource webresource = Resource.newResource(webref);
-        AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
-        String result = null;
-
-        File webrefFile = new File(webref);
-        URI uri = webrefFile.toURI();
-        // As normal URI ref
-        result = normalizer.normalize(uri);
-        assertThat("normalize(" + uri + ")", result, is("${WAR}"));
-
-        // as jar internal resource reference
-        uri = URI.create("jar:" + webrefFile.toURI().toASCIIString() + "!/deep/ref");
-        result = normalizer.normalize(uri);
-        assertThat("normalize(" + uri + ")", result, is("jar:${WAR}!/deep/ref"));
-        
-        // as jar internal resource reference
-        String line = "jar:${WAR}!/other/file";
-        result = normalizer.expand(line);
-        uri = URI.create("jar:" + webrefFile.toPath().toUri().toASCIIString() + "!/other/file");
-        assertThat("expand(\"" + line + "\")", URI.create(result), is(uri));
-        
-        
+        // Normalize WAR as String path
+        assertNormalize(war, war); // only URL, File, URI are supported
+    }
+    
+    @Test
+    public void testNormalizeJettyBaseAsFile()
+    {
+        // Normalize jetty.base as File path
+        assertNormalize(new File(jettyBase), "${jetty.base}");
+    }
+    
+    @Test
+    public void testNormalizeJettyHomeAsFile()
+    {
+        // Normalize jetty.home as File path
+        assertNormalize(new File(jettyHome), "${jetty.home}");
+    }
+    
+    @Test
+    public void testNormalizeJettyBaseAsURI()
+    {
+        // Normalize jetty.base as URI path
+        assertNormalize(new File(jettyBase).toURI(), "${jetty.base.uri}");
+    }
+    
+    @Test
+    public void testNormalizeJettyHomeAsURI()
+    {
+        // Normalize jetty.home as URI path
+        assertNormalize(new File(jettyHome).toURI(), "${jetty.home.uri}");
+    }
+    
+    @Test
+    public void testExpandJettyBase()
+    {
+        // Expand jetty.base
+        assertExpandPath("${jetty.base}", jettyBase);
+    }
+    
+    @Test
+    public void testExpandJettyHome()
+    {
+        // Expand jetty.home
+        assertExpandPath("${jetty.home}", jettyHome);
+    }
+    
+    @Test
+    public void testNormalizeWarAsURI()
+    {
+        // Normalize WAR as URI
+        URI testWarURI = new File(war).toURI();
+        assertNormalize(testWarURI, "${WAR.uri}");
+    }
+    
+    @Test
+    public void testNormalizeWarDeepAsFile()
+    {
+        // Normalize WAR deep path as File
+        File testWarDeep = new File(new File(war), OS.separators("deep/ref")).getAbsoluteFile();
+        assertNormalize(testWarDeep, "${WAR.path}/deep/ref");
+    }
+    
+    @Test
+    public void testNormalizeWarDeepAsString()
+    {
+        // Normalize WAR deep path as String
+        File testWarDeep = new File(new File(war), OS.separators("deep/ref")).getAbsoluteFile();
+        assertNormalize(testWarDeep.toString(), testWarDeep.toString());
+    }
+    
+    @Test
+    public void testNormalizeWarDeepAsURI()
+    {
+        // Normalize WAR deep path as URI
+        File testWarDeep = new File(new File(war), OS.separators("deep/ref")).getAbsoluteFile();
+        assertNormalize(testWarDeep.toURI(), "${WAR.uri}/deep/ref");
+    }
+    
+    @Test
+    public void testExpandWarDeep()
+    {
+        // Expand WAR deep path
+        File testWarDeep = new File(new File(war), OS.separators("deep/ref"));
+        URI uri = URI.create("jar:" + testWarDeep.toURI().toASCIIString() + "!/other/file");
+        assertExpandURI("jar:${WAR.uri}/deep/ref!/other/file", uri);
     }
 }
+

@@ -542,7 +542,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
         Object o = context.getAttribute(attribute);
         if (o == null)
             return;
-                
+        
         Collection<?> c =  (o instanceof Collection)? (Collection<?>)o:Collections.singletonList(o);
         StringBuilder v=new StringBuilder();
         for (Object i:c)
