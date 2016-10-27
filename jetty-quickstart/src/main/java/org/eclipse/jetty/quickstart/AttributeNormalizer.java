@@ -261,9 +261,11 @@ public class AttributeNormalizer
             URI uri = null;
             Path path = null;
             if (o instanceof URI)
-                uri = ((URI)o).normalize();
+                uri = toCanonicalURI(((URI)o));
+            else if (o instanceof Resource)
+                uri = toCanonicalURI(((Resource)o).getURI());
             else if (o instanceof URL)
-                uri = ((URL)o).toURI().normalize();
+                uri = toCanonicalURI(((URL)o).toURI());
             else if (o instanceof File)
                 path = ((File)o).getAbsoluteFile().getCanonicalFile().toPath();
             else if (o instanceof Path)

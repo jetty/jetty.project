@@ -190,14 +190,14 @@ public class AttributeNormalizerTest
     public void testNormalizeJettyBaseAsURI()
     {
         // Normalize jetty.base as URI path
-        assertNormalize(new File(jettyBase).toURI(), "${jetty.base.uri}/");
+        assertNormalize(new File(jettyBase).toURI(), "${jetty.base.uri}");
     }
     
     @Test
     public void testNormalizeJettyHomeAsURI()
     {
         // Normalize jetty.home as URI path
-        assertNormalize(new File(jettyHome).toURI(), "${jetty.home.uri}/");
+        assertNormalize(new File(jettyHome).toURI(), "${jetty.home.uri}");
     }
     
     @Test
@@ -219,7 +219,7 @@ public class AttributeNormalizerTest
     {
         // Normalize WAR as URI
         URI testWarURI = new File(war).toURI();
-        assertNormalize(testWarURI, "${WAR.uri}/");
+        assertNormalize(testWarURI, "${WAR.uri}");
     }
     
     @Test
