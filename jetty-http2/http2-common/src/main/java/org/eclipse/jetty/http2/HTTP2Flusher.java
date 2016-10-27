@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +46,7 @@ public class HTTP2Flusher extends IteratingCallback
     private final List<Entry> actives = new ArrayList<>();
     private final HTTP2Session session;
     private final ByteBufferPool.Lease lease;
-    private boolean terminated;
+    private Throwable terminated;
 
     public HTTP2Flusher(HTTP2Session session)
     {
@@ -57,52 +56,54 @@ public class HTTP2Flusher extends IteratingCallback
 
     public void window(IStream stream, WindowUpdateFrame frame)
     {
-        boolean closed;
+        Throwable closed;
         synchronized (this)
         {
             closed = terminated;
-            if (!closed)
+            if (closed == null)
                 windows.offer(new WindowEntry(stream, frame));
         }
         // Flush stalled data.
-        if (!closed)
+        if (closed == null)
             iterate();
     }
 
     public boolean prepend(Entry entry)
     {
-        boolean closed;
+        Throwable closed;
         synchronized (this)
         {
             closed = terminated;
-            if (!closed)
+            if (closed == null)
             {
                 frames.add(0, entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Prepended {}, frames={}", entry, frames.size());
             }
         }
-        if (closed)
-            closed(entry, new ClosedChannelException());
-        return !closed;
+        if (closed == null)
+            return true;
+        closed(entry, closed);
+        return false;
     }
 
     public boolean append(Entry entry)
     {
-        boolean closed;
+        Throwable closed;
         synchronized (this)
         {
             closed = terminated;
-            if (!closed)
+            if (closed == null)
             {
                 frames.add(entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Appended {}, frames={}", entry, frames.size());
             }
         }
-        if (closed)
-            closed(entry, new ClosedChannelException());
-        return !closed;
+        if (closed == null)
+            return true;
+        closed(entry, closed);
+        return false;
     }
 
     private Entry remove(int index)
@@ -122,15 +123,15 @@ public class HTTP2Flusher extends IteratingCallback
     }
 
     @Override
-    protected Action process() throws Exception
+    protected Action process() throws Throwable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Flushing {}", session);
 
         synchronized (this)
         {
-            if (terminated)
-                throw new ClosedChannelException();
+            if (terminated != null)
+                throw terminated;
 
             // First thing, update the window sizes, so we can
             // reason about the frames to remove from the queue.
@@ -269,13 +270,13 @@ public class HTTP2Flusher extends IteratingCallback
     {
         lease.recycle();
 
-        boolean closed;
+        Throwable closed;
         synchronized (this)
         {
             closed = terminated;
-            terminated = true;
+            terminated = x;
             if (LOG.isDebugEnabled())
-                LOG.debug("{}, active/queued={}/{}", closed ? "Closing" : "Failing", actives.size(), frames.size());
+                LOG.debug("{}, active/queued={}/{}", closed != null ? "Closing" : "Failing", actives.size(), frames.size());
             actives.addAll(frames);
             frames.clear();
         }
@@ -285,21 +286,21 @@ public class HTTP2Flusher extends IteratingCallback
 
         // If the failure came from within the
         // flusher, we need to close the connection.
-        if (!closed)
+        if (closed == null)
             session.abort(x);
     }
 
-    void terminate()
+    void terminate(Throwable cause)
     {
-        boolean closed;
+        Throwable closed;
         synchronized (this)
         {
             closed = terminated;
-            terminated = true;
+            terminated = cause;
             if (LOG.isDebugEnabled())
-                LOG.debug("{}", closed ? "Terminated" : "Terminating");
+                LOG.debug("{}", closed != null ? "Terminated" : "Terminating");
         }
-        if (!closed)
+        if (closed == null)
             iterate();
     }
 

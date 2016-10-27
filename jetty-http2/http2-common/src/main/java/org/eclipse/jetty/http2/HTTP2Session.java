@@ -959,7 +959,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         endPoint.close();
     }
 
-    private void terminate()
+    private void terminate(Throwable cause)
     {
         while (true)
         {
@@ -972,7 +972,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     if (closed.compareAndSet(current, CloseState.CLOSED))
                     {
-                        flusher.terminate();
+                        flusher.terminate(cause);
                         for (IStream stream : streams.values())
                             stream.close();
                         streams.clear();
@@ -992,7 +992,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     protected void abort(Throwable failure)
     {
         notifyFailure(this, failure);
-        terminate();
+        terminate(failure);
     }
 
     public boolean isDisconnected()
@@ -1209,7 +1209,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
                 case DISCONNECT:
                 {
-                    terminate();
+                    terminate(new ClosedChannelException());
                     break;
                 }
                 default:
