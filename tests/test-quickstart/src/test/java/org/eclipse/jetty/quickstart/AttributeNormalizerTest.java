@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
@@ -57,9 +54,8 @@ public class AttributeNormalizerTest
             result = normalizer.normalize(testWar);
             assertThat(result, is(testWar)); // only URL, File, URI are supported
             
-            URI testWarURI = new File(testWar).toURI();
-            
             // Normalize as URI
+            URI testWarURI = new File(testWar).toURI();
             result = normalizer.normalize(testWarURI);
             assertThat(result, is("${WAR}"));
             
@@ -75,6 +71,7 @@ public class AttributeNormalizerTest
             // Normalize deep path as URI
             result = normalizer.normalize(testWarDeep.toURI());
             assertThat(result, is("${WAR}/deep/ref"));
+            
         }
         finally
         {
@@ -82,6 +79,50 @@ public class AttributeNormalizerTest
             EnvUtils.restoreSystemProperty("jetty.base", oldJettyBase);
         }
     }
+    
+    
+    @Test
+    public void testNormalizeURIs() throws MalformedURLException
+    {
+        String testWar = EnvUtils.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOO");
+
+        Resource webresource = Resource.newResource(testWar);
+        AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
+        String result = null;
+
+        // Normalize as String path
+        result = normalizer.normalize(testWar);
+        assertThat(result, is(testWar)); // only URL, File, URI are supported
+
+        // Normalize as URI
+        URI testWarURI = new File(testWar).toURI();
+        result = normalizer.normalize(testWarURI);
+        assertThat(result, is("${WAR}"));
+        
+        // Normalize as URI
+        URI subURI = new File(testWar,"WEB-INF/web.xml").toURI();
+        result = normalizer.normalize(subURI);
+        assertThat(result, is("${WAR}/WEB-INF/web.xml"));
+        
+        // Normalize fake prefix
+        URI fakeURI = Resource.newResource(EnvUtils.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOOBAR")).getURI();
+        result = normalizer.normalize(fakeURI);
+        assertThat(result, is(fakeURI.toASCIIString()));
+        
+        // Normalize as no host
+        result = normalizer.normalize("file:"+testWarURI.getRawPath());
+        assertThat(result, is("${WAR}"));
+        
+        // Normalize as null host
+        result = normalizer.normalize("file://"+testWarURI.getRawPath());
+        assertThat(result, is("${WAR}"));
+        
+        // Normalize jar file
+        result = normalizer.normalize("jar:file:"+testWarURI.getRawPath()+"!/some/path");
+        assertThat(result, is("jar:${WAR}!/some/path"));
+        
+    }
+    
     
     @Test
     public void testNormalizeExpandWAR() throws MalformedURLException
@@ -107,26 +148,7 @@ public class AttributeNormalizerTest
         result = normalizer.expand(line);
         uri = URI.create("jar:" + webrefFile.toPath().toUri().toASCIIString() + "!/other/file");
         assertThat("expand(\"" + line + "\")", URI.create(result), is(uri));
-    }
-    
-    @Test
-    public void testWindowsTLD() throws MalformedURLException
-    {
-        // Setup AttributeNormalizer
-        String webref = "http://localhost/resource/webapps/root";
-        Resource webresource = Resource.newResource(webref);
-        AttributeNormalizer normalizer = new AttributeNormalizer(webresource);
         
-        // Setup example from windows
-        String javaUserHome = System.getProperty("user.home");
-        String realUserHome = EnvUtils.toSystemPath(javaUserHome);
-        String userHome = AttributeNormalizer.uriSeparators(realUserHome);
-        String path = "jar:file:" + userHome + "/.m2/repository/something/somejar.jar!/META-INF/some.tld";
         
-        String result = normalizer.normalize(path);
-        assertThat(result, is("jar:file:${user.home}/.m2/repository/something/somejar.jar!/META-INF/some.tld"));
-        
-        String expanded = normalizer.expand(result);
-        assertThat(expanded, not(anyOf(containsString("\\"), containsString("${"))));
     }
 }
