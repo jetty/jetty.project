@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.quickstart;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -29,6 +26,9 @@ import java.net.URI;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class AttributeNormalizerTest
 {
@@ -83,7 +83,7 @@ public class AttributeNormalizerTest
     
     
     @Test
-    public void testNormalizeURIs() throws MalformedURLException
+    public void testNormalizeURIs() throws Exception
     {
         String testWar = EnvUtils.toSystemPath("/opt/jetty-distro/demo.base/webapps/FOO");
 
