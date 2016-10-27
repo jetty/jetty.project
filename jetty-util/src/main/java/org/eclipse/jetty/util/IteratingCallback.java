@@ -156,9 +156,9 @@ public abstract class IteratingCallback implements Callback
      *
      * @return the appropriate Action
      *
-     * @throws Exception if the sub task processing throws
+     * @throws Throwable if the sub task processing throws
      */
-    protected abstract Action process() throws Exception;
+    protected abstract Action process() throws Throwable;
 
     /**
      * Invoked when the overall task has completed successfully.
