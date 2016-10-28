@@ -32,7 +32,7 @@ You can safely replace Jetty 9.3's `jetty.sh` with 9.4's.
 | `logging`    | `console-capture`
 | `infinispan` | `session-store-infinispan-embedded` or `session-store-infinispan-remote`
 | `jdbc-sessions` | `session-store-jdbc`
-| `gcloud-memcached-sessions`, `gcloud-session-idmgr` and `gcloud-sessions` | `gcloud`, `gcloud-datastore` and `session-store-gcloud`
+| `gcloud-memcached-sessions`, `gcloud-session-idmgr` and `gcloud-sessions` | `session-store-gcloud` and `session-store-cache`
 | `nosql` | `session-store-mongo`
 |===
 
@@ -88,8 +88,92 @@ For information on logging modules in the Jetty 9.4 architecture please see the 
 
 //TODO - More info.
 
-Session management received a significant overhaul in Jetty 9.4. Whereas in prior versions of Jetty uses needed to implement individual instances of both `SessionIdManager` and `SessionManager`, now one instance of both handles sessions for the server.
+Session management received a significant overhaul in Jetty 9.4. 
+Session functionality has been refactored to promote code-reuse, easier configuration and easier customization.
+Whereas previously users needed to edit xml configuration files, in Jetty 9.4 all session behaviour is controlled by properties that are exposed by the various session modules.
+Users now configure session management by selecting a composition of session modules.
 
-As part of these changes, modules for individual technologies were re-named to make configuration more transparent.
+====== Change Overview
+
+SessionIdManager:: Previously there was a different class of SessionIdManager - with different configuration options - depending upon which type of clustering technology chosen. 
+In Jetty 9.4, there is only one type, the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[org.eclipse.jetty.server.session.DfeaultSessionIdManager].
+
+SessionManager:: Previously, there was a different class of SessionManager depending upon which the type of clustering technology chosen.
+In Jetty 9.4 we have removed the SessionManager class and split its functionality into different, more easily extensible and composable classes:
+General setters:::
+All of the common setup of sessions such as the maxInactiveInterval and session cookie-related configuration has been moved to the link:{JDURL}/org/eclipse/jetty/server/session/SessionHandler.html[org.eclipse.jetty.server.session.SessionHandler]
+[cols="1,1", options="header"]
+|===
+| 9.3 SessionManager | 9.4 SessionHandler
+| setMaxInactiveInterval(sec)    |  setMaxInactiveInterval(sec)
+| setSessionCookie(String) | setSessionCookie(String)
+| setRefreshCookieAge(sec) | setRefreshCookieAge(sec)
+| setSecureRequestOnly(boolean) |  setSecureRequestOnly(boolean
+| setSessionIdPathParameterName(String) | setSessionIdPathParameterName(String)
+| setSessionTrackingModes(Set<SessionTrackingMode>) | setSessionTrackingModes(Set<SessionTrackingMode>)
+| setHttpOnly(boolean) | setHttpOnly(boolean)
+| setUsingCookies(boolean) | setUsingCookies(boolean)
+| setCheckingRemoteSessionIdEncoding(boolean) | setCheckingRemoteSessionIdEncoding(boolean)
+|===
+
+Persistence::: 
+In Jetty 9.3 SessionManagers (and sometimes SessionIdManagers) implemented the persistence mechanism.
+In Jetty 9.4 we have moved this functionality into the link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[org.eclipse.jetty.server.session.SessionDataStore].
+
+Session cache:::
+In Jetty 9.3 the SessionManager held a map of session objects in memory.
+In Jetty 9.4 this has been moved into the new link:{JDURL}/org/eclipse/jetty/server/session/SessionCache.html[org.eclipse.jetty.server.session.SessionCache] interface.
+
 
 For more information, please refer to the documentation on link:#jetty-sessions-architecture[Jetty Session Architecture.]
+
+====== Default
+
+As with earlier versions of jetty, if you do not explicitly configure any session modules, the default session infrastructure will be enabled.
+In previous versions of jetty this was referred to as "hash" session management. 
+The new default provides similar features to the old hash session management:
+ * a session scavenger thread that runs every 10mins and removes expired sessions
+ * a session id manager that generates unique session ids and handles session id sharing during context forwarding
+ * an in-memory cache of session objects. 
+Requests for the same session in the same context share the same session object. 
+Session objects remain in the cache until they expire or are explicitly invalidated.
+
+If you wish to configure the default setup further, enable the `session-cache-default` module.
+
+
+====== Filesystem
+
+In earlier versions of jetty, persisting sessions to the local filesystem was an option of the "hash" session manager.
+In jetty-9.4 this has been refactored to its own configurable module `session-store-file`.
+
+
+====== JDBC
+
+As with earlier versions of jetty, sessions may be persisted to a relational database. 
+Enable the `session-store-jdbc` module.
+
+
+====== NoSQL
+
+As with earlier versions of jetty, sessions may be persisted to a document database.
+Jetty supports the Mongo document database.
+Enable the `session-store-mongo` module.
+
+
+====== Infinispan
+
+As with earlier versions of jetty, sessions may be clustered via Infinispan to either an in-process or remote infinispan instance.
+Enable the `session-store-infinispan` module.
+
+
+====== GCloud Datastore
+
+As with earlier versions of jetty, sessions may be persisted to Google's GCloud Datastore.
+Enable the `session-store-gcloud` module.
+
+
+====== GCloud Datastore with Memcached
+
+As with earlier versions of jetty, sessions can be both persisted to Google's GCloud Datastore, and cached into Memcached for faster access.
+Enable the `session-store-gcloud` and `session-store-cache` modules.
+
