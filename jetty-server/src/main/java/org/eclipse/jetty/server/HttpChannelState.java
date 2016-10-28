@@ -299,7 +299,7 @@ public class HttpChannelState
                         {
                             listener.onStartAsync(event);
                         }
-                        catch(Exception e)
+                        catch(Throwable e)
                         {
                             // TODO Async Dispatch Error
                             LOG.warn(e);
@@ -853,7 +853,7 @@ public class HttpChannelState
                             {
                                 listener.onComplete(event);
                             }
-                            catch(Exception e)
+                            catch(Throwable e)
                             {
                                 LOG.warn(e+" while invoking onComplete listener " + listener);
                                 LOG.debug(e);
