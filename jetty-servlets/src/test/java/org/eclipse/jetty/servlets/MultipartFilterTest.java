@@ -64,6 +64,17 @@ public class MultipartFilterTest
     private ServletTester tester;
     FilterHolder multipartFilter;
     
+    
+    public static class NullServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setStatus(200);
+        }
+        
+    }
+    
     public static class FilenameServlet extends TestServlet
     {
         @Override
@@ -142,6 +153,70 @@ public class MultipartFilterTest
     {
         tester.stop();
         tester=null;
+    }
+    
+    @Test
+    public void testFinalBoundaryOnly() throws Exception
+    {
+        
+        tester.addServlet(NullServlet.class,"/null");       
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/null");
+        
+        String delimiter = "\r\n";
+        final String boundary = "MockMultiPartTestBoundary";
+        String content = 
+                delimiter +
+                "Hello world" +
+                delimiter +        // Two delimiter markers, which make an empty line.
+                delimiter +
+                "--" + boundary + "--" + delimiter;
+        
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setContent(content);
+        
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        }
+    } 
+    
+    @Test
+    public void testEmpty() throws Exception
+    {
+        
+        tester.addServlet(NullServlet.class,"/null");
+        
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/null");
+        
+        String delimiter = "\r\n";
+        final String boundary = "MockMultiPartTestBoundary";
+        String content = 
+                delimiter +
+                "--" + boundary + "--" + delimiter;
+        
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setContent(content);
+        
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        }
     }
 
     @Test
