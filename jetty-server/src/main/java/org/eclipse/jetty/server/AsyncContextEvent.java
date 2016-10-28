@@ -27,7 +27,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
@@ -162,7 +161,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         Scheduler.Task task=_timeoutTask;
         _timeoutTask=null;
         if (task!=null)
-            _state.onTimeout();
+            _state.getHttpChannel().execute(() -> _state.onTimeout());
     }
 
     public void addThrowable(Throwable e)

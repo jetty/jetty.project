@@ -282,7 +282,7 @@ public class HttpChannelState
                         {
                             listener.onStartAsync(event);
                         }
-                        catch(Exception e)
+                        catch(Throwable e)
                         {
                             // TODO Async Dispatch Error
                             LOG.warn(e);
@@ -540,7 +540,7 @@ public class HttpChannelState
                         {
                             listener.onTimeout(event);
                         }
-                        catch(Exception e)
+                        catch(Throwable e)
                         {
                             LOG.debug(e);
                             event.addThrowable(e);
@@ -671,7 +671,7 @@ public class HttpChannelState
                 {
                     listener.onError(event);
                 }
-                catch(Exception x)
+                catch(Throwable x)
                 {
                     LOG.info("Exception while invoking listener " + listener, x);
                 }
@@ -716,7 +716,7 @@ public class HttpChannelState
                             {
                                 listener.onComplete(event);
                             }
-                            catch(Exception e)
+                            catch(Throwable e)
                             {
                                 LOG.warn(e);
                             }
