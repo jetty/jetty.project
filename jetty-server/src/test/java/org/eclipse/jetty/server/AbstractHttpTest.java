@@ -98,6 +98,7 @@ public abstract class AbstractHttpTest
             writer.write("\r\n");
             writer.flush();
 
+            // TODO replace the SimpleHttp stuff
             SimpleHttpResponse response = httpParser.readResponse(reader);
             if ("HTTP/1.1".equals(httpVersion) 
                     && response.getHeaders().get("content-length") == null 
