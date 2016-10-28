@@ -63,6 +63,7 @@ public class MultiPartInputStreamTest
         _tmpDir.deleteOnExit();
     }
     
+    @Test
     public void testBadMultiPartRequest()
     throws Exception
     {
@@ -72,12 +73,12 @@ public class MultiPartInputStreamTest
         "Content-Type: application/octet-stream\r\n\r\n"+
         "How now brown cow."+
         "\r\n--" + boundary + "-\r\n\r\n";
-        
+
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()), 
-                                                             "multipart/form-data, boundary="+boundary,
-                                                             config,
-                                                             _tmpDir);
+                                                                         "multipart/form-data, boundary="+boundary,
+                                                                         config,
+                                                                         _tmpDir);
         mpis.setDeleteOnExit(true);
         try
         {
@@ -90,7 +91,56 @@ public class MultiPartInputStreamTest
         }
     }
 
+
+    @Test
+    public void testFinalBoundaryOnly()
+    throws Exception
+    {
+        String delimiter = "\r\n";
+        final String boundary = "MockMultiPartTestBoundary";
+
+
+        // Malformed multipart request body containing only an arbitrary string of text, followed by the final boundary marker, delimited by empty lines.
+        String str =
+                delimiter +
+                "Hello world" +
+                delimiter +        // Two delimiter markers, which make an empty line.
+                delimiter +
+                "--" + boundary + "--" + delimiter; 
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
+                                                                         "multipart/form-data, boundary="+boundary,
+                                                                         config,
+                                                                         _tmpDir);
+        mpis.setDeleteOnExit(true);
+        Collection<Part> parts = mpis.getParts();
+        assertTrue(mpis.getParts().isEmpty());
+    }
+
     
+    
+     @Test
+     public void testEmpty()
+     throws Exception
+     {
+         String delimiter = "\r\n";
+         final String boundary = "MockMultiPartTestBoundary";
+
+         String str =
+                 delimiter +
+                 "--" + boundary + "--" + delimiter; 
+
+         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(str.getBytes()),
+                                                                          "multipart/form-data, boundary="+boundary,
+                                                                          config,
+                                                                          _tmpDir);
+         mpis.setDeleteOnExit(true);
+         assertTrue(mpis.getParts().isEmpty());
+     }
+
+    @Test
     public void testNoBoundaryRequest()
     throws Exception
     {
