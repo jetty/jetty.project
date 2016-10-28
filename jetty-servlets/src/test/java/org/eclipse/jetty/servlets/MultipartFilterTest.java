@@ -45,6 +45,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletTester;
@@ -181,7 +182,7 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(content);
         
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -212,7 +213,7 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(content);
         
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -245,7 +246,7 @@ public class MultipartFilterTest
         request.setContent(content);
 
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class);)
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
@@ -698,7 +699,7 @@ public class MultipartFilterTest
         request.setURI("/context/dump");
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
@@ -723,7 +724,7 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
         
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
@@ -749,7 +750,7 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
@@ -880,7 +881,7 @@ public class MultipartFilterTest
         }
         request.setContent(baos.toString());
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertTrue(response.getContent().contains("Buffer size exceeded"));
