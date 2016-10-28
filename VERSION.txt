@@ -1,3 +1,5 @@
+jetty-9.3.15-SNAPSHOT
+
 jetty-9.3.14.v20161028 - 28 October 2016
  + 292 NPE in SslConnectionFactory newConnection
  + 295 Ensure Jetty Client use of Deflater / Inflater calls .end() to avoid
