@@ -527,6 +527,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void abort(Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("abort {} {}",this,failure);
         // Do a direct close of the output, as this may indicate to a client that the
         // response is bad either with RST or by abnormal completion of chunked response.
         getEndPoint().close();

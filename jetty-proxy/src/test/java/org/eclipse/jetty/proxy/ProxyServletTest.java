@@ -931,9 +931,10 @@ public class ProxyServletTest
         Assert.assertArrayEquals(content, response.getContent());
     }
 
-    @Test(expected = TimeoutException.class)
+    @Test
     public void testWrongContentLength() throws Exception
     {
+        
         startServer(new HttpServlet()
         {
             @Override
@@ -948,11 +949,17 @@ public class ProxyServletTest
         startProxy();
         startClient();
 
-        client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(1, TimeUnit.SECONDS)
+        try
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
-
-        Assert.fail();
+            Assert.assertThat(response.getStatus(),Matchers.greaterThanOrEqualTo(500));   
+        }
+        catch(ExecutionException e)
+        {     
+            Assert.assertThat(e.getCause(),Matchers.instanceOf(IOException.class));
+        }
     }
 
     @Test

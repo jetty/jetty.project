@@ -402,10 +402,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         if (!_response.isCommitted() && !_request.isHandled())
                             _response.sendError(HttpStatus.NOT_FOUND_404);
+                        else if (!_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                            _transport.abort(new IOException("insufficient content written"));
                         _response.closeOutput();
                         _request.setHandled(true);
 
-                         _state.onComplete();
+                        _state.onComplete();
 
                         onCompleted();
 

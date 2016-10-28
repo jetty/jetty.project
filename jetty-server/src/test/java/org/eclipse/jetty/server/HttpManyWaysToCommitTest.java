@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +32,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -419,6 +422,50 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     }
 
     @Test
+    public void testSetContentLengthFlushAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
+        server.start();
+        try
+        {
+            // TODO This test is compromised by the SimpleHttpResponse mechanism.
+            // Replace with a better client
+
+            SimpleHttpResponse response = executeRequest();
+            String failed_body = ""+(char)-1+(char)-1+(char)-1;
+            assertThat("response code is 200", response.getCode(), is("200"));
+            assertThat(response.getBody(), Matchers.endsWith(failed_body));
+            assertHeader(response, "content-length", "6");
+        }
+        catch(EOFException e)
+        {
+            // possible good response
+        }
+    }
+
+    @Test
+    public void testSetContentLengthAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(false));
+        server.start();
+
+        try
+        {
+            // TODO This test is compromised by the SimpleHttpResponse mechanism.
+            // Replace with a better client
+            SimpleHttpResponse response = executeRequest();
+            String failed_body = ""+(char)-1+(char)-1+(char)-1;
+            assertThat("response code is 200", response.getCode(), is("200"));
+            assertThat(response.getBody(), Matchers.endsWith(failed_body));
+            assertHeader(response, "content-length", "6");
+        }
+        catch(EOFException e)
+        {
+            // expected
+        }
+    }
+    
+    @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytes() throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(false));
@@ -444,6 +491,25 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response body is foo", response.getBody(), is("foo"));
     }
 
+    private class SetContentLengthAndWriteInsufficientBytesHandler extends AbstractHandler
+    {
+        boolean flush;
+        private SetContentLengthAndWriteInsufficientBytesHandler(boolean flush)
+        {
+            this.flush = flush;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentLength(6);
+            if (flush)
+                response.flushBuffer();
+            response.getWriter().write("foo");
+        }
+    }
+    
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
     {
         private SetContentLengthAndWriteThatAmountOfBytesHandler(boolean throwException)
