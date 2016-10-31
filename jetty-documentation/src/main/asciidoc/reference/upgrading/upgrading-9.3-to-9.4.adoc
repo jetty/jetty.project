@@ -63,7 +63,7 @@ You need to open your Jetty 9.3 `start.ini` and replace the references to the
 
 For example, in an existing 9.3 `start.ini` file the module declaration for logging would look like this:
 
-.start.ini
+[source, screen, subs="{sub-order}"]
 ----
 --module=logging
 jetty.logging.retainDays=7
@@ -71,31 +71,26 @@ jetty.logging.retainDays=7
 
 In 9.4, it should be replaced by:
 
-.start.ini
+[source, screen, subs="{sub-order}"]
 ----
 --module=console-capture
 jetty.console-capture.retainDays=7
 ----
 
-The properties that may be present in your Jetty 9.3's `start.ini`, such as
-`jetty.logging.retainDays` will still be working in Jetty 9.4, but a warning
-will be printed at Jetty 9.4 startup, saying to replace them with correspondent
-`jetty.console-capture.*` properties such as `jetty.console-capture.retainDays`.
+The properties that may be present in your Jetty 9.3's `start.ini`, such as `jetty.logging.retainDays` will still be working in Jetty 9.4, but a warning will be printed at Jetty 9.4 startup, saying to replace them with correspondent `jetty.console-capture.*` properties such as `jetty.console-capture.retainDays`.
 
 For information on logging modules in the Jetty 9.4 architecture please see the section on link:#configuring-logging-modules[configuring logging modules.]
 
 ===== Session Management
 
-//TODO - More info.
-
-Session management received a significant overhaul in Jetty 9.4. 
+Session management received a significant overhaul in Jetty 9.4.
 Session functionality has been refactored to promote code-reuse, easier configuration and easier customization.
-Whereas previously users needed to edit xml configuration files, in Jetty 9.4 all session behaviour is controlled by properties that are exposed by the various session modules.
+Whereas previously users needed to edit xml configuration files, in Jetty 9.4 all session behavior is controlled by properties that are exposed by the various session modules.
 Users now configure session management by selecting a composition of session modules.
 
 ====== Change Overview
 
-SessionIdManager:: Previously there was a different class of SessionIdManager - with different configuration options - depending upon which type of clustering technology chosen. 
+SessionIdManager:: Previously there was a different class of SessionIdManager - with different configuration options - depending upon which type of clustering technology chosen.
 In Jetty 9.4, there is only one type, the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[org.eclipse.jetty.server.session.DfeaultSessionIdManager].
 
 SessionManager:: Previously, there was a different class of SessionManager depending upon which the type of clustering technology chosen.
@@ -116,7 +111,7 @@ All of the common setup of sessions such as the maxInactiveInterval and session 
 | setCheckingRemoteSessionIdEncoding(boolean) | setCheckingRemoteSessionIdEncoding(boolean)
 |===
 
-Persistence::: 
+Persistence:::
 In Jetty 9.3 SessionManagers (and sometimes SessionIdManagers) implemented the persistence mechanism.
 In Jetty 9.4 we have moved this functionality into the link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[org.eclipse.jetty.server.session.SessionDataStore].
 
@@ -129,13 +124,13 @@ For more information, please refer to the documentation on link:#jetty-sessions-
 
 ====== Default
 
-As with earlier versions of jetty, if you do not explicitly configure any session modules, the default session infrastructure will be enabled.
-In previous versions of jetty this was referred to as "hash" session management. 
+As with earlier versions of Jetty, if you do not explicitly configure any session modules, the default session infrastructure will be enabled.
+In previous versions of Jetty this was referred to as "hash" session management.
 The new default provides similar features to the old hash session management:
  * a session scavenger thread that runs every 10mins and removes expired sessions
  * a session id manager that generates unique session ids and handles session id sharing during context forwarding
- * an in-memory cache of session objects. 
-Requests for the same session in the same context share the same session object. 
+ * an in-memory cache of session objects.
+Requests for the same session in the same context share the same session object.
 Session objects remain in the cache until they expire or are explicitly invalidated.
 
 If you wish to configure the default setup further, enable the `session-cache-default` module.
@@ -143,37 +138,36 @@ If you wish to configure the default setup further, enable the `session-cache-de
 
 ====== Filesystem
 
-In earlier versions of jetty, persisting sessions to the local filesystem was an option of the "hash" session manager.
-In jetty-9.4 this has been refactored to its own configurable module `session-store-file`.
+In earlier versions of Jetty, persisting sessions to the local filesystem was an option of the "hash" session manager.
+In Jetty 9.4 this has been refactored to its own configurable module `session-store-file`.
 
 
 ====== JDBC
 
-As with earlier versions of jetty, sessions may be persisted to a relational database. 
+As with earlier versions of Jetty, sessions may be persisted to a relational database.
 Enable the `session-store-jdbc` module.
 
 
 ====== NoSQL
 
-As with earlier versions of jetty, sessions may be persisted to a document database.
+As with earlier versions of Jetty, sessions may be persisted to a document database.
 Jetty supports the Mongo document database.
 Enable the `session-store-mongo` module.
 
 
 ====== Infinispan
 
-As with earlier versions of jetty, sessions may be clustered via Infinispan to either an in-process or remote infinispan instance.
+As with earlier versions of Jetty, sessions may be clustered via Infinispan to either an in-process or remote infinispan instance.
 Enable the `session-store-infinispan` module.
 
 
 ====== GCloud Datastore
 
-As with earlier versions of jetty, sessions may be persisted to Google's GCloud Datastore.
+As with earlier versions of Jetty, sessions may be persisted to Google's GCloud Datastore.
 Enable the `session-store-gcloud` module.
 
 
 ====== GCloud Datastore with Memcached
 
-As with earlier versions of jetty, sessions can be both persisted to Google's GCloud Datastore, and cached into Memcached for faster access.
+As with earlier versions of Jetty, sessions can be both persisted to Google's GCloud Datastore, and cached into Memcached for faster access.
 Enable the `session-store-gcloud` and `session-store-cache` modules.
-
