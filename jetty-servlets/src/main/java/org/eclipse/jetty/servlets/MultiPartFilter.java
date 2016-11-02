@@ -149,7 +149,6 @@ public class MultiPartFilter implements Filter
             return;
         }
 
-        InputStream in = new BufferedInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
 
         //Get current parameters so we can merge into them
@@ -164,12 +163,12 @@ public class MultiPartFilter implements Filter
         }
 
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
-        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(in, content_type, config, tempdir);
+        MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(request.getInputStream(), content_type, config, tempdir);
         mpis.setDeleteOnExit(_deleteFiles);
         mpis.setWriteFilesWithFilenames(_writeFilesWithFilenames);
         request.setAttribute(MULTIPART, mpis);
         try
-        {
+        {  
             Collection<Part> parts = mpis.getParts();
             if (parts != null)
             {
