@@ -886,7 +886,11 @@ public class ServletHandler extends ScopedHandler
 
         try
         {
-            setServlets(ArrayUtil.addToArray(holders, servlet, ServletHolder.class));
+            synchronized (this)
+            {
+                if (servlet != null && !containsServletHolder(servlet))
+                    setServlets(ArrayUtil.addToArray(holders, servlet, ServletHolder.class));
+            }
 
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet.getName());
@@ -908,7 +912,14 @@ public class ServletHandler extends ScopedHandler
      */
     public void addServlet(ServletHolder holder)
     {
-        setServlets(ArrayUtil.addToArray(getServlets(), holder, ServletHolder.class));
+        if (holder == null)
+            return;
+        
+        synchronized (this)
+        {
+            if (!containsServletHolder(holder))
+                setServlets(ArrayUtil.addToArray(getServlets(), holder, ServletHolder.class));
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -990,7 +1001,11 @@ public class ServletHandler extends ScopedHandler
 
         try
         {
-            setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
+            synchronized (this)
+            {
+                if (holder != null && !containsFilterHolder(holder))
+                    setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
+            }
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
@@ -1052,7 +1067,11 @@ public class ServletHandler extends ScopedHandler
 
         try
         {
-            setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
+            synchronized (this)
+            {
+                if (holder != null && !containsFilterHolder(holder))
+                    setFilters(ArrayUtil.addToArray(holders, holder, FilterHolder.class));
+            }
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
@@ -1093,7 +1112,13 @@ public class ServletHandler extends ScopedHandler
     public void addFilter (FilterHolder filter, FilterMapping filterMapping)
     {
         if (filter != null)
-            setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
+        {
+            synchronized (this)
+            {
+                if (!containsFilterHolder(filter))
+                    setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
+            }
+        }
         if (filterMapping != null)
             addFilterMapping(filterMapping);
     }
@@ -1106,8 +1131,14 @@ public class ServletHandler extends ScopedHandler
      */
     public void addFilter (FilterHolder filter)
     {
-        if (filter != null)
-            setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
+        if (filter == null)
+            return;
+
+        synchronized (this)
+        {
+            if (!containsFilterHolder(filter))
+                setFilters(ArrayUtil.addToArray(getFilters(), filter, FilterHolder.class));
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -1450,7 +1481,36 @@ public class ServletHandler extends ScopedHandler
         if (getHandler()!=null)
             nextHandle(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()),baseRequest,request,response);
     }
+    
+    
+    protected synchronized boolean containsFilterHolder (FilterHolder holder)
+    {
+        if (_filters == null)
+            return false;
+        boolean found = false;
+        for (FilterHolder f:_filters)
+        {
+            if (f == holder)
+                found = true;
+        }
+        return found;
+    }
 
+    
+    protected synchronized boolean containsServletHolder (ServletHolder holder)
+    {
+        if (_servlets == null)
+            return false;
+        boolean found = false;
+        for (ServletHolder s:_servlets)
+        {
+            if (s == holder)
+                found = true;
+        }
+        return found;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * @param filterChainsCached The filterChainsCached to set.
