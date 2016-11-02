@@ -53,6 +53,7 @@ public class Holder<T> extends BaseHolder<T>
     protected String _displayName;
     protected boolean _asyncSupported;
     protected String _name;
+    protected boolean _initialized = false;
 
 
     /* ---------------------------------------------------------------- */

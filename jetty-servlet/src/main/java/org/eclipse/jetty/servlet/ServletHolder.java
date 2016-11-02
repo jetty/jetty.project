@@ -73,7 +73,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private static final Logger LOG = Log.getLogger(ServletHolder.class);
     private int _initOrder = -1;
     private boolean _initOnStartup=false;
-    private boolean _initialized = false;
     private Map<String, String> _roleMap;
     private String _forcedPath;
     private String _runAsRole;
@@ -410,7 +409,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void initialize ()
     throws Exception
     {
-        if(!_initialized){
+        if(!_initialized)
+        {
             super.initialize();
             if (_extInstance || _initOnStartup)
             {
