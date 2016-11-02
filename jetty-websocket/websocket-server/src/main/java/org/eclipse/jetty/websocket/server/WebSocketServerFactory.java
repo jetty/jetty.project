@@ -188,7 +188,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         catch (URISyntaxException e)
         {
             throw new IOException("Unable to accept websocket due to mangled URI", e);
-        } 
+        }
         finally
         {
             Thread.currentThread().setContextClassLoader(old);
@@ -340,13 +340,22 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response)
     {
-        if (!"GET".equalsIgnoreCase(request.getMethod()))
+        // Tests sorted by least common to most common.
+        
+        String upgrade = request.getHeader("Upgrade");
+        if (upgrade == null)
         {
-            // not a "GET" request (not a websocket upgrade)
+            // no "Upgrade: websocket" header present.
             return false;
         }
-
-        String connection = request.getHeader("connection");
+        
+        if (!"websocket".equalsIgnoreCase(upgrade))
+        {
+            // Not a websocket upgrade
+            return false;
+        }
+        
+        String connection = request.getHeader("Connection");
         if (connection == null)
         {
             // no "Connection: upgrade" header present.
@@ -370,17 +379,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             return false;
         }
-
-        String upgrade = request.getHeader("Upgrade");
-        if (upgrade == null)
+        
+        if (!"GET".equalsIgnoreCase(request.getMethod()))
         {
-            // no "Upgrade: websocket" header present.
-            return false;
-        }
-
-        if (!"websocket".equalsIgnoreCase(upgrade))
-        {
-            LOG.debug("Not a 'Upgrade: WebSocket' (was [Upgrade: " + upgrade + "])");
+            // not a "GET" request (not a websocket upgrade)
             return false;
         }
 

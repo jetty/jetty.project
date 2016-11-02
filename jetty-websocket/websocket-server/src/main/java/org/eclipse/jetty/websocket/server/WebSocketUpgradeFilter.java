@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -160,17 +161,19 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             chain.doFilter(request,response);
             return;
         }
-
-        if (LOG.isDebugEnabled())
+    
+        try
         {
-            LOG.debug(".doFilter({}) - {}",fname,chain);
-        }
-
-        if ((request instanceof HttpServletRequest) && (response instanceof HttpServletResponse))
-        {
-            HttpServletRequest httpreq = (HttpServletRequest)request;
-            HttpServletResponse httpresp = (HttpServletResponse)response;
-
+            HttpServletRequest httpreq = (HttpServletRequest) request;
+            HttpServletResponse httpresp = (HttpServletResponse) response;
+            
+            if (!factory.isUpgradeRequest(httpreq, httpresp))
+            {
+                // Not an upgrade request, skip it
+                chain.doFilter(request, response);
+                return;
+            }
+        
             // Since this is a filter, we need to be smart about determining the target path
             String contextPath = httpreq.getContextPath();
             String target = httpreq.getRequestURI();
@@ -178,45 +181,52 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             {
                 target = target.substring(contextPath.length());
             }
-
-            if (factory.isUpgradeRequest(httpreq,httpresp))
+        
+            MappedResource<WebSocketCreator> resource = pathmap.getMatch(target);
+            if (resource == null)
             {
-                LOG.debug("target = [{}]",target);
-
-                MappedResource<WebSocketCreator> resource = pathmap.getMatch(target);
-                if (resource == null)
+                if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("WebSocket Upgrade on {} has no associated endpoint",target);
-                        LOG.debug("PathMappings: {}",pathmap.dump());
-                    }
-                    // no match.
-                    chain.doFilter(request,response);
-                    return;
+                    LOG.debug("WebSocket Upgrade on {} has no associated endpoint", target);
+                    LOG.debug("PathMappings: {}", pathmap.dump());
                 }
-                LOG.debug("WebSocket Upgrade detected on {} for endpoint {}",target,resource);
-
-                WebSocketCreator creator = resource.getResource();
-
-                // Store PathSpec resource mapping as request attribute
-                httpreq.setAttribute(PathSpec.class.getName(),resource.getPathSpec());
-
-                // We have an upgrade request
-                if (factory.acceptWebSocket(creator,httpreq,httpresp))
-                {
-                    // We have a socket instance created
-                    return;
-                }
-
-                // If we reach this point, it means we had an incoming request to upgrade
-                // but it was either not a proper websocket upgrade, or it was possibly rejected
-                // due to incoming request constraints (controlled by WebSocketCreator)
-                if (response.isCommitted())
-                {
-                    // not much we can do at this point.
-                    return;
-                }
+                // no match.
+                chain.doFilter(request, response);
+                return;
+            }
+            
+            if(LOG.isDebugEnabled())
+            {
+                LOG.debug("WebSocket Upgrade detected on {} for endpoint {}", target, resource);
+            }
+        
+            WebSocketCreator creator = resource.getResource();
+        
+            // Store PathSpec resource mapping as request attribute
+            httpreq.setAttribute(PathSpec.class.getName(), resource.getPathSpec());
+        
+            // We have an upgrade request
+            if (factory.acceptWebSocket(creator, httpreq, httpresp))
+            {
+                // We have a socket instance created
+                return;
+            }
+        
+            // If we reach this point, it means we had an incoming request to upgrade
+            // but it was either not a proper websocket upgrade, or it was possibly rejected
+            // due to incoming request constraints (controlled by WebSocketCreator)
+            if (response.isCommitted())
+            {
+                // not much we can do at this point.
+                return;
+            }
+        }
+        catch (ClassCastException e)
+        {
+            // We are in some kind of funky non-http environment.
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Not a HttpServletRequest, skipping WebSocketUpgradeFilter");
             }
         }
 
