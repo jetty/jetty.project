@@ -38,8 +38,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.log.Log;
@@ -56,6 +58,7 @@ public class MultiPartInputStreamParser
 {
     private static final Logger LOG = Log.getLogger(MultiPartInputStreamParser.class);
     public static final MultipartConfigElement  __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
+    public static final MultiMap<Part> EMPTY_MAP = new MultiMap(Collections.emptyMap());
     protected InputStream _in;
     protected MultipartConfigElement _config;
     protected String _contentType;
@@ -353,15 +356,24 @@ public class MultiPartInputStreamParser
      */
     public MultiPartInputStreamParser (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
-        _in = new ReadLineInputStream(in);
-       _contentType = contentType;
-       _config = config;
-       _contextTmpDir = contextTmpDir;
-       if (_contextTmpDir == null)
-           _contextTmpDir = new File (System.getProperty("java.io.tmpdir"));
+        _contentType = contentType;
+        _config = config;
+        _contextTmpDir = contextTmpDir;
+        if (_contextTmpDir == null)
+            _contextTmpDir = new File (System.getProperty("java.io.tmpdir"));
 
-       if (_config == null)
-           _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
+        if (_config == null)
+            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
+        
+        if (in instanceof ServletInputStream)
+        {
+            if (((ServletInputStream)in).isFinished())
+            {
+                _parts = EMPTY_MAP;
+                return;
+            }
+        }
+        _in = new ReadLineInputStream(in);
     }
 
     /**
@@ -476,6 +488,7 @@ public class MultiPartInputStreamParser
         //have we already parsed the input?
         if (_parts != null || _err != null)
             return;
+
 
         //initialize
         long total = 0; //keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
