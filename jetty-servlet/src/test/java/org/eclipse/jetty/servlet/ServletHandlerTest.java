@@ -102,6 +102,136 @@ public class ServletHandlerTest
     }
     
     @Test
+    public void testAddFilterIgnoresDuplicates() throws Exception
+    {
+
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+        handler.addFilter(h);
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        handler.addFilter(h);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        handler.addFilter(h2);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    @Test
+    public void testAddFilterIgnoresDuplicates2() throws Exception
+    {
+
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+        FilterMapping m = new FilterMapping();
+        m.setPathSpec("/*");
+        m.setFilterHolder(h);
+        
+        
+        handler.addFilter(h,m);
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        
+        FilterMapping m2 = new FilterMapping();
+        m2.setPathSpec("/*");
+        m2.setFilterHolder(h);
+        handler.addFilter(h, m2);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        FilterMapping m3 = new FilterMapping();
+        m3.setPathSpec("/*");
+        m3.setFilterHolder(h);
+        
+        handler.addFilter(h2, m3);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    
+    @Test
+    public void testAddFilterWithMappingIgnoresDuplicateFilters() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+ 
+        
+        
+        handler.addFilterWithMapping(h,"/*", 0);
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        handler.addFilterWithMapping(h, "/*", 1);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        
+        handler.addFilterWithMapping(h2, "/*", 0);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    
+    @Test
+    public void testAddFilterWithMappingIngoresDuplicateFilters2 () throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+ 
+        
+        
+        handler.addFilterWithMapping(h,"/*", EnumSet.allOf(DispatcherType.class));
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        handler.addFilterWithMapping(h, "/x", EnumSet.allOf(DispatcherType.class));
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        
+        handler.addFilterWithMapping(h2, "/*", EnumSet.allOf(DispatcherType.class));
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    
+    @Test
     public void testDuplicateMappingsForbidden() throws Exception
     {
         ServletHandler handler = new ServletHandler();
