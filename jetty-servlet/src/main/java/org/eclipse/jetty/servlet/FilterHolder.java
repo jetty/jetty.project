@@ -109,32 +109,37 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void initialize() throws Exception
     {
-        super.initialize();
-        
-        if (_filter==null)
+        if (!_initialized)
         {
-            try
-            {
-                ServletContext context=_servletHandler.getServletContext();
-                _filter=(context instanceof ServletContextHandler.Context)
-                    ?((ServletContextHandler.Context)context).createFilter(getHeldClass())
-                    :getHeldClass().newInstance();
-            }
-            catch (ServletException se)
-            {
-                Throwable cause = se.getRootCause();
-                if (cause instanceof InstantiationException)
-                    throw (InstantiationException)cause;
-                if (cause instanceof IllegalAccessException)
-                    throw (IllegalAccessException)cause;
-                throw se;
-            }
-        }
+            super.initialize();
 
-        _config=new Config();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Filter.init {}",_filter);
-        _filter.init(_config);
+            if (_filter==null)
+            {
+                try
+                {
+                    ServletContext context=_servletHandler.getServletContext();
+                    _filter=(context instanceof ServletContextHandler.Context)
+                            ?((ServletContextHandler.Context)context).createFilter(getHeldClass())
+                            :getHeldClass().newInstance();
+                }
+                catch (ServletException se)
+                {
+                    Throwable cause = se.getRootCause();
+                    if (cause instanceof InstantiationException)
+                        throw (InstantiationException)cause;
+                    if (cause instanceof IllegalAccessException)
+                        throw (IllegalAccessException)cause;
+                    throw se;
+                }
+            }
+
+            _config=new Config();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Filter.init {}",_filter);
+            _filter.init(_config);
+        }
+        
+        _initialized = true;
     }
 
 
@@ -158,6 +163,7 @@ public class FilterHolder extends Holder<Filter>
             _filter=null;
 
         _config=null;
+        _initialized = false;
         super.doStop();
     }
 
