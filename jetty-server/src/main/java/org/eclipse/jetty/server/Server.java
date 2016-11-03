@@ -378,8 +378,7 @@ public class Server extends HandlerWrapper implements Attributes
         
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
-
-        // check size of thread pool
+        // Check that the thread pool size is enough.
         SizedThreadPool pool = getBean(SizedThreadPool.class);
         int max=pool==null?-1:pool.getMaxThreads();
         int selectors=0;
@@ -387,23 +386,28 @@ public class Server extends HandlerWrapper implements Attributes
 
         for (Connector connector : _connectors)
         {
-            if (!(connector instanceof AbstractConnector))
-                continue;
+            if (connector instanceof AbstractConnector)
+            {
+                AbstractConnector abstractConnector = (AbstractConnector)connector;
+                Executor connectorExecutor = connector.getExecutor();
 
-            AbstractConnector abstractConnector = (AbstractConnector) connector;
-            Executor connectorExecutor = connector.getExecutor();
+                if (connectorExecutor != pool)
+                {
+                    // Do not count the selectors and acceptors from this connector at
+                    // the server level, because the connector uses a dedicated executor.
+                    continue;
+                }
 
-            if (connectorExecutor != pool)
-                // Do not count the selectors and acceptors from this connector at server level, because connector uses dedicated executor.
-                continue;
+                acceptors += abstractConnector.getAcceptors();
 
-            acceptors += abstractConnector.getAcceptors();
-
-            if (connector instanceof ServerConnector)
-                selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
-
+                if (connector instanceof ServerConnector)
+                {
+                    // The SelectorManager uses 2 threads for each selector,
+                    // one for the normal and one for the low priority strategies.
+                    selectors += 2 * ((ServerConnector)connector).getSelectorManager().getSelectorCount();
+                }
+            }
         }
-
 
         int needed=1+selectors+acceptors;
         if (max>0 && needed>max)
