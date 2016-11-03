@@ -41,7 +41,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     @Override
     public SessionHandler newSessionHandler()
     {
-        SessionHandler handler =  new SessionHandler();
+        SessionHandler handler =  new TestSessionHandler();
         InfinispanSessionDataStore sds = new InfinispanSessionDataStore();
         sds.setCache((BasicCache)_config);
         DefaultSessionCache ss = new DefaultSessionCache(handler);

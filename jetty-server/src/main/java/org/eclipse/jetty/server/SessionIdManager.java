@@ -23,6 +23,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.HouseKeeper;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /** 
@@ -114,4 +115,16 @@ public interface SessionIdManager extends LifeCycle
      * @return the set of session handlers
      */
     public  Set<SessionHandler> getSessionHandlers();
+    
+    
+    /**
+     * @param houseKeeper the housekeeper for doing scavenging
+     */
+    public void setSessionHouseKeeper (HouseKeeper houseKeeper);
+    
+    /**
+     * @return the housekeeper for doing scavenging
+     */
+    public HouseKeeper getSessionHouseKeeper();
+    
 }

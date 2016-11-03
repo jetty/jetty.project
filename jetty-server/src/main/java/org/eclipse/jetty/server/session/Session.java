@@ -86,12 +86,12 @@ public class Session implements SessionHandler.SessionIf
     protected SessionHandler _handler; //the manager of the session
     protected String _extendedId; //the _id plus the worker name
     protected long _requests;
-    private boolean _idChanged; 
-    private boolean _newSession;
-    private State _state = State.VALID; //state of the session:valid,invalid or being invalidated
-    private Locker _lock = new Locker(); //sync lock
-    private boolean _resident = false;
-    private SessionInactivityTimeout _sessionInactivityTimer = null;
+    protected boolean _idChanged; 
+    protected boolean _newSession;
+    protected State _state = State.VALID; //state of the session:valid,invalid or being invalidated
+    protected Locker _lock = new Locker(); //sync lock
+    protected boolean _resident = false;
+    protected SessionInactivityTimeout _sessionInactivityTimer = null;
     
     
 

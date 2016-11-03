@@ -22,6 +22,7 @@ package org.eclipse.jetty.gcloud.session;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.TestSessionHandler;
 
 /**
  * GCloudTestServer
@@ -51,7 +52,7 @@ public class GCloudTestServer extends AbstractTestServer
     @Override
     public SessionHandler newSessionHandler()
     {
-        SessionHandler handler =  new SessionHandler();
+        SessionHandler handler =  new TestSessionHandler();
         handler.setSessionIdManager(_sessionIdManager);
         GCloudSessionDataStore ds = new GCloudSessionDataStore();
         ds.setDatastore(GCloudTestSuite.__testSupport.getDatastore());

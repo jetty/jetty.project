@@ -16,29 +16,28 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+
+
+
 /**
- * @version $Revision$ $Date$
+ * TestSessionHandler
+ * 
+ * For testing convenience, allows access to some protected fields in SessionHandler
+ *
  */
-public class HashTestServer extends AbstractTestServer
+public class TestSessionHandler extends SessionHandler
 {
-    
 
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod, int evictionPolicy) throws Exception
+    /**
+     * @param size the size of the expiry candidates to check
+     */
+    public void assertCandidatesForExpiry (int size)
     {
-        super(port, maxInactivePeriod, scavengePeriod, evictionPolicy);
-    }
-
-
-
-    public SessionHandler newSessionHandler()
-    {
-        SessionHandler handler = new TestSessionHandler();
-        DefaultSessionCache ss = new DefaultSessionCache(handler);
-        handler.setSessionCache(ss);
-        ss.setSessionDataStore(new NullSessionDataStore());
-        return handler;
+        assertEquals(size, _candidateSessionIdsForExpiry.size());
     }
 
 }
