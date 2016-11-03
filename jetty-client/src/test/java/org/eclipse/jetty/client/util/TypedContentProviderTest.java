@@ -127,7 +127,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             {
                 baseRequest.setHandled(true);
                 Assert.assertEquals("GET", request.getMethod());
-                Assert.assertNull(request.getContentType());
+                Assert.assertNotNull(request.getContentType());
                 Assert.assertEquals(content, IO.toString(request.getInputStream()));
             }
         });
