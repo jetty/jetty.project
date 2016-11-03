@@ -744,7 +744,7 @@ public class HttpGenerator
                 transfer_encoding = null;
             }
             else
-                throw new BadMessageException(INTERNAL_SERVER_ERROR_500,"BAD TE");
+                throw new BadMessageException(INTERNAL_SERVER_ERROR_500,"Bad Transfer-Encoding");
         }
         // Else if we known the content length and are a request or a persistent response, 
         else if (content_length>=0 && (request!=null || _persistent))
@@ -756,7 +756,7 @@ public class HttpGenerator
         // Else if we are a response
         else if (response!=null)
         {
-            // We can use EOF 
+            // We must use EOF - even if we were trying to be persistent
             _endOfContent = EndOfContent.EOF_CONTENT;
             _persistent=false;
             if (content_length>=0 && ( content_length> 0 || assumed_content || content_length_field ))
