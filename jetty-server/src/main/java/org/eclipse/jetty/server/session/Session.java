@@ -232,8 +232,7 @@ public class Session implements SessionHandler.SessionIf
             long lastAccessed = _sessionData.getAccessed();
             _sessionData.setAccessed(time);
             _sessionData.setLastAccessed(lastAccessed);
-            int maxInterval=getMaxInactiveInterval();
-           _sessionData.setExpiry(maxInterval <= 0 ? 0 : (time + maxInterval*1000L));
+           _sessionData.calcAndSetExpiry(time);
             if (isExpiredAt(time))
             {
                 invalidate();
