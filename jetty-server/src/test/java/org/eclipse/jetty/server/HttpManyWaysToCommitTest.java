@@ -102,7 +102,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        assertHeader(response, "content-length", "0");
+        
+        if (HttpVersion.HTTP_1_1.asString().equals(httpVersion))
+            assertHeader(response, "content-length", "0");
     }
 
     @Test

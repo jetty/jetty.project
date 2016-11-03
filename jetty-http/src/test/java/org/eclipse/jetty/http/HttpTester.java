@@ -215,14 +215,20 @@ public class HttpTester
         
         ByteBuffer buffer = in.getBuffer();
         
-        int len=0;
-        while(len>=0)
+        while(true)
         {
             if (BufferUtil.hasContent(buffer))
                 if (parser.parseNext(buffer))
                     break;
-            if (in.fillBuffer()<=0)
+            int len=in.fillBuffer();
+            if (len==0)
                 break;
+            if (len<=0)
+            {
+                parser.atEOF();
+                parser.parseNext(buffer);
+                break;
+            }
         }
         
         if (r.isComplete())

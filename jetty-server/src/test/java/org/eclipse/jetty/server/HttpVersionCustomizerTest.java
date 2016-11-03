@@ -31,6 +31,8 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -55,7 +57,10 @@ public class HttpVersionCustomizerTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
+                response.setStatus(500);
                 Assert.assertEquals(HttpVersion.HTTP_1_1.asString(), request.getProtocol());
+                response.setStatus(200);
+                response.getWriter().println("OK");
             }
         });
         server.start();

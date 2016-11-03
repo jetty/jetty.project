@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Promise;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -258,7 +259,7 @@ public class HttpSenderOverHTTPTest
 
         String requestString = endPoint.takeOutputString();
         Assert.assertTrue(requestString.startsWith("GET "));
-        Assert.assertTrue(requestString.endsWith("\r\n\r\n" + content1 + content2));
+        Assert.assertThat(requestString,Matchers.endsWith("\r\n\r\n" + content1 + content2));
         Assert.assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -27,6 +28,7 @@ import static org.junit.Assert.assertThat;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -229,7 +231,7 @@ public class HttpGeneratorServerTest
     }
 
     @Test
-    public void testResponseNoContent() throws Exception
+    public void testResponseIncorrectContentLength() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
 
@@ -239,7 +241,36 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 10);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        info.getFields().add("Content-Length", "11");
+
+        result = gen.generateResponse(info, null, null, null, true);
+        assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+
+        try
+        {
+            gen.generateResponse(info, header, null, null, true);
+            Assert.fail();
+        }
+        catch(BadMessageException e)
+        {
+            assertEquals(e._code,500);
+        }
+    }
+
+    @Test
+    public void testResponseNoContentPersistent() throws Exception
+    {
+        ByteBuffer header = BufferUtil.allocate(8096);
+
+        HttpGenerator gen = new HttpGenerator();
+
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, null, true);
+        assertEquals(HttpGenerator.Result.NEED_INFO, result);
+        assertEquals(HttpGenerator.State.START, gen.getState());
+
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 0);
         info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         result = gen.generateResponse(info, null, null, null, true);
@@ -259,6 +290,40 @@ public class HttpGeneratorServerTest
         assertThat(head, containsString("HTTP/1.1 200 OK"));
         assertThat(head, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(head, containsString("Content-Length: 0"));
+    }
+
+    @Test
+    public void testResponseKnownNoContentNotPersistent() throws Exception
+    {
+        ByteBuffer header = BufferUtil.allocate(8096);
+
+        HttpGenerator gen = new HttpGenerator();
+
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, null, true);
+        assertEquals(HttpGenerator.Result.NEED_INFO, result);
+        assertEquals(HttpGenerator.State.START, gen.getState());
+
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 0);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        info.getFields().add("Connection", "close");
+
+        result = gen.generateResponse(info, null, null, null, true);
+        assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+
+        result = gen.generateResponse(info, header, null, null, true);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+        String head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+
+        result = gen.generateResponse(null, null, null, null, false);
+        assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
+        assertEquals(HttpGenerator.State.END, gen.getState());
+
+        assertEquals(0, gen.getContentPrepared());
+        assertThat(head, containsString("HTTP/1.1 200 OK"));
+        assertThat(head, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
+        assertThat(head, containsString("Connection: close"));
     }
 
     @Test
@@ -344,19 +409,23 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
+        
         assertThat(out, containsString("HTTP/1.1 200 OK"));
         assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(out, not(containsString("Content-Length")));
         assertThat(out, containsString("Transfer-Encoding: chunked"));
-        assertThat(out, containsString("\r\n\r\nD\r\n"));
-        assertThat(out, containsString("\r\nHello World! \r\n"));
-        assertThat(out, containsString("\r\n2E\r\n"));
-        assertThat(out, containsString("\r\nThe quick brown fox jumped over the lazy dog. \r\n"));
-        assertThat(out, containsString("\r\n0\r\n"));
+        
+        assertThat(out, endsWith(
+            "\r\n\r\nD\r\n"+
+            "Hello World! \r\n"+
+            "2E\r\n"+
+            "The quick brown fox jumped over the lazy dog. \r\n"+
+            "0\r\n"+
+            "\r\n"));
     }
 
     @Test
-    public void testResponseWithKnownContent() throws Exception
+    public void testResponseWithKnownContentLengthFromMetaData() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(4096);
         ByteBuffer content0 = BufferUtil.toBuffer("Hello World! ");
@@ -402,6 +471,58 @@ public class HttpGeneratorServerTest
         assertThat(out, containsString("Content-Length: 59"));
         assertThat(out, containsString("\r\n\r\nHello World! The quick brown fox jumped over the lazy dog. "));
     }
+
+    @Test
+    public void testResponseWithKnownContentLengthFromHeader() throws Exception
+    {
+        ByteBuffer header = BufferUtil.allocate(4096);
+        ByteBuffer content0 = BufferUtil.toBuffer("Hello World! ");
+        ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
+        HttpGenerator gen = new HttpGenerator();
+
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, content0, false);
+        assertEquals(HttpGenerator.Result.NEED_INFO, result);
+        assertEquals(HttpGenerator.State.START, gen.getState());
+
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        info.getFields().add("Content-Length",""+(content0.remaining()+content1.remaining()));
+        result = gen.generateResponse(info, null, null, content0, false);
+        assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+        assertEquals(HttpGenerator.State.START, gen.getState());
+
+        result = gen.generateResponse(info, header, null, content0, false);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
+
+        String out = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        out += BufferUtil.toString(content0);
+        BufferUtil.clear(content0);
+
+        result = gen.generateResponse(null, null, null, content1, false);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
+        out += BufferUtil.toString(content1);
+        BufferUtil.clear(content1);
+
+        result = gen.generateResponse(null, null, null, null, true);
+        assertEquals(HttpGenerator.Result.CONTINUE, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+
+        result = gen.generateResponse(null, null, null, null, true);
+        assertEquals(HttpGenerator.Result.DONE, result);
+        assertEquals(HttpGenerator.State.END, gen.getState());
+
+        assertThat(out, containsString("HTTP/1.1 200 OK"));
+        assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
+        assertThat(out, not(containsString("chunked")));
+        assertThat(out, containsString("Content-Length: 59"));
+        assertThat(out, containsString("\r\n\r\nHello World! The quick brown fox jumped over the lazy dog. "));
+    }
+    
+    
+    
 
     @Test
     public void test100ThenResponseWithContent() throws Exception

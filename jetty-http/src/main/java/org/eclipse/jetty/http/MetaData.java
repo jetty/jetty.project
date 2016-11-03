@@ -225,8 +225,8 @@ public class MetaData implements Iterable<HttpField>
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{u=%s,%s,h=%d}",
-                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size());
+            return String.format("%s{u=%s,%s,h=%d,cl=%d}",
+                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
 
@@ -300,7 +300,7 @@ public class MetaData implements Iterable<HttpField>
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{s=%d,h=%d}", getHttpVersion(), getStatus(), fields == null ? -1 : fields.size());
+            return String.format("%s{s=%d,h=%d,cl=%d}", getHttpVersion(), getStatus(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
 }

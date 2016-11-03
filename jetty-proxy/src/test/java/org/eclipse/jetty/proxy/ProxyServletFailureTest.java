@@ -257,8 +257,11 @@ public class ProxyServletFailureTest
     public void testProxyRequestStallsContentServerIdlesTimeout() throws Exception
     {
         final byte[] content = new byte[]{'C', '0', 'F', 'F', 'E', 'E'};
+        int expected = -1;
         if (proxyServlet instanceof AsyncProxyServlet)
         {
+            // TODO should this be a 502 also???
+            expected = 500;
             proxyServlet = new AsyncProxyServlet()
             {
                 @Override
@@ -281,6 +284,7 @@ public class ProxyServletFailureTest
         }
         else
         {
+            expected = 502;
             proxyServlet = new ProxyServlet()
             {
                 @Override
@@ -310,7 +314,7 @@ public class ProxyServletFailureTest
                     .content(new BytesContentProvider(content))
                     .send();
 
-            Assert.assertEquals(500, response.getStatus());
+            Assert.assertEquals(expected, response.getStatus());
         }
     }
 

@@ -1040,9 +1040,6 @@ public class MultipartFilterTest
     public void testWithCharSet()
     throws Exception
     {
-        ((StdErrLog)Log.getLogger(MultiPartFilter.class)).setDebugEnabled(true);
-        ((StdErrLog)Log.getLogger(MultiPartInputStreamParser.class)).setDebugEnabled(true);
-        
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;

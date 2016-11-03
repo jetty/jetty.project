@@ -115,7 +115,6 @@ public class DefaultServletRangesTest
                         "\r\n");
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: text/plain", response);
-        assertResponseContains("Content-Length: 10", response);
         assertResponseContains("Content-Range: bytes 0-9/80", response);
         assertResponseContains(DATA.substring(0,10), response);
     }
@@ -133,7 +132,6 @@ public class DefaultServletRangesTest
                         "\r\n");
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: text/plain", response);
-        assertResponseContains("Content-Length: 7", response);
         assertResponseContains("Content-Range: bytes 3-9/80", response);
         assertResponseContains(DATA.substring(3,10), response);
     }
@@ -156,7 +154,6 @@ public class DefaultServletRangesTest
         assertResponseContains("Content-Range: bytes 0-9/80", response);
         assertResponseContains("Content-Range: bytes 20-29/80", response);
         assertResponseContains("Content-Range: bytes 40-49/80", response);
-        assertResponseContains("Content-Length: " + body.length(), response);
         assertResponseContains(DATA.substring(0,10), response);
         assertResponseContains(DATA.substring(20,30), response);
         assertResponseContains(DATA.substring(40,50), response);
@@ -177,7 +174,6 @@ public class DefaultServletRangesTest
         assertResponseContains("206 Partial", response);
         assertResponseNotContains("Content-Type: multipart/byteranges; boundary=", response);
         assertResponseContains("Content-Range: bytes 20-79/80", response);
-        assertResponseContains("Content-Length: 60", response);
         assertResponseContains(DATA.substring(60), response);
     }
 
@@ -194,7 +190,6 @@ public class DefaultServletRangesTest
         assertResponseContains("206 Partial", response);
         assertResponseNotContains("Content-Type: multipart/byteranges; boundary=", response);
         assertResponseContains("Content-Range: bytes 60-79/80", response); // yes the spec says it is these bytes
-        assertResponseContains("Content-Length: 20", response);
         assertResponseContains(DATA.substring(60), response);
     }
 
