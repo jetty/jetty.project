@@ -96,7 +96,7 @@ public class JdbcTestServer extends AbstractTestServer
     @Override
     public SessionHandler newSessionHandler()
     {
-        SessionHandler handler = new SessionHandler();
+        SessionHandler handler = new TestSessionHandler();
         DefaultSessionCache sessionStore = new DefaultSessionCache(handler);
         handler.setSessionCache(sessionStore);
         JDBCSessionDataStore ds = new JDBCSessionDataStore();

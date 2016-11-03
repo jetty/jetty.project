@@ -122,7 +122,12 @@ public abstract class AbstractLocalSessionScavengingTest extends AbstractTestBas
                 pause(2*inactivePeriod);
 
                 assertEquals(1,  m1.getSessionsCreated());
+               
 
+                if (m1 instanceof TestSessionHandler)
+                {
+                    ((TestSessionHandler)m1).assertCandidatesForExpiry(0);
+                }
 
                 //check a session removed listener did not get called
                 assertEquals(1, listener.count.getCurrent());

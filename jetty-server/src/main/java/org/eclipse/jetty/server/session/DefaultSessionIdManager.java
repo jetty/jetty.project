@@ -120,6 +120,14 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
    
     
+    /**
+     * @return the housekeeper
+     */
+    public HouseKeeper getSessionHouseKeeper()
+    {
+        return _houseKeeper;
+    }
+    
 
     /* ------------------------------------------------------------ */
     /**

@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.session.CachingSessionDataStore;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.TestSessionHandler;
 
 /**
  * MemcachedTestServer
@@ -161,7 +162,7 @@ public class MemcachedTestServer extends AbstractTestServer
     @Override
     public SessionHandler newSessionHandler()
     {
-        SessionHandler handler =  new SessionHandler();
+        SessionHandler handler =  new TestSessionHandler();
         handler.setSessionIdManager(_sessionIdManager);
         MockDataStore persistentStore = new MockDataStore();
         MemcachedSessionDataMap sdm = new MemcachedSessionDataMap("localhost", "11211");
