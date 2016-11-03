@@ -85,8 +85,18 @@ public class SSLEngineTest
     private static final String REQUEST1=REQUEST1_HEADER+REQUEST_CONTENT.getBytes().length+"\n\n"+REQUEST_CONTENT;
 
     /** The expected response. */
-    private static final String RESPONSE0="HTTP/1.1 200 OK\n"+"Content-Length: "+HELLO_WORLD.length()+"\n"+"Server: Jetty("+JETTY_VERSION+")\n"+'\n'+HELLO_WORLD;
-    private static final String RESPONSE1="HTTP/1.1 200 OK\n"+"Connection: close\n"+"Server: Jetty("+JETTY_VERSION+")\n"+'\n'+HELLO_WORLD;
+    private static final String RESPONSE0="HTTP/1.1 200 OK\n"+
+        "Content-Length: "+HELLO_WORLD.length()+"\n"+
+        "Server: Jetty("+JETTY_VERSION+")\n"+
+        '\n'+
+        HELLO_WORLD;
+    
+    private static final String RESPONSE1="HTTP/1.1 200 OK\n"+
+        "Connection: close\n"+
+        "Content-Length: "+HELLO_WORLD.length()+"\n"+
+        "Server: Jetty("+JETTY_VERSION+")\n"+
+        '\n'+
+        HELLO_WORLD;
 
     private static final int BODY_SIZE=300;
 

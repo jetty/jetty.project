@@ -1096,7 +1096,8 @@ public class RequestTest
                     200, TimeUnit.MILLISECONDS
                     );
         assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.containsString("Connection: TE,Other"));
+        assertThat(response, Matchers.containsString("Connection: TE"));
+        assertThat(response, Matchers.containsString("Connection: Other"));
         assertThat(response, Matchers.containsString("Hello World"));
 
         response=_connector.getResponse(
