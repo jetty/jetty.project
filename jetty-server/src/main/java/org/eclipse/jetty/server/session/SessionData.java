@@ -251,6 +251,16 @@ public class SessionData implements Serializable
         return (getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + getMaxInactiveMs()));
     }
     
+    public long calcExpiry (long time)
+    {
+        return (getMaxInactiveMs() <= 0 ? 0 : (time + getMaxInactiveMs()));
+    }
+    
+    public void calcAndSetExpiry (long time)
+    {
+        setExpiry(calcExpiry(time));
+    }
+    
     public void calcAndSetExpiry ()
     {
         setExpiry(calcExpiry());
@@ -351,8 +361,8 @@ public class SessionData implements Serializable
     public boolean isExpiredAt (long time)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Testing expiry on session {}: expires at {} now {}", _id, getExpiry(), time);
-        if (getExpiry() <= 0)
+            LOG.debug("Testing expiry on session {}: expires at {} now {} maxIdle {}", _id, getExpiry(), time, getMaxInactiveMs());
+        if (getMaxInactiveMs() <= 0)
             return false; //never expires
         return (getExpiry() <= time);
     }
