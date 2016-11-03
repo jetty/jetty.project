@@ -30,11 +30,16 @@ public class HostPort
 
     public HostPort(String authority) throws IllegalArgumentException
     {
-        if (authority==null || authority.length()==0)
+        if (authority==null)
             throw new IllegalArgumentException("No Authority");
         try
         {
-            if (authority.charAt(0)=='[')
+            if (authority.isEmpty())
+            {
+                _host=authority;
+                _port=0;
+            }
+            else if (authority.charAt(0)=='[')
             {
                 // ipv6reference
                 int close=authority.lastIndexOf(']');
@@ -78,7 +83,7 @@ public class HostPort
                 {initCause(ex);}
             };
         }
-        if(_host.isEmpty())
+        if(_host==null)
             throw new IllegalArgumentException("Bad host");
         if(_port<0)
             throw new IllegalArgumentException("Bad port");
