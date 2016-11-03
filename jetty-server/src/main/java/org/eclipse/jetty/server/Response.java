@@ -21,12 +21,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -252,10 +249,7 @@ public class Response implements HttpServletResponse
         quoteOnlyOrAppend(buf,name,quote_name);
         
         buf.append('=');
-        
-        // Remember name= part to look for other matching set-cookie
-        String name_equals=buf.toString();
-
+       
         // Append the value
         boolean quote_value=isQuoteNeededForCookie(value);
         quoteOnlyOrAppend(buf,value,quote_value);
@@ -1134,15 +1128,14 @@ public class Response implements HttpServletResponse
                 _fields.put(_mimeType.getContentTypeField());
             }
         }
-        
     }
 
     @Override
     public void setBufferSize(int size)
     {
         if (isCommitted() || getContentCount() > 0)
-            throw new IllegalStateException("cannot set buffer size on committed response");
-        if (size <= 0)
+            throw new IllegalStateException("cannot set buffer size when response is committed or written to");
+        if (size < __MIN_BUFFER_SIZE)
             size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
     }
