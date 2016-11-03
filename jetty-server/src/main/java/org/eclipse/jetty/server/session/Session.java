@@ -859,7 +859,7 @@ public class Session implements SessionHandler.SessionIf
             if (result)
             {
                 //tell id mgr to remove session from all other contexts
-                ((DefaultSessionIdManager)_handler.getSessionIdManager()).invalidateAll(_sessionData.getId());
+                _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
             }
         }
         catch (Exception e)
