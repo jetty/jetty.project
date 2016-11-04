@@ -24,6 +24,10 @@ https://wiki.debian.org/LSBInitScripts[LSB tags].
 
 You can safely replace Jetty 9.3's `jetty.sh` with 9.4's.
 
+==== Removed Classes
+
+`ConcurrentArrayQueue` was removed from use in Jetty 9.3 and the class has been removed entirely as part of Jetty 9.4.
+
 ==== Module Changes in Jetty 9.4
 
 [cols="1,1", options="header"]
