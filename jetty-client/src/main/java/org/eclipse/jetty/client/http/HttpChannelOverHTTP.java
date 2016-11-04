@@ -143,6 +143,8 @@ public class HttpChannelOverHTTP extends HttpChannel
             closeReason = "failure";
         else if (receiver.isShutdown())
             closeReason = "server close";
+        else if (sender.isShutdown())
+            closeReason = "client close";
 
         if (closeReason == null)
         {
@@ -157,7 +159,7 @@ public class HttpChannelOverHTTP extends HttpChannel
             }
             else
             {
-                // HTTP 1.1 or greater closes only if it has an explicit close.
+                // HTTP 1.1 closes only if it has an explicit close.
                 if (responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
                     closeReason = "http/1.1";
             }
