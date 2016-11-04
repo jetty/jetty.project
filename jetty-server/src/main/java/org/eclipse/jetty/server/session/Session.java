@@ -169,6 +169,7 @@ public class Session implements SessionHandler.SessionIf
         _handler = handler;
         _sessionData = data;
         _newSession = true;
+        _sessionData.setDirty(true);
         _requests = 1; //access will not be called on this new session, but we are obviously in a request
     }
     
