@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 public class HttpSenderOverHTTP extends HttpSender
 {
     private final HttpGenerator generator = new HttpGenerator();
+    private boolean shutdown;
 
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -149,7 +150,12 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Request shutdown output {}", getHttpExchange().getRequest());
-        getHttpChannel().getHttpConnection().getEndPoint().shutdownOutput();
+        shutdown = true;
+    }
+
+    protected boolean isShutdown()
+    {
+        return shutdown;
     }
 
     @Override
