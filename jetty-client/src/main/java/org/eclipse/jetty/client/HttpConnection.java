@@ -112,7 +112,7 @@ public abstract class HttpConnection implements Connection
         }
 
         // If we are HTTP 1.1, add the Host header
-        if (version.getVersion() == 11)
+        if (version.getVersion() <= 11)
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
                 headers.put(getHttpDestination().getHostField());
