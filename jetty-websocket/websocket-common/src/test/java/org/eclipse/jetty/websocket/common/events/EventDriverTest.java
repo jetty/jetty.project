@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
+import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.CloseableLocalWebSocketSession;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
@@ -45,6 +46,7 @@ import examples.AnnotatedBinaryStreamSocket;
 import examples.AnnotatedFramesSocket;
 import examples.AnnotatedTextSocket;
 import examples.ListenerBasicSocket;
+import examples.ListenerPingPongSocket;
 
 public class EventDriverTest
 {
@@ -181,6 +183,50 @@ public class EventDriverTest
             socket.capture.assertEventCount(3);
             socket.capture.pop().assertEventStartsWith("onWebSocketConnect");
             socket.capture.pop().assertEventStartsWith("onWebSocketText(\"Hello World\")");
+            socket.capture.pop().assertEventStartsWith("onWebSocketClose(1000,");
+        }
+    }
+
+    @Test
+    public void testListenerPingPong() throws Exception
+    {
+        ListenerPingPongSocket socket = new ListenerPingPongSocket();
+        EventDriver driver = wrap(socket);
+
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
+        {
+            conn.start();
+            conn.open();
+            driver.incomingFrame(new PingFrame().setPayload("PING"));
+            driver.incomingFrame(new PongFrame().setPayload("PONG"));
+            driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+            socket.capture.assertEventCount(4);
+            socket.capture.pop().assertEventStartsWith("onWebSocketConnect");
+            socket.capture.pop().assertEventStartsWith("onWebSocketPing(");
+            socket.capture.pop().assertEventStartsWith("onWebSocketPong(");
+            socket.capture.pop().assertEventStartsWith("onWebSocketClose(1000,");
+        }
+    }
+
+    @Test
+    public void testListenerEmptyPingPong() throws Exception
+    {
+        ListenerPingPongSocket socket = new ListenerPingPongSocket();
+        EventDriver driver = wrap(socket);
+
+        try (LocalWebSocketSession conn = new CloseableLocalWebSocketSession(container,testname,driver))
+        {
+            conn.start();
+            conn.open();
+            driver.incomingFrame(new PingFrame());
+            driver.incomingFrame(new PongFrame());
+            driver.incomingFrame(new CloseInfo(StatusCode.NORMAL).asFrame());
+
+            socket.capture.assertEventCount(4);
+            socket.capture.pop().assertEventStartsWith("onWebSocketConnect");
+            socket.capture.pop().assertEventStartsWith("onWebSocketPing(");
+            socket.capture.pop().assertEventStartsWith("onWebSocketPong(");
             socket.capture.pop().assertEventStartsWith("onWebSocketClose(1000,");
         }
     }
