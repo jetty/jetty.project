@@ -22,6 +22,9 @@ package org.eclipse.jetty.server.session;
 import java.util.Set;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 
 /**
  * CachingSessionDataStore
@@ -44,7 +47,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
  */
 public class CachingSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
-
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     /**
      * The actual store for the session data
      */
@@ -98,8 +101,15 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         SessionData d = null;
 
 
-        //check to see if the session data is already in the cache
-        d = _cache.load(id);
+        try
+        {
+            //check to see if the session data is already in the cache
+            d = _cache.load(id);
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
 
         if (d != null)
             return d; //cache hit
@@ -178,11 +188,18 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     @Override
     public boolean exists(String id) throws Exception
     {
-        //check the cache first
-        SessionData data = _cache.load(id);
-        if (data != null)
-            return true;
-        
+        try
+        {
+            //check the cache first
+            SessionData data = _cache.load(id);
+            if (data != null)
+                return true;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
+
         //then the delegate store
         return _store.exists(id);
     }
