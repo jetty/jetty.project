@@ -95,7 +95,7 @@ Users now configure session management by selecting a composition of session mod
 ====== Change Overview
 
 SessionIdManager:: Previously there was a different class of SessionIdManager - with different configuration options - depending upon which type of clustering technology chosen.
-In Jetty 9.4, there is only one type, the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[org.eclipse.jetty.server.session.DfeaultSessionIdManager].
+In Jetty 9.4, there is only one type, the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[org.eclipse.jetty.server.session.DefaultSessionIdManager].
 
 SessionManager:: Previously, there was a different class of SessionManager depending upon which the type of clustering technology chosen.
 In Jetty 9.4 we have removed the SessionManager class and split its functionality into different, more easily extensible and composable classes:
@@ -139,11 +139,40 @@ Session objects remain in the cache until they expire or are explicitly invalida
 
 If you wish to configure the default setup further, enable the `session-cache-default` module.
 
+Compatibility
+
+As Session objects do not persist beyond a server restart, there are no compatibility issues.
+
 
 ====== Filesystem
 
 In earlier versions of Jetty, persisting sessions to the local filesystem was an option of the "hash" session manager.
 In Jetty 9.4 this has been refactored to its own configurable module `session-store-file`.
+
+Compatibility
+
+Sessions stored to files by earlier versions of jetty are not compatible with jetty-9.4 sessions. 
+Here is a comparison of file formats, note that the file contents are listed in order of file output:
+
+[cols="1,1", options="header"]
+|===
+| 9.3 | 9.4
+| File name: sessionid | File name: expirytime_contextpath_vhost_sessionid
+| sessionid  (utf)  | sessionid (utf)
+|                   | contextpath (uft)
+|                   | vhost (utf)
+| nodeid  (utf) |  lastnode (utlf)
+| createtime (long) | createtime (long)
+| accessed (long) | accessed (long)
+|                 | lastaccessed (long)
+|                 | cookiesettime (long)
+|                 | expiry (long)
+| requests (int)  |
+|                 | maxInactive (long)
+| attributes size (int) | attributes size (int)
+| attributes serialized (obj) | attributes serialized (obj)
+| maxInactive (long) |
+|===
 
 
 ====== JDBC
@@ -151,6 +180,10 @@ In Jetty 9.4 this has been refactored to its own configurable module `session-st
 As with earlier versions of Jetty, sessions may be persisted to a relational database.
 Enable the `session-store-jdbc` module.
 
+Compatibility
+
+Sessions stored to the database by earlier versions of jetty are not compatible with jetty-9.4 sessions.
+The incompatibility is minor:  in jetty-9.4 the `rowid` primary key column is no longer used, and the primary key is a composite of `(sessionid,contextpath,vhost)` columns.
 
 ====== NoSQL
 
@@ -159,11 +192,30 @@ Jetty supports the Mongo document database.
 Enable the `session-store-mongo` module.
 
 
+Compatibility
+
+Sessions stored to mongo by earlier versions of jetty are not compatible with jetty-9.4 sessions.
+The key for each subdocument that represents the session information for a context is different between jetty-9.3 and 9.4:
+
+[cols="1,1", options="header"]
+|===
+| 9.3 | 9.4
+|Each context key is: vhost+context+path, where empty vhosts="::" and root context = "*" and / is replaced by _ 
+|Each context key is: vhost:contextpath, where empty vhosts="0_0_0_0" and root context = "" and / replaced by _
+| eg "::/contextA" | eg " 0_0_0_0:_contextA"
+|===
+
+
 ====== Infinispan
 
 As with earlier versions of Jetty, sessions may be clustered via Infinispan to either an in-process or remote infinispan instance.
 Enable the `session-store-infinispan` module.
 
+Compatibility
+
+Sessions stored in infinispan by jetty-9.3 are incompatible with jetty-9.4. 
+In jetty-9.3 the serialized object stored to represent the session data was `org.eclipse.jetty.session.infinispan.SerializableSessionData`.
+In jetty-9.4 the serialized object is `org.eclipse.jetty.serer.session.SessionData`.
 
 ====== GCloud Datastore
 
@@ -171,7 +223,33 @@ As with earlier versions of Jetty, sessions may be persisted to Google's GCloud 
 Enable the `session-store-gcloud` module.
 
 
+Compatibility
+
+Sessions stored into gcloud datastore by jetty-9.3 are incompatible with jetty-9.4, although the incompatibility is trivial: the name of the session id entity property has changed:
+
+[cols="1,1", options="header"]
+|===
+|9.3 | 9.4
+|Kind: GCloudSession | Kind: GCloudSession
+|key: contextpath_vhost_sessionid | key: contextpath_vhost_sessionid
+|*"clusterId": sessionId* | *"id" : sessionId*
+|"contextPath" : contextpath | "contextPath": contextpath
+|"vhost" :vhost | "vhost": vhost
+|"accessed":accesstime | "accessed": accesstime
+|"lastAccessed": lastaccesstime | "lastAccessed": lastaccesstime
+|"createTime": createtime | "createTime": createtime
+|"cookieSetTime": cookiesettime | "cookieSetTime": cookiesettime
+|"lastNode": lastnode | "lastNode": lastnode
+|"expiry": expiry | "expiry": expiry
+|"maxInactive": maxInactive | "maxInactive": maxInactive
+|"attributes": blob | "attributes": blob
+|===
+
 ====== GCloud Datastore with Memcached
 
 As with earlier versions of Jetty, sessions can be both persisted to Google's GCloud Datastore, and cached into Memcached for faster access.
 Enable the `session-store-gcloud` and `session-store-cache` modules.
+
+Compatibility
+
+Sessions stored into memcached by earlier versions of jetty are incompatible with jetty-9.4. Previous versions of jetty stored `org.eclipse.jetty.gcloud.memcached.session.SerializableSessionData` whereas jetty-9.4 stores `org.eclipse.jetty.server.session.SessionData`.
