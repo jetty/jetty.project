@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class InsufficientThreadsDetectionTest {
@@ -69,7 +68,6 @@ public class InsufficientThreadsDetectionTest {
     }
 
     @Test // Github issue #586
-    @Ignore // TODO test failing???
     public void testCaseForMultipleConnectors() throws Exception {
         // server has 4 threads in the executor
         _server = new Server(new QueuedThreadPool(4));
