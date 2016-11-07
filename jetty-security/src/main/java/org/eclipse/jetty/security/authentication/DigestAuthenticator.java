@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.BitSet;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -212,6 +213,15 @@ public class DigestAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e);
         }
+    }
+
+    @Override
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
+    {
+        Digest digest = (Digest)credentials;
+        if (!Objects.equals(digest.realm, _loginService.getName()))
+            return null;
+        return super.login(username, credentials, request);
     }
 
     public String newNonce(Request request)
