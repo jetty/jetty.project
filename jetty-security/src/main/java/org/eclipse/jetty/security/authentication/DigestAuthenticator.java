@@ -50,8 +50,6 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 
 /**
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
- *
  * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)}
  * using the name "maxNonceAge".  The nonce max count can be set with {@link SecurityHandler#setInitParameter(String, String)}
  * using the name "maxNonceCount".  When the age or count is exceeded, the nonce is considered stale.
@@ -59,105 +57,58 @@ import org.eclipse.jetty.util.security.Credential;
 public class DigestAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(DigestAuthenticator.class);
-    SecureRandom _random = new SecureRandom();
-    private long _maxNonceAgeMs = 60*1000;
-    private int _maxNC=1024;
-    private ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<String, Nonce>();
-    private Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<Nonce>();
-    private static class Nonce
-    {
-        final String _nonce;
-        final long _ts;
-        final BitSet _seen; 
 
-        public Nonce(String nonce, long ts, int size)
-        {
-            _nonce=nonce;
-            _ts=ts;
-            _seen = new BitSet(size);
-        }
+    private final SecureRandom _random = new SecureRandom();
+    private long _maxNonceAgeMs = 60 * 1000;
+    private int _maxNC = 1024;
+    private ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<>();
+    private Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<>();
 
-        public boolean seen(int count)
-        {
-            synchronized (this)
-            {
-                if (count>=_seen.size())
-                    return true;
-                boolean s=_seen.get(count);
-                _seen.set(count);
-                return s;
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public DigestAuthenticator()
-    {
-        super();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#setConfiguration(org.eclipse.jetty.security.Authenticator.AuthConfiguration)
-     */
     @Override
     public void setConfiguration(AuthConfiguration configuration)
     {
         super.setConfiguration(configuration);
 
-        String mna=configuration.getInitParameter("maxNonceAge");
-        if (mna!=null)
-        {
-            _maxNonceAgeMs=Long.valueOf(mna);
-        }
-        String mnc=configuration.getInitParameter("maxNonceCount");
-        if (mnc!=null)
-        {
-            _maxNC=Integer.valueOf(mnc);
-        }
+        String mna = configuration.getInitParameter("maxNonceAge");
+        if (mna != null)
+            setMaxNonceAge(Long.valueOf(mna));
+        String mnc = configuration.getInitParameter("maxNonceCount");
+        if (mnc != null)
+            setMaxNonceCount(Integer.valueOf(mnc));
     }
 
-    /* ------------------------------------------------------------ */
     public int getMaxNonceCount()
     {
         return _maxNC;
     }
 
-    /* ------------------------------------------------------------ */
     public void setMaxNonceCount(int maxNC)
     {
         _maxNC = maxNC;
     }
 
-    /* ------------------------------------------------------------ */
     public long getMaxNonceAge()
     {
         return _maxNonceAgeMs;
     }
 
-    /* ------------------------------------------------------------ */
-    public synchronized void setMaxNonceAge(long maxNonceAgeInMillis)
+    public void setMaxNonceAge(long maxNonceAgeInMillis)
     {
         _maxNonceAgeMs = maxNonceAgeInMillis;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String getAuthMethod()
     {
         return Constraint.__DIGEST_AUTH;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
-    
 
-
-    /* ------------------------------------------------------------ */
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
@@ -217,20 +168,20 @@ public class DigestAuthenticator extends LoginAuthenticator
                                     digest.uri = tok;
                                 else if ("response".equalsIgnoreCase(name))
                                     digest.response = tok;
-                                name=null;
+                                name = null;
                             }
                     }
                 }
 
-                int n = checkNonce(digest,(Request)request);
+                int n = checkNonce(digest, (Request)request);
 
                 if (n > 0)
                 {
                     //UserIdentity user = _loginService.login(digest.username,digest);
                     UserIdentity user = login(digest.username, digest, req);
-                    if (user!=null)
+                    if (user != null)
                     {
-                        return new UserAuthentication(getAuthMethod(),user);
+                        return new UserAuthentication(getAuthMethod(), user);
                     }
                 }
                 else if (n == 0)
@@ -261,10 +212,8 @@ public class DigestAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e);
         }
-
     }
 
-    /* ------------------------------------------------------------ */
     public String newNonce(Request request)
     {
         Nonce nonce;
@@ -274,43 +223,42 @@ public class DigestAuthenticator extends LoginAuthenticator
             byte[] nounce = new byte[24];
             _random.nextBytes(nounce);
 
-            nonce = new Nonce(new String(B64Code.encode(nounce)),request.getTimeStamp(),_maxNC);
+            nonce = new Nonce(new String(B64Code.encode(nounce)), request.getTimeStamp(), getMaxNonceCount());
         }
-        while (_nonceMap.putIfAbsent(nonce._nonce,nonce)!=null);
+        while (_nonceMap.putIfAbsent(nonce._nonce, nonce) != null);
         _nonceQueue.add(nonce);
 
         return nonce._nonce;
     }
 
     /**
-     * @param nstring nonce to check
-     * @param request
+     * @param digest  the digest data to check
+     * @param request the request object
      * @return -1 for a bad nonce, 0 for a stale none, 1 for a good nonce
      */
-    /* ------------------------------------------------------------ */
     private int checkNonce(Digest digest, Request request)
     {
         // firstly let's expire old nonces
-        long expired = request.getTimeStamp()-_maxNonceAgeMs;
-        Nonce nonce=_nonceQueue.peek();
-        while (nonce!=null && nonce._ts<expired)
+        long expired = request.getTimeStamp() - getMaxNonceAge();
+        Nonce nonce = _nonceQueue.peek();
+        while (nonce != null && nonce._ts < expired)
         {
             _nonceQueue.remove(nonce);
             _nonceMap.remove(nonce._nonce);
-            nonce=_nonceQueue.peek();
+            nonce = _nonceQueue.peek();
         }
 
         // Now check the requested nonce
         try
         {
             nonce = _nonceMap.get(digest.nonce);
-            if (nonce==null)
+            if (nonce == null)
                 return 0;
 
-            long count = Long.parseLong(digest.nc,16);
-            if (count>=_maxNC)
+            long count = Long.parseLong(digest.nc, 16);
+            if (count >= _maxNC)
                 return 0;
-            
+
             if (nonce.seen((int)count))
                 return -1;
 
@@ -323,9 +271,32 @@ public class DigestAuthenticator extends LoginAuthenticator
         return -1;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+    private static class Nonce
+    {
+        final String _nonce;
+        final long _ts;
+        final BitSet _seen;
+
+        public Nonce(String nonce, long ts, int size)
+        {
+            _nonce = nonce;
+            _ts = ts;
+            _seen = new BitSet(size);
+        }
+
+        public boolean seen(int count)
+        {
+            synchronized (this)
+            {
+                if (count >= _seen.size())
+                    return true;
+                boolean s = _seen.get(count);
+                _seen.set(count);
+                return s;
+            }
+        }
+    }
+
     private static class Digest extends Credential
     {
         private static final long serialVersionUID = -2484639019549527724L;
@@ -350,8 +321,8 @@ public class DigestAuthenticator extends LoginAuthenticator
         public boolean check(Object credentials)
         {
             if (credentials instanceof char[])
-                credentials=new String((char[])credentials);
-            String password = (credentials instanceof String) ? (String) credentials : credentials.toString();
+                credentials = new String((char[])credentials);
+            String password = (credentials instanceof String) ? (String)credentials : credentials.toString();
 
             try
             {
@@ -362,22 +333,22 @@ public class DigestAuthenticator extends LoginAuthenticator
                     // Credentials are already a MD5 digest - assume it's in
                     // form user:realm:password (we have no way to know since
                     // it's a digest, alright?)
-                    ha1 = ((Credential.MD5) credentials).getDigest();
+                    ha1 = ((Credential.MD5)credentials).getDigest();
                 }
                 else
                 {
                     // calc A1 digest
                     md.update(username.getBytes(StandardCharsets.ISO_8859_1));
-                    md.update((byte) ':');
+                    md.update((byte)':');
                     md.update(realm.getBytes(StandardCharsets.ISO_8859_1));
-                    md.update((byte) ':');
+                    md.update((byte)':');
                     md.update(password.getBytes(StandardCharsets.ISO_8859_1));
                     ha1 = md.digest();
                 }
                 // calc A2 digest
                 md.reset();
                 md.update(method.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(uri.getBytes(StandardCharsets.ISO_8859_1));
                 byte[] ha2 = md.digest();
 
@@ -389,15 +360,15 @@ public class DigestAuthenticator extends LoginAuthenticator
                 // ) > <">
 
                 md.update(TypeUtil.toString(ha1, 16).getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(nonce.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(nc.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(cnonce.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(qop.getBytes(StandardCharsets.ISO_8859_1));
-                md.update((byte) ':');
+                md.update((byte)':');
                 md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
                 byte[] digest = md.digest();
 
