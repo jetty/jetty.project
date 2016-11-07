@@ -1001,6 +1001,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        asyncContext.complete();
                     }
 
                     @Override
