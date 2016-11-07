@@ -360,13 +360,18 @@ public class ProxyServletTest
                     resp.addHeader(PROXIED_HEADER, "true");
                 InputStream input = req.getInputStream();
                 int index = 0;
+                
+                byte[] buffer = new byte[16*1024];
                 while (true)
                 {
-                    int value = input.read();
+                    int value = input.read(buffer);
                     if (value < 0)
                         break;
-                    Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, value);
-                    ++index;
+                    for (int i=0;i<value;i++)
+                    {
+                        Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, buffer[i] & 0xFF);
+                        ++index;
+                    }
                 }
             }
         });
