@@ -135,6 +135,14 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         test_Authentication(new DigestAuthentication(uri, realm, "digest", "digest"));
     }
 
+    @Test
+    public void test_DigestAnyRealm() throws Exception
+    {
+        startDigest(new EmptyServerHandler());
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        test_Authentication(new DigestAuthentication(uri, Authentication.ANY_REALM, "digest", "digest"));
+    }
+
     private void test_Authentication(Authentication authentication) throws Exception
     {
         AuthenticationStore authenticationStore = client.getAuthenticationStore();

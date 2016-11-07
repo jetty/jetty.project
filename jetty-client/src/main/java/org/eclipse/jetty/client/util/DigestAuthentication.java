@@ -99,7 +99,10 @@ public class DigestAuthentication extends AbstractAuthentication
                 clientQOP = "auth-int";
         }
 
-        return new DigestResult(headerInfo.getHeader(), response.getContent(), getRealm(), user, password, algorithm, nonce, clientQOP, opaque);
+        String realm = getRealm();
+        if (ANY_REALM.equals(realm))
+            realm = headerInfo.getRealm();
+        return new DigestResult(headerInfo.getHeader(), response.getContent(), realm, user, password, algorithm, nonce, clientQOP, opaque);
     }
 
     private Map<String, String> parseParameters(String wwwAuthenticate)
