@@ -26,22 +26,22 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
 /** 
- * RolloverFileOutputStream
- * 
+ * RolloverFileOutputStream.
+ *
+ * <p>
  * This output stream puts content in a file that is rolled over every 24 hours.
  * The filename must include the string "yyyy_mm_dd", which is replaced with the 
  * actual date when creating and rolling over the file.
- * 
+ * </p>
+ * <p>
  * Old files are retained for a number of days before being deleted.
- * 
- * 
+ * </p>
  */
 public class RolloverFileOutputStream extends FilterOutputStream
 {
@@ -53,6 +53,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
     private RollTask _rollTask;
+    private Calendar midnight;
     private SimpleDateFormat _fileBackupFormat;
     private SimpleDateFormat _fileDateFormat;
 
@@ -172,18 +173,26 @@ public class RolloverFileOutputStream extends FilterOutputStream
             
             _rollTask=new RollTask();
 
-             Calendar now = Calendar.getInstance();
-             now.setTimeZone(zone);
-
-             GregorianCalendar midnight =
-                 new GregorianCalendar(now.get(Calendar.YEAR),
-                         now.get(Calendar.MONTH),
-                         now.get(Calendar.DAY_OF_MONTH),
-                         23,0);
-             midnight.setTimeZone(zone);
-             midnight.add(Calendar.HOUR,1);
-             __rollover.scheduleAtFixedRate(_rollTask,midnight.getTime(),1000L*60*60*24);
+            midnight = Calendar.getInstance();
+            midnight.setTimeZone(zone);
+            // set to midnight
+            midnight.set(Calendar.HOUR, 0);
+            midnight.set(Calendar.MINUTE, 0);
+            midnight.set(Calendar.SECOND, 0);
+            midnight.set(Calendar.MILLISECOND, 0);
+            
+            scheduleNextRollover();
         }
+    }
+    
+    private void scheduleNextRollover()
+    {
+        // Increment to next day.
+        // Using Calendar.add(DAY, 1) takes in account Daylights Savings
+        // differences, and still maintains the "midnight" settings for
+        // Hour, Minute, Second, Milliseconds
+        midnight.add(Calendar.DAY_OF_MONTH, 1);
+        __rollover.schedule(_rollTask,midnight.getTime());
     }
 
     /* ------------------------------------------------------------ */
@@ -254,7 +263,9 @@ public class RolloverFileOutputStream extends FilterOutputStream
     {
         if (_retainDays>0)
         {
-            long now = System.currentTimeMillis();
+            Calendar now = Calendar.getInstance();
+            now.add(Calendar.DAY_OF_MONTH, (-1)*_retainDays);
+            long expired = now.getTimeInMillis();
             
             File file= new File(_filename);
             File dir = new File(file.getParent());
@@ -272,9 +283,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
                 if(fn.startsWith(prefix)&&fn.indexOf(suffix,prefix.length())>=0)
                 {        
                     File f = new File(dir,fn);
-                    long date = f.lastModified();
-                    if ( ((now-date)/(1000*60*60*24))>_retainDays)
-                        f.delete();   
+                    if(f.lastModified() < expired)
+                    {
+                        f.delete();
+                    }
                 }
             }
         }
@@ -297,8 +309,6 @@ public class RolloverFileOutputStream extends FilterOutputStream
      }
     
     /* ------------------------------------------------------------ */
-    /** 
-     */
     @Override
     public void close()
         throws IOException
@@ -317,8 +327,6 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
     
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private class RollTask extends TimerTask
     {
         @Override
@@ -327,13 +335,13 @@ public class RolloverFileOutputStream extends FilterOutputStream
             try
             {
                 RolloverFileOutputStream.this.setFile();
+                RolloverFileOutputStream.this.scheduleNextRollover();
                 RolloverFileOutputStream.this.removeOldFiles();
-
             }
             catch(IOException e)
             {
                 // Cannot log this exception to a LOG, as RolloverFOS can be used by logging
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
     }
