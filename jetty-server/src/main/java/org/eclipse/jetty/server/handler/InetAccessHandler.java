@@ -107,7 +107,7 @@ public class InetAccessHandler extends HandlerWrapper
             if (endp != null)
             {
                 InetSocketAddress address = endp.getRemoteAddress();
-                if (address != null && !isAllowed(address.getAddress()))
+                if (address != null && !isAllowed(address.getAddress(), request))
                 {
                     response.sendError(HttpStatus.FORBIDDEN_403);
                     baseRequest.setHandled(true);
@@ -120,11 +120,21 @@ public class InetAccessHandler extends HandlerWrapper
     }
 
     /**
-     * Check sif specified address is allowed by current IPAccess rules.
+     * Checks if specified address and request are allowed by current InetAddress rules.
      *
      * @param address the inetAddress to check
-     * @return true if inetAddress is allowed
+     * @param request the request to check
+     * @return true if inetAddress and request are allowed
      */
+    protected boolean isAllowed(InetAddress address, HttpServletRequest request)
+    {
+        return isAllowed(address);
+    }
+
+    /**
+     * @deprecated use {@link #isAllowed(InetAddress, HttpServletRequest)} instead
+     */
+    @Deprecated
     protected boolean isAllowed(InetAddress address)
     {
         boolean allowed = _set.test(address);
