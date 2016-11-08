@@ -478,16 +478,7 @@ public class ServletHandler extends ScopedHandler
             old_scope=baseRequest.getUserIdentityScope();
             baseRequest.setUserIdentityScope(servlet_holder);
 
-            // start manual inline of nextScope(target,baseRequest,request,response);
-            if (never())
-                nextScope(target,baseRequest,request,response);
-            else if (_nextScope!=null)
-                _nextScope.doScope(target,baseRequest,request, response);
-            else if (_outerScope!=null)
-                _outerScope.doHandle(target,baseRequest,request, response);
-            else
-                doHandle(target,baseRequest,request, response);
-            // end manual inline (pathentic attempt to reduce stack depth)
+            nextScope(target,baseRequest,request,response);
         }
         finally
         {

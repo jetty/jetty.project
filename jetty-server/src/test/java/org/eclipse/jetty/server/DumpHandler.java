@@ -38,15 +38,11 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /** Dump request handler.
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
- *
- * @version $Id: DumpHandler.java,v 1.14 2005/08/13 00:01:26 gregwilkins Exp $
- *
  */
-public class DumpHandler extends AbstractHandler
+public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
 {
     private static final Logger LOG = Log.getLogger(DumpHandler.class);
 
@@ -61,12 +57,8 @@ public class DumpHandler extends AbstractHandler
         this.label=label;
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted())
             return;

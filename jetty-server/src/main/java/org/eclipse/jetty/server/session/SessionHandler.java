@@ -1581,14 +1581,7 @@ public class SessionHandler extends ScopedHandler
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // start manual inline of nextHandle(target,baseRequest,request,response);
-        if (never())
-            nextHandle(target,baseRequest,request,response);
-        else if (_nextScope != null && _nextScope == _handler)
-            _nextScope.doHandle(target,baseRequest,request,response);
-        else if (_handler != null)
-            _handler.handle(target,baseRequest,request,response);
-        // end manual inline
+        nextHandle(target,baseRequest,request,response);
     }
 
     /* ------------------------------------------------------------ */

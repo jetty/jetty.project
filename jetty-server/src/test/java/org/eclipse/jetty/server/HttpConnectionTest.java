@@ -857,10 +857,10 @@ public class HttpConnectionTest
         final CountDownLatch checkError = new CountDownLatch(1);
         String response = null;
         server.stop();
-        server.setHandler(new DumpHandler()
+        server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(),MimeTypes.Type.TEXT_HTML.toString());
