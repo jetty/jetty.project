@@ -109,6 +109,27 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.getFillInterest().fillable();
         }
     };
+    
+    Callback _nonBlockingReadCallback = new Callback.NonBlocking()
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(final Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("SSLC.NBReadCB@%x{%s}", SslConnection.this.hashCode(),SslConnection.this);
+        }
+    };
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
@@ -944,11 +965,20 @@ public class SslConnection extends AbstractConnection
                 getEndPoint().close();
             }
         }
-
+        
         private void ensureFillInterested()
         {
             if (!SslConnection.this.isFillInterested())
-                SslConnection.this.fillInterested();
+            {
+                if (getFillInterest().isCallbackNonBlocking())
+                {
+                    SslConnection.this.getEndPoint().fillInterested(_nonBlockingReadCallback);
+                }
+                else
+                {
+                    SslConnection.this.fillInterested();
+                }
+            }
         }
 
         @Override
