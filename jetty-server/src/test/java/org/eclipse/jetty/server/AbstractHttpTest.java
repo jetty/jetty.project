@@ -128,7 +128,7 @@ public abstract class AbstractHttpTest
         }
     }
 
-    protected class ThrowExceptionOnDemandHandler extends AbstractHandler
+    protected class ThrowExceptionOnDemandHandler extends AbstractHandler.ErrorDispatchHandler
     {
         private final boolean throwException;
         private volatile Throwable failure;
@@ -138,14 +138,8 @@ public abstract class AbstractHttpTest
             this.throwException = throwException;
         }
 
-        @Override final 
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            super.handle(target,baseRequest,request,response);
-        }
-
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
                 throw new TestCommitException();

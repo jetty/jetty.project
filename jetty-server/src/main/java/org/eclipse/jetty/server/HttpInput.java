@@ -260,6 +260,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l;
         synchronized (_inputQ)
         {
+            // Setup blocking only if not async
             if (!isAsync())
             {
                 if (_blockUntil == 0)
@@ -270,6 +271,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 }
             }
 
+            // Caclulate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
             {
@@ -282,6 +284,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 }
             }
 
+            // Consume content looking for bytes to read
             while (true)
             {
                 Content item = nextContent();
@@ -297,9 +300,13 @@ public class HttpInput extends ServletInputStream implements Runnable
                     break;
                 }
 
+                // No content, so should we block?
                 if (!_state.blockForContent(this))
                 {
+                    // Not blocking, so what should we return?
                     l = _state.noContent();
+                    
+                    // If EOF do we need to wake for allDataRead callback?
                     if (l<0)
                         wake = _channelState.onReadEof();
                     break;
@@ -801,9 +808,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         synchronized (_inputQ)
         {
             listener = _listener;
-            if (_channelState.isAsyncComplete())
-                return;
-            
+
             if (_state == EOF)
                 return;
 
@@ -837,10 +842,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     }
                 }
                 else if (content==null)
-                {
-                    LOG.warn("spurious run!");
-                    return;
-                }
+                    throw new IllegalStateException();
             }
         }
 

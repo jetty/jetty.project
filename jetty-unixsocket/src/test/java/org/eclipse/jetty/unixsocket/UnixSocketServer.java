@@ -41,12 +41,11 @@ public class UnixSocketServer
         UnixSocketConnector connector = new UnixSocketConnector(server,proxy,http);
         server.addConnector(connector);
         
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
-
             @Override
-            protected void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                    throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);

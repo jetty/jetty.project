@@ -269,10 +269,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testExceptionThrownInHandler() throws Exception
     {
-        configureServer(new AbstractHandler()
+        configureServer(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 throw new QuietServletException("TEST handler exception");
             }
@@ -300,10 +300,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final AtomicBoolean earlyEOFException = new AtomicBoolean(false);
-        configureServer(new AbstractHandler()
+        configureServer(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 int contentLength = request.getContentLength();
