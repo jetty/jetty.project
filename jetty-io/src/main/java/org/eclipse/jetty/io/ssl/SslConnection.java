@@ -39,12 +39,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * A Connection that acts as an interceptor between an EndPoint providing SSL encrypted data
@@ -111,7 +111,7 @@ public class SslConnection extends AbstractConnection
         }
     };
     
-    Callback _nonBlockingReadCallback = new Callback.NonBlocking()
+    Callback _sslReadCallback = new Callback()
     {
         @Override
         public void succeeded()
@@ -123,6 +123,12 @@ public class SslConnection extends AbstractConnection
         public void failed(final Throwable x)
         {
             onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getDecryptedEndPoint().getFillInterest().getCallbackInvocationType();
         }
 
         @Override
@@ -983,14 +989,9 @@ public class SslConnection extends AbstractConnection
         {
             if (!SslConnection.this.isFillInterested())
             {
-                if (getFillInterest().isCallbackNonBlocking())
-                {
-                    SslConnection.this.getEndPoint().fillInterested(_nonBlockingReadCallback);
-                }
-                else
-                {
-                    SslConnection.this.fillInterested();
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("fillInterested SSL NB {}",SslConnection.this);
+                SslConnection.this.getEndPoint().fillInterested(_sslReadCallback);
             }
         }
 
