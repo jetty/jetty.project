@@ -44,14 +44,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * A Connection that acts as an interceptor between an EndPoint providing SSL encrypted data
  * and another consumer of an EndPoint (typically an {@link Connection} like HttpConnection) that
  * wants unencrypted data.
  * <p>
- * The connector uses an {@link EndPoint} (typically {@link SelectChannelEndPoint}) as
+ * The connector uses an {@link EndPoint} (typically SocketChannelEndPoint) as
  * it's source/sink of encrypted data.   It then provides an endpoint via {@link #getDecryptedEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  * <p>
