@@ -47,8 +47,6 @@ The Google deployment tools will automatically configure the project and authent
 Regardless of whether you're running inside or outside google infrastructure you will need to upload a file that defines some indexes that are needed by the GCloud datastore session data store.
 This file is named `index.yaml` and you can find it in your distribution in `${jetty.base}/etc/sessions/gcloud/index.yaml`.
 
-//TODO - Add index.yaml properties? Test with new 9.4.x. It needs uploaded to Google as part of config
-
 Follow the instructions link:https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
 
 ===== Communicating with the GCloudDataStore Emulator
