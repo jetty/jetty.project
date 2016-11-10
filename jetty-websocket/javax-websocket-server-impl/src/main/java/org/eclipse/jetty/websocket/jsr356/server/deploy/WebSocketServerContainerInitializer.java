@@ -66,23 +66,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     }
 
     /**
-     * Servlet 3.1 approach.
-     * <p>
-     * This will use Servlet 3.1 techniques on the {@link ServletContext} to add a filter at the start of the filter chain.
+     * @deprecated use {@link #configureContext(ServletContextHandler)} instead
      */
+    @Deprecated
     public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {
-        // Create Filter
-        WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
-
-        // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),jettyContext.getServer().getThreadPool());
-        jettyContext.addBean(jettyContainer);
-
-        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
-        context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
-        return jettyContainer;
+        return configureContext(jettyContext);
     }
     
     private boolean isEnabled(Set<Class<?>> c, ServletContext context)
@@ -159,7 +148,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             Thread.currentThread().setContextClassLoader(context.getClassLoader());
 
             // Create the Jetty ServerContainer implementation
-            ServerContainer jettyContainer = configureContext(context,jettyContext);
+            ServerContainer jettyContainer = configureContext(jettyContext);
 
             // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
             context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);

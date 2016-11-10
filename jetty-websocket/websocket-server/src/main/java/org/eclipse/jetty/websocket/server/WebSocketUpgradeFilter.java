@@ -25,7 +25,6 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -35,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -66,6 +66,19 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         {
             return filter;
         }
+    
+        // Use WEB-INF/web.xml instantiated version, if present
+        FilterHolder filters[] = context.getServletHandler().getFilters();
+        for (FilterHolder registeredFilter: filters)
+        {
+            if (WebSocketUpgradeFilter.class.isAssignableFrom(registeredFilter.getClass()))
+            {
+                WebSocketUpgradeFilter wsuf = (WebSocketUpgradeFilter) registeredFilter.getFilter();
+                // need async supported
+                context.setAttribute(WebSocketUpgradeFilter.class.getName(), wsuf);
+                return wsuf;
+            }
+        }
         
         // Dynamically add filter
         filter = new WebSocketUpgradeFilter();
@@ -88,37 +101,26 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         return filter;
     }
-
+    
+    /**
+     * @deprecated use {@link #configureContext(ServletContextHandler)} instead
+     */
+    @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContext context) throws ServletException
     {
-        // Prevent double configure
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        if (filter != null)
+        ContextHandler handler = ContextHandler.getContextHandler(context);
+    
+        if (handler == null)
         {
-            return filter;
+            throw new ServletException("Not running on Jetty, WebSocket support unavailable");
+        }
+    
+        if (!(handler instanceof ServletContextHandler))
+        {
+            throw new ServletException("Not running in Jetty ServletContextHandler, WebSocket support via " + WebSocketUpgradeFilter.class.getName() + " unavailable");
         }
         
-        // Dynamically add filter
-        filter = new WebSocketUpgradeFilter();
-        filter.setToAttribute(context, WebSocketUpgradeFilter.class.getName());
-
-        String name = "Jetty_Dynamic_WebSocketUpgradeFilter";
-        String pathSpec = "/*";
-        EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
-        boolean isMatchAfter = false;
-        String urlPatterns[] = { pathSpec };
-
-        FilterRegistration.Dynamic dyn = context.addFilter(name,filter);
-        dyn.setAsyncSupported(true);
-        dyn.setInitParameter(CONTEXT_ATTRIBUTE_KEY,WebSocketUpgradeFilter.class.getName());
-        dyn.addMappingForUrlPatterns(dispatcherTypes,isMatchAfter,urlPatterns);
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Adding [{}] {} mapped to {} to {}",name,filter,pathSpec,context);
-        }
-
-        return filter;
+        return configureContext((ServletContextHandler) handler);
     }
 
     private final WebSocketServerFactory factory;
@@ -140,6 +142,9 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
+        // TODO: ideally should throw warning/error if attempting to map to something
+        // not covered by the filter pathSpec/url-patterns.  But how do we get the filter mappings
+        // in a sane way?  and then apply them to the PathSpec object properly?
         pathmap.put(spec,creator);
     }
 
