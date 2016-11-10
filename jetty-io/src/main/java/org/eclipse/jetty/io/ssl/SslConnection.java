@@ -39,7 +39,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -51,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
  * and another consumer of an EndPoint (typically an {@link Connection} like HttpConnection) that
  * wants unencrypted data.
  * <p>
- * The connector uses an {@link EndPoint} (typically {@link SelectChannelEndPoint}) as
+ * The connector uses an {@link EndPoint} (typically SocketChannelEndPoint) as
  * it's source/sink of encrypted data.   It then provides an endpoint via {@link #getDecryptedEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  * <p>
@@ -108,6 +107,33 @@ public class SslConnection extends AbstractConnection
         public void run()
         {
             _decryptedEndPoint.getFillInterest().fillable();
+        }
+    };
+    
+    Callback _sslReadCallback = new Callback()
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(final Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getDecryptedEndPoint().getFillInterest().getCallbackInvocationType();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("SSLC.NBReadCB@%x{%s}", SslConnection.this.hashCode(),SslConnection.this);
         }
     };
 
@@ -957,11 +983,15 @@ public class SslConnection extends AbstractConnection
                 getEndPoint().close();
             }
         }
-
+        
         private void ensureFillInterested()
         {
             if (!SslConnection.this.isFillInterested())
-                SslConnection.this.fillInterested();
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("fillInterested SSL NB {}",SslConnection.this);
+                SslConnection.this.getEndPoint().fillInterested(_sslReadCallback);
+            }
         }
 
         @Override

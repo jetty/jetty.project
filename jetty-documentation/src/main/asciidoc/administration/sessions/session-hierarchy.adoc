@@ -46,7 +46,7 @@ There is only one (1) `SessionDataStore` per `SessionCache`.
 // Null cache, memcache, non-sticky load-balancer
 // in-memory caching
 
-Visually the Session Hierarchy can be represented like this:
+Visually the session architecture can be represented like this:
 
 image::images/SessionsHierarchy.png[]
 

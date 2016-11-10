@@ -331,7 +331,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      * @param time Time to wait
      * @param unit Units for time to wait
      * @return The buffer of output
-     * @throws InterruptedException
+     * @throws InterruptedException if interrupted
      */
     public ByteBuffer waitForOutput(long time,TimeUnit unit) throws InterruptedException
     {

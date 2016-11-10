@@ -1602,7 +1602,6 @@ public class SslContextFactory extends AbstractLifeCycle
      * <p>
      * This is based on the information on effective key lengths in RFC 2246 - The TLS Protocol
      * Version 1.0, Appendix C. CipherSuite definitions:
-     * <p>
      * <pre>
      *                         Effective
      *     Cipher       Type    Key Bits
