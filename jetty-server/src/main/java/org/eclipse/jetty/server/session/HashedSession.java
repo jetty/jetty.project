@@ -52,6 +52,12 @@ public class HashedSession extends MemSession
     private transient boolean _saveFailed = false;
     
     /**
+    * Last time session was saved to prevent periodic saves to sessions
+    * that have not changed
+    */
+    private transient long _lastSaved = 0;
+    
+    /**
      * True if an attempt has been made to de-idle a session and it failed. Once
      * true, the session will not be attempted to be de-idled again.
      */
@@ -145,7 +151,7 @@ public class HashedSession extends MemSession
     throws Exception
     {   
         File file = null;
-        if (!_saveFailed && _hashSessionManager._storeDir != null)
+        if (!_saveFailed && _hashSessionManager._storeDir != null && _lastSaved < getAccessed())
         {
             file = new File(_hashSessionManager._storeDir, super.getId());
             if (file.exists())
@@ -155,6 +161,7 @@ public class HashedSession extends MemSession
 
             try(FileOutputStream fos = new FileOutputStream(file,false))
             {
+                _lastSaved = System.currentTimeMillis();
                 save(fos);
             }
             catch (Exception e)
