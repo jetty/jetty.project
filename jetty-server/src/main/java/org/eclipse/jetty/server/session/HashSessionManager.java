@@ -612,9 +612,9 @@ public class HashSessionManager extends AbstractSessionManager
                     __log.debug(error);
                 }
             }
-            else
+            else if (_savePeriodMs == 0)
             {
-                // delete successfully restored file
+                // delete successfully restored file if not saving periodically
                 file.delete();
             }
         }
