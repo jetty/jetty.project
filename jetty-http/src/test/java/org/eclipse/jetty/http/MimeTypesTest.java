@@ -92,8 +92,8 @@ public class MimeTypesTest
         assertEquals(null,MimeTypes.getCharsetFromContentType("foo/bar"));
         assertEquals("utf-8",MimeTypes.getCharsetFromContentType("foo/bar;charset=uTf8"));
         assertEquals("utf-8",MimeTypes.getCharsetFromContentType("foo/bar;other=\"charset=abc\";charset=uTf8"));
+        assertEquals("utf-8",MimeTypes.getCharsetFromContentType("application/pdf;;; charset=UTF-8"));
         assertEquals("utf-8",MimeTypes.getCharsetFromContentType("text/html;charset=utf-8"));
-
     }
 
     @Test
