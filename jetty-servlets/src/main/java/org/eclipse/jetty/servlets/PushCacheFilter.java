@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.PushBuilder;
@@ -114,17 +115,20 @@ public class PushCacheFilter implements Filter
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
-        if (HttpVersion.fromString(req.getProtocol()).getVersion() < 20)
+        HttpServletRequest request = (HttpServletRequest)req;
+
+        if (HttpVersion.fromString(req.getProtocol()).getVersion() < 20 ||
+                !HttpMethod.GET.is(request.getMethod()))
         {
             chain.doFilter(req, resp);
             return;
         }
 
         long now = System.nanoTime();
-        HttpServletRequest request = (HttpServletRequest)req;
 
         // Iterating over fields is more efficient than multiple gets
-        HttpFields fields = Request.getBaseRequest(request).getHttpFields();
+        Request jettyRequest = Request.getBaseRequest(request);
+        HttpFields fields = jettyRequest.getHttpFields();
         boolean conditional = false;
         String referrer = null;
         loop:
@@ -173,7 +177,7 @@ public class PushCacheFilter implements Filter
 
             if (referredFromHere)
             {
-                if ("GET".equalsIgnoreCase(request.getMethod()))
+                if (HttpMethod.GET.is(request.getMethod()))
                 {
                     String referrerPath = referrerURI.getPath();
                     if (referrerPath == null)
@@ -254,7 +258,7 @@ public class PushCacheFilter implements Filter
         // Push associated resources.
         if (!isPushRequest(request) && !conditional && !primaryResource._associated.isEmpty())
         {
-            PushBuilder pushBuilder = Request.getBaseRequest(request).getPushBuilder();
+            PushBuilder pushBuilder = jettyRequest.getPushBuilder();
 
             // Breadth-first push of associated resources.
             Queue<PrimaryResource> queue = new ArrayDeque<>();
