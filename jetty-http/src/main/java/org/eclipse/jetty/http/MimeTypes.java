@@ -21,7 +21,6 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -30,14 +29,11 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.MissingResourceException;
 import java.util.Properties;
-import java.util.ResourceBundle;
 import java.util.Set;
 
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
@@ -399,6 +395,12 @@ public class MimeTypes
                     quote=false;
                 continue;
             }
+            
+            if(';'==b && state<=8)
+            {
+                state = 1;
+                continue;
+            }
 
             switch(state)
             {
@@ -408,8 +410,6 @@ public class MimeTypes
                         quote=true;
                         break;
                     }
-                    if (';'==b)
-                        state=1;
                     break;
 
                 case 1: if ('c'==b) state=2; else if (' '!=b) state=0; break;
