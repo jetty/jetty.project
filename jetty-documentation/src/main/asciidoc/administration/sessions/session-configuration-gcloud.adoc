@@ -49,8 +49,6 @@ By default, indexes will not be used.
 In order to use them, you will need to manually upload a file that defines the indexes.
 This file is named `index.yaml` and you can find it in your distribution in `${jetty.base}/etc/sessions/gcloud/index.yaml`.
 
-//TODO - Add index.yaml properties? Test with new 9.4.x. It needs uploaded to Google as part of config
-
 Follow the instructions link:https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
 
 ===== Communicating with the GCloudDataStore Emulator
