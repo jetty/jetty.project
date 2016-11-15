@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.server.session.TestSessionHandler;
 
 import com.mongodb.DBCollection;
 import com.mongodb.Mongo;
@@ -74,7 +75,7 @@ public class MongoTestServer extends AbstractTestServer
 
     public SessionHandler newSessionHandler()
     {
-        SessionHandler handler = new SessionHandler();
+        SessionHandler handler = new TestSessionHandler();
         try
         {
             MongoSessionDataStore ds = new MongoSessionDataStore();

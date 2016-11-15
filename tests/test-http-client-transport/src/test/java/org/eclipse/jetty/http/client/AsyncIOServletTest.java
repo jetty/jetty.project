@@ -472,6 +472,112 @@ public class AsyncIOServletTest extends AbstractTest
     }
 
     @Test
+    public void testAsyncWriteLessThanContentLengthFlushed() throws Exception
+    {
+        CountDownLatch complete = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentLength(10);
+
+                AsyncContext async = request.startAsync();
+                ServletOutputStream out = response.getOutputStream();
+                AtomicInteger state = new AtomicInteger(0);
+                
+                out.setWriteListener(new WriteListener()
+                {
+                    @Override
+                    public void onWritePossible() throws IOException
+                    {
+                        while(true)
+                        {
+                            if (!out.isReady())
+                                return;
+                            
+                            switch(state.get())
+                            {
+                                case 0:
+                                    state.incrementAndGet();
+                                    WriteListener listener = this;
+                                    new Thread(()->
+                                    {
+                                        try
+                                        {
+                                            Thread.sleep(50);
+                                            listener.onWritePossible();
+                                        }
+                                        catch(Exception e)
+                                        {}
+                                    }).start();
+                                    return;
+                                
+                                case 1:
+                                    state.incrementAndGet();
+                                    out.flush();
+                                    break;
+                                    
+                                case 2:
+                                    state.incrementAndGet();
+                                    out.write("12345".getBytes());
+                                    break;
+                                    
+                                case 3:
+                                    async.complete();
+                                    complete.countDown();
+                                    return;
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                    }
+                });
+            }
+        });
+
+        AtomicBoolean failed = new AtomicBoolean(false);
+        CountDownLatch clientLatch = new CountDownLatch(3);
+        client.newRequest(newURI())
+                .path(servletPath)
+                .onResponseHeaders(response ->
+                {
+                    if (response.getStatus() == HttpStatus.OK_200)
+                        clientLatch.countDown();
+                })
+                .onResponseContent(new Response.ContentListener()
+                {                    
+                    @Override
+                    public void onContent(Response response, ByteBuffer content)
+                    {
+                        // System.err.println("Content: "+BufferUtil.toDetailString(content));
+                    }
+                })
+                .onResponseFailure(new Response.FailureListener()
+                {
+                    @Override
+                    public void onFailure(Response response, Throwable failure)
+                    {
+                        clientLatch.countDown();
+                    }
+                })
+                .send(result -> 
+                {
+                    failed.set(result.isFailed());
+                    clientLatch.countDown();
+                    clientLatch.countDown();
+                    clientLatch.countDown();
+                });
+
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(failed.get());
+    }
+
+    @Test
     public void testIsReadyAtEOF() throws Exception
     {
         String text = "TEST\n";
@@ -895,6 +1001,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        asyncContext.complete();
                     }
 
                     @Override
@@ -979,7 +1086,7 @@ public class AsyncIOServletTest extends AbstractTest
                         while (input.isReady() && !input.isFinished())
                         {
                             int read = input.read();
-                            System.err.printf("%x%n", read);
+                            // System.err.printf("%x%n", read);
                             readLatch.countDown();
                         }
                     }

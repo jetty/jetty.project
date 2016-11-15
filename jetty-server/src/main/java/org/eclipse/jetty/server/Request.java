@@ -83,7 +83,6 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
@@ -1057,7 +1056,7 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         if (metadata==null)
             return null;
-        HttpVersion version = metadata.getVersion();
+        HttpVersion version = metadata.getHttpVersion();
         if (version==null)
             return null;
         return version.toString();
@@ -1070,7 +1069,7 @@ public class Request implements HttpServletRequest
     public HttpVersion getHttpVersion()
     {
         MetaData.Request metadata = _metaData;
-        return metadata==null?null:metadata.getVersion();
+        return metadata==null?null:metadata.getHttpVersion();
     }
 
     /* ------------------------------------------------------------ */
@@ -1998,6 +1997,13 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         if (metadata!=null)
              metadata.setMethod(method);
+    }
+
+    public void setHttpVersion(HttpVersion version)
+    {
+        MetaData.Request metadata = _metaData;
+        if (metadata!=null)
+            metadata.setHttpVersion(version);
     }
 
     /* ------------------------------------------------------------ */

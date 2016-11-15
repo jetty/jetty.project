@@ -24,6 +24,7 @@ If you need a session manager that can work in a clustered scenario with multipl
 Jetty also offers more niche session managers that leverage backends such as MongoDB, Inifinispan, or even Google's Cloud Data Store.
 
 include::session-hierarchy.adoc[]
+include::sessions-details.adoc[]
 include::session-configuration-file-system.adoc[]
 include::session-configuration-jdbc.adoc[]
 include::session-configuration-mongodb.adoc[]

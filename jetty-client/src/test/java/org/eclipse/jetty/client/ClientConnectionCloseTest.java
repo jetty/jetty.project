@@ -19,26 +19,26 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,43 +51,16 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testClientConnectionCloseShutdownOutputWithoutRequestContent() throws Exception
+    public void test_ClientConnectionClose_ServerConnectionClose_ClientClosesAfterExchange() throws Exception
     {
-        testClientConnectionCloseShutdownOutput(null);
-    }
-
-    @Test
-    public void testClientConnectionCloseShutdownOutputWithRequestContent() throws Exception
-    {
-        testClientConnectionCloseShutdownOutput(new StringContentProvider("data", StandardCharsets.UTF_8));
-    }
-
-    @Test
-    public void testClientConnectionCloseShutdownOutputWithChunkedRequestContent() throws Exception
-    {
-        DeferredContentProvider content = new DeferredContentProvider()
-        {
-            @Override
-            public long getLength()
-            {
-                return -1;
-            }
-        };
-        content.offer(ByteBuffer.wrap("data".getBytes(StandardCharsets.UTF_8)));
-        content.close();
-        testClientConnectionCloseShutdownOutput(content);
-    }
-
-    private void testClientConnectionCloseShutdownOutput(ContentProvider content) throws Exception
-    {
-        AtomicReference<EndPoint> ref = new AtomicReference<>();
+        byte[] data = new byte[128 * 1024];
         start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                ref.set(baseRequest.getHttpChannel().getEndPoint());
+
                 ServletInputStream input = request.getInputStream();
                 while (true)
                 {
@@ -95,28 +68,190 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                     if (read < 0)
                         break;
                 }
-                response.setStatus(HttpStatus.OK_200);
+
+                response.setContentLength(data.length);
+                response.getOutputStream().write(data);
+
+                try
+                {
+                    // Delay the server from sending the TCP FIN.
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        String host = "localhost";
+        int port = connector.getLocalPort();
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+
+        ContentResponse response = client.newRequest(host, port)
                 .scheme(scheme)
-                .path("/ctx/path")
                 .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-                .content(content)
+                .content(new StringContentProvider("0"))
+                .onRequestSuccess(request ->
+                {
+                    HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
+                    Assert.assertFalse(connection.getEndPoint().isOutputShutdown());
+                })
                 .send();
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertArrayEquals(data, response.getContent());
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+    }
 
-        // Wait for the FIN to arrive to the server
-        Thread.sleep(1000);
+    @Test
+    public void test_ClientConnectionClose_ServerDoesNotRespond_ClientIdleTimeout() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                request.startAsync();
+                // Do not respond.
+            }
+        });
 
-        // Do not read from the server because it will trigger
-        // the send of the TLS Close Message before the response.
+        String host = "localhost";
+        int port = connector.getLocalPort();
 
-        EndPoint serverEndPoint = ref.get();
-        ByteBuffer buffer = BufferUtil.allocate(1);
-        int read = serverEndPoint.fill(buffer);
-        Assert.assertEquals(-1, read);
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        long idleTimeout = 1000;
+        client.newRequest(host, port)
+                .scheme(scheme)
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .onRequestSuccess(request ->
+                {
+                    HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
+                    Assert.assertFalse(connection.getEndPoint().isOutputShutdown());
+                })
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        resultLatch.countDown();
+                });
+
+        Assert.assertTrue(resultLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+    }
+
+    @Test
+    public void test_ClientConnectionClose_ServerPartialResponse_ClientIdleTimeout() throws Exception
+    {
+        long idleTimeout = 1000;
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+
+                ServletInputStream input = request.getInputStream();
+                while (true)
+                {
+                    int read = input.read();
+                    if (read < 0)
+                        break;
+                }
+
+                response.getOutputStream().print("Hello");
+                response.flushBuffer();
+
+                try
+                {
+                    Thread.sleep(2 * idleTimeout);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.allocate(8));
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        client.newRequest(host, port)
+                .scheme(scheme)
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+                .content(content)
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .onRequestSuccess(request ->
+                {
+                    HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
+                    Assert.assertFalse(connection.getEndPoint().isOutputShutdown());
+                })
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        resultLatch.countDown();
+                });
+        content.offer(ByteBuffer.allocate(8));
+        content.close();
+
+        Assert.assertTrue(resultLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+    }
+
+    @Test
+    public void test_ClientConnectionClose_ServerNoConnectionClose_ClientCloses() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(0);
+                response.flushBuffer();
+
+                try
+                {
+                    // Delay the server from sending the TCP FIN.
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+
+        ContentResponse response = client.newRequest(host, port)
+                .scheme(scheme)
+                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+                .onRequestSuccess(request ->
+                {
+                    HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
+                    Assert.assertFalse(connection.getEndPoint().isOutputShutdown());
+                })
+                .onResponseHeaders(r -> r.getHeaders().remove(HttpHeader.CONNECTION))
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
     }
 }

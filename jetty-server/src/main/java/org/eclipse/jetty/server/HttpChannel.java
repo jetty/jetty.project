@@ -402,10 +402,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         if (!_response.isCommitted() && !_request.isHandled())
                             _response.sendError(HttpStatus.NOT_FOUND_404);
+                        else if (!_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                            _transport.abort(new IOException("insufficient content written"));
                         _response.closeOutput();
                         _request.setHandled(true);
 
-                         _state.onComplete();
+                        _state.onComplete();
 
                         onCompleted();
 
@@ -557,7 +559,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (LOG.isDebugEnabled())
             LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}",request.getURIString(),this,System.lineSeparator(),
-                request.getMethod(),request.getURIString(),request.getVersion(),System.lineSeparator(),
+                request.getMethod(),request.getURIString(),request.getHttpVersion(),System.lineSeparator(),
                 request.getFields());
     }
 
@@ -703,7 +705,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committedMetaData=info;
         if (LOG.isDebugEnabled())
             LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}",getRequest().getRequestURI(),this,System.lineSeparator(),
-                info.getStatus(),info.getReason(),info.getVersion(),System.lineSeparator(),
+                info.getStatus(),info.getReason(),info.getHttpVersion(),System.lineSeparator(),
                 info.getFields());
     }
 

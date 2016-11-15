@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -38,18 +39,27 @@ import java.util.EnumSet;
 import java.util.Map;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
+import org.eclipse.jetty.util.ReadLineInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -63,6 +73,44 @@ public class MultipartFilterTest
     private File _dir;
     private ServletTester tester;
     FilterHolder multipartFilter;
+    
+    public static class ReadAllFilter implements Filter
+    {
+
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {   
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            ServletInputStream is = request.getInputStream();
+            ReadLineInputStream rlis = new ReadLineInputStream(request.getInputStream());
+            String line = "";
+            while (line != null)
+            {
+                line = rlis.readLine();
+            }
+          chain.doFilter(request, response);
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+    }
+    
+    
+    public static class NullServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setStatus(200);
+        }
+        
+    }
     
     public static class FilenameServlet extends TestServlet
     {
@@ -143,6 +191,70 @@ public class MultipartFilterTest
         tester.stop();
         tester=null;
     }
+    
+    @Test
+    public void testFinalBoundaryOnly() throws Exception
+    {
+        
+        tester.addServlet(NullServlet.class,"/null");       
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/null");
+        
+        String delimiter = "\r\n";
+        final String boundary = "MockMultiPartTestBoundary";
+        String content = 
+                delimiter +
+                "Hello world" +
+                delimiter +        // Two delimiter markers, which make an empty line.
+                delimiter +
+                "--" + boundary + "--" + delimiter;
+        
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setContent(content);
+        
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        }
+    } 
+    
+    @Test
+    public void testEmpty() throws Exception
+    {
+        
+        tester.addServlet(NullServlet.class,"/null");
+        
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/null");
+        
+        String delimiter = "\r\n";
+        final String boundary = "MockMultiPartTestBoundary";
+        String content = 
+                delimiter +
+                "--" + boundary + "--" + delimiter;
+        
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setContent(content);
+        
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        }
+    }
 
     @Test
     public void testBadPost() throws Exception
@@ -170,7 +282,7 @@ public class MultipartFilterTest
         request.setContent(content);
 
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class);)
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,response.getStatus());
@@ -623,13 +735,49 @@ public class MultipartFilterTest
         request.setURI("/context/dump");
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
             assertTrue(response.getContent().indexOf("Missing content")>=0);
         }
     }
+    
+    
+    @Test
+    public void testBodyAlreadyConsumed()
+    throws Exception
+    {
+        tester.addServlet(NullServlet.class,"/null");    
+        
+        FilterHolder holder = new FilterHolder();
+        holder.setName("reader");
+        holder.setFilter(new ReadAllFilter());
+        tester.getContext().getServletHandler().addFilter(holder);
+        FilterMapping mapping = new FilterMapping();
+        mapping.setFilterName("reader");
+        mapping.setPathSpec("/*");
+        tester.getContext().getServletHandler().prependFilterMapping(mapping);
+        String boundary="XyXyXy";
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+        
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/null");
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setContent("How now brown cow");
+
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        {
+            response = HttpTester.parseResponse(tester.getResponses(request.generate()));
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+        }
+    }
+
+
 
     @Test
     public void testWhitespaceBodyWithCRLF()
@@ -648,7 +796,7 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
         
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
@@ -674,7 +822,7 @@ public class MultipartFilterTest
         request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
         request.setContent(whitespace);
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
@@ -805,7 +953,7 @@ public class MultipartFilterTest
         }
         request.setContent(baos.toString());
 
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class, HttpChannel.class))
         {
             response = HttpTester.parseResponse(tester.getResponses(request.generate()));
             assertTrue(response.getContent().contains("Buffer size exceeded"));
@@ -892,9 +1040,6 @@ public class MultipartFilterTest
     public void testWithCharSet()
     throws Exception
     {
-        ((StdErrLog)Log.getLogger(MultiPartFilter.class)).setDebugEnabled(true);
-        ((StdErrLog)Log.getLogger(MultiPartInputStreamParser.class)).setDebugEnabled(true);
-        
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;

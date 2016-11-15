@@ -165,7 +165,6 @@ public class DispatcherTest
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
-            "Content-Length: 0\r\n"+
             "\r\n";
 
         String responses = _connector.getResponses("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
@@ -182,7 +181,6 @@ public class DispatcherTest
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
-            "Content-Length: 0\r\n"+
             "\r\n";
 
         String responses = _connector.getResponses("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.0\n\n");

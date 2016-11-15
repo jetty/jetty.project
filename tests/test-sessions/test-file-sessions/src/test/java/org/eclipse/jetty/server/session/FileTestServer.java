@@ -139,7 +139,7 @@ public class FileTestServer extends AbstractTestServer
 
     public SessionHandler newSessionHandler()
     {
-        SessionHandler handler =  new SessionHandler();
+        SessionHandler handler =  new TestSessionHandler();
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionCache(ss);
         FileSessionDataStore ds = new FileSessionDataStore();

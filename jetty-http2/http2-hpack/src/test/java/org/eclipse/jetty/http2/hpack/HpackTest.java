@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -37,6 +33,10 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class HpackTest
 {
@@ -187,7 +187,7 @@ public class HpackTest
     private void assertMetadataSame(MetaData expected, MetaData actual)
     {
         assertThat("Metadata.contentLength",actual.getContentLength(),is(expected.getContentLength()));
-        assertThat("Metadata.version" + ".version", actual.getVersion(), is(expected.getVersion()));
+        assertThat("Metadata.version" + ".version", actual.getHttpVersion(),is(expected.getHttpVersion()));
         assertHttpFieldsSame("Metadata.fields",expected.getFields(),actual.getFields());
     }
 

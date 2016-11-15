@@ -99,10 +99,10 @@ public class SniSslConnectionFactoryTest
                 new HttpConnectionFactory(_https_config));
         _server.addConnector(https);
 
-        _server.setHandler(new AbstractHandler()
+        _server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);

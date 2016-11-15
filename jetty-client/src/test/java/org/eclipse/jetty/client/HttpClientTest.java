@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -71,6 +73,7 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -1289,13 +1292,29 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
     {
-        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 1024);
+        try
+        {
+            testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 1024);
+        }
+        catch(ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+        }
     }
 
     @Test
     public void testBigContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
     {
-        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 128 * 1024);
+        try
+        {
+            testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 128 * 1024);
+        }
+        catch(ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+        }
     }
 
     @Test
@@ -1563,8 +1582,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testCopyRequest()
-            throws Exception
+    public void testCopyRequest() throws Exception
     {
         startClient();
 
@@ -1609,6 +1627,28 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertCopyRequest(client.newRequest("https://example.com")
                 .header("X-Custom-Header-1", "value")
                 .header("X-Custom-Header-2", "value"));
+    }
+
+    @Test
+    public void testHostWithHTTP10() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                Assert.assertThat(request.getHeader("Host"), Matchers.notNullValue());
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .version(HttpVersion.HTTP_1_0)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
     }
 
     private void assertCopyRequest(Request original)

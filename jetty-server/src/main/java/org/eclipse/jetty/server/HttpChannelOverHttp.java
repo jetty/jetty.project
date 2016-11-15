@@ -133,7 +133,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (_metadata.getVersion() == HttpVersion.HTTP_1_1)
+                    if (_metadata.getHttpVersion() == HttpVersion.HTTP_1_1)
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -263,7 +263,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         boolean persistent;
 
-        switch (_metadata.getVersion())
+        switch (_metadata.getHttpVersion())
         {
             case HTTP_0_9:
             {
@@ -347,7 +347,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
             default:
             {
-                throw new IllegalStateException("unsupported version " + _metadata.getVersion());
+                throw new IllegalStateException("unsupported version " + _metadata.getHttpVersion());
             }
         }
 

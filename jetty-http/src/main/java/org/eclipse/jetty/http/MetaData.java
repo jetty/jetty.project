@@ -58,9 +58,18 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
+     * @deprecated use {@link #getHttpVersion()} instead
+     */
+    @Deprecated
+    public HttpVersion getVersion()
+    {
+        return getHttpVersion();
+    }
+
+    /**
      * @return the HTTP version of this MetaData object
      */
-    public HttpVersion getVersion()
+    public HttpVersion getHttpVersion()
     {
         return _httpVersion;
     }
@@ -155,7 +164,7 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(Request request)
         {
-            this(request.getMethod(),new HttpURI(request.getURI()), request.getVersion(), new HttpFields(request.getFields()), request.getContentLength());
+            this(request.getMethod(),new HttpURI(request.getURI()), request.getHttpVersion(), new HttpFields(request.getFields()), request.getContentLength());
         }
 
         public void recycle()
@@ -216,8 +225,8 @@ public class MetaData implements Iterable<HttpField>
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{u=%s,%s,h=%d}",
-                    getMethod(), getURI(), getVersion(), fields == null ? -1 : fields.size());
+            return String.format("%s{u=%s,%s,h=%d,cl=%d}",
+                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
 
@@ -291,7 +300,7 @@ public class MetaData implements Iterable<HttpField>
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{s=%d,h=%d}", getVersion(), getStatus(), fields == null ? -1 : fields.size());
+            return String.format("%s{s=%d,h=%d,cl=%d}", getHttpVersion(), getStatus(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
 }

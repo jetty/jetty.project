@@ -608,7 +608,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             client.newRequest("localhost", connector.getLocalPort())
                     .scheme(scheme)
-                    .timeout(5, TimeUnit.SECONDS)
+                    .timeout(60, TimeUnit.SECONDS)
                     .send();
             Assert.fail();
         }

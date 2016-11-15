@@ -25,6 +25,7 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
+import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 
@@ -46,7 +47,7 @@ import org.eclipse.jetty.start.Utils;
  * <dd>optional type and classifier requirement</dd>
  * </dl>
  */
-public class MavenLocalRepoFileInitializer extends UriFileInitializer
+public class MavenLocalRepoFileInitializer extends FileInitializer
 {
     public static class Coordinates
     {
@@ -79,20 +80,22 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer
     }
 
     private Path localRepositoryDir;
+    private final boolean readonly;
 
     public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
-        this(baseHome,null);
+        this(baseHome,null,true);
     }
 
-    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir)
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly)
     {
-        super(baseHome);
+        super(baseHome,"maven");
         this.localRepositoryDir = localRepoDir;
+        this.readonly = readonly;
     }
 
     @Override
-    public boolean init(URI uri, Path file, String fileRef) throws IOException
+    public boolean create(URI uri, String location) throws IOException
     {
         Coordinates coords = getCoordinates(uri);
         if (coords == null)
@@ -101,26 +104,31 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer
             return false;
         }
 
-        if (isFilePresent(file, baseHome.getPath(fileRef)))
-        {
-            // All done
+        Path destination = getDestination(uri,location);
+        
+        if (isFilePresent(destination))
             return false;
-        }
 
+        
         // If using local repository
         if (this.localRepositoryDir != null)
         {
             // Grab copy from local repository (download if needed to local
             // repository)
             Path localRepoFile = getLocalRepoFile(coords);
-            StartLog.log("COPY ","%s to %s",localRepoFile,baseHome.toShortForm(file));
-            Files.copy(localRepoFile,file);
+            
+            if (localRepoFile!=null)
+            {
+                if (FS.ensureDirectoryExists(destination.getParent()))
+                    StartLog.log("MKDIR",_basehome.toShortForm(destination.getParent()));
+                StartLog.log("COPY ","%s to %s",localRepoFile,_basehome.toShortForm(destination));
+                Files.copy(localRepoFile,destination);
+                return true;
+            }
         }
-        else
-        {
-            // normal non-local repo version
-            download(coords.toCentralURI(),file);
-        }
+
+        // normal non-local repo version
+        download(coords.toCentralURI(),destination);
         return true;
     }
 
@@ -128,13 +136,16 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer
     {
         Path localFile = localRepositoryDir.resolve(coords.toPath());
         if (FS.canReadFile(localFile))
-        {
             return localFile;
-        }
 
         // Download, if needed
-        download(coords.toCentralURI(),localFile);
-        return localFile;
+        if (!readonly)
+        {
+            download(coords.toCentralURI(),localFile);
+            return localFile;
+        }
+        
+        return null;
     }
 
     public Coordinates getCoordinates(URI uri)

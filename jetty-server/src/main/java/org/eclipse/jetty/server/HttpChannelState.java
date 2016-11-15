@@ -299,7 +299,7 @@ public class HttpChannelState
                         {
                             listener.onStartAsync(event);
                         }
-                        catch(Exception e)
+                        catch(Throwable e)
                         {
                             // TODO Async Dispatch Error
                             LOG.warn(e);
@@ -853,7 +853,7 @@ public class HttpChannelState
                             {
                                 listener.onComplete(event);
                             }
-                            catch(Exception e)
+                            catch(Throwable e)
                             {
                                 LOG.warn(e+" while invoking onComplete listener " + listener);
                                 LOG.debug(e);
@@ -1005,6 +1005,14 @@ public class HttpChannelState
             if (_state==State.DISPATCHED)
                 return _async!=Async.NOT_ASYNC;
             return _async==Async.STARTED || _async==Async.EXPIRING;
+        }
+    }
+
+    public boolean isAsyncComplete()
+    {
+        try(Locker.Lock lock= _locker.lock())
+        {
+            return _async==Async.COMPLETE;
         }
     }
 
@@ -1168,6 +1176,31 @@ public class HttpChannelState
         }
         return woken;
     }
+    
+    /* ------------------------------------------------------------ */
+    /** Called to signal that a read has read -1.
+     * Will wake if the read was called while in ASYNC_WAIT state
+     * @return true if woken
+     */
+    public boolean onReadEof()
+    {
+        boolean woken=false;
+        try(Locker.Lock lock= _locker.lock())
+        {
+            if(DEBUG)
+                LOG.debug("onReadEof {}",toStringLocked());
+            
+            if (_state==State.ASYNC_WAIT)
+            {
+                _state=State.ASYNC_WOKEN;
+                _asyncReadUnready=true;
+                _asyncReadPossible=true;
+                woken=true;
+            }
+        }
+        return woken;
+    }
+
 
     public boolean isReadPossible()
     {

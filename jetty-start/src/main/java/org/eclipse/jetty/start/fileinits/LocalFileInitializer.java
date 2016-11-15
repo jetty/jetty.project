@@ -1,0 +1,87 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.start.fileinits;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.eclipse.jetty.start.BaseHome;
+import org.eclipse.jetty.start.FS;
+import org.eclipse.jetty.start.FileInitializer;
+import org.eclipse.jetty.start.StartLog;
+
+public class LocalFileInitializer extends FileInitializer
+{   
+    public LocalFileInitializer(BaseHome basehome)
+    {
+        super(basehome);
+    }
+
+    @Override
+    public boolean create(URI uri, String location) throws IOException
+    {
+        Path destination = getDestination(uri,location);
+        
+        if (destination == null)
+        {
+            StartLog.error("Bad file arg %s",uri);
+            return false;
+        }
+            
+        boolean isDir = location.endsWith("/");
+
+        if (FS.exists(destination))
+        {
+            // Validate existence
+            if (isDir)
+            {
+                if (!Files.isDirectory(destination))
+                {
+                    throw new IOException("Invalid: path should be a directory (but isn't): " + location);
+                }
+                if (!FS.canReadDirectory(destination))
+                {
+                    throw new IOException("Unable to read directory: " + location);
+                }
+            }
+            else
+            {
+                if (!FS.canReadFile(destination))
+                {
+                    throw new IOException("Unable to read file: " + location);
+                }
+            }
+
+            return false;
+        }
+
+        if (isDir)
+        {
+            // Create directory
+            boolean mkdir = FS.ensureDirectoryExists(destination);
+            if (mkdir)
+                StartLog.log("MKDIR",_basehome.toShortForm(destination));
+            return mkdir;
+        }
+        
+        throw new IOException("Unable to create "+_basehome.toShortForm(destination));
+    }
+}

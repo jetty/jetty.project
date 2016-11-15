@@ -163,8 +163,8 @@ public class StartArgs
     /** Should the server be run? */
     private boolean run = true;
 
-    /** Download related args */
-    private boolean download = false;
+    /** Files related args */
+    private boolean createFiles = false;
     private boolean licenseCheckRequired = false;
     private boolean testingMode = false;
 
@@ -620,24 +620,33 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
-    public Path getMavenLocalRepoDir()
+    public String getMavenLocalRepoDir()
     {
-        // Try property first
         String localRepo = getProperties().getString("maven.local.repo");
 
         if (Utils.isBlank(localRepo))
-        {
-            // Try jetty specific env variable
             localRepo = System.getenv("JETTY_MAVEN_LOCAL_REPO");
-        }
+
+        if (Utils.isBlank(localRepo))
+            localRepo = System.getenv("MAVEN_LOCAL_REPO");
+
+        return localRepo;
+    }
+    
+    public Path findMavenLocalRepoDir()
+    {
+        // Try property first
+        String localRepo = getMavenLocalRepoDir();
 
         if (Utils.isBlank(localRepo))
         {
             // Try generic env variable
-            localRepo = System.getenv("MAVEN_LOCAL_REPO");
+            String home = System.getenv("HOME");
+            Path home_m2_repository = new File(new File(home,".m2"),"repository").toPath();
+            if (Files.exists(home_m2_repository))
+                localRepo = home_m2_repository.toString();
         }
 
-        // TODO: load & use $HOME/.m2/settings.xml ?
         // TODO: possibly use Eclipse Aether to manage it ?
         // TODO: see https://bugs.eclipse.org/bugs/show_bug.cgi?id=449511
 
@@ -710,9 +719,9 @@ public class StartArgs
         return approveAllLicenses;
     }
 
-    public boolean isDownload()
+    public boolean isCreateFiles()
     {
-        return download;
+        return createFiles;
     }
 
     public boolean isDryRun()
@@ -859,14 +868,14 @@ public class StartArgs
         {
             addFile(null,Props.getValue(arg));
             run = false;
-            download = true;
+            createFiles = true;
             return;
         }
 
         if (arg.equals("--create-files"))
         {
             run = false;
-            download = true;
+            createFiles = true;
             licenseCheckRequired = true;
             return;
         }
@@ -959,7 +968,7 @@ public class StartArgs
         {
             createStartd=true;
             run = false;
-            download = true;
+            createFiles = true;
             licenseCheckRequired = true;
             return;
         }
@@ -970,7 +979,7 @@ public class StartArgs
             createStartd=true;
             startModules.addAll(Props.getValues(arg));
             run = false;
-            download = true;
+            createFiles = true;
             licenseCheckRequired = true;
             return;
         }
@@ -978,7 +987,7 @@ public class StartArgs
         {
             startModules.addAll(Props.getValues(arg));
             run = false;
-            download = true;
+            createFiles = true;
             licenseCheckRequired = true;
             return;
         }

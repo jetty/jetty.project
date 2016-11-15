@@ -35,6 +35,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.SessionTrackingMode;
 
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
@@ -1188,7 +1189,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         while (iter.hasNext())
         {
             String p = iter.next().toString(false, true);
-            p = normalizePattern(p);
+            p = ServletPathSpec.normalize(p);
             
             //check if there is already a mapping for this path
             ListIterator<ServletMapping> listItor = _servletMappings.listIterator();
@@ -1252,7 +1253,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         while (iter.hasNext())
         {
             String p = iter.next().toString(false, true);
-            p = normalizePattern(p);
+            p = ServletPathSpec.normalize(p);
             paths.add(p);
             context.getMetaData().setOrigin(filterName+".filter.mapping."+p, descriptor);
         }
@@ -1336,7 +1337,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             while (iter2.hasNext())
             {
                 String url = iter2.next().toString(false, true);
-                url = normalizePattern(url);
+                url = ServletPathSpec.normalize(url);
                 paths.add( url);
                 jpg.addUrlPattern(url);
             }
@@ -1476,7 +1477,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 while (iter2.hasNext())
                 {
                     String url = iter2.next().toString(false, true);
-                    url = normalizePattern(url);
+                    url = ServletPathSpec.normalize(url);
                     //remember origin so we can process ServletRegistration.Dynamic.setServletSecurityElement() correctly
                     context.getMetaData().setOrigin("constraint.url."+url, descriptor);
                     
@@ -1944,11 +1945,5 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         context.getServletHandler().addListener(h);
         return l;
 
-    }
-
-    public String normalizePattern(String p)
-    {
-        if (p != null && p.length() > 0 && !p.startsWith("/") && !p.startsWith("*")) return "/" + p;
-        return p;
     }
 }

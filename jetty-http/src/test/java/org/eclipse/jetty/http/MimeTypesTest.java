@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 
@@ -75,25 +77,34 @@ public class MimeTypesTest
         assertNotNull(prefix,contentType);
         assertEquals(prefix,expectedMimeType,contentType);
     }
+    
+    private void assertCharsetFromContentType(String contentType, String expectedCharset)
+    {
+        assertThat("getCharsetFromContentType(\"" + contentType + "\")",
+                MimeTypes.getCharsetFromContentType(contentType), is(expectedCharset));
+    }
 
     @Test
     public void testCharsetFromContentType()
     {
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;charset=abc;some=else"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;charset=abc"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar ; charset = abc"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar ; charset = abc ; some=else"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;other=param;charset=abc;some=else"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;other=param;charset=abc"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = abc"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = abc ; some=else"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = abc"));
-        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = \"abc\" ; some=else"));
-        assertEquals(null,MimeTypes.getCharsetFromContentType("foo/bar"));
-        assertEquals("utf-8",MimeTypes.getCharsetFromContentType("foo/bar;charset=uTf8"));
-        assertEquals("utf-8",MimeTypes.getCharsetFromContentType("foo/bar;other=\"charset=abc\";charset=uTf8"));
-        assertEquals("utf-8",MimeTypes.getCharsetFromContentType("text/html;charset=utf-8"));
-
+        assertCharsetFromContentType("foo/bar;charset=abc;some=else", "abc");
+        assertCharsetFromContentType("foo/bar;charset=abc", "abc");
+        assertCharsetFromContentType("foo/bar ; charset = abc", "abc");
+        assertCharsetFromContentType("foo/bar ; charset = abc ; some=else", "abc");
+        assertCharsetFromContentType("foo/bar;other=param;charset=abc;some=else", "abc");
+        assertCharsetFromContentType("foo/bar;other=param;charset=abc", "abc");
+        assertCharsetFromContentType("foo/bar other = param ; charset = abc", "abc");
+        assertCharsetFromContentType("foo/bar other = param ; charset = abc ; some=else", "abc");
+        assertCharsetFromContentType("foo/bar other = param ; charset = abc", "abc");
+        assertCharsetFromContentType("foo/bar other = param ; charset = \"abc\" ; some=else", "abc");
+        assertCharsetFromContentType("foo/bar", null);
+        assertCharsetFromContentType("foo/bar;charset=uTf8", "utf-8");
+        assertCharsetFromContentType("foo/bar;other=\"charset=abc\";charset=uTf8", "utf-8");
+        assertCharsetFromContentType("application/pdf; charset=UTF-8", "utf-8");
+        assertCharsetFromContentType("application/pdf;; charset=UTF-8", "utf-8");
+        assertCharsetFromContentType("application/pdf;;; charset=UTF-8", "utf-8");
+        assertCharsetFromContentType("application/pdf;;;; charset=UTF-8", "utf-8");
+        assertCharsetFromContentType("text/html;charset=utf-8", "utf-8");
     }
 
     @Test

@@ -27,6 +27,8 @@ import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
@@ -102,7 +104,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         //canonicalize the patterns
         ArrayList<String> urlPatternList = new ArrayList<String>();
         for (String p : urlPatterns)
-            urlPatternList.add(Util.normalizePattern(p));
+            urlPatternList.add(ServletPathSpec.normalize(p));
 
         String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
 

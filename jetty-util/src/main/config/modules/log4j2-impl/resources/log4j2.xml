@@ -11,7 +11,9 @@
 
   <Appenders>
     <Console name="console" target="SYSTEM_ERR">
-      <PatternLayout pattern="%m%n"/>
+      <PatternLayout>
+        <Pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n</Pattern>
+      </PatternLayout>
     </Console>
 
     <!--

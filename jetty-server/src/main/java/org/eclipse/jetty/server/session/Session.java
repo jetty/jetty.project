@@ -86,12 +86,12 @@ public class Session implements SessionHandler.SessionIf
     protected SessionHandler _handler; //the manager of the session
     protected String _extendedId; //the _id plus the worker name
     protected long _requests;
-    private boolean _idChanged; 
-    private boolean _newSession;
-    private State _state = State.VALID; //state of the session:valid,invalid or being invalidated
-    private Locker _lock = new Locker(); //sync lock
-    private boolean _resident = false;
-    private SessionInactivityTimeout _sessionInactivityTimer = null;
+    protected boolean _idChanged; 
+    protected boolean _newSession;
+    protected State _state = State.VALID; //state of the session:valid,invalid or being invalidated
+    protected Locker _lock = new Locker(); //sync lock
+    protected boolean _resident = false;
+    protected SessionInactivityTimeout _sessionInactivityTimer = null;
     
     
 
@@ -169,6 +169,7 @@ public class Session implements SessionHandler.SessionIf
         _handler = handler;
         _sessionData = data;
         _newSession = true;
+        _sessionData.setDirty(true);
         _requests = 1; //access will not be called on this new session, but we are obviously in a request
     }
     
@@ -232,8 +233,7 @@ public class Session implements SessionHandler.SessionIf
             long lastAccessed = _sessionData.getAccessed();
             _sessionData.setAccessed(time);
             _sessionData.setLastAccessed(lastAccessed);
-            int maxInterval=getMaxInactiveInterval();
-           _sessionData.setExpiry(maxInterval <= 0 ? 0 : (time + maxInterval*1000L));
+           _sessionData.calcAndSetExpiry(time);
             if (isExpiredAt(time))
             {
                 invalidate();
@@ -859,7 +859,7 @@ public class Session implements SessionHandler.SessionIf
             if (result)
             {
                 //tell id mgr to remove session from all other contexts
-                ((DefaultSessionIdManager)_handler.getSessionIdManager()).invalidateAll(_sessionData.getId());
+                _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
             }
         }
         catch (Exception e)

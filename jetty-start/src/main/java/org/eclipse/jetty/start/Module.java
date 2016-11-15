@@ -474,9 +474,9 @@ public class Module implements Comparable<Module>
     }
 
     /**
-     * @param source
-     * @param transitive
-     * @return True if the module was not previously enabled
+     * @param source String describing where the module was enabled from
+     * @param transitive True if the enable is transitive
+     * @return true if the module was not previously enabled
      */
     public boolean enable(String source,boolean transitive)
     {

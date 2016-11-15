@@ -30,9 +30,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpTransportOverFCGI implements HttpTransport
 {
+    private static final Logger LOG = Log.getLogger(HttpTransportOverFCGI.class);
     private final ServerGenerator generator;
     private final Flusher flusher;
     private final int request;
@@ -97,6 +100,8 @@ public class HttpTransportOverFCGI implements HttpTransport
 
     private void commit(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("commit {} {} l={}",this,info,lastContent);
         boolean shutdown = this.shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         if (head)
@@ -137,7 +142,10 @@ public class HttpTransportOverFCGI implements HttpTransport
     @Override
     public void abort(Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("abort {} {}",this,failure);
         aborted = true;
+        flusher.shutdown();
     }
 
     @Override

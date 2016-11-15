@@ -241,8 +241,8 @@ public class SessionHandler extends ScopedHandler
     protected final CounterStatistic _sessionsCreatedStats = new CounterStatistic();
     public Set<SessionTrackingMode> _sessionTrackingModes;
 
-    private boolean _usingURLs;
-    private boolean _usingCookies=true;
+    protected boolean _usingURLs;
+    protected boolean _usingCookies=true;
     
     protected ConcurrentHashSet<String> _candidateSessionIdsForExpiry = new ConcurrentHashSet<String>();
 
@@ -1317,9 +1317,13 @@ public class SessionHandler extends ScopedHandler
             //session ids that need to be expired. This is an efficiency measure: as
             //the expiration involves the SessionDataStore doing a delete, it is 
             //most efficient if it can be done as a bulk operation to eg reduce
-            //roundtrips to the persistent store.
-            _candidateSessionIdsForExpiry.add(session.getId());
-            if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+            //roundtrips to the persistent store. Only do this if the HouseKeeper that
+            //does the scavenging is configured to actually scavenge
+            if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+            {
+                _candidateSessionIdsForExpiry.add(session.getId());
+                if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+            }
         }
         else 
             _sessionCache.checkInactiveSession(session); //if inactivity eviction is enabled the session will be deleted from the cache
@@ -1577,14 +1581,7 @@ public class SessionHandler extends ScopedHandler
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // start manual inline of nextHandle(target,baseRequest,request,response);
-        if (never())
-            nextHandle(target,baseRequest,request,response);
-        else if (_nextScope != null && _nextScope == _handler)
-            _nextScope.doHandle(target,baseRequest,request,response);
-        else if (_handler != null)
-            _handler.handle(target,baseRequest,request,response);
-        // end manual inline
+        nextHandle(target,baseRequest,request,response);
     }
 
     /* ------------------------------------------------------------ */

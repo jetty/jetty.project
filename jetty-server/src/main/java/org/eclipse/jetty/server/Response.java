@@ -21,12 +21,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -253,10 +250,7 @@ public class Response implements HttpServletResponse
         quoteOnlyOrAppend(buf,name,quote_name);
 
         buf.append('=');
-
-        // Remember name= part to look for other matching set-cookie
-        String name_equals=buf.toString();
-
+       
         // Append the value
         boolean quote_value=isQuoteNeededForCookie(value);
         quoteOnlyOrAppend(buf,value,quote_value);
@@ -879,13 +873,13 @@ public class Response implements HttpServletResponse
         if (isCommitted() || isIncluding())
             return;
 
-        _contentLength = len;
-        if (_contentLength > 0)
+        if (len>0)
         {
             long written = _out.getWritten();
             if (written > len)
                 throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
+            _contentLength = len;
             _fields.putLongField(HttpHeader.CONTENT_LENGTH, len);
             if (isAllContentWritten(written))
             {
@@ -899,15 +893,19 @@ public class Response implements HttpServletResponse
                 }
             }
         }
-        else if (_contentLength==0)
+        else if (len==0)
         {
             long written = _out.getWritten();
             if (written > 0)
                 throw new IllegalArgumentException("setContentLength(0) when already written " + written);
+            _contentLength = len;
             _fields.put(HttpHeader.CONTENT_LENGTH, "0");
         }
         else
+        {
+            _contentLength = len;
             _fields.remove(HttpHeader.CONTENT_LENGTH);
+        }
     }
 
     public long getContentLength()
@@ -918,6 +916,11 @@ public class Response implements HttpServletResponse
     public boolean isAllContentWritten(long written)
     {
         return (_contentLength >= 0 && written >= _contentLength);
+    }
+    
+    public boolean isContentComplete(long written)
+    {
+        return (_contentLength < 0 || written >= _contentLength);
     }
 
     public void closeOutput() throws IOException
@@ -1094,15 +1097,14 @@ public class Response implements HttpServletResponse
                 _fields.put(_mimeType.getContentTypeField());
             }
         }
-
     }
 
     @Override
     public void setBufferSize(int size)
     {
         if (isCommitted() || getContentCount() > 0)
-            throw new IllegalStateException("cannot set buffer size on committed response");
-        if (size <= 0)
+            throw new IllegalStateException("cannot set buffer size when response is committed or written to");
+        if (size < __MIN_BUFFER_SIZE)
             size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
     }

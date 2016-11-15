@@ -34,7 +34,7 @@ public class HashTestServer extends AbstractTestServer
 
     public SessionHandler newSessionHandler()
     {
-        SessionHandler handler = new SessionHandler();
+        SessionHandler handler = new TestSessionHandler();
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionCache(ss);
         ss.setSessionDataStore(new NullSessionDataStore());

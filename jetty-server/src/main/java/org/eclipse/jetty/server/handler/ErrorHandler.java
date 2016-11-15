@@ -75,6 +75,12 @@ public class ErrorHandler extends AbstractHandler
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        doError(target,baseRequest,request,response);
+    }
+    
+    @Override
+    public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
         String method = request.getMethod();
         if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
         {

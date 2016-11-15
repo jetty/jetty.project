@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +32,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -83,10 +86,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(false); // not needed, but lets be explicit about what the test does
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -99,7 +102,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         SimpleHttpResponse response = executeRequest();
 
         assertThat("response code is 200", response.getCode(), is("200"));
-        assertHeader(response, "content-length", "0");
+        
+        if (HttpVersion.HTTP_1_1.asString().equals(httpVersion))
+            assertHeader(response, "content-length", "0");
     }
 
     @Test
@@ -121,10 +126,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -161,11 +166,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -206,12 +211,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foobar");
             response.flushBuffer();
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -249,11 +254,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.flushBuffer();
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -294,13 +299,13 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foo");
             response.flushBuffer();
             response.getWriter().write("bar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -369,12 +374,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setBufferSize(4);
             response.getWriter().write("foobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -386,13 +391,13 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setBufferSize(8);
             response.getWriter().write("fo");
             response.getWriter().write("obarfoobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
     
@@ -404,7 +409,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setBufferSize(8);
@@ -414,10 +419,54 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
             response.getWriter().write("fo");
             response.getWriter().write("ob");
             response.getWriter().write("ar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
+    @Test
+    public void testSetContentLengthFlushAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
+        server.start();
+        try
+        {
+            // TODO This test is compromised by the SimpleHttpResponse mechanism.
+            // Replace with a better client
+
+            SimpleHttpResponse response = executeRequest();
+            String failed_body = ""+(char)-1+(char)-1+(char)-1;
+            assertThat("response code is 200", response.getCode(), is("200"));
+            assertThat(response.getBody(), Matchers.endsWith(failed_body));
+            assertHeader(response, "content-length", "6");
+        }
+        catch(EOFException e)
+        {
+            // possible good response
+        }
+    }
+
+    @Test
+    public void testSetContentLengthAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(false));
+        server.start();
+
+        try
+        {
+            // TODO This test is compromised by the SimpleHttpResponse mechanism.
+            // Replace with a better client
+            SimpleHttpResponse response = executeRequest();
+            String failed_body = ""+(char)-1+(char)-1+(char)-1;
+            assertThat("response code is 200", response.getCode(), is("200"));
+            assertThat(response.getBody(), Matchers.endsWith(failed_body));
+            assertHeader(response, "content-length", "6");
+        }
+        catch(EOFException e)
+        {
+            // expected
+        }
+    }
+    
     @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytes() throws Exception
     {
@@ -444,6 +493,25 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response body is foo", response.getBody(), is("foo"));
     }
 
+    private class SetContentLengthAndWriteInsufficientBytesHandler extends AbstractHandler
+    {
+        boolean flush;
+        private SetContentLengthAndWriteInsufficientBytesHandler(boolean flush)
+        {
+            this.flush = flush;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentLength(6);
+            if (flush)
+                response.flushBuffer();
+            response.getWriter().write("foo");
+        }
+    }
+    
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
     {
         private SetContentLengthAndWriteThatAmountOfBytesHandler(boolean throwException)
@@ -452,12 +520,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setContentLength(3);
             response.getWriter().write("foo");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -495,13 +563,13 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setContentLength(3);
             // Only "foo" will get written and "bar" will be discarded
             response.getWriter().write("foobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -539,12 +607,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foo");
             response.setContentLength(3);
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -582,12 +650,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foobar");
             response.setContentLength(3);
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 }
