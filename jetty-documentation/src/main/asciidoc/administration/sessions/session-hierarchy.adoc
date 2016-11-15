@@ -42,10 +42,6 @@ However, it is possible to provide your own implementation that never shares Ses
 Where the `SessionCache` handles Session information, Session data is stored in a `SessionDataStore` that is specific to the clustering technology being implemented.
 There is only one (1) `SessionDataStore` per `SessionCache`.
 
-//TODO : Information on memcache-d, when to use different config options. "Configuration Scenarios?"
-// Null cache, memcache, non-sticky load-balancer
-// in-memory caching
-
 Visually the session architecture can be represented like this:
 
 image::images/SessionsHierarchy.png[]
