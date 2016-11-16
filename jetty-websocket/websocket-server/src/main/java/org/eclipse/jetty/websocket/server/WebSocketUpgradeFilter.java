@@ -25,7 +25,6 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -59,11 +59,11 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 {
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
-
+    
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
         // Prevent double configure
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) context.getAttribute(WebSocketUpgradeFilter.class.getName());
         if (filter != null)
         {
             return filter;
@@ -72,77 +72,71 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         // Dynamically add filter
         filter = new WebSocketUpgradeFilter();
         filter.setToAttribute(context, WebSocketUpgradeFilter.class.getName());
-
+        
         String name = "Jetty_WebSocketUpgradeFilter";
         String pathSpec = "/*";
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
-
+        
         FilterHolder fholder = new FilterHolder(filter);
         fholder.setName(name);
         fholder.setAsyncSupported(true);
-        fholder.setInitParameter(CONTEXT_ATTRIBUTE_KEY,WebSocketUpgradeFilter.class.getName());
-        context.addFilter(fholder,pathSpec,dispatcherTypes);
-
+        fholder.setInitParameter(CONTEXT_ATTRIBUTE_KEY, WebSocketUpgradeFilter.class.getName());
+        context.addFilter(fholder, pathSpec, dispatcherTypes);
+        
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Adding [{}] {} mapped to {} to {}",name,filter,pathSpec,context);
-        }
-
-        return filter;
-    }
-
-    public static WebSocketUpgradeFilter configureContext(ServletContext context) throws ServletException
-    {
-        // Prevent double configure
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        if (filter != null)
-        {
-            return filter;
+            LOG.debug("Adding [{}] {} mapped to {} to {}", name, filter, pathSpec, context);
         }
         
-        // Dynamically add filter
-        filter = new WebSocketUpgradeFilter();
-        filter.setToAttribute(context, WebSocketUpgradeFilter.class.getName());
-
-        String name = "Jetty_Dynamic_WebSocketUpgradeFilter";
-        String pathSpec = "/*";
-        EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
-        boolean isMatchAfter = false;
-        String urlPatterns[] = { pathSpec };
-
-        FilterRegistration.Dynamic dyn = context.addFilter(name,filter);
-        dyn.setAsyncSupported(true);
-        dyn.setInitParameter(CONTEXT_ATTRIBUTE_KEY,WebSocketUpgradeFilter.class.getName());
-        dyn.addMappingForUrlPatterns(dispatcherTypes,isMatchAfter,urlPatterns);
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Adding [{}] {} mapped to {} to {}",name,filter,pathSpec,context);
-        }
-
         return filter;
     }
-
-    private final WebSocketServerFactory factory;
-    private final PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
+    
+    /**
+     * @deprecated use {@link #configureContext(ServletContextHandler)} instead
+     */
+    @Deprecated
+    public static WebSocketUpgradeFilter configureContext(ServletContext context) throws ServletException
+    {
+        ContextHandler handler = ContextHandler.getContextHandler(context);
+        
+        if (handler == null)
+        {
+            throw new ServletException("Not running on Jetty, WebSocket support unavailable");
+        }
+        
+        if (!(handler instanceof ServletContextHandler))
+        {
+            throw new ServletException("Not running in Jetty ServletContextHandler, WebSocket support via " + WebSocketUpgradeFilter.class.getName() + " unavailable");
+        }
+        
+        return configureContext((ServletContextHandler) handler);
+    }
+    
+    public static final String CREATOR_KEY = "org.eclipse.jetty.websocket.server.creator";
+    public static final String FACTORY_KEY = "org.eclipse.jetty.websocket.server.factory";
+    
+    private final WebSocketPolicy policy;
+    private final ByteBufferPool bufferPool;
+    private WebSocketServerFactory factory;
+    private MappedWebSocketCreator mappedWebSocketCreator;
     private String fname;
     private boolean alreadySetToAttribute = false;
-
+    
     public WebSocketUpgradeFilter()
     {
-        this(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
+        this(WebSocketPolicy.newServerPolicy(), new MappedByteBufferPool());
     }
-
+    
     public WebSocketUpgradeFilter(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        factory = new WebSocketServerFactory(policy,bufferPool);
-        addBean(factory,true);
+        this.policy = policy;
+        this.bufferPool = bufferPool;
     }
-
+    
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
-        pathmap.put(spec,creator);
+        mappedWebSocketCreator.addMapping(spec, creator);
     }
     
     /**
@@ -169,10 +163,9 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     public void destroy()
     {
         factory.cleanup();
-        pathmap.reset();
         super.destroy();
     }
-
+    
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
@@ -180,10 +173,10 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         {
             // no factory, cannot operate
             LOG.debug("WebSocketUpgradeFilter is not operational - no WebSocketServletFactory configured");
-            chain.doFilter(request,response);
+            chain.doFilter(request, response);
             return;
         }
-    
+        
         try
         {
             HttpServletRequest httpreq = (HttpServletRequest) request;
@@ -195,7 +188,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
                 chain.doFilter(request, response);
                 return;
             }
-        
+            
             // Since this is a filter, we need to be smart about determining the target path
             String contextPath = httpreq.getContextPath();
             String target = httpreq.getRequestURI();
@@ -203,37 +196,37 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             {
                 target = target.substring(contextPath.length());
             }
-        
-            MappedResource<WebSocketCreator> resource = pathmap.getMatch(target);
+            
+            MappedResource<WebSocketCreator> resource = mappedWebSocketCreator.getMappings().getMatch(target);
             if (resource == null)
             {
                 if (LOG.isDebugEnabled())
                 {
                     LOG.debug("WebSocket Upgrade on {} has no associated endpoint", target);
-                    LOG.debug("PathMappings: {}", pathmap.dump());
+                    LOG.debug("PathMappings: {}", mappedWebSocketCreator.getMappings().dump());
                 }
                 // no match.
                 chain.doFilter(request, response);
                 return;
             }
             
-            if(LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled())
             {
                 LOG.debug("WebSocket Upgrade detected on {} for endpoint {}", target, resource);
             }
-        
+            
             WebSocketCreator creator = resource.getResource();
-        
+            
             // Store PathSpec resource mapping as request attribute
             httpreq.setAttribute(PathSpec.class.getName(), resource.getPathSpec());
-        
+            
             // We have an upgrade request
             if (factory.acceptWebSocket(creator, httpreq, httpresp))
             {
                 // We have a socket instance created
                 return;
             }
-        
+            
             // If we reach this point, it means we had an incoming request to upgrade
             // but it was either not a proper websocket upgrade, or it was possibly rejected
             // due to incoming request constraints (controlled by WebSocketCreator)
@@ -251,71 +244,82 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
                 LOG.debug("Not a HttpServletRequest, skipping WebSocketUpgradeFilter");
             }
         }
-
+        
         // not an Upgrade request
-        chain.doFilter(request,response);
+        chain.doFilter(request, response);
     }
-
+    
     @Override
     public String dump()
     {
         return ContainerLifeCycle.dump(this);
     }
-
+    
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(indent).append(" +- pathmap=").append(pathmap.toString()).append("\n");
-        pathmap.dump(out,indent + "   ");
+        out.append(indent).append(" +- pathmap=").append(mappedWebSocketCreator.toString()).append("\n");
+        mappedWebSocketCreator.getMappings().dump(out, indent + "   ");
     }
-
+    
     public WebSocketServerFactory getFactory()
     {
         return factory;
     }
-
+    
     @ManagedAttribute(value = "mappings", readonly = true)
     @Override
     public PathMappings<WebSocketCreator> getMappings()
     {
-        return pathmap;
+        return mappedWebSocketCreator.getMappings();
     }
-
+    
     @Override
     public void init(FilterConfig config) throws ServletException
     {
         fname = config.getFilterName();
-
+        
         try
         {
-            ServletContext ctx = config.getServletContext();
-            factory.init(ctx);
-            WebSocketPolicy policy = factory.getPolicy();
-
+            mappedWebSocketCreator = (MappedWebSocketCreator) config.getServletContext().getAttribute(CREATOR_KEY);
+            if (mappedWebSocketCreator == null)
+            {
+                mappedWebSocketCreator = new DefaultMappedWebSocketCreator();
+            }
+            
+            factory = (WebSocketServerFactory) config.getServletContext().getAttribute(FACTORY_KEY);
+            if (factory == null)
+            {
+                factory = new WebSocketServerFactory(policy, bufferPool);
+            }
+            addBean(factory, true);
+            
+            // TODO: Policy isn't from attributes
+            
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)
             {
-                policy.setIdleTimeout(Long.parseLong(max));
+                factory.getPolicy().setIdleTimeout(Long.parseLong(max));
             }
-
+            
             max = config.getInitParameter("maxTextMessageSize");
             if (max != null)
             {
-                policy.setMaxTextMessageSize(Integer.parseInt(max));
+                factory.getPolicy().setMaxTextMessageSize(Integer.parseInt(max));
             }
-
+            
             max = config.getInitParameter("maxBinaryMessageSize");
             if (max != null)
             {
-                policy.setMaxBinaryMessageSize(Integer.parseInt(max));
+                factory.getPolicy().setMaxBinaryMessageSize(Integer.parseInt(max));
             }
-
+            
             max = config.getInitParameter("inputBufferSize");
             if (max != null)
             {
-                policy.setInputBufferSize(Integer.parseInt(max));
+                factory.getPolicy().setInputBufferSize(Integer.parseInt(max));
             }
-
+            
             String key = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
             if (key == null)
             {
@@ -335,45 +339,45 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     
     private void setToAttribute(ServletContextHandler context, String key) throws ServletException
     {
-        if(alreadySetToAttribute)
+        if (alreadySetToAttribute)
         {
             return;
         }
         
         if (context.getAttribute(key) != null)
         {
-            throw new ServletException(WebSocketUpgradeFilter.class.getName() + 
+            throw new ServletException(WebSocketUpgradeFilter.class.getName() +
                     " is defined twice for the same context attribute key '" + key
-                    + "'.  Make sure you have different init-param '" + 
+                    + "'.  Make sure you have different init-param '" +
                     CONTEXT_ATTRIBUTE_KEY + "' values set");
         }
-        context.setAttribute(key,this);
-
+        context.setAttribute(key, this);
+        
         alreadySetToAttribute = true;
     }
-
+    
     public void setToAttribute(ServletContext context, String key) throws ServletException
     {
-        if(alreadySetToAttribute)
+        if (alreadySetToAttribute)
         {
             return;
         }
         
         if (context.getAttribute(key) != null)
         {
-            throw new ServletException(WebSocketUpgradeFilter.class.getName() + 
+            throw new ServletException(WebSocketUpgradeFilter.class.getName() +
                     " is defined twice for the same context attribute key '" + key
-                    + "'.  Make sure you have different init-param '" + 
+                    + "'.  Make sure you have different init-param '" +
                     CONTEXT_ATTRIBUTE_KEY + "' values set");
         }
-        context.setAttribute(key,this);
-
+        context.setAttribute(key, this);
+        
         alreadySetToAttribute = true;
     }
-
+    
     @Override
     public String toString()
     {
-        return String.format("%s[factory=%s,pathmap=%s]",this.getClass().getSimpleName(),factory,pathmap);
+        return String.format("%s[factory=%s,creator=%s]", this.getClass().getSimpleName(), factory, mappedWebSocketCreator);
     }
 }

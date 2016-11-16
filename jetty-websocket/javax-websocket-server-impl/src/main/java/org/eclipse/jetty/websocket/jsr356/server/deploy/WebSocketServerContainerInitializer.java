@@ -33,13 +33,19 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
+import org.eclipse.jetty.websocket.server.DefaultMappedWebSocketCreator;
+import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 @HandlesTypes(
@@ -47,13 +53,11 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 public class WebSocketServerContainerInitializer implements ServletContainerInitializer
 {
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
+    public static final String ADD_DYNAMIC_FILTER_KEY = "org.eclipse.jetty.websocket.jsr356.addDynamicFilter";
     private static final Logger LOG = Log.getLogger(WebSocketServerContainerInitializer.class);
-
     
     /**
      * DestroyListener
-     *
-     *
      */
     public static class ContextDestroyListener implements ServletContextListener
     {
@@ -80,107 +84,97 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         }
     }
     
+    /**
+     * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for
+     * true or false setting that determines if the specified feature is enabled (or not).
+     *
+     * @param context the context to search
+     * @param keyName the key name
+     * @param defValue the default value, if the value is not specified in the context
+     * @return the value for the feature key
+     */
+    public static boolean isEnabledViaContext(ServletContext context, String keyName, boolean defValue)
+    {
+        // Try context parameters first
+        String cp = context.getInitParameter(keyName);
     
+        if(cp != null)
+        {
+            if (TypeUtil.isTrue(cp))
+            {
+                return true;
+            }
+        
+            if (TypeUtil.isFalse(cp))
+            {
+                return false;
+            }
+        
+            return defValue;
+        }
+    
+        // Next, try attribute on context
+        Object enable = context.getAttribute(ENABLE_KEY);
+    
+        if(enable != null)
+        {
+            if (TypeUtil.isTrue(enable))
+            {
+                return true;
+            }
+        
+            if (TypeUtil.isFalse(enable))
+            {
+                return false;
+            }
+        }
+    
+        return defValue;
+    }
     
     /**
-     * Jetty Native approach.
-     * <p>
-     * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
-     * 
-     * @param context the servlet context handler
-     * @return the created websocket server container
-     * @throws ServletException if unable to create the websocket server container
+     * Embedded Jetty approach for non-bytecode scanning.
      */
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
-        // Create Filter
-        WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
+        // Create Basic components
+        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
+        MappedWebSocketCreator creator = new DefaultMappedWebSocketCreator();
+        WebSocketServerFactory factory = new WebSocketServerFactory(policy, bufferPool);
 
         // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),context.getServer().getThreadPool());
-        context.addBean(jettyContainer, true);
+        ServerContainer jettyContainer = new ServerContainer(creator,factory,context.getServer().getThreadPool());
+        context.addBean(jettyContainer);
+        
+        context.setAttribute(WebSocketUpgradeFilter.CREATOR_KEY, creator);
+        context.setAttribute(WebSocketUpgradeFilter.FACTORY_KEY, factory);
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
-        return jettyContainer;
-    }
-
-    /**
-     * Servlet 3.1 approach.
-     * <p>
-     * This will use Servlet 3.1 techniques on the {@link ServletContext} to add a filter at the start of the filter chain.
-     * 
-     * @param context the servlet context
-     * @param jettyContext the jetty servlet context handler
-     * @return the created websocket server container
-     * @throws ServletException if unable to create the websocket server container
-     */
-    public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
-    {
+    
         // Create Filter
-        WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
-
-        // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),jettyContext.getServer().getThreadPool());
-        jettyContext.addBean(jettyContainer, true);
-
-        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
-        context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
+        if(isEnabledViaContext(context.getServletContext(), ADD_DYNAMIC_FILTER_KEY, true))
+        {
+            WebSocketUpgradeFilter.configureContext(context);
+        }
+    
         return jettyContainer;
     }
     
-    private boolean isEnabled(Set<Class<?>> c, ServletContext context)
+    /**
+     * @deprecated use {@link #configureContext(ServletContextHandler)} instead
+     */
+    @Deprecated
+    public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {
-        // Try context parameters first
-        String cp = context.getInitParameter(ENABLE_KEY);
-        if(TypeUtil.isTrue(cp))
-        {
-            // forced on
-            return true;
-        }
-        
-        if(TypeUtil.isFalse(cp))
-        {
-            // forced off
-            LOG.warn("JSR-356 support disabled via parameter on context {} - {}",context.getContextPath(),context);
-            return false;
-        }
-        
-        // Next, try attribute on context
-        Object enable = context.getAttribute(ENABLE_KEY);
-        
-        if(TypeUtil.isTrue(enable))
-        {
-            // forced on
-            return true;
-        }
-        
-        if (TypeUtil.isFalse(enable))
-        {
-            // forced off
-            LOG.warn("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
-            return false;
-        }
-        
-        // if not forced on or off, determine behavior based on annotations.
-        if (c.isEmpty())
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("No JSR-356 annotations or interfaces discovered. JSR-356 support disabled",context.getContextPath(),context);
-            }
-            return false;
-        }
-        
-        return true;
+        return configureContext(jettyContext);
     }
 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
     {
-        if(!isEnabled(c,context))
+        if(!isEnabledViaContext(context, ENABLE_KEY, true))
         {
             return;
         }
@@ -203,13 +197,13 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         try
         {
             Thread.currentThread().setContextClassLoader(context.getClassLoader());
-
+            
             // Create the Jetty ServerContainer implementation
-            ServerContainer jettyContainer = configureContext(context,jettyContext);
-            
+            ServerContainer jettyContainer = configureContext(jettyContext);
+    
             context.addListener(new ContextDestroyListener()); //make sure context is cleaned up when the context stops
-            
-            // Establish the DecoratedObjectFactory thread local 
+    
+            // Establish the DecoratedObjectFactory thread local
             // for various ServiceLoader initiated components to use.
             DecoratedObjectFactory instantiator = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
             if (instantiator == null)
@@ -217,12 +211,24 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                 LOG.info("Using WebSocket local DecoratedObjectFactory - none found in ServletContext");
                 instantiator = new DecoratedObjectFactory();
             }
-            
+
+            // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
+            context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
+
+            if (c.isEmpty())
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No JSR-356 annotations or interfaces discovered");
+                }
+                return;
+            }
+    
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Found {} classes",c.size());
             }
-
+    
             // Now process the incoming classes
             Set<Class<? extends Endpoint>> discoveredExtendedEndpoints = new HashSet<>();
             Set<Class<?>> discoveredAnnotatedEndpoints = new HashSet<>();
@@ -312,9 +318,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                     throw new ServletException(e);
                 }
             }
-        }
-        finally
-        {
+        } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
     }
