@@ -19,9 +19,9 @@
 package org.eclipse.jetty.embedded;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.session.AbstractSessionIdManager;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
+import org.eclipse.jetty.server.session.NullSessionDataStore;
+import org.eclipse.jetty.server.session.SessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
@@ -31,11 +31,6 @@ public class OneServletContextWithSession
     public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
-
-        // Create an ID manager for the server.  This is normally done
-        // by default, but is done explicitly here for demonstration.
-        AbstractSessionIdManager idManager = new HashSessionIdManager();
-        server.setSessionIdManager(idManager);
 
         // Create a ServletContext, with a session handler enabled.
         ServletContextHandler context = new ServletContextHandler(
@@ -47,13 +42,19 @@ public class OneServletContextWithSession
         // Access the SessionHandler from the context.
         SessionHandler sessions = context.getSessionHandler();
         
-        // Set a SessionManager.  This is normally done by default,
+        // Explicitly set Session Cache and null Datastore.
+        // This is normally done by default,
         // but is done explicitly here for demonstration.
-        sessions.setSessionManager(new HashSessionManager());
-        
+        // If more than one context is to be deployed, it is
+        // simpler to use SessionCacheFactory and/or
+        // SessionDataStoreFactory instances set as beans on 
+        // the server.
+        SessionCache cache = new DefaultSessionCache(sessions);
+        cache.setSessionDataStore(new NullSessionDataStore());
+        sessions.setSessionCache(cache);
 
-        //Servlet to read/set the greeting stored in the session.
-        //Can be accessed using http://localhost:8080/hello
+        // Servlet to read/set the greeting stored in the session.
+        // Can be accessed using http://localhost:8080/hello
         context.addServlet(HelloSessionServlet.class, "/");
 
         server.start();
