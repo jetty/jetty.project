@@ -21,6 +21,7 @@ package org.eclipse.jetty.embedded;
 import org.eclipse.jetty.server.session.HashedSession;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,8 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 
 public class HelloSessionServlet extends HttpServlet
 {
-    private String greeting;
-
     public HelloSessionServlet() {}
 
     @Override
@@ -38,14 +37,47 @@ public class HelloSessionServlet extends HttpServlet
                           HttpServletResponse response ) throws ServletException,
             IOException
     {
-        HashedSession session = (HashedSession)request.getSession();
-        if((greeting = (String)session.getAttribute("greeting")) == null) {
-            greeting = "Hello";
-        }
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println(
-                "<h1>" + greeting + " from HelloSessionServlet</h1>");
+        response.addHeader("Cache-Control","no-cache");
+        
+        HashedSession session = (HashedSession)request.getSession();
+        String message;
+        String link;
+        
+        String greeting = request.getParameter("greeting");
+        if (greeting != null)
+        {
+            session.setAttribute("greeting", greeting);
+            message = "New greeting '" + greeting + "' set in session.";
+            link = "Click <a href=\"/\">here</a> to use the new greeting from the session.";
+        }
+        else
+        {
+            greeting = (String)session.getAttribute("greeting");
+
+            if (greeting != null) 
+            {
+                message = "Greeting '" + greeting + "' set from session.";
+            }
+            else
+            {
+                greeting = "Hello";
+                message = "Greeting '" + greeting + "' is default.";
+            }
+
+            link = "Click <a href=\"/?greeting=Hola\">here</a> to set a new greeting.";
+        }
+        
+        PrintWriter out = response.getWriter();
+        out.println("<h1>" + greeting + " from HelloSessionServlet</h1>");
+        out.println("<p>" + message + "</p>");
+        out.println("<pre>");
+        out.println("session.getId() = " +session.getId());
+        out.println("session.isNew() = " +session.isNew());
+        out.println("</pre>");
+        out.println("<p>" + link + "</p>");
+        
     }
 
 }

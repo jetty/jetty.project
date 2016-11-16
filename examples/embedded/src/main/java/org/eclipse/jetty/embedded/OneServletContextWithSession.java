@@ -32,29 +32,27 @@ public class OneServletContextWithSession
     {
         Server server = new Server(8080);
 
-        SessionHandler handler = new SessionHandler();
-        handler.setServer(server);
-
-        HashSessionManager manager = new HashSessionManager();
-        handler.setSessionManager(manager);
-
+        // Create an ID manager for the server.  This is normally done
+        // by default, but is done explicitly here for demonstration.
         AbstractSessionIdManager idManager = new HashSessionIdManager();
-        manager.setSessionIdManager(idManager);
         server.setSessionIdManager(idManager);
 
+        // Create a ServletContext, with a session handler enabled.
         ServletContextHandler context = new ServletContextHandler(
                 ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setResourceBase(System.getProperty("java.io.tmpdir"));
         server.setHandler(context);
 
-        //Servlet to store a different greeting in the session
-        //Can be accessed using http://localhost:8080/store
-        context.addServlet(StoreInSessionServlet.class, "/store/*");
+        // Access the SessionHandler from the context.
+        SessionHandler sessions = context.getSessionHandler();
+        
+        // Set a SessionManager.  This is normally done by default,
+        // but is done explicitly here for demonstration.
+        sessions.setSessionManager(new HashSessionManager());
+        
 
-        //Servlet to read the greeting stored in the session, if you have not visited the
-        //StoreInSessionServlet a default greeting is shown, after visiting you will see
-        //a different greeting.
+        //Servlet to read/set the greeting stored in the session.
         //Can be accessed using http://localhost:8080/hello
         context.addServlet(HelloSessionServlet.class, "/");
 
