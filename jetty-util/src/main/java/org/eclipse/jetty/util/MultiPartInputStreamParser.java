@@ -906,6 +906,8 @@ public class MultiPartInputStreamParser
                             if(lastChar == -1 || lastChar == '-') 
                             {
                                 lastPart = true;
+                            } else {
+                                throw new IOException("Incomplete parts, final boundary must end with --"); 
                             }
                         } else if (c2ndLastChar == '\r') 
                         {
