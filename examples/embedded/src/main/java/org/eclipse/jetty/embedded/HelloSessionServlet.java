@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.server.session.HashedSession;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -27,7 +25,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
+@SuppressWarnings("serial")
 public class HelloSessionServlet extends HttpServlet
 {
     public HelloSessionServlet() {}
@@ -41,7 +41,7 @@ public class HelloSessionServlet extends HttpServlet
         response.setStatus(HttpServletResponse.SC_OK);
         response.addHeader("Cache-Control","no-cache");
         
-        HashedSession session = (HashedSession)request.getSession();
+        HttpSession session = request.getSession();
         String message;
         String link;
         
