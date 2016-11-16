@@ -1734,9 +1734,10 @@ public class Request implements HttpServletRequest
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
         _metaData=request;
-        _originalURI=_metaData.getURIString();
+        
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
+        _originalURI=uri.isAbsolute()&&request.getHttpVersion()!=HttpVersion.HTTP_2?uri.toString():uri.getPathQuery();
 
         String path = uri.getDecodedPath();
         String info;

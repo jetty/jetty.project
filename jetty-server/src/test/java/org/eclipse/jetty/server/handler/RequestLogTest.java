@@ -80,9 +80,7 @@ public class RequestLogTest
     {
         _connector.getResponse("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
         String log = _log.exchange(null,5,TimeUnit.SECONDS);
-        // TODO should be without host (https://bugs.eclipse.org/bugs/show_bug.cgi?id=480276)
-        // assertThat(log,containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
-        assertThat(log,containsString("GET //host:80/foo?data=1 HTTP/1.0\" 200 "));
+        assertThat(log,containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
         
         _connector.getResponse("GET //bad/foo?data=1 HTTP/1.0\n\n");
         log = _log.exchange(null,5,TimeUnit.SECONDS);
@@ -91,6 +89,51 @@ public class RequestLogTest
         _connector.getResponse("GET http://host:80/foo?data=1 HTTP/1.0\n\n");
         log = _log.exchange(null,5,TimeUnit.SECONDS);
         assertThat(log,containsString("GET http://host:80/foo?data=1 HTTP/1.0\" 200 "));   
+    }
+    
+    @Test
+    public void testHTTP10Host() throws Exception
+    {
+        _connector.getResponse(
+            "GET /foo?name=value HTTP/1.0\n"+
+            "Host: servername\n"+
+            "\n");
+        String log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET /foo?name=value"));
+        assertThat(log,containsString(" 200 "));
+    }
+    
+    @Test
+    public void testHTTP11() throws Exception
+    {
+        _connector.getResponse(
+            "GET /foo?name=value HTTP/1.1\n"+
+            "Host: servername\n"+
+            "\n");
+        String log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET /foo?name=value"));
+        assertThat(log,containsString(" 200 "));
+    }
+    
+    @Test
+    public void testAbsolute() throws Exception
+    {
+        _connector.getResponse(
+            "GET http://hostname:8888/foo?name=value HTTP/1.1\n"+
+            "Host: servername\n"+
+            "\n");
+        String log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET http://hostname:8888/foo?name=value"));
+        assertThat(log,containsString(" 200 "));
+    }
+    
+    @Test
+    public void testQuery() throws Exception
+    {
+        _connector.getResponse("GET /foo?name=value HTTP/1.0\n\n");
+        String log = _log.exchange(null,5,TimeUnit.SECONDS);
+        assertThat(log,containsString("GET /foo?name=value"));
+        assertThat(log,containsString(" 200 "));
     }
     
     @Test
