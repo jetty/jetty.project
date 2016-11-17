@@ -24,7 +24,8 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -53,7 +54,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
     private RollTask _rollTask;
-    private Calendar midnight;
+    private ZonedDateTime midnight;
     private SimpleDateFormat _fileBackupFormat;
     private SimpleDateFormat _fileDateFormat;
 
@@ -175,13 +176,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
             
             _rollTask=new RollTask();
 
-            midnight = Calendar.getInstance();
-            midnight.setTimeZone(zone);
-            // set to midnight
-            midnight.set(Calendar.HOUR, 0);
-            midnight.set(Calendar.MINUTE, 0);
-            midnight.set(Calendar.SECOND, 0);
-            midnight.set(Calendar.MILLISECOND, 0);
+            midnight = ZonedDateTime.now().toLocalDate().atStartOfDay(zone.toZoneId());
             
             scheduleNextRollover();
         }
@@ -193,8 +188,8 @@ public class RolloverFileOutputStream extends FilterOutputStream
         // Using Calendar.add(DAY, 1) takes in account Daylights Savings
         // differences, and still maintains the "midnight" settings for
         // Hour, Minute, Second, Milliseconds
-        midnight.add(Calendar.DAY_OF_MONTH, 1);
-        __rollover.schedule(_rollTask,midnight.getTime());
+        midnight = midnight.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(midnight.getZone());
+        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli());
     }
 
     /* ------------------------------------------------------------ */
@@ -265,9 +260,9 @@ public class RolloverFileOutputStream extends FilterOutputStream
     {
         if (_retainDays>0)
         {
-            Calendar now = Calendar.getInstance();
-            now.add(Calendar.DAY_OF_MONTH, (-1)*_retainDays);
-            long expired = now.getTimeInMillis();
+            ZonedDateTime now = ZonedDateTime.now(this.midnight.getZone());
+            now.minus(_retainDays, ChronoUnit.DAYS);
+            long expired = now.toInstant().toEpochMilli();
             
             File file= new File(_filename);
             File dir = new File(file.getParent());
