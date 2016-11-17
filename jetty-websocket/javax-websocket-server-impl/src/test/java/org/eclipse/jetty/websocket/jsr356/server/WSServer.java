@@ -151,6 +151,11 @@ public class WSServer
     {
         return serverUri;
     }
+    
+    public Server getServer()
+    {
+        return server;
+    }
 
     public File getWebAppDir()
     {
