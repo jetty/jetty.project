@@ -292,6 +292,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             {
                 factory = new WebSocketServerFactory(policy, bufferPool);
             }
+            factory.init(config.getServletContext());
             addBean(factory, true);
             
             // TODO: Policy isn't from attributes
@@ -327,7 +328,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
                 key = WebSocketUpgradeFilter.class.getName();
             }
             
-            setToAttribute(ctx, key);
+            setToAttribute(config.getServletContext(), key);
             
             factory.start();
         }

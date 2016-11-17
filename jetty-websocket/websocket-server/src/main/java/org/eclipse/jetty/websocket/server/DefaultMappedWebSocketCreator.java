@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
-import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class DefaultMappedWebSocketCreator implements MappedWebSocketCreator

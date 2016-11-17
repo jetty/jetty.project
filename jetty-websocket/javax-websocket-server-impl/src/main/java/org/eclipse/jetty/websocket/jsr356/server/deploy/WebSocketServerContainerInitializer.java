@@ -37,7 +37,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -201,20 +200,8 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             // Create the Jetty ServerContainer implementation
             ServerContainer jettyContainer = configureContext(jettyContext);
     
-            context.addListener(new ContextDestroyListener()); //make sure context is cleaned up when the context stops
+            context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
     
-            // Establish the DecoratedObjectFactory thread local
-            // for various ServiceLoader initiated components to use.
-            DecoratedObjectFactory instantiator = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
-            if (instantiator == null)
-            {
-                LOG.info("Using WebSocket local DecoratedObjectFactory - none found in ServletContext");
-                instantiator = new DecoratedObjectFactory();
-            }
-
-            // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
-            context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
             if (c.isEmpty())
             {
                 if (LOG.isDebugEnabled())
