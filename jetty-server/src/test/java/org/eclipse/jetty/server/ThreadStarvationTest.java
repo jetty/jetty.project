@@ -18,44 +18,135 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CountDownLatch;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
-import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
+import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+@RunWith(Parameterized.class)
 public class ThreadStarvationTest
 {
     @Rule
     public TestTracker tracker = new TestTracker();
+    
+    interface ConnectorProvider {
+        ServerConnector newConnector(Server server, int acceptors, int selectors);
+    }
+    
+    interface ClientSocketProvider {
+        Socket newSocket(String host, int port) throws IOException;
+    }
+    
+    @Parameterized.Parameters(name = "{0}")
+    public static List<Object[]> params()
+    {
+        List<Object[]> params = new ArrayList<>();
+        
+        // HTTP
+        ConnectorProvider http = (server, acceptors, selectors) -> new ServerConnector(server, acceptors, selectors);
+        ClientSocketProvider httpClient = (host, port) -> new Socket(host, port);
+        params.add(new Object[]{ "http", http, httpClient });
+        
+        // HTTPS/SSL/TLS
+        ConnectorProvider https = (server, acceptors, selectors) -> {
+            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore");
+            SslContextFactory sslContextFactory = new SslContextFactory();
+            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+            sslContextFactory.setTrustStorePath(keystorePath.toString());
+            sslContextFactory.setTrustStorePassword("storepwd");
+            ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+    
+            HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+            ServerConnector connector = new ServerConnector(server,(Executor)null,(Scheduler)null,
+                    pool, acceptors, selectors,
+                    AbstractConnectionFactory.getFactories(sslContextFactory,httpConnectionFactory));
+            SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
+            secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
+            httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
+            return connector;
+        };
+        ClientSocketProvider httpsClient = new ClientSocketProvider()
+        {
+            private SSLContext sslContext;
+            {
+                try
+                {
+                    HttpsURLConnection.setDefaultHostnameVerifier((hostname, session)-> true);
+                    sslContext = SSLContext.getInstance("TLS");
+                    sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
+                    HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+            }
+            
+            @Override
+            public Socket newSocket(String host, int port) throws IOException
+            {
+                return sslContext.getSocketFactory().createSocket(host,port);
+            }
+        };
+        params.add(new Object[]{ "https/ssl/tls", https, httpsClient });
+        
+        return params;
+    }
+    
+    private final ConnectorProvider connectorProvider;
+    private final ClientSocketProvider clientSocketProvider;
     private QueuedThreadPool _threadPool;
     private Server _server;
     private ServerConnector _connector;
     private int _availableThreads;
-
+    
+    public ThreadStarvationTest(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
+    {
+        this.connectorProvider = connectorProvider;
+        this.clientSocketProvider = clientSocketProvider;
+    }
+    
     private Server prepareServer(Handler handler)
     {
         int threads = 4;
@@ -66,7 +157,7 @@ public class ThreadStarvationTest
         _server = new Server(_threadPool);
         int acceptors = 1;
         int selectors = 1;
-        _connector = new ServerConnector(_server, acceptors, selectors);
+        _connector = connectorProvider.newConnector(_server, acceptors, selectors);
         _server.addConnector(_connector);
         _server.setHandler(handler);
         _availableThreads = threads - acceptors - selectors;
@@ -84,7 +175,7 @@ public class ThreadStarvationTest
     {
         prepareServer(new ReadHandler()).start();
 
-        Socket client = new Socket("localhost", _connector.getLocalPort());
+        Socket client = clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
 
         OutputStream os = client.getOutputStream();
         InputStream is = client.getInputStream();
@@ -128,7 +219,7 @@ public class ThreadStarvationTest
 
         for (int i = 0; i < client.length; i++)
         {
-            client[i] = new Socket("localhost", _connector.getLocalPort());
+            client[i] = clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
             client[i].setSoTimeout(10000);
 
             os[i] = client[i].getOutputStream();
@@ -173,7 +264,7 @@ public class ThreadStarvationTest
 
         // Three idle threads in the pool here.
         // The server will accept the socket in normal mode.
-        Socket client = new Socket("localhost", _connector.getLocalPort());
+        Socket client = clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
         client.setSoTimeout(10000);
 
         Thread.sleep(500);
