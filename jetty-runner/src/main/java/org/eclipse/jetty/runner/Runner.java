@@ -444,6 +444,14 @@ public class Runner
                             }
 
                             handler.setAttribute(WebInfConfiguration.CONTAINER_JAR_PATTERN, containerIncludeJarPattern);
+                            
+                            //check the configurations, if not explicitly set up, then configure all of them
+                            if (handler instanceof WebAppContext)
+                            {
+                                WebAppContext wac = (WebAppContext)handler;
+                                if (wac.getConfigurationClasses() == null || wac.getConfigurationClasses().length == 0)
+                                    wac.setConfigurationClasses(__plusConfigurationClasses);
+                            }
                         }
                         else 
                         {
