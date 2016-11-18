@@ -222,13 +222,14 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
-     * @param request request object
-     * @param b StringBuilder to write to
-     * @throws IOException if unable to append extended log
-     * @deprecated override {@link #logExtended(StringBuilder, Request, Response)} instead
+     * Writes extended request and response information to the output stream.
+     *
+     * @param b        StringBuilder to write to
+     * @param request  request object
+     * @param response response object
+     * @throws IOException if unable to log the extended information
      */
-    @Deprecated
-    protected void logExtended(Request request, StringBuilder b) throws IOException
+    protected void logExtended(StringBuilder b, Request request, Response response) throws IOException
     {
         String referer = request.getHeader(HttpHeader.REFERER.toString());
         if (referer == null)
@@ -249,19 +250,6 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             b.append(agent);
             b.append('"');
         }
-    }
-
-    /**
-     * Writes extended request and response information to the output stream.
-     *
-     * @param b        StringBuilder to write to
-     * @param request  request object
-     * @param response response object
-     * @throws IOException if unable to log the extended information
-     */
-    protected void logExtended(StringBuilder b, Request request, Response response) throws IOException
-    {
-        logExtended(request, b);
     }
 
     /**

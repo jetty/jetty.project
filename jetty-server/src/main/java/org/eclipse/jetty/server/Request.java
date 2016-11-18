@@ -1681,7 +1681,9 @@ public class Request implements HttpServletRequest
     {
         _metaData=request;
         HttpURI uri = request.getURI();
-        _originalUri = uri.toString();
+        _originalUri = uri.isAbsolute() && request.getHttpVersion()!=HttpVersion.HTTP_2
+            ? uri.toString()
+            : uri.getPathQuery();
         
         if (uri.getScheme()==null)
             uri.setScheme("http");
@@ -1816,7 +1818,6 @@ public class Request implements HttpServletRequest
     {
         _requestAttributeListeners.remove(listener);
     }
-
 
     /* ------------------------------------------------------------ */
     public void setAsyncSupported(boolean supported,String source)

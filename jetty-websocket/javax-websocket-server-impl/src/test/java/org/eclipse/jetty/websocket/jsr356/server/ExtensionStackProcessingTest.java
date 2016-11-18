@@ -58,21 +58,18 @@ public class ExtensionStackProcessingTest
 {
     private Server server;
     private ServerConnector connector;
-    private ExtensionFactory serverExtensionFactory;
     private WebSocketContainer client;
-
+    private ServletContextHandler servletContextHandler;
+    
     @Before
     public void prepare() throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
-
-        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
-        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
-        
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        serverExtensionFactory = filter.getFactory().getExtensionFactory();
+    
+        servletContextHandler = new ServletContextHandler(server, "/", true, false);
+        ServerContainer container = WebSocketServerContainerInitializer.configureContext(servletContextHandler);
         
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         container.addEndpoint(config);
@@ -88,11 +85,18 @@ public class ExtensionStackProcessingTest
     {
         server.stop();
     }
+    
+    private void assumeDeflateFrameAvailable()
+    {
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)servletContextHandler.getAttribute(WebSocketUpgradeFilter.class.getName());
+        ExtensionFactory serverExtensionFactory = filter.getFactory().getExtensionFactory();
+        Assume.assumeTrue("Server has permessage-deflate extension registered",serverExtensionFactory.isAvailable("permessage-deflate"));
+    }
 
     @Test
     public void testDeflateFrameExtension() throws Exception
     {
-        Assume.assumeTrue("Server has deflate-frame extension registered",serverExtensionFactory.isAvailable("deflate-frame"));
+        assumeDeflateFrameAvailable();
         
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
@@ -140,7 +144,7 @@ public class ExtensionStackProcessingTest
     @Test
     public void testPerMessageDeflateExtension() throws Exception
     {
-        Assume.assumeTrue("Server has permessage-deflate extension registered",serverExtensionFactory.isAvailable("permessage-deflate"));
+        assumeDeflateFrameAvailable();
         
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))

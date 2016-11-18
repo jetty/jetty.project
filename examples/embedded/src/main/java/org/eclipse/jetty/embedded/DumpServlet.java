@@ -42,6 +42,7 @@ public class DumpServlet extends HttpServlet
         out.println("<h1>DumpServlet</h1>");
         out.println("<pre>");
         out.println("requestURI=" + request.getRequestURI());
+        out.println("requestURL=" + request.getRequestURL().toString());
         out.println("contextPath=" + request.getContextPath());
         out.println("servletPath=" + request.getServletPath());
         out.println("pathInfo=" + request.getPathInfo());
