@@ -753,7 +753,7 @@ public class MultiPartInputStreamParser
 
                 try
                 {
-					//Read the config noew so we don't need to keep re-reading it.
+                    //Read the config noew so we don't need to keep re-reading it.
                     long maxRequestSize = Long.MAX_VALUE;
                     if (_config.getMaxRequestSize() > 0) maxRequestSize = _config.getMaxRequestSize();
 
