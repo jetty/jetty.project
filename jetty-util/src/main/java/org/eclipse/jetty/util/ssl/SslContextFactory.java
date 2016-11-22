@@ -344,6 +344,10 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     
         try
         {
+            /* Use a pristine SSLEngine (not one from this SslContextFactory).
+             * This will allow for proper detection and identification
+             * of JRE/lib/security/java.security level disabled features
+             */
             SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
     
             List<Object> selections = new ArrayList<>();
