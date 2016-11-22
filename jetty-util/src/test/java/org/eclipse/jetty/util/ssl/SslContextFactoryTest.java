@@ -29,7 +29,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
-import java.util.Arrays;
 
 import javax.net.ssl.SSLEngine;
 
@@ -62,11 +61,8 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("keypwd");
 
         cf.start();
-
-        System.err.println(Arrays.asList(cf.getSelectedProtocols()));
-        for (String cipher : cf.getSelectedCipherSuites())
-            System.err.println(cipher);
-
+        
+        cf.dump(System.out, "");
     }
     
     @Test
