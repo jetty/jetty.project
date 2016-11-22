@@ -37,10 +37,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -223,6 +225,7 @@ public class ThreadStarvationTest
         }
 
         Thread.sleep(500);
+        _threadPool.dump(System.out, "");
 
         for (int i = 0; i < client.length; i++)
         {
@@ -231,6 +234,7 @@ public class ThreadStarvationTest
         }
 
         Thread.sleep(500);
+        _threadPool.dump(System.out, "");
 
         for (int i = 0; i < client.length; i++)
         {
@@ -247,17 +251,25 @@ public class ThreadStarvationTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            response.setStatus(200);
-
-            int l = request.getContentLength();
-            int r = 0;
-            while (r < l)
+            
+            if(request.getDispatcherType() == DispatcherType.REQUEST)
             {
-                if (request.getInputStream().read() >= 0)
-                    r++;
+                response.setStatus(200);
+    
+                int l = request.getContentLength();
+                int r = 0;
+                while (r < l)
+                {
+                    if (request.getInputStream().read() >= 0)
+                        r++;
+                }
+    
+                response.getOutputStream().write(("Read Input " + r + "\r\n").getBytes());
             }
-
-            response.getOutputStream().write(("Read Input " + r + "\r\n").getBytes());
+            else
+            {
+                response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            }
         }
     }
     
