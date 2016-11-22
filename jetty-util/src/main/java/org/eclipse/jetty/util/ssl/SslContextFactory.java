@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.CRL;
@@ -340,26 +341,33 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(String.valueOf(this)).append(" trustAll=").append(Boolean.toString(_trustAll)).append(System.lineSeparator());
-        
-        SSLEngine sslEngine = newSSLEngine();
     
-        List<Object> selections = new ArrayList<>();
-        
-        // protocols
-        selections.add(new SslSelectionDump("Protocol",
-                sslEngine.getSupportedProtocols(),
-                sslEngine.getEnabledProtocols(),
-                getExcludeProtocols(),
-                getIncludeProtocols()));
-        
-        // ciphers
-        selections.add(new SslSelectionDump("Cipher Suite",
-                sslEngine.getSupportedCipherSuites(),
-                sslEngine.getEnabledCipherSuites(),
-                getExcludeCipherSuites(),
-                getIncludeCipherSuites()));
-        
-        ContainerLifeCycle.dump(out, indent, selections);
+        try
+        {
+            SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
+    
+            List<Object> selections = new ArrayList<>();
+            
+            // protocols
+            selections.add(new SslSelectionDump("Protocol",
+                    sslEngine.getSupportedProtocols(),
+                    sslEngine.getEnabledProtocols(),
+                    getExcludeProtocols(),
+                    getIncludeProtocols()));
+            
+            // ciphers
+            selections.add(new SslSelectionDump("Cipher Suite",
+                    sslEngine.getSupportedCipherSuites(),
+                    sslEngine.getEnabledCipherSuites(),
+                    getExcludeCipherSuites(),
+                    getIncludeCipherSuites()));
+            
+            ContainerLifeCycle.dump(out, indent, selections);
+        }
+        catch (NoSuchAlgorithmException ignore)
+        {
+            LOG.ignore(ignore);
+        }
     }
     
     @Override
