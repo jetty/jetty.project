@@ -154,6 +154,13 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         }
     }
 
+    @Override
+    protected void doStop() throws Exception
+    {
+        mappedCreator.getMappings().reset();
+        super.doStop();
+    }
+
     public ServerEndpointMetadata getServerEndpointMetadata(final Class<?> endpoint, final ServerEndpointConfig config) throws DeploymentException
     {
         ServerEndpointMetadata metadata = null;
