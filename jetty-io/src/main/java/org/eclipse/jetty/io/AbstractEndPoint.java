@@ -428,6 +428,11 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public String toString()
     {
+        return String.format("%s->%s",toEndPointString(),toConnectionString());
+    }
+    
+    public String toEndPointString()
+    {
         Class<?> c=getClass();
         String name=c.getSimpleName();
         while (name.length()==0 && c.getSuperclass()!=null)
@@ -436,20 +441,26 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             name=c.getSimpleName();
         }
 
-        Connection connection = getConnection();
-        return String.format("%s@%x{%s<->%s,%s,%s|%s,%d/%d,%s@%x}",
+        return String.format("%s@%h{%s<->%s,%s,fill=%s,flush=%s,to=%d/%d}",
                 name,
-                hashCode(),
+                this,
                 getRemoteAddress(),
                 getLocalAddress(),
                 _state.get(),
                 _fillInterest.toStateString(),
                 _writeFlusher.toStateString(),
                 getIdleFor(),
-                getIdleTimeout(),
-                connection == null ? null : connection.getClass().getSimpleName(),
-                connection == null ? 0 : connection.hashCode());
+                getIdleTimeout());
     }
+    
+    public String toConnectionString()
+    {
+        Connection connection = getConnection();
+        if (connection instanceof AbstractConnection)
+            return ((AbstractConnection)connection).toConnectionString();
+        return String.format("%s@%x",connection.getClass().getSimpleName(),connection.hashCode());
+    }
+       
 
     private enum State
     {

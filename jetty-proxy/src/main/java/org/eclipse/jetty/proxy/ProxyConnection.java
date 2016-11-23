@@ -77,12 +77,13 @@ public abstract class ProxyConnection extends AbstractConnection
     protected abstract void write(EndPoint endPoint, ByteBuffer buffer, Callback callback);
 
     @Override
-    public String toString()
+    public String toConnectionString()
     {
-        return String.format("%s[l:%d<=>r:%d]",
-                super.toString(),
-                getEndPoint().getLocalAddress().getPort(),
-                getEndPoint().getRemoteAddress().getPort());
+        return String.format("%s@%x[l:%d<=>r:%d]",
+            getClass().getSimpleName(),
+            hashCode(),
+            getEndPoint().getLocalAddress().getPort(),
+            getEndPoint().getRemoteAddress().getPort());
     }
 
     private class ProxyIteratingCallback extends IteratingCallback

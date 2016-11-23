@@ -838,4 +838,9 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
             }
         }
     }
+
+    public Selector getSelector()
+    {
+        return _selector;        
+    }
 }

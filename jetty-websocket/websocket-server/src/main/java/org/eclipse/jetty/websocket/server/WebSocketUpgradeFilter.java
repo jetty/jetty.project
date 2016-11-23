@@ -44,6 +44,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -55,11 +56,13 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketCreator} objects.
  */
 @ManagedObject("WebSocket Upgrade Filter")
-public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
+public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
 {
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
-    
+    private boolean localMapper;
+    private boolean localFactory;
+
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
         // Prevent double configure
@@ -162,8 +165,14 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     @Override
     public void destroy()
     {
-        factory.cleanup();
-        super.destroy();
+        if (localFactory)
+        {
+            factory.cleanup();
+        }
+        if (localMapper)
+        {
+            mappedWebSocketCreator.getMappings().reset();
+        }
     }
     
     @Override
@@ -281,21 +290,22 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         
         try
         {
-            mappedWebSocketCreator = (MappedWebSocketCreator) config.getServletContext().getAttribute(CREATOR_KEY);
+            ServletContext context = config.getServletContext();
+            
+            mappedWebSocketCreator = (MappedWebSocketCreator) context.getAttribute(CREATOR_KEY);
             if (mappedWebSocketCreator == null)
             {
                 mappedWebSocketCreator = new DefaultMappedWebSocketCreator();
+                localMapper = true;
             }
             
-            factory = (WebSocketServerFactory) config.getServletContext().getAttribute(FACTORY_KEY);
+            factory = (WebSocketServerFactory) context.getAttribute(FACTORY_KEY);
             if (factory == null)
             {
                 factory = new WebSocketServerFactory(policy, bufferPool);
+                localFactory = true;
             }
-            factory.init(config.getServletContext());
-            addBean(factory, true);
-            
-            // TODO: Policy isn't from attributes
+            factory.init(context);
             
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)
@@ -328,7 +338,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
                 key = WebSocketUpgradeFilter.class.getName();
             }
             
-            setToAttribute(config.getServletContext(), key);
+            setToAttribute(context, key);
             
             factory.start();
         }
