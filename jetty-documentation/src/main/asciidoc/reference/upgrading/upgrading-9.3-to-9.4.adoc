@@ -14,9 +14,12 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-=== Upgrading from Jetty 9.3 to Jetty 9.4
+=== Upgrading from Jetty 9.3.x to Jetty 9.4.0
 
-==== jetty.sh
+The purpose of this guide is to assist users migrating from Jetty 9.3.x to 9.4.0.
+It is not comprehensive, but covers many of the major changes included in the release that may prove as problem areas for users.
+
+==== The jetty.sh Script
 
 The file `jetty.sh`, typically used to start Jetty as a service in Linux/Unix machines underwent only small changes, such as the addition of https://wiki.debian.org/LSBInitScripts[LSB tags].
 
