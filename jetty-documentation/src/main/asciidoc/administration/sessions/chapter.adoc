@@ -25,6 +25,7 @@ Jetty also offers more niche session managers that leverage backends such as Mon
 
 include::session-hierarchy.adoc[]
 include::sessions-details.adoc[]
+include::session-configuration-memory.adoc[]
 include::session-configuration-file-system.adoc[]
 include::session-configuration-jdbc.adoc[]
 include::session-configuration-mongodb.adoc[]
