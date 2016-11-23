@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.channels.SelectionKey;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -50,7 +49,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -245,30 +243,6 @@ public class ThreadStarvationTest
             });
         }
         
-//        new Thread(()->{
-//            try
-//            {
-//                TimeUnit.SECONDS.sleep(10);
-//
-//                ServerConnector conn = _server.getBean(ServerConnector.class);
-//                ManagedSelector ms = conn.getSelectorManager().getBean(ManagedSelector.class);
-//
-//                Selector sel = ms.getSelector();
-//                sel.keys().stream().map((key)->key.attachment()).forEach(
-//                        (attach) -> {
-//                            System.out.println(attach);
-//                            SocketChannelEndPoint endp = (SocketChannelEndPoint) attach;
-//                            SslConnection sslconn = (SslConnection) endp.getConnection();
-//                            sslconn.dumpBuffers();
-//                        });
-//
-//                _server.dump(System.out, "");
-//            }
-//            catch (Throwable ignore)
-//            {
-//            }
-//        }).start();
-    
         try
         {
             List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
