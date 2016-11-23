@@ -60,8 +60,9 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
 {
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
-    private boolean localFactory = false;
-    
+    private boolean localMapper;
+    private boolean localFactory;
+
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
         // Prevent double configure
@@ -164,9 +165,13 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
     @Override
     public void destroy()
     {
-        if(localFactory)
+        if (localFactory)
         {
             factory.cleanup();
+        }
+        if (localMapper)
+        {
+            mappedWebSocketCreator.getMappings().reset();
         }
     }
     
@@ -291,6 +296,7 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
             if (mappedWebSocketCreator == null)
             {
                 mappedWebSocketCreator = new DefaultMappedWebSocketCreator();
+                localMapper = true;
             }
             
             factory = (WebSocketServerFactory) context.getAttribute(FACTORY_KEY);
