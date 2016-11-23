@@ -60,7 +60,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
     private abstract class RunnableTask  implements Runnable, Invocable
     {
-        private final String _operation;
+        final String _operation;
 
         protected RunnableTask(String op)
         {
@@ -70,7 +70,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         @Override
         public String toString()
         {
-            return ChannelEndPoint.this.toString()+":"+_operation;
+            return String.format("CEP:%s:%s:%s",ChannelEndPoint.this,_operation,getInvocationType());
         }
     }
 
@@ -138,6 +138,13 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         {
             getWriteFlusher().completeWrite();
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("CEP:%s:%s:%s->%s",ChannelEndPoint.this,_operation,getInvocationType(),getWriteFlusher());
+        }
+        
     };
 
     private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
@@ -424,7 +431,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
 
     @Override
-    public String toString()
+    public String toEndPointString()
     {
         // We do a best effort to print the right toString() and that's it.
         try
@@ -433,7 +440,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             int keyInterests = valid ? _key.interestOps() : -1;
             int keyReadiness = valid ? _key.readyOps() : -1;
             return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
-                    super.toString(),
+                    super.toEndPointString(),
                     _currentInterestOps,
                     _desiredInterestOps,
                     keyInterests,
