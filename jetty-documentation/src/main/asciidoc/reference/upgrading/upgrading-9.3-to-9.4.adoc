@@ -128,7 +128,7 @@ The new default provides similar features to the old hash session management:
 Requests for the same session in the same context share the same session object.
 Session objects remain in the cache until they expire or are explicitly invalidated.
 
-If you wish to configure the default setup further, enable the `session-cache-default` module.
+If you wish to configure the default setup further, enable the `session-cache-hash` module.
 
 *Compatibility*
 
