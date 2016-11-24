@@ -125,7 +125,7 @@ public class MetaData
             if (descriptor!=null)
                 return descriptor.toString();
             if (annotation!=null)
-                return "@"+annotation.annotationType().getSimpleName()+" on "+annotated.getName();
+                return "@"+annotation.annotationType().getSimpleName()+"("+annotated.getName()+")";
             return origin.toString();
         }
     }
