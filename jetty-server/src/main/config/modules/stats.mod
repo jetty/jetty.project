@@ -10,3 +10,6 @@ server
 
 [xml]
 etc/jetty-stats.xml
+
+[ini-template]
+jetty.webapp.addServerClasses+=,-org.eclipse.jetty.servlet.StatisticsServlet
