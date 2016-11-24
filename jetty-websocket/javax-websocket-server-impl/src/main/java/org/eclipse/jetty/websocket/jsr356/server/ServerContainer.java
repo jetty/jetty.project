@@ -25,6 +25,7 @@ import javax.websocket.Endpoint;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
@@ -33,26 +34,22 @@ import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
-import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
-import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
 
-    private final MappedWebSocketCreator mappedCreator;
-    private final WebSocketServerFactory webSocketServerFactory;
+    private final NativeWebSocketConfiguration configuration;
 
-    public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
+    public ServerContainer(NativeWebSocketConfiguration nativeWebSocketConfiguration, Executor executor)
     {
         super(executor);
-        this.mappedCreator = creator;
-        this.webSocketServerFactory = factory;
-        EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
+        this.configuration = nativeWebSocketConfiguration;
+        EventDriverFactory eventDriverFactory = this.configuration.getFactory().getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
-        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this,this));
+        this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this,this));
     }
     
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
@@ -82,8 +79,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     public void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
-        JsrCreator creator = new JsrCreator(metadata,webSocketServerFactory.getExtensionFactory());
-        mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
+        JsrCreator creator = new JsrCreator(metadata,this.configuration.getFactory().getExtensionFactory());
+        this.configuration.addMapping(new UriTemplatePathSpec(metadata.getPath()),creator);
     }
 
     @Override
@@ -129,36 +126,36 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
         return metadata;
     }
-
+    
     @Override
     public long getDefaultAsyncSendTimeout()
     {
-        return webSocketServerFactory.getPolicy().getAsyncWriteTimeout();
+        return this.configuration.getPolicy().getAsyncWriteTimeout();
     }
 
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
-        return webSocketServerFactory.getPolicy().getMaxBinaryMessageSize();
+        return this.configuration.getPolicy().getMaxBinaryMessageSize();
     }
 
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
-        return webSocketServerFactory.getPolicy().getIdleTimeout();
+        return this.configuration.getPolicy().getIdleTimeout();
     }
 
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
-        return webSocketServerFactory.getPolicy().getMaxTextMessageSize();
+        return this.configuration.getPolicy().getMaxTextMessageSize();
     }
 
     @Override
     public void setAsyncSendTimeout(long ms)
     {
         super.setAsyncSendTimeout(ms);
-        webSocketServerFactory.getPolicy().setAsyncWriteTimeout(ms);
+        this.configuration.getPolicy().setAsyncWriteTimeout(ms);
     }
 
     @Override
@@ -166,16 +163,16 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         super.setDefaultMaxBinaryMessageBufferSize(max);
         // overall message limit (used in non-streaming)
-        webSocketServerFactory.getPolicy().setMaxBinaryMessageSize(max);
+        this.configuration.getPolicy().setMaxBinaryMessageSize(max);
         // incoming streaming buffer size
-        webSocketServerFactory.getPolicy().setMaxBinaryMessageBufferSize(max);
+        this.configuration.getPolicy().setMaxBinaryMessageBufferSize(max);
     }
 
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
         super.setDefaultMaxSessionIdleTimeout(ms);
-        webSocketServerFactory.getPolicy().setIdleTimeout(ms);
+        this.configuration.getPolicy().setIdleTimeout(ms);
     }
 
     @Override
@@ -183,8 +180,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         super.setDefaultMaxTextMessageBufferSize(max);
         // overall message limit (used in non-streaming)
-        webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
+        this.configuration.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
-        webSocketServerFactory.getPolicy().setMaxTextMessageBufferSize(max);
+        this.configuration.getPolicy().setMaxTextMessageBufferSize(max);
     }
 }

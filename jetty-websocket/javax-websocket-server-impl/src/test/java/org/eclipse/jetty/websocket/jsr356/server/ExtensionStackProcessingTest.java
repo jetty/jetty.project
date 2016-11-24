@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -88,8 +88,9 @@ public class ExtensionStackProcessingTest
     
     private void assumeDeflateFrameAvailable()
     {
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)servletContextHandler.getAttribute(WebSocketUpgradeFilter.class.getName());
-        ExtensionFactory serverExtensionFactory = filter.getFactory().getExtensionFactory();
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) servletContextHandler
+                .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+        ExtensionFactory serverExtensionFactory = configuration.getFactory().getExtensionFactory();
         Assume.assumeTrue("Server has permessage-deflate extension registered",serverExtensionFactory.isAvailable("permessage-deflate"));
     }
 

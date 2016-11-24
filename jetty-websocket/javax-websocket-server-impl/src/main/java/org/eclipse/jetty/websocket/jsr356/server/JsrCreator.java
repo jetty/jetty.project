@@ -28,6 +28,8 @@ import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -36,7 +38,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
-import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -134,10 +135,10 @@ public class JsrCreator implements WebSocketCreator
 
         // [JSR] Step 4: build out new ServerEndpointConfig
         PathSpec pathSpec = jsrHandshakeRequest.getRequestPathSpec();
-        if (pathSpec instanceof WebSocketPathSpec)
+        if (pathSpec instanceof UriTemplatePathSpec)
         {
             // We have a PathParam path spec
-            WebSocketPathSpec wspathSpec = (WebSocketPathSpec)pathSpec;
+            UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
             String requestPath = req.getRequestPath();
             // Wrap the config with the path spec information
             config = new PathParamServerEndpointConfig(config,wspathSpec,requestPath);

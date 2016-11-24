@@ -38,7 +38,9 @@ import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
  * Sorted into search order upon entry into the Set
  * 
  * @param <E>
+ * @deprecated use {@link org.eclipse.jetty.http.pathmap.PathMappings} instead
  */
+@Deprecated
 @ManagedObject("Path Mappings")
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {

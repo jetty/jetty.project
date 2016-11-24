@@ -18,23 +18,31 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
-import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import java.util.Set;
 
-public class DefaultMappedWebSocketCreator implements MappedWebSocketCreator
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
+public class NativeWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
-    private final PathMappings<WebSocketCreator> mappings = new PathMappings<>();
-    
-    @Override
-    public void addMapping(PathSpec spec, WebSocketCreator creator)
+    public static NativeWebSocketConfiguration getDefaultFrom(ServletContext context)
     {
-        this.mappings.put(spec, creator);
+        final String KEY = NativeWebSocketConfiguration.class.getName();
+        
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(KEY);
+        if (configuration == null)
+        {
+            configuration = new NativeWebSocketConfiguration();
+            context.setAttribute(KEY, configuration);
+        }
+        return configuration;
     }
     
     @Override
-    public PathMappings<WebSocketCreator> getMappings()
+    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
     {
-        return this.mappings;
+        // initialize
+        getDefaultFrom(ctx);
     }
 }
