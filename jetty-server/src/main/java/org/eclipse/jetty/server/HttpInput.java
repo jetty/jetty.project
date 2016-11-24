@@ -842,7 +842,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     }
                 }
                 else if (content==null)
-                    throw new IllegalStateException();
+                    return;
             }
         }
 
