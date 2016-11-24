@@ -59,8 +59,10 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
     public enum Mode {DISABLED, GENERATE, AUTO, QUCKSTART};
     private Mode _mode=Mode.AUTO;
     private boolean _quickStart;
+    private QuickStartGeneratorConfiguration _generator = new QuickStartGeneratorConfiguration();
     
-    
+
+
     public QuickStartConfiguration()
     {
         beforeThis(WebInfConfiguration.class);
@@ -77,7 +79,11 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
         return _mode;
     }
     
-
+    public QuickStartGeneratorConfiguration getGenerator()
+    {
+        return _generator;
+    }
+    
     /**
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -92,6 +98,7 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
         //look for quickstart-web.xml in WEB-INF of webapp
         Resource quickStartWebXml = getQuickStartWebXml(context);
         LOG.debug("quickStartWebXml={} exists={}",quickStartWebXml,quickStartWebXml.exists());
+ 
         _quickStart=false;
         switch(_mode)
         {
@@ -101,7 +108,9 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
                 
             case GENERATE:
                 super.preConfigure(context);     
-                context.addConfiguration(new QuickStartGeneratorConfiguration());
+                
+        
+                context.addConfiguration(_generator);
                 context.addConfiguration(new StopContextConfiguration());
                 break;
                 

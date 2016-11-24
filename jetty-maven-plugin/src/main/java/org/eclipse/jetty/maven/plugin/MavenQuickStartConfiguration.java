@@ -43,6 +43,8 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
     private Resource _quickStartWebXml;
 
     
+    
+    
     public void setQuickStartWebXml (Resource r)
     {
         _quickStartWebXml = r;
@@ -58,7 +60,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
-    {
+    {        
         //check that webapp is suitable for quick start 
         if (context.getBaseResource() == null)
             throw new IllegalStateException ("No location for webapp");  
@@ -66,9 +68,8 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         
         //look for quickstart-web.xml in WEB-INF of webapp
         Resource quickStartWebXml = getQuickStartWebXml(context);
-        LOG.debug("quickStartWebXml={}",quickStartWebXml);
-        
-        context.getMetaData().setWebXml(quickStartWebXml);
+        if (LOG.isDebugEnabled()) LOG.debug("quickStartWebXml={}",quickStartWebXml);
+        super.preConfigure(context);
     }
 
     @Override
@@ -86,7 +87,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         }
         
         //Set up the quickstart environment for the context
-        configure(context);       
+        super.configure(context);       
     }
     
     @Override
@@ -111,6 +112,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
                 }
             }
         }
+        super.deconfigure(context);
     }
     
 }

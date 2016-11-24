@@ -29,16 +29,20 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class QuickStartWebApp extends WebAppContext
 {
+
     private final QuickStartConfiguration _quickStartConfiguration;
-    
+
+
+    private String _originAttribute;
+    private boolean _generateOrigin;
     public QuickStartWebApp()
     {
         super();
         addConfiguration(
-                _quickStartConfiguration=new QuickStartConfiguration(),
-                new EnvConfiguration(),
-                new PlusConfiguration(),
-                new AnnotationConfiguration());
+                         _quickStartConfiguration=new QuickStartConfiguration(),
+                         new EnvConfiguration(),
+                         new PlusConfiguration(),
+                         new AnnotationConfiguration());
         setExtractWAR(true);
         setCopyWebDir(false);
         setCopyWebInf(false);
@@ -67,7 +71,36 @@ public class QuickStartWebApp extends WebAppContext
     {
         setAutoGenerate(autoPrecompile);
     }
-    
+
+    public void setOriginAttribute (String name)
+    {
+        _quickStartConfiguration.getGenerator().setOriginAttribute(name);
+    }
+
+    /**
+     * @return the originAttribute
+     */
+    public String getOriginAttribute()
+    {
+        return _originAttribute;
+    }
+
+    /**
+     * @return the generateOrigin
+     */
+    public boolean isGenerateOrigin()
+    {
+        return _generateOrigin;
+    }
+
+    /**
+     * @param generateOrigin the generateOrigin to set
+     */
+    public void setGenerateOrigin(boolean generateOrigin)
+    {
+        _quickStartConfiguration.getGenerator().setGenerateOrigin(generateOrigin);
+    }
+
     public boolean isGenerate()
     {
         return _quickStartConfiguration.getMode()==Mode.GENERATE;

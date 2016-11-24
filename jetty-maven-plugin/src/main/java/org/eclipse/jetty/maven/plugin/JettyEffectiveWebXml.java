@@ -49,11 +49,12 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     protected File target;
     
     /**
-     * The target directory
+     * The name of the file to generate into
      * 
      * @parameter 
      */
     protected File effectiveWebXml;
+    
     
     
     protected boolean deleteOnExit = true;
@@ -91,11 +92,11 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
             
-            
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
             webApp.setGenerateQuickStart(true);
+
 
             //if the user didn't nominate a file to generate into, pick the name and
             //make sure that it is deleted on exit

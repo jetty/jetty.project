@@ -54,6 +54,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -75,12 +76,61 @@ import org.eclipse.jetty.xml.XmlAppendable;
 public class QuickStartGeneratorConfiguration extends AbstractConfiguration implements Configuration.DisabledByDefault
 {
     private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
-        
+
+    public static final String DEFAULT_ORIGIN_ATTRIBUTE_NAME = "origin";
+    protected String _originAttribute;
+    protected boolean _generateOrigin;
+    protected int _count;
+    protected Resource _quickStartWebXml;
+    
     public QuickStartGeneratorConfiguration()
     {
+        _count = 0;
     }
 
     
+    public void setOriginAttribute (String name)
+    {
+        _originAttribute = name;
+    }
+
+    /**
+     * @return the originAttribute
+     */
+    public String getOriginAttribute()
+    {
+        return _originAttribute;
+    }
+
+    /**
+     * @return the generateOrigin
+     */
+    public boolean isGenerateOrigin()
+    {
+        return _generateOrigin;
+    }
+
+    /**
+     * @param generateOrigin the generateOrigin to set
+     */
+    public void setGenerateOrigin(boolean generateOrigin)
+    {
+        _generateOrigin = generateOrigin;
+    }
+    
+    
+    public Resource getQuickStartWebXml()
+    {
+        return _quickStartWebXml;
+    }
+
+
+    public void setQuickStartWebXml(Resource quickStartWebXml)
+    {
+        _quickStartWebXml = quickStartWebXml;
+    }
+
+
     /**
      * Perform the generation of the xml file
      * @param stream the stream to generate the quickstart-web.xml to
@@ -94,6 +144,8 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
         if (stream == null)
             throw new IllegalStateException("No output for quickstart generation");
         
+        if (_originAttribute == null)
+            _originAttribute = DEFAULT_ORIGIN_ATTRIBUTE_NAME;
         context.getMetaData().getOrigins();
 
         if (context.getBaseResource()==null)
@@ -681,7 +733,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
      */
     public Map<String, String> origin(MetaData md, String name)
     {
-        if (!LOG.isDebugEnabled())
+        if (!(_generateOrigin || LOG.isDebugEnabled()))
             return Collections.emptyMap();
         if (name == null)
             return Collections.emptyMap();
@@ -689,7 +741,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
         if (LOG.isDebugEnabled()) LOG.debug("origin of "+name+" is "+origin);
         if (origin == null)
             return Collections.emptyMap();
-        return Collections.singletonMap("origin",origin.toString());
+        return Collections.singletonMap(_originAttribute,origin.toString()+":"+(_count++));
     }
     
     
@@ -702,13 +754,17 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
         super.preConfigure(context);
     }
 
+
+
     @Override
     public void configure(WebAppContext context) throws Exception
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
 
-        Resource quickStartWebXml = context.getBaseResource().addPath("/WEB-INF/quickstart-web.xml");
+        Resource quickStartWebXml = _quickStartWebXml;
+        if (_quickStartWebXml == null)
+            quickStartWebXml = context.getBaseResource().addPath("/WEB-INF/quickstart-web.xml");
         if (!quickStartWebXml.exists())
             quickStartWebXml.getFile().createNewFile();
         try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile(),false))
@@ -716,6 +772,4 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
             generateQuickStartWebXml(context,fos);
         }
     }
-
-
 }
