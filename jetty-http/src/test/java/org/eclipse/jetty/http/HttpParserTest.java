@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.*;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -32,19 +30,21 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- *
- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class HttpParserTest
 {
-    /* ------------------------------------------------------------------------------- */
     /**
      * Parse until {@link State#END} state.
      * If the parser is already in the END state, then it is {@link HttpParser#reset()} and re-parsed.
      * @param parser The parser to test
      * @throws IllegalStateException If the buffers have already been partially parsed.
      */
-    public static void parseAll(HttpParser parser, ByteBuffer buffer)
+    private static void parseAll(HttpParser parser, ByteBuffer buffer)
     {
         if (parser.isState(State.END))
             parser.reset();
@@ -320,8 +320,6 @@ public class HttpParserTest
         assertEquals(9, _headers);
     }
 
-    
-    
     @Test
     public void testHeaderParseLF() throws Exception
     {
@@ -420,8 +418,6 @@ public class HttpParserTest
         assertEquals(0, _headers);
         assertEquals(null,_bad);
     }
-    
-    
 
     @Test
     public void testBadMethodEncoding() throws Exception
@@ -446,7 +442,6 @@ public class HttpParserTest
         parseAll(parser,buffer);
         assertThat(_bad,Matchers.notNullValue());
     }
-
 
     @Test
     public void testBadHeaderEncoding() throws Exception
@@ -582,7 +577,6 @@ public class HttpParserTest
         }
     }
 
-
     @Test
     public void testChunkParse() throws Exception
     {
@@ -673,7 +667,6 @@ public class HttpParserTest
         
     }
 
-    
     @Test
     public void testMultiParse() throws Exception
     {
@@ -738,7 +731,6 @@ public class HttpParserTest
         assertEquals("value3", _val[1]);
         assertEquals("0123456789", _content);
     }
-    
 
     @Test
     public void testMultiParseEarlyEOF() throws Exception
@@ -883,7 +875,6 @@ public class HttpParserTest
         assertTrue(_messageCompleted);
     }
 
-
     @Test
     public void testResponseParse3() throws Exception
     {
@@ -1015,8 +1006,6 @@ public class HttpParserTest
         assertFalse(buffer.hasRemaining());
         assertTrue(parser.isClosed());
     }
-    
-    
 
     @Test
     public void testNoURI() throws Exception
@@ -1036,7 +1025,6 @@ public class HttpParserTest
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-
 
     @Test
     public void testNoURI2() throws Exception
@@ -1138,7 +1126,7 @@ public class HttpParserTest
                 + "Connection: close\015\012"
                 + "\015\012");
 
-        handler = new Handler();handler = new Handler();
+        handler = new Handler();
         parser= new HttpParser(handler);
 
         parser.parseNext(buffer);
@@ -1180,9 +1168,6 @@ public class HttpParserTest
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
-    
-    
-    
 
     @Test
     public void testBadContentLength0() throws Exception
@@ -1431,7 +1416,6 @@ public class HttpParserTest
         buffer.position(0);
         parseAll(parser,buffer);
         assertTrue(field==_fields.get(0));
-        
     }
 
     @Test
@@ -1444,7 +1428,7 @@ public class HttpParserTest
                 +"Connection: close\015\012"+"\015\012"+"\015\012");
 
         Handler handler=new Handler();
-        HttpParser parser=new HttpParser((HttpParser.RequestHandler)handler);
+        HttpParser parser=new HttpParser((HttpParser.RequestHandler<ByteBuffer>)handler);
         parseAll(parser, buffer);
 
         assertTrue(_headerCompleted);
@@ -1452,7 +1436,7 @@ public class HttpParserTest
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
         assertEquals("HTTP/1.1", _versionOrReason);
-        assertEquals("PROXY TCP4 107.47.45.254 10.0.1.116 27689 80", handler._proxy);
+        assertEquals("PROXY TCP4 107.47.45.254 10.0.1.116 27689 80", _proxy);
         assertEquals("Host", _hdr[0]);
         assertEquals("localhost", _val[0]);
         assertEquals("Connection", _hdr[1]);
@@ -1464,7 +1448,7 @@ public class HttpParserTest
     public void testSplitProxyHeaderParseTest() throws Exception
     {
         Handler handler=new Handler();
-        HttpParser parser=new HttpParser((HttpParser.RequestHandler)handler);
+        HttpParser parser=new HttpParser((HttpParser.RequestHandler<ByteBuffer>)handler);
 
         ByteBuffer buffer=BufferUtil.toBuffer("PROXY TCP4 207.47.45.254 10.0.1.116 27689 80\015\012");
         parser.parseNext(buffer);
@@ -1482,14 +1466,13 @@ public class HttpParserTest
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
         assertEquals("HTTP/1.1", _versionOrReason);
-        assertEquals("PROXY TCP4 207.47.45.254 10.0.1.116 27689 80", handler._proxy);
+        assertEquals("PROXY TCP4 207.47.45.254 10.0.1.116 27689 80", _proxy);
         assertEquals("Host", _hdr[0]);
         assertEquals("localhost", _val[0]);
         assertEquals("Connection", _hdr[1]);
         assertEquals("close", _val[1]);
         assertEquals(1, _headers);
     }
-    
 
     @Test
     public void testFolded() throws Exception
@@ -1520,7 +1503,6 @@ public class HttpParserTest
         assertEquals(2, _headers);
     }
 
-    
     @Test
     public void testParseRequest() throws Exception
     {
@@ -1549,7 +1531,6 @@ public class HttpParserTest
         assertEquals("Accept",_hdr[4]);
         assertEquals("unknown",_val[4]);
     }
-    
 
     @Test
     public void testHTTP2Preface() throws Exception
@@ -1572,21 +1553,25 @@ public class HttpParserTest
         assertEquals(-1, _headers);
         assertEquals(null, _bad);
     }
-    
-    
+
     @Before
     public void init()
     {
+        _host=null;
+        _port=0;
         _bad=null;
         _content=null;
         _methodOrVersion=null;
         _uriOrStatus=null;
         _versionOrReason=null;
+        _fields.clear();
         _hdr=null;
         _val=null;
         _headers=0;
+        _early=false;
         _headerCompleted=false;
         _messageCompleted=false;
+        _proxy=null;
     }
 
     private String _host;
@@ -1600,23 +1585,19 @@ public class HttpParserTest
     private String[] _hdr;
     private String[] _val;
     private int _headers;
-    
     private boolean _early;
     private boolean _headerCompleted;
     private boolean _messageCompleted;
+    private String _proxy;
 
     private class Handler implements HttpParser.RequestHandler<ByteBuffer>, HttpParser.ResponseHandler<ByteBuffer>, HttpParser.ProxyHandler
     {
-        private HttpFields fields;
-        String _proxy;
-
         @Override
         public boolean content(ByteBuffer ref)
         {
             if (_content==null)
                 _content="";
             String c = BufferUtil.toString(ref,StandardCharsets.UTF_8);
-            //System.err.println("content '"+c+"'");
             _content= _content + c;
             ref.position(ref.limit());
             return false;
@@ -1632,8 +1613,6 @@ public class HttpParserTest
             _methodOrVersion= method;
             _uriOrStatus= BufferUtil.toUTF8String(uri);
             _versionOrReason= version==null?null:version.asString();
-
-            fields=new HttpFields();
             _messageCompleted = false;
             _headerCompleted = false;
             _early=false;
@@ -1644,7 +1623,6 @@ public class HttpParserTest
         public boolean parsedHeader(HttpField field)
         {
             _fields.add(field);
-            //System.err.println("header "+name+": "+value);
             _hdr[++_headers]= field.getName();
             _val[_headers]= field.getValue();
             return false;
@@ -1661,15 +1639,7 @@ public class HttpParserTest
         @Override
         public boolean headerComplete()
         {
-            //System.err.println("headerComplete");
             _content= null;
-            String s0=fields.toString();
-            String s1=fields.toString();
-            if (!s0.equals(s1))
-            {
-                throw new IllegalStateException();
-            }
-
             _headerCompleted = true;
             return false;
         }
@@ -1677,7 +1647,6 @@ public class HttpParserTest
         @Override
         public boolean messageComplete()
         {
-            //System.err.println("messageComplete");
             _messageCompleted = true;
             return true;
         }
@@ -1695,11 +1664,8 @@ public class HttpParserTest
             _methodOrVersion = version.asString();
             _uriOrStatus = Integer.toString(status);
             _versionOrReason = reason;
-
-            fields=new HttpFields();
             _hdr= new String[9];
             _val= new String[9];
-
             _messageCompleted = false;
             _headerCompleted = false;
             return false;

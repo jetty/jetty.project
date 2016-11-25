@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
@@ -500,9 +501,35 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
     {
+        private InetSocketAddress _localAddr;
+        private InetSocketAddress _remoteAddr;
+
         public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
             super(connector,config,endPoint,transport,input);
+        }
+
+        @Override
+        public void proxied(String protocol, String remoteAddress, String localAddress, int remotePort, int localPort)
+        {
+            _localAddr = InetSocketAddress.createUnresolved(localAddress, localPort);
+            _remoteAddr = InetSocketAddress.createUnresolved(remoteAddress, remotePort);
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            if (_localAddr != null)
+                return _localAddr;
+            return super.getLocalAddress();
+        }
+
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            if (_remoteAddr != null)
+                return _remoteAddr;
+            return super.getRemoteAddress();
         }
 
         @Override
