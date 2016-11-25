@@ -519,10 +519,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     @Override
     public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
     {
-        _request.setAttribute("PROXY", protocol);
-        _request.setServerName(sAddr);
-        _request.setServerPort(dPort);
-        _request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
+        throw new UnsupportedOperationException();
     }
 
     @Override
