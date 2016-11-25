@@ -6,9 +6,11 @@
 		 http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
   version="3.1">
 
-  <listener>
-    <listener-class>org.eclipse.jetty.websocket.server.InfoContextAttributeListener</listener-class>
-  </listener>
+  <servlet>
+    <servlet-name>info-servlet</servlet-name>
+    <servlet-class>org.eclipse.jetty.websocket.server.InfoServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
 
   <filter>
     <filter-name>wsuf</filter-name>
