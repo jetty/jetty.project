@@ -34,7 +34,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,6 +82,26 @@ import org.junit.Test;
 
 public class ResponseTest
 {
+
+    static final InetSocketAddress LOCALADDRESS;
+    
+    static
+    {
+        InetAddress ip=null;
+        try
+        {
+            ip = Inet4Address.getByName("127.0.0.42");
+        }
+        catch (UnknownHostException e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            LOCALADDRESS=new InetSocketAddress(ip,8888);
+        }
+    }
+    
     private Server _server;
     private HttpChannel _channel;
 
@@ -92,7 +116,14 @@ public class ResponseTest
         _server.setHandler(new DumpHandler());
         _server.start();
 
-        AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
+        AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000)
+        {
+            @Override
+            public InetSocketAddress getLocalAddress()
+            {
+                return LOCALADDRESS;
+            }   
+        };
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             private Throwable _channelError;
@@ -661,18 +692,21 @@ public class ResponseTest
         };
 
         int[] ports=new int[]{8080,80};
-        String[] hosts=new String[]{"myhost","192.168.0.1","0::1"};
+        String[] hosts=new String[]{null,"myhost","192.168.0.1","0::1"};
         for (int port : ports)
         {
             for (String host : hosts)
             {
                 for (int i=0;i<tests.length;i++)
                 {
+                    // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
+                    
                     Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
 
                     request.setScheme("http");
-                    request.setAuthority(host,port);
+                    if (host!=null)
+                        request.setAuthority(host,port);
                     request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
                     request.setContextPath("/path");
                     request.setRequestedSessionId("12345");
@@ -691,8 +725,10 @@ public class ResponseTest
                     response.sendRedirect(tests[i][0]);
 
                     String location = response.getHeader("Location");
-
-                    String expected=tests[i][1].replace("@HOST@",host.contains(":")?("["+host+"]"):host).replace("@PORT@",port==80?"":(":"+port));
+                    
+                    String expected = tests[i][1]
+                        .replace("@HOST@",host==null ? request.getLocalAddr() : (host.contains(":")?("["+host+"]"):host ))
+                        .replace("@PORT@",host==null ? ":8888" : (port==80?"":(":"+port)));
                     assertEquals("test-"+i+" "+host+":"+port,expected,location);
                 }
             }
@@ -753,31 +789,33 @@ public class ResponseTest
             });
             server.start();
 
-            Socket socket = new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort());
-            socket.setSoTimeout(500000);
-            socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
-            socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
-            socket.getOutputStream().flush();
-
-            LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
-            String line = reader.readLine();
-            Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
-            // look for blank line
-            while (line != null && line.length() > 0)
-                line = reader.readLine();
-
-            // Read the first line of the GET
-            line = reader.readLine();
-            Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
-
-            String last = null;
-            while (line != null)
+            try(Socket socket = new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort()))
             {
-                last = line;
-                line = reader.readLine();
-            }
+                socket.setSoTimeout(500000);
+                socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
+                socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
+                socket.getOutputStream().flush();
 
-            assertEquals("Doch", last);
+                LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
+                String line = reader.readLine();
+                Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
+                // look for blank line
+                while (line != null && line.length() > 0)
+                    line = reader.readLine();
+
+                // Read the first line of the GET
+                line = reader.readLine();
+                Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
+
+                String last = null;
+                while (line != null)
+                {
+                    last = line;
+                    line = reader.readLine();
+                }
+
+                assertEquals("Doch", last);
+            }
         }
         finally
         {
