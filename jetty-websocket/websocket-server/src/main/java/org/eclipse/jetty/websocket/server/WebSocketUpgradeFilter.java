@@ -148,6 +148,7 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
     {
         try
         {
+            alreadySetToAttribute = false;
             configuration.stop();
         }
         catch (Exception e)
