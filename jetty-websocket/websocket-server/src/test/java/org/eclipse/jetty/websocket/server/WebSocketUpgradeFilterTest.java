@@ -210,13 +210,36 @@ public class WebSocketUpgradeFilterTest
                 WSServer server = new WSServer(testDir, "/");
                 
                 server.copyClass(InfoSocket.class);
-                server.copyClass(InfoContextListener.class);
+                server.copyClass(InfoContextAttributeListener.class);
                 server.copyWebInf("wsuf-config-via-listener.xml");
                 server.start();
                 
                 WebAppContext webapp = server.createWebAppContext();
                 server.deployWebapp(webapp);
                 
+                return server.getServer();
+            }
+        }});
+    
+        // WSUF from web.xml, SCI active, apply app-ws configuration via Servlet.init
+    
+        cases.add(new Object[]{"wsuf/WebAppContext/web.xml/Servlet.init", new ServerProvider()
+        {
+            @Override
+            public Server newServer() throws Exception
+            {
+                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+            
+                WSServer server = new WSServer(testDir, "/");
+            
+                server.copyClass(InfoSocket.class);
+                server.copyClass(InfoServlet.class);
+                server.copyWebInf("wsuf-config-via-servlet-init.xml");
+                server.start();
+            
+                WebAppContext webapp = server.createWebAppContext();
+                server.deployWebapp(webapp);
+            
                 return server.getServer();
             }
         }});
