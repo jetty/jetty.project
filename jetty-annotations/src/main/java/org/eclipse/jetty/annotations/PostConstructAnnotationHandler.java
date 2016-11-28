@@ -52,7 +52,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                 Method m = (Method)methods[i];
                 if (m.isAnnotationPresent(PostConstruct.class))
                 {
-                    if (m.getParameterTypes().length != 0)
+                    if (m.getParameterCount() != 0)
                         throw new IllegalStateException(m+" has parameters");
                     if (m.getReturnType() != Void.TYPE)
                         throw new IllegalStateException(m+" is not void");

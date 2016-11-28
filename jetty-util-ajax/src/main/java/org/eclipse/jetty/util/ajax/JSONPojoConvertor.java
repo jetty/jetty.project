@@ -116,7 +116,7 @@ public class JSONPojoConvertor implements JSON.Convertor
             if (!Modifier.isStatic(m.getModifiers()) && m.getDeclaringClass()!=Object.class)
             {
                 String name=m.getName();
-                switch(m.getParameterTypes().length)
+                switch(m.getParameterCount())
                 {
                     case 0:
                         

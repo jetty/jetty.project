@@ -511,7 +511,7 @@ public class TypeUtil
         {
             if (!method.getName().equals(methodName))
                 continue;            
-            if (method.getParameterTypes().length != arg.length)
+            if (method.getParameterCount() != arg.length)
                 continue;
             if (Modifier.isStatic(method.getModifiers()) != (obj == null))
                 continue;
@@ -535,7 +535,7 @@ public class TypeUtil
         {
             if (!method.getName().equals(methodName))
                 continue;            
-            if (method.getParameterTypes().length != arg.length+1)
+            if (method.getParameterCount() != arg.length+1)
                 continue;
             if (!method.getParameterTypes()[arg.length].isArray())
                 continue;
@@ -569,10 +569,10 @@ public class TypeUtil
             if (arguments == null)
             {
                 // null arguments in .newInstance() is allowed
-                if (constructor.getParameterTypes().length != 0)
+                if (constructor.getParameterCount() != 0)
                     continue;
             }
-            else if (constructor.getParameterTypes().length != arguments.length)
+            else if (constructor.getParameterCount() != arguments.length)
                 continue;
 
             try
@@ -597,10 +597,10 @@ public class TypeUtil
             if (arguments == null)
             {
                 // null arguments in .newInstance() is allowed
-                if (constructor.getParameterTypes().length != 0)
+                if (constructor.getParameterCount() != 0)
                     continue;
             }
-            else if (constructor.getParameterTypes().length != arguments.length)
+            else if (constructor.getParameterCount() != arguments.length)
                 continue;
 
             try
