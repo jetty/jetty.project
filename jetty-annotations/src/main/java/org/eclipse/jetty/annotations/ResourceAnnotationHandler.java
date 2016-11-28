@@ -257,7 +257,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 return;
             }
 
-            if (method.getParameterTypes().length != 1)
+            if (method.getParameterCount() != 1)
             {
                 LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not single argument to method");
                 return;

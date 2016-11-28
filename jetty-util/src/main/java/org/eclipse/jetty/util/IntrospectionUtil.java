@@ -44,7 +44,7 @@ public class IntrospectionUtil
         if (!method.getName().startsWith("set"))
             return false;
         
-        if (method.getParameterTypes().length != 1)
+        if (method.getParameterCount() != 1)
             return false;
         
         return true;
