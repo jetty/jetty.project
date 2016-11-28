@@ -542,6 +542,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         StringBuilder resp = new StringBuilder();
         resp.append("HTTP/1.1 101 Upgrade\r\n");
         resp.append("Connection: upgrade\r\n");
+        resp.append("Content-Length: 0\r\n");
         resp.append("Sec-WebSocket-Accept: ");
         resp.append(AcceptHash.hashKey(key)).append("\r\n");
         if (extensionStack.hasNegotiatedExtensions())

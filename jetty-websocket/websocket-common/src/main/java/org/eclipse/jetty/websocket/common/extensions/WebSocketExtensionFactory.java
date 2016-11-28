@@ -18,8 +18,13 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import java.util.Objects;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -27,12 +32,22 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public class WebSocketExtensionFactory extends ExtensionFactory
 {
-    private WebSocketContainerScope container;
+    private final DecoratedObjectFactory objFactory;
+    private final WebSocketPolicy policy;
+    private final ByteBufferPool bufferPool;
 
     public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
+        this(container.getPolicy(), container.getObjectFactory(), container.getBufferPool());
+    }
+
+    public WebSocketExtensionFactory(WebSocketPolicy policy, DecoratedObjectFactory objectFactory, ByteBufferPool byteBufferPool)
+    {
         super();
-        this.container = container;
+        Objects.requireNonNull(objectFactory,"DecoratedObjectFactory");
+        this.policy = policy;
+        this.objFactory = objectFactory;
+        this.bufferPool = byteBufferPool;
     }
 
     @Override
@@ -57,11 +72,11 @@ public class WebSocketExtensionFactory extends ExtensionFactory
 
         try
         {
-            Extension ext = container.getObjectFactory().createInstance(extClass);
+            Extension ext = objFactory.createInstance(extClass);
             if (ext instanceof AbstractExtension)
             {
                 AbstractExtension aext = (AbstractExtension)ext;
-                aext.init(container);
+                aext.init(policy, bufferPool);
                 aext.setConfig(config);
             }
             return ext;

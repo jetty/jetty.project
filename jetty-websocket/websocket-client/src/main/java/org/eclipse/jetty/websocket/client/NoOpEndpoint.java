@@ -16,17 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.io;
+package org.eclipse.jetty.websocket.client;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
- * Deprecated holder for connection information
- * @deprecated use of {@link HttpClient} with WebSocketClient is recommended
+ * WebSocket endpoint that does nothing.
  */
-@Deprecated
-public abstract class ConnectPromise extends FuturePromise<Session> implements Runnable
+public class NoOpEndpoint extends WebSocketAdapter
 {
+    /* does nothing */
 }

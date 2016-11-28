@@ -79,8 +79,8 @@ public abstract class WebSocketHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
-        configure(webSocketFactory);
         super.doStart();
+        configure(webSocketFactory);
     }
 
     public WebSocketServletFactory getWebSocketFactory()

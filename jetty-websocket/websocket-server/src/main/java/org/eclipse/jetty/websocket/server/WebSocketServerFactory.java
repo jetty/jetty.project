@@ -95,7 +95,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final WebSocketPolicy defaultPolicy;
     private final EventDriverFactory eventDriverFactory;
     private final ByteBufferPool bufferPool;
-    private final WebSocketExtensionFactory extensionFactory;
+    private WebSocketExtensionFactory extensionFactory;
     private Executor executor;
     private List<SessionFactory> sessionFactories;
     private WebSocketCreator creator;
@@ -421,6 +421,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             // no "Upgrade: websocket" header present.
             return false;
         }
+
+        // Needs valid objectFactory
+        this.extensionFactory = new WebSocketExtensionFactory(this);
         
         if (!"websocket".equalsIgnoreCase(upgrade))
         {

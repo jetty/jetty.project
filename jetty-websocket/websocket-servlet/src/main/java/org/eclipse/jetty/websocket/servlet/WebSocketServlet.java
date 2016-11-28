@@ -128,14 +128,11 @@ public abstract class WebSocketServlet extends HttpServlet
             }
 
             factory = WebSocketServletFactory.Loader.create(policy);
+            ServletContext ctx = getServletContext();
+            factory.init(ctx);
+            ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
 
             configure(factory);
-            
-            ServletContext ctx = getServletContext();
-
-            factory.init(ctx);
-            
-            ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
         }
         catch (Exception x)
         {

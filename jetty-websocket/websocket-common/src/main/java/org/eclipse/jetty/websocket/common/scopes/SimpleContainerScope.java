@@ -106,14 +106,16 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         this.sslContextFactory = sslContextFactory;
     }
-
+    
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
+        /* do nothing */
     }
 
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
+        /* do nothing */
     }
 }
