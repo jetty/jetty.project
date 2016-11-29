@@ -16,30 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-public class DummyCreator implements MappedWebSocketCreator
+@WebSocket
+public class InfoSocket
 {
-    @Override
-    public void addMapping(org.eclipse.jetty.websocket.server.pathmap.PathSpec spec, WebSocketCreator creator)
+    private Session session;
+    
+    @OnWebSocketConnect
+    public void onConnect(Session session)
     {
-        /* do nothing */
+        this.session = session;
     }
     
-    @Override
-    public void addMapping(PathSpec spec, WebSocketCreator creator)
+    @OnWebSocketMessage
+    public void onMessage(String msg)
     {
-        /* do nothing */
-    }
-    
-    @Override
-    public MappedResource<WebSocketCreator> getMapping(String target)
-    {
-        return null;
+        RemoteEndpoint remote = this.session.getRemote();
+        remote.sendStringByFuture("session.maxTextMessageSize=" + session.getPolicy().getMaxTextMessageSize());
     }
 }
