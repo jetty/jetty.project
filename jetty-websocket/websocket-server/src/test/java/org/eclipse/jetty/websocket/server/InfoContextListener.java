@@ -31,7 +31,7 @@ public class InfoContextListener implements WebSocketCreator, ServletContextList
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration();
+        NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(sce.getServletContext());
         configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
         configuration.addMapping(new ServletPathSpec("/info/*"), this);
         sce.getServletContext().setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);

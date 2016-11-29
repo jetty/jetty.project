@@ -53,8 +53,9 @@ public abstract class WebSocketHandler extends HandlerWrapper
             factory.register(websocketPojo);
         }
     }
-
-    private final WebSocketServletFactory webSocketFactory;
+    
+    private final ByteBufferPool bufferPool;
+    private WebSocketServletFactory webSocketFactory;
 
     public WebSocketHandler()
     {
@@ -63,10 +64,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
     
     public WebSocketHandler(ByteBufferPool bufferPool)
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        configurePolicy(policy);
-        webSocketFactory = new WebSocketServerFactory(policy, bufferPool);
-        addBean(webSocketFactory);
+        this.bufferPool = bufferPool;
     }
 
     public abstract void configure(WebSocketServletFactory factory);
@@ -79,12 +77,18 @@ public abstract class WebSocketHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        configurePolicy(policy);
+        webSocketFactory = new WebSocketServerFactory(policy, getServer().getThreadPool(), bufferPool);
+        addBean(webSocketFactory);
         configure(webSocketFactory);
         super.doStart();
     }
-
+    
     public WebSocketServletFactory getWebSocketFactory()
     {
+        if (!isRunning())
+            throw new IllegalStateException("Not Started yet");
         return webSocketFactory;
     }
 

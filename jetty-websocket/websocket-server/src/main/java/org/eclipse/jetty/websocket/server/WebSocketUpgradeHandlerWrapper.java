@@ -30,20 +30,21 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements MappedWebSocketCreator
 {
     private NativeWebSocketConfiguration configuration;
 
-    public WebSocketUpgradeHandlerWrapper()
+    public WebSocketUpgradeHandlerWrapper(ServletContextHandler context)
     {
-        this(new MappedByteBufferPool());
+        this(context, new MappedByteBufferPool());
     }
     
-    public WebSocketUpgradeHandlerWrapper(ByteBufferPool bufferPool)
+    public WebSocketUpgradeHandlerWrapper(ServletContextHandler context, ByteBufferPool bufferPool)
     {
-        this.configuration = new NativeWebSocketConfiguration(new WebSocketServerFactory(bufferPool));
+        this.configuration = new NativeWebSocketConfiguration(new WebSocketServerFactory(context.getServletContext(), bufferPool));
     }
     
     @Override

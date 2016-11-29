@@ -85,6 +85,8 @@ public class OnPartialTest
         URI requestURI = URI.create("ws://localhost/" + id);
         DummyConnection connection = new DummyConnection();
         ClientContainer container = new ClientContainer();
+        container.start();
+        
         @SuppressWarnings("resource")
         JsrSession session = new JsrSession(container,id,requestURI,driver,connection);
         session.setPolicy(policy);

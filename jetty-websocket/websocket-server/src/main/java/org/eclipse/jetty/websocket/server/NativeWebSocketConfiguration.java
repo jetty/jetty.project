@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 
+import javax.servlet.ServletContext;
+
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -44,9 +46,9 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     private final WebSocketServerFactory factory;
     private final PathMappings<WebSocketCreator> mappings = new PathMappings<>();
     
-    public NativeWebSocketConfiguration()
+    public NativeWebSocketConfiguration(ServletContext context)
     {
-        this(new WebSocketServerFactory());
+        this(new WebSocketServerFactory(context));
     }
     
     public NativeWebSocketConfiguration(WebSocketServerFactory webSocketServerFactory)

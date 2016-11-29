@@ -163,7 +163,7 @@ public class WebSocketUpgradeFilterTest
                 server.setHandler(context);
                 context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
                 
-                NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration();
+                NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
                 configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
                 configuration.addMapping(new ServletPathSpec("/info/*"), infoCreator);
                 context.getServletContext().setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);

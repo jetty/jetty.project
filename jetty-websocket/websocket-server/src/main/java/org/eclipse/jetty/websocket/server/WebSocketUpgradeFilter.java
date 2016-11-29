@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -45,7 +44,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -55,11 +53,9 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 @ManagedObject("WebSocket Upgrade Filter")
 public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
 {
+    private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     public static final String CONFIG_ATTRIBUTE_KEY = "configAttributeKey";
-    private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
-    private boolean localMapper;
-    private boolean localFactory;
 
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
@@ -122,9 +118,9 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
         // do nothing
     }
     
-    public WebSocketUpgradeFilter(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public WebSocketUpgradeFilter(WebSocketServerFactory factory)
     {
-        this(new NativeWebSocketConfiguration(new WebSocketServerFactory(policy, bufferPool)));
+        this(new NativeWebSocketConfiguration(factory));
     }
     
     public WebSocketUpgradeFilter(NativeWebSocketConfiguration configuration)

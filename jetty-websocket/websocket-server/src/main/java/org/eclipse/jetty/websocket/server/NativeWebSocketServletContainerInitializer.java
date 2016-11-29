@@ -33,7 +33,7 @@ public class NativeWebSocketServletContainerInitializer implements ServletContai
         NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(KEY);
         if (configuration == null)
         {
-            configuration = new NativeWebSocketConfiguration();
+            configuration = new NativeWebSocketConfiguration(context);
             context.setAttribute(KEY, configuration);
         }
         return configuration;
