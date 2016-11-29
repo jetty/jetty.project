@@ -663,7 +663,7 @@ public class ObjectMBean implements DynamicMBean
                 {
 
                     // look for a declared setter
-                    if (methods[m].getName().equals(declaredSetter) && methods[m].getParameterTypes().length == 1)
+                    if (methods[m].getName().equals(declaredSetter) && methods[m].getParameterCount() == 1)
                     {
                         if (setter != null)
                         {
@@ -682,7 +682,7 @@ public class ObjectMBean implements DynamicMBean
                 }
 
                 // look for a setter
-                if ( methods[m].getName().equals("set" + uName) && methods[m].getParameterTypes().length == 1)
+                if ( methods[m].getName().equals("set" + uName) && methods[m].getParameterCount() == 1)
                 {
                     if (setter != null)
                     {
