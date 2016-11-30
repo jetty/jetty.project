@@ -30,6 +30,7 @@ import org.eclipse.jetty.start.BaseBuilder;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Module;
+import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartLog;
 
 /**
@@ -51,7 +52,7 @@ public class StartDirBuilder implements BaseBuilder.Config
     }
 
     @Override
-    public String addModule(Module module) throws IOException
+    public String addModule(Module module, Props props) throws IOException
     {
         if (module.isDynamic())
         {
@@ -69,7 +70,7 @@ public class StartDirBuilder implements BaseBuilder.Config
             Path ini = startDir.resolve(module.getName() + ".ini");
             try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
             {
-                module.writeIniSection(writer);
+                module.writeIniSection(writer,props);
             }
             return baseHome.toShortForm(ini);
         }
