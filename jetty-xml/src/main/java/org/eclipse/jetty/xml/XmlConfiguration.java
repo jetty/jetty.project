@@ -527,8 +527,10 @@ public class XmlConfiguration
             Method set = null;
             for (int s = 0; sets != null && s < sets.length; s++)
             {
+                if (sets[s].getParameterCount()!=1)
+                    continue;
                 Class<?>[] paramTypes = sets[s].getParameterTypes();
-                if (name.equals(sets[s].getName()) && paramTypes.length == 1)
+                if (name.equals(sets[s].getName()))
                 {
                     // lets try it
                     try
