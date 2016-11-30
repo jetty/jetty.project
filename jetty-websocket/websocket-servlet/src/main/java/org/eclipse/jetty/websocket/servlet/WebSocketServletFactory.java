@@ -66,8 +66,6 @@ public interface WebSocketServletFactory
     void start() throws Exception;
     void stop() throws Exception;
     
-    WebSocketServletFactory createFactory(ServletContext context, WebSocketPolicy policy);
-    
     WebSocketCreator getCreator();
     
     ExtensionFactory getExtensionFactory();

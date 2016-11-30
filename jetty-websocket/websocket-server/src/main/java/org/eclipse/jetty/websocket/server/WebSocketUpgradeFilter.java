@@ -39,7 +39,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -51,7 +50,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketCreator} objects.
  */
 @ManagedObject("WebSocket Upgrade Filter")
-public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
+public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
     public static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
@@ -111,6 +110,7 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
     }
     
     private NativeWebSocketConfiguration configuration;
+    private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
     
     public WebSocketUpgradeFilter()
@@ -150,7 +150,10 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
         try
         {
             alreadySetToAttribute = false;
-            configuration.stop();
+            if(localConfiguration)
+            {
+                configuration.stop();
+            }
         }
         catch (Exception e)
         {
@@ -310,7 +313,11 @@ public class WebSocketUpgradeFilter extends AbstractLifeCycle implements Filter,
                 }
             }
             
-            this.configuration.start();
+            if(!this.configuration.isRunning())
+            {
+                localConfiguration = true;
+                this.configuration.start();
+            }
             
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)

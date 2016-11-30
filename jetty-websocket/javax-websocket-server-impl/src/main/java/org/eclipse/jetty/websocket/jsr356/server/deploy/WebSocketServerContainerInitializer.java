@@ -146,7 +146,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         if(isEnabledViaContext(context.getServletContext(), ADD_DYNAMIC_FILTER_KEY, true))
         {
             WebSocketUpgradeFilter.configureContext(context);
-            NativeWebSocketServletContainerInitializer.getDefaultFrom(context.getServletContext());
         }
     
         return jettyContainer;

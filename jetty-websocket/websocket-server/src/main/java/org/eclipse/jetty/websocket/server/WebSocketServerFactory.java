@@ -85,9 +85,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
-    /**
-     * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
-     */
+    // TODO: obtain shared (per server scheduler, somehow)
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
     private final String supportedVersions;
@@ -95,12 +93,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final EventDriverFactory eventDriverFactory;
     private final ByteBufferPool bufferPool;
     private final WebSocketExtensionFactory extensionFactory;
-    private ServletContext context; // can be null when this factory is used from WebSocketHandler
+    private final ServletContext context; // can be null when this factory is used from WebSocketHandler
+    private final List<SessionFactory> sessionFactories = new ArrayList<>();
+    private final List<Class<?>> registeredSocketClasses = new ArrayList<>();
     private Executor executor;
-    private List<SessionFactory> sessionFactories;
-    private WebSocketCreator creator;
-    private List<Class<?>> registeredSocketClasses;
     private DecoratedObjectFactory objectFactory;
+    private WebSocketCreator creator;
     
     public WebSocketServerFactory(ServletContext context)
     {
@@ -125,45 +123,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        Objects.requireNonNull(context, ServletContext.class.getName());
-        
-        this.context = context;
-        
-        handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
-        
-        addBean(scheduler);
-        addBean(bufferPool);
-        
-        this.contextClassloader = Thread.currentThread().getContextClassLoader();
-        
-        this.registeredSocketClasses = new ArrayList<>();
-        
-        this.defaultPolicy = policy;
-        this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
-        this.bufferPool = bufferPool;
-        this.extensionFactory = new WebSocketExtensionFactory(this);
-        
-        this.sessionFactories = new ArrayList<>();
-        this.sessionFactories.add(new WebSocketSessionFactory(this));
-        this.creator = this;
-        
-        // Create supportedVersions
-        List<Integer> versions = new ArrayList<>();
-        for (int v : handshakes.keySet())
-        {
-            versions.add(v);
-        }
-        Collections.sort(versions, Collections.reverseOrder()); // newest first
-        StringBuilder rv = new StringBuilder();
-        for (int v : versions)
-        {
-            if (rv.length() > 0)
-            {
-                rv.append(", ");
-            }
-            rv.append(v);
-        }
-        supportedVersions = rv.toString();
+        this(Objects.requireNonNull(context, ServletContext.class.getName()), policy, null, null, bufferPool);
     }
     
     /**
@@ -175,7 +135,13 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      */
     protected WebSocketServerFactory(WebSocketPolicy policy, Executor executor, ByteBufferPool bufferPool)
     {
-        this.objectFactory = new DecoratedObjectFactory();
+        this(null, policy, new DecoratedObjectFactory(), executor, bufferPool);
+    }
+    
+    private WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, DecoratedObjectFactory objectFactory, Executor executor, ByteBufferPool bufferPool)
+    {
+        this.context = context;
+        this.objectFactory = objectFactory;
         this.executor = executor;
         
         handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
@@ -185,14 +151,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         
         this.contextClassloader = Thread.currentThread().getContextClassLoader();
         
-        this.registeredSocketClasses = new ArrayList<>();
-        
         this.defaultPolicy = policy;
         this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
         this.bufferPool = bufferPool;
         this.extensionFactory = new WebSocketExtensionFactory(this);
         
-        this.sessionFactories = new ArrayList<>();
         this.sessionFactories.add(new WebSocketSessionFactory(this));
         this.creator = this;
         
@@ -287,12 +250,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.sessionFactories.add(sessionFactory);
     }
     
-    @Override
-    public WebSocketServletFactory createFactory(ServletContext context, WebSocketPolicy policy)
-    {
-        return new WebSocketServerFactory(context, policy, bufferPool);
-    }
-    
     private WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
         if (websocket == null)
@@ -353,7 +310,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             this.objectFactory = (DecoratedObjectFactory) context.getAttribute(DecoratedObjectFactory.ATTR);
             if (this.objectFactory == null)
             {
-                throw new RuntimeException("Unable to find required ServletContext attribute: " + DecoratedObjectFactory.ATTR);
+                throw new IllegalStateException("Unable to find required ServletContext attribute: " + DecoratedObjectFactory.ATTR);
             }
         }
     

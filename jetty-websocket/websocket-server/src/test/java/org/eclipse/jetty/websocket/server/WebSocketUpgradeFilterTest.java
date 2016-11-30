@@ -208,10 +208,10 @@ public class WebSocketUpgradeFilterTest
                 File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
                 
                 WSServer server = new WSServer(testDir, "/");
-                
+    
+                server.copyWebInf("wsuf-config-via-listener.xml");
                 server.copyClass(InfoSocket.class);
                 server.copyClass(InfoContextAttributeListener.class);
-                server.copyWebInf("wsuf-config-via-listener.xml");
                 server.start();
                 
                 WebAppContext webapp = server.createWebAppContext();
@@ -231,10 +231,33 @@ public class WebSocketUpgradeFilterTest
                 File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
             
                 WSServer server = new WSServer(testDir, "/");
-            
+    
+                server.copyWebInf("wsuf-config-via-servlet-init.xml");
                 server.copyClass(InfoSocket.class);
                 server.copyClass(InfoServlet.class);
-                server.copyWebInf("wsuf-config-via-servlet-init.xml");
+                server.start();
+            
+                WebAppContext webapp = server.createWebAppContext();
+                server.deployWebapp(webapp);
+            
+                return server.getServer();
+            }
+        }});
+        
+        // xml based, wsuf, on alternate url-pattern and config attribute location
+
+        cases.add(new Object[]{"wsuf/WebAppContext/web.xml/ServletContextListener/alt-config", new ServerProvider()
+        {
+            @Override
+            public Server newServer() throws Exception
+            {
+                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+            
+                WSServer server = new WSServer(testDir, "/");
+    
+                server.copyWebInf("wsuf-alt-config-via-listener.xml");
+                server.copyClass(InfoSocket.class);
+                server.copyClass(InfoContextAltAttributeListener.class);
                 server.start();
             
                 WebAppContext webapp = server.createWebAppContext();
