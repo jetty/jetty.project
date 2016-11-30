@@ -112,6 +112,8 @@ public class StartArgs
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
+    private final BaseHome baseHome;
+    
     /** List of enabled modules */
     private List<String> modules = new ArrayList<>();
 
@@ -182,8 +184,9 @@ public class StartArgs
     private boolean approveAllLicenses = false;
    
 
-    public StartArgs()
+    public StartArgs(BaseHome baseHome)
     {
+        this.baseHome = baseHome;
         classpath = new Classpath();
     }
 
@@ -234,7 +237,7 @@ public class StartArgs
         }
     }
 
-    public void dumpActiveXmls(BaseHome baseHome)
+    public void dumpActiveXmls()
     {
         System.out.println();
         System.out.println("Jetty Active XMLs:");
@@ -251,7 +254,7 @@ public class StartArgs
         }
     }
 
-    public void dumpEnvironment(BaseHome baseHome)
+    public void dumpEnvironment()
     {
         // Java Details
         System.out.println();
@@ -442,7 +445,7 @@ public class StartArgs
      * @throws IOException
      *             if unable to expand the libraries
      */
-    public void expandLibs(BaseHome baseHome) throws IOException
+    public void expandLibs() throws IOException
     {
         StartLog.debug("Expanding Libs");
         for (String rawlibref : rawLibs)
@@ -464,14 +467,12 @@ public class StartArgs
     /**
      * Build up the Classpath and XML file references based on enabled Module list.
      *
-     * @param baseHome
-     *            the base home in use
      * @param activeModules
      *            the active (selected) modules
      * @throws IOException
      *             if unable to expand the modules
      */
-    public void expandModules(BaseHome baseHome, List<Module> activeModules) throws IOException
+    public void expandModules(List<Module> activeModules) throws IOException
     {
         StartLog.debug("Expanding Modules");
         for (Module module : activeModules)
@@ -543,7 +544,7 @@ public class StartArgs
         return jvmArgs;
     }
 
-    public CommandLineBuilder getMainArgs(BaseHome baseHome, boolean addJavaInit) throws IOException
+    public CommandLineBuilder getMainArgs(boolean addJavaInit) throws IOException
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
 
@@ -851,6 +852,28 @@ public class StartArgs
             return;
         }
 
+        if (arg.startsWith("--commands="))
+        {
+            Path commands = baseHome.getPath(Props.getValue(arg));
+            
+            if (!Files.exists(commands) || !Files.isReadable(commands))
+                throw new UsageException(ERR_BAD_ARG,"--commands file must be readable: %s",commands);
+            try
+            {
+                TextFile file = new TextFile(commands);
+                StartLog.info("reading commands from %s",baseHome.toShortForm(commands));
+                String s = source+"|"+baseHome.toShortForm(commands);
+                for (String line: file)
+                {
+                    parse(line,s);
+                }
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
         if (arg.startsWith("--include-jetty-dir="))
         {
             // valid, but handled in ConfigSources instead
@@ -1133,7 +1156,7 @@ public class StartArgs
         }
     }
     
-    public void resolveExtraXmls(BaseHome baseHome) throws IOException
+    public void resolveExtraXmls() throws IOException
     {
         // Find and Expand XML files
         for (String xmlRef : xmlRefs)
@@ -1148,7 +1171,7 @@ public class StartArgs
         }
     }
 
-    public void resolvePropertyFiles(BaseHome baseHome) throws IOException
+    public void resolvePropertyFiles() throws IOException
     {
         // Find and Expand property files
         for (String propertyFileRef : propertyFileRefs)

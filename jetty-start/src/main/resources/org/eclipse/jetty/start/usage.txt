@@ -40,6 +40,10 @@ Command Line Options:
                    properties to the sub process. This allows the 
                    generated properties file to be saved and reused.
                    Without this option, a temporary file is used.
+                   
+  --commands=<filename>
+                   Use each line of the file as arguments on the command
+                   line.
 
 Debug and Start Logging:
 ------------------------
