@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.http.pathmap.PathMappings;
-import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 /**
@@ -27,7 +27,32 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
  */
 public interface MappedWebSocketCreator
 {
-    public void addMapping(PathSpec spec, WebSocketCreator creator);
-
-    public PathMappings<WebSocketCreator> getMappings();
+    /**
+     * Add a mapping.
+     *
+     * @param spec the path spec to use
+     * @param creator the creator for the mapping
+     * @deprecated use {@link #addMapping(org.eclipse.jetty.http.pathmap.PathSpec, WebSocketCreator)} instead.
+     * (support classes moved to generic jetty-http project)
+     */
+    @Deprecated
+    void addMapping(PathSpec spec, WebSocketCreator creator);
+    
+    /**
+     * Add a mapping.
+     *
+     * @param spec the path spec to use
+     * @param creator the creator for the mapping
+     * @since 9.2.20
+     */
+    void addMapping(org.eclipse.jetty.http.pathmap.PathSpec spec, WebSocketCreator creator);
+    
+    /**
+     * Get specific MappedResource for associated target.
+     *
+     * @param target the target to get mapping for
+     * @return the MappedResource for the target, or null if no match.
+     * @since 9.2.20
+     */
+    MappedResource<WebSocketCreator> getMapping(String target);
 }

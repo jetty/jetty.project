@@ -166,6 +166,12 @@ public class DecoderFactory implements Configurable
         {
             LOG.debug("init({})",config);
         }
+        
+        if(!containerScope.isRunning())
+        {
+            throw new RuntimeException(containerScope.getClass().getName() + " is not running yet");
+        }
+        
         // Instantiate all declared decoders
         for (DecoderMetadata metadata : metadatas)
         {
