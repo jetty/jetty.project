@@ -224,7 +224,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @param objectFactory
      *            shared DecoratedObjectFactory
      */
-    public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
+    private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
         this.httpClient = new HttpClient(sslContextFactory);
         this.httpClient.setExecutor(executor);
@@ -638,7 +638,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this.httpClient.setDispatchIO(dispatchIO);
     }
-
+    
     public void setExecutor(Executor executor)
     {
         this.httpClient.setExecutor(executor);
