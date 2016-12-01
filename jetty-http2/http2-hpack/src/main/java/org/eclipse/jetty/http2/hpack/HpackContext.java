@@ -116,7 +116,7 @@ public class HpackContext
     private static final Trie<StaticEntry> __staticNameMap = new ArrayTernaryTrie<>(true,512);
     private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.UNKNOWN.ordinal()];
     private static final StaticEntry[] __staticTable=new StaticEntry[STATIC_TABLE.length];
-    private static final int STATIC_SIZE = STATIC_TABLE.length-1;
+    public static final int STATIC_SIZE = STATIC_TABLE.length-1;
     static
     {
         Set<String> added = new HashSet<>();
