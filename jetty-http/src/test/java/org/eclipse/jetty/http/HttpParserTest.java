@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -30,9 +34,6 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 public class HttpParserTest
 {
@@ -590,6 +591,28 @@ public class HttpParserTest
         Assert.assertEquals("\u00e6 \u00e6", _val[0]);
         Assert.assertEquals(0, _headers);
         Assert.assertEquals(null, _bad);
+    }
+    
+    @Test
+    public void testResponseBufferUpgradeFrom() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "HTTP/1.1 101 Upgrade\r\n" +
+                "Connection: upgrade\r\n" +
+                "Content-Length: 0\r\n" +
+                "Sec-WebSocket-Accept: 4GnyoUP4Sc1JD+2pCbNYAhFYVVA\r\n" +
+                "\r\n" +
+                "FOOGRADE");
+    
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+    
+        while (!parser.isState(State.END))
+        {
+            parser.parseNext(buffer);
+        }
+        
+        assertThat(BufferUtil.toUTF8String(buffer), is("FOOGRADE"));
     }
 
     @Test
