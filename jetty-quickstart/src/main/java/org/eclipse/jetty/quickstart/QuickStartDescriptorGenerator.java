@@ -77,6 +77,7 @@ public class QuickStartDescriptorGenerator
 {
     private static final Logger LOG = Log.getLogger(QuickStartDescriptorGenerator.class);
     
+    public static final String ORIGIN = "org.eclipse.jetty.originAttribute";
     public static final String DEFAULT_QUICKSTART_DESCRIPTOR_NAME = "quickstart-web.xml";
     public static final String DEFAULT_ORIGIN_ATTRIBUTE_NAME = "origin";
     
@@ -152,6 +153,16 @@ public class QuickStartDescriptorGenerator
         addContextParamFromAttribute(out,MetaInfConfiguration.METAINF_RESOURCES,normalizer);
 
 
+        //add the name of the origin attribute, if it is being used
+        if (_generateOrigin)
+        {
+            out.openTag("context-param")
+            .tag("param-name", ORIGIN)
+            .tag("param-value", _originAttribute)
+            .closeTag();    
+        }
+        
+        
         // init params
         for (String p : _webApp.getInitParams().keySet())
             out.openTag("context-param",origin(md,"context-param." + p))

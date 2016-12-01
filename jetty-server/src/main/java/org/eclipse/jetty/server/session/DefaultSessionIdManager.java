@@ -354,7 +354,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
         if (_houseKeeper == null)
         {
-            LOG.warn("No SessionScavenger set, using defaults");
+            LOG.info("No SessionScavenger set, using defaults");
             _ownHouseKeeper = true;
             _houseKeeper = new HouseKeeper();
             _houseKeeper.setSessionIdManager(this);
