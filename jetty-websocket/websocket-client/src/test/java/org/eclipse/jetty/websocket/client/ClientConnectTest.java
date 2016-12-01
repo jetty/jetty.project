@@ -18,19 +18,24 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
@@ -87,7 +92,8 @@ public class ClientConnectTest
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient(bufferPool);
+        client = new WebSocketClient();
+        client.setBufferPool(bufferPool);
         client.setConnectTimeout(timeout);
         client.start();
     }
@@ -124,10 +130,36 @@ public class ClientConnectTest
 
         Session sess = future.get(30,TimeUnit.SECONDS);
         
-        sess.close();
+        wsocket.waitForConnected(1, TimeUnit.SECONDS);
         
         assertThat("Connect.UpgradeRequest", wsocket.connectUpgradeRequest, notNullValue());
         assertThat("Connect.UpgradeResponse", wsocket.connectUpgradeResponse, notNullValue());
+        
+        sess.close();
+    }
+    
+    @Test
+    public void testAltConnect() throws Exception
+    {
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
+        URI wsUri = server.getWsUri();
+        
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        
+        WebSocketUpgradeRequest req = new WebSocketUpgradeRequest(new WebSocketClient(), httpClient, wsUri, wsocket);
+        req.header("X-Foo","Req");
+        CompletableFuture<Session> sess = req.sendAsync();
+
+        sess.thenAccept((s) -> {
+            System.out.printf("Session: %s%n",s);
+            s.close();
+            assertThat("Connect.UpgradeRequest",wsocket.connectUpgradeRequest,notNullValue());
+            assertThat("Connect.UpgradeResponse",wsocket.connectUpgradeResponse,notNullValue());
+        });
+        
+        IBlockheadServerConnection connection = server.accept();
+        connection.upgrade();
     }
 
     @Test
@@ -141,7 +173,9 @@ public class ClientConnectTest
         IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // no upgrade, just fail with a 404 error
-        connection.respond("HTTP/1.1 404 NOT FOUND\r\n\r\n");
+        connection.respond("HTTP/1.1 404 NOT FOUND\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
 
         // The attempt to get upgrade response future should throw error
         try
@@ -170,7 +204,9 @@ public class ClientConnectTest
         IBlockheadServerConnection connection = server.accept();
         connection.readRequest();
         // Send OK to GET but not upgrade
-        connection.respond("HTTP/1.1 200 OK\r\n\r\n");
+        connection.respond("HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
 
         // The attempt to get upgrade response future should throw error
         try
@@ -205,6 +241,7 @@ public class ClientConnectTest
         resp.append("HTTP/1.1 200 OK\r\n"); // intentionally 200 (not 101)
         // Include a value accept key
         resp.append("Sec-WebSocket-Accept: ").append(AcceptHash.hashKey(key)).append("\r\n");
+        resp.append("Content-Length: 0\r\n");
         resp.append("\r\n");
         connection.respond(resp.toString());
 

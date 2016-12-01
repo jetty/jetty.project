@@ -79,26 +79,35 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     private final DecoderFactory decoderFactory;
     /** Tracking all primitive encoders for the container */
     private final EncoderFactory encoderFactory;
+    /** The jetty websocket client in use for this container */
+    private final WebSocketClient client;
     /** Tracking for all declared Client endpoints */
     private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
-    /** The jetty websocket client in use for this container */
-    private WebSocketClient client;
-
+    
+    /**
+     * This is the entry point for {@link javax.websocket.ContainerProvider#getWebSocketContainer()}
+     */
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
         this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         client.setDaemon(true);
     }
-
+    
+    /**
+     * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
+     *
+     * @param scope the scope of the ServerContainer
+     */
     public ClientContainer(WebSocketContainerScope scope)
     {
         boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
 
         this.scopeDelegate = scope;
-        client = new WebSocketClient(scope, new SslContextFactory(trustAll));
-        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
-        client.setSessionFactory(new JsrSessionFactory(this));
+        client = new WebSocketClient(scope,
+                new JsrEventDriverFactory(scope.getPolicy()),
+                new JsrSessionFactory(this));
+        client.getSslContextFactory().setTrustAll(trustAll);
         addBean(client);
 
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
