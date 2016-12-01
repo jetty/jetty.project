@@ -33,18 +33,14 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.server.DefaultMappedWebSocketCreator;
-import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 
 @HandlesTypes(
@@ -137,18 +133,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
         // Create Basic components
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
-        MappedWebSocketCreator creator = new DefaultMappedWebSocketCreator();
-        WebSocketServerFactory factory = new WebSocketServerFactory(policy, bufferPool);
-
+        NativeWebSocketConfiguration nativeWebSocketConfiguration = NativeWebSocketServletContainerInitializer.getDefaultFrom(context.getServletContext());
+        
         // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(creator,factory,context.getServer().getThreadPool());
+        ServerContainer jettyContainer = new ServerContainer(nativeWebSocketConfiguration, context.getServer().getThreadPool());
         context.addBean(jettyContainer);
         
-        context.setAttribute(WebSocketUpgradeFilter.CREATOR_KEY, creator);
-        context.setAttribute(WebSocketUpgradeFilter.FACTORY_KEY, factory);
-
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
     

@@ -36,6 +36,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
+
 /**
  * Represents a Module metadata, as defined in Jetty.
  * 
@@ -59,6 +62,8 @@ public class Module implements Comparable<Module>
 {
     private static final String VERSION_UNSPECIFIED = "9.2";
     private static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
+    private static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
+
 
     /** The file of the module */
     private final Path _path;
@@ -505,8 +510,8 @@ public class Module implements Comparable<Module>
     {
         return isEnabled() && !_notTransitive;
     }
-
-    public void writeIniSection(BufferedWriter writer)
+    
+    public void writeIniSection(BufferedWriter writer, Props props)
     {
         PrintWriter out = new PrintWriter(writer);
         out.println("# --------------------------------------- ");
@@ -517,7 +522,23 @@ public class Module implements Comparable<Module>
         out.println("--module=" + getName());
         out.println();
         for (String line : getIniTemplate())
-            out.println(line);
+        {
+            Matcher m = SET_PROPERTY.matcher(line);
+            if (m.matches() && m.groupCount()==3)
+            {
+                String name = m.group(2);
+                Prop p = props.getProp(name);
+                if (p!=null && p.origin.startsWith(CommandLineConfigSource.ORIGIN_CMD_LINE))
+                {
+                    StartLog.info("%-15s property set %s=%s",this._name,name,p.value);
+                    out.printf("%s=%s%n",name,p.value);
+                }
+                else
+                    out.println(line);
+            }
+            else
+                out.println(line);
+        }
         out.println();
         out.flush();
     }

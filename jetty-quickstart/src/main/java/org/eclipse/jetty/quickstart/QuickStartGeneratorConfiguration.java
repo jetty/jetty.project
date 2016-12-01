@@ -76,7 +76,7 @@ import org.eclipse.jetty.xml.XmlAppendable;
 public class QuickStartGeneratorConfiguration extends AbstractConfiguration implements Configuration.DisabledByDefault
 {
     private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
-
+    public static final String ORIGIN = "org.eclipse.jetty.originAttribute";
     public static final String DEFAULT_ORIGIN_ATTRIBUTE_NAME = "origin";
     protected String _originAttribute;
     protected boolean _generateOrigin;
@@ -183,6 +183,16 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
         addContextParamFromAttribute(context,out,MetaInfConfiguration.METAINF_RESOURCES,normalizer);
 
 
+        //add the name of the origin attribute, if it is being used
+        if (_generateOrigin)
+        {
+            out.openTag("context-param")
+            .tag("param-name", ORIGIN)
+            .tag("param-value", _originAttribute)
+            .closeTag();    
+        }
+        
+        
         // init params
         for (String p : context.getInitParams().keySet())
             out.openTag("context-param",origin(md,"context-param." + p))

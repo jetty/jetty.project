@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.BaseHomeFileInitializer;
@@ -54,7 +55,7 @@ public class BaseBuilder
          * @return The ini file if module was added, null if module was not added.
          * @throws IOException if unable to add the module
          */
-        public String addModule(Module module) throws IOException;
+        public String addModule(Module module, Props props) throws IOException;
     }
 
     private static final String EXITING_LICENSE_NOT_ACKNOWLEDGED = "Exiting: license not acknowledged!";
@@ -209,7 +210,7 @@ public class BaseBuilder
                         // if (explictly added and ini file modified)
                         if (startArgs.getStartModules().contains(module.getName()))
                         {
-                            ini=builder.get().addModule(module);
+                            ini=builder.get().addModule(module, startArgs.getProperties());
                             if (ini!=null)
                                 modified.set(true);
                         }
@@ -240,7 +241,6 @@ public class BaseBuilder
                     StartLog.info("%-15s initialized in %s",
                     module.getName(),
                     ini);
-                    
             });            
         }
 

@@ -18,23 +18,32 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import org.eclipse.jetty.http.pathmap.PathMappings;
-import org.eclipse.jetty.http.pathmap.PathSpec;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
-public class DefaultMappedWebSocketCreator implements MappedWebSocketCreator
+public class InfoContextAttributeListener implements WebSocketCreator, ServletContextListener
 {
-    private final PathMappings<WebSocketCreator> mappings = new PathMappings<>();
-    
     @Override
-    public void addMapping(PathSpec spec, WebSocketCreator creator)
+    public void contextInitialized(ServletContextEvent sce)
     {
-        this.mappings.put(spec, creator);
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) sce.getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+        configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+        configuration.addMapping(new ServletPathSpec("/info/*"), this);
     }
     
     @Override
-    public PathMappings<WebSocketCreator> getMappings()
+    public void contextDestroyed(ServletContextEvent sce)
     {
-        return this.mappings;
+    }
+    
+    @Override
+    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+    {
+        return new InfoSocket();
     }
 }

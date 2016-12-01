@@ -67,7 +67,7 @@ public class SessionTrackingTest
         serverContainer = WebSocketServerContainerInitializer.configureContext(servletContextHandler);
         serverContainer.addEndpoint(EchoSocket.class);
 
-        wsServerFactory = serverContainer.getBean(WebSocketServerFactory.class);
+        wsServerFactory = serverContainer.getWebSocketServerFactory();
 
         server.start();
 

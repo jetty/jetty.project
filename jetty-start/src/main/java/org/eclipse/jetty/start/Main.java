@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_GRAPH;
 import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
 import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
 import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
@@ -205,7 +204,7 @@ public class Main
 
         StartLog.debug("%s - %s",invoked_class,invoked_class.getPackage().getImplementationVersion());
 
-        CommandLineBuilder cmd = args.getMainArgs(baseHome,false);
+        CommandLineBuilder cmd = args.getMainArgs(false);
         String argArray[] = cmd.getArgs().toArray(new String[0]);
         StartLog.debug("Command Line Args: %s",cmd.toString());
 
@@ -223,7 +222,7 @@ public class Main
         StartLog.endStartLog();
         
         // Dump Jetty Home / Base
-        args.dumpEnvironment(baseHome);
+        args.dumpEnvironment();
 
         // Dump JVM Args
         args.dumpJvmArgs();
@@ -238,7 +237,7 @@ public class Main
         dumpClasspathWithVersions(args.getClasspath());
 
         // Dump Resolved XMLs
-        args.dumpActiveXmls(baseHome);
+        args.dumpActiveXmls();
     }
 
     public void listModules(StartArgs args)
@@ -288,7 +287,7 @@ public class Main
         // the various start inis
         // and then the raw command line arguments
         StartLog.debug("Parsing collected arguments");
-        StartArgs args = new StartArgs();
+        StartArgs args = new StartArgs(baseHome);
         args.parse(baseHome.getConfigSources());
 
         // ------------------------------------------------------------
@@ -330,17 +329,17 @@ public class Main
 
         // ------------------------------------------------------------
         // 5) Lib & XML Expansion / Resolution
-        args.expandLibs(baseHome);
-        args.expandModules(baseHome,activeModules);
+        args.expandLibs();
+        args.expandModules(activeModules);
 
 
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
-        args.resolveExtraXmls(baseHome);
+        args.resolveExtraXmls();
         
         // ------------------------------------------------------------
         // 9) Resolve Property Files
-        args.resolvePropertyFiles(baseHome);
+        args.resolvePropertyFiles();
         
         return args;
     }
@@ -391,7 +390,7 @@ public class Main
         // Show Command Line to execute Jetty
         if (args.isDryRun())
         {
-            CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
+            CommandLineBuilder cmd = args.getMainArgs(true);
             System.out.println(cmd.toString(StartLog.isDebugEnabled()?" \\\n":" "));
         }
 
@@ -419,7 +418,7 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
+            CommandLineBuilder cmd = args.getMainArgs(true);
             cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();

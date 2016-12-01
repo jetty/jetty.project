@@ -25,47 +25,60 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
-import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements MappedWebSocketCreator
 {
-    private PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
-    private final WebSocketServerFactory factory;
+    private NativeWebSocketConfiguration configuration;
 
-    public WebSocketUpgradeHandlerWrapper()
+    public WebSocketUpgradeHandlerWrapper(ServletContextHandler context)
     {
-        this(new MappedByteBufferPool());
+        this(context, new MappedByteBufferPool());
     }
     
-    public WebSocketUpgradeHandlerWrapper(ByteBufferPool bufferPool)
+    public WebSocketUpgradeHandlerWrapper(ServletContextHandler context, ByteBufferPool bufferPool)
     {
-        factory = new WebSocketServerFactory(bufferPool);
+        this.configuration = new NativeWebSocketConfiguration(new WebSocketServerFactory(context.getServletContext(), bufferPool));
     }
-
+    
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
-        pathmap.put(spec,creator);
+        this.configuration.addMapping(spec, creator);
     }
-
+    
+    /**
+     * Add a mapping.
+     *
+     * @param spec the path spec to use
+     * @param creator the creator for the mapping
+     * @deprecated use {@link #addMapping(PathSpec, WebSocketCreator)} instead.
+     */
     @Override
-    public PathMappings<WebSocketCreator> getMappings()
+    @Deprecated
+    public void addMapping(org.eclipse.jetty.websocket.server.pathmap.PathSpec spec, WebSocketCreator creator)
     {
-        return pathmap;
+        configuration.addMapping(spec, creator);
     }
-
+    
+    @Override
+    public MappedResource<WebSocketCreator> getMapping(String target)
+    {
+        return this.configuration.getMatch(target);
+    }
+    
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (factory.isUpgradeRequest(request,response))
+        if (configuration.getFactory().isUpgradeRequest(request,response))
         {
-            MappedResource<WebSocketCreator> resource = pathmap.getMatch(target);
+            MappedResource<WebSocketCreator> resource = configuration.getMatch(target);
             if (resource == null)
             {
                 // no match.
@@ -79,7 +92,7 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
             request.setAttribute(PathSpec.class.getName(),resource);
 
             // We have an upgrade request
-            if (factory.acceptWebSocket(creator,request,response))
+            if (configuration.getFactory().acceptWebSocket(creator,request,response))
             {
                 // We have a socket instance created
                 return;

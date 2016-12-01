@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
@@ -38,7 +39,7 @@ public class PathParamServerEndpointConfig extends BasicServerEndpointConfig imp
         super(containerScope, config);
 
         Map<String, String> pathMap = pathSpec.getPathParams(requestPath);
-        pathParamMap = new HashMap<String, String>();
+        pathParamMap = new HashMap<>();
         if (pathMap != null)
         {
             pathParamMap.putAll(pathMap);

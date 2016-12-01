@@ -63,7 +63,7 @@ public class ModulesTest
         // Initialize
         BaseHome basehome = new BaseHome(config);
 
-        StartArgs args = new StartArgs();
+        StartArgs args = new StartArgs(basehome);
         args.parse(config);
 
         // Test Modules
@@ -121,7 +121,7 @@ public class ModulesTest
         // Initialize
         BaseHome basehome = new BaseHome(config);
 
-        StartArgs args = new StartArgs();
+        StartArgs args = new StartArgs(basehome);
         args.parse(config);
 
         // Test Modules
@@ -158,7 +158,7 @@ public class ModulesTest
         // Initialize
         BaseHome basehome = new BaseHome(config);
 
-        StartArgs args = new StartArgs();
+        StartArgs args = new StartArgs(basehome);
         args.parse(config);
 
         // Test Modules
