@@ -6,7 +6,6 @@ jetty-9.4.0.RC2 - 16 November 2016
  + 644 Modules for enabling logging
  + 905 Jetty terminates SSL connections too early with Connection: close
  + 907 Update to support apache jasper 8.5.5
-
  + 1020 Java Util Logging properties in wrong location
  + 1023 Error on configuring slf4j-simple-impl module
  + 1029 Restore Request.setHttpVersion()
