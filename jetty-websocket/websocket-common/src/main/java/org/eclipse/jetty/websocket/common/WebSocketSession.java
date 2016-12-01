@@ -98,7 +98,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
-        this.policy = containerScope.getPolicy();
+        this.policy = websocket.getPolicy();
 
         addBean(this.connection);
         addBean(this.websocket);
@@ -350,16 +350,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     }
 
     /**
-     * Incoming Errors from Parser
+     * Incoming Errors
      */
     @Override
     public void incomingError(Throwable t)
     {
-        if (connection.getIOState().isInputAvailable())
-        {
-            // Forward Errors to User WebSocket Object
-            websocket.incomingError(t);
-        }
+        // Forward Errors to User WebSocket Object
+        websocket.incomingError(t);
     }
 
     /**
@@ -418,6 +415,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
     public void notifyError(Throwable cause)
     {
+        if (openFuture != null && !openFuture.isDone())
+            openFuture.completeExceptionally(cause);
         incomingError(cause);
     }
 

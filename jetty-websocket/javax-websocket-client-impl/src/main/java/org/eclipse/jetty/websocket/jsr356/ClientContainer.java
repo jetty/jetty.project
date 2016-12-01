@@ -125,7 +125,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         ClientEndpointConfig config = (ClientEndpointConfig)instance.getConfig();
         ClientUpgradeRequest req = new ClientUpgradeRequest();
         UpgradeListener upgradeListener = null;
-
+        
         for (Extension ext : config.getExtensions())
         {
             req.addExtensions(new JsrExtensionConfig(ext));

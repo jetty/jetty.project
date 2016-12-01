@@ -22,11 +22,11 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
-import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.server.Server;
@@ -37,14 +37,20 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.EchoHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class MisbehavingClassTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
     private static Server server;
     private static EchoHandler handler;
     private static URI serverUri;
 
+    @SuppressWarnings("Duplicates")
     @BeforeClass
     public static void startServer() throws Exception
     {
@@ -84,6 +90,7 @@ public class MisbehavingClassTest
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Test
     public void testEndpointRuntimeOnOpen() throws Exception
     {
@@ -92,19 +99,20 @@ public class MisbehavingClassTest
 
         try (StacklessLogging logging = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
         {
-            // expecting ArrayIndexOutOfBoundsException during onOpen
-            Session session = container.connectToServer(socket,serverUri);
+            // expecting IOException during onOpen
+            expectedException.expect(IOException.class);
+            expectedException.expectCause(instanceOf(RuntimeException.class));
+            container.connectToServer(socket, serverUri);
+            expectedException.reportMissingExceptionWithMessage("Should have failed .connectToServer()");
+            
             assertThat("Close should have occurred",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
 
-            // technically, the session object isn't invalid here.
-            assertThat("Session.isOpen",session.isOpen(),is(false));
-            assertThat("Should have only had 1 error",socket.errors.size(),is(1));
-
             Throwable cause = socket.errors.pop();
-            assertThat("Error",cause,instanceOf(ArrayIndexOutOfBoundsException.class));
+            assertThat("Error",cause,instanceOf(RuntimeException.class));
         }
     }
-
+    
+    @SuppressWarnings("Duplicates")
     @Test
     public void testAnnotatedRuntimeOnOpen() throws Exception
     {
@@ -113,13 +121,13 @@ public class MisbehavingClassTest
 
         try (StacklessLogging logging = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
         {
-            // expecting ArrayIndexOutOfBoundsException during onOpen
-            Session session = container.connectToServer(socket,serverUri);
+            // expecting IOException during onOpen
+            expectedException.expect(IOException.class);
+            expectedException.expectCause(instanceOf(RuntimeException.class));
+            container.connectToServer(socket, serverUri);
+            expectedException.reportMissingExceptionWithMessage("Should have failed .connectToServer()");
+            
             assertThat("Close should have occurred",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-
-            // technically, the session object isn't invalid here.
-            assertThat("Session.isOpen",session.isOpen(),is(false));
-            assertThat("Should have only had 1 error",socket.errors.size(),is(1));
 
             Throwable cause = socket.errors.pop();
             assertThat("Error",cause,instanceOf(ArrayIndexOutOfBoundsException.class));

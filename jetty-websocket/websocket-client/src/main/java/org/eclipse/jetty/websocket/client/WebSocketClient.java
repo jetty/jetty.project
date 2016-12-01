@@ -146,9 +146,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param sslContextFactory
      *            ssl context factory to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
-    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
         this(sslContextFactory,null);
@@ -257,7 +255,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory)
     {
-        this.httpClient = new HttpClient(scope.getSslContextFactory());
+        SslContextFactory sslContextFactory = scope.getSslContextFactory();
+        if(sslContextFactory == null)
+        {
+            sslContextFactory = new SslContextFactory();
+        }
+        this.httpClient = new HttpClient(sslContextFactory);
         this.httpClient.setExecutor(scope.getExecutor());
         addBean(this.httpClient);
         

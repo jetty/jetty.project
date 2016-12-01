@@ -42,12 +42,7 @@ public class AnnotatedRuntimeOnOpen
     @OnOpen
     public void onOpen(Session session, EndpointConfig config)
     {
-        // Intentional runtime exception.
-        int[] arr = new int[5];
-        for (int i = 0; i < 10; i++)
-        {
-            arr[i] = 222;
-        }
+        throw new RuntimeException("Intentionally Misbehaving");
     }
 
     @OnClose

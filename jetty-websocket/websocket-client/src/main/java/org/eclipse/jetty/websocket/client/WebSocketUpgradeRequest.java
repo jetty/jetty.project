@@ -469,6 +469,11 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
                 header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,protocol);
             }
         }
+        
+        if (upgradeListener != null)
+        {
+            upgradeListener.onHandshakeRequest(apiRequestFacade);
+        }
     }
 
     @Override
@@ -548,11 +553,6 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             // Not my upgrade
             throw new HttpResponseException("Not WebSocket Upgrade",response);
-        }
-
-        if (upgradeListener != null)
-        {
-            upgradeListener.onHandshakeRequest(apiRequestFacade);
         }
 
         // Check the Accept hash

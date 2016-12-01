@@ -55,7 +55,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
         this.objectFactory = objectFactory;
 
         QueuedThreadPool threadPool = new QueuedThreadPool();
-        String name = "WebSocketSimpleContainer@" + hashCode();
+        String name = SimpleContainerScope.class.getSimpleName() + ".Executor@" + hashCode();
         threadPool.setName(name);
         threadPool.setDaemon(true);
         this.executor = threadPool;
