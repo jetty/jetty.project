@@ -456,6 +456,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     public String toConnectionString()
     {
         Connection connection = getConnection();
+        if (connection == null)
+            return "null";
         if (connection instanceof AbstractConnection)
             return ((AbstractConnection)connection).toConnectionString();
         return String.format("%s@%x",connection.getClass().getSimpleName(),connection.hashCode());
