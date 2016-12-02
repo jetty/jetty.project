@@ -50,8 +50,8 @@ public class BaseBuilder
         /**
          * Add a module to the start environment in <code>${jetty.base}</code>
          *
-         * @param module
-         *            the module to add
+         * @param module the module to add
+         * @param props The properties to substitute into a template
          * @return The ini file if module was added, null if module was not added.
          * @throws IOException if unable to add the module
          */

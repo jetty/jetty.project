@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[override-web-xml]]
-=== Jetty `override-web.xml`
+=== Jetty override-web.xml
 
 To deploy a web application or WAR into different environments, most likely you will need to customize the webapp for compatibility with each environment.
 The challenge is to do so without changing the webapp itself. You can use a `jetty.xml` file for some of this work since it is not part of the webapp.

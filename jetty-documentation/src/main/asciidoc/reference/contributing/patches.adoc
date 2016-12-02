@@ -30,8 +30,8 @@ The following is the general process by which we operate.
 * This may not be the final form a commit will take, there may be some back and forth and you may be asked to re-issue a pull request.
 
 
-
-Not everything is specifically relevant since we are at GitHub but the crux of things are detailed there.  The CLA is critically important to the process.
+Not everything is specifically relevant since we are at GitHub but the crux of things are detailed there.
+The CLA is *critically* important to the process.
 
 [[contributing-cla]]
 ==== Sign a CLA
