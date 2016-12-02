@@ -28,7 +28,7 @@ By default the Jetty distribution enables the JSP link:#startup-modules[module],
 
 [source, plain, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-distribution/src/main/resources/modules/jsp.mod[]
+include::{SRCDIR}/jetty-home/src/main/resources/modules/jsp.mod[]
 ----
 
 Note that the availability of some JSP features may depend on which JSP container implementation you are using.

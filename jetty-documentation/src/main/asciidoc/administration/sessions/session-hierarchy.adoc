@@ -17,6 +17,7 @@
 [[jetty-sessions-architecture]]
 === Session Architecture
 
+// TODO: Remove in Jetty 9.5/10 - This paragraph is dated and only really useful for upgrading into 9.4 from prior versions.
 ==== Changes in Session Architecture
 The architecture of Session Management Jetty changed significantly in Jetty 9.4.
 These changes have resulted in Sessions not only being easier to configure but making them much more pluggable for various technologies.
