@@ -38,6 +38,7 @@ public class AnnotatedEchoTest
     private static EchoHandler handler;
     private static URI serverUri;
 
+    @SuppressWarnings("Duplicates")
     @BeforeClass
     public static void startServer() throws Exception
     {

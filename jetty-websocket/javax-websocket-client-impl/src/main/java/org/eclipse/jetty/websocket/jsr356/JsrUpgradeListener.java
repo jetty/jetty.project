@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.net.HttpCookie;
 import java.util.List;
 import java.util.Map;
 
@@ -49,21 +48,7 @@ public class JsrUpgradeListener implements UpgradeListener
         configurator.beforeRequest(headers);
 
         // Handle cookies
-        for (String name : headers.keySet())
-        {
-            if ("cookie".equalsIgnoreCase(name))
-            {
-                List<String> values = headers.get(name);
-                if (values != null)
-                {
-                    for (String cookie : values)
-                    {
-                        List<HttpCookie> cookies = HttpCookie.parse(cookie);
-                        request.getCookies().addAll(cookies);
-                    }
-                }
-            }
-        }
+        request.setHeaders(headers);
     }
 
     @Override

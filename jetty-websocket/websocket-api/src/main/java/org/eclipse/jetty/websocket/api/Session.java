@@ -22,8 +22,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.
  */

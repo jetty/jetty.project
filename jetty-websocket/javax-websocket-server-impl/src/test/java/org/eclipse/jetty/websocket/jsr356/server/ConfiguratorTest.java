@@ -273,7 +273,7 @@ public class ConfiguratorTest
         {
             List<String> selectedProtocol = response.getHeaders().get("Sec-WebSocket-Protocol");
             String protocol = "<>";
-            if (selectedProtocol != null || !selectedProtocol.isEmpty())
+            if (selectedProtocol != null && !selectedProtocol.isEmpty())
                 protocol = selectedProtocol.get(0);
             config.getUserProperties().put("selected-subprotocol", protocol);
         }

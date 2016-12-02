@@ -234,7 +234,7 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
         }
         catch (Throwable t)
         {
-            unhandled(t);
+            this.session.notifyError(t);
             throw t;
         }
     }

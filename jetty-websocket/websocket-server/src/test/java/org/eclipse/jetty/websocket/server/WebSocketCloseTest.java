@@ -324,6 +324,7 @@ public class WebSocketCloseTest
         }
     }
 
+    @SuppressWarnings("Duplicates")
     private void fastClose() throws Exception
     {
         try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
@@ -376,6 +377,7 @@ public class WebSocketCloseTest
         }
     }
     
+    @SuppressWarnings("Duplicates")
     private void dropConnection() throws Exception
     {
         try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))

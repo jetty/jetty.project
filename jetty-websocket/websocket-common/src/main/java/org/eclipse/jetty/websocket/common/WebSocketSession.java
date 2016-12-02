@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -70,6 +71,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final LogicalConnection connection;
     private final EventDriver websocket;
     private final Executor executor;
+    private final WebSocketPolicy policy;
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
     private RemoteEndpointFactory remoteEndpointFactory;
@@ -78,9 +80,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private RemoteEndpoint remote;
     private IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
-    private WebSocketPolicy policy;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
+    private CompletableFuture<Session> openFuture;
 
     public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
@@ -96,7 +98,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
         this.connection.getIOState().addListener(this);
-        this.policy = containerScope.getPolicy();
+        this.policy = websocket.getPolicy();
 
         addBean(this.connection);
         addBean(this.websocket);
@@ -348,16 +350,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     }
 
     /**
-     * Incoming Errors from Parser
+     * Incoming Errors
      */
     @Override
     public void incomingError(Throwable t)
     {
-        if (connection.getIOState().isInputAvailable())
-        {
-            // Forward Errors to User WebSocket Object
-            websocket.incomingError(t);
-        }
+        // Forward Errors to User WebSocket Object
+        websocket.incomingError(t);
     }
 
     /**
@@ -416,6 +415,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
     public void notifyError(Throwable cause)
     {
+        if (openFuture != null && !openFuture.isDone())
+            openFuture.completeExceptionally(cause);
         incomingError(cause);
     }
 
@@ -509,6 +510,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             {
                 LOG.debug("open -> {}",dump());
             }
+            
+            if(openFuture != null)
+            {
+                openFuture.complete(this);
+            }
         }
         catch (CloseException ce)
         {
@@ -534,6 +540,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.extensionFactory = extensionFactory;
     }
 
+    public void setFuture(CompletableFuture<Session> fut)
+    {
+        this.openFuture = fut;
+    }
+
     /**
      * Set the timeout in milliseconds
      */
@@ -548,9 +559,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.outgoingHandler = outgoing;
     }
 
+    @Deprecated
     public void setPolicy(WebSocketPolicy policy)
     {
-        this.policy = policy;
+        // do nothing
     }
 
     public void setUpgradeRequest(UpgradeRequest request)

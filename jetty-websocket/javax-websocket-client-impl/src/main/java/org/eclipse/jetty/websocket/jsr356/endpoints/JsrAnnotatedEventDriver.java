@@ -41,6 +41,7 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 import org.eclipse.jetty.websocket.jsr356.messages.BinaryPartialOnMessage;
 import org.eclipse.jetty.websocket.jsr356.messages.TextPartialOnMessage;
+import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
 
 /**
  * Base implementation for JSR-356 Annotated event drivers.
@@ -54,6 +55,13 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
     {
         super(policy,endpointInstance);
         this.events = events;
+    
+        EndpointMetadata metadata = endpointInstance.getMetadata();
+    
+        if (metadata.maxTextMessageSize() >= 1)
+            policy.setMaxTextMessageSize((int) metadata.maxTextMessageSize());
+        if (metadata.maxBinaryMessageSize() >= 1)
+            policy.setMaxBinaryMessageSize((int) metadata.maxBinaryMessageSize());
     }
 
     @Override

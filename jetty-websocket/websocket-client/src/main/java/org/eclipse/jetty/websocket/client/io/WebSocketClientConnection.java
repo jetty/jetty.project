@@ -20,15 +20,17 @@ package org.eclipse.jetty.websocket.client.io;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.masks.Masker;
+import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
@@ -37,16 +39,12 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
  */
 public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
-    private final ConnectPromise connectPromise;
     private final Masker masker;
-    private final AtomicBoolean opened = new AtomicBoolean(false);
 
-    public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise, WebSocketPolicy policy)
+    public WebSocketClientConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy websocketPolicy, ByteBufferPool bufferPool)
     {
-        super(endp,executor,connectPromise.getClient().getScheduler(),policy,connectPromise.getClient().getBufferPool());
-        this.connectPromise = connectPromise;
-        this.masker = connectPromise.getMasker();
-        assert (this.masker != null);
+        super(endp,executor,scheduler,websocketPolicy,bufferPool);
+        this.masker = new RandomMasker();
     }
 
     @Override
@@ -60,18 +58,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         return getEndPoint().getRemoteAddress();
     }
-
-    @Override
-    public void onOpen()
-    {
-        super.onOpen();
-        boolean beenOpened = opened.getAndSet(true);
-        if (!beenOpened)
-        {
-            connectPromise.succeeded();
-        }
-    }
-
+    
     /**
      * Override to set the masker.
      */

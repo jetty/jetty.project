@@ -47,7 +47,7 @@ public class AnnotatedServerEndpointMetadata extends AnnotatedEndpointMetadata<S
         this.endpoint = anno;
         this.config = new AnnotatedServerEndpointConfig(containerScope,websocket,anno,baseConfig);
         
-        getDecoders().addAll(anno.decoders());  
+        getDecoders().addAll(anno.decoders());
         getEncoders().addAll(anno.encoders());
     }
 

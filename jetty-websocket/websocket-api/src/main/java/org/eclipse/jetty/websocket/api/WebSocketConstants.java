@@ -16,17 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.io;
+package org.eclipse.jetty.websocket.api;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-
-/**
- * Listener for Handshake/Upgrade events.
- */
-public interface UpgradeListener
+public final class WebSocketConstants
 {
-    void onHandshakeRequest(UpgradeRequest request);
-
-    void onHandshakeResponse(UpgradeResponse response);
+    public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
+    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
+    public static final String SEC_WEBSOCKET_VERSION = "Sec-WebSocket-Version";
+    public static final int SPEC_VERSION = 13;
 }

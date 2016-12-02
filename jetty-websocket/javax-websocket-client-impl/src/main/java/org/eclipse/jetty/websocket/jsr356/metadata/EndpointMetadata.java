@@ -20,9 +20,13 @@ package org.eclipse.jetty.websocket.jsr356.metadata;
 
 public interface EndpointMetadata
 {
-    public DecoderMetadataSet getDecoders();
+    DecoderMetadataSet getDecoders();
 
-    public EncoderMetadataSet getEncoders();
-
-    public Class<?> getEndpointClass();
+    EncoderMetadataSet getEncoders();
+    
+    Class<?> getEndpointClass();
+    
+    default long maxTextMessageSize() { return -1; }
+    
+    default long maxBinaryMessageSize() { return -1; }
 }

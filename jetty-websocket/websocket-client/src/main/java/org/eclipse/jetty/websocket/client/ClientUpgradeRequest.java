@@ -19,10 +19,10 @@
 package org.eclipse.jetty.websocket.client;
 
 import java.net.CookieStore;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,22 +30,21 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.common.UpgradeRequestAdapter;
 
 /**
  * Allowing a generate from a UpgradeRequest
  */
-public class ClientUpgradeRequest extends UpgradeRequest
+public class ClientUpgradeRequest extends UpgradeRequestAdapter
 {
-    private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
     private static final Set<String> FORBIDDEN_HEADERS;
 
     static
@@ -68,6 +67,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
     }
 
     private final String key;
+    private Object localEndpoint;
 
     public ClientUpgradeRequest()
     {
@@ -80,125 +80,46 @@ public class ClientUpgradeRequest extends UpgradeRequest
         super(requestURI);
         this.key = genRandomKey();
     }
-
-    public String generate()
+    
+    public ClientUpgradeRequest(WebSocketUpgradeRequest wsRequest)
     {
-        URI uri = getRequestURI();
-
-        StringBuilder request = new StringBuilder(512);
-        request.append("GET ");
-        if (StringUtil.isBlank(uri.getPath()))
+        this(wsRequest.getURI());
+        // cookies
+        this.setCookies(wsRequest.getCookies());
+        // headers
+        Map<String, List<String>> headers = new HashMap<>();
+        HttpFields fields = wsRequest.getHeaders();
+        for (HttpField field : fields)
         {
-            request.append("/");
-        }
-        else
-        {
-            request.append(uri.getPath());
-        }
-        if (StringUtil.isNotBlank(uri.getRawQuery()))
-        {
-            request.append("?").append(uri.getRawQuery());
-        }
-        request.append(" HTTP/1.1\r\n");
-
-        request.append("Host: ").append(uri.getHost());
-        if (uri.getPort() > 0)
-        {
-            request.append(':').append(uri.getPort());
-        }
-        request.append("\r\n");
-
-        // WebSocket specifics
-        request.append("Upgrade: websocket\r\n");
-        request.append("Connection: Upgrade\r\n");
-        request.append("Sec-WebSocket-Key: ").append(key).append("\r\n");
-        request.append("Sec-WebSocket-Version: 13\r\n"); // RFC-6455 specified version
-
-        // (Per the hybi list): Add no-cache headers to avoid compatibility issue.
-        // There are some proxies that rewrite "Connection: upgrade"
-        // to "Connection: close" in the response if a request doesn't contain
-        // these headers.
-        request.append("Pragma: no-cache\r\n");
-        request.append("Cache-Control: no-cache\r\n");
-
-        // Extensions
-        if (!getExtensions().isEmpty())
-        {
-            request.append("Sec-WebSocket-Extensions: ");
-            boolean needDelim = false;
-            for (ExtensionConfig ext : getExtensions())
+            String key = field.getName();
+            List<String> values = headers.get(key);
+            if (values == null)
             {
-                if (needDelim)
-                {
-                    request.append(", ");
-                }
-                request.append(ext.getParameterizedName());
-                needDelim = true;
+                values = new ArrayList<>();
             }
-            request.append("\r\n");
-        }
-
-        // Sub Protocols
-        if (!getSubProtocols().isEmpty())
-        {
-            request.append("Sec-WebSocket-Protocol: ");
-            boolean needDelim = false;
-            for (String protocol : getSubProtocols())
+            values.addAll(Arrays.asList(field.getValues()));
+            headers.put(key,values);
+            // sub protocols
+            if(key.equalsIgnoreCase("Sec-WebSocket-Protocol"))
             {
-                if (needDelim)
+                for(String subProtocol: field.getValue().split(","))
                 {
-                    request.append(", ");
+                    setSubProtocols(subProtocol);
                 }
-                request.append(protocol);
-                needDelim = true;
             }
-            request.append("\r\n");
-        }
-
-        // Cookies
-        List<HttpCookie> cookies = getCookies();
-        if ((cookies != null) && (cookies.size() > 0))
-        {
-            request.append("Cookie: ");
-            boolean needDelim = false;
-            for (HttpCookie cookie : cookies)
+            // extensions
+            if(key.equalsIgnoreCase("Sec-WebSocket-Extensions"))
             {
-                if (needDelim)
+                for(ExtensionConfig ext: ExtensionConfig.parseList(field.getValues()))
                 {
-                    request.append("; ");
+                    addExtensions(ext);
                 }
-                
-                request.append(cookie.getName()).append("=");
-                if (cookie.getVersion() == 1)
-                {
-                    // must be enclosed with quotes
-                    request.append('"').append(cookie.getValue()).append('"');
-                }
-                else
-                {
-                    request.append(cookie.getValue());
-                }
-                needDelim = true;
             }
-            request.append("\r\n");
         }
-
-        // Other headers
-        for (String key : getHeaders().keySet())
-        {
-            if (FORBIDDEN_HEADERS.contains(key))
-            {
-                LOG.debug("Skipping forbidden header - {}",key);
-                continue; // skip
-            }
-            request.append(key).append(": ");
-            request.append(getHeader(key));
-            request.append("\r\n");
-        }
-
-        // request header end
-        request.append("\r\n");
-        return request.toString();
+        super.setHeaders(headers);
+        // sessions
+        setHttpVersion(wsRequest.getVersion().toString());
+        setMethod(wsRequest.getMethod());
     }
 
     private final String genRandomKey()
@@ -213,26 +134,14 @@ public class ClientUpgradeRequest extends UpgradeRequest
         return key;
     }
 
+    /**
+     * @param cookieStore the cookie store to use
+     * @deprecated use either {@link WebSocketClient#setCookieStore(CookieStore)} or {@link HttpClient#setCookieStore(CookieStore)} instead
+     */
+    @Deprecated
     public void setCookiesFrom(CookieStore cookieStore)
     {
-        if (cookieStore == null)
-        {
-            return;
-        }
-
-        List<HttpCookie> existing = getCookies();
-        List<HttpCookie> extra = cookieStore.get(getRequestURI());
-
-        List<HttpCookie> cookies = new ArrayList<>();
-        if (LazyList.hasEntry(existing))
-        {
-            cookies.addAll(existing);
-        }
-        if (LazyList.hasEntry(extra))
-        {
-            cookies.addAll(extra);
-        }
-        setCookies(cookies);
+        throw new UnsupportedOperationException("Request specific CookieStore no longer supported");
     }
 
     @Override
@@ -268,5 +177,15 @@ public class ClientUpgradeRequest extends UpgradeRequest
 
             super.setParameterMap(pmap);
         }
+    }
+
+    public void setLocalEndpoint(Object websocket)
+    {
+        this.localEndpoint = websocket;
+    }
+    
+    public Object getLocalEndpoint()
+    {
+        return localEndpoint;
     }
 }

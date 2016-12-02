@@ -1126,12 +1126,10 @@ public class BufferUtil
             buf.append("\\x").append(TypeUtil.toHexString(b));
     }
     
-
     /* ------------------------------------------------------------ */
     /** Convert buffer to a Hex Summary String.
      * @param buffer the buffer to generate a hex byte summary from
-     * @return A string showing the escaped content of the buffer around the
-     * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
+     * @return A string showing a summary of the content in hex
      */
     public static String toHexSummary(ByteBuffer buffer)
     {
@@ -1150,6 +1148,18 @@ public class BufferUtil
             }
         }
         return buf.toString();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Convert buffer to a Hex String.
+     * @param buffer the buffer to generate a hex byte summary from
+     * @return A hex string
+     */
+    public static String toHexString(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+        return TypeUtil.toHexString(toArray(buffer));
     }
 
 

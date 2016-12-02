@@ -16,17 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.io;
+package org.eclipse.jetty.websocket.client;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 
 /**
- * Listener for Handshake/Upgrade events.
+ * WebSocket endpoint that does nothing.
  */
-public interface UpgradeListener
+public class NoOpEndpoint extends WebSocketAdapter
 {
-    void onHandshakeRequest(UpgradeRequest request);
-
-    void onHandshakeResponse(UpgradeResponse response);
+    /* does nothing */
 }

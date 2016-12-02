@@ -18,15 +18,19 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
@@ -51,17 +55,32 @@ public class CookieTest
     {
         public EventQueue<String> messageQueue = new EventQueue<>();
         public EventQueue<Throwable> errorQueue = new EventQueue<>();
+        private CountDownLatch openLatch = new CountDownLatch(1);
+        
+        @Override
+        public void onWebSocketConnect(Session sess)
+        {
+            openLatch.countDown();
+            super.onWebSocketConnect(sess);
+        }
 
         @Override
         public void onWebSocketText(String message)
         {
+            System.err.printf("onTEXT - %s%n",message);
             messageQueue.add(message);
         }
 
         @Override
         public void onWebSocketError(Throwable cause)
         {
+            System.err.printf("onERROR - %s%n",cause);
             errorQueue.add(cause);
+        }
+
+        public void awaitOpen(int duration, TimeUnit unit) throws InterruptedException
+        {
+            assertTrue("Open Latch", openLatch.await(duration,unit));
         }
     }
 
@@ -125,7 +144,7 @@ public class CookieTest
         String serverCookies = confirmClientUpgradeAndCookies(clientSocket,clientConnectFuture,serverConn);
 
         assertThat("Cookies seen at server side",serverCookies,containsString("hello=world"));
-        assertThat("Cookies seen at server side",serverCookies,containsString("foo=\"bar is the word\""));
+        assertThat("Cookies seen at server side",serverCookies,containsString("foo=bar is the word"));
     }
     
     @Test
@@ -149,7 +168,7 @@ public class CookieTest
         // client confirms upgrade and receipt of frame
         String serverCookies = confirmClientUpgradeAndCookies(clientSocket,clientConnectFuture,serverConn);
 
-        Assert.assertThat("Cookies seen at server side",serverCookies,containsString("hello=\"world\""));
+        Assert.assertThat("Cookies seen at server side",serverCookies,containsString("hello=world"));
     }
 
     private String confirmClientUpgradeAndCookies(CookieTrackingSocket clientSocket, Future<Session> clientConnectFuture, IBlockheadServerConnection serverConn)
@@ -164,18 +183,29 @@ public class CookieTest
         serverCookieFrame.setFin(true);
         serverCookieFrame.setPayload(QuoteUtil.join(upgradeRequestCookies,","));
         serverConn.write(serverCookieFrame);
-
-        // Server closes connection
-        serverConn.close(StatusCode.NORMAL);
+        serverConn.flush();
 
         // Confirm client connect on future
-        clientConnectFuture.get(30000,TimeUnit.MILLISECONDS);
-
-        // Wait for client receipt of cookie frame via client websocket
-        clientSocket.messageQueue.awaitEventCount(1,2,TimeUnit.SECONDS);
+        clientConnectFuture.get(10,TimeUnit.SECONDS);
+        clientSocket.awaitOpen(2,TimeUnit.SECONDS);
+    
+        try
+        {
+            // Wait for client receipt of cookie frame via client websocket
+            clientSocket.messageQueue.awaitEventCount(1, 3, TimeUnit.SECONDS);
+        }
+        catch (TimeoutException e)
+        {
+            e.printStackTrace(System.err);
+            assertThat("Message Count", clientSocket.messageQueue.size(), is(1));
+        }
 
         String cookies = clientSocket.messageQueue.poll();
         LOG.debug("Cookies seen at server: {}",cookies);
+        
+        // Server closes connection
+        serverConn.close(StatusCode.NORMAL);
+    
         return cookies;
     }
 }

@@ -1,5 +1,53 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.0.RC2 - 16 November 2016
+ + 240 Missing content for multipart request after upgrade to Jetty > 9.2.7
+ + 586 Thread pools and connectors
+ + 644 Modules for enabling logging
+ + 905 Jetty terminates SSL connections too early with Connection: close
+ + 907 Update to support apache jasper 8.5.5
+ + 1020 Java Util Logging properties in wrong location
+ + 1023 Error on configuring slf4j-simple-impl module
+ + 1029 Restore Request.setHttpVersion()
+ + 1031 Improve HttpField pre-encoding
+ + 1032 Remove jetty dependencies in jetty jasper classes
+ + 1037 Don't execute AsyncListener.onTimeout events in spare Scheduler-Thread
+ + 1038 AttributeNormalizer does not favor ${WAR} over other attributes, like
+   ${jetty.base}
+ + 1039 AttributeNormalizer should not track attributes that are null
+ + 1045 Abort HttpChannel onCompletion if wrong content length set
+ + 1046 Improve HTTP2Flusher error report 
+ + 1050 Add multiple FilterHolder to a ServletContextHandler may cause problems
+ + 1054 Using WebSocketPingPongListener with empty PING payload results in
+   NullPointerException
+ + 1057 Improve WebSocketUpgradeFilter fast path performance
+ + 1062 Jetty allows requests to hang under PUT load
+ + 1063 HostPortHttpField should handle port-only values
+ + 1064 HttpClient sets chunked transfer-encoding
+ + 1065 Response.setBufferSize checks for written content.
+ + 1066 Content-Length: 0 set when not required.
+ + 1067 Ensure if session scavenging is disabled, no candidate expired sessions
+   accumulate
+ + 1069 Host header should be sent with HTTP/1.0
+ + 1070 Refactor calculation for session expiry
+ + 1071 Ensure dirty flag set on a new session
+ + 1072 InetAccessHandler needs InetAddress & Path based restrictions like
+   IPAccessHandler did
+ + 1074 Improve HttpInput for non dispatched calls
+ + 1075 If read from session data cache fails, fallback to session data store
+ + 1076 bad error handling in
+   ServerTimeoutsTest.testBlockingReadWithMinimumDataRateBelowLimit 
+ + 1077 doHandle defined twice for ScopedHandler
+ + 1078 DigestAuthentication should use realm from server, even if unknown in
+   advance
+ + 1081 DigestAuthenticator does not check the realm sent by the client
+ + 1091 Update to gcloud datastore 0.5.1
+ + 1098 MimeTypes.getCharsetFromContentType() unable parse "application/pdf;;;
+   charset=UTF-8"
+ + 1099 PushCacheFilter pushes POST requests
+ + 1103 AbstractNCSARequestLog reports too much of the Request URI
+ + 480764 Suppress stacks in multipart filter tests
+
 jetty-9.4.0.RC1 - 21 October 2016
  + 277 Proxy servlet does not handle HTTP status 100 correctly
  + 292 NPE in SslConnectionFactory newConnection

@@ -94,7 +94,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (BufferUtil.hasContent(buffer))
         {
             ByteBuffer upgradeBuffer = ByteBuffer.allocate(buffer.remaining());
-            upgradeBuffer.put(buffer);
+            upgradeBuffer.put(buffer).flip();
             return upgradeBuffer;
         }
         return null;
