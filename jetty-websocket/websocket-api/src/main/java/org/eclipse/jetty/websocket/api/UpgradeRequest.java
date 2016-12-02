@@ -109,8 +109,6 @@ public interface UpgradeRequest
 
     /**
      * The host of the Upgrade Request URI
-     * <p>
-     * Equivalent to {@link #getRequestURI()#getHost()}
      *
      * @return host of the request URI
      */
@@ -140,7 +138,7 @@ public interface UpgradeRequest
      * <p>
      * See <a href="http://tools.ietf.org/html/rfc6455#section-10.2">RFC6455: Section 10.2</a> for details.
      * <p>
-     * Equivalent to {@link #getHeader("Origin")}
+     * Equivalent to {@link #getHeader(String)} passed the "Origin" header.
      *
      * @return the Origin header
      */
@@ -165,8 +163,6 @@ public interface UpgradeRequest
 
     /**
      * Get the Query String of the request URI.
-     * <p>
-     * Equivalent to {@link #getRequestURI()#getQueryString()}
      *
      * @return the request uri query string
      */
