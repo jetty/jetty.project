@@ -44,7 +44,7 @@ public interface WebSocketServletFactory
             try
             {
                 Class<? extends WebSocketServletFactory> wsClazz =
-                        (Class<? extends WebSocketServletFactory>) Class.forName(DEFAULT_IMPL);
+                        (Class<? extends WebSocketServletFactory>) Class.forName(DEFAULT_IMPL,true,Thread.currentThread().getContextClassLoader());
                 Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{ServletContext.class, WebSocketPolicy.class});
                 return ctor.newInstance(ctx, policy);
             }
