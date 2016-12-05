@@ -1,3 +1,5 @@
+jetty-9.4.0-SNAPSHOT
+
 jetty-9.4.0.RC3 - 05 December 2016
  + 1051 NCSARequestLog/RolloverFileOutputStream does not roll day after DST
    ends
