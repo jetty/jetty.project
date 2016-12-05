@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,25 +44,59 @@ public class ServletUpgradeResponse implements UpgradeResponse
     private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private boolean success = false;
+    private int status;
     
     public ServletUpgradeResponse(HttpServletResponse response)
     {
         this.response = response;
-    
-        for (String name : response.getHeaderNames())
-        {
-            headers.put(name, new ArrayList<String>(response.getHeaders(name)));
-        }
     }
     
     @Override
     public void addHeader(String name, String value)
     {
-        this.response.addHeader(name, value);
+        if (value!=null)
+        {
+            List<String> values = headers.get(name);
+            if (values==null)
+            {
+                values = new ArrayList<>();
+                headers.put(name,values);
+            }
+            values.add(value);
+        }
+    }
+
+    @Override
+    public void setHeader(String name, String value)
+    {
+        // remove from the real response
+        if (response!=null)
+            response.setHeader(name,null);
+
+       
+        List<String> values = headers.get(name);
+        if (values==null)
+        {
+            values = new ArrayList<>();
+            headers.put(name,values);
+        }
+        else
+            values.clear();
+        values.add(value);
     }
     
-    private void commitHeaders()
+    public void complete()
     {
+        if (response==null)
+            return;
+
+        // Take a copy of all the real response headers
+        Map<String, Collection<String>> real = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (String name : response.getHeaderNames())
+        {
+            real.put(name,response.getHeaders(name));
+        }
+        
         // Transfer all headers to the real HTTP response
         for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
         {
@@ -69,11 +105,17 @@ public class ServletUpgradeResponse implements UpgradeResponse
                 response.addHeader(entry.getKey(), value);
             }
         }
-    }
-    
-    public void complete()
-    {
-        commitHeaders();
+        
+        // Prepend the real headers to the copy headers
+        for (Map.Entry<String, Collection<String>> entry : real.entrySet())
+        {
+            String name = entry.getKey();
+            Collection<String> prepend = entry.getValue();
+            List<String> values = headers.getOrDefault(name,headers.containsKey(name)?null:new ArrayList<>());
+            values.addAll(0,prepend);
+        }
+        
+        status = response.getStatus();
         response = null;
     }
     
@@ -92,13 +134,27 @@ public class ServletUpgradeResponse implements UpgradeResponse
     @Override
     public String getHeader(String name)
     {
-        return response.getHeader(name);
+        if (response!=null)
+        {
+            String value = response.getHeader(name);
+            if (value!=null)
+                return value;
+        }
+        List<String> values = headers.get(name);
+        if (values!=null && !values.isEmpty())
+            return values.get(0);
+        return null;
     }
     
     @Override
     public Set<String> getHeaderNames()
     {
-        return getHeaders().keySet();
+        if (response==null)
+            return headers.keySet();
+        
+        Set<String> h = new HashSet<>(response.getHeaderNames());
+        h.addAll(headers.keySet());
+        return h;
     }
     
     @Override
@@ -110,13 +166,20 @@ public class ServletUpgradeResponse implements UpgradeResponse
     @Override
     public List<String> getHeaders(String name)
     {
-        return getHeaders().get(name);
+        if (response==null)
+            return headers.get(name);
+        
+        List<String> values = new ArrayList<>(response.getHeaders(name));
+        values.addAll(headers.get(name));
+        return values.isEmpty()?null:values;
     }
     
     @Override
     public int getStatusCode()
     {
-        return response.getStatus();
+        if (response!=null)
+            return response.getStatus();
+        return status;
     }
     
     @Override
@@ -154,20 +217,20 @@ public class ServletUpgradeResponse implements UpgradeResponse
     public void sendError(int statusCode, String message) throws IOException
     {
         setSuccess(false);
-        applyHeaders();
-        response.sendError(statusCode, message);
-        response.flushBuffer(); // commit response
-        response = null;
+        HttpServletResponse r = response;
+        complete();
+        r.sendError(statusCode, message);
+        r.flushBuffer();
     }
     
     @Override
     public void sendForbidden(String message) throws IOException
     {
         setSuccess(false);
-        applyHeaders();
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, message);
-        response.flushBuffer(); // commit response
-        response = null;
+        HttpServletResponse r = response;
+        complete();
+        r.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+        r.flushBuffer();
     }
     
     @Override
@@ -188,32 +251,10 @@ public class ServletUpgradeResponse implements UpgradeResponse
     }
     
     @Override
-    public void setHeader(String name, String value)
-    {
-        response.setHeader(name, value);
-    }
-    
-    private void applyHeaders()
-    {
-        // Transfer all headers to the real HTTP response
-        for (Map.Entry<String, List<String>> entry : getHeaders().entrySet())
-        {
-            for (String value : entry.getValue())
-            {
-                response.addHeader(entry.getKey(), value);
-            }
-        }
-    }
-    
-    public void setStatus(int status)
-    {
-        response.setStatus(status);
-    }
-    
-    @Override
     public void setStatusCode(int statusCode)
     {
-        response.setStatus(statusCode);
+        if (response!=null)
+            response.setStatus(statusCode);
     }
     
     @Override
@@ -226,5 +267,11 @@ public class ServletUpgradeResponse implements UpgradeResponse
     public void setSuccess(boolean success)
     {
         this.success = success;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("r=%s s=%d h=%s",response,status,headers);
     }
 }
