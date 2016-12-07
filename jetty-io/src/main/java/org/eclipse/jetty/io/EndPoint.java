@@ -206,6 +206,14 @@ public interface EndPoint extends Closeable
     void fillInterested(Callback callback) throws ReadPendingException;
 
     /**
+     * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
+     *
+     * @param callback the callback to call when an error occurs or we are readable.
+     * @return true if set
+     */
+    boolean tryFillInterested(Callback callback);
+
+    /**
      * @return whether {@link #fillInterested(Callback)} has been called, but {@link #fill(ByteBuffer)} has not yet
      * been called
      */

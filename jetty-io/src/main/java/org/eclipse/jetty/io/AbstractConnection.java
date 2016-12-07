@@ -142,6 +142,16 @@ public abstract class AbstractConnection implements Connection
         getEndPoint().fillInterested(_readCallback);
     }
 
+    public void tryFillInterested()
+    {
+        tryFillInterested(_readCallback);
+    }
+
+    public void tryFillInterested(Callback callback)
+    {
+        getEndPoint().tryFillInterested(callback);
+    }
+
     public boolean isFillInterested()
     {
         return getEndPoint().isFillInterested();

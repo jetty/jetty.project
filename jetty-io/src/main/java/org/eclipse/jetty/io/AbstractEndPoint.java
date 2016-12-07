@@ -122,10 +122,17 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public void fillInterested(Callback callback) throws IllegalStateException
+    public void fillInterested(Callback callback)
     {
         notIdle();
         _fillInterest.register(callback);
+    }
+
+    @Override
+    public boolean tryFillInterested(Callback callback)
+    {
+        notIdle();
+        return _fillInterest.tryRegister(callback);
     }
 
     @Override
