@@ -178,6 +178,8 @@ public class StartArgs
     private boolean version = false;
     private boolean dryRun = false;
     private boolean createStartd = false;
+    private boolean updateIni = false;
+
 
     private boolean exec = false;
     private String exec_properties;
@@ -786,6 +788,11 @@ public class StartArgs
         return createStartd;
     }
 
+    public boolean isUpdateIni()
+    {
+        return updateIni;
+    }
+
     public void parse(ConfigSources sources)
     {
         ListIterator<ConfigSource> iter = sources.reverseListIterator();
@@ -896,6 +903,13 @@ public class StartArgs
             run = false;
             createFiles = true;
             licenseCheckRequired = true;
+            return;
+        }
+
+        if (arg.equals("--update-ini") || arg.equals("--update-inis"))
+        {
+            run = false;
+            updateIni = true;
             return;
         }
 

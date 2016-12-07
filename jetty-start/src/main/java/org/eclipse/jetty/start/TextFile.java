@@ -40,6 +40,7 @@ public class TextFile implements Iterable<String>
 {
     private final Path file;
     private final List<String> lines = new ArrayList<>();
+    private final List<String> allLines = new ArrayList<>();
 
     public TextFile(Path file) throws FileNotFoundException, IOException
     {
@@ -62,6 +63,8 @@ public class TextFile implements Iterable<String>
                     continue;
                 }
 
+                allLines.add(line);
+                
                 if (line.charAt(0) == '#')
                 {
                     continue;
@@ -106,6 +109,11 @@ public class TextFile implements Iterable<String>
         return lines;
     }
 
+    public List<String> getAllLines()
+    {
+        return allLines;
+    }
+
     public void init()
     {
     }
@@ -129,5 +137,11 @@ public class TextFile implements Iterable<String>
     public void process(String line)
     {
         addUniqueLine(line);
+    }
+    
+    @Override 
+    public String toString()
+    {
+        return file.toString();
     }
 }

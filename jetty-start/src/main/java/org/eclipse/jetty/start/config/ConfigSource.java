@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.start.config;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.RawArgs;
+import org.eclipse.jetty.start.StartIni;
 
 /**
  * A Configuration Source
@@ -72,4 +76,9 @@ public interface ConfigSource
      * @return the value of the property, or null if not found
      */
     public String getProperty(String key);
+    
+    public default Set<StartIni> getStartInis() 
+    {
+        return Collections.emptySet();
+    }
 }

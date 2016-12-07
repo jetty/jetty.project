@@ -13,7 +13,8 @@ PROP|name=value
 PROP|name0=changed0
 PROP|name1=changed1
 PROP|property=value
-PROP|property0=value0
+PROP|property0=changed0
+PROP|property1=changed1
 
 # Files / Directories to create
 EXISTS|start.d/parameterized.ini
