@@ -50,6 +50,7 @@
         <extensions>true</extensions>
         <executions>
           <execution>
+            <phase>process-classes</phase>
             <goals>
               <goal>manifest</goal>
             </goals>

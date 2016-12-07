@@ -39,9 +39,9 @@
             <Import-Package>javax.servlet.*;version="[2.6.0,3.2)",org.eclipse.jetty.server.session.jmx;version="9.1";resolution:=optional,,org.eclipse.jetty.*;version="9.1",*</Import-Package>
           </instructions>
         </configuration>
-        <extensions>true</extensions>
         <executions>
           <execution>
+            <phase>process-classes</phase>
             <goals>
               <goal>manifest</goal>
             </goals>
