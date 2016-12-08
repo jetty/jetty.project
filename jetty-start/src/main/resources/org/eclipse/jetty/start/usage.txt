@@ -114,6 +114,10 @@ Module Management:
                    Note: not all modules have ini templates and thus may
                    be transitively enabled and not explicitly enabled in
                    a ini file.
+                   
+  --update-ini     Scan all start.ini and start.d/*.ini files and update
+                   any properties with values specified on the command
+                   line. e.g. --update-ini jetty.http.port=8888
 
   --create-startd  Ensure that a start.d directory exists for use by
                    subsequent --add-to-start=*. If a start.ini file exists

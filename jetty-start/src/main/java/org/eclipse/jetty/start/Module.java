@@ -61,9 +61,8 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 public class Module implements Comparable<Module>
 {
     private static final String VERSION_UNSPECIFIED = "9.2";
-    private static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
-    private static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
-
+    static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
+    static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
 
     /** The file of the module */
     private final Path _path;

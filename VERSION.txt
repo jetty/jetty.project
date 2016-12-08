@@ -1,5 +1,32 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.0.RC3 - 05 December 2016
+ + 1051 NCSARequestLog/RolloverFileOutputStream does not roll day after DST
+   ends
+ + 1062 Jetty allows requests to hang under PUT load
+ + 1090 Allow WebSocketUpgradeFilter to be used by WEB-INF/web.xml
+ + 1092 jetty-runner jstl support
+ + 1108 Please improve logging in SslContextFactory when there are no approved
+   cipher suites
+ + 1117 quickstart generator of quickstart-web.xml should keep ids
+ + 1118 Filter.destroy() conflicts with ContainerLifeCycle.destroy() in
+   WebSocketUpgradeFilter
+ + 1123 Broken lifecycle for WebSocket's mappings
+ + 1124 Allow configuration of WebSocket mappings from Spring
+ + 1127 AsyncMiddleManServletTest Test failure
+ + 1128 Stats Servlet hidden from classpath
+ + 1130 PROXY protocol support reports incorrect remote address
+ + 1134 Jetty HTTP/2 client problems
+ + 1135 Avoid allocations from Method.getParameterTypes() if possible
+ + 1138 Ensure xml validation works on web descriptors
+ + 1139 Support configuration of properties during --add-to-start
+ + 1142 Do not warn for default settings in sessions
+ + 1143 Upgrade google cloud APIs to 0.7.0
+ + 117 Support proxies with WebSocketClient
+ + 572 Don't reject HTTP/2 requests without body in low threads mode
+ + 877 Programmatic servlet mappings cannot override mappings from
+   webdefault.xml using quickstart
+
 jetty-9.4.0.RC2 - 16 November 2016
  + 240 Missing content for multipart request after upgrade to Jetty > 9.2.7
  + 586 Thread pools and connectors
