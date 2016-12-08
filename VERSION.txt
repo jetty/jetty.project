@@ -1,3 +1,5 @@
+jetty-9.4.1-SNAPSHOT
+
 jetty-9.4.0.v20161208 - 08 December 2016
  + 1112 How config async support in jsp tag?
  + 1124 Allow configuration of WebSocket mappings from Spring
