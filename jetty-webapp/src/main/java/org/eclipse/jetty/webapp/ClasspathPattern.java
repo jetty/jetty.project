@@ -19,9 +19,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
@@ -33,7 +30,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
@@ -44,7 +40,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
-/* ------------------------------------------------------------ */
 /**
  * Classpath classes list performs sequential pattern matching of a class name 
  * against an internal array of classpath pattern entries.
@@ -156,7 +151,7 @@ public class ClasspathPattern extends AbstractSet<String>
         @Override
         public Iterator<Entry> iterator()
         {
-            return _entries.keySet().stream().map(k->_entries.get(k)).iterator();
+            return _entries.keySet().stream().map(_entries::get).iterator();
         }
 
         @Override
@@ -335,8 +330,6 @@ public class ClasspathPattern extends AbstractSet<String>
     
     
     Map<String,Entry> _entries = new HashMap<>();
-    Set<String> _classes = new HashSet<>();
-    
     IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
     IncludeExcludeSet<File,Path> _locations = new IncludeExcludeSet<>(ByLocation.class);
     
@@ -544,16 +537,16 @@ public class ClasspathPattern extends AbstractSet<String>
     {       
         try
         {
-            Resource resource = TypeUtil.getLoadedFrom(clazz);
-            Path path = resource.getFile().toPath();
-            
             Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
-            Boolean byLocation = _locations.isIncludedAndNotExcluded(path);
-            
+            Resource resource = TypeUtil.getLoadedFrom(clazz);
+            Boolean byLocation = resource == null || resource.getFile() == null
+                    ? null
+                    : _locations.isIncludedAndNotExcluded(resource.getFile().toPath());
+
             // Combine the tri-state match of both IncludeExclude Sets
-            boolean included = byName==TRUE || byLocation==TRUE
+            boolean included = byName==Boolean.TRUE || byLocation==Boolean.TRUE
                 || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-            boolean excluded = byName==FALSE || byLocation==FALSE;
+            boolean excluded = byName==Boolean.FALSE || byLocation==Boolean.FALSE;
             return included && !excluded;
         }
         catch (Exception e)
@@ -588,9 +581,9 @@ public class ClasspathPattern extends AbstractSet<String>
         }
 
         // Combine the tri-state match of both IncludeExclude Sets
-        boolean included = byName==TRUE || byLocation==TRUE
+        boolean included = byName==Boolean.TRUE || byLocation==Boolean.TRUE
             || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-        boolean excluded = byName==FALSE || byLocation==FALSE;
+        boolean excluded = byName==Boolean.FALSE || byLocation==Boolean.FALSE;
         return included && !excluded;
     }
 

@@ -662,6 +662,11 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             _endp.fillInterested(callback);
         }
 
+        public boolean tryFillInterested(Callback callback)
+        {
+            return _endp.tryFillInterested(callback);
+        }
+
         @Override
         public boolean isFillInterested()
         {

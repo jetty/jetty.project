@@ -253,7 +253,7 @@ public class SessionData implements Serializable
     
     public long calcExpiry ()
     {
-        return (getMaxInactiveMs() <= 0 ? 0 : (System.currentTimeMillis() + getMaxInactiveMs()));
+        return calcExpiry(System.currentTimeMillis());
     }
     
     public long calcExpiry (long time)
