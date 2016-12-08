@@ -20,6 +20,8 @@ package org.eclipse.jetty.http2.client;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
@@ -78,30 +80,23 @@ public class HTTP2ClientSession extends HTTP2Session
 
         int streamId = frame.getStreamId();
         IStream stream = getStream(streamId);
-        if (stream == null)
+        if (stream != null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
+            MetaData metaData = frame.getMetaData();
+            if (metaData.isRequest())
+            {
+                onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_response");
+            }
+            else
+            {
+                stream.process(frame, Callback.NOOP);
+                notifyHeaders(stream, frame);
+            }
         }
         else
         {
-            stream.process(frame, Callback.NOOP);
-            notifyHeaders(stream, frame);
-        }
-    }
-
-    private void notifyHeaders(IStream stream, HeadersFrame frame)
-    {
-        Stream.Listener listener = stream.getListener();
-        if (listener == null)
-            return;
-        try
-        {
-            listener.onHeaders(stream, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("Failure while notifying listener " + listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
         }
     }
 
