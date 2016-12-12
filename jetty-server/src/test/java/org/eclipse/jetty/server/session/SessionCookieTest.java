@@ -148,9 +148,9 @@ public class SessionCookieTest
         }
 
         @Override
-        public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
+        public String renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
         {
-            // TODO Auto-generated method stub
+            return "";
             
         }
     }

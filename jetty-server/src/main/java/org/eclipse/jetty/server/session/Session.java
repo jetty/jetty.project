@@ -810,7 +810,13 @@ public class Session implements SessionHandler.SessionIf
             extendedId = getExtendedId();
         }
         
-        _handler._sessionIdManager.renewSessionId(id, extendedId, request); 
+        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request); 
+        try (Lock lock = _lock.lockIfNotHeld())
+        {
+            checkValidForWrite(); 
+            _sessionData.setId(newId);
+            setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+        }
         setIdChanged(true);
     }
        

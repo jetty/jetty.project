@@ -483,7 +483,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * @see org.eclipse.jetty.server.SessionIdManager#renewSessionId(java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest)
      */
     @Override
-    public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
+    public String renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
     { 
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
@@ -495,6 +495,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         {
             manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
         }
+        
+        return newClusterId;
     }
     
     
