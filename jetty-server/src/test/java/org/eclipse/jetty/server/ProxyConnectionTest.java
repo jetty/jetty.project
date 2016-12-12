@@ -169,8 +169,9 @@ public class ProxyConnectionTest
                 "Host: server:80\n"+
                 "Connection: close\n"+
                 "\n");
-        Assert.assertThat(response,Matchers.equalTo(""));
+        Assert.assertThat(response,Matchers.containsString("HTTP/1.1 200"));
+        Assert.assertThat(response,Matchers.containsString("pathInfo=/path"));
+        Assert.assertThat(response,Matchers.containsString("local=0.0.0.0"));
+        Assert.assertThat(response,Matchers.containsString("remote=0.0.0.0"));
     }
 }
-
-

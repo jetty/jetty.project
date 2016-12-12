@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom
+public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom, Connection.UpgradeTo
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     public static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.asString());
@@ -187,6 +187,23 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             return buffer;
         }
         return null;
+    }
+
+    @Override
+    public void onUpgradeTo(ByteBuffer prefilled) {
+        if (prefilled == null)
+        {
+            return;
+        }
+        if (_requestBuffer != null)
+        {
+            throw new IllegalStateException("upgrade after buffer has been allocated");
+        }
+
+        _requestBuffer = _bufferPool.acquire(getInputBufferSize(), false);
+        _requestBuffer.limit(prefilled.remaining());
+        _requestBuffer.put(prefilled);
+        _requestBuffer.position(0);
     }
 
     void releaseRequestBuffer()

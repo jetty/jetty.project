@@ -20,6 +20,7 @@ package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Connection.UpgradeTo;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -77,7 +79,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * be called again and make another best effort attempt to progress the connection.
  *
  */
-public class SslConnection extends AbstractConnection
+public class SslConnection extends AbstractConnection implements UpgradeTo
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
     private static final ByteBuffer __FILL_CALLED_FLUSH= BufferUtil.allocate(0);
@@ -90,6 +92,7 @@ public class SslConnection extends AbstractConnection
     private ByteBuffer _decryptedInput;
     private ByteBuffer _encryptedInput;
     private ByteBuffer _encryptedOutput;
+    private ByteBuffer _upgradeBuffer;
     private final boolean _encryptedDirectBuffers = true;
     private final boolean _decryptedDirectBuffers = false;
     private boolean _renegotiationAllowed;
@@ -219,6 +222,14 @@ public class SslConnection extends AbstractConnection
     {
         super.onOpen();
         getDecryptedEndPoint().getConnection().onOpen();
+    }
+
+    @Override
+    public void onUpgradeTo(ByteBuffer prefilled) {
+        if (BufferUtil.hasContent(_upgradeBuffer)) {
+            throw new IllegalStateException();
+        }
+        _upgradeBuffer = prefilled;
     }
 
     @Override
@@ -594,6 +605,19 @@ public class SslConnection extends AbstractConnection
                     _encryptedInput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
                 else
                     BufferUtil.compact(_encryptedInput);
+
+                if (BufferUtil.hasContent(_upgradeBuffer)) {
+                    final int savedPos = _encryptedInput.position();
+                    if (_upgradeBuffer.remaining() > _encryptedInput.capacity()) {
+                        throw new BufferOverflowException();
+                    }
+
+                    _encryptedInput.limit(savedPos + _upgradeBuffer.remaining());
+                    _encryptedInput.put(_upgradeBuffer);
+                    _encryptedInput.position(savedPos);
+
+                    _upgradeBuffer = null;
+                }
 
                 // We also need an app buffer, but can use the passed buffer if it is big enough
                 ByteBuffer app_in;
