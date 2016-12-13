@@ -378,7 +378,7 @@ public class HpackContext
                 _offset = (_offset+1)%_entries.length;
                 _size--;
                 if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("HdrTbl[%x] evict %s",hashCode(),entry));
+                    LOG.debug(String.format("HdrTbl[%x] evict %s",HpackContext.this.hashCode(),entry));
                 _dynamicTableSizeInBytes-=entry.getSize();
                 entry._slot=-1;
                 _fieldMap.remove(entry.getHttpField());
@@ -388,7 +388,7 @@ public class HpackContext
 
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes));
+                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",HpackContext.this.hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes));
         }
 
     }
