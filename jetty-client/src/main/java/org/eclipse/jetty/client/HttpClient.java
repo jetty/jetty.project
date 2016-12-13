@@ -468,7 +468,23 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpRequest newHttpRequest(HttpConversation conversation, URI uri)
     {
-        return new HttpRequest(this, conversation, uri);
+        return new HttpRequest(this, conversation, checkHost(uri));
+    }
+
+    /**
+     * Check {@code uri} for non-null host
+     *
+     * @param uri to check for non-null host
+     * @return same {@code uri} if it's correct
+     * @throws IllegalArgumentException with message containing authority if {@code uri.getHost() == null}
+     */
+    private URI checkHost(URI uri)
+    {
+        if (uri.getHost() == null)
+        {
+            throw new IllegalArgumentException(String.format("Invalid URI host: null (authority: %s)", uri.getRawAuthority()));
+        }
+        return uri;
     }
 
     /**

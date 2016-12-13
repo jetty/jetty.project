@@ -63,6 +63,13 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(HttpStatus.OK_200, request.send().getStatus());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testIDNHost() throws Exception
+    {
+        startClient();
+        client.newRequest("http://пример.рф"); // example.com-like host in IDN domain
+    }
+
     @Test
     public void testPath() throws Exception
     {
