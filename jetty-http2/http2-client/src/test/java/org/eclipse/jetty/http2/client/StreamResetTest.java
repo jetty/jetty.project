@@ -23,12 +23,17 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -440,5 +445,140 @@ public class StreamResetTest extends AbstractTest
 
             Assert.assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
         }
+    }
+
+    @Test
+    public void testResetAfterAsyncRequestBlockingWriteStalledByFlowControl() throws Exception
+    {
+        int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        CountDownLatch writeLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.start(() ->
+                {
+                    try
+                    {
+                        // Make sure we are in async wait before writing.
+                        Thread.sleep(1000);
+                        response.getOutputStream().write(new byte[10 * windowSize]);
+                        asyncContext.complete();
+                    }
+                    catch (IOException x)
+                    {
+                        writeLatch.countDown();
+                    }
+                    catch (Throwable x)
+                    {
+                        x.printStackTrace();
+                    }
+                });
+            }
+        });
+
+        Deque<Object> dataQueue = new ArrayDeque<>();
+        AtomicLong received = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(request, null, true);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(frame, promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                dataQueue.offer(frame);
+                dataQueue.offer(callback);
+                // Do not consume the data yet.
+                if (received.addAndGet(frame.getData().remaining()) == windowSize)
+                    latch.countDown();
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        // Reset and consume.
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        dataQueue.stream()
+                .filter(item -> item instanceof Callback)
+                .map(item -> (Callback)item)
+                .forEach(Callback::succeeded);
+
+        Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testResetAfterAsyncRequestAsyncWriteStalledByFlowControl() throws Exception
+    {
+        int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        CountDownLatch writeLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                ServletOutputStream output = response.getOutputStream();
+                output.setWriteListener(new WriteListener()
+                {
+                    private boolean written;
+
+                    @Override
+                    public void onWritePossible() throws IOException
+                    {
+                        while (output.isReady())
+                        {
+                            if (written)
+                            {
+                                asyncContext.complete();
+                                break;
+                            }
+                            else
+                            {
+                                output.write(new byte[10 * windowSize]);
+                                written = true;
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        writeLatch.countDown();
+                    }
+                });
+            }
+        });
+
+        Deque<Callback> dataQueue = new ArrayDeque<>();
+        AtomicLong received = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("GET", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(request, null, true);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(frame, promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                dataQueue.offer(callback);
+                // Do not consume the data yet.
+                if (received.addAndGet(frame.getData().remaining()) == windowSize)
+                    latch.countDown();
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        // Reset and consume.
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        dataQueue.forEach(Callback::succeeded);
+
+        Assert.assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
 }

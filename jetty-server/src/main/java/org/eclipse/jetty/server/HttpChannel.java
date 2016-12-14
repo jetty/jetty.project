@@ -368,45 +368,51 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             break loop;
                         }
 
-                        _request.setHandled(false);
-                        _response.resetBuffer();
-                        _response.getHttpOutput().reopen();
-
-
-                        String reason;
-                        if (ex == null || ex instanceof TimeoutException)
+                        if (_response.isCommitted())
                         {
-                            reason = "Async Timeout";
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Could not perform Error Dispatch because the response is already committed, aborting");
+                            _transport.abort(ex);
                         }
                         else
                         {
-                            reason = HttpStatus.Code.INTERNAL_SERVER_ERROR.getMessage();
-                            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, ex);
-                        }
+                            _request.setHandled(false);
+                            _response.resetBuffer();
+                            _response.getHttpOutput().reopen();
 
-                        _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
-                        _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, reason);
-                        _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, _request.getRequestURI());
+                            String reason;
+                            if (ex == null || ex instanceof TimeoutException)
+                            {
+                                reason = "Async Timeout";
+                            }
+                            else
+                            {
+                                reason = HttpStatus.Code.INTERNAL_SERVER_ERROR.getMessage();
+                                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, ex);
+                            }
 
-                        _response.setStatusWithReason(HttpStatus.INTERNAL_SERVER_ERROR_500, reason);
+                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, reason);
+                            _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, _request.getRequestURI());
+                            _response.setStatusWithReason(HttpStatus.INTERNAL_SERVER_ERROR_500, reason);
 
-                        ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(), _state.getContextHandler());
-                        if (eh instanceof ErrorHandler.ErrorPageMapper)
-                        {
-                            String error_page = ((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
-                            if (error_page != null)
-                                _state.getAsyncContextEvent().setDispatchPath(error_page);
-                        }
+                            ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(), _state.getContextHandler());
+                            if (eh instanceof ErrorHandler.ErrorPageMapper)
+                            {
+                                String error_page = ((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
+                                if (error_page != null)
+                                    _state.getAsyncContextEvent().setDispatchPath(error_page);
+                            }
 
-
-                        try
-                        {
-                            _request.setDispatcherType(DispatcherType.ERROR);
-                            getServer().handleAsync(this);
-                        }
-                        finally
-                        {
-                            _request.setDispatcherType(null);
+                            try
+                            {
+                                _request.setDispatcherType(DispatcherType.ERROR);
+                                getServer().handleAsync(this);
+                            }
+                            finally
+                            {
+                                _request.setDispatcherType(null);
+                            }
                         }
                         break;
                     }
