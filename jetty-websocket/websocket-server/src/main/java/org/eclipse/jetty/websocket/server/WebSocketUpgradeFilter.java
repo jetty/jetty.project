@@ -110,6 +110,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     }
     
     private NativeWebSocketConfiguration configuration;
+    private boolean exportConfiguration = true;
     private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
     
@@ -126,6 +127,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     public WebSocketUpgradeFilter(NativeWebSocketConfiguration configuration)
     {
         this.configuration = configuration;
+        this.exportConfiguration = false;
     }
     
     @Override
@@ -304,7 +306,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                             NativeWebSocketConfiguration.class.getName() + " at ServletContext attribute '" + configurationKey + "'");
                 }
             }
-            else
+            else if (exportConfiguration)
             {
                 // We have a NativeWebSocketConfiguration already present, make sure it exists on the ServletContext
                 if (config.getServletContext().getAttribute(configurationKey) == null)

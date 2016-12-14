@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -67,6 +68,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     public void reset()
     {
         mappings.clear();
+    }
+    
+    public void removeIf(Predicate<MappedResource<E>> predicate)
+    {
+        mappings.removeIf(predicate);
     }
     
     /**
