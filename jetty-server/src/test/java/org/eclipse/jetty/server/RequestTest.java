@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -59,6 +60,8 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.Utf8Appendable;
@@ -831,23 +834,38 @@ public class RequestTest
     @Test
     public void testMultiPartFormDataReadInputThenParams() throws Exception
     {
+        final File tmpdir = MavenTestingUtils.getTargetTestingDir("multipart");
+        FS.ensureEmpty(tmpdir);
+    
         Handler handler = new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {
+                // Fake a MultiPartConfig'd servlet endpoint
+                MultipartConfigElement multipartConfig = new MultipartConfigElement(tmpdir.getAbsolutePath());
+                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
+            
+                // Normal processing
                 baseRequest.setHandled(true);
+            
+                // Fake the commons-fileupload behavior
+                int length = request.getContentLength();
                 InputStream in = request.getInputStream();
-                String content = IO.toString(in);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                IO.copy(in, out, length); // commons-fileupload does not read to EOF
+            
+                LOG.info("input stream = " + in);
+            
+                // Record what happened as servlet response headers
                 response.setIntHeader("x-request-content-length", request.getContentLength());
-                response.setIntHeader("x-request-content-read", content.length());
-                String foo = request.getParameter("foo");
-                String bar = request.getParameter("bar");
+                response.setIntHeader("x-request-content-read", out.size());
+                String foo = request.getParameter("foo"); // uri query parameter
+                String bar = request.getParameter("bar"); // form-data content parameter
                 response.setHeader("x-foo", foo == null ? "null" : foo);
                 response.setHeader("x-bar", bar == null ? "null" : bar);
             }
-
         };
         _server.stop();
         _server.setHandler(handler);
@@ -874,11 +892,11 @@ public class RequestTest
     
     
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-
-        // Possible to read query string
+    
+        // It should always be possible to read query string
         assertThat("response.x-foo", response.get("x-foo"), is("FooUri"));
-        // Not possible to read request content parameters
-        assertThat("response.x-bar", response.get("x-bar"), is("null"));
+        // Not possible to read request content parameters?
+        assertThat("response.x-bar", response.get("x-bar"), is("null")); // TODO: should this work?
     }
     
     @Test
