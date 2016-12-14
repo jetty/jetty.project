@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -832,6 +833,7 @@ public class RequestTest
     
     
     @Test
+    @Ignore("See issue #1175")
     public void testMultiPartFormDataReadInputThenParams() throws Exception
     {
         final File tmpdir = MavenTestingUtils.getTargetTestingDir("multipart");
@@ -843,6 +845,9 @@ public class RequestTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {
+                if (baseRequest.getDispatcherType() != DispatcherType.REQUEST)
+                    return;
+                
                 // Fake a MultiPartConfig'd servlet endpoint
                 MultipartConfigElement multipartConfig = new MultipartConfigElement(tmpdir.getAbsolutePath());
                 request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
