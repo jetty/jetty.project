@@ -99,18 +99,7 @@ Module Management:
                    If the ini template contains properties, these may be 
                    amended in the generated file by specifying those 
                    properties on the command line.
-                   
-        FS.ensureDirectoryExists(startDir);
-        FS.ensureDirectoryExists(startDir);
-                   modules that the specified module depends on are also
-       .
-       If the directory ${jetty.base}/start.d 
-                   exists then <modulename>.ini files are created within
-                   that directory, otherwise then enabling configuration
-                   is appended to the ${jetty.base}/start.ini file.
-                   Lines that are added come from the ini template that
-                   the module itself maintains.
-       
+
                    Note: not all modules have ini templates and thus may
                    be transitively enabled and not explicitly enabled in
                    a ini file.

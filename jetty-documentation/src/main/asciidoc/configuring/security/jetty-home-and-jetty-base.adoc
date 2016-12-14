@@ -255,187 +255,11 @@ First notice the separation of `${jetty.base}` and `${jetty.home}`.
 
 Notice that you have `--module=<name>` here and there; you have wrapped up the goal of a module (libs, configuration XMLs, and properties) into a single unit, with dependencies on other modules.
 
-You can see the list of modules:
+You can see the list of modules by appending `--list-modules` to the command line.
 
 [source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --list-modules
-
-Jetty All Available Modules:
-----------------------------
-
-Module: annotations
-      LIB: lib/jetty-annotations-${jetty.version}.jar
-      LIB: lib/annotations/*.jar
-      XML: etc/jetty-annotations.xml
-  depends: [plus]
-
-Module: client
-      LIB: lib/jetty-client-${jetty.version}.jar
-  depends: []
-
-Module: debug
-      XML: etc/jetty-debug.xml
-  depends: [server]
-
-Module: deploy
-      LIB: lib/jetty-deploy-${jetty.version}.jar
-      XML: etc/jetty-deploy.xml
-  depends: [webapp]
-  enabled: ${jetty.base}/start.ini
-
-Module: ext
-      LIB: lib/ext/*.jar
-  depends: []
-
-Module: http
-      XML: etc/jetty-http.xml
-  depends: [server]
-  enabled: ${jetty.base}/start.ini
-
-Module: http2
-      LIB: lib/http2/*.jar
-      XML: etc/jetty-http2.xml
-  depends: [ssl, alpn]
-
-Module: http2c
-     LIB: lib/http2/*.jar
-     XML: etc/jetty-http2c.xml
- depends: [http]
-
-Module: https
-      XML: etc/jetty-https.xml
-  depends: [ssl]
-
-Module: ipaccess
-      XML: etc/jetty-ipaccess.xml
-  depends: [server]
-
-Module: jaas
-      LIB: lib/jetty-jaas-${jetty.version}.jar
-      XML: etc/jetty-jaas.xml
-  depends: [server]
-
-Module: jaspi
-      LIB: lib/jetty-jaspi-${jetty.version}.jar
-      LIB: lib/jaspi/*.jar
-  depends: [security]
-
-Module: jmx
-      LIB: lib/jetty-jmx-${jetty.version}.jar
-      XML: etc/jetty-jmx.xml
-  depends: []
-
-Module: jndi
-      LIB: lib/jetty-jndi-${jetty.version}.jar
-      LIB: lib/jndi/*.jar
-  depends: [server]
-
-Module: jsp
-      LIB: lib/jsp/*.jar
-  depends: [servlet]
-
-Module: jvm
-  depends: []
-
-Module: logging
-      XML: etc/jetty-logging.xml
-  depends: []
-
-Module: lowresources
-      XML: etc/jetty-lowresources.xml
-  depends: [server]
-
-Module: monitor
-      LIB: lib/jetty-monitor-${jetty.version}.jar
-      XML: etc/jetty-monitor.xml
-  depends: [client, server]
-
-Module: npn
-  depends: []
-
-Module: plus
-      LIB: lib/jetty-plus-${jetty.version}.jar
-      XML: etc/jetty-plus.xml
-  depends: [server, security, jndi]
-
-Module: proxy
-      LIB: lib/jetty-proxy-${jetty.version}.jar
-      XML: etc/jetty-proxy.xml
-  depends: [client, server]
-
-Module: requestlog
-      XML: etc/jetty-requestlog.xml
-  depends: [server]
-
-Module: resources
-      LIB: resources
-  depends: []
-
-Module: rewrite
-      LIB: lib/jetty-rewrite-${jetty.version}.jar
-      XML: etc/jetty-rewrite.xml
-  depends: [server]
-
-Module: security
-      LIB: lib/jetty-security-${jetty.version}.jar
-  depends: [server]
-
-Module: server
-      LIB: lib/servlet-api-3.1.jar
-      LIB: lib/jetty-schemas-3.1.jar
-      LIB: lib/jetty-http-${jetty.version}.jar
-      LIB: lib/jetty-continuation-${jetty.version}.jar
-      LIB: lib/jetty-server-${jetty.version}.jar
-      LIB: lib/jetty-xml-${jetty.version}.jar
-      LIB: lib/jetty-util-${jetty.version}.jar
-      LIB: lib/jetty-io-${jetty.version}.jar
-      XML: etc/jetty.xml
-  depends: []
-  enabled: ${jetty.base}/start.ini
-
-Module: servlet
-      LIB: lib/jetty-servlet-${jetty.version}.jar
-  depends: [server]
-
-Module: servlets
-      LIB: lib/jetty-servlets-${jetty.version}.jar
-  depends: [servlet]
-
-Module: setuid
-      LIB: lib/setuid/jetty-setuid-java-1.0.1.jar
-      XML: etc/jetty-setuid.xml
-  depends: [server]
-
-Module: ssl
-      XML: etc/jetty-ssl.xml
-  depends: [server]
-  enabled: ${jetty.base}/start.ini
-
-Module: stats
-      XML: etc/jetty-stats.xml
-  depends: [server]
-
-Module: webapp
-      LIB: lib/jetty-webapp-${jetty.version}.jar
-  depends: [servlet]
-
-Module: websocket
-      LIB: lib/websocket/*.jar
-  depends: [annotations]
-
-Module: xinetd
-      XML: etc/jetty-xinetd.xml
-  depends: [server]
-
-Jetty Active Module Tree:
--------------------------
- + Module: server [enabled]
-   + Module: http [enabled]
-   + Module: servlet [transitive]
-   + Module: ssl [enabled]
-     + Module: webapp [transitive]
-       + Module: deploy [enabled]
+[my-base] $ java -jar ../jetty-distribution-{VERSION}/start.jar --list-modules
 ....
 
 These are the modules by name, the libraries they bring in, the XML configurations they use, the other modules they depend on (even optional ones), and if the module is in use, where it was enabled.
@@ -458,6 +282,7 @@ ____
 
 Notice that your `${jetty.base}/start.ini` has no references to the XML files.
 That's because the module system and its graph of dependencies now dictate all of the XML files, and their load order.
+Much more information on modules can be found in the section on link:#startup-modules[Managing Startup Modules.]
 
 [[parameterizing]]
 ===== Parameters
