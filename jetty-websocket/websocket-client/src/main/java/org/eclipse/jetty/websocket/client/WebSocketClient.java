@@ -287,12 +287,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         super.doStop();
         
-        if (cookieStore != null)
-        {
-            cookieStore.removeAll();
-            cookieStore = null;
-        }
-        
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}",this);
     }
@@ -539,7 +533,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     public void setCookieStore(CookieStore cookieStore)
     {
-        updateBean(this.cookieStore,cookieStore);
         this.cookieStore = cookieStore;
     }
     
