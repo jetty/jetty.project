@@ -55,6 +55,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -828,6 +829,59 @@ public class RequestTest
     
     
     @Test
+    public void testMultiPartFormDataReadInputThenParams() throws Exception
+    {
+        Handler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
+            {
+                baseRequest.setHandled(true);
+                InputStream in = request.getInputStream();
+                String content = IO.toString(in);
+                response.setIntHeader("x-request-content-length", request.getContentLength());
+                response.setIntHeader("x-request-content-read", content.length());
+                String foo = request.getParameter("foo");
+                String bar = request.getParameter("bar");
+                response.setHeader("x-foo", foo == null ? "null" : foo);
+                response.setHeader("x-bar", bar == null ? "null" : bar);
+            }
+
+        };
+        _server.stop();
+        _server.setHandler(handler);
+        _server.start();
+    
+        String multipart =  "--AaBbCc\r\n"+
+                "content-disposition: form-data; name=\"bar\"\r\n"+
+                "\r\n"+
+                "BarContent\r\n"+
+                "--AaBbCc\r\n"+
+                "content-disposition: form-data; name=\"stuff\"\r\n"+
+                "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
+                "\r\n"+
+                "000000000000000000000000000000000000000000000000000\r\n"+
+                "--AaBbCc--\r\n";
+    
+        String request="POST /?foo=FooUri HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Content-Type: multipart/form-data; boundary=\"AaBbCc\"\r\n"+
+                "Content-Length: "+multipart.getBytes().length+"\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                multipart;
+    
+    
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+
+        // Possible to read query string
+        assertThat("response.x-foo", response.get("x-foo"), is("FooUri"));
+        // Not possible to read request content parameters
+        assertThat("response.x-bar", response.get("x-bar"), is("null"));
+    }
+    
+    @Test
     public void testPartialRead() throws Exception
     {
         Handler handler = new AbstractHandler()
@@ -843,35 +897,35 @@ public class RequestTest
                 response.getOutputStream().write(b);
                 response.flushBuffer();
             }
-
+            
         };
         _server.stop();
         _server.setHandler(handler);
         _server.start();
-
+        
         String request="GET / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: text/plane\r\n"+
-        "Content-Length: "+10+"\r\n"+
-        "\r\n"+
-        "0123456789\r\n"+
-        "GET / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: text/plane\r\n"+
-        "Content-Length: "+10+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        "ABCDEFGHIJ\r\n";
-
+                "Host: whatever\r\n"+
+                "Content-Type: text/plane\r\n"+
+                "Content-Length: "+10+"\r\n"+
+                "\r\n"+
+                "0123456789\r\n"+
+                "GET / HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Content-Type: text/plane\r\n"+
+                "Content-Length: "+10+"\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                "ABCDEFGHIJ\r\n";
+        
         String responses = _connector.getResponses(request);
-
+        
         int index=responses.indexOf("read="+(int)'0');
         assertTrue(index>0);
-
+        
         index=responses.indexOf("read="+(int)'A',index+7);
         assertTrue(index>0);
     }
-
+    
     @Test
     public void testQueryAfterRead()
         throws Exception
