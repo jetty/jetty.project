@@ -296,6 +296,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public void onFailure(Throwable failure)
     {
+        getHttpTransport().onStreamFailure(failure);
         if (onEarlyEOF())
             handle();
         else

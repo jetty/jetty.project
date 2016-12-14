@@ -240,7 +240,6 @@ public class HttpClient extends ContainerLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        cookieStore.removeAll();
         decoderFactories.clear();
         handlers.clear();
 
