@@ -19,8 +19,8 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.osgi</groupId>
-    	<artifactId>org.eclipse.osgi</artifactId>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
     </dependency>
   </dependencies>
 

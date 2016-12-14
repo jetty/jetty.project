@@ -13,29 +13,28 @@
     <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
   </properties>
   <build>
-  <plugins>
-    <plugin>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>maven-bundle-plugin</artifactId>
-      <extensions>true</extensions>
-      <configuration>
-        <instructions>
-          <Require-Capability>
-            osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
-          </Require-Capability>
-          <Provide-Capability>
-            osgi.serviceloader;
-            osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
-          </Provide-Capability>
-        </instructions>
-      </configuration>
-    </plugin>
-    
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Require-Capability>
+              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+            </Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader;
+              osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+            </Provide-Capability>
+          </instructions>
+        </configuration>
+      </plugin>
       <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
       with a snapshot. -->
       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

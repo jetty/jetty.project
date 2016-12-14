@@ -106,8 +106,9 @@ public interface SessionIdManager extends LifeCycle
     * @param oldId the old plain session id
     * @param oldExtendedId the old fully qualified id
     * @param request the request containing the session
+    * @return the new session id
     */
-    public void renewSessionId(String oldId, String oldExtendedId, HttpServletRequest request);    
+    public String renewSessionId(String oldId, String oldExtendedId, HttpServletRequest request);    
 
     /* ------------------------------------------------------------ */
     /**

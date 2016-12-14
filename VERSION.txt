@@ -1,5 +1,16 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.0.v20161208 - 08 December 2016
+ + 1112 How config async support in jsp tag?
+ + 1124 Allow configuration of WebSocket mappings from Spring
+ + 1139 Support configuration of properties during --add-to-start
+ + 1146 jetty.server.HttpInput deadlock
+ + 1148 Support HTTP/2 HEADERS trailer
+ + 1151 NPE in ClasspathPattern.match()
+ + 1153 Make SessionData easier to subclass
+ + 123 AbstractSessionIdManager can't atomically check for uniqueness of new
+   session ID
+
 jetty-9.4.0.RC3 - 05 December 2016
  + 1051 NCSARequestLog/RolloverFileOutputStream does not roll day after DST
    ends
@@ -405,7 +416,7 @@ jetty-9.3.12.v20160915 - 15 September 2016
  + 832 ServerWithJNDI example uses wrong webapp
  + 841 support reset in buffering interceptors
  + 844 Implement a Thread Limit Handler
- + 845 Improve blocking IO for data rate limiting.
+ + 845 Improve blocking IO for data rate limiting
  + 851 MBeanContainer no longer unregisters MBeans when "stopped"
  + 854 If container.destroy() is called, calling container.start() again should
    throw an IllegalStateException

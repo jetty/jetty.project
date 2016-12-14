@@ -73,7 +73,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private final SessionFactory sessionFactory;
     private final DecoratedObjectFactory objectFactory;
     private Masker masker;
-    
+
     private final int id = ThreadLocalRandom.current().nextInt();
 
     /**
@@ -229,14 +229,14 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.httpClient.setExecutor(executor);
         this.httpClient.setByteBufferPool(bufferPool);
         addBean(this.httpClient);
-        
+
         if (objectFactory == null)
             this.objectFactory = new DecoratedObjectFactory();
         else
             this.objectFactory = objectFactory;
-    
+
         this.extensionRegistry = new WebSocketExtensionFactory(this);
-    
+
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
         this.sessionFactory = new WebSocketSessionFactory(this);
@@ -263,7 +263,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.httpClient = new HttpClient(sslContextFactory);
         this.httpClient.setExecutor(scope.getExecutor());
         addBean(this.httpClient);
-        
+
         this.objectFactory = new DecoratedObjectFactory();
         this.extensionRegistry = new WebSocketExtensionFactory(this);
 
@@ -298,7 +298,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         return connect(websocket,toUri,request,(UpgradeListener)null);
     }
-    
+
     /**
      * Connect to remote websocket endpoint
      *
@@ -357,9 +357,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         init();
-    
+
         WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this,httpClient,request);
-        
+
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
     }
@@ -370,14 +370,14 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}",this);
 
-        
+
         if (ShutdownThread.isRegistered(this))
         {
             ShutdownThread.deregister(this);
         }
 
         super.doStop();
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}",this);
     }
@@ -390,7 +390,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Return the number of milliseconds for a timeout of an attempted write operation.
-     * 
+     *
      * @return number of milliseconds for timeout of an attempted write operation
      */
     public long getAsyncWriteTimeout()
@@ -446,7 +446,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Get the maximum size for buffering of a binary message.
-     * 
+     *
      * @return the maximum size of a binary message buffer.
      */
     public int getMaxBinaryMessageBufferSize()
@@ -456,7 +456,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Get the maximum size for a binary message.
-     * 
+     *
      * @return the maximum size of a binary message.
      */
     public long getMaxBinaryMessageSize()
@@ -466,7 +466,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Get the max idle timeout for new connections.
-     * 
+     *
      * @return the max idle timeout in milliseconds for new connections.
      */
     public long getMaxIdleTimeout()
@@ -476,7 +476,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Get the maximum size for buffering of a text message.
-     * 
+     *
      * @return the maximum size of a text message buffer.
      */
     public int getMaxTextMessageBufferSize()
@@ -486,7 +486,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Get the maximum size for a text message.
-     * 
+     *
      * @return the maximum size of a text message.
      */
     public long getMaxTextMessageSize()
@@ -539,7 +539,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Factory method for new ConnectionManager
-     * 
+     *
      * @return the ConnectionManager instance to use
      * @deprecated use HttpClient instead
      */
@@ -594,7 +594,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Set the timeout for connecting to the remote server.
-     * 
+     *
      * @param ms
      *            the timeout in milliseconds
      */
@@ -618,7 +618,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this.httpClient.setDispatchIO(dispatchIO);
     }
-    
+
     public void setExecutor(Executor executor)
     {
         this.httpClient.setExecutor(executor);
@@ -638,7 +638,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Set the max idle timeout for new connections.
      * <p>
      * Existing connections will not have their max idle timeout adjusted.
-     * 
+     *
      * @param ms
      *            the timeout in milliseconds
      */
@@ -664,7 +664,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         return this.httpClient;
     }
-    
+
     @Override
     public String toString()
     {

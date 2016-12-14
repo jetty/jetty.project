@@ -103,7 +103,7 @@
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
     </dependency>
-    
+
   </dependencies>
   <build>
     <plugins>

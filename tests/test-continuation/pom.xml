@@ -28,11 +28,11 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId> 
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
-    </dependency> 
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-continuation</artifactId>
@@ -43,6 +43,5 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>compile</scope>
     </dependency>
-    
   </dependencies>
 </project>

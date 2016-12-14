@@ -197,6 +197,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         stream.data(frame, callback);
     }
 
+    public void onStreamFailure(Throwable failure)
+    {
+        transportCallback.failed(failure);
+    }
+
     public boolean onStreamTimeout(Throwable failure)
     {
         return transportCallback.onIdleTimeout(failure);
@@ -264,9 +269,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             synchronized (this)
             {
                 commit = this.commit;
-                if (state != State.TIMEOUT)
+                if (state == State.WRITING)
                 {
                     callback = this.callback;
+                    this.callback = null;
                     this.state = State.IDLE;
                 }
             }
@@ -284,9 +290,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             synchronized (this)
             {
                 commit = this.commit;
-                if (state != State.TIMEOUT)
+                if (state == State.WRITING)
                 {
                     callback = this.callback;
+                    this.callback = null;
                     this.state = State.FAILED;
                 }
             }
@@ -317,6 +324,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 if (result)
                 {
                     callback = this.callback;
+                    this.callback = null;
                     this.state = State.TIMEOUT;
                 }
             }
