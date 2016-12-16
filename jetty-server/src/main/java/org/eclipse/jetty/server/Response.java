@@ -557,7 +557,7 @@ public class Response implements HttpServletResponse
             if (error_handler!=null)
                 error_handler.handle(null, request, request, this);
             else
-                _out.close();
+                closeOutput();
         }
     }
 
