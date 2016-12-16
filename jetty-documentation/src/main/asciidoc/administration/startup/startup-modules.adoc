@@ -253,7 +253,7 @@ If there are multiple entries in the `[tags]` section, it sorts by the first tag
 ____
 [NOTE]
 By default, the `--list-modules` command line argument shows all modules that do not include `internal` in the `[tags]` section of the associated `.mod` file.
-If you would like to see *all* modules, use `--list-modules=*`
+If you would like to see *all* modules, use `--list-all-modules`
 ____
 
 Here's an example of the `--list-modules` command:
