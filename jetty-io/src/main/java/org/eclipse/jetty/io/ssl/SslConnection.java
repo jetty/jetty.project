@@ -569,9 +569,10 @@ public class SslConnection extends AbstractConnection
                         HandshakeStatus unwrapHandshakeStatus = unwrapResult.getHandshakeStatus();
                         Status unwrapResultStatus = unwrapResult.getStatus();
 
-                        // Extra check on unwrapResultStatus == OK with zero length buffer is due
-                        // to SSL client on android (see bug #454773)
-                        _underFlown = unwrapResultStatus == Status.BUFFER_UNDERFLOW || unwrapResultStatus == Status.OK && unwrapResult.bytesConsumed()==0 && unwrapResult.bytesProduced()==0;
+                        // Extra check on unwrapResultStatus == OK with zero bytes consumed
+                        // or produced is due to an SSL client on Android (see bug #454773).
+                        _underFlown = unwrapResultStatus == Status.BUFFER_UNDERFLOW ||
+                                unwrapResultStatus == Status.OK && unwrapResult.bytesConsumed() == 0 && unwrapResult.bytesProduced() == 0;
 
                         if (_underFlown)
                         {
@@ -672,8 +673,10 @@ public class SslConnection extends AbstractConnection
                                         flush(__FILL_CALLED_FLUSH);
                                         if (BufferUtil.isEmpty(_encryptedOutput))
                                         {
-                                            // The flush wrote all the encrypted bytes so continue to fill
+                                            // The flush wrote all the encrypted bytes so continue to fill.
                                             _fillRequiresFlushToProgress = false;
+                                            if (_underFlown)
+                                                break decryption;
                                             continue;
                                         }
                                         else
