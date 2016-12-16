@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -508,6 +509,40 @@ public class HttpClientTest extends AbstractTest
         sleep(1000);
 
         Assert.assertEquals(1, completes.get());
+    }
+
+    @Test
+    public void testHEADResponds200() throws Exception
+    {
+        testHEAD(servletPath, HttpStatus.OK_200);
+    }
+
+    @Test
+    public void testHEADResponds404() throws Exception
+    {
+        testHEAD("/notMapped", HttpStatus.NOT_FOUND_404);
+    }
+
+    private void testHEAD(String path, int status) throws Exception
+    {
+        byte[] data = new byte[1024];
+        new Random().nextBytes(data);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.getOutputStream().write(data);
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI())
+                .method(HttpMethod.HEAD)
+                .path(path)
+                .send();
+
+        Assert.assertEquals(status, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
     }
 
     private void sleep(long time) throws IOException

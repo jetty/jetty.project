@@ -34,6 +34,7 @@ import javax.servlet.DispatcherType;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -127,13 +128,43 @@ public class WebSocketUpgradeFilterTest
             NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
             configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
             configuration.addMapping(new ServletPathSpec("/info/*"), infoCreator);
-            context.getServletContext().setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
+            context.setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
             
             server13.start();
             
             return server13;
         }});
-        
+    
+        // Embedded WSUF, added as filter, apply app-ws configuration via wsuf constructor
+    
+        cases.add(new Object[]{"wsuf/addFilter/WSUF Constructor configure", new ServerProvider()
+        {
+            @Override
+            public Server newServer() throws Exception
+            {
+                Server server = new Server();
+                ServerConnector connector = new ServerConnector(server);
+                connector.setPort(0);
+                server.addConnector(connector);
+            
+                ServletContextHandler context = new ServletContextHandler();
+                context.setContextPath("/");
+                server.setHandler(context);
+            
+                NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
+                configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
+                configuration.addMapping(new ServletPathSpec("/info/*"), infoCreator);
+                context.addBean(configuration, true);
+            
+                FilterHolder wsufHolder = new FilterHolder(new WebSocketUpgradeFilter(configuration));
+                context.addFilter(wsufHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            
+                server.start();
+            
+                return server;
+            }
+        }});
+
         // Embedded WSUF, added as filter, apply app-ws configuration via ServletContextListener
         
         cases.add(new Object[]{"wsuf.configureContext/ServletContextListener configure", (ServerProvider) () ->
@@ -235,7 +266,7 @@ public class WebSocketUpgradeFilterTest
     }
     
     @Test
-    public void testConfiguration() throws Exception
+    public void testNormalConfiguration() throws Exception
     {
         URI destUri = serverUri.resolve("/info/");
         
@@ -250,6 +281,47 @@ public class WebSocketUpgradeFilterTest
             EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
             String payload = frames.poll().getPayloadAsUTF8();
             
+            // If we can connect and send a text message, we know that the endpoint was
+            // added properly, and the response will help us verify the policy configuration too
+            assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
+        }
+    }
+    
+    @Test
+    public void testStopStartOfHandler() throws Exception
+    {
+        URI destUri = serverUri.resolve("/info/");
+        
+        try (BlockheadClient client = new BlockheadClient(destUri))
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+            
+            client.write(new TextFrame().setPayload("hello 1"));
+            
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
+            String payload = frames.poll().getPayloadAsUTF8();
+            
+            // If we can connect and send a text message, we know that the endpoint was
+            // added properly, and the response will help us verify the policy configuration too
+            assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
+        }
+        
+        server.getHandler().stop();
+        server.getHandler().start();
+        
+        try (BlockheadClient client = new BlockheadClient(destUri))
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+        
+            client.write(new TextFrame().setPayload("hello 2"));
+        
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
+            String payload = frames.poll().getPayloadAsUTF8();
+        
             // If we can connect and send a text message, we know that the endpoint was
             // added properly, and the response will help us verify the policy configuration too
             assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));

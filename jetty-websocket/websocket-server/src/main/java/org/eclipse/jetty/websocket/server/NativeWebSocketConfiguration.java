@@ -60,7 +60,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     @Override
     public void doStop() throws Exception
     {
-        mappings.reset();
+        mappings.removeIf((mapped) -> !(mapped.getResource() instanceof PersistedWebSocketCreator));
         super.doStop();
     }
     
@@ -111,13 +111,23 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     
     /**
      * Manually add a WebSocket mapping.
+     * <p>
+     *     If mapping is added before this configuration is started, then it is persisted through
+     *     stop/start of this configuration's lifecycle.  Otherwise it will be removed when
+     *     this configuration is stopped.
+     * </p>
      *
      * @param pathSpec the pathspec to respond on
      * @param creator the websocket creator to activate on the provided mapping.
      */
     public void addMapping(PathSpec pathSpec, WebSocketCreator creator)
     {
-        mappings.put(pathSpec, creator);
+        WebSocketCreator wsCreator = creator;
+        if (!isRunning())
+        {
+            wsCreator = new PersistedWebSocketCreator(creator);
+        }
+        mappings.put(pathSpec, wsCreator);
     }
     
     /**
@@ -169,5 +179,27 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
                 }
             }
         });
+    }
+    
+    private class PersistedWebSocketCreator implements WebSocketCreator
+    {
+        private final WebSocketCreator delegate;
+        
+        public PersistedWebSocketCreator(WebSocketCreator delegate)
+        {
+            this.delegate = delegate;
+        }
+        
+        @Override
+        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+        {
+            return delegate.createWebSocket(req, resp);
+        }
+    
+        @Override
+        public String toString()
+        {
+            return "Persisted[" + super.toString() + "]";
+        }
     }
 }

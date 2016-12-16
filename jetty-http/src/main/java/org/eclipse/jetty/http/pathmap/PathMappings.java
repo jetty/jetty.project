@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.Trie;
@@ -79,6 +80,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         _mappings.clear();
         _prefixMap.clear();
         _suffixMap.clear();
+    }
+    
+    public void removeIf(Predicate<MappedResource<E>> predicate)
+    {
+        _mappings.removeIf(predicate);
     }
     
     /**
@@ -172,7 +178,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     }
                     
                     default:
-                }   
+                }
             }
             
             if (mr.getPathSpec().matches(path))
