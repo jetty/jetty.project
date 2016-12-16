@@ -79,8 +79,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class SslConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(SslConnection.class);
-    private static final ByteBuffer __FILL_CALLED_FLUSH= BufferUtil.allocate(0);
-    private static final ByteBuffer __FLUSH_CALLED_FILL= BufferUtil.allocate(0);
 
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
@@ -569,9 +567,10 @@ public class SslConnection extends AbstractConnection
                         HandshakeStatus unwrapHandshakeStatus = unwrapResult.getHandshakeStatus();
                         Status unwrapResultStatus = unwrapResult.getStatus();
 
-                        // Extra check on unwrapResultStatus == OK with zero length buffer is due
-                        // to SSL client on android (see bug #454773)
-                        _underFlown = unwrapResultStatus == Status.BUFFER_UNDERFLOW || unwrapResultStatus == Status.OK && unwrapResult.bytesConsumed()==0 && unwrapResult.bytesProduced()==0;
+                        // Extra check on unwrapResultStatus == OK with zero bytes consumed
+                        // or produced is due to an SSL client on Android (see bug #454773).
+                        _underFlown = unwrapResultStatus == Status.BUFFER_UNDERFLOW ||
+                                unwrapResultStatus == Status.OK && unwrapResult.bytesConsumed() == 0 && unwrapResult.bytesProduced() == 0;
 
                         if (_underFlown)
                         {
@@ -665,15 +664,17 @@ public class SslConnection extends AbstractConnection
                                     {
                                         // If we are called from flush()
                                         // return to let it do the wrapping.
-                                        if (buffer == __FLUSH_CALLED_FILL)
+                                        if (_flushRequiresFillToProgress)
                                             return 0;
 
                                         _fillRequiresFlushToProgress = true;
-                                        flush(__FILL_CALLED_FLUSH);
+                                        flush(BufferUtil.EMPTY_BUFFER);
                                         if (BufferUtil.isEmpty(_encryptedOutput))
                                         {
-                                            // The flush wrote all the encrypted bytes so continue to fill
+                                            // The flush wrote all the encrypted bytes so continue to fill.
                                             _fillRequiresFlushToProgress = false;
+                                            if (_underFlown)
+                                                break decryption;
                                             continue;
                                         }
                                         else
@@ -896,11 +897,11 @@ public class SslConnection extends AbstractConnection
                                 case NEED_UNWRAP:
                                     // Ah we need to fill some data so we can write.
                                     // So if we were not called from fill and the app is not reading anyway
-                                    if (appOuts[0]!=__FILL_CALLED_FLUSH && !getFillInterest().isInterested())
+                                    if (!_fillRequiresFlushToProgress && !getFillInterest().isInterested())
                                     {
                                         // Tell the onFillable method that there might be a write to complete
                                         _flushRequiresFillToProgress = true;
-                                        fill(__FLUSH_CALLED_FILL);
+                                        fill(BufferUtil.EMPTY_BUFFER);
                                         // Check if after the fill() we need to wrap again
                                         if (_sslEngine.getHandshakeStatus() == HandshakeStatus.NEED_WRAP)
                                             continue;
