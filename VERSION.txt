@@ -1,4 +1,13 @@
-jetty-9.2.20-SNAPSHOT
+jetty-9.2.20.v20161216 - 16 December 2016
+ + 295 Ensure Jetty Client use of Deflater / Inflater calls .end() to avoid
+   memory leak
+ + Reset Response buffer size
+ + 1051 NCSARequestLog/RolloverFileOutputStream does not roll day after DST
+   ends
+ + 1057 Improve WebSocketUpgradeFilter fast path performance
+ + 1090 Allow WebSocketUpgradeFilter to be used by WEB-INF/web.xml
+ + 1124 Allow configuration of WebSocket mappings from Spring
+ + 1130 PROXY protocol support reports incorrect remote address
 
 jetty-9.2.19.v20160908 - 08 September 2016
  + 817 NPE in jndi Resource
@@ -34,7 +43,7 @@ jetty-9.2.16.v20160414 - 14 April 2016
  + 365 Potential connection leakage in case of aborted request
  + 367 Build downloads from git.eclipse.org
  + 371 jasper dependencies are outdated in 9.2.x
- + 377 HttpClient - No supported cipher suites leads to stuck requests.
+ + 377 HttpClient - No supported cipher suites leads to stuck requests
  + 418 Javax websocket server impl does not expose all required services as
    OSGi capabilities
  + 424 Jetty impl. of Websocket ServerEndpointConfig.Configurator lifecycle out
@@ -5323,7 +5332,7 @@ jetty-6.1.0rc2 - 20 December 2006
  + ensure classpath passed to jspc contains file paths not urls
  + ensure com.sun.el.Messages.properties included in jsp-2.1 jar
  + ensure servlets initialized if only using ServletHandler
- + fixed Jetty-197 AJP13 getRemoteHost()
+ + Jetty-197 AJP13 getRemoteHost()
  + Refactored AbstractSessionManager for ehcache
  + remove code to remove SecurityHandler if no constraints present
 

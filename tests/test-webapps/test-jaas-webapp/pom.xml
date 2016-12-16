@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.2.20-SNAPSHOT</version>
+    <version>9.2.20.v20161216</version>
   </parent>
   <artifactId>test-jaas-webapp</artifactId>
   <name>Jetty Tests :: WebApp :: JAAS</name>
