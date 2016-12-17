@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -402,9 +403,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case COMPLETE:
                     {
                         if (!_response.isCommitted() && !_request.isHandled())
+                        {
                             _response.sendError(HttpStatus.NOT_FOUND_404);
-                        else if (!_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                            _transport.abort(new IOException("insufficient content written"));
+                        }
+                        else
+                        {
+                            // RFC 7230, section 3.3.
+                            int status = _response.getStatus();
+                            boolean hasContent = !(_request.isHead() ||
+                                    HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
+                                    HttpStatus.isInformational(status) ||
+                                    status == HttpStatus.NO_CONTENT_204 ||
+                                    status == HttpStatus.NOT_MODIFIED_304);
+                            if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                                _transport.abort(new IOException("insufficient content written"));
+                        }
                         _response.closeOutput();
                         _request.setHandled(true);
 
