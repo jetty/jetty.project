@@ -27,6 +27,7 @@ import javax.servlet.ServletContextListener;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a ContextHandler
@@ -36,6 +37,7 @@ import org.osgi.framework.BundleContext;
 public class Activator implements BundleActivator
 {
 
+    private ServiceRegistration _sr;
     /**
      * 
      * @param context
@@ -48,20 +50,20 @@ public class Activator implements BundleActivator
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
-               // System.err.println("Context is initialized");
+               //System.err.println("Context is initialized");
             }
 
             @Override
             public void contextDestroyed(ServletContextEvent sce)
             {
-                // System.err.println("CONTEXT IS DESTROYED!");                
+                //System.err.println("CONTEXT IS DESTROYED!");                
             }
             
         });
         Dictionary props = new Hashtable();
         props.put("contextPath","/acme");
         props.put("Jetty-ContextFilePath", "acme.xml");
-        context.registerService(ContextHandler.class.getName(),ch,props);
+        _sr = context.registerService(ContextHandler.class.getName(),ch,props);
     }
 
     /**
@@ -72,5 +74,6 @@ public class Activator implements BundleActivator
      */
     public void stop(BundleContext context) throws Exception
     {
+        _sr.unregister();
     }
 }

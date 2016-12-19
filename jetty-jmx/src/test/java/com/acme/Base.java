@@ -25,7 +25,7 @@ public class Base extends AbstractLifeCycle
     String name;
     int value;
     String[] messages;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the messages.
@@ -34,14 +34,17 @@ public class Base extends AbstractLifeCycle
     {
         return messages;
     }
+
     /* ------------------------------------------------------------ */
     /**
-     * @param messages The messages to set.
+     * @param messages
+     *            The messages to set.
      */
     public void setMessages(String[] messages)
     {
         this.messages = messages;
     }
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the name.
@@ -50,14 +53,17 @@ public class Base extends AbstractLifeCycle
     {
         return name;
     }
+
     /* ------------------------------------------------------------ */
     /**
-     * @param name The name to set.
+     * @param name
+     *            The name to set.
      */
     public void setName(String name)
     {
         this.name = name;
     }
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the value.
@@ -66,10 +72,11 @@ public class Base extends AbstractLifeCycle
     {
         return value;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * @param value The value to set.
+     * @param value
+     *            The value to set.
      */
     public void setValue(int value)
     {
@@ -79,14 +86,13 @@ public class Base extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     public void doSomething(int arg)
     {
-        System.err.println("doSomething "+arg);
+        System.err.println("doSomething " + arg);
     }
 
     /* ------------------------------------------------------------ */
     public String findSomething(int arg)
     {
-        return ("found "+arg);
+        return ("found " + arg);
     }
-    
-    
+
 }

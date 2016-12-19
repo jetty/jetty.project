@@ -1,9 +1,11 @@
-#
-# HTTP2 Clear Text Support Module
-# This module adds support for HTTP/2 clear text to the
-# HTTP/1 clear text connector (defined in jetty-http.xml).
-# The resulting connector will accept both HTTP/1 and HTTP/2 connections.
-#
+[description]
+Enables the HTTP2C protocol on the HTTP Connector
+The connector will accept both HTTP/1 and HTTP/2 connections.
+
+[tags]
+connector
+http2
+http
 
 [depend]
 http

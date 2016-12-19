@@ -24,7 +24,7 @@ import java.util.Locale;
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -54,7 +54,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
     private String[] _ignorePaths;
     private boolean _extended;
-    private transient PathMap<String> _ignorePathMap;
+    private transient PathMappings<String> _ignorePathMap;
     private boolean _logLatency = false;
     private boolean _logCookies = false;
     private boolean _logServer = false;
@@ -139,7 +139,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             buf.append("] \"");
             append(buf,request.getMethod());
             buf.append(' ');
-            append(buf,request.getHttpURI().toString());
+            append(buf,request.getOriginalURI());
             buf.append(' ');
             append(buf,request.getProtocol());
             buf.append("\" ");
@@ -222,13 +222,14 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
-     * @param request the HTTP request to log
-     * @param b the build to write logs into
-     * @throws IOException for no reason
-     * @deprecated override {@link #logExtended(StringBuilder, Request, Response)} instead
+     * Writes extended request and response information to the output stream.
+     *
+     * @param b        StringBuilder to write to
+     * @param request  request object
+     * @param response response object
+     * @throws IOException if unable to log the extended information
      */
-    @Deprecated
-    protected void logExtended(Request request, StringBuilder b) throws IOException
+    protected void logExtended(StringBuilder b, Request request, Response response) throws IOException
     {
         String referer = request.getHeader(HttpHeader.REFERER.toString());
         if (referer == null)
@@ -249,19 +250,6 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             b.append(agent);
             b.append('"');
         }
-    }
-
-    /**
-     * Writes extended request and response information to the output stream.
-     *
-     * @param b        StringBuilder to write to
-     * @param request  request object
-     * @param response response object
-     * @throws IOException if unable to log the extended information
-     */
-    protected void logExtended(StringBuilder b, Request request, Response response) throws IOException
-    {
-        logExtended(request, b);
     }
 
     /**
@@ -423,7 +411,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
         if (_ignorePaths != null && _ignorePaths.length > 0)
         {
-            _ignorePathMap = new PathMap<>();
+            _ignorePathMap = new PathMappings<>();
             for (int i = 0; i < _ignorePaths.length; i++)
                 _ignorePathMap.put(_ignorePaths[i], _ignorePaths[i]);
         }

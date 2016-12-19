@@ -16,273 +16,190 @@
 
 [source, screen, subs="{sub-order}"]
 ....
-[mybase]$ java -jar /opt/jetty-distribution/start.jar --list-modules
+[mybase]$ java -jar ../start.jar --list-modules
 
-Jetty All Available Modules:
-----------------------------
+Available Modules:
+==================
+tags: [-internal]
 
- [ ] Module: alpn
-     Depend: ssl
-     Depend: alpn-impl/alpn-${java.version}
+Modules for tag '*':
+--------------------
+
+     Module: alpn
+           : Enables the ALPN extension to TLS(SSL) by adding modified classes to
+           : the JVM bootpath.
+           : This modification has a tight dependency on specific recent updates of
+           : Java 1.7 and Java 1.8 (Java versions prior to 1.7u40 are not supported).
+           : The alpn module will use an appropriate alpn-boot jar for your
+           : specific version of Java.
+     Depend: alpn-impl/alpn-${java.version}, ssl
         LIB: lib/jetty-alpn-client-${jetty.version}.jar
         LIB: lib/jetty-alpn-server-${jetty.version}.jar
         XML: etc/jetty-alpn.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: protonego-boot
-        Ref: alpn-impl/alpn-1.8.0_45
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: annotations
+     Module: annotations
+           : Enables Annotation scanning for deployed webapplications.
      Depend: plus
         LIB: lib/jetty-annotations-${jetty.version}.jar
         LIB: lib/annotations/*.jar
         XML: etc/jetty-annotations.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: apache-jsp
+     Module: apache-jsp
+           : Enables use of the apache implementation of JSP
         LIB: lib/apache-jsp/*.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: apache-jstl
+     Module: apache-jstl
+           : Enables the apache version of JSTL
         LIB: lib/apache-jstl/*.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: cdi
-     Depend: deploy
-     Depend: annotations
-     Depend: plus
-     Depend: jsp
+     Module: cdi
+           : Experimental CDI/Weld integration
+     Depend: jsp, annotations, plus, deploy
         LIB: lib/cdi/*.jar
         LIB: lib/cdi-core-${jetty.version}.jar
         LIB: lib/cdi-servlet-${jetty.version}.jar
         XML: etc/jetty-cdi.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: client
+     Module: client
+           : Adds the Jetty HTTP client to the server classpath.
         LIB: lib/jetty-client-${jetty.version}.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: continuation
+     Module: continuation
+           : Enables support for Continuation style asynchronous
+           : Servlets.  Now deprecated in favour of Servlet 3.1
+           : API
         LIB: lib/jetty-continuation-${jetty.version}.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: debuglog
-     Depend: server
-        XML: etc/jetty-debug.xml
-    Enabled: <not enabled in this configuration>
-
- [x] Module: deploy
+     Module: deploy
+           : Enables webapplication deployment from the webapps directory.
      Depend: webapp
         LIB: lib/jetty-deploy-${jetty.version}.jar
         XML: etc/jetty-deploy.xml
-    Enabled: <via> ${jetty.base}/start.ini
 
- [ ] Module: ext
-        LIB: lib/ext/**.jar
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: fcgi
-     Depend: servlet
-     Depend: client
+     Module: fcgi
+           : Adds the FastCGI implementation to the classpath.
+     Depend: servlet, client
         LIB: lib/jetty-proxy-${jetty.version}.jar
         LIB: lib/fcgi/*.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: gzip
+     Module: flight-recorder
      Depend: server
-        XML: etc/jetty-gzip.xml
-    Enabled: <not enabled in this configuration>
+        JVM: -XX:+UnlockCommercialFeatures
+        JVM: -XX:+FlightRecorder
 
- [ ] Module: hawtio
-     Depend: stats
-     Depend: deploy
-     Depend: jmx
-        XML: etc/hawtio.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: home-base-warning
+     Module: home-base-warning
+           : Generates a warning that server has been run from $JETTY_HOME
+           : rather than from a $JETTY_BASE.
         XML: etc/home-base-warning.xml
-    Enabled: <not enabled in this configuration>
 
- [x] Module: http
-     Depend: server
-        XML: etc/jetty-http.xml
-    Enabled: <via> ${jetty.base}/start.ini
-
- [ ] Module: http2
-     Depend: ssl
-     Depend: alpn
-        LIB: lib/http2/*.jar
-        XML: etc/jetty-http2.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: http2c
-     Depend: http
-        LIB: lib/http2/*.jar
-        XML: etc/jetty-http2c.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: https
-     Depend: ssl
-        XML: etc/jetty-https.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: infinispan
-     Depend: annotations
-     Depend: webapp
-        LIB: lib/jetty-infinispan-${jetty.version}.jar
-        LIB: lib/infinispan/*.jar
-        XML: etc/jetty-infinispan.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: ipaccess
-     Depend: server
-        XML: etc/jetty-ipaccess.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: jaas
+     Module: jaas
+           : Enable JAAS for deployed webapplications.
      Depend: server
         LIB: lib/jetty-jaas-${jetty.version}.jar
         XML: etc/jetty-jaas.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: jamon
-     Depend: stats
-     Depend: deploy
-     Depend: jmx
-     Depend: jsp
-        LIB: lib/jamon/**.jar
-        XML: etc/jamon.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: jaspi
+     Module: jaspi
+           : Enable JASPI authentication for deployed webapplications.
      Depend: security
         LIB: lib/jetty-jaspi-${jetty.version}.jar
         LIB: lib/jaspi/*.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: jdbc-sessions
-     Depend: annotations
-     Depend: webapp
-        XML: etc/jetty-jdbc-sessions.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: jminix
-     Depend: stats
-     Depend: jmx
-        LIB: lib/jminix/**.jar
-        XML: etc/jminix.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: jmx
+     Module: jmx
+           : Enables JMX instrumentation for server beans and
+           : enables JMX agent.
      Depend: server
         LIB: lib/jetty-jmx-${jetty.version}.jar
         XML: etc/jetty-jmx.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: jmx-remote
+     Module: jmx-remote
+           : Enables remote RMI access to JMX
      Depend: jmx
         XML: etc/jetty-jmx-remote.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: jndi
+     Module: jndi
+           : Adds the Jetty JNDI implementation to the classpath.
      Depend: server
         LIB: lib/jetty-jndi-${jetty.version}.jar
         LIB: lib/jndi/*.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: jolokia
-     Depend: stats
-     Depend: deploy
-     Depend: jmx
-        XML: etc/jolokia.xml
-    Enabled: <not enabled in this configuration>
+     Module: jsp
+           : Enables JSP for all webapplications deployed on the server.
+     Depend: apache-jsp, servlet, annotations
 
- [ ] Module: jsp
-     Depend: servlet
-     Depend: annotations
-     Depend: apache-jsp
-    Enabled: <not enabled in this configuration>
+     Module: jstl
+           : Enables JSTL for all webapplications deployed on the server
+     Depend: jsp, apache-jstl
 
- [ ] Module: jstl
-     Depend: jsp
-     Depend: apache-jstl
-    Enabled: <not enabled in this configuration>
+     Module: jvm
+           : A noop module that creates an ini template useful for
+           : setting JVM arguments (eg -Xmx )
 
- [ ] Module: jvm
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: logging
-        LIB: lib/logging/**.jar
-        LIB: resources/
-        XML: etc/jetty-logging.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: lowresources
+     Module: lowresources
+           : Enables a low resource monitor on the server
+           : that can take actions if threads and/or connections
+           : cross configured threshholds.
      Depend: server
         XML: etc/jetty-lowresources.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: monitor
-     Depend: server
-     Depend: client
-        LIB: lib/monitor/jetty-monitor-${jetty.version}.jar
-        XML: etc/jetty-monitor.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: nosql
-     Depend: webapp
-        LIB: lib/jetty-nosql-${jetty.version}.jar
-        LIB: lib/nosql/*.jar
-        XML: etc/jetty-nosql.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: plus
-     Depend: server
-     Depend: security
-     Depend: jndi
-     Depend: webapp
+     Module: plus
+           : Enables JNDI and resource injection for webapplications
+           : and other servlet 3.x features not supported in the core
+           : jetty webapps module.
+     Depend: webapp, server, security, jndi
         LIB: lib/jetty-plus-${jetty.version}.jar
         XML: etc/jetty-plus.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: proxy
-     Depend: servlet
-     Depend: client
+     Module: proxy
+           : Enable the Jetty Proxy, that allows the server to act
+           : as a non-transparent proxy for browsers.
+     Depend: servlet, client
         LIB: lib/jetty-proxy-${jetty.version}.jar
         XML: etc/jetty-proxy.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: quickstart
-     Depend: server
-     Depend: plus
-     Depend: annotations
+     Module: proxy-protocol
+           : Enables the Proxy Protocol on the HTTP Connector.
+           : http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt
+           : This allows a proxy operating in TCP mode to
+           : transport details of the proxied connection to
+           : the server.
+           : Both V1 and V2 versions of the protocol are supported.
+     Depend: http
+        XML: etc/jetty-proxy-protocol.xml
+
+     Module: quickstart
+           : Enables the Jetty Quickstart module for rapid
+           : deployment of preconfigured webapplications.
+     Depend: server, annotations, plus
         LIB: lib/jetty-quickstart-${jetty.version}.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: requestlog
-     Depend: server
-        XML: etc/jetty-requestlog.xml
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: resources
-        LIB: resources/
-    Enabled: <not enabled in this configuration>
-
- [ ] Module: rewrite
+     Module: rewrite
+           : Enables the jetty-rewrite handler.  Specific rewrite
+           : rules must be added to either to etc/jetty-rewrite.xml or a custom xml/module
      Depend: server
         LIB: lib/jetty-rewrite-${jetty.version}.jar
         XML: etc/jetty-rewrite.xml
-    Enabled: <not enabled in this configuration>
 
- [x] Module: security
+     Module: rewrite-compactpath
+           : Add a rule to the rewrite module to compact paths so that double slashes
+           : in the path are treated as a single slash.
+     Depend: rewrite
+        XML: etc/rewrite-compactpath.xml
+
+     Module: rewrite-customizer [rewrite]
+           : Enables a rewrite Rules container as a request customizer on
+           : the servers default HttpConfiguration instance
+     Depend: server
+        LIB: lib/jetty-rewrite-${jetty.version}.jar
+        XML: etc/jetty-rewrite-customizer.xml
+
+     Module: security
+           : Adds servlet standard security handling to the classpath.
      Depend: server
         LIB: lib/jetty-security-${jetty.version}.jar
-    Enabled: <via> <transitive from> ${jetty.base}/start.ini
-    Enabled: <via> ${jetty.base}/start.ini
 
- [x] Module: server
+     Module: server
+           : Enables the core Jetty server on the classpath.
+   Optional: jvm, ext, resources, logging
         LIB: lib/servlet-api-3.1.jar
         LIB: lib/jetty-schemas-3.1.jar
         LIB: lib/jetty-http-${jetty.version}.jar
@@ -291,60 +208,418 @@ Jetty All Available Modules:
         LIB: lib/jetty-util-${jetty.version}.jar
         LIB: lib/jetty-io-${jetty.version}.jar
         XML: etc/jetty.xml
-    Enabled: <via> <transitive from> ${jetty.base}/start.ini
-    Enabled: <via> ${jetty.base}/start.ini
 
- [x] Module: servlet
+     Module: servlet
+           : Enables standard Servlet handling.
      Depend: server
         LIB: lib/jetty-servlet-${jetty.version}.jar
-    Enabled: <via> <transitive from> ${jetty.base}/start.ini
-    Enabled: <via> ${jetty.base}/start.ini
 
- [ ] Module: servlets
+     Module: servlets
+           : Puts a collection of jetty utility servlets and filters
+           : on the server classpath (CGI, CrossOriginFilter, DosFilter,
+           : MultiPartFilter, PushCacheFilter, QoSFilter, etc.) for
+           : use by all webapplications.
      Depend: servlet
         LIB: lib/jetty-servlets-${jetty.version}.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: setuid
+     Module: setuid
+           : Enables the unix setUID configuration so that the server
+           : may be started as root to open privileged ports/files before
+           : changing to a restricted user (eg jetty).
      Depend: server
         LIB: lib/setuid/jetty-setuid-java-1.0.3.jar
         XML: etc/jetty-setuid.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: spring
+     Module: spring
+           : Enable spring configuration processing so all jetty style
+           : xml files can optionally be written as spring beans
      Depend: server
         LIB: lib/spring/*.jar
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: ssl
+     Module: webapp
+           : Adds support for servlet specification webapplication to the server
+           : classpath.  Without this, only Jetty specific handlers may be deployed.
+     Depend: security, servlet
+        LIB: lib/jetty-webapp-${jetty.version}.jar
+        XML: etc/jetty-webapp.xml
+
+     Module: websocket
+           : Enable websockets for deployed web applications
+     Depend: annotations
+        LIB: lib/websocket/*.jar
+
+Modules for tag '3rdparty':
+---------------------------
+
+     Module: gcloud
+           : Control GCloud API classpath
+       Tags: 3rdparty, gcloud
+        LIB: lib/gcloud/*.jar
+
+     Module: gcloud-datastore
+           : Enables GCloud Datastore API and implementation
+       Tags: 3rdparty, gcloud
+     Depend: jcl-slf4j, gcloud
+
+     Module: hawtio
+           : Deploys the Hawtio console as a webapplication.
+       Tags: 3rdparty
+     Depend: jmx, stats, deploy
+        XML: etc/hawtio.xml
+
+     Module: jamon
+           : Deploys the JAMon webapplication
+       Tags: 3rdparty
+     Depend: jmx, stats, jsp, deploy
+        LIB: lib/jamon/**.jar
+        XML: etc/jamon.xml
+
+     Module: jminix
+           : Deploys the Jminix JMX Console within the server
+       Tags: 3rdparty
+     Depend: jmx, stats, jcl-impl, jcl-api
+        LIB: lib/jminix/**.jar
+        XML: etc/jminix.xml
+
+     Module: jolokia
+           : Deploys the Jolokia console as a web application.
+       Tags: 3rdparty
+     Depend: jmx, stats, deploy
+        XML: etc/jolokia.xml
+
+Modules for tag 'classpath':
+----------------------------
+
+     Module: ext
+           : Adds all jar files discovered in $JETTY_HOME/lib/ext
+           : and $JETTY_BASE/lib/ext to the servers classpath.
+       Tags: classpath
+        LIB: lib/ext/**.jar
+
+     Module: resources
+           : Adds the $JETTY_HOME/resources and/or $JETTY_BASE/resources
+           : directory to the server classpath. Useful for configuration
+           : property files (eg jetty-logging.properties)
+       Tags: classpath
+        LIB: resources/
+
+Modules for tag 'connector':
+----------------------------
+
+     Module: http
+           : Enables a HTTP connector on the server.
+           : By default HTTP/1 is support, but HTTP2C can
+           : be added to the connector with the http2c module.
+       Tags: connector, http
+     Depend: server
+        XML: etc/jetty-http.xml
+
+     Module: http-forwarded
+           : Adds a forwarded request customizer to the HTTP Connector
+           : to process forwarded-for style headers from a proxy.
+       Tags: connector
+     Depend: http
+        XML: etc/jetty-http-forwarded.xml
+
+     Module: http2
+           : Enables HTTP2 protocol support on the TLS(SSL) Connector,
+           : using the ALPN extension to select which protocol to use.
+       Tags: connector, http2, http, ssl
+     Depend: alpn, ssl
+        LIB: lib/http2/*.jar
+        XML: etc/jetty-http2.xml
+
+     Module: http2c
+           : Enables the HTTP2C protocol on the HTTP Connector
+           : The connector will accept both HTTP/1 and HTTP/2 connections.
+       Tags: connector, http2, http
+     Depend: http
+        LIB: lib/http2/*.jar
+        XML: etc/jetty-http2c.xml
+
+     Module: https
+           : Adds HTTPS protocol support to the TLS(SSL) Connector
+       Tags: connector, https, http, ssl
+     Depend: ssl
+   Optional: http-forwarded, http2
+        XML: etc/jetty-https.xml
+
+     Module: proxy-protocol-ssl
+           : Enables the Proxy Protocol on the TLS(SSL) Connector.
+           : http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt
+           : This allows a Proxy operating in TCP mode to transport
+           : details of the proxied connection to the server.
+           : Both V1 and V2 versions of the protocol are supported.
+       Tags: connector, ssl
+     Depend: ssl
+        XML: etc/jetty-proxy-protocol-ssl.xml
+
+     Module: ssl
+           : Enables a TLS(SSL) Connector on the server.
+           : This may be used for HTTPS and/or HTTP2 by enabling
+           : the associated support modules.
+       Tags: connector, ssl
      Depend: server
         XML: etc/jetty-ssl.xml
         XML: etc/jetty-ssl-context.xml
-    Enabled: <not enabled in this configuration>
 
- [ ] Module: stats
+     Module: unixsocket
+           : Enables a Unix Domain Socket Connector that can receive
+           : requests from a local proxy and/or SSL offloader (eg haproxy) in either
+           : HTTP or TCP mode.  Unix Domain Sockets are more efficient than
+           : localhost TCP/IP connections  as they reduce data copies, avoid
+           : needless fragmentation and have better dispatch behaviours.
+           : When enabled with corresponding support modules, the connector can
+           : accept HTTP, HTTPS or HTTP2C traffic.
+       Tags: connector
+     Depend: server
+        LIB: lib/jetty-unixsocket-${jetty.version}.jar
+        LIB: lib/jnr/*.jar
+        XML: etc/jetty-unixsocket.xml
+
+     Module: unixsocket-forwarded
+           : Adds a forwarded request customizer to the HTTP configuration used
+           : by the Unix Domain Socket connector, for use when behind a proxy operating
+           : in HTTP mode that adds forwarded-for style HTTP headers. Typically this
+           : is an alternate to the Proxy Protocol used mostly for TCP mode.
+       Tags: connector
+     Depend: unixsocket-http
+        XML: etc/jetty-unixsocket-forwarded.xml
+
+     Module: unixsocket-http
+           : Adds a HTTP protocol support to the Unix Domain Socket connector.
+           : It should be used when a proxy is forwarding either HTTP or decrypted
+           : HTTPS traffic to the connector and may be used with the
+           : unix-socket-http2c modules to upgrade to HTTP/2.
+       Tags: connector, http
+     Depend: unixsocket
+        XML: etc/jetty-unixsocket-http.xml
+
+     Module: unixsocket-http2c
+           : Adds a HTTP2C connetion factory to the Unix Domain Socket Connector
+           : It can be used when either the proxy forwards direct
+           : HTTP/2C (unecrypted) or decrypted HTTP/2 traffic.
+       Tags: connector, http2
+     Depend: unixsocket-http
+        LIB: lib/http2/*.jar
+        XML: etc/jetty-unixsocket-http2c.xml
+
+     Module: unixsocket-proxy-protocol
+           : Enables the proxy protocol on the Unix Domain Socket Connector
+           : http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt
+           : This allows information about the proxied connection to be
+           : efficiently forwarded as the connection is accepted.
+           : Both V1 and V2 versions of the protocol are supported and any
+           : SSL properties may be interpreted by the unixsocket-secure
+           : module to indicate secure HTTPS traffic. Typically this
+           : is an alternate to the forwarded module.
+       Tags: connector
+     Depend: unixsocket
+        XML: etc/jetty-unixsocket-proxy-protocol.xml
+
+     Module: unixsocket-secure
+           : Enable a secure request customizer on the HTTP Configuration
+           : used by the Unix Domain Socket Connector.
+           : This looks for a secure scheme transported either by the
+           : unixsocket-forwarded, unixsocket-proxy-protocol or in a
+           : HTTP2 request.
+       Tags: connector
+     Depend: unixsocket-http
+        XML: etc/jetty-unixsocket-secure.xml
+
+Modules for tag 'debug':
+------------------------
+
+     Module: debug
+           : Enables the DebugListener to generate additional
+           : logging regarding detailed request handling events.
+           : Renames threads to include request URI.
+       Tags: debug
+     Depend: deploy
+        XML: etc/jetty-debug.xml
+
+     Module: debuglog
+           : Deprecated Debug Log using the DebugHandle.
+           : Replaced with the debug module.
+       Tags: debug
+     Depend: server
+        XML: etc/jetty-debuglog.xml
+
+Modules for tag 'handler':
+--------------------------
+
+     Module: gzip
+           : Enable GzipHandler for dynamic gzip compression
+           : for the entire server.
+       Tags: handler
+     Depend: server
+        XML: etc/jetty-gzip.xml
+
+     Module: ipaccess
+           : Enable the ipaccess handler to apply a white/black list
+           : control of the remote IP of requests.
+       Tags: handler
+     Depend: server
+        XML: etc/jetty-ipaccess.xml
+
+     Module: stats
+           : Enable detailed statistics collection for the server,
+           : available via JMX.
+       Tags: handler
      Depend: server
         XML: etc/jetty-stats.xml
-    Enabled: <not enabled in this configuration>
 
- [x] Module: webapp
-     Depend: servlet
-     Depend: security
-        LIB: lib/jetty-webapp-${jetty.version}.jar
-    Enabled: <via> ${jetty.base}/start.ini
-    Enabled: <via> <transitive from> ${jetty.base}/start.ini
+     Module: threadlimit
+       Tags: handler
+     Depend: server
+        XML: etc/jetty-threadlimit.xml
 
- [ ] Module: websocket
-     Depend: annotations
-        LIB: lib/websocket/*.jar
-    Enabled: <not enabled in this configuration>
+Modules for tag 'logging':
+--------------------------
 
-Jetty Selected Module Ordering:
--------------------------------
-    1) server          ${jetty.base}/start.ini
-    2) http            ${jetty.base}/start.ini
-    2) security        ${jetty.base}/start.ini
-    2) servlet         ${jetty.base}/start.ini
-    3) webapp          ${jetty.base}/start.ini
-    4) deploy          ${jetty.base}/start.ini
+     Module: console-capture
+           : Redirects JVMs console stderr and stdout to a log file,
+           : including output from Jetty's default StdErrLog logging.
+       Tags: logging
+        LIB: resources/
+        XML: etc/console-capture.xml
+
+     Module: logging-jcl [logging]
+           : Configure jetty logging to use Java Commons Logging (jcl)
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: jcl-impl, slf4j-jcl
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-jetty [logging]
+           : Configure jetty logging mechanism.
+           : Provides a ${jetty.base}/resources/jetty-logging.properties.
+       Tags: logging
+     Depend: console-capture, resources
+
+     Module: logging-jul [logging]
+           : Configure jetty logging to use Java Util Logging (jul)
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: jul-impl, slf4j-jul
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-log4j [logging]
+           : Configure jetty logging to use Log4j Logging
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: log4j-impl, slf4j-log4j
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-log4j2 [logging]
+           : Configure jetty logging to use log4j version 2
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: slf4j-log4j2, log4j2-impl
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-logback [logging]
+           : Configure jetty logging to use Logback Logging.
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: logback-impl, slf4j-logback
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-slf4j [logging]
+           : Configure jetty logging to use slf4j.
+           : Any slf4j-impl implementation is used
+       Tags: logging
+     Depend: slf4j-api, slf4j-impl
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+Modules for tag 'requestlog':
+-----------------------------
+
+     Module: logback-access [requestlog]
+           : Enables logback request log.
+       Tags: requestlog, logging, logback
+     Depend: server, logback-core, resources
+        LIB: lib/logback/logback-access-${logback.version}.jar
+        XML: etc/jetty-logback-access.xml
+
+     Module: requestlog
+           : Enables a NCSA style request log.
+       Tags: requestlog
+     Depend: server
+        XML: etc/jetty-requestlog.xml
+
+Modules for tag 'session':
+--------------------------
+
+     Module: session-cache-hash [session-cache]
+           : Enable first level session cache in ConcurrentHashMap.
+           : If not enabled, sessions will use a HashSessionCache by default, so enabling
+           : via this module is only needed if the configuration properties need to be
+           : changed.
+       Tags: session
+     Depend: sessions
+        XML: etc/sessions/session-cache-hash.xml
+
+     Module: session-cache-null [session-cache]
+           : A trivial SessionCache that does not actually cache sessions.
+       Tags: session
+     Depend: sessions
+        XML: etc/sessions/session-cache-null.xml
+
+     Module: session-store-cache
+           : Enables caching of SessionData in front of a SessionDataStore.
+       Tags: session
+     Depend: session-store, sessions/session-data-cache/${session-data-cache}
+        XML: etc/sessions/session-data-cache/session-caching-store.xml
+
+     Module: session-store-file [session-store]
+           : Enables session persistent storage in files.
+       Tags: session
+     Depend: sessions
+        XML: etc/sessions/file/session-store.xml
+
+     Module: session-store-gcloud [session-store]
+           : Enables GCloudDatastore session management.
+       Tags: session, gcloud
+     Depend: webapp, sessions, gcloud-datastore, annotations
+        LIB: lib/jetty-gcloud-session-manager-${jetty.version}.jar
+        XML: etc/sessions/gcloud/session-store.xml
+
+     Module: session-store-infinispan-embedded [session-store]
+           : Enables session data store in a local Infinispan cache
+       Tags: session
+     Depend: sessions, sessions/infinispan/default
+        LIB: lib/jetty-infinispan-${jetty.version}.jar
+        LIB: lib/infinispan/*.jar
+
+     Module: session-store-infinispan-remote [session-store]
+           : Enables session data store in a remote Infinispan cache
+       Tags: session
+     Depend: sessions/infinispan/remote, sessions
+        LIB: lib/jetty-infinispan-${jetty.version}.jar
+        LIB: lib/infinispan/*.jar
+
+     Module: session-store-jdbc [session-store]
+           : Enables JDBC peristent/distributed session storage.
+       Tags: session
+     Depend: sessions, sessions/jdbc/${db-connection-type}
+        XML: etc/sessions/jdbc/session-store.xml
+
+     Module: session-store-mongo [session-store]
+           : Enables NoSql session management with a MongoDB driver.
+       Tags: session
+     Depend: sessions
+        LIB: lib/jetty-nosql-${jetty.version}.jar
+        LIB: lib/nosql/*.jar
+        XML: etc/sessions/mongo/session-store.xml
+
+     Module: sessions
+           : The session management. By enabling this module, it allows
+           : session management to be configured via the ini templates
+           : created or by enabling other session-cache or session-store
+           : modules.  Without this module enabled, the server may still
+           : use sessions, but their management cannot be configured.
+       Tags: session
+     Depend: server
+        XML: etc/sessions/id-manager.xml
 ....

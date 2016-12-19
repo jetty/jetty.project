@@ -292,15 +292,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     }
 
     @Override
-    public String toString()
+    public String toConnectionString()
     {
-        return String.format("%s@%h(l:%s <-> r:%s)",
-                getClass().getSimpleName(),
-                this,
-                getEndPoint().getLocalAddress(),
-                getEndPoint().getRemoteAddress());
+        return String.format("%s@%x[l:%s<->r:%s]",
+            getClass().getSimpleName(),
+            hashCode(),
+            getEndPoint().getLocalAddress(),
+            getEndPoint().getRemoteAddress());
     }
-
+    
     private class Delegate extends HttpConnection
     {
         private Delegate(HttpDestination destination)

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.15-SNAPSHOT</version>
+    <version>9.4.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>apache-jsp</artifactId>
@@ -21,11 +21,11 @@
             <configuration>
               <instructions>
                 <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
-                <Export-Package>org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", 
+                <Export-Package>org.eclipse.jetty.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
                                 org.eclipse.jetty.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
                 <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-                <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
+                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log</Provide-Capability>
                 <_nouses>true</_nouses>
               </instructions>
             </configuration>
@@ -34,18 +34,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
-          <execution>
-            <id>artifact-jar</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-jar</id>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
           <execution>
             <id>nolog-jar</id>
             <goals>
@@ -59,11 +47,6 @@
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -81,7 +64,7 @@
         <artifactId>jetty-util</artifactId>
         <version>${project.version}</version>
     </dependency>
-    
+
     <!-- Schemas -->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

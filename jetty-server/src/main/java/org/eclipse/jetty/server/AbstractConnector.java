@@ -151,7 +151,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
     private String _name;
-    private int _acceptorPriorityDelta;
+    private int _acceptorPriorityDelta=-2;
 
 
     /**
@@ -253,16 +253,18 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
+        if(_defaultProtocol==null)
+            throw new IllegalStateException("No default protocol for "+this);
         _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
         if(_defaultConnectionFactory==null)
-            throw new IllegalStateException("No protocol factory for default protocol: "+_defaultProtocol);
+            throw new IllegalStateException("No protocol factory for default protocol '"+_defaultProtocol+"' in "+this);
         SslConnectionFactory ssl = getConnectionFactory(SslConnectionFactory.class);
         if (ssl != null)
         {
             String next = ssl.getNextProtocol();
             ConnectionFactory cf = getConnectionFactory(next);
             if (cf == null)
-                throw new IllegalStateException("No protocol factory for SSL next protocol: " + next);
+                throw new IllegalStateException("No protocol factory for SSL next protocol: '" + next + "' in " + this);
         }
 
         super.doStart();
@@ -306,7 +308,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         // If we have a stop timeout
         long stopTimeout = getStopTimeout();
         CountDownLatch stopping=_stopping;
-        if (stopTimeout > 0 && stopping!=null)
+        if (stopTimeout > 0 && stopping!=null && getAcceptors()>0)
             stopping.await(stopTimeout,TimeUnit.MILLISECONDS);
         _stopping=null;
 

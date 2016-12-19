@@ -26,7 +26,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
  */
 public interface UpgradeListener
 {
-    public void onHandshakeRequest(UpgradeRequest request);
+    void onHandshakeRequest(UpgradeRequest request);
 
-    public void onHandshakeResponse(UpgradeResponse response);
+    void onHandshakeResponse(UpgradeResponse response);
 }

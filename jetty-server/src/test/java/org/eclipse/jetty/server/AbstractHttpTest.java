@@ -98,6 +98,7 @@ public abstract class AbstractHttpTest
             writer.write("\r\n");
             writer.flush();
 
+            // TODO replace the SimpleHttp stuff
             SimpleHttpResponse response = httpParser.readResponse(reader);
             if ("HTTP/1.1".equals(httpVersion) 
                     && response.getHeaders().get("content-length") == null 
@@ -127,7 +128,7 @@ public abstract class AbstractHttpTest
         }
     }
 
-    protected class ThrowExceptionOnDemandHandler extends AbstractHandler
+    protected class ThrowExceptionOnDemandHandler extends AbstractHandler.ErrorDispatchHandler
     {
         private final boolean throwException;
         private volatile Throwable failure;
@@ -138,7 +139,7 @@ public abstract class AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
                 throw new TestCommitException();

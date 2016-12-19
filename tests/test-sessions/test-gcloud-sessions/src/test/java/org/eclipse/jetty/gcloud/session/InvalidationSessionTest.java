@@ -19,10 +19,13 @@
 
 package org.eclipse.jetty.gcloud.session;
 
+
 import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * InvalidationSessionTest
@@ -39,32 +42,26 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
     }
     
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#createServer(int)
+     * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
-        return new GCloudTestServer(port);
-    }
+        GCloudTestServer server =  new GCloudTestServer(port, maxInactive, scavengeInterval, evictionPolicy) 
+        {
+            /** 
+             * @see org.eclipse.jetty.gcloud.session.GCloudTestServer#newSessionHandler()
+             */
+            @Override
+            public SessionHandler newSessionHandler()
+            {
+                SessionHandler handler = super.newSessionHandler();
+                handler.getSessionCache().setEvictionPolicy(evictionPolicy);
+                return handler;
+            }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractInvalidationSessionTest#pause()
-     */
-    @Override
-    public void pause()
-    {
-        //This test moves around a session between 2 nodes. After it is invalidated on the 1st node,
-        //it will still be in the memory of the 2nd node. We need to wait until after the stale time
-        //has expired on node2 for it to reload the session and discover it has been deleted.
-        try
-        {
-            Thread.currentThread().sleep((2*GCloudTestServer.STALE_INTERVAL_SEC)*1000);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        
+        };
+        return server;
     }
 
 }

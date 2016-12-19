@@ -1,0 +1,92 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[source, screen, subs="{sub-order}"]
+....
+[mybase]$ java -jar ../start.jar --list-modules=logging,-internal
+
+Available Modules:
+==================
+tags: [logging, -internal]
+
+Modules for tag 'logging':
+--------------------------
+
+     Module: console-capture
+           : Redirects JVMs console stderr and stdout to a log file,
+           : including output from Jetty's default StdErrLog logging.
+       Tags: logging
+        LIB: resources/
+        XML: etc/console-capture.xml
+
+     Module: logging-jcl [logging]
+           : Configure jetty logging to use Java Commons Logging (jcl)
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: jcl-impl, slf4j-jcl
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-jetty [logging]
+           : Configure jetty logging mechanism.
+           : Provides a ${jetty.base}/resources/jetty-logging.properties.
+       Tags: logging
+     Depend: console-capture, resources
+
+     Module: logging-jul [logging]
+           : Configure jetty logging to use Java Util Logging (jul)
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: jul-impl, slf4j-jul
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-log4j [logging]
+           : Configure jetty logging to use Log4j Logging
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: log4j-impl, slf4j-log4j
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-log4j2 [logging]
+           : Configure jetty logging to use log4j version 2
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: slf4j-log4j2, log4j2-impl
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-logback [logging]
+           : Configure jetty logging to use Logback Logging.
+           : SLF4J is used as the core logging mechanism.
+       Tags: logging
+     Depend: logback-impl, slf4j-logback
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+     Module: logging-slf4j [logging]
+           : Configure jetty logging to use slf4j.
+           : Any slf4j-impl implementation is used
+       Tags: logging
+     Depend: slf4j-api, slf4j-impl
+        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+
+Modules for tag 'requestlog':
+-----------------------------
+
+     Module: logback-access [requestlog]
+           : Enables logback request log.
+       Tags: requestlog, logging, logback
+     Depend: server, logback-core, resources
+        LIB: lib/logback/logback-access-${logback.version}.jar
+        XML: etc/jetty-logback-access.xml
+....

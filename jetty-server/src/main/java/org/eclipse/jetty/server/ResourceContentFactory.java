@@ -19,9 +19,12 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpContent.Factory;
+import org.eclipse.jetty.http.HttpContent.ContentFactory;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.resource.Resource;
@@ -29,22 +32,22 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 
 
 /**
- * A HttpContent.Factory for transient content.  The HttpContent's created by 
+ * A HttpContent.Factory for transient content (not cached).  The HttpContent's created by 
  * this factory are not intended to be cached, so memory limits for individual
  * HttpOutput streams are enforced.
  */
-public class ResourceContentFactory implements Factory
+public class ResourceContentFactory implements ContentFactory
 {
     private final ResourceFactory _factory;
     private final MimeTypes _mimeTypes;
-    private final boolean _gzip;
+    private final CompressedContentFormat[] _precompressedFormats;
     
     /* ------------------------------------------------------------ */
-    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, boolean gzip)
+    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, CompressedContentFormat[] precompressedFormats)
     {
         _factory=factory;
         _mimeTypes=mimeTypes;
-        _gzip=gzip;
+        _precompressedFormats=precompressedFormats;
     }
 
     /* ------------------------------------------------------------ */
@@ -68,19 +71,25 @@ public class ResourceContentFactory implements Factory
         
         if (resource.isDirectory())
             return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),maxBufferSize);
-        
-        // Look for a gzip resource or content
+
+        // Look for a precompressed resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
-        if (_gzip)
+        if (_precompressedFormats.length > 0)
         {
-            // Is there a gzip resource? 
-            String pathInContextGz=pathInContext+".gz";
-            Resource resourceGz=_factory.getResource(pathInContextGz);
-            if (resourceGz.exists() && resourceGz.lastModified()>=resource.lastModified() && resourceGz.length()<resource.length())
-                return new ResourceHttpContent(resource,mt,maxBufferSize,
-                       new ResourceHttpContent(resourceGz,_mimeTypes.getMimeByExtension(pathInContextGz),maxBufferSize));
+            // Is there a compressed resource?
+            Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>(_precompressedFormats.length);
+            for (CompressedContentFormat format : _precompressedFormats)
+            {
+                String compressedPathInContext = pathInContext + format._extension;
+                Resource compressedResource = _factory.getResource(compressedPathInContext);
+                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
+                        && compressedResource.length() < resource.length())
+                    compressedContents.put(format,
+                            new ResourceHttpContent(compressedResource,_mimeTypes.getMimeByExtension(compressedPathInContext),maxBufferSize));
+            }
+            if (!compressedContents.isEmpty())
+                return new ResourceHttpContent(resource,mt,maxBufferSize,compressedContents);
         }
-        
         return new ResourceHttpContent(resource,mt,maxBufferSize);
     }
     

@@ -278,4 +278,14 @@ public class PathMappingsTest
         assertEquals("suffix",p.getMatch("/foo/something.txt").getResource());
         assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getResource());
     }
+    
+    @Test
+    public void testBadPathSpecs()
+    {
+        try{new ServletPathSpec("*");Assert.fail();}catch(IllegalArgumentException e){}
+        try{new ServletPathSpec("/foo/*/bar");Assert.fail();}catch(IllegalArgumentException e){}
+        try{new ServletPathSpec("/foo*");Assert.fail();}catch(IllegalArgumentException e){}
+        try{new ServletPathSpec("*/foo");Assert.fail();}catch(IllegalArgumentException e){}
+        try{new ServletPathSpec("*.foo/*");Assert.fail();}catch(IllegalArgumentException e){}
+    }
 }

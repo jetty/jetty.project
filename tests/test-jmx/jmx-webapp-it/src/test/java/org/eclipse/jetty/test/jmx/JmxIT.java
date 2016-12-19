@@ -149,7 +149,7 @@ public class JmxIT
     {
         ObjectName serverName = new ObjectName("org.eclipse.jetty.server:type=server,id=0");
         String version = getStringAttribute(serverName,"version");
-        assertThat("Version",version,startsWith("9.3."));
+        assertThat("Version",version,startsWith("9.4."));
     }
 
     @Test

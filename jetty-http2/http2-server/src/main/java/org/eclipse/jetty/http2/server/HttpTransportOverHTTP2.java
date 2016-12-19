@@ -152,7 +152,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP/2 Push {}",request);
+            LOG.debug("HTTP/2 Push {}", request);
 
         stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
         {
@@ -175,8 +175,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Response #{}:{}{} {}{}{}",
-                    stream.getId(), System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
+            LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
                     System.lineSeparator(), info.getFields());
         }
 
@@ -188,8 +189,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Response #{}: {} content bytes{}",
-                    stream.getId(), content.remaining(), lastContent ? " (last chunk)" : "");
+            LOG.debug("HTTP2 Response #{}/{}: {} content bytes{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    content.remaining(), lastContent ? " (last chunk)" : "");
         }
         DataFrame frame = new DataFrame(stream.getId(), content, lastContent);
         stream.data(frame, callback);
@@ -229,7 +231,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         IStream stream = this.stream;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 Response #{} aborted", stream == null ? -1 : stream.getId());
+            LOG.debug("HTTP2 Response #{}/{} aborted", stream == null ? -1 : stream.getId(),
+                    stream == null ? -1 : Integer.toHexString(stream.getSession().hashCode()));
         if (stream != null)
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP);
     }
@@ -301,9 +304,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
 
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return callback.isNonBlocking();
+            Callback callback;
+            synchronized (this)
+            {
+                callback = this.callback;
+            }
+            return callback.getInvocationType();
         }
 
         private boolean onIdleTimeout(Throwable failure)

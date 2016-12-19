@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
@@ -27,9 +25,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.ServiceEvent;
-import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * JettyServerServiceTracker
@@ -38,116 +35,71 @@ import org.osgi.framework.ServiceReference;
  * webapps or ContextHandlers discovered from the OSGi environment.
  * 
  */
-public class JettyServerServiceTracker implements ServiceListener
+public class JettyServerServiceTracker implements ServiceTrackerCustomizer
 {
     private static Logger LOG = Log.getLogger(JettyServerServiceTracker.class.getName());
 
 
-    /** The context-handler to deactivate indexed by ServerInstanceWrapper */
-    private Map<ServiceReference, ServerInstanceWrapper> _indexByServiceReference = new HashMap<ServiceReference, ServerInstanceWrapper>();
-
-    /**
-     * Stops each one of the registered servers.
+    /** 
+     * @see org.osgi.util.tracker.ServiceTrackerCustomizer#addingService(org.osgi.framework.ServiceReference)
      */
-    public void stop()
+    @Override
+    public Object addingService(ServiceReference sr)
     {
-        for (ServerInstanceWrapper wrapper : _indexByServiceReference.values())
+        Bundle contributor = sr.getBundle();
+        Server server = (Server) contributor.getBundleContext().getService(sr);
+        String name = (String) sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+        if (name == null) { throw new IllegalArgumentException("The property " + OSGiServerConstants.MANAGED_JETTY_SERVER_NAME + " is mandatory"); }
+        if (LOG.isDebugEnabled()) LOG.debug("Adding Server {}", name);
+        ServerInstanceWrapper wrapper = new ServerInstanceWrapper(name);
+        Properties props = new Properties();
+        for (String key : sr.getPropertyKeys())
+        {
+            Object value = sr.getProperty(key);
+            props.put(key, value);
+        }
+        try
+        {
+            wrapper.start(server, props);
+            LOG.info("Started Server {}", name);
+            return wrapper;
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+            return sr.getBundle().getBundleContext().getService(sr);
+        }
+    }
+
+    /** 
+     * @see org.osgi.util.tracker.ServiceTrackerCustomizer#modifiedService(org.osgi.framework.ServiceReference, java.lang.Object)
+     */
+    @Override
+    public void modifiedService(ServiceReference reference, Object service)
+    {
+        removedService(reference, service);
+        addingService(reference);
+    }
+
+    /** 
+     * @see org.osgi.util.tracker.ServiceTrackerCustomizer#removedService(org.osgi.framework.ServiceReference, java.lang.Object)
+     */
+    @Override
+    public void removedService(ServiceReference reference, Object service)
+    {
+        if (service instanceof ServerInstanceWrapper)
         {
             try
             {
+                ServerInstanceWrapper wrapper = (ServerInstanceWrapper)service;
                 wrapper.stop();
+                LOG.info("Stopped Server {}",wrapper.getManagedServerName());
             }
-            catch (Throwable t)
+            catch (Exception e)
             {
-                LOG.warn(t);
+                LOG.warn(e);
             }
         }
-    }
-
-    /**
-     * Receives notification that a service has had a lifecycle change.
-     * 
-     * @param ev The <code>ServiceEvent</code> object.
-     */
-    public void serviceChanged(ServiceEvent ev)
-    {
-        ServiceReference sr = ev.getServiceReference();
-        switch (ev.getType())
-        {
-            case ServiceEvent.MODIFIED:
-            case ServiceEvent.UNREGISTERING:
-            {
-                ServerInstanceWrapper instance = unregisterInIndex(ev.getServiceReference());
-                if (instance != null)
-                {
-                    try
-                    {
-                        instance.stop();
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn(e);
-                    }
-                }
-
-                if (ev.getType() == ServiceEvent.UNREGISTERING)
-                {
-                    break;
-                }
-                else
-                {
-                    // modified, meaning: we reload it. now that we stopped it;
-                    // we can register it.
-                }
-            }
-            case ServiceEvent.REGISTERED:
-            {
-                try
-                {
-                    Bundle contributor = sr.getBundle();
-                    Server server = (Server) contributor.getBundleContext().getService(sr);
-                    ServerInstanceWrapper wrapper = registerInIndex(server, sr);
-                    Properties props = new Properties();
-                    for (String key : sr.getPropertyKeys())
-                    {
-                        Object value = sr.getProperty(key);
-                        props.put(key, value);
-                    }
-                    wrapper.start(server, props);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-                break;
-            }
-        }
-    }
-
-    private ServerInstanceWrapper registerInIndex(Server server, ServiceReference sr)
-    {
-        String name = (String) sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-        if (name == null) { throw new IllegalArgumentException("The property " + OSGiServerConstants.MANAGED_JETTY_SERVER_NAME + " is mandatory"); }
-        ServerInstanceWrapper wrapper = new ServerInstanceWrapper(name);
-        _indexByServiceReference.put(sr, wrapper);
-        return wrapper;
-    }
-
-    /**
-     * Returns the ContextHandler to stop.
-     * 
-     * @param reg
-     * @return the ContextHandler to stop.
-     */
-    private ServerInstanceWrapper unregisterInIndex(ServiceReference sr)
-    {
-        ServerInstanceWrapper handler = _indexByServiceReference.remove(sr);
-        if (handler == null)
-        {
-            LOG.warn("Unknown Jetty Server ServiceReference: ", sr);
-            return null;
-        }
-       
-        return handler;
+        
     }
 }

@@ -31,12 +31,12 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
 {
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractImmortalSessionTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createServer(int, int, int, int)
      */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
-        return new MongoTestServer(port, maxInactiveMs, scavengeMs);
+        return new MongoTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
 
 }

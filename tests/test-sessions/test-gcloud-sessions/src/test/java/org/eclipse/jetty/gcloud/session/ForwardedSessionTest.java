@@ -39,13 +39,10 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
         GCloudTestSuite.__testSupport.deleteSessions();
     }
     
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractForwardedSessionTest#createServer(int)
-     */
-    @Override
-    public AbstractTestServer createServer(int port)
-    {
-       return new GCloudTestServer(port);
-    }
 
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy) throws Exception
+    {
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
+    }
 }

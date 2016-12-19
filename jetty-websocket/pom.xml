@@ -3,7 +3,7 @@
     <parent>
         <artifactId>jetty-project</artifactId>
         <groupId>org.eclipse.jetty</groupId>
-        <version>9.3.15-SNAPSHOT</version>
+        <version>9.4.1-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -24,34 +24,25 @@
     </modules>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <configuration>
-                    <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
-                </configuration>
-            </plugin>
-<!--
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>clirr-maven-plugin</artifactId>
-                <version>2.7</version>
-                <executions>
-                    <execution>
-                        <id>compare-api</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>clirr</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <minSeverity>info</minSeverity>
-                    <comparisonVersion>9.1.0.v20131115</comparisonVersion>
-                </configuration>
-            </plugin>
--->
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>findbugs-maven-plugin</artifactId>
+                    <configuration>
+                        <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>clirr-maven-plugin</artifactId>
+                    <configuration>
+                        <minSeverity>info</minSeverity>
+                        <comparisonVersion>9.1.0.v20131115</comparisonVersion>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
+
 </project>

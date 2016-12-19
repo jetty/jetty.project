@@ -28,7 +28,9 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.NaturalSort;
@@ -75,6 +77,7 @@ public class DirConfigSource implements ConfigSource
     private final int weight;
     private final RawArgs args;
     private final Props props;
+    private final Set<StartIni> startInis = new HashSet<>();
 
     /**
      * Create DirConfigSource with specified identifier and directory.
@@ -109,6 +112,7 @@ public class DirConfigSource implements ConfigSource
                 if (FS.canReadFile(iniFile))
                 {
                     StartIni ini = new StartIni(iniFile);
+                    startInis.add(ini);
                     args.addAll(ini.getLines(),iniFile);
                     parseAllArgs(ini.getLines(),iniFile.toString());
                 }
@@ -149,6 +153,7 @@ public class DirConfigSource implements ConfigSource
                 {
                     StartLog.debug("Reading %s/start.d/%s - %s",id,diniFile.getFileName(),diniFile);
                     StartIni ini = new StartIni(diniFile);
+                    startInis.add(ini);
                     args.addAll(ini.getLines(),diniFile);
                     parseAllArgs(ini.getLines(),diniFile.toString());
                 }
@@ -156,6 +161,12 @@ public class DirConfigSource implements ConfigSource
         }
     }
 
+    @Override
+    public Set<StartIni> getStartInis() 
+    {
+        return startInis;
+    }
+    
     private void parseAllArgs(List<String> lines, String origin)
     {
         for (String line : lines)

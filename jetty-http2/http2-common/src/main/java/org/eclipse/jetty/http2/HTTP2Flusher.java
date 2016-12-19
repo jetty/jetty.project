@@ -21,9 +21,8 @@ package org.eclipse.jetty.http2;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 
 import org.eclipse.jetty.http2.frames.Frame;
@@ -40,12 +39,12 @@ public class HTTP2Flusher extends IteratingCallback
     private static final Logger LOG = Log.getLogger(HTTP2Flusher.class);
 
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
-    private final List<Entry> frames = new ArrayList<>();
-    private final Map<IStream, Integer> streams = new HashMap<>();
-    private final List<Entry> resets = new ArrayList<>();
+    private final Deque<Entry> frames = new ArrayDeque<>();
+    private final Queue<Entry> entries = new ArrayDeque<>();
     private final List<Entry> actives = new ArrayList<>();
     private final HTTP2Session session;
     private final ByteBufferPool.Lease lease;
+    private Entry stalled;
     private Throwable terminated;
 
     public HTTP2Flusher(HTTP2Session session)
@@ -76,7 +75,7 @@ public class HTTP2Flusher extends IteratingCallback
             closed = terminated;
             if (closed == null)
             {
-                frames.add(0, entry);
+                frames.offerFirst(entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Prepended {}, frames={}", entry, frames.size());
             }
@@ -95,7 +94,7 @@ public class HTTP2Flusher extends IteratingCallback
             closed = terminated;
             if (closed == null)
             {
-                frames.add(entry);
+                frames.offer(entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Appended {}, frames={}", entry, frames.size());
             }
@@ -104,14 +103,6 @@ public class HTTP2Flusher extends IteratingCallback
             return true;
         closed(entry, closed);
         return false;
-    }
-
-    private Entry remove(int index)
-    {
-        synchronized (this)
-        {
-            return frames.remove(index);
-        }
     }
 
     public int getQueueSize()
@@ -133,112 +124,75 @@ public class HTTP2Flusher extends IteratingCallback
             if (terminated != null)
                 throw terminated;
 
-            // First thing, update the window sizes, so we can
-            // reason about the frames to remove from the queue.
             while (!windows.isEmpty())
             {
                 WindowEntry entry = windows.poll();
                 entry.perform();
             }
 
-            // Now the window sizes cannot change.
-            // Window updates that happen concurrently will
-            // be queued and processed on the next iteration.
-            int sessionWindow = session.getSendWindow();
-
-            int index = 0;
-            int size = frames.size();
-            while (index < size)
+            if (!frames.isEmpty())
             {
-                Entry entry = frames.get(index);
-                IStream stream = entry.stream;
-
-                // If the stream has been reset, don't send the frame.
-                if (stream != null && stream.isReset() && !entry.isProtocol())
+                for (Entry entry : frames)
                 {
-                    remove(index);
-                    --size;
-                    resets.add(entry);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Gathered for reset {}", entry);
-                    continue;
+                    entries.offer(entry);
+                    actives.add(entry);
                 }
-
-                // Check if the frame fits in the flow control windows.
-                int remaining = entry.dataRemaining();
-                if (remaining > 0)
-                {
-                    if (sessionWindow <= 0)
-                    {
-                        ++index;
-                        // There may be *non* flow controlled frames to send.
-                        continue;
-                    }
-
-                    if (stream != null)
-                    {
-                        // The stream may have a smaller window than the session.
-                        Integer streamWindow = streams.get(stream);
-                        if (streamWindow == null)
-                        {
-                            streamWindow = stream.updateSendWindow(0);
-                            streams.put(stream, streamWindow);
-                        }
-
-                        // Is it a frame belonging to an already stalled stream ?
-                        if (streamWindow <= 0)
-                        {
-                            ++index;
-                            // There may be *non* flow controlled frames to send.
-                            continue;
-                        }
-                    }
-
-                    // The frame fits both flow control windows, reduce them.
-                    sessionWindow -= remaining;
-                    if (stream != null)
-                        streams.put(stream, streams.get(stream) - remaining);
-                }
-
-                // The frame will be written, remove it from the queue.
-                remove(index);
-                --size;
-                actives.add(entry);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Gathered for write {}", entry);
+                frames.clear();
             }
-            streams.clear();
         }
 
-        // Perform resets outside the sync block.
-        for (int i = 0; i < resets.size(); ++i)
-        {
-            Entry entry = resets.get(i);
-            entry.reset();
-        }
-        resets.clear();
 
-        if (actives.isEmpty())
+        if (entries.isEmpty())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Flushed {}", session);
             return Action.IDLE;
         }
 
-        for (int i = 0; i < actives.size(); ++i)
+        while (!entries.isEmpty())
         {
-            Entry entry = actives.get(i);
-            Throwable failure = entry.generate(lease);
-            if (failure != null)
+            Entry entry = entries.poll();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing {}", entry);
+
+            // If the stream has been reset, don't send the frame.
+            if (entry.reset())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Resetting {}", entry);
+                continue;
+            }
+
+            try
+            {
+                if (entry.generate(lease))
+                {
+                    if (entry.dataRemaining() > 0)
+                        entries.offer(entry);
+                }
+                else
+                {
+                    if (stalled == null)
+                        stalled = entry;
+                }
+            }
+            catch (Throwable failure)
             {
                 // Failure to generate the entry is catastrophic.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Failure generating frame " + entry.frame, failure);
                 failed(failure);
                 return Action.SUCCEEDED;
             }
         }
 
         List<ByteBuffer> byteBuffers = lease.getByteBuffers();
+        if (byteBuffers.isEmpty())
+        {
+            complete();
+            return Action.IDLE;
+        }
+
         if (LOG.isDebugEnabled())
             LOG.debug("Writing {} buffers ({} bytes) for {} frames {}", byteBuffers.size(), lease.getTotalLength(), actives.size(), actives);
         session.getEndPoint().write(this, byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
@@ -248,15 +202,43 @@ public class HTTP2Flusher extends IteratingCallback
     @Override
     public void succeeded()
     {
-        lease.recycle();
-
         if (LOG.isDebugEnabled())
             LOG.debug("Written {} frames for {}", actives.size(), actives);
 
-        actives.forEach(Entry::succeeded);
-        actives.clear();
+        complete();
 
         super.succeeded();
+    }
+
+    private void complete()
+    {
+        lease.recycle();
+
+        actives.forEach(Entry::complete);
+
+        if (stalled != null)
+        {
+            // We have written part of the frame, but there is more to write.
+            // The API will not allow to send two data frames for the same
+            // stream so we append the unfinished frame at the end to allow
+            // better interleaving with other streams.
+            int index = actives.indexOf(stalled);
+            for (int i = index; i < actives.size(); ++i)
+            {
+                Entry entry = actives.get(i);
+                if (entry.dataRemaining() > 0)
+                    append(entry);
+            }
+            for (int i = 0; i < index; ++i)
+            {
+                Entry entry = actives.get(i);
+                if (entry.dataRemaining() > 0)
+                    append(entry);
+            }
+            stalled = null;
+        }
+
+        actives.clear();
     }
 
     @Override
@@ -313,6 +295,7 @@ public class HTTP2Flusher extends IteratingCallback
     {
         protected final Frame frame;
         protected final IStream stream;
+        private boolean reset;
 
         protected Entry(Frame frame, IStream stream, Callback callback)
         {
@@ -326,14 +309,14 @@ public class HTTP2Flusher extends IteratingCallback
             return 0;
         }
 
-        public Throwable generate(ByteBufferPool.Lease lease)
-        {
-            return null;
-        }
+        protected abstract boolean generate(ByteBufferPool.Lease lease);
 
-        public void reset()
+        private void complete()
         {
-            failed(new EofException("reset"));
+            if (reset)
+                failed(new EofException("reset"));
+            else
+                succeeded();
         }
 
         @Override
@@ -347,7 +330,12 @@ public class HTTP2Flusher extends IteratingCallback
             super.failed(x);
         }
 
-        public boolean isProtocol()
+        private boolean reset()
+        {
+            return this.reset = stream != null && stream.isReset() && !isProtocol();
+        }
+
+        private boolean isProtocol()
         {
             switch (frame.getType())
             {

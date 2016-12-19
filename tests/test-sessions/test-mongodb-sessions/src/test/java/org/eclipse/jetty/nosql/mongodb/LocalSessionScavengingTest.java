@@ -20,15 +20,31 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTest
 {
 
-    @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
     {
-       MongoTestServer mserver=new MongoTestServer(port,max,scavenge);
-       ((MongoSessionIdManager)mserver.getServer().getSessionIdManager()).setScavengeBlockSize(0);
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
+    }
+
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
+    
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    {
+       MongoTestServer mserver=new MongoTestServer(port,max,scavenge, evictionPolicy);
+       
        return mserver;
     }
 

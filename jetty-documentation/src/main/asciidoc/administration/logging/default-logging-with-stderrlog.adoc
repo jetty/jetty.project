@@ -20,95 +20,124 @@
 [[stderrlog-configuration]]
 ==== StdErrLog Configuration
 
-If you do nothing to configure a separate logging framework, Jetty will default to using an internal `org.eclipse.jetty.util.log.StdErrLog` implementation. 
+If you do nothing to configure a separate logging framework, Jetty will default to using an internal `org.eclipse.jetty.util.log.StdErrLog` implementation.
 This will output all logging events to STDERR (aka `System.err`).
 
-Simply use Jetty and `StdErrLog` based logging is output.
+Simply use Jetty and `StdErrLog`-based logging is output to the console.
 
-Included in the Jetty distribution is a logging module that is capable of performing simple capturing of all STDOUT and STDERR output to a file that is rotated daily.
+Included in the Jetty distribution is a logging module named `console-capture` that is capable of performing simple capturing of all STDOUT (`System.out`) and STDERR (`System.err`) output to a file that is rotated daily.
 
-To enable on this feature via the command line:
+To enable this feature, simply activate the `console-capture` module on the command line:
 
-[source,bash]
-----
-[my-base]$ java -jar /opt/jetty/start.jar --module=logging
-----
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=console-capture
+INFO  : console-capture initialized in ${jetty.base}/start.d/console-capture.ini
+MKDIR : ${jetty.base}/logs
+INFO  : Base directory was modified
 
-You can also include the `--module=logging` command in your `${jetty.base}/start.ini`.
+[my-base]$ tree
+.
+├── logs
+└── start.d
+    └── console-capture.ini
+....
 
-[source,bash]
-----
-[my-base]$ java -jar /opt/jetty/start.jar --add-to-start=logging
-----
+The default configuration for logging output will create a file `${jetty.base}/logs/yyyy_mm_dd.stderrout.log` which allows configuration of the output directory by setting the `jetty.logs` property.
 
-The default configuration for logging output will create a file `${jetty.logs}/yyyy_mm_dd.stderrout.log` which allows configuration of the output directory by setting the `jetty.logs` property.
+Just enabling the `console-capture` will simply output the values of STDERR and STDOUT to a log file.
+To customize the log further, a module named `logging-jetty` is available to provides a default properties file to configure.
+As with `console-capture`, you activate the `logging-jetty` on the command line.
 
-For more advanced logging configurations, please consider use of a separate logging library.
+[source, screen, subs="{sub-order}"]
+....
+[my-base]$ java -jar ../start.jar --add-to-start=logging-jetty
+INFO  : logging-jetty   initialized in ${jetty.base}/start.d/logging-jetty.ini
+INFO  : resources       transitively enabled
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/logging-jetty/resources/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
+INFO  : Base directory was modified
 
-The recommended way to configure `StdErrLog` is to create a `${jetty.home}/resources/jetty-logging.properties` file, specify the log implementation to `StdErrLog` and then setup logging levels.
+[my-base]$ tree
+.
+├── logs
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── console-capture.ini
+    └── logging-jetty.ini
+....
 
-[source,properties]
-----
-# Configure Jetty for StdErrLog Logging
-org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StrErrLog
-# Overall Logging Level is INFO
-org.eclipse.jetty.LEVEL=INFO
-# Detail Logging for WebSocket
-org.eclipse.jetty.websocket.LEVEL=DEBUG
-----
+Once activated, you can find the properties file at `${jetty.base}/resources/jetty-logging.properties`.
+By default, the following parameters are defined.
+To change them, un-comment the line and substitute your naming scheme and configuration choices.
 
-There are a number of properties that can be defined in the configuration that will affect the behavior of `StdErrLog`.
+[source, properties, subs="{sub-order}"]
+....
+## Force jetty logging implementation
+#org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
+
+## Set logging levels from: ALL, DEBUG, INFO, WARN, OFF
+#org.eclipse.jetty.LEVEL=INFO
+#com.example.LEVEL=INFO
+
+## Hide stacks traces in logs?
+#com.example.STACKS=false
+
+## Show the source file of a log location?
+#com.example.SOURCE=false
+....
+
+There are a number of properties that can be defined in the configuration that will affect the behavior of StdErr logging with `console-capture`.
 
 `<name>.LEVEL=<level>`::
-  Sets the logging level for all loggers within the `name` specified to the level, which can be (in increasing order of restriction) `ALL`, `DEBUG`, `INFO`, `WARN`, `OFF`. 
+  Sets the logging level for all loggers within the `name` specified to the level, which can be (in increasing order of restriction) `ALL`, `DEBUG`, `INFO`, `WARN`, `OFF`.
   The name (or hierarchy) can be a specific fully qualified class or a package namespace.
-  For example, `org.eclipse.jetty.http.LEVEL=DEBUG` is a package namespace approach to turn all loggers in the Jetty HTTP package to DEBUG level, and  `org.eclipse.jetty.io.ChanelEndPoint.LEVEL=ALL` turns on all logging events for the specific class, including `DEBUG`, `INFO`, `WARN` (and even special internally ignored exception classes). 
+  For example, `org.eclipse.jetty.http.LEVEL=DEBUG` is a package namespace approach to turn all loggers in the Jetty HTTP package to DEBUG level, and  `org.eclipse.jetty.io.ChanelEndPoint.LEVEL=ALL` turns on all logging events for the specific class, including `DEBUG`, `INFO`, `WARN` (and even special internally ignored exception classes).
   If more than one system property specifies a logging level, the most specific one applies.
 `<name>.SOURCE=<boolean>`::
-  Named Logger specific, attempts to print the Java source file name and line number from where the logging event originated. 
-  Name must be a fully qualified class name (this configurable does not support package name hierarchy). 
-  Default is false. 
+  Named Logger specific, attempts to print the Java source file name and line number from where the logging event originated.
+  Name must be a fully qualified class name (this configurable does not support package name hierarchy).
+  Default is false.
   Be aware that this is a slow operation and has an impact on performance.
 `<name>.STACKS=<boolean>`::
-  Named Logger specific, controls the display of stacktraces. 
+  Named Logger specific, controls the display of stacktraces.
   Name must be a fully qualified class name (this configurable does not support package name hierarchy).
   Default is true.
 `org.eclipse.jetty.util.log.stderr.SOURCE=<boolean>`::
-  Special Global Configuration. 
-  Attempts to print the Java source file name and line number from where the logging event originated. 
+  Special Global Configuration.
+  Attempts to print the Java source file name and line number from where the logging event originated.
   Default is false.
 `org.eclipse.jetty.util.log.stderr.LONG=<boolean>`::
-  Special Global Configuration. 
-  When true, outputs logging events to `STDERR` using long form, fully qualified class names. 
+  Special Global Configuration.
+  When true, outputs logging events to `STDERR` using long form, fully qualified class names.
   When false, uses abbreviated package names.
   Default is false.
-  +
++
   * Example when set to false:
-  +
++
 [source, screen, subs="{sub-order}"]
 ....
-2014-06-03 14:36:16.013:INFO:oejs.Server:main: jetty-9.2.0.v20140526
-2014-06-03 14:36:16.028:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/opt/jetty/demo-base/webapps/] at interval 1
-2014-06-03 14:36:16.051:INFO:oejsh.ContextHandler:main: Started o.e.j.s.h.MovedContextHandler@7d256e50{/oldContextPath,null,AVAILABLE}
-2014-06-03 14:36:17.880:INFO:oejs.ServerConnector:main: Started ServerConnector@34f2d11a{HTTP/1.1}{0.0.0.0:8080}
-2014-06-03 14:36:17.888:INFO:oejs.Server:main: Started @257ms
+2016-10-21 15:31:01.248:INFO::main: Logging initialized @332ms to org.eclipse.jetty.util.log.StdErrLog
+2016-10-21 15:31:01.370:INFO:oejs.Server:main: jetty-9.4.0-SNAPSHOT
+2016-10-21 15:31:01.400:INFO:oejs.AbstractConnector:main: Started ServerConnector@2c330fbc{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2016-10-21 15:31:01.400:INFO:oejs.Server:main: Started @485ms
 ....
-  +
++
   * Example when set to true:
-  +
++
 [source, screen, subs="{sub-order}"]
 ....
-2014-06-03 14:38:19.019:INFO:org.eclipse.jetty.server.Server:main: jetty-9.2.0.v20140526
-2014-06-03 14:38:19.032:INFO:org.eclipse.jetty.deploy.providers.ScanningAppProvider:main: Deployment monitor [file:/opt/jetty/demo-base/webapps/] at interval 1
-2014-06-03 14:38:19.054:INFO:org.eclipse.jetty.server.handler.ContextHandler:main: Started o.e.j.s.h.MovedContextHandler@246d8660{/oldContextPath,null,AVAILABLE}
-2014-06-03 14:38:20.715:INFO:org.eclipse.jetty.server.ServerConnector:main: Started ServerConnector@59f625be{HTTP/1.1}{0.0.0.0:8080}
-2014-06-03 14:38:20.723:INFO:org.eclipse.jetty.server.Server:main: Started @243ms
+2016-10-21 15:31:35.020:INFO::main: Logging initialized @340ms to org.eclipse.jetty.util.log.StdErrLog
+2016-10-21 15:31:35.144:INFO:org.eclipse.jetty.server.Server:main: jetty-9.4.0-SNAPSHOT
+2016-10-21 15:31:35.174:INFO:org.eclipse.jetty.server.AbstractConnector:main: Started ServerConnector@edf4efb{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2016-10-21 15:31:35.175:INFO:org.eclipse.jetty.server.Server:main: Started @495ms
 ....
 
 [[deprecated-parameters]]
 ==== Deprecated Parameters
 
-These parameters existed in prior versions of Jetty, and are no longer supported. 
+These parameters existed in prior versions of Jetty, and are no longer supported.
 They are included here for historical (and search engine) reasons.
 
 `org.eclipse.jetty.util.log.DEBUG`::

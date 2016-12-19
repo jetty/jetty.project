@@ -22,14 +22,16 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -38,6 +40,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -48,6 +51,43 @@ public class JaspiTest
 {
     Server _server;
     LocalConnector _connector;
+    public class TestLoginService extends AbstractLoginService
+    {
+        protected Map<String, UserPrincipal> _users = new HashMap<>();
+        protected Map<String, String[]> _roles = new HashMap();
+     
+      
+
+        public TestLoginService(String name)
+        {
+            setName(name);
+        }
+
+        public void putUser (String username, Credential credential, String[] roles)
+        {
+            UserPrincipal userPrincipal = new UserPrincipal(username,credential);
+            _users.put(username, userPrincipal);
+            _roles.put(username, roles);
+        }
+        
+        /** 
+         * @see org.eclipse.jetty.security.AbstractLoginService#loadRoleInfo(org.eclipse.jetty.security.AbstractLoginService.UserPrincipal)
+         */
+        @Override
+        protected String[] loadRoleInfo(UserPrincipal user)
+        {
+           return _roles.get(user.getName());
+        }
+
+        /** 
+         * @see org.eclipse.jetty.security.AbstractLoginService#loadUserInfo(java.lang.String)
+         */
+        @Override
+        protected UserPrincipal loadUserInfo(String username)
+        {
+            return _users.get(username);
+        }
+    }
     
     @Before
     public void before() throws Exception
@@ -60,7 +100,7 @@ public class JaspiTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
         
-        HashLoginService loginService = new HashLoginService("TestRealm");
+        TestLoginService loginService = new TestLoginService("TestRealm");
         loginService.putUser("user",new Password("password"),new String[]{"users"});
         loginService.putUser("admin",new Password("secret"),new String[]{"users","admins"});
         _server.addBean(loginService);

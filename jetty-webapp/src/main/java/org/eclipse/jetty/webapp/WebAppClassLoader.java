@@ -27,6 +27,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -71,12 +72,14 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     private static final Logger LOG = Log.getLogger(WebAppClassLoader.class);
-
+    private static final ThreadLocal<Boolean> __loadServerClasses = new ThreadLocal<>();
+    
     private final Context _context;
     private final ClassLoader _parent;
     private final Set<String> _extensions=new HashSet<String>();
     private String _name=String.valueOf(hashCode());
     private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
+    
     
     /* ------------------------------------------------------------ */
     /** The Context in which the classloader operates.
@@ -98,7 +101,7 @@ public class WebAppClassLoader extends URLClassLoader
          * @return Returns the permissions.
          */
         PermissionCollection getPermissions();
-
+        
         /* ------------------------------------------------------------ */
         /** Is the class a System Class.
          * A System class is a class that is visible to a webapplication,
@@ -107,7 +110,7 @@ public class WebAppClassLoader extends URLClassLoader
          * @param clazz The fully qualified name of the class.
          * @return True if the class is a system class.
          */
-        boolean isSystemClass(String clazz);
+        boolean isSystemClass(Class<?> clazz);
 
         /* ------------------------------------------------------------ */
         /** Is the class a Server Class.
@@ -118,7 +121,7 @@ public class WebAppClassLoader extends URLClassLoader
          * @param clazz The fully qualified name of the class.
          * @return True if the class is a server class.
          */
-        boolean isServerClass(String clazz);
+        boolean isServerClass(Class<?> clazz);
 
         /* ------------------------------------------------------------ */
         /**
@@ -131,7 +134,37 @@ public class WebAppClassLoader extends URLClassLoader
         
         /* ------------------------------------------------------------ */
         String getExtraClasspath();
+
+        boolean isServerResource(String name, URL parent_url);
+
+        boolean isSystemResource(String name, URL webapp_url);
         
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Run an action with access to ServerClasses
+     * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
+     * configured so as to allow server classes to be visible</p>
+     * @param <T> The type returned by the action
+     * @param action The action to run
+     * @return The return from the action
+     * @throws Exception if thrown by the action
+     */
+    public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
+    {
+        Boolean lsc=__loadServerClasses.get();
+        try
+        {
+            __loadServerClasses.set(true);
+            return action.run();
+        }
+        finally
+        {
+            if (lsc==null)
+                __loadServerClasses.remove();
+            else
+                __loadServerClasses.set(lsc);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -332,27 +365,42 @@ public class WebAppClassLoader extends URLClassLoader
     @Override
     public Enumeration<URL> getResources(String name) throws IOException
     {
-        boolean system_class=_context.isSystemClass(name);
-        boolean server_class=_context.isServerClass(name);
+        List<URL> from_parent = new ArrayList<>();
+        List<URL> from_webapp = new ArrayList<>();
         
-        List<URL> from_parent = toList(server_class?null:_parent.getResources(name));
-        List<URL> from_webapp = toList((system_class&&!from_parent.isEmpty())?null:this.findResources(name));
-            
+        Enumeration<URL> urls = _parent.getResources(name);
+        while (urls!=null && urls.hasMoreElements())
+        {
+            URL url = urls.nextElement();
+            if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerResource(name,url))
+                from_parent.add(url);
+        }
+
+        urls = this.findResources(name);
+        while (urls!=null && urls.hasMoreElements())
+        {
+            URL url = urls.nextElement();
+            if (!_context.isSystemResource(name,url) || from_parent.isEmpty())
+                from_webapp.add(url);
+        }
+
+        List<URL> resources;
+        
         if (_context.isParentLoaderPriority())
         {
             from_parent.addAll(from_webapp);
-            return Collections.enumeration(from_parent);
+            resources = from_parent;
         }
-        from_webapp.addAll(from_parent);
-        return Collections.enumeration(from_webapp);
-    }
+        else
+        {
+            from_webapp.addAll(from_parent);
+            resources = from_webapp;
+        }
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("getResources {} {}",name,resources);
 
-    /* ------------------------------------------------------------ */
-    private List<URL> toList(Enumeration<URL> e)
-    {
-        if (e==null)
-            return new ArrayList<URL>();
-        return Collections.list(e);
+        return Collections.enumeration(resources);
     }
     
     /* ------------------------------------------------------------ */
@@ -366,66 +414,60 @@ public class WebAppClassLoader extends URLClassLoader
     @Override
     public URL getResource(String name)
     {
-        URL url= null;
-        boolean tried_parent= false;
-
-        //If the resource is a class name with .class suffix, strip it off before comparison
-        //as the server and system patterns are specified without a .class suffix
-        String tmp = name;
-        if (tmp != null && tmp.endsWith(".class"))
-            tmp = tmp.substring(0, tmp.length()-6);
-        
-        boolean system_class=_context.isSystemClass(tmp);
-        boolean server_class=_context.isServerClass(tmp);
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug("getResource({}) system={} server={} cl={}",name,system_class,server_class,this);
-        
-        if (system_class && server_class)
-            return null;
-        
-        ClassLoader source=null;
-        
-        if (_parent!=null &&(_context.isParentLoaderPriority() || system_class ) && !server_class)
+        URL resource=null;
+        if (_context.isParentLoaderPriority())
         {
-            tried_parent= true;
+            URL parent_url=_parent.getResource(name);
             
-            if (_parent!=null)
+            // return if we have a url the webapp is allowed to see
+            if (parent_url!=null
+                && (Boolean.TRUE.equals(__loadServerClasses.get()) 
+                    || !_context.isServerResource(name,parent_url)))
+                resource = parent_url;
+            else
             {
-                source=_parent;
-                url=_parent.getResource(name);
+                URL webapp_url = this.findResource(name);
+
+                // If found here then OK to use regardless of system or server classes
+                // If it is a system resource, we've already tried to load from parent, so
+                // would have returned it.
+                // If it is a server resource, doesn't matter as we have loaded it from the 
+                // webapp
+                if (webapp_url!=null)
+                    resource = webapp_url;
             }
         }
-
-        if (url == null)
+        else
         {
-            url= this.findResource(name);
-            source=this;
-            if (url == null && name.startsWith("/"))
-                url= this.findResource(name.substring(1));
-        }
+            URL webapp_url = this.findResource(name);
 
-        if (url == null && !tried_parent && !server_class )
-        {
-            if (_parent!=null)
+            if (webapp_url!=null && !_context.isSystemResource(name,webapp_url))
+                resource = webapp_url;
+            else
             {
-                tried_parent=true;
-                source=_parent;
-                url= _parent.getResource(name);
+
+                // Couldn't find or see a webapp resource, so try a parent
+                URL parent_url=_parent.getResource(name);
+                if (parent_url!=null
+                    && (Boolean.TRUE.equals(__loadServerClasses.get()) 
+                        || !_context.isServerResource(name,parent_url)))
+                    resource = parent_url;
+                // We couldn't find a parent resource, so OK to return a webapp one if it exists 
+                // and we just couldn't see it before 
+                else if (webapp_url!=null)
+                    resource = webapp_url;
             }
         }
+        
+        // Perhaps this failed due to leading /
+        if (resource==null && name.startsWith("/"))
+            resource = getResource(name.substring(1));
 
         if (LOG.isDebugEnabled())
-            LOG.debug("gotResource({})=={} from={} tried_parent={}",name,url,source,tried_parent);
-
-        return url;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException
-    {
-        return loadClass(name, false);
+            LOG.debug("getResource {} {}",name,resource);
+       
+        return resource;
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -433,74 +475,116 @@ public class WebAppClassLoader extends URLClassLoader
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
         synchronized (getClassLoadingLock(name))
-        {
-            Class<?> c= findLoadedClass(name);
+        {            
             ClassNotFoundException ex= null;
-            boolean tried_parent= false;
-
-            boolean system_class=_context.isSystemClass(name);
-            boolean server_class=_context.isServerClass(name);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("loadClass({}) system={} server={} cl={}",name,system_class,server_class,this);
+            Class<?> parent_class = null;
+            Class<?> webapp_class = null;
             
-            ClassLoader source=null;
-            
-            if (system_class && server_class)
-            {
-                return null;
-            }
-
-            if (c == null && _parent!=null && (_context.isParentLoaderPriority() || system_class) && !server_class)
-            {
-                tried_parent= true;
-                source=_parent;
-                try
-                {
-                    c= _parent.loadClass(name);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("loaded " + c);
-                }
-                catch (ClassNotFoundException e)
-                {
-                    ex= e;
-                }
-            }
-
-            if (c == null)
-            {
-                try
-                {
-                    source=this;
-                    c= this.findClass(name);
-                }
-                catch (ClassNotFoundException e)
-                {
-                    ex= e;
-                }
-            }
-
-            if (c == null && _parent!=null && !tried_parent && !server_class )
-            {
-                tried_parent=true;
-                source=_parent;
-                c= _parent.loadClass(name);
-            }
-
-            if (c == null && ex!=null)
+            // Has this loader loaded the class already?
+            webapp_class = findLoadedClass(name);
+            if (webapp_class != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("!loadedClass({}) from={} tried_parent={}",name,this,tried_parent);
+                    LOG.debug("found webapp loaded {}",webapp_class);
+                return webapp_class;
+            }
+            
+            // Should we try the parent loader first?
+            if (_context.isParentLoaderPriority())
+            {
+                // Try the parent loader
+                try
+                {
+                    parent_class = _parent.loadClass(name); 
+
+                    // If the webapp is allowed to see this class
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("PLP parent loaded {}",parent_class);
+                        return parent_class;
+                    }
+                }
+                catch (ClassNotFoundException e)
+                {
+                    // Save it for later
+                    ex = e;
+                }
+                
+                // Try the webapp loader
+                try
+                {
+                    // If found here then OK to use regardless of system or server classes
+                    // If it is a system class, we've already tried to load from parent, so
+                    // would have returned it.
+                    // If it is a server class, doesn't matter as we have loaded it from the 
+                    // webapp
+                    webapp_class = this.findClass(name);
+                    resolveClass(webapp_class);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("PLP webapp loaded {}",webapp_class);
+                    return webapp_class;
+                }
+                catch (ClassNotFoundException e)
+                {
+                    if (ex==null)
+                        ex = e;
+                    else
+                        ex.addSuppressed(e);
+                }
+                
                 throw ex;
             }
+            else
+            {
+                // Not parent loader priority, so...
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("loadedClass({})=={} from={} tried_parent={}",name,c,source,tried_parent);
-            
-            if (resolve)
-                resolveClass(c);
+                // Try the webapp classloader first
+                // Look in the webapp classloader as a resource, to avoid 
+                // loading a system class.
+                String path = name.replace('.', '/').concat(".class");
+                URL webapp_url = findResource(path);
+                
+                if (webapp_url!=null && !_context.isSystemResource(name,webapp_url))
+                {
+                    webapp_class = this.foundClass(name,webapp_url);
+                    resolveClass(webapp_class);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("WAP webapp loaded {}",webapp_class);
+                    return webapp_class;
+                }
 
-            return c;
+                // Try the parent loader
+                try
+                {
+                    parent_class = _parent.loadClass(name); 
+                    
+                    // If the webapp is allowed to see this class
+                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isServerClass(parent_class))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("WAP parent loaded {}",parent_class);
+                        return parent_class;
+                    }
+                }
+                catch (ClassNotFoundException e)
+                {
+                    ex=e;
+                }
+
+                // We couldn't find a parent class, so OK to return a webapp one if it exists 
+                // and we just couldn't see it before 
+                if (webapp_url!=null)
+                {
+                    webapp_class = this.foundClass(name,webapp_url);
+                    resolveClass(webapp_class);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("WAP !server webapp loaded {}",webapp_class);
+                    return webapp_class;
+                }
+                
+                throw ex==null?new ClassNotFoundException(name):ex;
+            }
         }
     }
 
@@ -538,69 +622,71 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return _transformers.remove(transformer);
     }
-    
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected Class<?> findClass(final String name) throws ClassNotFoundException
     {
-        Class<?> clazz=null;
-
         if (_transformers.isEmpty())
-            clazz = super.findClass(name);
-        else
+            return super.findClass(name);
+
+        String path = name.replace('.', '/').concat(".class");
+        URL url = findResource(path);
+        if (url==null)
+            throw new ClassNotFoundException(name);
+        return foundClass(name,url);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected Class<?> foundClass(final String name, URL url) throws ClassNotFoundException
+    {
+        if (_transformers.isEmpty())
+            return super.findClass(name);
+
+        InputStream content=null;
+        try
         {
-            String path = name.replace('.', '/').concat(".class");
-            URL url = getResource(path);
-            if (url==null)
-                throw new ClassNotFoundException(name);
+            content = url.openStream();
+            byte[] bytes = IO.readBytes(content);
 
-            InputStream content=null;
-            try
+            if (LOG.isDebugEnabled())
+                LOG.debug("foundClass({}) url={} cl={}",name,url,this);
+
+            for (ClassFileTransformer transformer : _transformers)
             {
-                content = url.openStream();
-                byte[] bytes = IO.readBytes(content);
+                byte[] tmp = transformer.transform(this,name,null,null,bytes);
+                if (tmp != null)
+                    bytes = tmp;
+            }
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("foundClass({}) url={} cl={}",name,url,this);
-                
-                for (ClassFileTransformer transformer : _transformers)
+            return defineClass(name,bytes,0,bytes.length);
+        }
+        catch (IOException e)
+        {
+            throw new ClassNotFoundException(name,e);
+        }
+        catch (IllegalClassFormatException e)
+        {
+            throw new ClassNotFoundException(name,e);
+        }
+        finally
+        {
+            if (content!=null)
+            {
+                try
                 {
-                    byte[] tmp = transformer.transform(this,name,null,null,bytes);
-                    if (tmp != null)
-                        bytes = tmp;
+                    content.close(); 
                 }
-                
-                clazz=defineClass(name,bytes,0,bytes.length);
-            }
-            catch (IOException e)
-            {
-                throw new ClassNotFoundException(name,e);
-            }
-            catch (IllegalClassFormatException e)
-            {
-                throw new ClassNotFoundException(name,e);
-            }
-            finally
-            {
-                if (content!=null)
+                catch (IOException e)
                 {
-                    try
-                    {
-                        content.close(); 
-                    }
-                    catch (IOException e)
-                    {
-                        throw new ClassNotFoundException(name,e);
-                    }
+                    throw new ClassNotFoundException(name,e);
                 }
             }
         }
-
-        return clazz;
     }
+
     
-    
+    /* ------------------------------------------------------------ */
     @Override
     public void close() throws IOException
     {
@@ -613,4 +699,5 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());
     }
+    
 }

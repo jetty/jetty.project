@@ -33,8 +33,7 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.security.MappedLoginService.KnownUser;
-import org.eclipse.jetty.security.MappedLoginService.RolePrincipal;
+
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
@@ -64,17 +63,17 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
 {
     private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
 
-    private Path _configPath;
-    private Resource _configResource;
+    protected Path _configPath;
+    protected Resource _configResource;
     
-    private PathWatcher pathWatcher;
-    private boolean hotReload = false; // default is not to reload
+    protected PathWatcher pathWatcher;
+    protected boolean hotReload = false; // default is not to reload
 
-    private IdentityService _identityService = new DefaultIdentityService();
-    private boolean _firstLoad = true; // true if first load, false from that point on
-    private final List<String> _knownUsers = new ArrayList<String>();
-    private final Map<String, UserIdentity> _knownUserIdentities = new HashMap<String, UserIdentity>();
-    private List<UserListener> _listeners;
+    protected IdentityService _identityService = new DefaultIdentityService();
+    protected boolean _firstLoad = true; // true if first load, false from that point on
+    protected final List<String> _knownUsers = new ArrayList<String>();
+    protected final Map<String, UserIdentity> _knownUserIdentities = new HashMap<String, UserIdentity>();
+    protected List<UserListener> _listeners;
 
     /**
      * Get the config (as a string)
@@ -186,27 +185,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
         this.hotReload = enable;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * sets the refresh interval (in seconds)
-     * @param sec the refresh interval
-     * @deprecated use {@link #setHotReload(boolean)} instead
-     */
-    @Deprecated
-    public void setRefreshInterval(int sec)
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return refresh interval in seconds for how often the properties file should be checked for changes
-     * @deprecated use {@link #isHotReload()} instead
-     */
-    @Deprecated
-    public int getRefreshInterval()
-    {
-        return (hotReload)?1:0;
-    }
+   
     
     @Override
     public String toString()
@@ -221,7 +200,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
     }
 
     /* ------------------------------------------------------------ */
-    private void loadUsers() throws IOException
+    protected void loadUsers() throws IOException
     {
         if (_configPath == null)
             return;
@@ -259,7 +238,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
                 known.add(username);
                 Credential credential = Credential.getCredential(credentials);
 
-                Principal userPrincipal = new KnownUser(username,credential);
+                Principal userPrincipal = new AbstractLoginService.UserPrincipal(username,credential);
                 Subject subject = new Subject();
                 subject.getPrincipals().add(userPrincipal);
                 subject.getPrivateCredentials().add(credential);
@@ -268,7 +247,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
                 {
                     for (String role : roleArray)
                     {
-                        subject.getPrincipals().add(new RolePrincipal(role));
+                        subject.getPrincipals().add(new AbstractLoginService.RolePrincipal(role));
                     }
                 }
 

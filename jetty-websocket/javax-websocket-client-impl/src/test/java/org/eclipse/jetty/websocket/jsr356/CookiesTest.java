@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Collections;
@@ -73,14 +77,15 @@ public class CookiesTest
         final String cookieName = "name";
         final String cookieValue = "value";
         final String cookieString = cookieName + "=" + cookieValue;
+        
         startServer(new EchoHandler()
         {
             @Override
             public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response)
             {
                 List<HttpCookie> cookies = request.getCookies();
-                Assert.assertNotNull(cookies);
-                Assert.assertEquals(1, cookies.size());
+                assertThat("Cookies", cookies, notNullValue());
+                assertThat("Cookies", cookies.size(), is(1));
                 HttpCookie cookie = cookies.get(0);
                 Assert.assertEquals(cookieName, cookie.getName());
                 Assert.assertEquals(cookieValue, cookie.getValue());

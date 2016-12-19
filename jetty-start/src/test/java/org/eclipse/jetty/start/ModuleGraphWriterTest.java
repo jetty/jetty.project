@@ -57,12 +57,11 @@ public class ModuleGraphWriterTest
         // Initialize
         BaseHome basehome = new BaseHome(config);
         
-        StartArgs args = new StartArgs();
+        StartArgs args = new StartArgs(basehome);
         args.parse(config);
 
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
-        modules.buildGraph();
 
         Path outputFile = basehome.getBasePath("graph.dot");
 

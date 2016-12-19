@@ -25,7 +25,7 @@ A demo Jetty base that supports HTTP/1, HTTPS/1 and deployment from a webapps di
 $ JETTY_BASE=http2-demo
 $ mkdir $JETTY_BASE
 $ cd $JETTY_BASE
-$ java -jar $JETTY_HOME/start.jar --add-to-startd=http,https,deploy
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http,https,deploy
 ....
 
 The commands above create a `$JETTY_BASE` directory called `http2-demo`, and initializes the `http,` `https` and `deploy` modules (and their dependencies) to run a typical Jetty Server on port 8080 (for HTTP/1) and 8443 (for HTTPS/1).
@@ -35,7 +35,7 @@ To add HTTP/2 to this demo base, it is just a matter of enabling the `http2` mod
 
 [source, screen, subs="{sub-order}"]
 ....
-$ java -jar $JETTY_HOME/start.jar --add-to-startd=http2
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http2
 ....
 
 This command does not create a new connector, but instead simply adds the HTTP/2 protocol to the existing HTTPS/1 connector, so that it now supports both protocols on port 8443.
@@ -61,7 +61,7 @@ HTTP/2 can be enabled on the plain text connector and the server restarted with 
 
 [source,screen]
 ....
-$ java -jar $JETTY_HOME/start.jar --add-to-startd=http2c
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http2c
 $ java -jar $JETTY_HOME/start.jar
 ..
 2015-06-17 14:16:12.549:INFO:oejs.ServerConnector:main: Started ServerConnector@6f32cd1e{HTTP/1.1,[http/1.1, h2c, h2c-17]}{0.0.0.0:8080}

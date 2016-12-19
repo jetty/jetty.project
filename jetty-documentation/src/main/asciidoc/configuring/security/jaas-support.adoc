@@ -148,10 +148,10 @@ There are 2 aspects to this:
 
 To accomplish the above, use the Jetty link:#startup-overview[startup] link:#startup-modules[modules mechanism] to add the JAAS link:#startup-modules[module]:
 
-[source,bash]
-----
-java -jar start.jar --add-to-startd=jaas
-----
+[source, screen, subs="{sub-order}"]
+....
+java -jar start.jar --add-to-start=jaas
+....
 
 ____
 [NOTE]

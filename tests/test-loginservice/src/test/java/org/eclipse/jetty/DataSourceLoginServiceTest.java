@@ -62,7 +62,6 @@ public class DataSourceLoginServiceTest
     private static HttpClient _client;
     private static String __realm = "DSRealm";
     private static URI _baseUri;
-    private static final int __cacheInterval = 200;
     private static DatabaseLoginServiceTestServer _testServer;
 
 
@@ -124,7 +123,6 @@ public class DataSourceLoginServiceTest
          loginService.setUserRoleTableUserKey("user_id");
          loginService.setJndiName("dstest");
          loginService.setName(__realm);
-         loginService.setCacheMs(__cacheInterval);
          if (_testServer != null)
              loginService.setServer(_testServer.getServer());
          
@@ -154,7 +152,7 @@ public class DataSourceLoginServiceTest
              String newpwd = String.valueOf(System.currentTimeMillis());
              
              changePassword("jetty", newpwd);
-             TimeUnit.MILLISECONDS.sleep(2*__cacheInterval);  //pause to ensure cache invalidates
+           
              
              startClient("jetty", newpwd);
              
@@ -172,7 +170,7 @@ public class DataSourceLoginServiceTest
      
      protected void changePassword (String user, String newpwd) throws Exception
      {
-         Loader.loadClass(this.getClass(), "org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+         Loader.loadClass("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
          try (Connection connection = DriverManager.getConnection(DatabaseLoginServiceTestServer.__dbURL, "", "");
               Statement stmt = connection.createStatement())
          {

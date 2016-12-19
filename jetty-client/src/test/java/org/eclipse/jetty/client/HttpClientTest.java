@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -71,6 +73,7 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -116,7 +119,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-        DuplexConnectionPool connectionPool = destination.getConnectionPool();
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
         long start = System.nanoTime();
         HttpConnectionOverHTTP connection = null;
@@ -638,7 +641,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .onRequestBegin(request ->
                 {
                     HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
-                    destination.getConnectionPool().getActiveConnections().peek().close();
+                    DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+                    connectionPool.getActiveConnections().iterator().next().close();
                 })
                 .send(new Response.Listener.Adapter()
                 {
@@ -1288,13 +1292,29 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
     {
-        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 1024);
+        try
+        {
+            testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 1024);
+        }
+        catch(ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+        }
     }
 
     @Test
     public void testBigContentDelimitedByEOFWithSlowRequestHTTP10() throws Exception
     {
-        testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 128 * 1024);
+        try
+        {
+            testContentDelimitedByEOFWithSlowRequest(HttpVersion.HTTP_1_0, 128 * 1024);
+        }
+        catch(ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.instanceOf(BadMessageException.class));
+            assertThat(e.getCause().getMessage(), Matchers.containsString("Unknown content"));
+        }
     }
 
     @Test

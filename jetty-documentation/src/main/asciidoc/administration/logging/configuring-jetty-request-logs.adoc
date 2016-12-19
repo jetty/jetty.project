@@ -49,15 +49,14 @@ To enable the Request Log module for the entire server via the Jetty distributio
 
 [source, screen, subs="{sub-order}"]
 ----
-$ java -jar ../start.jar --add-to-startd=requestlog
+$ java -jar ../start.jar --add-to-start=requestlog
 
 INFO: requestlog      initialised in ${jetty.base}/start.d/requestlog.ini
 MKDIR: ${jetty.base}/logs
 INFO: Base directory was modified
 ----
 
-The above command will add a new `requestlog.ini` file to your `{$jetty.base}/start.d` directory.
-If you used `--add-to-start` it will append the configuration options for the module to the `start.ini` file located in your `{$jetty.base}` directory.
+The above command will add a new `requestlog.ini` file to your link:#start-vs-startd[`{$jetty.base}/start.d` directory].
 
 The equivalent code for embedded usages of Jetty is:
 

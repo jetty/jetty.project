@@ -51,7 +51,7 @@ Configure the Jetty logging layer via the `org.eclipse.jetty.util.log.Log` class
 * If no logger implementation is specified, default to `org.eclipse.jetty.util.log.StdErrLog`.
 ____
 [NOTE]
-You can create your own custom logging by providing an implementation of the link:{JDURL}org/eclipse/jetty/util/log/Logger.html[Jetty Logger API]. 
+You can create your own custom logging by providing an implementation of the link:{JDURL}org/eclipse/jetty/util/log/Logger.html[Jetty Logger API].
 For an example of a custom logger, see link:{GITBROWSEURL}/jetty-util/src/main/java/org/eclipse/jetty/util/log/JavaUtilLog.java[JavaUtilLog.java].
 ____
 
@@ -60,13 +60,12 @@ ____
 
 By default, the internal Jetty Logging discovery mechanism will load logging specific properties from a classpath resource called `jetty-logging.properties` and then initialize the Logging from a combination of properties found in that file, along with any System Properties.
 A typical jetty-logging.properties file will include at least the declaration of which logging implementation you want to use by defining a value for the `org.eclipse.jetty.util.log.class` property.
-  
+
 Examples for various logging frameworks can be found later in this documentation.
 
 * Default Logging with link:#default-logging-with-stderrlog[Jetty's StdErrLog]
-* Using link:#example-logging-log4j[Log4j via Slf4jLog]
-* Using link:#example-logging-logback[Logback via Slf4jLog]
-* Using java.util.logging via Slf4jLog
-* Using java.util.logging via Jetty's JavaUtilLog
-* Capturing link:#example-slf4j-multiple-loggers[Multiple Logging Frameworks via Slf4jLog]
+* Using link:#example-logging-log4j[Log4j or Log4j2 via SLF4J]
+* Using link:#example-logging-logback[Logback via SLF4J]
+* Using link:#example-logging-java-util-logging[Java Util Logging via SLF4J]
+* Using link:#example-logging-java-commons-logging[Java Commons Logging via SLF4J]
 * link:#example-logging-logback-centralized[Centralized Logging with Logback and Sfl4jLog]

@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,6 +46,7 @@ public class ScopedHandlerTest
     public void testSingle() throws Exception
     {
         TestHandler handler0 = new TestHandler("0");
+        handler0.setServer(new Server());
         handler0.start();
         handler0.handle("target",null,null,null);
         handler0.stop();
@@ -57,6 +59,8 @@ public class ScopedHandlerTest
     {
         TestHandler handler0 = new TestHandler("0");
         TestHandler handler1 = new TestHandler("1");
+        handler0.setServer(new Server());
+        handler1.setServer(handler0.getServer());
         handler0.setHandler(handler1);
         handler0.start();
         handler0.handle("target",null,null,null);
@@ -71,6 +75,9 @@ public class ScopedHandlerTest
         TestHandler handler0 = new TestHandler("0");
         TestHandler handler1 = new TestHandler("1");
         TestHandler handler2 = new TestHandler("2");
+        handler0.setServer(new Server());
+        handler1.setServer(handler0.getServer());
+        handler2.setServer(handler0.getServer());
         handler0.setHandler(handler1);
         handler1.setHandler(handler2);
         handler0.start();
@@ -90,6 +97,10 @@ public class ScopedHandlerTest
         OtherHandler handlerA = new OtherHandler("A");
         TestHandler handler1 = new TestHandler("1");
         OtherHandler handlerB = new OtherHandler("B");
+        handler0.setServer(new Server());
+        handlerA.setServer(handler0.getServer());
+        handler1.setServer(handler0.getServer());
+        handlerB.setServer(handler0.getServer());
         handler0.setHandler(handlerA);
         handlerA.setHandler(handler1);
         handler1.setHandler(handlerB);
@@ -112,6 +123,12 @@ public class ScopedHandlerTest
         OtherHandler handlerB = new OtherHandler("B");
         TestHandler handler2 = new TestHandler("2");
         OtherHandler handlerC = new OtherHandler("C");
+        handler0.setServer(new Server());
+        handlerA.setServer(handler0.getServer());
+        handler1.setServer(handler0.getServer());
+        handlerB.setServer(handler0.getServer());
+        handler2.setServer(handler0.getServer());
+        handlerC.setServer(handler0.getServer());
         handler0.setHandler(handlerA);
         handlerA.setHandler(handler1);
         handler1.setHandler(handlerB);

@@ -33,9 +33,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
-/** Error Page Error Handler
- *
+/**
  * An ErrorHandler that maps exceptions and status codes to URIs for dispatch using
  * the internal ERROR style of dispatch.
  */
@@ -43,69 +41,67 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 {
     public final static String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
     private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
-    enum PageLookupTechnique{ THROWABLE, STATUS_CODE, GLOBAL } 
+
+    private enum PageLookupTechnique
+    {
+        THROWABLE, STATUS_CODE, GLOBAL
+    }
 
     protected ServletContext _servletContext;
-    private final Map<String,String> _errorPages= new HashMap<String,String>(); // code or exception to URL
-    private final List<ErrorCodeRange> _errorPageList=new ArrayList<ErrorCodeRange>(); // list of ErrorCode by range
+    private final Map<String, String> _errorPages = new HashMap<>(); // code or exception to URL
+    private final List<ErrorCodeRange> _errorPageList = new ArrayList<>(); // list of ErrorCode by range
 
-    /* ------------------------------------------------------------ */
-    public ErrorPageErrorHandler()
-    {}
-
-    /* ------------------------------------------------------------ */
     @Override
     public String getErrorPage(HttpServletRequest request)
     {
-        String error_page= null;
+        String error_page = null;
 
         PageLookupTechnique pageSource = null;
 
         Class<?> matchedThrowable = null;
-        Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable th = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
         // Walk the cause hierarchy
-        while (error_page == null && th != null )
+        while (error_page == null && th != null)
         {
             pageSource = PageLookupTechnique.THROWABLE;
-            
-            Class<?> exClass=th.getClass();
-            error_page= _errorPages.get(exClass.getName());
+
+            Class<?> exClass = th.getClass();
+            error_page = _errorPages.get(exClass.getName());
 
             // walk the inheritance hierarchy
             while (error_page == null)
             {
-                exClass= exClass.getSuperclass();
-                if (exClass==null)
+                exClass = exClass.getSuperclass();
+                if (exClass == null)
                     break;
                 error_page = _errorPages.get(exClass.getName());
             }
 
-            if(error_page != null)
+            if (error_page != null)
                 matchedThrowable = exClass;
 
-            th=(th instanceof ServletException)?((ServletException)th).getRootCause():null;
+            th = (th instanceof ServletException) ? ((ServletException)th).getRootCause() : null;
         }
 
         Integer errorStatusCode = null;
-        
+
         if (error_page == null)
         {
             pageSource = PageLookupTechnique.STATUS_CODE;
-            
+
             // look for an exact code match
             errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
-            if (errorStatusCode!=null)
+            if (errorStatusCode != null)
             {
-                error_page= (String)_errorPages.get(Integer.toString(errorStatusCode));
+                error_page = _errorPages.get(Integer.toString(errorStatusCode));
 
                 // if still not found
-                if ((error_page == null) && (_errorPageList != null))
+                if (error_page == null)
                 {
                     // look for an error code range match.
-                    for (int i = 0; i < _errorPageList.size(); i++)
+                    for (ErrorCodeRange errCode : _errorPageList)
                     {
-                        ErrorCodeRange errCode = (ErrorCodeRange) _errorPageList.get(i);
                         if (errCode.isInRange(errorStatusCode))
                         {
                             error_page = errCode.getUri();
@@ -116,13 +112,13 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             }
         }
 
-        //try servlet 3.x global error page
+        // Try servlet 3.x global error page.
         if (error_page == null)
         {
             pageSource = PageLookupTechnique.GLOBAL;
             error_page = _errorPages.get(GLOBAL_ERROR_PAGE);
         }
-        
+
         if (LOG.isDebugEnabled())
         {
             StringBuilder dbg = new StringBuilder();
@@ -139,7 +135,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     Throwable originalThrowable = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
                     dbg.append(originalThrowable.getClass().getName());
                     dbg.append(')');
-                    LOG.debug(dbg.toString(),th);
+                    LOG.debug(dbg.toString(), th);
                     break;
                 case STATUS_CODE:
                     dbg.append(" (from status code ");
@@ -153,98 +149,92 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     break;
             }
         }
-        
+
         return error_page;
     }
 
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the errorPages.
-     */
-    public Map<String,String> getErrorPages()
+    public Map<String, String> getErrorPages()
     {
         return _errorPages;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param errorPages The errorPages to set. A map of Exception class name  or error code as a string to URI string
+     * @param errorPages a map of Exception class names or error codes as a string to URI string
      */
-    public void setErrorPages(Map<String,String> errorPages)
+    public void setErrorPages(Map<String, String> errorPages)
     {
         _errorPages.clear();
-        if (errorPages!=null)
+        if (errorPages != null)
             _errorPages.putAll(errorPages);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add Error Page mapping for an exception class
+    /**
+     * Adds ErrorPage mapping for an exception class.
      * This method is called as a result of an exception-type element in a web.xml file
      * or may be called directly
+     *
      * @param exception The exception
-     * @param uri The URI of the error page.
+     * @param uri       The URI of the error page.
      */
-    public void addErrorPage(Class<? extends Throwable> exception,String uri)
+    public void addErrorPage(Class<? extends Throwable> exception, String uri)
     {
-        _errorPages.put(exception.getName(),uri);
+        _errorPages.put(exception.getName(), uri);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add Error Page mapping for an exception class
+    /**
+     * Adds ErrorPage mapping for an exception class.
      * This method is called as a result of an exception-type element in a web.xml file
      * or may be called directly
+     *
      * @param exceptionClassName The exception
-     * @param uri The URI of the error page.
+     * @param uri                The URI of the error page.
      */
-    public void addErrorPage(String exceptionClassName,String uri)
+    public void addErrorPage(String exceptionClassName, String uri)
     {
-        _errorPages.put(exceptionClassName,uri);
+        _errorPages.put(exceptionClassName, uri);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add Error Page mapping for a status code.
+    /**
+     * Adds ErrorPage mapping for a status code.
      * This method is called as a result of an error-code element in a web.xml file
-     * or may be called directly
+     * or may be called directly.
+     *
      * @param code The HTTP status code to match
-     * @param uri The URI of the error page.
+     * @param uri  The URI of the error page.
      */
-    public void addErrorPage(int code,String uri)
+    public void addErrorPage(int code, String uri)
     {
-        _errorPages.put(Integer.toString(code),uri);
+        _errorPages.put(Integer.toString(code), uri);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add Error Page mapping for a status code range.
-     * This method is not available from web.xml and must be called
-     * directly.
+    /**
+     * Adds ErrorPage mapping for a status code range.
+     * This method is not available from web.xml and must be called directly.
+     *
      * @param from The lowest matching status code
-     * @param to The highest matching status code
-     * @param uri The URI of the error page.
+     * @param to   The highest matching status code
+     * @param uri  The URI of the error page.
      */
     public void addErrorPage(int from, int to, String uri)
     {
         _errorPageList.add(new ErrorCodeRange(from, to, uri));
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-        _servletContext=ContextHandler.getCurrentContext();
+        _servletContext = ContextHandler.getCurrentContext();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class ErrorCodeRange
+    private static class ErrorCodeRange
     {
         private int _from;
         private int _to;
         private String _uri;
 
         ErrorCodeRange(int from, int to, String uri)
-            throws IllegalArgumentException
+                throws IllegalArgumentException
         {
             if (from > to)
                 throw new IllegalArgumentException("from>to");
@@ -256,12 +246,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
         boolean isInRange(int value)
         {
-            if ((value >= _from) && (value <= _to))
-            {
-                return true;
-            }
-
-            return false;
+            return _from <= value && value <= _to;
         }
 
         String getUri()

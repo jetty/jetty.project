@@ -29,7 +29,7 @@ import javax.servlet.annotation.WebInitParam;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.Holder;
+import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -95,7 +95,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         if (holder == null)
         {
             //Filter with this name does not already exist, so add it
-            holder = _context.getServletHandler().newFilterHolder(Holder.Source.ANNOTATION);
+            holder = _context.getServletHandler().newFilterHolder(new Source (Source.Origin.ANNOTATION, clazz.getName()));
             holder.setName(name);
 
             holder.setHeldClass(clazz);

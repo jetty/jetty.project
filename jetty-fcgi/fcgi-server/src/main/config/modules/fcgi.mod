@@ -1,6 +1,5 @@
-#
-# FastCGI Module
-#
+[description]
+Adds the FastCGI implementation to the classpath.
 
 [depend]
 servlet

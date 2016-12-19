@@ -102,6 +102,8 @@ public class JettyWebAppContext extends WebAppContext
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
     private Resource _quickStartWebXml;
+    private String _originAttribute;
+    private boolean _generateOrigin;
    
     
  
@@ -227,6 +229,38 @@ public class JettyWebAppContext extends WebAppContext
         _overlays = overlays;
     }
     
+    /**
+     * @return the originAttribute
+     */
+    public String getOriginAttribute()
+    {
+        return _originAttribute;
+    }
+
+    /**
+     * @param originAttribute the originAttribute to set
+     */
+    public void setOriginAttribute(String originAttribute)
+    {
+        _originAttribute = originAttribute;
+    }
+
+    /**
+     * @return the generateOrigin
+     */
+    public boolean isGenerateOrigin()
+    {
+        return _generateOrigin;
+    }
+
+    /**
+     * @param generateOrigin the generateOrigin to set
+     */
+    public void setGenerateOrigin(boolean generateOrigin)
+    {
+        _generateOrigin = generateOrigin;
+    }
+
     /* ------------------------------------------------------------ */
     public List<Overlay> getOverlays()
     {
@@ -311,7 +345,7 @@ public class JettyWebAppContext extends WebAppContext
             if (getQuickStartWebDescriptor() == null)
                 throw new IllegalStateException ("No location to generate quickstart descriptor");
 
-            QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, _preconfigProcessor.getXML());
+            QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, _preconfigProcessor.getXML(), _originAttribute, _generateOrigin);
             try (FileOutputStream fos = new FileOutputStream(getQuickStartWebDescriptor().getFile()))
             {
                 generator.generateQuickStartWebXml(fos);

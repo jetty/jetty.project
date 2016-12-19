@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,6 +30,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -44,6 +47,7 @@ public class PropertyPassingTest
         private String mode;
         private BufferedReader reader;
         private StringWriter output;
+        private CountDownLatch latch=new CountDownLatch(1);
 
         public ConsoleCapture(String mode, InputStream is)
         {
@@ -61,6 +65,7 @@ public class PropertyPassingTest
                 while ((line = reader.readLine()) != (null))
                 {
                     out.println(line);
+                    out.flush();
                 }
             }
             catch (IOException ignore)
@@ -70,11 +75,13 @@ public class PropertyPassingTest
             finally
             {
                 IO.close(reader);
+                latch.countDown();
             }
         }
 
-        public String getConsoleOutput()
+        public String getConsoleOutput() throws InterruptedException
         {
+            latch.await(30,TimeUnit.SECONDS);
             return output.toString();
         }
 
@@ -153,9 +160,9 @@ public class PropertyPassingTest
 
         // Run command, collect output
         String output = collectRunOutput(commands);
-
+        
         // Test for values
-        Assert.assertThat("output",output,containsString("foo=bar"));
+        Assert.assertThat(output,containsString("test.foo=bar"));
     }
 
     private String getClassPath()
@@ -165,6 +172,8 @@ public class PropertyPassingTest
         cp.append(MavenTestingUtils.getProjectDir("target/classes"));
         cp.append(pathSep);
         cp.append(MavenTestingUtils.getProjectDir("target/test-classes"));
+        cp.append(pathSep);
+        cp.append(MavenTestingUtils.getProjectDir("../jetty-util/target/classes")); // TODO horrible hack!
         return cp.toString();
     }
 
@@ -198,6 +207,7 @@ public class PropertyPassingTest
             System.out.printf("STDOUT: [" + stdOutPump.getConsoleOutput() + "]%n");
             Assert.assertThat("Exit code",exitCode,is(0));
         }
+        stdErrPump.getConsoleOutput();
         return stdOutPump.getConsoleOutput();
     }
 

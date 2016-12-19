@@ -125,7 +125,7 @@ public interface Stream
     /**
      * @param idleTimeout the stream idle timeout
      * @see #getIdleTimeout()
-     * @see Stream.Listener#onTimeout(Stream, Throwable)
+     * @see Stream.Listener#onIdleTimeout(Stream, Throwable)
      */
     public void setIdleTimeout(long idleTimeout);
 
@@ -150,7 +150,7 @@ public interface Stream
          *
          * @param stream the stream
          * @param frame  the PUSH_PROMISE frame received
-         * @return a {@link Stream.Listener} that will be notified of pushed stream events
+         * @return a Stream.Listener that will be notified of pushed stream events
          */
         public Listener onPush(Stream stream, PushPromiseFrame frame);
 
@@ -234,7 +234,6 @@ public interface Stream
             @Override
             public boolean onIdleTimeout(Stream stream, Throwable x)
             {
-                onTimeout(stream, x);
                 return true;
             }
         }

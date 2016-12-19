@@ -1,0 +1,249 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+=== Upgrading from Jetty 9.3.x to Jetty 9.4.0
+
+The purpose of this guide is to assist users migrating from Jetty 9.3.x to 9.4.0.
+It is not comprehensive, but covers many of the major changes included in the release that may prove as problem areas for users.
+
+==== The jetty.sh Script
+
+The file `jetty.sh`, typically used to start Jetty as a service in Linux/Unix machines underwent only small changes, such as the addition of https://wiki.debian.org/LSBInitScripts[LSB tags].
+
+You can safely replace the `jetty.sh` file packaged with Jetty 9.3 with the version found in Jetty 9.4.
+
+==== Removed Classes
+
+`ConcurrentArrayQueue` was removed from use in Jetty 9.3 and the class has been removed entirely as part of Jetty 9.4.
+
+==== Module Changes in Jetty 9.4
+
+[cols="1,1", options="header"]
+|===
+| Jetty 9.3 Module | Jetty 9.4 Module
+| `logging`    | `console-capture`
+| `infinispan` | `session-store-infinispan-embedded` or `session-store-infinispan-remote`
+| `jdbc-sessions` | `session-store-jdbc`
+| `gcloud-memcached-sessions`, `gcloud-session-idmgr` and `gcloud-sessions` | `session-store-gcloud` and `session-store-cache`
+| `nosql` | `session-store-mongo`
+|===
+
+===== Logging Modules
+
+The module `logging` is no longer available in Jetty 9.4.
+
+The logging module structure present in Jetty 9.3 has been replaced with a more fine-grained structure in Jetty 9.4, so that you have now more choices available that are also easier to configure.
+
+The migration path is different depending on whether you have completely customized this module or not.
+
+If you have a Jetty 9.3 installation, and you have both `$jetty.base/modules/logging.mod` and `$jetty.base/etc/jetty-logging.xml`, then this module is local to your `$jetty.base` setup and will be used by Jetty 9.4 as before.
+No changes are required for your implementation.
+
+If either `$jetty.base/modules/logging.mod` or `$jetty.base/etc/jetty-logging.xml` are missing, then you were relying on those present in `$jetty.home`, which were present in Jetty 9.3, but are no longer available in Jetty 9.4.
+
+The Jetty 9.3 `logging` module has been renamed to `console-capture` in Jetty 9.4.
+You need to open your Jetty 9.3 `start.ini` and replace the references to the `logging` modules with `console-capture`.
+
+For example, in an existing Jetty 9.3 `start.ini` file the module declaration for logging would look like this:
+
+[source, screen, subs="{sub-order}"]
+----
+--module=logging
+jetty.logging.retainDays=7
+----
+
+In 9.4, it should be replaced by:
+
+[source, screen, subs="{sub-order}"]
+----
+--module=console-capture
+jetty.console-capture.retainDays=7
+----
+
+The properties that may be present in your Jetty 9.3's `start.ini`, such as `jetty.logging.retainDays` will still be working in Jetty 9.4, but a warning will be printed at Jetty 9.4 startup, saying to replace them with correspondent `jetty.console-capture.*` properties such as `jetty.console-capture.retainDays`.
+
+For information on logging modules in the Jetty 9.4 architecture please see the section on link:#configuring-logging-modules[configuring logging modules.]
+
+==== Session Management
+
+Session management received a significant overhaul in Jetty 9.4.
+Session functionality has been refactored to promote code-reuse, easier configuration and easier customization.
+Whereas previously users needed to edit xml configuration files, in Jetty 9.4 all session behavior is controlled by properties that are exposed by the various session modules.
+Users now configure session management by selecting a composition of session modules.
+
+===== Change Overview
+
+SessionIdManager:: Previously there was a different class of SessionIdManager - with different configuration options - depending upon which type of clustering technology chosen.
+In Jetty 9.4, there is only one type, the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[org.eclipse.jetty.server.session.DefaultSessionIdManager].
+
+SessionManager:: Previously, there was a different class of SessionManager depending upon which the type of clustering technology chosen.
+In Jetty 9.4 we have removed the SessionManager class and split its functionality into different, more easily extensible and composable classes:
+General setters:::
+All of the common setup of sessions such as the maxInactiveInterval and session cookie-related configuration has been moved to the link:{JDURL}/org/eclipse/jetty/server/session/SessionHandler.html[org.eclipse.jetty.server.session.SessionHandler]
+
+[cols="1,1", options="header"]
+|===
+| 9.3 SessionManager | 9.4 SessionHandler
+| `setMaxInactiveInterval(sec)`    |  `setMaxInactiveInterval(sec)`
+| `setSessionCookie(String)` | `setSessionCookie(String)`
+| `setRefreshCookieAge(sec)` | `setRefreshCookieAge(sec)`
+| `setSecureRequestOnly(boolean)` |  `setSecureRequestOnly(boolean)`
+| `setSessionIdPathParameterName(String)` | `setSessionIdPathParameterName(String)`
+| `setSessionTrackingModes(Set<SessionTrackingMode>)` | `setSessionTrackingModes(Set<SessionTrackingMode>)`
+| `setHttpOnly(boolean)` | `setHttpOnly(boolean)`
+| `setUsingCookies(boolean)` | `setUsingCookies(boolean)`
+| `setCheckingRemoteSessionIdEncoding(boolean)` | `setCheckingRemoteSessionIdEncoding(boolean)`
+|===
+
+Persistence:::
+In Jetty 9.3 `SessionManagers` (and sometimes `SessionIdManagers`) implemented the persistence mechanism.
+In Jetty 9.4 we have moved this functionality into the link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[`org.eclipse.jetty.server.session.SessionDataStore`].
+
+Session cache:::
+In Jetty 9.3 the `SessionManager` held a map of session objects in memory.
+In Jetty 9.4 this has been moved into the new link:{JDURL}/org/eclipse/jetty/server/session/SessionCache.html[`org.eclipse.jetty.server.session.SessionCache`] interface.
+
+For more information, please refer to the documentation on link:#jetty-sessions-architecture[Jetty Session Architecture.]
+
+===== Default Sessions
+
+As with earlier versions of Jetty, if you do not explicitly configure any session modules, the default session infrastructure will be enabled.
+In previous versions of Jetty this was referred to as "hash" session management.
+The new default provides similar features to the old hash session management:
+
+* A session scavenger thread that runs every 10mins and removes expired sessions
+* A session id manager that generates unique session ids and handles session id sharing during context forwarding
+* An in-memory cache of session objects.
+
+Requests for the same session in the same context share the same session object.
+Session objects remain in the cache until they expire or are explicitly invalidated.
+
+If you wish to configure the default setup further, enable the `session-cache-hash` module.
+
+*Compatibility*
+
+As Session objects do not persist beyond a server restart, there are no compatibility issues.
+
+
+===== Sessions using the Filesystem
+
+In earlier versions of Jetty, persisting sessions to the local filesystem was an option of the "hash" session manager.
+In Jetty 9.4 this has been refactored to its own configurable module `session-store-file`.
+
+*Compatibility*
+
+Sessions stored to files by earlier versions of jetty are not compatible with jetty-9.4 sessions.
+Here is a comparison of file formats, note that the file contents are listed in order of file output:
+
+[cols="1,1", options="header"]
+|===
+| Jetty 9.3 | Jetty 9.4
+| File name: `sessionid` | File name: `expirytime_contextpath_vhost_sessionid`
+| `sessionid  (utf)`  | `sessionid (utf)`
+|                   | `contextpath (utf)`
+|                   | `vhost (utf)`
+| `nodeid  (utf)` |  `lastnode (utf)`
+| `createtime (long)` | `createtime (long)`
+| `accessed (long)` | `accessed (long)`
+|                 | `lastaccessed (long)`
+|                 | `cookiesettime (long)`
+|                 | `expiry (long)`
+| `requests (int)`  |
+|                 | `maxInactive (long)`
+| `attributes size (int)` | `attributes size (int)`
+| `attributes serialized (obj)` | `attributes serialized (obj)`
+| `maxInactive (long)` |
+|===
+
+
+===== JDBC Sessions
+
+As with earlier versions of Jetty, sessions may be persisted to a relational database.
+Enable the `session-store-jdbc` module.
+
+*Compatibility*
+
+Sessions stored to the database by earlier versions of jetty are not compatible with jetty-9.4 sessions.
+The incompatibility is minor:  in jetty-9.4 the `rowid` primary key column is no longer used, and the primary key is a composite of `(sessionid,contextpath,vhost)` columns.
+
+===== NoSQL Sessions
+
+As with earlier versions of Jetty, sessions may be persisted to a document database.
+Jetty supports the Mongo document database.
+Enable the `session-store-mongo` module.
+
+
+*Compatibility*
+
+Sessions stored to mongo by earlier versions of jetty are not compatible with jetty-9.4 sessions.
+The key for each subdocument that represents the session information for a context is different between jetty-9.3 and 9.4:
+
+
+[cols="1,1", options="header"]
+|===
+| Jetty 9.3 | Jetty 9.4
+|Each context key is: vhost+context+path, where empty vhosts="::" and root context = "*" and / is replaced by _
+|Each context key is: vhost:contextpath, where empty vhosts="0_0_0_0" and root context = "" and / replaced by _
+| eg "::/contextA" | eg " 0_0_0_0:_contextA"
+|===
+
+
+===== Infinispan Sessions
+
+As with earlier versions of Jetty, sessions may be clustered via Infinispan to either an in-process or remote infinispan instance.
+Enable the `session-store-infinispan` module.
+
+*Compatibility*
+
+Sessions stored in infinispan by jetty-9.3 are incompatible with jetty-9.4.
+In Jetty 9.3 the serialized object stored to represent the session data was `org.eclipse.jetty.session.infinispan.SerializableSessionData`.
+In Jetty 9.4 the serialized object is `org.eclipse.jetty.serer.session.SessionData`.
+
+===== GCloud Datastore
+
+As with earlier versions of Jetty, sessions may be persisted to Google's GCloud Datastore.
+Enable the `session-store-gcloud` module.
+
+*Compatibility*
+
+Sessions stored into GCloud Datastore by Jetty 9.3 are *incompatible* with Jetty 9.4, although the incompatibility is trivial: the name of the session id entity property has changed:
+
+[cols="1,1", options="header"]
+|===
+|Jetty 9.3 | Jetty 9.4
+|Kind: `GCloudSession` | Kind: `GCloudSession`
+|key: `contextpath_vhost_sessionid` | key: `contextpath_vhost_sessionid`
+|*"clusterId"*: `sessionId` | *"id"*: `sessionId`
+|"contextPath" : `contextpath` | "contextPath": `contextpath`
+|"vhost" : `vhost` | "vhost": `vhost`
+|"accessed": `accesstime` | "accessed": `accesstime`
+|"lastAccessed": `lastaccesstime` | "lastAccessed": `lastaccesstime`
+|"createTime": `createtime` | "createTime": `createtime`
+|"cookieSetTime": `cookiesettime` | "cookieSetTime": `cookiesettime`
+|"lastNode": `lastnode` | "lastNode": `lastnode`
+|"expiry": `expiry` | "expiry": `expiry`
+|"maxInactive": `maxInactive` | "maxInactive": `maxInactive`
+|"attributes": `blob` | "attributes": `blob`
+|===
+
+===== GCloud Datastore with Memcached
+
+As with earlier versions of Jetty, sessions can be both persisted to Google's GCloud Datastore, and cached into Memcached for faster access.
+Enable the `session-store-gcloud` and `session-store-cache` modules.
+
+*Compatibility*
+
+Sessions stored into Memcached by earlier versions of jetty are incompatible with Jetty 9.4. Previous versions of jetty stored `org.eclipse.jetty.gcloud.memcached.session.SerializableSessionData` whereas Jetty 9.4 stores `org.eclipse.jetty.server.session.SessionData`.

@@ -20,11 +20,14 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -43,10 +46,12 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {
     private static final Logger LOG = Log.getLogger(PathMappings.class);
-    private List<MappedResource<E>> mappings = new ArrayList<MappedResource<E>>();
-    private MappedResource<E> defaultResource = null;
-    private MappedResource<E> rootResource = null;
-
+    private final Set<MappedResource<E>> _mappings = new TreeSet<>();
+    
+    private Trie<MappedResource<E>> _exactMap=new ArrayTernaryTrie<>(false);
+    private Trie<MappedResource<E>> _prefixMap=new ArrayTernaryTrie<>(false);
+    private Trie<MappedResource<E>> _suffixMap=new ArrayTernaryTrie<>(false);
+    
     @Override
     public String dump()
     {
@@ -56,23 +61,30 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dump(out,indent,mappings);
+        ContainerLifeCycle.dump(out,indent,_mappings);
     }
 
     @ManagedAttribute(value = "mappings", readonly = true)
     public List<MappedResource<E>> getMappings()
     {
-        return mappings;
+        return new ArrayList<>(_mappings);
     }
 
+    public int size()
+    {
+        return _mappings.size();
+    }
+    
     public void reset()
     {
-        mappings.clear();
+        _mappings.clear();
+        _prefixMap.clear();
+        _suffixMap.clear();
     }
     
     public void removeIf(Predicate<MappedResource<E>> predicate)
     {
-        mappings.removeIf(predicate);
+        _mappings.removeIf(predicate);
     }
     
     /**
@@ -83,22 +95,19 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
      */
     public List<MappedResource<E>> getMatches(String path)
     {
-        boolean matchRoot = "/".equals(path);
+        boolean isRootPath = "/".equals(path);
         
         List<MappedResource<E>> ret = new ArrayList<>();
-        int len = mappings.size();
-        for (int i = 0; i < len; i++)
+        for (MappedResource<E> mr :_mappings)
         {
-            MappedResource<E> mr = mappings.get(i);
-
             switch (mr.getPathSpec().group)
             {
                 case ROOT:
-                    if (matchRoot)
+                    if (isRootPath)
                         ret.add(mr);
                     break;
                 case DEFAULT:
-                    if (matchRoot || mr.getPathSpec().matches(path))
+                    if (isRootPath || mr.getPathSpec().matches(path))
                         ret.add(mr);
                     break;
                 default:
@@ -112,54 +121,160 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 
     public MappedResource<E> getMatch(String path)
     {
-        if (path.equals("/") && rootResource != null)
+        PathSpecGroup last_group=null;
+        
+        // Search all the mappings
+        for (MappedResource<E> mr : _mappings)
         {
-            return rootResource;
+            PathSpecGroup group=mr.getPathSpec().getGroup();
+            if (group!=last_group)
+            {
+                // New group in list, so let's look for an optimization
+                switch(group)
+                {
+                    case EXACT:
+                    {
+                        int i= path.length();
+                        final Trie<MappedResource<E>> exact_map=_exactMap;
+                        while(i>=0)
+                        {
+                            MappedResource<E> candidate=exact_map.getBest(path,0,i);
+                            if (candidate==null)
+                                break;
+                            if (candidate.getPathSpec().matches(path))
+                                return candidate;
+                            i=candidate.getPathSpec().getPrefix().length()-1;
+                        }
+                        break;
+                    }
+                        
+                    case PREFIX_GLOB:
+                    {
+                        int i= path.length();
+                        final Trie<MappedResource<E>> prefix_map=_prefixMap;
+                        while(i>=0)
+                        {
+                            MappedResource<E> candidate=prefix_map.getBest(path,0,i);
+                            if (candidate==null)
+                                break;
+                            if (candidate.getPathSpec().matches(path))
+                                return candidate;
+                            i=candidate.getPathSpec().getPrefix().length()-1;
+                        }
+                        break;
+                    }
+                        
+                    case SUFFIX_GLOB:
+                    {
+                        int i=0;
+                        final Trie<MappedResource<E>> suffix_map=_suffixMap;
+                        while ((i=path.indexOf('.',i+1))>0)
+                        {
+                            MappedResource<E> candidate=suffix_map.get(path,i+1,path.length()-i-1);
+                            if (candidate!=null && candidate.getPathSpec().matches(path))
+                                return candidate;
+                        }
+                        break;
+                    }
+                    
+                    default:
+                }
+            }
+            
+            if (mr.getPathSpec().matches(path))
+                return mr;
+            
+            last_group=group;
         }
         
-        int len = mappings.size();
-        for (int i = 0; i < len; i++)
-        {
-            MappedResource<E> mr = mappings.get(i);
-            if (mr.getPathSpec().matches(path))
-            {
-                return mr;
-            }
-        }
-        return defaultResource;
+        return null;
     }
 
     @Override
     public Iterator<MappedResource<E>> iterator()
     {
-        return mappings.iterator();
+        return _mappings.iterator();
     }
 
-    @SuppressWarnings("incomplete-switch")
-    public void put(PathSpec pathSpec, E resource)
+    public static PathSpec asPathSpec(String pathSpecString)
+    {
+        if ((pathSpecString == null) || (pathSpecString.length() < 1))
+        {
+            throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + pathSpecString + "]");
+        }
+        return pathSpecString.charAt(0) == '^' ? new RegexPathSpec(pathSpecString):new ServletPathSpec(pathSpecString);
+    }
+    
+    public boolean put(String pathSpecString, E resource)
+    {
+        return put(asPathSpec(pathSpecString),resource);
+    }
+    
+    public boolean put(PathSpec pathSpec, E resource)
     {
         MappedResource<E> entry = new MappedResource<>(pathSpec,resource);
         switch (pathSpec.group)
         {
-            case DEFAULT:
-                defaultResource = entry;
+            case EXACT:
+                String exact = pathSpec.getPrefix();
+                while (exact!=null && !_exactMap.put(exact,entry))
+                    _exactMap=new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_exactMap,1.5);
                 break;
-            case ROOT:
-                rootResource = entry;
+            case PREFIX_GLOB:
+                String prefix = pathSpec.getPrefix();
+                while (prefix!=null && !_prefixMap.put(prefix,entry))
+                    _prefixMap=new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_prefixMap,1.5);
+                break;
+            case SUFFIX_GLOB:
+                String suffix = pathSpec.getSuffix();
+                while (suffix!=null && !_suffixMap.put(suffix,entry))
+                    _suffixMap=new ArrayTernaryTrie<>((ArrayTernaryTrie<MappedResource<E>>)_prefixMap,1.5);
+                break;
+            default:
+        }
+        
+        boolean added =_mappings.add(entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {} to {}",added?"Added":"Ignored",entry,this);
+        return added;
+    }
+    
+    @SuppressWarnings("incomplete-switch")
+    public boolean remove(PathSpec pathSpec)
+    {
+        switch (pathSpec.group)
+        {
+            case EXACT:
+                _exactMap.remove(pathSpec.getPrefix());
+                break;
+            case PREFIX_GLOB:
+                _prefixMap.remove(pathSpec.getPrefix());
+                break;
+            case SUFFIX_GLOB:
+                _suffixMap.remove(pathSpec.getSuffix());
                 break;
         }
         
-        // TODO: add warning when replacing an existing pathspec?
-        
-        mappings.add(entry);
+        Iterator<MappedResource<E>> iter = _mappings.iterator();
+        boolean removed=false;
+        while (iter.hasNext())
+        {
+            if (iter.next().getPathSpec().equals(pathSpec))
+            {
+                removed=true;
+                iter.remove();
+                break;
+            }
+        }
         if (LOG.isDebugEnabled())
-            LOG.debug("Added {} to {}",entry,this);
-        Collections.sort(mappings);
+            LOG.debug("{} {} to {}",removed?"Removed":"Ignored",pathSpec,this);
+        return removed;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s[size=%d]",this.getClass().getSimpleName(),mappings.size());
+        return String.format("%s[size=%d]",this.getClass().getSimpleName(),_mappings.size());
     }
+
 }

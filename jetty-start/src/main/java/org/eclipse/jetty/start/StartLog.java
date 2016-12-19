@@ -41,6 +41,7 @@ public class StartLog
     private final static PrintStream stderr = System.err;
     private static volatile PrintStream out = System.out;
     private static volatile PrintStream err = System.err;
+    private static volatile PrintStream logStream = System.err;
     private final static StartLog INSTANCE = new StartLog();
 
     public static void debug(String format, Object... args)
@@ -55,7 +56,7 @@ public class StartLog
     {
         if (INSTANCE.trace)
         {
-            out.printf("TRACE: " + format + "%n",args);
+            out.printf("TRACE " + format + "%n",args);
         }
     }
 
@@ -74,12 +75,12 @@ public class StartLog
     
     public static void log(String type, String msg)
     {
-        err.println(type + ": " + msg);
+        logStream.printf("%-6s: %s%n",type,msg);
     }
     
     public static void log(String type, String format, Object... args)
     {
-        err.printf(type + ": " + format + "%n",args);
+        log(type,String.format(format,args));
     }
 
     public static void info(String format, Object... args)
@@ -89,12 +90,17 @@ public class StartLog
 
     public static void warn(String format, Object... args)
     {
-        log("WARNING",format,args);
+        log("WARN",format,args);
+    }
+
+    public static void error(String format, Object... args)
+    {
+        log("ERROR",format,args);
     }
 
     public static void warn(Throwable t)
     {
-        t.printStackTrace(err);
+        t.printStackTrace(logStream);
     }
 
     public static boolean isDebugEnabled()
@@ -163,9 +169,10 @@ public class StartLog
 
                 err.println("StartLog to " + logfile);
                 OutputStream fileout = Files.newOutputStream(startLog,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
-                PrintStream logger = new PrintStream(fileout);
+                PrintStream logger = new PrintStream(fileout,true);
                 out=logger;
                 err=logger;
+                setStream(logger);
                 System.setErr(logger);
                 System.setOut(logger);
                 err.println("StartLog Establishing " + logfile + " on " + new Date());
@@ -189,7 +196,20 @@ public class StartLog
             err.println("StartLog ended");
             stderr.println("StartLog ended");
         }
+        setStream(stderr);
         System.setErr(stderr);
         System.setOut(stdout);
+    }
+    
+    public static PrintStream getStream()
+    {
+        return logStream;
+    }
+    
+    public static PrintStream setStream(PrintStream stream)
+    {
+        PrintStream ret = logStream;
+        logStream = stream;
+        return ret;
     }
 }

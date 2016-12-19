@@ -1,0 +1,134 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[sessions-details]]
+=== Session Configuration and Use Cases
+
+==== Configuration
+
+===== SessionIdManager
+
+There is a maximum of 1 `SessionIdManager` per jetty Server instance.
+Its purpose is to generate fresh, unique session ids and to coordinate the re-use of session ids amongst co-operating contexts.
+
+Unlike in previous versions of Jetty, the `SessionIdManager` is agnostic with respect to the type of clustering technology chosen.
+
+Jetty provides a default implementation - the `DefaultSessionIdManager` - which should meet the needs of most users.
+If you do not explicitly enable one of the session modules, or otherwise configure a `SessionIdManager`, the `DefaultSessionIdManager` will be used.
+
+If the `DefaultSessionIdManager` does not meet your needs, you can extend the `org.eclipse.jetty.server.session.AbstractSessionIdManager` or do a fresh implementation of the `org.eclipse.jetty.server.session.SessionIdManager` interface.
+
+===== HouseKeeper
+
+There is a maximum of 1 `HouseKeeper` per `SessionIdManager`.
+Its purpose is to periodically poll the `SessionHandlers` to clean out expired sessions.
+
+By default the `HouseKeeper` will poll the `SessionHandlers` every 10 mins to find and delete expired sessions, although this interval is configurable.
+
+
+===== SessionCache
+
+There is 1 `SessionCache` per context.
+Its purpose is to provide an L1 cache of Session objects.
+Having a working set of Session objects in memory allows multiple simultaneous requests for the same session to share the same Session object.
+
+Jetty provides 2 `SessionCache` implementations: the `DefaultSessionCache` and the `NullSessionCache`.
+The `DefaultSessionCache` retains Session objects in memory in a cache and has a number of configuration options to control cache behavior.
+It is the default that is used if no other `SessionCache` has been configured.
+It is suitable for non-clustered and clustered deployments with a sticky load balancer, as well as clustered deployments with a non-sticky load balancer, with some caveats.
+The `NullSessionCache` does not actually cache any objects: each request uses a fresh Session object.
+It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
+
+`SessionCaches` always write out a Session to the `SessionDataStore` whenever the last request for the Session exits.
+
+They can also be configured to do an immediate, eager write of a freshly created session.
+This can be useful if you are likely to experience multiple, near simultaneous requests referencing the same session, e.g. with HTTP/2 and you don't have a sticky load balancer.
+Alternatively, if the eager write is not done, application paths which create and then invalidate a session within a single request never incur the cost of writing to persistent storage.
+
+Additionally, if the `EVICT_ON_INACTIVITY` eviction policy is in use, you can configure the `DefaultSessionCache` to force a write of the Session to the SessionDataStore just before the Session is evicted.
+
+===== SessionDataStore
+
+There is 1 `SessionDataStore` per context. Its purpose is to handle all persistence related operations on sessions.
+
+The common characteristics for all `SessionDataStores` are whether or not they support passivation, and the length of the grace period.
+
+Supporting passivation means that session data is serialized.
+Some persistence mechanisms serialize, such as JDBC, GCloud Datastore etc,  whereas others may store an object in shared memory eg Infinispan when configured with a local cache.
+
+Whether or not a clustering technology entails passivation controls whether or not the session passivation/activation listeners will be called.
+
+The grace period is an interval, configured in seconds, that attempts to deal with the non-transactional nature of sessions with regard to finding sessions that have expired.
+Due to the lack of transactionality, in a clustered configuration, even with a sticky load balancer, it is always possible that a Session is live on a node but has not yet been updated in the persistent store.
+When `SessionDataStores` search their persistent store to find sessions that have expired, they typically perform a few sequential searches:
+
+* The first verifies the expiration of a list of candidate session ids suggested by the SessionCache
+* The second finds sessions in the store that have expired which were last live on the current node
+* The third finds sessions that expired a "while" ago, irrespective of on which node they were last used: the definition of "a while" is based on the grace period.
+
+
+===== CachingSessionDataStore
+
+The `CachingSessionDataStore` is a special type of `SessionDataStore` that inserts an L2 cache of SessionData - the `SessionDataMap` - in front of a delegate `SessionDataStore`.
+The `SessionDataMap` is preferentially consulted before the actual SessionDataStore on reads.
+This can improve the performance of slow stores.
+
+Jetty provides one implementation of the this L2 cache based on `Memcached`, the `MemcachedSessionDataMap`.
+
+
+==== Use Cases
+
+===== Clustering with a Sticky Load Balancer
+
+Preferably, your cluster will utilize a sticky load balancer.
+This will route requests for the same session to the same Jetty instance.
+In this case, the `DefaultSessionCache` can be used to keep in-use Session objects in memory.
+You can fine-tune the cache by controlling how long Session objects remain in memory with the eviction policy settings.
+
+If you have a large number of Sessions or very large Session objects, then you might want to manage your memory allocation by controlling the amount of time Session objects spend in the cache.
+The `EVICT_ON_SESSION_EXIT` eviction policy will remove a Session object from the cache as soon as the last simultaneous request referencing it exits.
+Alternatively, the `EVICT_ON_INACTIVITY` policy will remove a Session object from the cache after a configurable amount of time has passed without a request referencing it.
+
+If your Sessions are very long lived and infrequently referenced, you might use the `EVICT_ON_INACTIVITY_POLICY` to control the size of the cache.
+
+If your Sessions are small, or relatively few or stable in number or they are read-mostly, then you might select the `NEVER_EVICT` policy.
+With this policy, Session objects will remain in the cache until they either expire or are explicitly invalidated.
+
+If you have a high likelihood of simultaneous requests for the same session object, then the `EVICT_ON_SESSION_EXIT` policy will ensure the Session object stays in the cache as long as it is needed.
+
+
+===== Clustering without a Sticky Load Balancer
+
+Without a sticky load balancer requests for the same session may arrive on any node in the cluster.
+This means it is likely that the copy of the Session object in any `SessionCache` is likely to be out-of-date, as the Session was probably last accessed on a different node.
+In this case, your `choices` are to use either the `NullSessionCache` or to de-tuned the `DefaultSessionCache`.
+If you use the NullSessionCache all Session object caching is avoided.
+This means that every time a request references a session it must be brought in from persistent storage.
+It also means that there can be no sharing of Session objects for multiple requests for the same session: each will have their own Session object.
+Furthermore, the outcome of session writes are indeterminate because the Servlet Specification does not mandate ACID transactions for sessions.
+
+If you use the `DefaultSessionCache`, there is a risk that the caches on some nodes will contain out-of-date session information as simultaneous requests for the same session are scattered over the cluster.
+To mitigate this somewhat you can use the `EVICT_ON_SESSION_EXIT` eviction policy: this will ensure that the Session is removed from the cache as soon as the last simultaneous request for it exits.
+Again, due to the lack of session transactionality, the ordering outcome of write operations cannot be guaranteed.
+As the Session is cached while at least one request is accessing it, it is possible for multiple simultaneous requests to share the same Session object.
+
+
+===== Handling corrupted or unloadable session data
+
+For various reasons it might not be possible for the SessionDataStore to re-read a stored session.
+One scenario is that the session stores a serialized object in it's attributes, and after a redeployment there in an incompatible class change.
+Using the setter `SessionCache.setRemoveUnloadableSessions(true)` will allow the `SessionDataStore` to delete the unreadable session from persistent storage.
+This can be useful from preventing the scavenger from continually generating errors on the same expired, but un-restorable, session.

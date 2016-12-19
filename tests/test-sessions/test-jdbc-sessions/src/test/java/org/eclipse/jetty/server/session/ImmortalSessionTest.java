@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
 import org.junit.After;
 import org.junit.Test;
 
@@ -32,9 +29,9 @@ import org.junit.Test;
 
 public class ImmortalSessionTest extends AbstractImmortalSessionTest
 {
-    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs)
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs, int evictionPolicy) throws Exception
     {
-        return new JdbcTestServer(port, maxInactiveMs, scavengeMs);
+        return new JdbcTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
     }
 
     @Test
@@ -46,12 +43,7 @@ public class ImmortalSessionTest extends AbstractImmortalSessionTest
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
+   
 }

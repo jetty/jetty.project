@@ -134,20 +134,25 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
             OnMessageCallable onmessage = new OnMessageCallable(pojo,method);
             visitMethod(onmessage,pojo,method,paramsOnMessage,OnMessage.class);
 
+            OnMessage messageAnno = (OnMessage) annotation;
             Param param = onmessage.getMessageObjectParam();
             switch (param.role)
             {
                 case MESSAGE_BINARY:
                     metadata.onBinary = new OnMessageBinaryCallable(onmessage);
+                    metadata.setMaxBinaryMessageSize(messageAnno.maxMessageSize());
                     break;
                 case MESSAGE_BINARY_STREAM:
                     metadata.onBinaryStream = new OnMessageBinaryStreamCallable(onmessage);
+                    metadata.setMaxBinaryMessageSize(messageAnno.maxMessageSize());
                     break;
                 case MESSAGE_TEXT:
                     metadata.onText = new OnMessageTextCallable(onmessage);
+                    metadata.setMaxTextMessageSize(messageAnno.maxMessageSize());
                     break;
                 case MESSAGE_TEXT_STREAM:
                     metadata.onTextStream = new OnMessageTextStreamCallable(onmessage);
+                    metadata.setMaxTextMessageSize(messageAnno.maxMessageSize());
                     break;
                 case MESSAGE_PONG:
                     metadata.onPong = new OnMessagePongCallable(onmessage);

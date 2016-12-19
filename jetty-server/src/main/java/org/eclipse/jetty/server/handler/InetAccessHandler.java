@@ -128,18 +128,9 @@ public class InetAccessHandler extends HandlerWrapper
      */
     protected boolean isAllowed(InetAddress address, HttpServletRequest request)
     {
-        return isAllowed(address);
-    }
-
-    /**
-     * @deprecated use {@link #isAllowed(InetAddress, HttpServletRequest)} instead
-     */
-    @Deprecated
-    protected boolean isAllowed(InetAddress address)
-    {
         boolean allowed = _set.test(address);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} {}", this, allowed ? "allowed" : "denied", address);
+            LOG.debug("{} {} {} for {}", this, allowed ? "allowed" : "denied", address, request);
         return allowed;
     }
 

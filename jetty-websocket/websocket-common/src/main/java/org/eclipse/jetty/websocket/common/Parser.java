@@ -404,21 +404,42 @@ public class Parser
                             if (isRsv1InUse())
                                 frame.setRsv1(true);
                             else
-                                throw new ProtocolException("RSV1 not allowed to be set");   
+                            {
+                                String err = "RSV1 not allowed to be set";
+                                if(LOG.isDebugEnabled())
+                                {
+                                    LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
+                                }
+                                throw new ProtocolException(err);
+                            }
                         }
                         if ((b & 0x20) != 0)
                         {
                             if (isRsv2InUse())
                                 frame.setRsv2(true);
                             else
-                                throw new ProtocolException("RSV2 not allowed to be set");   
+                            {
+                                String err = "RSV2 not allowed to be set";
+                                if(LOG.isDebugEnabled())
+                                {
+                                    LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
+                                }
+                                throw new ProtocolException(err);
+                            }
                         }
                         if ((b & 0x10) != 0)
                         {
                             if (isRsv3InUse())
                                 frame.setRsv3(true);
                             else
-                                throw new ProtocolException("RSV3 not allowed to be set");   
+                            {
+                                String err = "RSV3 not allowed to be set";
+                                if(LOG.isDebugEnabled())
+                                {
+                                    LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
+                                }
+                                throw new ProtocolException(err);
+                            }
                         }
                     }
                     

@@ -85,6 +85,8 @@ public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends 
     private final Class<?> endpointClass;
     private DecoderMetadataSet decoders;
     private EncoderMetadataSet encoders;
+    private long maxTextMessageSize = -1;
+    private long maxBinaryMessageSize = -1;
 
     protected AnnotatedEndpointMetadata(Class<?> endpointClass)
     {
@@ -119,7 +121,19 @@ public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends 
     public abstract T getAnnotation();
 
     public abstract C getConfig();
-
+    
+    @Override
+    public long maxBinaryMessageSize()
+    {
+        return maxBinaryMessageSize;
+    }
+    
+    @Override
+    public long maxTextMessageSize()
+    {
+        return maxTextMessageSize;
+    }
+    
     @Override
     public DecoderMetadataSet getDecoders()
     {
@@ -136,5 +150,15 @@ public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends 
     public Class<?> getEndpointClass()
     {
         return endpointClass;
+    }
+    
+    public void setMaxBinaryMessageSize(long maxBinaryMessageSize)
+    {
+        this.maxBinaryMessageSize = maxBinaryMessageSize;
+    }
+    
+    public void setMaxTextMessageSize(long maxTextMessageSize)
+    {
+        this.maxTextMessageSize = maxTextMessageSize;
     }
 }

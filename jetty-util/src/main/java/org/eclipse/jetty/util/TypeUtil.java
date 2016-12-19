@@ -24,6 +24,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,9 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.servlet.ServletContainerInitializer;
+
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
 
 /* ------------------------------------------------------------ */
@@ -692,5 +698,39 @@ public class TypeUtil
         if (o instanceof Boolean)
             return !((Boolean)o).booleanValue();
         return "false".equalsIgnoreCase(o.toString());
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static Resource getLoadedFrom(Class<?> clazz)
+    {
+        ProtectionDomain domain = clazz.getProtectionDomain();
+        if (domain!=null)
+        {
+            CodeSource source = domain.getCodeSource();
+            if (source!=null)
+            {
+                URL location = source.getLocation();
+                
+                if (location!=null)
+                    return Resource.newResource(location);
+            }
+        }
+        
+        String rname = clazz.getName().replace('.','/')+".class";
+        ClassLoader loader = clazz.getClassLoader();
+        URL url = (loader==null?ClassLoader.getSystemClassLoader():loader).getResource(rname);
+        if (url!=null)
+        {
+            try
+            {
+                return Resource.newResource(URIUtil.getJarSource(url.toString()));
+            }
+            catch(Exception e)
+            {
+                LOG.debug(e);
+            }  
+        }    
+        
+        return null;
     }
 }

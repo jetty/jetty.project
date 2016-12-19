@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.1.0-SNAPSHOT</version>
+    <version>9.1.3-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -24,7 +24,7 @@
             </goals>
             <configuration>
               <excludes>**/MANIFEST.MF</excludes>
-              <excludeGroupIds>org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.alpn</excludeGroupIds>
+              <excludeGroupIds>javax.annotations,org.objectweb.asm,javax.servlet,org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.npn</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>

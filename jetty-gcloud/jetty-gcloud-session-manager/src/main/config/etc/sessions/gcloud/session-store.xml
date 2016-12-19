@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for GCloudSessionDataStores                       -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">      
+       <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+       <Set name="maxRetries"><Property name="jetty.session.gcloud.maxRetries" default="5"/></Set>
+       <Set name="backoffMs"><Property name="jetty.session.gcloud.backoffMs" default="1000"/></Set>
+       <Set name="namespace"><Property name="jetty.session.gcloud.namespace" default=""/></Set>
+       <Set name="entityDataModel">
+          <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStore$EntityDataModel">
+              <Set name="kind">
+                <Property name="jetty.session.gcloud.model.kind" default="GCloudSession" />
+              </Set>
+              <Set name="id">
+                <Property name="jetty.session.gcloud.model.id" default="id" />
+              </Set>
+             <Set name="contextPath">
+                <Property name="jetty.session.gcloud.model.contextPath" default="contextPath" />
+              </Set>
+              <Set name="vhost">
+                <Property name="jetty.session.gcloud.model.vhost" default="vhost" />
+              </Set>
+              <Set name="accessed">
+                <Property name="jetty.session.gcloud.model.accessed" default="accessed" />
+              </Set>
+              <Set name="lastAccessed">
+                <Property name="jetty.session.gcloud.model.lastAccessed" default="lastAccessed" />
+              </Set>
+              <Set name="createTime">
+                <Property name="jetty.session.gcloud.model.createTime" default="createTime" />
+              </Set>
+              <Set name="cookieSetTime">
+                <Property name="jetty.session.gcloud.model.cookieSetTime" default="cookieSetTime" />
+              </Set>
+              <Set name="lastNode">
+                <Property name="jetty.session.gcloud.model.lastNode" default="lastNode" />
+              </Set>
+              <Set name="expiry">
+                <Property name="jetty.session.gcloud.model.expiry" default="expiry" />
+              </Set>
+              <Set name="maxInactive">
+                <Property name="jetty.session.gcloud.model.maxInactive" default="maxInactive" />
+              </Set>
+              <Set name="attributes">
+                <Property name="jetty.session.gcloud.model.attributes" default="attributes" />
+              </Set>
+          </New>
+       </Set>
+    </New>
+   </Arg>
+  </Call>
+  
+</Configure>

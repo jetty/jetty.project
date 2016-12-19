@@ -25,12 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
 import java.util.List;
-
-import org.eclipse.jetty.start.graph.Graph;
-import org.eclipse.jetty.start.graph.Node;
-import org.eclipse.jetty.start.graph.Selection;
 
 /**
  * Generate a graphviz dot graph of the modules found
@@ -107,7 +102,7 @@ public class ModuleGraphWriter
             out.println("    ssize = \"20,40\"");
             out.println("  ];");
 
-            List<Module> enabled = modules.getSelected();
+            List<Module> enabled = modules.getEnabled();
 
             // Module Nodes
             writeModules(out,modules,enabled);
@@ -168,7 +163,7 @@ public class ModuleGraphWriter
     private void writeModuleNode(PrintWriter out, Module module, boolean resolved)
     {
         String color = colorModuleBg;
-        if (module.isSelected())
+        if (module.isEnabled())
         {
             // specifically enabled by config
             color = colorEnabledBg;
@@ -183,10 +178,10 @@ public class ModuleGraphWriter
         out.printf("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"2\">%n");
         out.printf("  <TR><TD ALIGN=\"LEFT\"><B>%s</B></TD></TR>%n",module.getName());
 
-        if (module.isSelected())
+        if (module.isEnabled())
         {
             writeModuleDetailHeader(out,"ENABLED");
-            for (Selection selection : module.getSelections())
+            for (String selection : module.getEnableSources())
             {
                 writeModuleDetailLine(out,"via: " + selection);
             }
@@ -233,32 +228,21 @@ public class ModuleGraphWriter
 
         out.println("  node [ labeljust = l ];");
 
-        for (int depth = 0; depth <= allmodules.getMaxDepth(); depth++)
+        for (Module module: allmodules)
         {
-            out.println();
-            Collection<Module> depthModules = allmodules.getModulesAtDepth(depth);
-            if (depthModules.size() > 0)
-            {
-                out.printf("  /* Level %d */%n",depth);
-                out.println("  { rank = same;");
-                for (Module module : depthModules)
-                {
-                    boolean resolved = enabled.contains(module);
-                    writeModuleNode(out,module,resolved);
-                }
-                out.println("  }");
-            }
+            boolean resolved = enabled.contains(module);
+            writeModuleNode(out,module,resolved);
         }
     }
 
-    private void writeRelationships(PrintWriter out, Graph<Module> modules, List<Module> enabled)
+    private void writeRelationships(PrintWriter out, Iterable<Module> modules, List<Module> enabled)
     {
         for (Module module : modules)
         {
-            for (Node<?> parent : module.getParentEdges())
-            {
-                out.printf("    \"%s\" -> \"%s\";%n",module.getName(),parent.getName());
-            }
+            for (String depends : module.getDepends())
+                out.printf("    \"%s\" -> \"%s\";%n",module.getName(),depends);
+            for (String optional : module.getOptional())
+                out.printf("    \"%s\" => \"%s\";%n",module.getName(),optional);
         }
     }
 }

@@ -34,7 +34,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,9 +64,12 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.session.HashedSession;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionCache;
+import org.eclipse.jetty.server.session.NullSessionDataStore;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -75,6 +82,26 @@ import org.junit.Test;
 
 public class ResponseTest
 {
+
+    static final InetSocketAddress LOCALADDRESS;
+    
+    static
+    {
+        InetAddress ip=null;
+        try
+        {
+            ip = Inet4Address.getByName("127.0.0.42");
+        }
+        catch (UnknownHostException e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            LOCALADDRESS=new InetSocketAddress(ip,8888);
+        }
+    }
+    
     private Server _server;
     private HttpChannel _channel;
 
@@ -89,7 +116,14 @@ public class ResponseTest
         _server.setHandler(new DumpHandler());
         _server.start();
 
-        AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
+        AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000)
+        {
+            @Override
+            public InetSocketAddress getLocalAddress()
+            {
+                return LOCALADDRESS;
+            }   
+        };
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             private Throwable _channelError;
@@ -384,11 +418,9 @@ public class ResponseTest
         
         SessionHandler session_handler = new SessionHandler();
         session_handler.setServer(_server);
-        HashSessionManager session_manager = new HashSessionManager();
-        session_handler.setSessionManager(session_manager);
-        session_manager.setUsingCookies(true);
+        session_handler.setUsingCookies(true);
         session_handler.start();
-        request.setSessionManager(session_manager);
+        request.setSessionHandler(session_handler);
         HttpSession session = request.getSession(true);
         
         assertThat(session,not(nullValue()));
@@ -503,7 +535,7 @@ public class ResponseTest
 
         response.sendError(404);
         assertEquals(404, response.getStatus());
-        assertEquals(null, response.getReason());
+        assertEquals("Not Found", response.getReason());
 
         response = getResponse();
 
@@ -524,6 +556,37 @@ public class ResponseTest
         assertEquals(406, response.getStatus());
         assertEquals("Super Nanny", response.getReason());
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
+    }
+    
+    @Test
+    public void testStatusCodesNoErrorHandler() throws Exception
+    {
+        _server.removeBean(_server.getBean(ErrorHandler.class));
+        Response response = getResponse();
+
+        response.sendError(404);
+        assertEquals(404, response.getStatus());
+        assertEquals("Not Found", response.getReason());
+
+        response = getResponse();
+
+        response.sendError(500, "Database Error");
+        assertEquals(500, response.getStatus());
+        assertEquals("Database Error", response.getReason());
+        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
+
+        response = getResponse();
+
+        response.setStatus(200);
+        assertEquals(200, response.getStatus());
+        assertEquals(null, response.getReason());
+
+        response = getResponse();
+
+        response.sendError(406, "Super Nanny");
+        assertEquals(406, response.getStatus());
+        assertEquals("Super Nanny", response.getReason());
+        assertThat(response.getHeader(HttpHeader.CACHE_CONTROL.asString()),Matchers.nullValue());
     }
 
     @Test
@@ -565,19 +628,24 @@ public class ResponseTest
 
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
-        HashSessionManager manager = new HashSessionManager();
-        manager.setSessionIdManager(new HashSessionIdManager());
-        request.setSessionManager(manager);
-        request.setSession(new TestSession(manager, "12345"));
+        SessionHandler handler = new SessionHandler();
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        NullSessionDataStore ds = new NullSessionDataStore();
+        ss.setSessionDataStore(ds);
+        handler.setSessionIdManager(new DefaultSessionIdManager(_server));
+        request.setSessionHandler(handler);
+        TestSession tsession = new TestSession(handler, "12345");
+        tsession.setExtendedId(handler.getSessionIdManager().getExtendedId("12345", null));
+        request.setSession(tsession);
 
-        manager.setCheckingRemoteSessionIdEncoding(false);
+        handler.setCheckingRemoteSessionIdEncoding(false);
 
         assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
         assertEquals("http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
         assertEquals("http://myhost/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
         assertEquals("http://myhost:8888/other/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
 
-        manager.setCheckingRemoteSessionIdEncoding(true);
+        handler.setCheckingRemoteSessionIdEncoding(true);
         assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
         assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
         assertEquals("http://myhost/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
@@ -591,7 +659,7 @@ public class ResponseTest
         assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/;jsessionid=7777"));
         assertEquals("http://myhost:8888/;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/;param?query=0&more=1#target"));
         assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
-        manager.setCheckingRemoteSessionIdEncoding(false);
+        handler.setCheckingRemoteSessionIdEncoding(false);
         assertEquals("/foo;jsessionid=12345", response.encodeURL("/foo"));
         assertEquals("/;jsessionid=12345", response.encodeURL("/"));
         assertEquals("/foo.html;jsessionid=12345#target", response.encodeURL("/foo.html#target"));
@@ -624,33 +692,43 @@ public class ResponseTest
         };
 
         int[] ports=new int[]{8080,80};
-        String[] hosts=new String[]{"myhost","192.168.0.1","0::1"};
+        String[] hosts=new String[]{null,"myhost","192.168.0.1","0::1"};
         for (int port : ports)
         {
             for (String host : hosts)
             {
                 for (int i=0;i<tests.length;i++)
                 {
+                    // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
+                    
                     Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
 
                     request.setScheme("http");
-                    request.setAuthority(host,port);
+                    if (host!=null)
+                        request.setAuthority(host,port);
                     request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
                     request.setContextPath("/path");
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i>2);
-                    HashSessionManager manager = new HashSessionManager();
-                    manager.setSessionIdManager(new HashSessionIdManager());
-                    request.setSessionManager(manager);
-                    request.setSession(new TestSession(manager, "12345"));
-                    manager.setCheckingRemoteSessionIdEncoding(false);
+                    SessionHandler handler = new SessionHandler();
+                    
+                    NullSessionDataStore ds = new NullSessionDataStore();
+                    DefaultSessionCache ss = new DefaultSessionCache(handler);
+                    handler.setSessionCache(ss);
+                    ss.setSessionDataStore(ds);
+                    handler.setSessionIdManager(new DefaultSessionIdManager(_server));
+                    request.setSessionHandler(handler);
+                    request.setSession(new TestSession(handler, "12345"));
+                    handler.setCheckingRemoteSessionIdEncoding(false);
 
                     response.sendRedirect(tests[i][0]);
 
                     String location = response.getHeader("Location");
-
-                    String expected=tests[i][1].replace("@HOST@",host.contains(":")?("["+host+"]"):host).replace("@PORT@",port==80?"":(":"+port));
+                    
+                    String expected = tests[i][1]
+                        .replace("@HOST@",host==null ? request.getLocalAddr() : (host.contains(":")?("["+host+"]"):host ))
+                        .replace("@PORT@",host==null ? ":8888" : (port==80?"":(":"+port)));
                     assertEquals("test-"+i+" "+host+":"+port,expected,location);
                 }
             }
@@ -711,31 +789,33 @@ public class ResponseTest
             });
             server.start();
 
-            Socket socket = new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort());
-            socket.setSoTimeout(500000);
-            socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
-            socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
-            socket.getOutputStream().flush();
-
-            LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
-            String line = reader.readLine();
-            Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
-            // look for blank line
-            while (line != null && line.length() > 0)
-                line = reader.readLine();
-
-            // Read the first line of the GET
-            line = reader.readLine();
-            Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
-
-            String last = null;
-            while (line != null)
+            try(Socket socket = new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort()))
             {
-                last = line;
-                line = reader.readLine();
-            }
+                socket.setSoTimeout(500000);
+                socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
+                socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
+                socket.getOutputStream().flush();
 
-            assertEquals("Doch", last);
+                LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
+                String line = reader.readLine();
+                Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
+                // look for blank line
+                while (line != null && line.length() > 0)
+                    line = reader.readLine();
+
+                // Read the first line of the GET
+                line = reader.readLine();
+                Assert.assertThat(line, Matchers.startsWith("HTTP/1.1 200 OK"));
+
+                String last = null;
+                while (line != null)
+                {
+                    last = line;
+                    line = reader.readLine();
+                }
+
+                assertEquals("Doch", last);
+            }
         }
         finally
         {
@@ -937,11 +1017,11 @@ public class ResponseTest
         return _channel.getResponse();
     }
 
-    private static class TestSession extends HashedSession
+    private static class TestSession extends Session
     {
-        protected TestSession(HashSessionManager hashSessionManager, String id)
+        protected TestSession(SessionHandler handler, String id)
         {
-            super(hashSessionManager, 0L, 0L, id);
+            super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
         }
     }
 }

@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
 import org.junit.After;
 import org.junit.Test;
 
@@ -29,28 +26,21 @@ import org.junit.Test;
  */
 public class LastAccessTimeTest extends AbstractLastAccessTimeTest
 {
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-        return new JdbcTestServer(port,max,scavenge);
+        return new JdbcTestServer(port,max,scavenge, evictionPolicy);
     }
 
     @Test
     public void testLastAccessTime() throws Exception
     {
-        // Log.getLog().setDebugEnabled(true);
         super.testLastAccessTime();
     }
     
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
     
 }

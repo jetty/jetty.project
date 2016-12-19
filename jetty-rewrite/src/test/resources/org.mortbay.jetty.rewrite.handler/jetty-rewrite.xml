@@ -240,7 +240,6 @@
           <New class="org.eclipse.jetty.security.jaspi.modules.HashLoginService">
             <Set name="name">Test Realm</Set>
             <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
-            <Set name="refreshInterval">0</Set>
           </New>
         </Item>
       </Array>

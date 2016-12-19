@@ -495,10 +495,10 @@ public class ServerTimeoutsTest extends AbstractTest
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
                 {
@@ -517,6 +517,7 @@ public class ServerTimeoutsTest extends AbstractTest
                     throw x;
                 }
             }
+
         });
 
         DeferredContentProvider contentProvider = new DeferredContentProvider();

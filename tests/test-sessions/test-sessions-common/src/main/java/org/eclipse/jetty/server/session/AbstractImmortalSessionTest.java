@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -33,15 +34,15 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
 
 /**
  * AbstractImmortalSessionTest
  */
-public abstract class AbstractImmortalSessionTest
+public abstract class AbstractImmortalSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs);
 
     @Test
     public void testImmortalSession() throws Exception
@@ -50,8 +51,9 @@ public abstract class AbstractImmortalSessionTest
         String servletMapping = "/server";
         int scavengePeriod = 2;
         //turn off session expiry by setting maxInactiveInterval to -1
-        AbstractTestServer server = createServer(0, -1, scavengePeriod);
-        server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
+        AbstractTestServer server = createServer(0, -1, scavengePeriod, SessionCache.NEVER_EVICT);
+        ServletContextHandler context = server.addContext(contextPath);
+        context.addServlet(TestServlet.class, servletMapping);
 
         try
         {
@@ -78,10 +80,13 @@ public abstract class AbstractImmortalSessionTest
                 // Be sure the session is still there
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=get");
                 request.header("Cookie", sessionCookie);
+
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 resp = response.getContentAsString();
                 assertEquals(String.valueOf(value),resp.trim());
+                
+                assertEquals(1, context.getSessionHandler().getSessionsCreated());
             }
             finally
             {
@@ -111,6 +116,7 @@ public abstract class AbstractImmortalSessionTest
             else if ("get".equals(action))
             {
                 HttpSession session = request.getSession(false);
+                assertNotNull(session);
                 if (session!=null)
                     result = (String)session.getAttribute("value");
             }

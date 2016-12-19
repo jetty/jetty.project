@@ -231,7 +231,6 @@ JETTY_BASE     =  /opt/web/mybase
 JETTY_CONF     =  /opt/jetty/jetty-distribution-{VERSION}/etc/jetty.conf
 JETTY_PID      =  /var/run/jetty.pid
 JETTY_START    =  /opt/jetty/jetty-distribution-{VERSION}/start.jar
-JETTY_LOGS     =  /opt/web/mybase/logs
 CLASSPATH      =
 JAVA           =  /usr/bin/java
 JAVA_OPTIONS   =  -Djetty.state=/opt/web/mybase/jetty.state

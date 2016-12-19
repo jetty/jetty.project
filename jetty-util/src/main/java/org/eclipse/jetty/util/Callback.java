@@ -18,19 +18,23 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.concurrent.CompletableFuture;
+
+import org.eclipse.jetty.util.thread.Invocable;
+
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
  *
  * <p>Semantically this is equivalent to an optimise Promise&lt;Void&gt;, but callback is a more meaningful
  * name than EmptyPromise</p>
  */
-public interface Callback
+public interface Callback extends Invocable
 {
     /**
      * Instance of Adapter that can be used when the callback methods need an empty
      * implementation without incurring in the cost of allocating a new Adapter object.
      */
-    Callback NOOP = new Callback()
+    static Callback NOOP = new Callback()
     {
     };
 
@@ -52,23 +56,53 @@ public interface Callback
     }
 
     /**
-     * @return True if the callback is known to never block the caller
+     * <p>Creates a non-blocking callback from the given incomplete CompletableFuture.</p>
+     * <p>When the callback completes, either succeeding or failing, the
+     * CompletableFuture is also completed, respectively via
+     * {@link CompletableFuture#complete(Object)} or
+     * {@link CompletableFuture#completeExceptionally(Throwable)}.</p>
+     *
+     * @param completable the CompletableFuture to convert into a callback
+     * @return a callback that when completed, completes the given CompletableFuture
      */
-    default boolean isNonBlocking()
+    static Callback from(CompletableFuture<?> completable)
     {
-        return false;
+        return from(completable, InvocationType.NON_BLOCKING);
     }
 
     /**
-     * Callback interface that declares itself as non-blocking
+     * <p>Creates a callback from the given incomplete CompletableFuture,
+     * with the given {@code blocking} characteristic.</p>
+     *
+     * @param completable the CompletableFuture to convert into a callback
+     * @param invocation whether the callback is blocking
+     * @return a callback that when completed, completes the given CompletableFuture
      */
-    interface NonBlocking extends Callback
+    static Callback from(CompletableFuture<?> completable, InvocationType invocation)
     {
-        @Override
-        default boolean isNonBlocking()
+        if (completable instanceof Callback)
+            return (Callback)completable;
+
+        return new Callback()
         {
-            return true;
-        }
+            @Override
+            public void succeeded()
+            {
+                completable.complete(null);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                completable.completeExceptionally(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocation;
+            }
+        };
     }
 
     class Nested implements Callback
@@ -98,17 +132,44 @@ public interface Callback
         }
 
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return callback.isNonBlocking();
+            return callback.getInvocationType();
         }
     }
-
     /**
-     * <p>Empty implementation of {@link Callback}</p>
+     * <p>A CompletableFuture that is also a Callback.</p>
      */
-    @Deprecated
-    class Adapter implements Callback
+    class Completable extends CompletableFuture<Void> implements Callback
     {
+        private final InvocationType invocation;
+
+        public Completable()
+        {
+            this(Invocable.InvocationType.NON_BLOCKING);
+        }
+
+        public Completable(InvocationType invocation)
+        {
+            this.invocation = invocation;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            complete(null);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            completeExceptionally(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return invocation;
+        }
     }
 }

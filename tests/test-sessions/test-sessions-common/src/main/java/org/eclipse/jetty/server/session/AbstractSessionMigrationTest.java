@@ -37,17 +37,19 @@ import org.junit.Test;
 
 /**
  * AbstractSessionMigrationTest
+ * 
+ * Check that a session that is active on node 1 can be accessed on node2.
  */
-public abstract class AbstractSessionMigrationTest
+public abstract class AbstractSessionMigrationTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer (int port);
+
 
     @Test
     public void testSessionMigration() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
-        AbstractTestServer server1 = createServer(0);
+        AbstractTestServer server1 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
         try
@@ -55,7 +57,7 @@ public abstract class AbstractSessionMigrationTest
             server1.start();
             int port1=server1.getPort();
             
-            AbstractTestServer server2 = createServer(0);
+            AbstractTestServer server2 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try

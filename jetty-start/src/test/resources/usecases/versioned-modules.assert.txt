@@ -1,18 +1,13 @@
-# The XMLs we expect (order is important)
-XML|${jetty.home}/etc/jetty.xml
-XML|${jetty.home}/etc/jetty-http.xml
+## The XMLs we expect (order is important)
+XML|${jetty.home}/etc/base.xml
+XML|${jetty.home}/etc/main.xml
 
 # The LIBs we expect (order is irrelevant)
-LIB|${jetty.home}/lib/jetty-http-9.3.jar
-LIB|${jetty.home}/lib/jetty-io-9.3.jar
-LIB|${jetty.home}/lib/jetty-schemas-3.1.jar
-LIB|${jetty.home}/lib/jetty-server-9.3.jar
-LIB|${jetty.home}/lib/jetty-util-9.3.jar
-LIB|${jetty.home}/lib/jetty-xml-9.3.jar
-LIB|${jetty.home}/lib/servlet-api-3.1.jar
+LIB|${jetty.home}/lib/base.jar
+LIB|${jetty.home}/lib/main.jar
+LIB|${jetty.home}/lib/other.jar
 
 # The Properties we expect (order is irrelevant)
-# (this is the property we actually set in jetty.base)
-PROP|jetty.http.port=9090
-PROP|from-module=old
+PROP|main.prop=value0
 PROP|the-future=is-new
+PROP|from-module=old

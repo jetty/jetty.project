@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -209,7 +208,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     /**
-     * Create the SSLContext object and starts the lifecycle
+     * Creates the SSLContext object and starts the lifecycle
      */
     @Override
     protected void doStart() throws Exception
@@ -549,7 +548,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             _keyStoreResource = Resource.newResource(keyStorePath);
         }
-        catch (MalformedURLException e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
@@ -618,7 +617,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             _trustStoreResource = Resource.newResource(trustStorePath);
         }
-        catch (MalformedURLException e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
@@ -727,65 +726,65 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     /**
      * @param password The password for the key store.  If null is passed and
      *                 a keystore is set, then
-     *                 the {@link Password#getPassword(String, String, String)} is used to
+     *                 the {@link #getPassword(String)} is used to
      *                 obtain a password either from the {@value #PASSWORD_PROPERTY}
-     *                 System property or by prompting for manual entry.
+     *                 system property or by prompting for manual entry.
      */
     public void setKeyStorePassword(String password)
     {
         if (password == null)
         {
             if (_keyStoreResource != null)
-                _keyStorePassword = Password.getPassword(PASSWORD_PROPERTY, null, null);
+                _keyStorePassword = getPassword(PASSWORD_PROPERTY);
             else
                 _keyStorePassword = null;
         }
         else
         {
-            _keyStorePassword = new Password(password);
+            _keyStorePassword = newPassword(password);
         }
     }
 
     /**
      * @param password The password (if any) for the specific key within the key store.
      *                 If null is passed and the {@value #KEYPASSWORD_PROPERTY} system property is set,
-     *                 then the {@link Password#getPassword(String, String, String)} is used to
-     *                 obtain a password from the {@value #KEYPASSWORD_PROPERTY}  system property.
+     *                 then the {@link #getPassword(String)} is used to
+     *                 obtain a password from the {@value #KEYPASSWORD_PROPERTY} system property.
      */
     public void setKeyManagerPassword(String password)
     {
         if (password == null)
         {
             if (System.getProperty(KEYPASSWORD_PROPERTY) != null)
-                _keyManagerPassword = Password.getPassword(KEYPASSWORD_PROPERTY, null, null);
+                _keyManagerPassword = getPassword(KEYPASSWORD_PROPERTY);
             else
                 _keyManagerPassword = null;
         }
         else
         {
-            _keyManagerPassword = new Password(password);
+            _keyManagerPassword = newPassword(password);
         }
     }
 
     /**
-     * @param password The password for the trust store. If null is passed and a truststore is set
+     * @param password The password for the truststore. If null is passed and a truststore is set
      *                 that is different from the keystore, then
-     *                 the {@link Password#getPassword(String, String, String)} is used to
+     *                 the {@link #getPassword(String)} is used to
      *                 obtain a password either from the {@value #PASSWORD_PROPERTY}
-     *                 System property or by prompting for manual entry.
+     *                 system property or by prompting for manual entry.
      */
     public void setTrustStorePassword(String password)
     {
         if (password == null)
         {
             if (_trustStoreResource != null && !_trustStoreResource.equals(_keyStoreResource))
-                _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY, null, null);
+                _trustStorePassword = getPassword(PASSWORD_PROPERTY);
             else
                 _trustStorePassword = null;
         }
         else
         {
-            _trustStorePassword = new Password(password);
+            _trustStorePassword = newPassword(password);
         }
     }
 
@@ -843,24 +842,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void setSecureRandomAlgorithm(String algorithm)
     {
         _secureRandomAlgorithm = algorithm;
-    }
-
-    /**
-     * @deprecated use {@link #getKeyManagerFactoryAlgorithm()} instead
-     */
-    @Deprecated
-    public String getSslKeyManagerFactoryAlgorithm()
-    {
-        return getKeyManagerFactoryAlgorithm();
-    }
-
-    /**
-     * @deprecated use {@link #setKeyManagerFactoryAlgorithm(String)} instead
-     */
-    @Deprecated
-    public void setSslKeyManagerFactoryAlgorithm(String algorithm)
-    {
-        setKeyManagerFactoryAlgorithm(algorithm);
     }
 
     /**
@@ -1463,6 +1444,28 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         _sslSessionTimeout = sslSessionTimeout;
     }
 
+    /**
+     * Returns the password object for the given realm.
+     *
+     * @param realm the realm
+     * @return the Password object
+     */
+    protected Password getPassword(String realm)
+    {
+        return Password.getPassword(realm, null, null);
+    }
+
+    /**
+     * Creates a new Password object.
+     *
+     * @param password the password string
+     * @return the new Password object
+     */
+    public Password newPassword(String password)
+    {
+        return new Password(password);
+    }
+
     public SSLServerSocket newSslServerSocket(String host, int port, int backlog) throws IOException
     {
         checkIsStarted();
@@ -1645,7 +1648,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      * <p>
      * This is based on the information on effective key lengths in RFC 2246 - The TLS Protocol
      * Version 1.0, Appendix C. CipherSuite definitions:
-     * <p>
      * <pre>
      *                         Effective
      *     Cipher       Type    Key Bits

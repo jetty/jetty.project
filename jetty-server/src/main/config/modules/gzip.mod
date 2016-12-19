@@ -1,7 +1,9 @@
-#
-# GZIP module
-# Applies GzipHandler to entire server
-#
+[description]
+Enable GzipHandler for dynamic gzip compression
+for the entire server.
+
+[tags]
+handler
 
 [depend]
 server
@@ -21,3 +23,6 @@ etc/jetty-gzip.xml
 
 ## User agents for which gzip is disabled
 # jetty.gzip.excludedUserAgent=.*MSIE.6\.0.*
+
+## Inflate request buffer size, or 0 for no request inflation
+# jetty.gzip.inflateBufferSize=0

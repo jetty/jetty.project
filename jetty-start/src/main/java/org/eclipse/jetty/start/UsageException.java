@@ -37,6 +37,11 @@ public class UsageException extends RuntimeException
         super(String.format(format,objs));
         this.exitCode = exitCode;
     }
+    
+    public UsageException(String format, Object... objs)
+    {
+        this (ERR_UNKNOWN,format,objs);
+    }
 
     public UsageException(int exitCode, Throwable cause)
     {

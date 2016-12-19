@@ -1,0 +1,118 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-sessions-infinispan]]
+
+=== Clustered Session Management: Inifinspan
+
+When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
+$ java -jar ../start.jar --add-to-start=session-store-infinispan-remote
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: session-store-infinispan-remote
+  + Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.
+  + http://infinispan.org/
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
+INFO : session-store-infinispan-remote initialised in ${jetty.base}/start.d/session-store-infinispan-remote.ini
+DOWNLOAD: https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-infinispan/src/main/infinispan-resources/hotrod-client.properties?id=master to ${jetty.base}/resources/hotrod-client.properties
+DOWNLOAD: http://central.maven.org/maven2/org/infinispan/infinispan-remote/7.1.1.Final/infinispan-remote-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-7.1.1.Final.jar
+INFO : Base directory was modified
+----
+
+Doing this enables the remote Infinispan Session module and any dependent modules or files needed for it to run on the server.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
+Because Infinispan is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-infinispan-remote` module as well as the `sessions` and `server` modules, which are required for Infinispan session management to operate.
+It also downloaded the needed Infinispan-specific jar files and created a directory named `${jetty.base}/lib/infinispan/` to house them.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
+
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-infinispan-remote
+# Enables session data store in a remote Infinispan cache
+# ---------------------------------------
+--module=session-store-infinispan-remote
+
+#jetty.session.infinispan.remoteCacheName=sessions
+#jetty.session.infinispan.idleTimeout.seconds=0
+#jetty.session.gracePeriod.seconds=3600
+----
+
+jetty.session.infinispan.remoteCacheName::
+Name of the cache in Infinispan where sessions will be stored.
+jetty.session.infinispan.idleTimeout.seconds::
+Amount of time, in seconds, that the system allows the connector to remain idle before closing the connection.
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+
+
+==== Configuring Embedded Inifinspan Clustering
+
+During testing, it can be helpful to run an in-process instance of Infinispan.
+To enable this you will first need to enable the `session-store-infinispan-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+java -jar ../start.jar --add-to-start=session-store-infinispan-embedded
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
++ contains software not provided by the Eclipse Foundation!
++ contains software not covered by the Eclipse Public License!
++ has not been audited for compliance with its license
+
+Module: session-store-infinispan-embedded
+ + Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.
+ + http://infinispan.org/
+ + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
+INFO : session-store-infinispan-embedded initialised in ${jetty.base}/start.d/session-store-infinispan-embedded.ini
+DOWNLOAD: http://central.maven.org/maven2/org/infinispan/infinispan-embedded/7.1.1.Final/infinispan-embedded-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-embedded-7.1.1.Final.jar
+INFO : Base directory was modified
+----
+
+Doing this enables the embedded Infinispan Session module and any dependent modules or files needed for it to run on the server.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
+Because Infinispan is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-infinispan-embedded` module as well as the `sessions` and `server` modules, which are required for Infinispan session management to operate.
+It also downloaded the needed Infinispan-specific jar files and created a directory named `${jetty.base}/lib/infinispan/` to house them.
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.

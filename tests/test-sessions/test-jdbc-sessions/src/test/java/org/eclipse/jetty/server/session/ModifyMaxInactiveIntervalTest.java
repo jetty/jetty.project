@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.After;
 import org.junit.Test;
 
 
@@ -44,15 +45,16 @@ import org.junit.Test;
  */
 public class ModifyMaxInactiveIntervalTest
 {
-    
-        public static int inactive = 4;
-        public static int newMaxInactive = 20;
-        public static int scavenge = 1;
+
+    public static int __inactive = 4;
+    public static int newMaxInactive = 20;
+    public static int __scavenge = 1;
+
         
     @Test
     public void testSessionExpiryAfterModifiedMaxInactiveInterval() throws Exception
     {
-        AbstractTestServer server = new JdbcTestServer(0,inactive,scavenge);
+        AbstractTestServer server = new JdbcTestServer(0,__inactive,__scavenge, SessionCache.NEVER_EVICT);
         
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
@@ -74,7 +76,7 @@ public class ModifyMaxInactiveIntervalTest
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                
+
                 //do another request to change the maxinactive interval
                 Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=change&val="+newMaxInactive);
                 request.header("Cookie", sessionCookie);
@@ -86,7 +88,6 @@ public class ModifyMaxInactiveIntervalTest
                 Thread.currentThread().sleep(10*1000L);
                 
                 //do another request using the cookie to ensure the session is still there
-               
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=test");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
@@ -101,6 +102,13 @@ public class ModifyMaxInactiveIntervalTest
         {
             server.stop();
         }
+    }
+    
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
     }
     
     public static class TestModServlet extends HttpServlet
