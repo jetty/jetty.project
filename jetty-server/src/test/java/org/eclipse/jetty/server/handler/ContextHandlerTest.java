@@ -497,7 +497,7 @@ public class ContextHandlerTest
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();
         for(String host : requestHosts)
         {
-            connector.getResponses("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
+            connector.getResponse("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
             if(succeed)
                 Assert.assertTrue("'" + host + "' should have been handled.", handler.isHandled());
             else

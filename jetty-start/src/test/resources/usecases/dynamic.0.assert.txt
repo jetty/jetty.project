@@ -1,0 +1,12 @@
+## The XMLs we expect (order is important)
+XML|${jetty.home}/etc/base.xml
+XML|${jetty.home}/etc/main.xml
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.home}/lib/base.jar
+LIB|${jetty.home}/lib/main.jar
+LIB|${jetty.home}/lib/other.jar
+
+# The Properties we expect (order is irrelevant)
+PROP|main.prop=value0
+PROP|dynamic=1.7.0_31-from-mod

@@ -14,7 +14,6 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[example-logging-java-util-logging]]
 === Example: Logging with Java's java.util.logging via Slf4j
 
 It is possible to have the Jetty Server logging configured so that `java.util.logging` controls the output of logging events produced by Jetty.

@@ -42,10 +42,10 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
     }
 
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractStopSessionManagerPreserveSessionTest#checkSessionPersisted(boolean)
+     * @see org.eclipse.jetty.server.session.AbstractStopSessionManagerPreserveSessionTest#checkSessionPersisted(String, boolean)
      */
     @Override
-    public void checkSessionPersisted(boolean expected)
+    public void checkSessionPersisted(String id, boolean expected)
     {
         try
         {
@@ -58,15 +58,12 @@ public class StopSessionManagerPreserveSessionTest extends AbstractStopSessionMa
 
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractStopSessionManagerPreserveSessionTest#createServer(int)
-     */
-    @Override
-    public AbstractTestServer createServer(int port)
-    {
-        return  new GCloudTestServer(port);
-    }
 
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs,int evictionPolicy) throws Exception
+    {
+       return new GCloudTestServer(port, maxInactiveMs, scavengeMs, evictionPolicy);
+    }
     /** 
      * @see org.eclipse.jetty.server.session.AbstractStopSessionManagerPreserveSessionTest#configureSessionManagement(org.eclipse.jetty.servlet.ServletContextHandler)
      */

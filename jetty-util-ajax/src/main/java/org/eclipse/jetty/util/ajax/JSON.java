@@ -935,7 +935,7 @@ public class JSON
         {
             try
             {
-                Class c = Loader.loadClass(JSON.class,classname);
+                Class c = Loader.loadClass(classname);
                 return convertTo(c,map);
             }
             catch (ClassNotFoundException e)

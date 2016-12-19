@@ -33,6 +33,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a webapp
@@ -42,6 +43,8 @@ import org.osgi.framework.BundleContext;
 public class Activator implements BundleActivator
 {
 
+    private ServiceRegistration _srA;
+    private ServiceRegistration _srB;
 
     public static class TestServlet extends HttpServlet
     {
@@ -70,16 +73,23 @@ public class Activator implements BundleActivator
      */
     public void start(BundleContext context) throws Exception
     {
-        String serverName = "defaultJettyServer";
-     
-        //Create a webapp context as a Service and target it at the Server created above
+        //Create webappA as a Service and target it at the default server
         WebAppContext webapp = new WebAppContext();
         webapp.addServlet(new ServletHolder(new TestServlet()), "/mime");
         Dictionary props = new Hashtable();
-        props.put("war",".");
+        props.put("war","webappA");
         props.put("contextPath","/acme");
-        props.put("managedServerName", serverName);
-        context.registerService(ContextHandler.class.getName(),webapp,props);
+        props.put("managedServerName", "defaultJettyServer");
+        _srA = context.registerService(WebAppContext.class.getName(),webapp,props);
+        
+        //Create a second webappB as a Service and target it at a custom Server
+        //deployed by another bundle
+        WebAppContext webappB = new WebAppContext();
+        Dictionary propsB = new Hashtable();
+        propsB.put("war", "webappB");
+        propsB.put("contextPath", "/acme");
+        propsB.put("managedServerName", "fooServer");
+        _srB = context.registerService(WebAppContext.class.getName(), webappB, propsB);
     }
 
     /**
@@ -90,5 +100,7 @@ public class Activator implements BundleActivator
      */
     public void stop(BundleContext context) throws Exception
     {
+        _srA.unregister(); 
+        _srB.unregister();
     }
 }

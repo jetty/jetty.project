@@ -29,7 +29,7 @@ import java.util.Set;
 public interface Trie<V>
 {
     /* ------------------------------------------------------------ */
-    /** Put and entry into the Trie
+    /** Put an entry into the Trie
      * @param s The key for the entry
      * @param v The value of the entry
      * @return True if the Trie had capacity to add the field.
@@ -47,14 +47,14 @@ public interface Trie<V>
     public V remove(String s);
 
     /* ------------------------------------------------------------ */
-    /** Get and exact match from a String key
+    /** Get an exact match from a String key
      * @param s The key
      * @return the value for the string key
      */
     public V get(String s);
 
     /* ------------------------------------------------------------ */
-    /** Get and exact match from a String key
+    /** Get an exact match from a String key
      * @param s The key
      * @param offset The offset within the string of the key
      * @param len the length of the key
@@ -63,14 +63,14 @@ public interface Trie<V>
     public V get(String s,int offset,int len);
 
     /* ------------------------------------------------------------ */
-    /** Get and exact match from a segment of a ByteBuufer as key
+    /** Get an exact match from a segment of a ByteBuufer as key
      * @param b The buffer
      * @return The value or null if not found
      */
     public V get(ByteBuffer b);
 
     /* ------------------------------------------------------------ */
-    /** Get and exact match from a segment of a ByteBuufer as key
+    /** Get an exact match from a segment of a ByteBuufer as key
      * @param b The buffer
      * @param offset The offset within the buffer of the key
      * @param len the length of the key

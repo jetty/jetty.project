@@ -222,7 +222,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             }
             else
             {
-                Class<?> clazz = Loader.loadClass(getClass(), _callbackHandlerClass);
+                Class<?> clazz = Loader.loadClass(_callbackHandlerClass);
                 callbackHandler = (CallbackHandler)clazz.newInstance();
             }
             //set up the login context

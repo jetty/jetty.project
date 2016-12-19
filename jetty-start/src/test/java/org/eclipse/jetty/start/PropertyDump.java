@@ -28,6 +28,7 @@ public class PropertyDump
 {
     public static void main(String[] args)
     {
+        System.out.printf("PropertyDump%n");
         // As System Properties
         Properties props = System.getProperties();
         Enumeration<?> names = props.propertyNames();
@@ -37,7 +38,7 @@ public class PropertyDump
             // only interested in "test." prefixed properties
             if (name.startsWith("test."))
             {
-                System.out.printf("%s=%s%n",name,props.getProperty(name));
+                System.out.printf("System %s=%s%n",name,props.getProperty(name));
             }
         }
 
@@ -48,7 +49,6 @@ public class PropertyDump
             {
                 Properties aprops = new Properties();
                 File propFile = new File(arg);
-                System.out.printf("[load file %s]%n",propFile.getName());
                 try (FileReader reader = new FileReader(propFile))
                 {
                     aprops.load(reader);
@@ -58,7 +58,7 @@ public class PropertyDump
                         String name = (String)anames.nextElement();
                         if (name.startsWith("test."))
                         {
-                            System.out.printf("%s=%s%n",name,aprops.getProperty(name));
+                            System.out.printf("%s %s=%s%n",propFile.getName(),name,aprops.getProperty(name));
                         }
                     }
                 }

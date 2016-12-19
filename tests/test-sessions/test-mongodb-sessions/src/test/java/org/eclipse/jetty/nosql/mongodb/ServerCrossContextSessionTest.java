@@ -20,15 +20,34 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractServerCrossContextSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 
 public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
 {
-    public AbstractTestServer createServer(int port)
+    
+    @BeforeClass
+    public static void beforeClass() throws Exception
     {
-        return new MongoTestServer(port);
+        MongoTestServer.dropCollection();
+        MongoTestServer.createCollection();
     }
+
+    @AfterClass
+    public static void afterClass() throws Exception
+    {
+        MongoTestServer.dropCollection();
+    }
+    
+
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
+    {
+        return new MongoTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
+    }
+
 
     @Test
     public void testCrossContextDispatch() throws Exception

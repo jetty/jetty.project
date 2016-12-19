@@ -727,6 +727,7 @@ If this is not the case, you will get an "Address already in use" error message 
 ==== jetty:effective-web-xml
 
 This goal calculates a synthetic `web.xml` (the "effective web.xml") according to the rules of the Servlet Specification taking into account all sources of discoverable configuration of web components in your application: descriptors (`webdefault.xml`, `web.xml`, `web-fragment.xml`s, `web-override.xml`) and discovered annotations (`@WebServlet`, `@WebFilter`, `@WebListener`).
+Note that no programmatic declarations of servlets, filters and listeners can be taken into account.
 The effective `web.xml` from these combined sources is generated and displayed as maven log output.
 Other useful information about your webapp that is produced as part of the analysis is also stored as context parameters in the effective-web.xml.
 The effective-web.xml can be used in conjunction with the link:#quickstart-webapp[Quickstart] feature to quickly start your webapp (note that Quickstart is not appropriate for the mvn jetty goals).
@@ -739,7 +740,25 @@ If set to `false`, the effective web.xml is generated into a file called `effect
 effectiveWebXml::
 The full path name of a file into which you would like the effective web xml generated.
 
-Note that no programmatic declarations of servlets, filters and listeners will be taken into account.
+You can also generate the origin of each element into the effective web.xml file.
+The origin is either a descriptor eg web.xml,web-fragment.xml,override-web.xml file, or an annotation eg @WebServlet.
+Some examples of elements with origin attribute information are:
+[source, xml, subs="{sub-order}"]
+----
+<listener origin="DefaultsDescriptor(file:///path/to/distro/etc/webdefault.xml):21">
+<listener origin="WebDescriptor(file:///path/to/base/webapps/test-spec/WEB-INF/web.xml):22">
+<servlet-class origin="FragmentDescriptor(jar:file:///path/to/base/webapps/test-spec/WEB-INF/lib/test-web-fragment.jar!/META-INF/web-fragment.xml):23">
+<servlet-class origin="@WebServlet(com.acme.test.TestServlet):24">
+----
+
+To generate origin informatino, use the following configuration parameters on the  `webApp` element:
+
+originAttribute::
+The name of the attribute that will contain the origin.
+By default it is `origin`.
+generateOrigin::
+False by default. If true, will force the generation of the originAttribute onto each element.
+
 
 [[using-overlaid-wars]]
 ==== Using Overlaid wars

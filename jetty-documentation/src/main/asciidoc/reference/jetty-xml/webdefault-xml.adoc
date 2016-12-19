@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[webdefault-xml]]
-=== `webdefault.xml`
+=== webdefault.xml
 
 The `webdefault.xml` file saves web applications from having to define a lot of house-keeping and container-specific elements in their own `web.xml` files.
 For example, you can use it to set up mime-type mappings and JSP servlet-mappings.
@@ -27,12 +27,17 @@ However, it is certainly possible to provide differentiated ` webdefault.xml` fi
 The `webdefault.xml` file is located in `$(jetty.home)/etc/webdefault.xml`.
 
 [[using-webdefault-xml]]
-==== Using `webdefault.xml`
+==== Using webdefault.xml
 
 You can specify a custom configuration file to use for specific webapps, or for all webapps. If you do not specify an alternate defaults descriptor, the $JETTY-HOME/etc/jetty-deploy.xml file will configure jetty to automatically use $JETTY_HOME/etc/`webdefault.xml`.
 
+____
+[NOTE]
+To ensure your `webdefault.xml` files are validated, you will need to set the `validateXml` attribute to true as described link:#jetty-xml-dtd[here.]
+____
+
 [[creating-custom-webdefault-xml-one-webapp]]
-===== Creating a Custom `webdefault.xml` for One WebApp
+===== Creating a Custom webdefault.xml for One WebApp
 
 You can specify a custom `webdefault.xml` for an individual web application in that webapp's xref:jetty-xml-config[] as follows:
 
@@ -63,8 +68,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
     //Set up the absolute path to the custom webdefault.xml.
     wac.setDefaultsDescriptor("/my/path/to/webdefault.xml");
     ...
-
-
 ----
 
 Alternatively, you can use a xref:jetty-classloading[] to find the resource representing your custom `webdefault.xml`.
@@ -86,7 +89,6 @@ Similarly, when using the link:#jetty-maven-plugin[Jetty Maven Plugin] you provi
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <project>
     ...
     <plugins>

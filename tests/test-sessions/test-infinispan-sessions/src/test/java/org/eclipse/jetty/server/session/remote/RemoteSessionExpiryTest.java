@@ -45,9 +45,9 @@ public class RemoteSessionExpiryTest extends AbstractSessionExpiryTest
     }
     
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-       InfinispanTestSessionServer server =  new InfinispanTestSessionServer(port, max, scavenge, __testSupport.getCache());
+       InfinispanTestSessionServer server =  new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache());
        return server;
     }
 

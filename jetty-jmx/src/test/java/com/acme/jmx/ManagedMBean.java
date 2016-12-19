@@ -39,7 +39,7 @@ public class ManagedMBean extends ObjectMBean
         return "not managed " + ((Managed)_managed).bad();
     }
 
-    @ManagedAttribute(value="test of proxy attributes", proxied=true)
+    @ManagedAttribute(value = "test of proxy attributes", proxied = true)
     public String goop()
     {
         return "goop";

@@ -46,8 +46,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -106,9 +107,9 @@ public class ThreadStarvationTest
         ServerConnector connector = new ServerConnector(_server, 0, 1)
         {
             @Override
-            protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout())
+                return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
                     protected void onIncompleteFlush()
@@ -246,7 +247,7 @@ public class ThreadStarvationTest
             int acceptors = 0;
             int selectors = 1;
             int maxThreads = 10;
-            final int barried=maxThreads-acceptors-selectors;
+            final int barried=maxThreads-acceptors-selectors*2;
             final CyclicBarrier barrier = new CyclicBarrier(barried);
 
 
@@ -258,18 +259,16 @@ public class ThreadStarvationTest
             ServerConnector connector = new ServerConnector(_server, acceptors, selectors)
             {
                 @Override
-                protected SelectChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+                protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
                 {
-                    return new SelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout())
+                    return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                     {
-
                         @Override
                         public boolean flush(ByteBuffer... buffers) throws IOException
                         {
                             super.flush(buffers[0]);
                             throw new IOException("TEST FAILURE");
                         }
-
                     };
                 }
             };
@@ -318,7 +317,6 @@ public class ThreadStarvationTest
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }
-
 
             byte[] buffer = new byte[48 * 1024];
             List<Exchanger<Integer>> totals = new ArrayList<>();

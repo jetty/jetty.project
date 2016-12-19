@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -87,6 +88,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
 
     private final Locker _dateLocker = new Locker();
@@ -144,10 +146,27 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    public ErrorHandler getErrorHandler()
+    {
+        return _errorHandler;
+    }
+
+    /* ------------------------------------------------------------ */
     public void setRequestLog(RequestLog requestLog)
     {
         updateBean(_requestLog,requestLog);
         _requestLog = requestLog;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setErrorHandler(ErrorHandler errorHandler)
+    {
+        if (errorHandler instanceof ErrorHandler.ErrorPageMapper)
+            throw new IllegalArgumentException("ErrorPageMapper is applicable only to ContextHandler");
+        updateBean(_errorHandler,errorHandler);
+        _errorHandler=errorHandler;
+        if (errorHandler!=null)
+            errorHandler.setServer(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -162,7 +181,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _stopAtShutdown;
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -331,6 +349,14 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
+        // Create an error handler if there is none
+        if (_errorHandler==null)
+            _errorHandler=getBean(ErrorHandler.class);
+        if (_errorHandler==null)
+            setErrorHandler(new ErrorHandler());
+        if (_errorHandler instanceof ErrorHandler.ErrorPageMapper)
+            LOG.warn("ErrorPageMapper not supported for Server level Error Handling");
+        
         //If the Server should be stopped when the jvm exits, register
         //with the shutdown handler thread.
         if (getStopAtShutdown())
@@ -352,8 +378,7 @@ public class Server extends HandlerWrapper implements Attributes
         
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
-
-        // check size of thread pool
+        // Check that the thread pool size is enough.
         SizedThreadPool pool = getBean(SizedThreadPool.class);
         int max=pool==null?-1:pool.getMaxThreads();
         int selectors=0;
@@ -361,23 +386,28 @@ public class Server extends HandlerWrapper implements Attributes
 
         for (Connector connector : _connectors)
         {
-            if (!(connector instanceof AbstractConnector))
-                continue;
+            if (connector instanceof AbstractConnector)
+            {
+                AbstractConnector abstractConnector = (AbstractConnector)connector;
+                Executor connectorExecutor = connector.getExecutor();
 
-            AbstractConnector abstractConnector = (AbstractConnector) connector;
-            Executor connectorExecutor = connector.getExecutor();
+                if (connectorExecutor != pool)
+                {
+                    // Do not count the selectors and acceptors from this connector at
+                    // the server level, because the connector uses a dedicated executor.
+                    continue;
+                }
 
-            if (connectorExecutor != pool)
-                // Do not count the selectors and acceptors from this connector at server level, because connector uses dedicated executor.
-                continue;
+                acceptors += abstractConnector.getAcceptors();
 
-            acceptors += abstractConnector.getAcceptors();
-
-            if (connector instanceof ServerConnector)
-                selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
-
+                if (connector instanceof ServerConnector)
+                {
+                    // The SelectorManager uses 2 threads for each selector,
+                    // one for the normal and one for the low priority strategies.
+                    selectors += 2 * ((ServerConnector)connector).getSelectorManager().getSelectorCount();
+                }
+            }
         }
-
 
         int needed=1+selectors+acceptors;
         if (max>0 && needed>max)

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.webapp;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -84,7 +83,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
                 Object xml_attr=context.getAttribute(XML_CONFIGURATION);
                 context.removeAttribute(XML_CONFIGURATION);
-                
                 final XmlConfiguration jetty_config = xml_attr instanceof XmlConfiguration
                     ?(XmlConfiguration)xml_attr
                     :new XmlConfiguration(jetty.getURI().toURL());
@@ -92,16 +90,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 
                 try
                 {
-                    final XmlConfiguration config=jetty_config;
-                    context.runWithoutCheckingServerClasses(new Callable<Void>()
-                    {
-                        @Override
-                        public Void call() throws Exception
-                        {
-                            config.configure(context);
-                            return null;
-                        }
-                    });
+                    WebAppClassLoader.runWithServerClassAccess(()->{jetty_config.configure(context);return null;});
                 }
                 catch(Exception e)
                 {
@@ -122,6 +111,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     {
         Map<String,String> props = jetty_config.getProperties();
         // TODO - should this be an id rather than a property?
-        props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
+        props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURI()));
     }
 }

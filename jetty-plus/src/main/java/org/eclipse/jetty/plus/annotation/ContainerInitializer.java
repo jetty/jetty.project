@@ -127,7 +127,7 @@ public class ContainerInitializer
             try
             {
                 for (String s : _applicableTypeNames)
-                    classes.add(Loader.loadClass(context.getClass(), s));
+                    classes.add(Loader.loadClass(s));
 
                 context.getServletContext().setExtendedListenerTypes(true);
                 if (LOG.isDebugEnabled())

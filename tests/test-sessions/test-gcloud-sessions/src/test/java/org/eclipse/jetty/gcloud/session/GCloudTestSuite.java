@@ -33,25 +33,20 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
   ClientCrossContextSessionTest.class,
   ForwardedSessionTest.class,
+  ImmediateSaveTest.class,
   ImmortalSessionTest.class,
   InvalidationSessionTest.class,
   LastAccessTimeTest.class,
-    
   LocalSessionScavengingTest.class,
-  
   NewSessionTest.class,
   OrphanedSessionTest.class,
   ReentrantRequestSessionTest.class,
-  
   RemoveSessionTest.class,
-  
   SameNodeLoadTest.class,
   ServerCrossContextSessionTest.class,
   SessionExpiryTest.class,
-  
   SessionInvalidateAndCreateTest.class,
   SessionMigrationTest.class,
-  
   SessionRenewTest.class,
   SessionValueSavingTest.class,
   StopSessionManagerPreserveSessionTest.class

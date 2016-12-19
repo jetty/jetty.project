@@ -1,6 +1,5 @@
-#
-# JAAS Module
-#
+[description]
+Enable JAAS for deployed webapplications.
 
 [depend]
 server

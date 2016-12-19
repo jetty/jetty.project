@@ -1,0 +1,249 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-sessions-gcloud]]
+=== Clustered Session Management: Google Cloud DataStore
+
+==== Preparation
+
+You will first need to create a project and enable the Google Cloud api: https://cloud.google.com/docs/authentication#preparation.
+Take note of the project id that you create in this step as you need to supply it in later steps.
+
+===== Communicating with GCloudDataStore
+
+====== When running Jetty outside of google infrastructure
+
+Before running Jetty, you will need to choose one of the following methods to set up the local environment to enable remote GCloud DataStore communications.
+
+1. Using the GCloud SDK:
+  * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en.
+  * Use the GCloud tool to set up the project you created in the preparation step: `gcloud config set project PROJECT_ID`
+  * Use the GCloud tool to authenticate a google account associated with the project created in the preparation step: `gcloud auth login ACCOUNT`
+
+2. Using environment variables
+  * Define the environment variable `GCLOUD_PROJECT` with the project id you created in the preparation step.
+  * Generate a JSON link:https://cloud.google.com/storage/docs/authentication?hl=en#service_accounts[service account key] and then define the environment variable `GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/key.json`
+
+
+====== When Running Jetty Inside of Google Infrastructure
+
+The Google deployment tools will automatically configure the project and authentication information for you.
+
+==== Configuring Indexes for Session Data
+
+Using some special, composite indexes can speed up session search operations, although it may make write operations slower.
+By default, indexes will not be used.
+In order to use them, you will need to manually upload a file that defines the indexes.
+This file is named `index.yaml` and you can find it in your distribution in `${jetty.base}/etc/sessions/gcloud/index.yaml`.
+
+Follow the instructions link:https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
+
+===== Communicating with the GCloudDataStore Emulator
+
+To enable communication using the GCloud Emulator:
+
+   * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en
+   * Follow the instructions link:https://cloud.google.com/datastore/docs/tools/datastore-emulator[here] on how to start the GCloud datastore emulator, and how to propagate the environment variables that it creates to the terminal in which you run Jetty.
+
+==== Configuring the Google Cloud DataStore Module
+
+When using the Jetty distribution, you will first need to enable the `session-store-gcloud` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
+$ java -jar ../start.jar --add-to-start=session-store-gcloud
+
+ALERT: There are enabled module(s) with licenses.
+The following 2 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: gcloud
+  + GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.
+  + https://github.com/GoogleCloudPlatform/gcloud-java
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+ Module: slf4j-api
+  + SLF4J is distributed under the MIT License.
+  + Copyright (c) 2004-2013 QOS.ch
+  + All rights reserved.
+  + Permission is hereby granted, free  of charge, to any person obtaining
+  + a  copy  of this  software  and  associated  documentation files  (the
+  + "Software"), to  deal in  the Software without  restriction, including
+  + without limitation  the rights to  use, copy, modify,  merge, publish,
+  + distribute,  sublicense, and/or sell  copies of  the Software,  and to
+  + permit persons to whom the Software  is furnished to do so, subject to
+  + the following conditions:
+  + The  above  copyright  notice  and  this permission  notice  shall  be
+  + included in all copies or substantial portions of the Software.
+  + THE  SOFTWARE IS  PROVIDED  "AS  IS", WITHOUT  WARRANTY  OF ANY  KIND,
+  + EXPRESS OR  IMPLIED, INCLUDING  BUT NOT LIMITED  TO THE  WARRANTIES OF
+  + MERCHANTABILITY,    FITNESS    FOR    A   PARTICULAR    PURPOSE    AND
+  + NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+  + LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+  + OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
+  + WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Proceed (y/N)? y
+INFO  : webapp          transitively enabled, ini template available with --add-to-start=webapp
+INFO  : jul-impl        transitively enabled
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : servlet         transitively enabled
+INFO  : gcloud          transitively enabled, ini template available with --add-to-start=gcloud
+INFO  : annotations     transitively enabled
+INFO  : plus            transitively enabled
+INFO  : slf4j-api       transitively enabled
+INFO  : security        transitively enabled
+INFO  : gcloud-datastore transitively enabled
+INFO  : jcl-slf4j       transitively enabled
+INFO  : session-store-gcloud initialized in ${jetty.base}/start.d/session-store-gcloud.ini
+INFO  : jndi            transitively enabled
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/jul-impl/etc/java-util-logging.properties to ${jetty.base}/etc/java-util-logging.properties
+MKDIR : ${jetty.base}/lib/slf4j
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
+MKDIR : ${jetty.base}/lib/gcloud
+COPY  : /Users/chris/.m2/repository/aopalliance/aopalliance/1.0/aopalliance-1.0.jar to ${jetty.base}/lib/gcloud/aopalliance-1.0.jar
+COPY  : /Users/chris/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.1.3/jackson-core-2.1.3.jar to ${jetty.base}/lib/gcloud/jackson-core-2.1.3.jar
+COPY  : /Users/chris/.m2/repository/com/google/api-client/google-api-client-appengine/1.21.0/google-api-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-appengine-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/api-client/google-api-client/1.20.0/google-api-client-1.20.0.jar to ${jetty.base}/lib/gcloud/google-api-client-1.20.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/api-client/google-api-client-servlet/1.21.0/google-api-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-servlet-1.21.0.jar
+DOWNLD: http://central.maven.org/maven2/com/google/api/gax/0.0.21/gax-0.0.21.jar to ${jetty.base}/lib/gcloud/gax-0.0.21.jar
+COPY  : /Users/chris/.m2/repository/com/google/api/grpc/grpc-google-common-protos/0.1.0/grpc-google-common-protos-0.1.0.jar to ${jetty.base}/lib/gcloud/grpc-google-common-protos-0.1.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/api/grpc/grpc-google-iam-v1/0.1.0/grpc-google-iam-v1-0.1.0.jar to ${jetty.base}/lib/gcloud/grpc-google-iam-v1-0.1.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/auth/google-auth-library-credentials/0.3.1/google-auth-library-credentials-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-credentials-0.3.1.jar
+COPY  : /Users/chris/.m2/repository/com/google/auth/google-auth-library-oauth2-http/0.3.1/google-auth-library-oauth2-http-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-oauth2-http-0.3.1.jar
+DOWNLD: http://central.maven.org/maven2/com/google/auto/value/auto-value/1.2/auto-value-1.2.jar to ${jetty.base}/lib/gcloud/auto-value-1.2.jar
+DOWNLD: http://central.maven.org/maven2/com/google/cloud/datastore/datastore-v1-proto-client/1.3.0/datastore-v1-proto-client-1.3.0.jar to ${jetty.base}/lib/gcloud/datastore-v1-proto-client-1.3.0.jar
+DOWNLD: http://central.maven.org/maven2/com/google/cloud/datastore/datastore-v1-protos/1.3.0/datastore-v1-protos-1.3.0.jar to ${jetty.base}/lib/gcloud/datastore-v1-protos-1.3.0.jar
+DOWNLD: http://central.maven.org/maven2/com/google/cloud/google-cloud-core/0.5.1/google-cloud-core-0.5.1.jar to ${jetty.base}/lib/gcloud/google-cloud-core-0.5.0.jar
+DOWNLD: http://central.maven.org/maven2/com/google/cloud/google-cloud-datastore/0.5.1/google-cloud-datastore-0.5.1.jar to ${jetty.base}/lib/gcloud/google-cloud-datastore-0.5.1.jar
+COPY  : /Users/chris/.m2/repository/com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar to ${jetty.base}/lib/gcloud/jsr305-1.3.9.jar
+COPY  : /Users/chris/.m2/repository/com/google/code/gson/gson/2.3/gson-2.3.jar to ${jetty.base}/lib/gcloud/gson-2.3.jar
+COPY  : /Users/chris/.m2/repository/com/google/guava/guava/19.0/guava-19.0.jar to ${jetty.base}/lib/gcloud/guava-19.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-appengine/1.21.0/google-http-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-appengine-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-jackson2/1.19.0/google-http-client-jackson2-1.19.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson2-1.19.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-jackson/1.21.0/google-http-client-jackson-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client/1.21.0/google-http-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-jdo/1.21.0/google-http-client-jdo-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jdo-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-protobuf/1.20.0/google-http-client-protobuf-1.20.0.jar to ${jetty.base}/lib/gcloud/google-http-client-protobuf-1.20.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/inject/guice/4.0/guice-4.0.jar to ${jetty.base}/lib/gcloud/guice-4.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/oauth-client/google-oauth-client-appengine/1.21.0/google-oauth-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-appengine-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/oauth-client/google-oauth-client/1.21.0/google-oauth-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/oauth-client/google-oauth-client-servlet/1.21.0/google-oauth-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-servlet-1.21.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/protobuf/protobuf-java/3.0.0/protobuf-java-3.0.0.jar to ${jetty.base}/lib/gcloud/protobuf-java-3.0.0.jar
+COPY  : /Users/chris/.m2/repository/com/google/protobuf/protobuf-java-util/3.0.0/protobuf-java-util-3.0.0.jar to ${jetty.base}/lib/gcloud/protobuf-java-util-3.0.0.jar
+COPY  : /Users/chris/.m2/repository/commons-codec/commons-codec/1.3/commons-codec-1.3.jar to ${jetty.base}/lib/gcloud/commons-codec-1.3.jar
+COPY  : /Users/chris/.m2/repository/io/grpc/grpc-context/1.0.1/grpc-context-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-context-1.0.1.jar
+COPY  : /Users/chris/.m2/repository/io/grpc/grpc-core/1.0.1/grpc-core-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-core-1.0.1.jar
+COPY  : /Users/chris/.m2/repository/io/grpc/grpc-protobuf/1.0.1/grpc-protobuf-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-protobuf-1.0.1.jar
+COPY  : /Users/chris/.m2/repository/io/grpc/grpc-protobuf-lite/1.0.1/grpc-protobuf-lite-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-protobuf-lite-1.0.1.jar
+COPY  : /Users/chris/.m2/repository/javax/inject/javax.inject/1/javax.inject-1.jar to ${jetty.base}/lib/gcloud/javax.inject-1.jar
+COPY  : /Users/chris/.m2/repository/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb.jar to ${jetty.base}/lib/gcloud/jdo2-api-2.3-eb.jar
+COPY  : /Users/chris/.m2/repository/javax/transaction/transaction-api/1.1/transaction-api-1.1.jar to ${jetty.base}/lib/gcloud/transaction-api-1.1.jar
+COPY  : /Users/chris/.m2/repository/joda-time/joda-time/2.9.2/joda-time-2.9.2.jar to ${jetty.base}/lib/gcloud/joda-time-2.9.2.jar
+COPY  : /Users/chris/.m2/repository/org/apache/httpcomponents/httpclient/4.0.1/httpclient-4.0.1.jar to ${jetty.base}/lib/gcloud/httpclient-4.0.1.jar
+COPY  : /Users/chris/.m2/repository/org/apache/httpcomponents/httpcore/4.0.1/httpcore-4.0.1.jar to ${jetty.base}/lib/gcloud/httpcore-4.0.1.jar
+COPY  : /Users/chris/.m2/repository/org/codehaus/jackson/jackson-core-asl/1.9.11/jackson-core-asl-1.9.11.jar to ${jetty.base}/lib/gcloud/jackson-core-asl-1.9.11.jar
+COPY  : /Users/chris/.m2/repository/org/json/json/20151123/json-20151123.jar to ${jetty.base}/lib/gcloud/json-20151123.jar
+DOWNLD: http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.21/jcl-over-slf4j-1.7.21.jar to ${jetty.base}/lib/slf4j/jcl-over-slf4j-1.7.21.jar
+COPY  : ${jetty.home}/modules/gcloud/index.yaml to ${jetty.base}/etc/index.yaml
+INFO  : Base directory was modified
+ERROR : Module jcl-slf4j requires a module providing slf4j-impl from one of [slf4j-simple-impl, slf4j-logback, slf4j-jul, slf4j-log4j2, slf4j-log4j]
+
+ERROR : Unsatisfied module dependencies: jcl-slf4j
+
+Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
+       java -jar $JETTY_HOME/start.jar --help  # for more information
+----
+
+Doing this enables the GCloud Session module and any dependent session modules or files needed for it to run on the server.
+The example above is running an fresh `${jetty.base}` with nothing enabled.
+Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
+You will notice, however, that the above output presented a warning: GCloud requires certain Java Commons Logging features to work correctly.
+GCloud has a dependency on Java Commons Logging, and by default Jetty will route this through SLF4J.
+Enabling the GCloud Sessions module will also enable the `jcl-slf4j` module, which sends JCL logging information to SLF4J.
+It does *not*, however, configure a SLF4J implementation for the users.
+
+As such, you will also need to enable one of the SLF4J implementation modules listed.
+In this example, we will enable the `slf4j-simple-impl` module to provide a SLF4J implementation.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --add-to-start=slf4j-simple-impl
+INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
+INFO  : resources       transitively enabled
+DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/slf4j-simple-impl/resources/simplelogger.properties to ${jetty.base}/resources/simplelogger.properties
+INFO  : Base directory was modified
+----
+
+When the `--add-to-start` argument was added to the command line the first time, it enabled the the `session-store-gcloud` module as well as several others, such as as `server`, `sessions`, `webapp` and others which are required for GCloud session management to operate; the `slf4j-simple-impl` and its dependent modules were added when the the command was run the second time.
+In addition to adding these modules to the classpath of the server it also added the respective configuration files to the `start.d` directory of the `${jetty.base}`.
+
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+Opening the `start.d/session-store-gcloud.ini` will display a list of all the configurable properties for the Google Cloud DataStore module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-gcloud
+# Enables GCloudDatastore session management.
+# ---------------------------------------
+--module=session-store-gcloud
+
+
+## GCloudDatastore Session config
+#jetty.session.gcloud.maxRetries=5
+#jetty.session.gcloud.backoffMs=1000
+#jetty.session.gcloud.namespace=
+#jetty.session.gcloud.model.kind=GCloudSession
+#jetty.session.gcloud.model.id=id
+#jetty.session.gcloud.model.contextPath=contextPath
+#jetty.session.gcloud.model.vhost=vhost
+#jetty.session.gcloud.model.accessed=accessed
+#jetty.session.gcloud.model.lastAccessed=lastAccessed
+#jetty.session.gcloud.model.createTime=createTime
+#jetty.session.gcloud.model.cookieSetTime=cookieSetTime
+#jetty.session.gcloud.model.lastNode=lastNode
+#jetty.session.gcloud.model.expiry=expiry
+#jetty.session.gcloud.model.maxInactive=maxInactive
+#jetty.session.gcloud.model.attributes=attributes
+----
+
+jetty.session.gcloud.maxRetries::
+Maxmium number of tries to connect to GCloud DataStore to write sessions.
+jetty.session.gcloud.backoffMs::
+Amount of time, in milliseconds, between attempts to connect to the GCloud DataStore to write sessions.
+jetty.session.gcloud.namespace::
+Optional.
+Sets the namespace for GCloud Datastore to use.
+If set, partitions the visibility of session data between webapps, which is helpful for multi-tenant deployments.
+More information can be found link:https://cloud.google.com/datastore/docs/concepts/multitenancy[here.]
+
+The other values listed are simply the names of properties that represent stored session data, and can be changed if needed.

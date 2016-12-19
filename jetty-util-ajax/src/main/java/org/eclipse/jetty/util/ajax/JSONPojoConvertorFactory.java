@@ -65,7 +65,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
         {
             try
             {
-                Class cls=Loader.loadClass(JSON.class,clsName);
+                Class cls=Loader.loadClass(clsName);
                 convertor=new JSONPojoConvertor(cls,_fromJson);
                 _json.addConvertorFor(clsName, convertor);
              }
@@ -91,7 +91,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
             {
                 try
                 {
-                    Class cls=Loader.loadClass(JSON.class,clsName);
+                    Class cls=Loader.loadClass(clsName);
                     convertor=new JSONPojoConvertor(cls,_fromJson);
                     _json.addConvertorFor(clsName, convertor);
                 }

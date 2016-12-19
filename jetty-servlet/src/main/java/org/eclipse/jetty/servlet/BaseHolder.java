@@ -45,8 +45,6 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     private static final Logger LOG = Log.getLogger(BaseHolder.class);
     
     
-    public enum Source { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
-    
     final protected Source _source;
     protected transient Class<? extends T> _class;
     protected String _className;
@@ -92,7 +90,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         {
             try
             {
-                _class=Loader.loadClass(Holder.class, _className);
+                _class=Loader.loadClass(_className);
                 if(LOG.isDebugEnabled())
                     LOG.debug("Holding {} from {}",_class,_class.getClassLoader());
             }

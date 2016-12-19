@@ -35,33 +35,26 @@ import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
  * execute tasks until the producer continues to produce them.</p>
  */
 public interface ExecutionStrategy
-{
+{    
     /**
-     * <p>Initiates (or resumes) the task production and execution.</p>
+     * <p>Initiates (or resumes) the task production and consumption.</p>
      * <p>This method guarantees that the task is never run by the
      * thread that called this method.</p>
      *
-     * @see #execute()
+     * TODO review the need for this (only used by HTTP2 push)
+     * @see #produce()
      */
     public void dispatch();
 
     /**
-     * <p>Initiates (or resumes) the task production and execution.</p>
+     * <p>Initiates (or resumes) the task production and consumption.</p>
      * <p>The produced task may be run by the same thread that called
      * this method.</p>
      *
      * @see #dispatch()
      */
-    public void execute();
-
-    /**
-     * A task that can handle {@link RejectedExecutionException}
-     */
-    public interface Rejectable
-    {
-        public void reject();
-    }
-
+    public void produce();
+    
     /**
      * <p>A producer of {@link Runnable} tasks to run.</p>
      * <p>The {@link ExecutionStrategy} will repeatedly invoke {@link #produce()} until
@@ -102,17 +95,6 @@ public interface ExecutionStrategy
         {
             return DefaultExecutionStrategyFactory.INSTANCE;
         }
-
-        /**
-         * @param producer the execution strategy producer
-         * @param executor the execution strategy executor
-         * @deprecated use {@code getDefault().newExecutionStrategy(Producer, Executor)} instead
-         */
-        @Deprecated
-        public static ExecutionStrategy instanceFor(Producer producer, Executor executor)
-        {
-            return getDefault().newExecutionStrategy(producer, executor);
-        }
     }
 
     public static class DefaultExecutionStrategyFactory implements Factory
@@ -128,7 +110,7 @@ public interface ExecutionStrategy
             {
                 try
                 {
-                    Class<? extends ExecutionStrategy> c = Loader.loadClass(producer.getClass(), strategy);
+                    Class<? extends ExecutionStrategy> c = Loader.loadClass(strategy);
                     Constructor<? extends ExecutionStrategy> m = c.getConstructor(Producer.class, Executor.class);
                     LOG.info("Use {} for {}", c.getSimpleName(), producer.getClass().getName());
                     return m.newInstance(producer, executor);

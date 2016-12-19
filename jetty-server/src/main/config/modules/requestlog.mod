@@ -1,6 +1,8 @@
-#
-# Request Log module
-#
+[description]
+Enables a NCSA style request log.
+
+[tags]
+requestlog
 
 [depend]
 server

@@ -20,7 +20,9 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -37,16 +39,18 @@ import org.junit.Test;
 
 /**
  * AbstractNewSessionTest
+ * 
+ * Create a session, wait for it to be scavenged, re-present the cookie and check that  a
+ * new session is created.
  */
-public abstract class AbstractNewSessionTest
+public abstract class AbstractNewSessionTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
 
     public void pause(int scavenge)
     {
         try
         {
-            Thread.sleep(scavenge * 2500L);
+            Thread.sleep(scavenge * 1000L);
         }
         catch (InterruptedException e)
         {
@@ -59,7 +63,8 @@ public abstract class AbstractNewSessionTest
     {
         String servletMapping = "/server";
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(0, 1, scavengePeriod);
+        int maxInactivePeriod = 1;
+        AbstractTestServer server = createServer(0, maxInactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";
@@ -79,11 +84,11 @@ public abstract class AbstractNewSessionTest
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
-                pause(scavengePeriod);
+                // Let's wait for the scavenger to run
+                pause(maxInactivePeriod + scavengePeriod);
 
-                // The session is not there anymore, but we present an old cookie
-                // The server creates a new session, we must ensure we released all locks
+                // The session should not be there anymore, but we present an old cookie
+                // The server should create a new session.
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=old-create");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
@@ -102,6 +107,8 @@ public abstract class AbstractNewSessionTest
     }
     public static class TestServlet extends HttpServlet
     {
+        String id;
+        
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -110,10 +117,15 @@ public abstract class AbstractNewSessionTest
             {
                 HttpSession session = request.getSession(true);
                 assertTrue(session.isNew());
+                id = session.getId();
             }
             else if ("old-create".equals(action))
             {
-                request.getSession(true);
+                HttpSession s = request.getSession(false);
+                assertNull(s);
+                s = request.getSession(true);
+                assertNotNull(s);
+                assertFalse(s.getId().equals(id));
             }
             else
             {

@@ -138,6 +138,8 @@ public class SslConnectionFactoryTest
         {
             out.write("Rubbish".getBytes());
             out.flush();
+
+            socket.setSoTimeout(1000);
             // Expect TLS message type == 21: Alert
             Assert.assertThat(socket.getInputStream().read(), Matchers.equalTo(21));
         }

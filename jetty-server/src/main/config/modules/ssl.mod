@@ -1,8 +1,10 @@
-#
-# SSL Keystore module
-#
+[description]
+Enables a TLS(SSL) Connector on the server.
+This may be used for HTTPS and/or HTTP2 by enabling
+the associated support modules.
 
-[name]
+[tags]
+connector
 ssl
 
 [depend]
@@ -13,7 +15,7 @@ etc/jetty-ssl.xml
 etc/jetty-ssl-context.xml
 
 [files]
-https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-server/src/test/config/etc/keystore?id=${jetty.tag.version}|etc/keystore
+basehome:modules/ssl/keystore|etc/keystore
 
 [ini-template]
 ### TLS(SSL) Connector Configuration

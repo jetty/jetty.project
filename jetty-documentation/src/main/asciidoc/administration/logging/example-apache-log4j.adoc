@@ -14,10 +14,9 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[example-logging-log4j]]
 === Example: Logging with Apache Log4j
 
-It is possible to have the Jetty Server logging configured so that Log4j controls the output of logging events produced by Jetty. 
+It is possible to have the Jetty Server logging configured so that Log4j controls the output of logging events produced by Jetty.
 This is accomplished by configuring Jetty for logging to http://logging.apache.org/log4j/[Apache Log4j] via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for Log4j].
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with log4j.

@@ -70,15 +70,18 @@ public class ServletPathSpec extends PathSpec
         if ((servletPathSpec.charAt(0) == '/') && (specLength > 1) && (lastChar == '*'))
         {
             this.group = PathSpecGroup.PREFIX_GLOB;
+            this.prefix = servletPathSpec.substring(0,specLength-2);
         }
         // suffix based
         else if (servletPathSpec.charAt(0) == '*')
         {
             this.group = PathSpecGroup.SUFFIX_GLOB;
+            this.suffix = servletPathSpec.substring(2,specLength);
         }
         else
         {
             this.group = PathSpecGroup.EXACT;
+            this.prefix = servletPathSpec;
         }
 
         for (int i = 0; i < specLength; i++)
@@ -124,6 +127,11 @@ public class ServletPathSpec extends PathSpec
             if (idx != (len - 1))
             {
                 throw new IllegalArgumentException("Servlet Spec 12.2 violation: glob '*' can only exist at end of prefix based matches: bad spec \""+ servletPathSpec +"\"");
+            }
+            
+            if (idx<1 || servletPathSpec.charAt(idx-1)!='/')
+            {
+                throw new IllegalArgumentException("Servlet Spec 12.2 violation: suffix glob '*' can only exist after '/': bad spec \""+ servletPathSpec +"\"");
             }
         }
         else if (servletPathSpec.startsWith("*."))

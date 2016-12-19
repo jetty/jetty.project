@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
 import org.junit.After;
 import org.junit.Test;
 
@@ -30,11 +27,11 @@ import org.junit.Test;
 public class SessionMigrationTest extends AbstractSessionMigrationTest
 {
 
-    public AbstractTestServer createServer(int port)
+    @Override
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
-       return new JdbcTestServer(port);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
-
     @Test
     public void testSessionMigration() throws Exception
     {
@@ -44,12 +41,6 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
 }

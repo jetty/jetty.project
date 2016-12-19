@@ -1,6 +1,7 @@
-#
-# Low Resources module
-#
+[description]
+Enables a low resource monitor on the server
+that can take actions if threads and/or connections
+cross configured threshholds.
 
 [depend]
 server

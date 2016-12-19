@@ -18,11 +18,24 @@
 
 package org.eclipse.jetty.start;
 
+import static java.util.stream.Collectors.toList;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,55 +49,115 @@ import org.junit.runners.Parameterized.Parameters;
 public class TestUseCases
 {
     @Parameters(name = "{0}")
-    public static List<Object[]> getCases()
+    public static List<Object[]> getCases() throws Exception
     {
-        List<Object[]> ret = new ArrayList<>();
-
-        ret.add(new String[] {"barebones", null});
-        ret.add(new String[] {"include-jetty-dir-logging", null});
-        ret.add(new String[] {"jmx", null});
-        ret.add(new String[] {"logging", null});
-        ret.add(new String[] {"jsp", null});
-        ret.add(new String[] {"database", null});
-        ret.add(new String[] {"deep-ext", null});
-        ret.add(new String[] {"versioned-modules", null});
+        File usecases = MavenTestingUtils.getTestResourceDir("usecases/");
+        File[] cases = usecases.listFiles((dir, name) -> name.endsWith(".assert.txt"));
+        Arrays.sort(cases);
         
-        // Ones with command lines
-        ret.add(new Object[] {"http2", new String[]{"java.version=1.8.0_31"}});
-        ret.add(new Object[] {"basic-properties", new String[]{"port=9090"}});
-        ret.add(new Object[] {"agent-properties", new String[]{"java.vm.specification.version=1.6"}});
+        List<Object[]> ret = new ArrayList<>();
+        for (File assertTxt : cases)
+        {
+            String caseName = assertTxt.getName().replace(".assert.txt", "");
+            ret.add(new Object[]{caseName});
+        }
         
         return ret;
     }
-
+    
     @Parameter(0)
     public String caseName;
-
-    @Parameter(1)
-    public String[] commandLineArgs;
-
+    
     @Test
     public void testUseCase() throws Exception
     {
+        String baseName = caseName.replaceFirst("\\..*$", "");
+        File assertFile = MavenTestingUtils.getTestResourceFile("usecases/" + caseName + ".assert.txt");
+        
         Path homeDir = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
-        Path baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName).toPath().toRealPath();
-
-        Main main = new Main();
-        List<String> cmdLine = new ArrayList<>();
-        cmdLine.add("jetty.home=" + homeDir.toString());
-        cmdLine.add("jetty.base=" + baseDir.toString());
-        // cmdLine.add("--debug");
-
-        if (commandLineArgs != null)
+        
+        Path baseSrcDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName).toPath().toRealPath();
+        Path baseDir = MavenTestingUtils.getTargetTestingPath(caseName);
+        org.eclipse.jetty.toolchain.test.FS.ensureEmpty(baseDir);
+        org.eclipse.jetty.toolchain.test.IO.copyDir(baseSrcDir.toFile(), baseDir.toFile());
+        
+        System.setProperty("jetty.home", homeDir.toString());
+        System.setProperty("jetty.base", baseDir.toString());
+        
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream originalStream = StartLog.setStream(new PrintStream(out));
+        try
         {
-            for (String arg : commandLineArgs)
+            // If there is a "{caseName}.prepare.txt" then use those
+            // lines as if you are calling start.jar once to setup
+            // the base directory.
+            List<String> prepareArgs = lines(caseName + ".prepare.txt");
+            if (!prepareArgs.isEmpty())
             {
-                cmdLine.add(arg);
+                Main main = new Main();
+                List<String> cmdLine = new ArrayList<>();
+                cmdLine.add("--testing-mode");
+                cmdLine.addAll(prepareArgs);
+                
+                main.start(main.processCommandLine(cmdLine));
+            }
+            
+            Main main = new Main();
+            List<String> cmdLine = new ArrayList<>();
+            // cmdLine.add("--debug");
+            
+            // If there is a "{caseName}.cmdline.txt" then these
+            // entries are extra command line argument to use for
+            // the actual testcase
+            cmdLine.addAll(lines(caseName + ".cmdline.txt"));
+            StartArgs args = main.processCommandLine(cmdLine);
+            args.getAllModules().checkEnabledModules();
+            BaseHome baseHome = main.getBaseHome();
+            
+            StartLog.setStream(originalStream);
+            String output = out.toString(StandardCharsets.UTF_8.name());
+            ConfigurationAssert.assertConfiguration(baseHome, args, output, assertFile);
+        }
+        catch (Exception e)
+        {
+            List<String> exceptions = lines(assertFile).stream().filter(s -> s.startsWith("EX|")).collect(toList());
+            if (exceptions.isEmpty())
+                throw e;
+            for (String ex : exceptions)
+            {
+                ex = ex.substring(3);
+                Assert.assertThat(e.toString(), Matchers.containsString(ex));
             }
         }
-
-        StartArgs args = main.processCommandLine(cmdLine);
-        BaseHome baseHome = main.getBaseHome();
-        ConfigurationAssert.assertConfiguration(baseHome,args,"usecases/" + caseName + ".assert.txt");
+        finally
+        {
+            StartLog.setStream(originalStream);
+        }
+    }
+    
+    private List<String> lines(String filename) throws IOException
+    {
+        return lines(MavenTestingUtils.getTestResourcesPath().resolve("usecases" + File.separator + filename).toFile());
+    }
+    
+    private List<String> lines(File file) throws IOException
+    {
+        if (!file.exists() || !file.canRead())
+            return Collections.emptyList();
+        List<String> ret = new ArrayList<>();
+        try (FileReader reader = new FileReader(file);
+             BufferedReader buf = new BufferedReader(reader))
+        {
+            String line;
+            while ((line = buf.readLine()) != null)
+            {
+                line = line.trim();
+                if (line.length() > 0)
+                {
+                    ret.add(line);
+                }
+            }
+        }
+        return ret;
     }
 }

@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.io.File;
+
+import org.eclipse.jetty.util.IO;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
-    public AbstractTestServer createServer(int port)
-    {
-        return new HashTestServer(port);
-    }
+
 
     @Test
     public void testCrossContextDispatch() throws Exception
@@ -33,4 +35,10 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
         super.testCrossContextDispatch();
     }
 
+
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    {
+        return new HashTestServer(port,max,scavenge,evictionPolicy);
+    }
 }

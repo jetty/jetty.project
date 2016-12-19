@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
 import org.junit.After;
 import org.junit.Test;
 
@@ -31,9 +28,9 @@ import org.junit.Test;
 public class ReentrantRequestSessionTest extends AbstractReentrantRequestSessionTest
 {
 
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
     {
-       return new JdbcTestServer(port);
+       return new JdbcTestServer(port,max,scavenge,evictionPolicy);
     }
 
     @Test
@@ -42,15 +39,11 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
         super.testReentrantRequestSession();
     }
     
+    
     @After
     public void tearDown() throws Exception 
     {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
+        JdbcTestServer.shutdown(null);
     }
+   
 }

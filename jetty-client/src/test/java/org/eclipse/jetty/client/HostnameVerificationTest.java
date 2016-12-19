@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
 

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.15-SNAPSHOT</version>
+    <version>9.4.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jspc-maven-plugin</artifactId>
@@ -23,7 +23,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
-        <version>3.4</version>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
@@ -93,21 +92,20 @@
       <version>1.8.4</version>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jstl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-    </dependencies>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
   <reporting>
-  <plugins>
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-project-info-reports-plugin</artifactId>
-      <version>2.1</version>
-      <configuration>
-        <dependencyLocationEnabled>false</dependencyLocationEnabled>
-       </configuration>
-         <reportSets>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <configuration>
+          <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+        </configuration>
+        <reportSets>
           <reportSet>
             <reports>
               <report>project-team</report>
@@ -119,7 +117,7 @@
             </reports>
           </reportSet>
         </reportSets>
-    </plugin>
-  </plugins>
+      </plugin>
+    </plugins>
   </reporting>
 </project>

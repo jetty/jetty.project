@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.3.15-SNAPSHOT</version>
+    <version>9.4.1-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: Webapps :: Spec Webapp</name>
   <artifactId>test-spec-webapp</artifactId>
@@ -21,7 +21,7 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-       
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -62,7 +62,6 @@
         </configuration>
       </plugin>
 
-
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -92,7 +91,6 @@
           </instructions>
         </configuration>
       </plugin>
-
 
        <plugin>
          <artifactId>maven-antrun-plugin</artifactId>
@@ -141,24 +139,6 @@
           </execution>
         </executions>
        </plugin>
-       <!-- plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.2-beta-3</version>
-          <executions>
-            <execution>
-              <phase>package</phase>
-              <goals>
-                <goal>single</goal>
-              </goals>
-              <configuration>
-                <descriptors>
-                  <descriptor>${basedir}/src/main/assembly/config.xml</descriptor>
-                </descriptors>
-              </configuration>
-            </execution>
-          </executions>
-       </plugin -->
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
@@ -192,6 +172,7 @@
       </plugin>
     </plugins>
   </build>
+
   <dependencies>
     <dependency>
       <groupId>javax.transaction</groupId>

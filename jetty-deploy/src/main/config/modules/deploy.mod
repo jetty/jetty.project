@@ -1,6 +1,5 @@
-#
-# Deploy Feature
-#
+[description]
+Enables webapplication deployment from the webapps directory.
 
 [depend]
 webapp

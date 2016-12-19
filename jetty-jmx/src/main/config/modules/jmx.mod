@@ -1,6 +1,6 @@
-#
-# JMX Module
-#
+[description]
+Enables JMX instrumentation for server beans and 
+enables JMX agent.
 
 [depend]
 server

@@ -1,0 +1,186 @@
+//  ========================================================================
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[session-clustering-infinispan]]
+=== Session Clustering with Infinispan
+
+Jetty can support session clustering by persisting sessions to http://www.infinispan.org[Infinispan].
+Each Jetty instance locally caches sessions for which it has received requests, writing any changes to the session through to Infinispan as the request exits the server.
+Sessions must obey the Serialization contract, and servlets must call the `Session.setAttribute()` method to ensure that changes are persisted.
+
+The persistent session mechanism works in conjunction with a load balancer that supports stickiness.
+Stickiness can be based on various data items, such as source IP address or characteristics of the session ID or a load-balancer specific mechanism.
+For those load balancers that examine the session ID, the Jetty persistent session mechanism appends a node ID to the session ID, which can be used for routing.
+
+==== Configuration
+
+There are two components to session management in Jetty: a session ID manager and a session manager.
+
+* The session ID manager ensures that session IDs are unique across all webapps hosted on a Jetty instance, and thus there can only be one session ID manager per Jetty instance.
+* The session manager handles the session lifecycle (create/update/invalidate/expire) on behalf of a web application, so there is one session manager per web application instance.
+
+These managers also cooperate and collaborate with the `org.eclipse.jetty.server.session.SessionHandler` to enable cross-context dispatch.
+
+==== The Infinispan Module
+
+When using the jetty distribution, to enable Infinispan session persistence, you will first need to enable the Infinispan link:#startup-modules[module] for your link:#creating-jetty-base[base] using the `--add-to-start` argument to the link:#startup-overview[start.jar].
+
+As part of the module installation, the necessary Infinispan jars will be dynamically downloaded and installed to your `${jetty.base}/lib/infinispan` directory.
+If you need to up or downgrade the version of the Infinispan jars, then you can delete the jars that were automatically installed and replace them.
+Once you've done that, you will need to prevent Jetty's startup checks from detecting the missing jars.
+To do that, you can use `--skip-file-validation=infinispan` argument to start.jar on the command line, or place that line inside `${jetty.base}/start.ini` to ensure it is used for every start.
+
+You will also find the following properties, either in your base's `start.d/infinispan.ini` file or appended to your `start.ini`, depending on how you enabled the module:
+
+....
+## Unique identifier for this node in the cluster
+jetty.infinispanSession.workerName=node1
+....
+
+jetty.infinispanSession.workerName::
+  The name that uniquely identifies this node in the cluster.
+  This value   will also be used by the sticky load balancer to identify the node.
+  Don't forget to change the value of this property on *each* node on which you enable Infinispan session clustering.
+
+These properties are applied to the `InfinispanSessionIdManager` described below.
+
+===== Configuring the InfinispanSessionIdManager
+
+The Infinispan module will have installed file called `$\{jetty.home}/etc/jetty-infinispan.xml`.
+This file configures an instance of the `InfinispanSessionIdManager` that will be shared across all webapps deployed on that server.
+It looks like this:
+
+[source, xml, subs="{sub-order}"]
+----
+include::{SRCDIR}/jetty-infinispan/src/main/config/etc/jetty-infinispan.xml[]
+----
+
+As you can see, you configure the Infinispan http://infinispan.org/docs/7.1.x/user_guide/user_guide.html#_the_cache_apis[Cache] instance that the `InfinispanSessionIdManager` should use in this file.
+By default, the Infinispan http://infinispan.org/docs/7.1.x/getting_started/getting_started.html#_running_infinispan_on_a_single_node[Default cache] instance is used (e.g. on the local node).
+You can instead use a custom Cache setup - the `jetty-infinispan.xml` file shows you how to configure a remote Cache (using the http://infinispan.org/docs/7.1.x/user_guide/user_guide.html#_using_hot_rod_server[hotrod java client]).
+
+The `InfinispanSessionIdManager` can be configured by calling setters:
+
+idleExpiryMultiple::
+  Sessions that are not immortal, e.g. they have an expiry time, have   their ids stored into Infinispan with an http://infinispan.org/docs/7.1.x/user_guide/user_guide.html#_expiration[idle  expiry timeout] equivalent to double the session's timeout.
+  This should be sufficient to ensure that a session id that is in-use by a session is never accidentally removed.
+  However, should you wish to, you can configure this to any integral value to effectively increase the http://infinispan.org/docs/7.1.x/user_guide/user_guide.html#_expiration[idle expiry] timeout.
+
+===== Configuring the InfinispanSessionManager
+
+As mentioned elsewhere, there should be one `InfinispanSessionManager` per context (e.g. webapp).
+It will need to reference the single `InfinispanSessionIdManager` configured previously for the Server.
+
+The way you configure a `InfinispanSessionManager` depends on whether you're configuring from a context xml file, a `jetty-web.xml` file or code.
+The basic difference is how you get a reference to the Jetty `org.eclipse.jetty.server.Server` instance.
+
+From a context xml file, you reference the Server instance as a Ref:
+
+[source, xml, subs="{sub-order}"]
+----
+  <!-- Expose the jetty infinispan classes for session serialization -->
+  <Call name="prependServerClass">
+    <Arg>-org.eclipse.jetty.session.infinispan.</Arg>
+  </Call>
+
+
+  <!-- Get a reference to the InfinispanSessionIdManager -->
+  <Ref id="Server">
+    <Call id="idMgr" name="getSessionIdManager"/>
+  </Ref>
+
+  <!-- Get a referencee to the Cache from the InfinispanSessionIdManager -->
+  <Ref id="idMgr">
+    <Get id="cache" name="cache"/>
+  </Ref>
+
+  <!-- Use the InfinispanSessionIdManager and Cache to setup up the InfinispanSessionManager -->
+  <Set name="sessionHandler">
+    <New class="org.eclipse.jetty.server.session.SessionHandler">
+      <Arg>
+        <New id="mgr" class="org.eclipse.jetty.session.infinispan.InfinispanSessionManager">
+          <Set name="sessionIdManager">
+            <Ref id="idMgr"/>
+          </Set>
+          <Set name="cache">
+            <Ref id="cache">
+            </Ref>
+          </Set>
+          <Set name="scavengeInterval">60</Set>
+        </New>
+      </Arg>
+    </New>
+  </Set>
+----
+
+From a `WEB-INF/jetty-web.xml` file, you can reference the Server instance directly:
+
+[source, xml, subs="{sub-order}"]
+----
+  <!-- Expose the jetty infinispan classes for session serialization -->
+  <Call name="prependServerClass">
+    <Arg>-org.eclipse.jetty.session.infinispan.</Arg>
+  </Call>
+
+<!-- Reference the server directly -->
+<Get name="server">
+  <Get id="idMgr" name="sessionIdManager"/>
+</Get>
+
+<!-- Get a reference to the Cache via the InfinispanSessionIdManager -->
+ <Ref id="idMgr">
+    <Get id="cache" name="cache"/>
+  </Ref>
+
+<!-- Apply the SessionIdManager and Cache to the InfinispanSessionManager -->
+<Set name="sessionHandler">
+  <New class="org.eclipse.jetty.server.session.SessionHandler">
+     <Arg>
+        <New id="mgr" class="org.eclipse.jetty.session.infinispan.InfinispanSessionManager">
+          <Set name="sessionIdManager">
+            <Ref id="idMgr"/>
+          </Set>
+          <Set name="cache">
+            <Ref id="cache">
+            </Ref>
+          </Set>
+          <Set name="scavengeInterval">600</Set>
+        </New>
+      </Arg>
+  </New>
+</Set>
+----
+
+The InfinispanSessionManager can be provided by calling setters:
+
+scavengeInterval::
+  Time in seconds between runs of a scavenger task that looks for expired old sessions to delete.
+  The default is 10 minutes.
+staleIntervalSec::
+  The length of time a session can be in memory without being checked against the cluster.
+  A value of 0 indicates that the session is never checked against the cluster - the current node is considered to be the master for the session.
+
+===== Using HotRod
+
+If you're using the hotrod client - where serialization will be required - you will need to ensure that the hotrod marshalling software works with Jetty classloading.
+To do this, firstly ensure that you have included the lines containing the `prependServerClass` to your context xml file as shown above.
+
+Then, create the file `${jetty.base}/resources/hotrod-client.properties`.
+Add the following line to this file:
+
+....
+infinispan.client.hotrod.marshaller=org.eclipse.jetty.session.infinispan.WebAppMarshaller
+....

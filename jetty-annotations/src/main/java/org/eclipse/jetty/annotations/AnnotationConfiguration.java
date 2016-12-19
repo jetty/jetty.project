@@ -21,7 +21,6 @@ package org.eclipse.jetty.annotations;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -81,8 +81,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     protected List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<ContainerInitializerAnnotationHandler>();
    
     protected List<ParserTask> _parserTasks;
-    protected WebAppClassNameResolver _webAppClassNameResolver;
-    protected ContainerClassNameResolver _containerClassNameResolver;
 
     protected CounterStatistic _containerPathStats;
     protected CounterStatistic _webInfLibStats;
@@ -138,15 +136,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
         protected Exception _exception;
         protected final AnnotationParser _parser;
         protected final Set<? extends Handler> _handlers;
-        protected final ClassNameResolver _resolver;
         protected final Resource _resource;
         protected TimeStatistic _stat;
         
-        public ParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource, ClassNameResolver resolver)
+        public ParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource)
         {
             _parser = parser;
             _handlers = handlers;
-            _resolver = resolver;
             _resource = resource;
         }
         
@@ -160,7 +156,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             if (_stat != null)
                 _stat.start();
             if (_parser != null)
-                _parser.parse(_handlers, _resource, _resolver); 
+                _parser.parse(_handlers, _resource); 
             if (_stat != null)
                 _stat.end();
             return null;
@@ -174,83 +170,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         public Resource getResource()
         {
             return _resource;
-        }
-        
-    }
-
-    /**
-     * WebAppClassNameResolver
-     *
-     * Checks to see if a classname belongs to hidden or visible packages when scanning,
-     * and whether a classname that is a duplicate should override a previously
-     * scanned classname. 
-     * 
-     * This is analogous to the management of classes that the WebAppClassLoader is doing,
-     * however we don't want to load the classes at this point so we are doing it on
-     * the name only.
-     * 
-     */
-    public class WebAppClassNameResolver implements ClassNameResolver
-    {
-        private WebAppContext _context;
-
-        public WebAppClassNameResolver (WebAppContext context)
-        {
-            _context = context;
-        }
-
-        public boolean isExcluded (String name)
-        {
-            if (_context.isSystemClass(name)) return true;
-            if (_context.isServerClass(name)) return false;
-            return false;
-        }
-
-        public boolean shouldOverride (String name)
-        {
-            //looking at webapp classpath, found already-parsed class 
-            //of same name - did it come from system or duplicate in webapp?
-            if (_context.isParentLoaderPriority())
-                return false;
-            return true;
-        }
-    }
-
-    
-    /**
-     * ContainerClassNameResolver
-     *
-     * Checks to see if a classname belongs to a hidden or visible package
-     * when scanning for annotations and thus whether it should be excluded from
-     * consideration or not.
-     * 
-     * This is analogous to the management of classes that the WebAppClassLoader is doing,
-     * however we don't want to load the classes at this point so we are doing it on
-     * the name only.
-     * 
-     */
-    public class ContainerClassNameResolver implements ClassNameResolver
-    { 
-        private WebAppContext _context;
-        
-        public ContainerClassNameResolver (WebAppContext context)
-        {
-            _context = context;
-        }
-        public boolean isExcluded (String name)
-        {
-            if (_context.isSystemClass(name)) return false;
-            if (_context.isServerClass(name)) return true;
-            return false;
-        }
-
-        public boolean shouldOverride (String name)
-        {
-            //visiting the container classpath, 
-            if (_context.isParentLoaderPriority())
-                return true;
-            return false;
-        }
+        }   
     }
     
     
@@ -390,8 +310,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        _webAppClassNameResolver = new WebAppClassNameResolver(context);
-        _containerClassNameResolver = new ContainerClassNameResolver(context);
         String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN);
         _sciExcludePattern = (tmp==null?null:Pattern.compile(tmp));
     }
@@ -445,15 +363,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
        if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
            scanForAnnotations(context);   
-       
+
        // Resolve container initializers
        List<ContainerInitializer> initializers = 
-                   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+           (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
        if (initializers != null && initializers.size()>0)
        {
            Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
            for (ContainerInitializer i : initializers)
-                   i.resolveClasses(context,map);
+               i.resolveClasses(context,map);
        }
     }
 
@@ -723,23 +641,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public Resource getJarFor (ServletContainerInitializer service) 
     throws MalformedURLException, IOException
     {
-        //try the thread context classloader to get the jar that loaded the class
-        URL jarURL = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
-        
-        //if for some reason that failed (eg we're in osgi and the TCCL does not know about the service) try the classloader that
-        //loaded the class
-        if (jarURL == null)
-            jarURL = service.getClass().getClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
-  
-        String loadingJarName = jarURL.toString();
-
-        int i = loadingJarName.indexOf(".jar");
-        if (i < 0)
-            return null; //not from a jar
-        
-        loadingJarName = loadingJarName.substring(0,i+4);
-        loadingJarName = (loadingJarName.startsWith("jar:")?loadingJarName.substring(4):loadingJarName);
-        return Resource.newResource(loadingJarName);
+        return TypeUtil.getLoadedFrom(service.getClass());
     }
     
     /**
@@ -760,26 +662,41 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (context == null)
             throw new IllegalArgumentException("WebAppContext null");
         
-        if (LOG.isDebugEnabled()) LOG.debug("Checking {} for jar exclusion", sci);
-        
+                
         //A ServletContainerInitializer that came from the container's classpath cannot be excluded by an ordering
         //of WEB-INF/lib jars
         if (isFromContainerClassPath(context, sci))
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} from container classpath", sci);
             return false;
+        }
         
         //If no ordering, nothing is excluded
         if (context.getMetaData().getOrdering() == null)
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} no ordering", sci);
             return false;
-        
+        }
         
         List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
 
         //there is an ordering, but there are no jars resulting from the ordering, everything excluded
         if (orderedJars.isEmpty())
+        {
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("Excluded {} empty ordering", sci);
             return true;
+        }
 
         if (sciResource == null)
-            return false; //not from a jar therefore not from WEB-INF so not excludable
+        {
+            //not from a jar therefore not from WEB-INF so not excludable
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("!Excluded {} not from jar", sci);
+            return false; 
+        }
         
         URI loadingJarURI = sciResource.getURI();
         boolean found = false;
@@ -790,9 +707,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
             found = r.getURI().equals(loadingJarURI);
         }
 
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("{}Excluded {} found={}",found?"!":"",sci,found);
         return !found;
     }
-
 
     /**
      * Test if the ServletContainerIntializer is excluded by the 
@@ -808,7 +726,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return false;
         
         //test if name of class matches the regex
-        if (LOG.isDebugEnabled()) LOG.debug("Checking {} against containerInitializerExclusionPattern",sci.getClass().getName());
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("Checking {} against containerInitializerExclusionPattern",sci.getClass().getName());
         return _sciExcludePattern.matcher(sci.getClass().getName()).matches();
     }
     
@@ -866,17 +785,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //because containerInitializerOrdering omits it
         for (ServletContainerInitializer sci:_loadedInitializers)
         { 
-            
             if (matchesExclusionPattern(sci)) 
             {
-                if (LOG.isDebugEnabled()) LOG.debug("{} excluded by pattern", sci);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} excluded by pattern", sci);
                 continue;
             }
 
             Resource sciResource = getJarFor(sci);
             if (isFromExcludedJar(context, sci, sciResource)) 
             { 
-                if (LOG.isDebugEnabled()) LOG.debug("{} is from excluded jar", sci);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} is from excluded jar", sci);
                 continue;
             }
             
@@ -885,7 +805,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
             if (initializerOrdering != null
                 && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
             {
-                if (LOG.isDebugEnabled()) LOG.debug("{} is excluded by ordering", sci);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} is excluded by ordering", sci);
                 continue;
             }
             
@@ -912,12 +833,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //no web.xml ordering defined, add SCIs in any order
             if (context.getMetaData().getOrdering() == null)
             {
-                if (LOG.isDebugEnabled())  LOG.debug("No web.xml ordering, ServletContainerInitializers in random order");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No web.xml ordering, ServletContainerInitializers in random order");
                 nonExcludedInitializers.addAll(sciResourceMap.keySet());
             }
             else
             {
-                if (LOG.isDebugEnabled())  LOG.debug("Ordering ServletContainerInitializers with ordering {}",context.getMetaData().getOrdering());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ordering ServletContainerInitializers with ordering {}",context.getMetaData().getOrdering());
                 for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
                 {
                     //add in SCIs from the container classpath
@@ -992,7 +915,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //queue it up for scanning if using multithreaded mode
             if (_parserTasks != null)
             {
-                ParserTask task = new ParserTask(parser, handlers, r, _containerClassNameResolver);
+                ParserTask task = new ParserTask(parser, handlers, r);
                 _parserTasks.add(task);  
                 _containerPathStats.increment();
                 if (LOG.isDebugEnabled())
@@ -1054,7 +977,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
                 if (_parserTasks != null)
                 {
-                    ParserTask task = new ParserTask(parser, handlers,r, _webAppClassNameResolver);
+                    ParserTask task = new ParserTask(parser, handlers,r);
                     _parserTasks.add (task);
                     _webInfLibStats.increment();
                     if (LOG.isDebugEnabled())
@@ -1087,7 +1010,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             if (_parserTasks != null)
             {
-                ParserTask task = new ParserTask(parser, handlers, dir, _webAppClassNameResolver);
+                ParserTask task = new ParserTask(parser, handlers, dir);
                 _parserTasks.add(task);
                 _webInfClassesStats.increment();
                 if (LOG.isDebugEnabled())

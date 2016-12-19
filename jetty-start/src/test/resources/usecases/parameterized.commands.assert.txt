@@ -1,0 +1,19 @@
+## The XMLs we expect (order is important)
+XML|${jetty.home}/etc/base.xml
+XML|${jetty.home}/etc/main.xml
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.home}/lib/base.jar
+LIB|${jetty.home}/lib/main.jar
+LIB|${jetty.home}/lib/other.jar
+
+# The Properties we expect (order is irrelevant)
+PROP|main.prop=value0
+PROP|name=value
+PROP|name0=changed0
+PROP|name1=changed1
+PROP|property=value
+PROP|property0=value0
+
+# Files / Directories to create
+EXISTS|start.d/parameterized.ini

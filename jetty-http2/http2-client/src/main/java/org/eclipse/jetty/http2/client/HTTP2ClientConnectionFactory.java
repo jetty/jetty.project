@@ -39,7 +39,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
@@ -52,7 +51,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
 
     private final Connection.Listener connectionListener = new ConnectionListener();
-    private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
@@ -66,42 +64,13 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(byteBufferPool);
-        FlowControlStrategy flowControl = newFlowControlStrategy();
-        if (flowControl == null)
-            flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
+        FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
-                parser, session, client.getInputBufferSize(), client.getExecutionStrategyFactory(), promise, listener);
+                parser, session, client.getInputBufferSize(), promise, listener);
         connection.addListener(connectionListener);
         return customize(connection, context);
-    }
-
-    /**
-     * @deprecated use {@link HTTP2Client#setFlowControlStrategyFactory(FlowControlStrategy.Factory)} instead
-     */
-    @Deprecated
-    protected FlowControlStrategy newFlowControlStrategy()
-    {
-        return null;
-    }
-
-    /**
-     * @deprecated use {@link HTTP2Client#getInitialSessionRecvWindow()} instead
-     */
-    @Deprecated
-    public int getInitialSessionRecvWindow()
-    {
-        return initialSessionRecvWindow;
-    }
-
-    /**
-     * @deprecated use {@link HTTP2Client#setInitialSessionRecvWindow(int)} instead
-     */
-    @Deprecated
-    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
-    {
-        this.initialSessionRecvWindow = initialSessionRecvWindow;
     }
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback
@@ -110,26 +79,26 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, ExecutionStrategy.Factory executionFactory, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
-            super(byteBufferPool, executor, endpoint, parser, session, bufferSize, executionFactory);
+            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
             this.promise = promise;
             this.listener = listener;
         }
 
         @Override
-        public int getMessagesIn()
+        public long getMessagesIn()
         {
             HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return (int)session.getStreamsOpened();
+            return session.getStreamsOpened();
         }
 
         @Override
-        public int getMessagesOut()
+        public long getMessagesOut()
         {
             HTTP2ClientSession session = (HTTP2ClientSession)getSession();
-            return (int)session.getStreamsClosed();
+            return session.getStreamsClosed();
         }
 
         @Override
@@ -144,11 +113,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
             ISession session = getSession();
 
-            int sessionRecv = client.getInitialSessionRecvWindow();
-            if (sessionRecv == FlowControlStrategy.DEFAULT_WINDOW_SIZE)
-                sessionRecv = initialSessionRecvWindow;
-
-            int windowDelta = sessionRecv - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+            int windowDelta = client.getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             if (windowDelta > 0)
             {
                 session.updateRecvWindow(windowDelta);

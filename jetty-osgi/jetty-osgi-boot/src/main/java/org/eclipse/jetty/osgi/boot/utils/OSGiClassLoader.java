@@ -43,7 +43,6 @@ public class OSGiClassLoader extends URLClassLoader
     
     private Bundle _bundle;
     private ClassLoader _osgiBundleClassLoader;
-    private boolean _lookInOsgiFirst = true;
     private ClassLoader _parent;
     
     /* ------------------------------------------------------------ */
@@ -69,14 +68,6 @@ public class OSGiClassLoader extends URLClassLoader
         boolean tried_parent= false;
 
         
-        if (_parent!=null && !_lookInOsgiFirst)
-        {
-            tried_parent= true;
-            
-            if (_parent!=null)
-                url= _parent.getResource(name);
-        }
-
         if (url == null)
         {           
             url = _osgiBundleClassLoader.getResource(name);
@@ -118,21 +109,6 @@ public class OSGiClassLoader extends URLClassLoader
         ClassNotFoundException ex= null;
         boolean tried_parent= false;
         
-        if (c == null && _parent!=null && !_lookInOsgiFirst)
-        {
-            tried_parent= true;
-            try
-            {
-                c= _parent.loadClass(name);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("loaded " + c);
-            }
-            catch (ClassNotFoundException e)
-            {
-                ex= e;
-            }
-        }
-
         if (c == null)
         {
             try
@@ -166,14 +142,7 @@ public class OSGiClassLoader extends URLClassLoader
     {
         Enumeration<URL> osgiUrls = _osgiBundleClassLoader.getResources(name);
         Enumeration<URL> urls = super.getResources(name);
-        if (_lookInOsgiFirst)
-        {
-            return Collections.enumeration(toList(osgiUrls, urls));
-        }
-        else
-        {
-            return Collections.enumeration(toList(urls, osgiUrls));
-        }
+        return Collections.enumeration(toList(osgiUrls, urls));
     }
     
     
@@ -181,21 +150,7 @@ public class OSGiClassLoader extends URLClassLoader
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException
     {
-        try
-        {
-            return _lookInOsgiFirst ? _osgiBundleClassLoader.loadClass(name) : super.findClass(name);
-        }
-        catch (ClassNotFoundException cne)
-        {
-            try
-            {
-                return _lookInOsgiFirst ? super.findClass(name) : _osgiBundleClassLoader.loadClass(name);
-            }
-            catch (ClassNotFoundException cne2)
-            {
-                throw cne;
-            }
-        }
+       return  _osgiBundleClassLoader.loadClass(name);
     }
     
     

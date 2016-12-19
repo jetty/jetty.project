@@ -21,13 +21,12 @@ If you are using the standard distribution of Jetty, you must enable the _JNDI_ 
 As the _plus_ module depends on the _JNDI_ module, you only need to enable the _plus_ module to enable both.
 Assuming you have Jetty installed in `/opt/jetty`, and you have made a link:#startup-base-and-home[jetty base] in `/opt/jetty/my-base`, do:
 
-[source,bash]
-----
+[source, screen, subs="{sub-order}"]
+....
 cd /opt/jetty
 cd my-base
-java -jar $JETTY_HOME/start.jar --add-to-startd=plus
-
-----
+java -jar $JETTY_HOME/start.jar --add-to-start=plus
+....
 
 You can now start Jetty and use JNDI within your webapps.
 See link:#using-jndi[Using JNDI] for information on how to add entries to the JNDI environment that Jetty can look up within webapps.
@@ -36,10 +35,9 @@ If you have extra jars associated with your JNDI resources, for example a databa
 You will then need to enable the _ext_ module to ensure the jars in the `ext/` directory are on the classpath.
 Assuming you have Jetty installed in `/opt/jetty`, and you have made a link:#startup-base-and-home[jetty base] in `/opt/jetty/my-base`, do:
 
-[source,bash]
-----
+[source, screen, subs="{sub-order}"]
+....
 cd /opt/jetty
 cd my-base
-java -jar $JETTY_HOME/start.jar --add-to-startd=ext
-
-----
+java -jar $JETTY_HOME/start.jar --add-to-start=ext
+....

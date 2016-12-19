@@ -1,0 +1,26 @@
+## The XMLs we expect (order is important)
+XML|${jetty.home}/etc/optional.xml
+XML|${jetty.home}/etc/base.xml
+XML|${jetty.home}/etc/main.xml
+XML|${jetty.home}/etc/extra.xml
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.home}/lib/optional.jar
+LIB|${jetty.home}/lib/base.jar
+LIB|${jetty.home}/lib/main.jar
+LIB|${jetty.home}/lib/other.jar
+LIB|${jetty.home}/lib/extra/extra0.jar
+LIB|${jetty.home}/lib/extra/extra1.jar
+
+# The Properties we expect (order is irrelevant)
+PROP|extra.prop=value0
+PROP|main.prop=value0
+PROP|optional.prop=value0
+
+# Files / Directories to create
+EXISTS|maindir/
+EXISTS|start.d/extra.ini
+EXISTS|start.d/optional.ini
+
+# Output Assertions [regex!] (order is irrelevant)
+OUTPUT|MKDIR : \$\{jetty.base\}[\\/]maindir

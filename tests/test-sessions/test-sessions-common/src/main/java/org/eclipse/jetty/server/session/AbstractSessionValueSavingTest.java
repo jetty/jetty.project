@@ -39,9 +39,8 @@ import org.junit.Test;
 /**
  * AbstractSessionValueSavingTest
  */
-public abstract class AbstractSessionValueSavingTest
+public abstract class AbstractSessionValueSavingTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
 
     @Test
     public void testSessionValueSaving() throws Exception
@@ -50,7 +49,7 @@ public abstract class AbstractSessionValueSavingTest
         String servletMapping = "/server";
         int maxInactivePeriod = 10000;
         int scavengePeriod = 20000;
-        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod);
+        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
  
         try
@@ -77,9 +76,6 @@ public abstract class AbstractSessionValueSavingTest
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
-                    // Perform some request to server2 using the session cookie from the previous request
-                    // This should migrate the session from server1 to server2, and leave server1's
-                    // session in a very stale state, while server2 has a very fresh session.
                     // We want to test that optimizations done to the saving of the shared lastAccessTime
                     // do not break the correct working
                     int requestInterval = 500;
@@ -130,13 +126,10 @@ public abstract class AbstractSessionValueSavingTest
             else
             {
                 HttpSession session = request.getSession(false);
-                System.out.println("not init call " + session);
                 if (session!=null)
                 {
-                        long value = System.currentTimeMillis();
-                        System.out.println("Setting test to : " + value);
+                    long value = System.currentTimeMillis();
                     session.setAttribute("test", value);
-
                 }
 
                 sendResult(session, httpServletResponse.getWriter());

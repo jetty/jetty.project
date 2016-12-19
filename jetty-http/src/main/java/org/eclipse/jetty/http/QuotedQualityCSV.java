@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.http;
 
+import static java.lang.Integer.MIN_VALUE;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 
 /* ------------------------------------------------------------ */
 /**
@@ -39,15 +42,46 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     
     private final List<Double> _quality = new ArrayList<>();
     private boolean _sorted = false;
+    private final Function<String, Integer> _secondaryOrdering;
     
     /* ------------------------------------------------------------ */
-    public QuotedQualityCSV(String... values)
+    /**
+     * Sorts values with equal quality according to the length of the value String.
+     */
+    public QuotedQualityCSV()
     {
-        for (String v:values)
-            addValue(v);
+        this((s) -> s.length());
     }
 
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Sorts values with equal quality according to given order.
+     * @param preferredOrder Array indicating the preferred order of known values
+     */
+    public QuotedQualityCSV(String[] preferredOrder)
+    {
+        this((s) -> {
+            for (int i=0;i<preferredOrder.length;++i)
+                if (preferredOrder[i].equals(s))
+                    return preferredOrder.length-i;
+
+            if ("*".equals(s))
+                return preferredOrder.length;
+
+            return MIN_VALUE;
+        });
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Orders values with equal quality with the given function.
+     * @param secondaryOrdering Function to apply an ordering other than specified by quality
+     */
+    public QuotedQualityCSV(Function<String, Integer> secondaryOrdering)
+    {
+        this._secondaryOrdering = secondaryOrdering;
+    }
+
     /* ------------------------------------------------------------ */
     public void addValue(String value)
     {
@@ -108,7 +142,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         _sorted=true;
 
         Double last = ZERO;
-        int len = Integer.MIN_VALUE;
+        int lastOrderIndex = Integer.MIN_VALUE;
 
         for (int i = _values.size(); i-- > 0;)
         {
@@ -116,20 +150,20 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             Double q = _quality.get(i);
 
             int compare=last.compareTo(q);
-            if (compare > 0  || (compare==0 && v.length()<len))
+            if (compare>0 || (compare==0 && _secondaryOrdering.apply(v)<lastOrderIndex))
             {
                 _values.set(i, _values.get(i + 1));
                 _values.set(i + 1, v);
                 _quality.set(i, _quality.get(i + 1));
                 _quality.set(i + 1, q);
                 last = ZERO;
-                len=0;
+                lastOrderIndex=0;
                 i = _values.size();
                 continue;
             }
 
             last=q;
-            len=v.length();
+            lastOrderIndex=_secondaryOrdering.apply(v);
         }
         
         int last_element=_quality.size();

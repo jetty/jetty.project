@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -55,10 +56,33 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
+    /**
+     * @param protocol A HTTP2 protocol variant
+     * @return True if the protocol version is supported
+     */
+    public static boolean isSupportedProtocol(String protocol)
+    {
+        switch(protocol)
+        {
+            case "h2":
+            case "h2-17":
+            case "h2-16":
+            case "h2-15":
+            case "h2-14":
+            case "h2c":
+            case "h2c-17":
+            case "h2c-16":
+            case "h2c-15":
+            case "h2c-14":
+                return true;
+            default:
+                return false;
+        }
+    }
+    
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final AtomicLong totalRequests = new AtomicLong();
@@ -68,26 +92,21 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
-        this(byteBufferPool, executor, endPoint, httpConfig, parser, session, inputBufferSize, ExecutionStrategy.Factory.getDefault(), listener);
-    }
-
-    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ExecutionStrategy.Factory executionFactory, ServerSessionListener listener)
-    {
-        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, executionFactory);
+        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
     }
 
     @Override
-    public int getMessagesIn()
+    public long getMessagesIn()
     {
-        return totalRequests.intValue();
+        return totalRequests.get();
     }
 
     @Override
-    public int getMessagesOut()
+    public long getMessagesOut()
     {
-        return totalResponses.intValue();
+        return totalResponses.get();
     }
 
     @Override
@@ -271,7 +290,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return true;
     }
 
-    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements ExecutionStrategy.Rejectable
+    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements Closeable
     {
         public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
         {
@@ -303,7 +322,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
-        public void reject()
+        public void close()
         {
             IStream stream = getStream();
             if (LOG.isDebugEnabled())

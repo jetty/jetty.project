@@ -44,13 +44,11 @@ import org.junit.Test;
  *
  *
  */
-public abstract class AbstractProxySerializationTest
+public abstract class AbstractProxySerializationTest extends AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int max, int scavenge);
     
     public abstract void customizeContext (ServletContextHandler c);
-    
-   
+     
     
     /**
      * @param msec milliseconds to sleep
@@ -73,7 +71,7 @@ public abstract class AbstractProxySerializationTest
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 10;
-        AbstractTestServer server = createServer(0, 20, scavengePeriod);
+        AbstractTestServer server = createServer(0, 20, scavengePeriod, SessionCache.NEVER_EVICT);
         ServletContextHandler context = server.addContext(contextPath);
 
         InputStream is = this.getClass().getClassLoader().getResourceAsStream("proxy-serialization.jar");

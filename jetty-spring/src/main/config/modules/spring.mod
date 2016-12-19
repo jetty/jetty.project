@@ -1,9 +1,6 @@
-#
-# Spring
-#
-
-[name]
-spring
+[description]
+Enable spring configuration processing so all jetty style 
+xml files can optionally be written as spring beans
 
 [depend]
 server

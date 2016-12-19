@@ -50,11 +50,10 @@ import org.junit.Test;
  * In the real world, we must have a load balancer that uses sticky sessions
  * to keep the session pinned to a particular node.
  */
-public abstract class AbstractScatterGunLoadTest
+public abstract class AbstractScatterGunLoadTest extends AbstractTestBase
 {
     protected boolean _stress = Boolean.getBoolean( "STRESS" );
 
-    public abstract AbstractTestServer createServer(int port);
 
     @Test
     public void testLightLoad()
@@ -64,14 +63,14 @@ public abstract class AbstractScatterGunLoadTest
         {
             String contextPath = "";
             String servletMapping = "/server";
-            AbstractTestServer server1 = createServer( 0 );
+            AbstractTestServer server1 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
             server1.addContext( contextPath ).addServlet( TestServlet.class, servletMapping );
 
             try
             {
                 server1.start();
                 int port1 = server1.getPort();
-                AbstractTestServer server2 = createServer( 0 );
+                AbstractTestServer server2 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
                 server2.addContext( contextPath ).addServlet( TestServlet.class, servletMapping );
 
                 try

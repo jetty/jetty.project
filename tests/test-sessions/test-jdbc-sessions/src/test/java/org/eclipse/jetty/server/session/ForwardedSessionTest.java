@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -29,13 +30,10 @@ import org.junit.Test;
 public class ForwardedSessionTest extends AbstractForwardedSessionTest
 {
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractForwardedSessionTest#createServer(int)
-     */
     @Override
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
     {
-        return new JdbcTestServer(port);
+        return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
     }
 
     @Test
@@ -44,6 +42,12 @@ public class ForwardedSessionTest extends AbstractForwardedSessionTest
         super.testSessionCreateInForward();
     }
     
+    
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestServer.shutdown(null);
+    }
     
     
 

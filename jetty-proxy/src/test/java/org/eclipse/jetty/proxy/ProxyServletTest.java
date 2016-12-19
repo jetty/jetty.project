@@ -62,6 +62,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContentResponse;
 import org.eclipse.jetty.client.HttpProxy;
@@ -359,13 +360,18 @@ public class ProxyServletTest
                     resp.addHeader(PROXIED_HEADER, "true");
                 InputStream input = req.getInputStream();
                 int index = 0;
+                
+                byte[] buffer = new byte[16*1024];
                 while (true)
                 {
-                    int value = input.read();
+                    int value = input.read(buffer);
                     if (value < 0)
                         break;
-                    Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, value);
-                    ++index;
+                    for (int i=0;i<value;i++)
+                    {
+                        Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, buffer[i] & 0xFF);
+                        ++index;
+                    }
                 }
             }
         });
@@ -930,9 +936,10 @@ public class ProxyServletTest
         Assert.assertArrayEquals(content, response.getContent());
     }
 
-    @Test(expected = TimeoutException.class)
+    @Test
     public void testWrongContentLength() throws Exception
     {
+        
         startServer(new HttpServlet()
         {
             @Override
@@ -947,11 +954,17 @@ public class ProxyServletTest
         startProxy();
         startClient();
 
-        client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(1, TimeUnit.SECONDS)
+        try
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
-
-        Assert.fail();
+            Assert.assertThat(response.getStatus(),Matchers.greaterThanOrEqualTo(500));   
+        }
+        catch(ExecutionException e)
+        {     
+            Assert.assertThat(e.getCause(),Matchers.instanceOf(IOException.class));
+        }
     }
 
     @Test
@@ -1088,7 +1101,8 @@ public class ProxyServletTest
         Assert.assertEquals(-1, input.read());
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        Assert.assertEquals(0, destination.getConnectionPool().getIdleConnections().size());
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test
@@ -1161,7 +1175,8 @@ public class ProxyServletTest
         }
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
-        Assert.assertEquals(0, destination.getConnectionPool().getIdleConnections().size());
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.http.GzipHttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -40,6 +39,8 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
 public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 {
@@ -226,7 +227,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 return;
             }
 
-            fields.put(GzipHttpContent.CONTENT_ENCODING_GZIP);
+            fields.put(GZIP._contentEncoding);
             _crc.reset();
             _buffer=_channel.getByteBufferPool().acquire(_bufferSize,false);
             BufferUtil.fill(_buffer,GZIP_HEADER,0,GZIP_HEADER.length);
@@ -249,7 +250,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     private String etagGzip(String etag)
     {
         int end = etag.length()-1;
-        return (etag.charAt(end)=='"')?etag.substring(0,end)+GzipHttpContent.ETAG_GZIP+'"':etag+GzipHttpContent.ETAG_GZIP;
+        return (etag.charAt(end)=='"')?etag.substring(0,end)+ GZIP._etag+'"':etag+GZIP._etag;
     }
     
     public void noCompression()

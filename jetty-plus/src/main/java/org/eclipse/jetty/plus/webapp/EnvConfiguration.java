@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -113,7 +114,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 {
                     localContextRoot.getRoot().addListener(listener);
                     XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlUrl);
-                    configuration.configure(context);
+                    WebAppClassLoader.runWithServerClassAccess(()->{configuration.configure(context);return null;});
                 }
                 finally
                 {

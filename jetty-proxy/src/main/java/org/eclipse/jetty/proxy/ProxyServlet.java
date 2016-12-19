@@ -346,9 +346,9 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         @Override
-        public boolean isNonBlocking()
+        public InvocationType getInvocationType()
         {
-            return true;
+            return InvocationType.NON_BLOCKING;
         }
 
         @Override

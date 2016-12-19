@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
@@ -63,17 +64,17 @@ public interface HttpContent
     ReadableByteChannel getReadableByteChannel() throws IOException;
     void release();
 
-    HttpContent getGzipContent();
+    Map<CompressedContentFormat,? extends HttpContent> getPrecompressedContents();
     
     
-    public interface Factory
+    public interface ContentFactory
     {
         /**
          * @param path The path within the context to the resource
          * @param maxBuffer The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
          * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
          * @return A {@link HttpContent}
-         * @throws IOException IO Exception reading content
+         * @throws IOException if unable to get content
          */
         HttpContent getContent(String path,int maxBuffer) throws IOException;
     }
