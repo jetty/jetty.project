@@ -17,9 +17,15 @@
 [[watchservice]]
 === Java WatchService
 
-The JVM link:https://docs.oracle.com/javase/7/docs/api/java/nio/file/WatchService.html[WatchService] is in place to monitor objects, like a directory, for changes and update it's contents.
+The JVM link:https://docs.oracle.com/javase/7/docs/api/java/nio/file/WatchService.html[`WatchService`] is in place to monitor objects like a directory for changes, and then update it's contents and notify the application of those changes.
 This service is useful for features like link:#hot-deployment[Hot Deployment].
-When a change is made the system will wait to post the update and pause to see if there are any other changes.
+When a change is detected, the `WatchService` will enter a "quiet time" where it is waiting for the change (or changes) to be made and completed before notifying the application of the change.
+
+Example:
+A new war file is copied into `/webapps`.
+The `WatchService` can (depending on implementation) see that the file was created (which is registered as an event!, and that its growing in size (another event).
+With the quiet time, each of the events are gated behind that timeout before the aggregated events are sent to the application.
+
 While some operating systems such as Windows have a native value for this quiet time, not all do, notably OSX.
 At the core this is a limitation of the JVM's FileSystem-specific implementation, but one that has been raised to the link:https://bugs.openjdk.java.net/browse/JDK-7133447[attention of the project.]
 
