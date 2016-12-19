@@ -300,8 +300,6 @@ public class ServerConnector extends AbstractNetworkConnector
                 _localPort = serverChannel.socket().getLocalPort();
                 if (_localPort <= 0)
                     throw new IOException("Server channel not bound");
-
-                addBean(serverChannel);
             }
 
             serverChannel.configureBlocking(true);
