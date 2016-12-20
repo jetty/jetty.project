@@ -1,11 +1,56 @@
-jetty-9.3.15-SNAPSHOT
+jetty-9.3.15.v20161220 - 20 December 2016
+ + 240 Missing content for multipart request after upgrade to Jetty > 9.2.7
+ + 905 Jetty terminates SSL connections too early with Connection: close
+ + 1020 Java Util Logging properties in wrong location
+ + 1050 Add multiple FilterHolder to a ServletContextHandler may cause problems
+ + 1051 NCSARequestLog/RolloverFileOutputStream does not roll day after DST
+   ends
+ + 1054 Using WebSocketPingPongListener with empty PING payload results in
+   NullPointerException
+ + 1057 Improve WebSocketUpgradeFilter fast path performance
+ + 1062 Jetty allows requests to hang under PUT load
+ + 1063 HostPortHttpField should handle port-only values
+ + 1064 HttpClient sets chunked transfer-encoding
+ + 1065 Response.setBufferSize checks for written content.
+ + 1069 Host header should be sent with HTTP/1.0
+ + 1072 InetAccessHandler needs InetAddress & Path based restrictions like
+   IPAccessHandler did
+ + 1078 DigestAuthentication should use realm from server, even if unknown in
+   advance
+ + 1081 DigestAuthenticator does not check the realm sent by the client
+ + 1090 Allow WebSocketUpgradeFilter to be used by WEB-INF/web.xml
+ + 1092 jetty-runner jstl support
+ + 1098 MimeTypes.getCharsetFromContentType() unable parse "application/pdf;;;
+   charset=UTF-8"
+ + 1099 PushCacheFilter pushes POST requests
+ + 1108 Please improve logging in SslContextFactory when there are no approved
+   cipher suites
+ + 1114 Add testcase for WSUF for stop/start of the Server
+ + 1118 Filter.destroy() conflicts with ContainerLifeCycle.destroy() in
+   WebSocketUpgradeFilter
+ + 1123 Broken lifecycle for WebSocket's mappings
+ + 1124 Allow configuration of WebSocket mappings from Spring
+ + 1130 PROXY protocol support reports incorrect remote address
+ + 1134 Jetty HTTP/2 client problems
+ + 1135 Avoid allocations from Method.getParameterTypes() if possible
+ + 1146 jetty.server.HttpInput deadlock
+ + 1161 HttpClient and WebSocketClient should not remove all cookies on stop
+ + 1169 HTTP/2 reset on a stalled write does not unblock writer thread
+ + 1171 jetty-client throws NPE for request to IDN hosts only when
+   `HttpClient#send(...)` is called
+ + 1175 Reading HttpServletRequest InputStream from a Filter then accessing
+   getParameterNames() results in java.io.IOException: Missing content for
+   multipart request
+ + 1181 Review buffer underflow cases in SslConnection
+ + 1186 Where can i find SocketConnector .java and
+   BlockingChannelConnector.java etc?
 
 jetty-9.3.14.v20161028 - 28 October 2016
  + 292 NPE in SslConnectionFactory newConnection
  + 295 Ensure Jetty Client use of Deflater / Inflater calls .end() to avoid
    memory leak
  + 989 InputStreamResponseListener.get() throws with HTTP/2 following redirect
- + 1009 [9.3.x] ThreadLimitHandler has no method setBlockForMs
+ + 1009 9.3.x] ThreadLimitHandler has no method setBlockForMs
  + 1018 Remove dependency on asm types in oej.annotations.Util
  + 1029 Restore Request.setHttpVersion()
  + 1031 Improve HttpField pre-encoding
@@ -6448,7 +6493,7 @@ jetty-6.1.0rc2 - 20 December 2006
  + ensure classpath passed to jspc contains file paths not urls
  + ensure com.sun.el.Messages.properties included in jsp-2.1 jar
  + ensure servlets initialized if only using ServletHandler
- + fixed Jetty-197 AJP13 getRemoteHost()
+ + Jetty-197 AJP13 getRemoteHost()
  + Refactored AbstractSessionManager for ehcache
  + remove code to remove SecurityHandler if no constraints present
 
