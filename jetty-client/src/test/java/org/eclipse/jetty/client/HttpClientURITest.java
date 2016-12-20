@@ -18,9 +18,18 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -29,6 +38,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -61,6 +72,56 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(uri.toString(), request.getURI().toString());
 
         Assert.assertEquals(HttpStatus.OK_200, request.send().getStatus());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIDNHost() throws Exception
+    {
+        startClient();
+        client.newRequest(scheme + "://пример.рф"); // example.com-like host in IDN domain
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIDNRedirect() throws Exception
+    {
+        // Internationalized Domain Name.
+        String exampleHost = scheme + "://пример.рф";
+        String incorrectlyDecoded = new String(exampleHost.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
+
+        // Simple server that only parses clear-text HTTP/1.1.
+        IDNRedirectServer server = new IDNRedirectServer(exampleHost);
+        server.start();
+
+        try
+        {
+            startClient();
+
+            ContentResponse response = client.newRequest("localhost", server.getLocalPort())
+                    .timeout(5, TimeUnit.SECONDS)
+                    .followRedirects(false)
+                    .send();
+
+            HttpField location = response.getHeaders().getField(HttpHeader.LOCATION);
+            Assert.assertEquals(incorrectlyDecoded, location.getValue());
+
+            try
+            {
+                client.newRequest("localhost", server.getLocalPort())
+                        .timeout(5, TimeUnit.SECONDS)
+                        .followRedirects(true)
+                        .send();
+            }
+            catch (ExecutionException x)
+            {
+                Throwable cause = x.getCause();
+                if (cause instanceof IllegalArgumentException)
+                    throw (IllegalArgumentException)cause;
+            }
+        }
+        finally
+        {
+            server.stop();
+        }
     }
 
     @Test
@@ -503,5 +564,73 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         ContentResponse response = request.send();
 
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    private static class IDNRedirectServer implements Runnable
+    {
+        private final String location;
+        private ServerSocket serverSocket;
+        private int port;
+
+        private IDNRedirectServer(final String location) throws IOException
+        {
+            this.location = location;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                while (!Thread.currentThread().isInterrupted())
+                {
+                    try (Socket clientSocket = serverSocket.accept();
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), StandardCharsets.UTF_8));
+                         PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), false))
+                    {
+                        // Ignore the request.
+                        while (true)
+                        {
+                            String line = reader.readLine();
+                            if (line == null || line.isEmpty())
+                                break;
+                        }
+
+                        writer.append("HTTP/1.1 302 Found\r\n")
+                                .append("Location: ").append(location).append("\r\n")
+                                .append("Content-Length: 0\r\n")
+                                .append("Connection: close\r\n")
+                                .append("\r\n");
+                        writer.flush();
+                    }
+                }
+            }
+            catch (SocketException x)
+            {
+                // ServerSocket has been closed.
+            }
+            catch (Throwable x)
+            {
+                x.printStackTrace();
+            }
+        }
+
+        private void start() throws Exception
+        {
+            serverSocket = new ServerSocket();
+            serverSocket.bind(new InetSocketAddress("localhost", 0));
+            port = serverSocket.getLocalPort();
+            new Thread(this).start();
+        }
+
+        private void stop() throws Exception
+        {
+            serverSocket.close();
+        }
+
+        private int getLocalPort()
+        {
+            return port;
+        }
     }
 }
