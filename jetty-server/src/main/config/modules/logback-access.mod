@@ -8,7 +8,7 @@ logback
 
 [depend]
 server
-logback-core
+logback-impl
 resources
 
 [provide]
