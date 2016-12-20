@@ -320,35 +320,31 @@ public class SslConnection extends AbstractConnection
                 // This means that a write of data has failed.  Writes are done
                 // only if there is an active writeflusher or a read needed to write
                 // data.  In either case the appropriate callback is passed on.
-                boolean fail_filler = false;
+                boolean fail_filler;
                 synchronized (DecryptedEndPoint.this)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} write.failed", SslConnection.this, x);
+                        LOG.debug("{} write failed", SslConnection.this, x);
+
                     BufferUtil.clear(_encryptedOutput);
                     releaseEncryptedOutputBuffer();
 
                     _cannotAcceptMoreAppDataToFlush = false;
-
+                    fail_filler = _fillRequiresFlushToProgress;
                     if (_fillRequiresFlushToProgress)
-                    {
                         _fillRequiresFlushToProgress = false;
-                        fail_filler = true;
-                    }
                 }
-
-                final boolean filler_failed=fail_filler;
 
                 failedCallback(new Callback()
                 {
                     @Override
                     public void failed(Throwable x)
                     {
-                        if (filler_failed)
+                        if (fail_filler)
                             getFillInterest().onFail(x);
                         getWriteFlusher().onFail(x);
                     }
-                },x);
+                }, x);
             }
         };
 
@@ -442,7 +438,6 @@ public class SslConnection extends AbstractConnection
                     getExecutor().execute(_runCompletWrite);
                 }
             }
-            
         }
 
         @Override
@@ -970,9 +965,8 @@ public class SslConnection extends AbstractConnection
                     // TODO review close logic here
                     if (ishut)
                         close = true;
-                    
                 }
-                
+
                 if (flush)
                     flush(BufferUtil.EMPTY_BUFFER); // Send the TLS close message.
                 if (close)
@@ -1076,5 +1070,4 @@ public class SslConnection extends AbstractConnection
             return super.toString()+"->"+getEndPoint().toString();
         }
     }
-
 }
