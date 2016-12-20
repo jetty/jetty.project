@@ -22,16 +22,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -79,39 +78,44 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
     public void testIDNHost() throws Exception
     {
         startClient();
-        client.newRequest("http://пример.рф"); // example.com-like host in IDN domain
+        client.newRequest(scheme + "://пример.рф"); // example.com-like host in IDN domain
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIDNRedirect() throws Exception
     {
-        String exampleHost = "http://пример.рф"; // example.com-like host in IDN domain
+        // Internationalized Domain Name.
+        String exampleHost = scheme + "://пример.рф";
         String incorrectlyDecoded = new String(exampleHost.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
 
+        // Simple server that only parses clear-text HTTP/1.1.
         IDNRedirectServer server = new IDNRedirectServer(exampleHost);
-        startClient();
         server.start();
-
-        ContentResponse response = client.newRequest("localhost", server.localPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .followRedirects(false)
-                .send();
-
-        HttpField location = response.getHeaders().getField(HttpHeader.LOCATION);
-        Assert.assertEquals(incorrectlyDecoded, location.getValue());
 
         try
         {
-            client.newRequest("localhost", server.localPort())
+            startClient();
+
+            ContentResponse response = client.newRequest("localhost", server.getLocalPort())
                     .timeout(5, TimeUnit.SECONDS)
-                    .followRedirects(true)
+                    .followRedirects(false)
                     .send();
-        }
-        catch (ExecutionException e)
-        {
-            if (e.getCause() instanceof IllegalArgumentException)
+
+            HttpField location = response.getHeaders().getField(HttpHeader.LOCATION);
+            Assert.assertEquals(incorrectlyDecoded, location.getValue());
+
+            try
             {
-                throw (IllegalArgumentException) e.getCause();
+                client.newRequest("localhost", server.getLocalPort())
+                        .timeout(5, TimeUnit.SECONDS)
+                        .followRedirects(true)
+                        .send();
+            }
+            catch (ExecutionException x)
+            {
+                Throwable cause = x.getCause();
+                if (cause instanceof IllegalArgumentException)
+                    throw (IllegalArgumentException)cause;
             }
         }
         finally
@@ -562,70 +566,71 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    private static class IDNRedirectServer
+    private static class IDNRedirectServer implements Runnable
     {
-        private final Thread serverThread;
-        private final AtomicInteger port;
+        private final String location;
+        private ServerSocket serverSocket;
+        private int port;
 
-        private IDNRedirectServer(final String redirect)
+        private IDNRedirectServer(final String location) throws IOException
         {
-            this.port = new AtomicInteger(0);
-            this.serverThread = new Thread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try (ServerSocket serverSocket = new ServerSocket())
-                    {
-                        serverSocket.bind(new InetSocketAddress(InetAddress.getLocalHost(), 0));
-                        port.set(serverSocket.getLocalPort());
-
-                        while (!Thread.currentThread().isInterrupted())
-                        {
-                            try (Socket clientSocket = serverSocket.accept();
-                                 BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())))
-                            {
-                                while (!reader.readLine().equals(""))
-                                {
-                                    // ignore request
-                                }
-
-                                try (PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), false))
-                                {
-                                    writer.append("HTTP/1.1 302 Found\r\n")
-                                            .append("Location: ").append(redirect).append("\r\n")
-                                            .append("Content-Length: 0\r\n")
-                                            .append("\r\n");
-                                    writer.flush();
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
+            this.location = location;
         }
 
-        public void start()
+        @Override
+        public void run()
         {
-            serverThread.start();
-            while (port.get() == 0)
+            try
             {
-                // await serverThread started
+                while (!Thread.currentThread().isInterrupted())
+                {
+                    try (Socket clientSocket = serverSocket.accept();
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), StandardCharsets.UTF_8));
+                         PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), false))
+                    {
+                        // Ignore the request.
+                        while (true)
+                        {
+                            String line = reader.readLine();
+                            if (line == null || line.isEmpty())
+                                break;
+                        }
+
+                        writer.append("HTTP/1.1 302 Found\r\n")
+                                .append("Location: ").append(location).append("\r\n")
+                                .append("Content-Length: 0\r\n")
+                                .append("Connection: close\r\n")
+                                .append("\r\n");
+                        writer.flush();
+                    }
+                }
+            }
+            catch (SocketException x)
+            {
+                // ServerSocket has been closed.
+            }
+            catch (Throwable x)
+            {
+                x.printStackTrace();
             }
         }
 
-        public void stop()
+        private void start() throws Exception
         {
-            serverThread.interrupt();
+            serverSocket = new ServerSocket();
+            serverSocket.bind(new InetSocketAddress("localhost", 0));
+            port = serverSocket.getLocalPort();
+            new Thread(this).start();
         }
 
-        public int localPort()
+        private void stop() throws Exception
         {
-            return port.get();
+            serverSocket.close();
+        }
+
+        private int getLocalPort()
+        {
+            return port;
         }
     }
 }
