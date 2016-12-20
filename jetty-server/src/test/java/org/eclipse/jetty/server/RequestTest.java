@@ -1245,6 +1245,23 @@ public class RequestTest
         assertEquals("quoted=;value", cookies.get(1).getValue());
 
         cookies.clear();
+        response=_connector.getResponse(
+                "GET / HTTP/1.1\n"+
+                        "Host: whatever\n"+
+                        "Cookie: first=value; second=; last=\n" +
+                        "Connection: close\n"+
+                        "\n"
+        );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(3,cookies.size());
+        assertEquals("first", cookies.get(0).getName());
+        assertEquals("value", cookies.get(0).getValue());
+        assertEquals("second", cookies.get(1).getName());
+        assertEquals("", cookies.get(1).getValue());
+        assertEquals("last", cookies.get(2).getName());
+        assertEquals("", cookies.get(2).getValue());
+
+        cookies.clear();
         LocalEndPoint endp = _connector.executeRequest(
                 "GET /other HTTP/1.1\n"+
                 "Host: whatever\n"+

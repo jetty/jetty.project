@@ -249,6 +249,12 @@ public class CookieCutter
                                 break;
 
                             case '=':
+                                if (i==last)
+                                {
+                                    name = hdr.substring(tokenstart, tokenend+1);
+                                    value = "";
+                                    break;
+                                }
                                 if (tokenstart>=0)
                                     name = hdr.substring(tokenstart, tokenend+1);
                                 tokenstart = -1;
