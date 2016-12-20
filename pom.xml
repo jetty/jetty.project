@@ -320,7 +320,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>2.3</version>
+          <version>2.4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -823,6 +823,7 @@
                 <phase>generate-resources</phase>
                 <goals>
                   <goal>update-version-text</goal>
+                  <goal>tag</goal>
                 </goals>
                 <configuration>
                   <refreshTags>true</refreshTags>
