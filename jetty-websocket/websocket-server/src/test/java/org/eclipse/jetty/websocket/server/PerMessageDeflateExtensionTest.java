@@ -150,7 +150,7 @@ public class PerMessageDeflateExtensionTest
             Future<Session> fut = client.connect(clientSocket,server.getServerUri(),request);
 
             // Wait for connect
-            Session session = fut.get(5,TimeUnit.SECONDS);
+            Session session = fut.get(30,TimeUnit.SECONDS);
 
             assertThat("Response.extensions",getNegotiatedExtensionList(session),containsString("permessage-deflate"));
 
