@@ -43,6 +43,8 @@ import org.junit.Test;
 
 public class WebSocketOverSSLTest
 {
+    public static final int CONNECT_TIMEOUT = 15000;
+    public static final int FUTURE_TIMEOUT_SEC = 30;
     @Rule
     public TestTracker tracker = new TestTracker();
     
@@ -84,7 +86,7 @@ public class WebSocketOverSSLTest
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
-            Session session = fut.get(3,TimeUnit.SECONDS);
+            Session session = fut.get(FUTURE_TIMEOUT_SEC,TimeUnit.SECONDS);
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
@@ -118,7 +120,7 @@ public class WebSocketOverSSLTest
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
-            client.setConnectTimeout(3000);
+            client.setConnectTimeout(CONNECT_TIMEOUT);
             client.start();
 
             CaptureSocket clientSocket = new CaptureSocket();
@@ -127,7 +129,7 @@ public class WebSocketOverSSLTest
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
-            Session session = fut.get(5,TimeUnit.SECONDS);
+            Session session = fut.get(FUTURE_TIMEOUT_SEC,TimeUnit.SECONDS);
 
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
@@ -160,7 +162,7 @@ public class WebSocketOverSSLTest
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
         try
         {
-            client.setConnectTimeout(3000);
+            client.setConnectTimeout(CONNECT_TIMEOUT);
             client.start();
 
             CaptureSocket clientSocket = new CaptureSocket();
@@ -169,7 +171,7 @@ public class WebSocketOverSSLTest
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
-            Session session = fut.get(5,TimeUnit.SECONDS);
+            Session session = fut.get(FUTURE_TIMEOUT_SEC,TimeUnit.SECONDS);
 
             // Generate text frame
             RemoteEndpoint remote = session.getRemote();
