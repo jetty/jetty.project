@@ -1,3 +1,5 @@
+jetty-9.3.16-SNAPSHOT
+
 jetty-9.3.15.v20161220 - 20 December 2016
  + 240 Missing content for multipart request after upgrade to Jetty > 9.2.7
  + 905 Jetty terminates SSL connections too early with Connection: close
