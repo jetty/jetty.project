@@ -34,9 +34,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /* ------------------------------------------------------------ */
 /** HTTP Configuration.
- * <p>This class is a holder of HTTP configuration for use by the 
+ * <p>This class is a holder of HTTP configuration for use by the
  * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
- * is instantiated and passed to a {@link ConnectionFactory} that can 
+ * is instantiated and passed to a {@link ConnectionFactory} that can
  * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
  * but for the interpretation and handling of HTTP requests that could
@@ -64,16 +64,17 @@ public class HttpConfiguration
     private boolean _sendDateHeader = true;
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
+    private boolean _chunkedResponsesOverNonPersistentConnections = false;
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
 
     /* ------------------------------------------------------------ */
-    /** 
-     * <p>An interface that allows a request object to be customized 
+    /**
+     * <p>An interface that allows a request object to be customized
      * for a particular HTTP connector configuration.  Unlike Filters, customizer are
-     * applied before the request is submitted for processing and can be specific to the 
+     * applied before the request is submitted for processing and can be specific to the
      * connector on which the request was received.
-     * 
+     *
      * <p>Typically Customizers perform tasks such as: <ul>
      *  <li>process header fields that may be injected by a proxy or load balancer.
      *  <li>setup attributes that may come from the connection/connector such as SSL Session IDs
@@ -87,18 +88,18 @@ public class HttpConfiguration
     {
         public void customize(Connector connector, HttpConfiguration channelConfig, Request request);
     }
-    
+
     public interface ConnectionFactory
     {
         HttpConfiguration getHttpConfiguration();
     }
-    
+
     public HttpConfiguration()
     {
         _formEncodedMethods.put(HttpMethod.POST.asString(),Boolean.TRUE);
         _formEncodedMethods.put(HttpMethod.PUT.asString(),Boolean.TRUE);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Create a configuration from another.
      * @param config The configuration to copy.
@@ -124,21 +125,22 @@ public class HttpConfiguration
         _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
         _maxErrorDispatches=config._maxErrorDispatches;
         _minRequestDataRate=config._minRequestDataRate;
+        _chunkedResponsesOverNonPersistentConnections=config._chunkedResponsesOverNonPersistentConnections;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** 
-     * <p>Add a {@link Customizer} that is invoked for every 
+    /**
+     * <p>Add a {@link Customizer} that is invoked for every
      * request received.</p>
-     * <p>Customiser are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or 
-     * optional protocol semantics (eg {@link SecureRequestCustomizer}). 
+     * <p>Customiser are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or
+     * optional protocol semantics (eg {@link SecureRequestCustomizer}).
      * @param customizer A request customizer
      */
     public void addCustomizer(Customizer customizer)
     {
         _customizers.add(customizer);
     }
-    
+
     /* ------------------------------------------------------------ */
     public List<Customizer> getCustomizers()
     {
@@ -211,10 +213,17 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("Whether chunked responses over persistent connections are enabled")
+    public boolean isChunkedResponsesOverNonPersistentConnectionsEnabled()
+    {
+        return _chunkedResponsesOverNonPersistentConnections;
+    }
+
+    /* ------------------------------------------------------------ */
     /** Get the max idle time in ms.
      * <p>The max idle time is applied to a HTTP request for IO operations and
-     * delayed dispatch. 
-     * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * delayed dispatch.
+     * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
     @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of a HTTP request")
@@ -226,8 +235,8 @@ public class HttpConfiguration
     /* ------------------------------------------------------------ */
     /** Set the max idle time in ms.
      * <p>The max idle time is applied to a HTTP request for IO operations and
-     * delayed dispatch. 
-     * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * delayed dispatch.
+     * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
     public void setIdleTimeout(long timeoutMs)
@@ -238,9 +247,9 @@ public class HttpConfiguration
     /* ------------------------------------------------------------ */
     /** Get the timeout applied to blocking operations.
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total operation (as opposed to the idle timeout that applies to the time no 
+     * to the total operation (as opposed to the idle timeout that applies to the time no
      * data is being sent).
-     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     @ManagedAttribute("Total timeout in ms for blocking I/O operations.")
@@ -252,9 +261,9 @@ public class HttpConfiguration
     /**
      * Set the timeout applied to blocking operations.
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total operation (as opposed to the idle timeout that applies to the time no 
+     * to the total operation (as opposed to the idle timeout that applies to the time no
      * data is being sent).
-     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     public void setBlockingTimeout(long blockingTimeout)
@@ -266,6 +275,12 @@ public class HttpConfiguration
     public void setPersistentConnectionsEnabled(boolean persistentConnectionsEnabled)
     {
         _persistentConnectionsEnabled = persistentConnectionsEnabled;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setChunkedResponsesOverNonPersistentConnectionsEnabled(boolean chunkedResponsesOverNonPersistentConnectionsEnabled)
+    {
+        _chunkedResponsesOverNonPersistentConnections = chunkedResponsesOverNonPersistentConnectionsEnabled;
     }
 
     /* ------------------------------------------------------------ */
@@ -293,7 +308,7 @@ public class HttpConfiguration
                 out.append(postamble);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setSendXPoweredBy (boolean sendXPoweredBy)
     {
@@ -338,10 +353,10 @@ public class HttpConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * <p>Set the {@link Customizer}s that are invoked for every 
+     * <p>Set the {@link Customizer}s that are invoked for every
      * request received.</p>
      * <p>Customizers are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or
-     * optional protocol semantics (eg {@link SecureRequestCustomizer}). 
+     * optional protocol semantics (eg {@link SecureRequestCustomizer}).
      * @param customizers the list of customizers
      */
     public void setCustomizers(List<Customizer> customizers)
@@ -363,7 +378,7 @@ public class HttpConfiguration
         _outputBufferSize = outputBufferSize;
         setOutputAggregationSize(outputBufferSize / 4);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Set the max size of the response content write that is copied into the aggregate buffer.
@@ -379,7 +394,7 @@ public class HttpConfiguration
 
     /* ------------------------------------------------------------ */
     /** Set the maximum size of a request header.
-     * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded 
+     * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded
      * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
      * attacks.</p>
      * @param requestHeaderSize Max header size in bytes
@@ -391,8 +406,8 @@ public class HttpConfiguration
 
     /* ------------------------------------------------------------ */
     /** Set the maximum size of a response header.
-     * 
-     * <p>Larger headers will allow for more and/or larger cookies and longer HTTP headers (eg for redirection). 
+     *
+     * <p>Larger headers will allow for more and/or larger cookies and longer HTTP headers (eg for redirection).
      * However, larger headers will also consume more memory.</p>
      * @param responseHeaderSize Response header size in bytes.
      */
@@ -443,9 +458,9 @@ public class HttpConfiguration
 
     /* ------------------------------------------------------------ */
     /** Set the form encoded methods.
-     * @param methods HTTP Methods of requests that can be decoded as 
-     * x-www-form-urlencoded content to be made available via the 
-     * {@link Request#getParameter(String)} and associated APIs 
+     * @param methods HTTP Methods of requests that can be decoded as
+     * x-www-form-urlencoded content to be made available via the
+     * {@link Request#getParameter(String)} and associated APIs
      */
     public void setFormEncodedMethods(String... methods)
     {
@@ -453,11 +468,11 @@ public class HttpConfiguration
         for (String method:methods)
             addFormEncodedMethod(method);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * @return Set of HTTP Methods of requests that can be decoded as 
-     * x-www-form-urlencoded content to be made available via the 
+     * @return Set of HTTP Methods of requests that can be decoded as
+     * x-www-form-urlencoded content to be made available via the
      * {@link Request#getParameter(String)} and associated APIs
      */
     public Set<String> getFormEncodedMethods()
@@ -466,23 +481,23 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    /** Add a form encoded HTTP Method 
-     * @param method HTTP Method of requests that can be decoded as 
-     * x-www-form-urlencoded content to be made available via the 
+    /** Add a form encoded HTTP Method
+     * @param method HTTP Method of requests that can be decoded as
+     * x-www-form-urlencoded content to be made available via the
      * {@link Request#getParameter(String)} and associated APIs
      */
     public void addFormEncodedMethod(String method)
     {
         _formEncodedMethods.put(method,Boolean.TRUE);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Test if the method type supports <code>x-www-form-urlencoded</code> content
-     * 
+     *
      * @param method the method type
      * @return True of the requests of this method type can be
-     * decoded as <code>x-www-form-urlencoded</code> content to be made available via the 
+     * decoded as <code>x-www-form-urlencoded</code> content to be made available via the
      * {@link Request#getParameter(String)} and associated APIs
      */
     public boolean isFormEncodedMethod(String method)
