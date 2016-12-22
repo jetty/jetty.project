@@ -57,7 +57,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
@@ -444,13 +443,12 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    @Ignore // This is a bad test as the newRequest method throws IAE
     public void testTimeoutCancelledWhenSendingThrowsException() throws Exception
     {
         start(new EmptyServerHandler());
 
         long timeout = 1000;
-        Request request = client.newRequest("badscheme://localhost:badport");
+        Request request = client.newRequest("badscheme://localhost:" + connector.getLocalPort());
 
         try
         {
