@@ -552,6 +552,11 @@ public class StartArgs
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
 
+        // Special Stop/Shutdown properties
+        ensureSystemPropertySet("STOP.PORT");
+        ensureSystemPropertySet("STOP.KEY");
+        ensureSystemPropertySet("STOP.WAIT");
+
         if (addJavaInit)
         {
             cmd.addRawArg(CommandLineBuilder.findJavaBin());
@@ -577,11 +582,7 @@ public class StartArgs
             cmd.addRawArg(getMainClassname());
         }
 
-        // Special Stop/Shutdown properties
-        ensureSystemPropertySet("STOP.PORT");
-        ensureSystemPropertySet("STOP.KEY");
-        ensureSystemPropertySet("STOP.WAIT");
-
+       
         // pass properties as args or as a file
         if (dryRun && exec_properties==null)
         {
