@@ -31,7 +31,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpGeneratorServerTest
-{
+{ 
     @Test
     public void test_0_9() throws Exception
     {
@@ -54,20 +54,20 @@ public class HttpGeneratorServerTest
         String response = BufferUtil.toString(header);
         BufferUtil.clear(header);
         response += BufferUtil.toString(content);
-        BufferUtil.clear(content);
+        BufferUtil.clear(content);        
 
         result = gen.generateResponse(null, null, null, content, false);
         assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-
+        
         assertEquals(10, gen.getContentPrepared());
-
+        
         assertThat(response, not(containsString("200 OK")));
         assertThat(response, not(containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT")));
         assertThat(response, not(containsString("Content-Length: 10")));
         assertThat(response, containsString("0123456789"));
     }
-
+    
     @Test
     public void testSimple() throws Exception
     {
@@ -93,20 +93,20 @@ public class HttpGeneratorServerTest
         String response = BufferUtil.toString(header);
         BufferUtil.clear(header);
         response += BufferUtil.toString(content);
-        BufferUtil.clear(content);
+        BufferUtil.clear(content);        
 
         result = gen.generateResponse(null, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-
+        
         assertEquals(10, gen.getContentPrepared());
-
+        
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(response, containsString("Content-Length: 10"));
         assertThat(response, containsString("\r\n0123456789"));
     }
-
+    
     @Test
     public void test204() throws Exception
     {
@@ -114,23 +114,23 @@ public class HttpGeneratorServerTest
         ByteBuffer content = BufferUtil.toBuffer("0123456789");
 
         HttpGenerator gen = new HttpGenerator();
-
+        
         MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 204, "Foo", new HttpFields(), 10);
         info.getFields().add("Content-Type", "test/data");
         info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         HttpGenerator.Result result = gen.generateResponse(info, header, null, content, true);
-
-        assertEquals(gen.isNoContent(), true);
+     
+        assertEquals(gen.isNoContent(), true);    
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         String responseheaders = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        BufferUtil.clear(header);     
 
         result = gen.generateResponse(null, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-
+        
         assertThat(responseheaders, containsString("HTTP/1.1 204 Foo"));
         assertThat(responseheaders, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(responseheaders, not(containsString("Content-Length: 10")));
@@ -138,8 +138,8 @@ public class HttpGeneratorServerTest
         //Note: the HttpConnection.process() method is responsible for actually
         //excluding the content from the response based on generator.isNoContent()==true
     }
-
-
+    
+    
     @Test
     public void testComplexChars() throws Exception
     {
@@ -165,14 +165,14 @@ public class HttpGeneratorServerTest
         String response = BufferUtil.toString(header);
         BufferUtil.clear(header);
         response += BufferUtil.toString(content);
-        BufferUtil.clear(content);
+        BufferUtil.clear(content);        
 
         result = gen.generateResponse(null, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-
+                
         assertEquals(10, gen.getContentPrepared());
-
+        
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(response, containsString("Content-Type: test/data;  extra=value"));
@@ -191,7 +191,7 @@ public class HttpGeneratorServerTest
         MetaData.Response infoF = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1);
         String head;
 
-        HttpGenerator gen = new HttpGenerator(true, true, false);
+        HttpGenerator gen = new HttpGenerator(true, true);
         gen.generateResponse(info, header, null, null, true);
         head = BufferUtil.toString(header);
         BufferUtil.clear(header);
@@ -209,7 +209,7 @@ public class HttpGeneratorServerTest
         assertThat(head, containsString("X-Powered-By: SomePower"));
         gen.reset();
 
-        gen = new HttpGenerator(false, false, false);
+        gen = new HttpGenerator(false, false);
         gen.generateResponse(info, header, null, null, true);
         head = BufferUtil.toString(header);
         BufferUtil.clear(header);

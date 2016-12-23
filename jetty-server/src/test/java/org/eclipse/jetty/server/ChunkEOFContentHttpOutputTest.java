@@ -26,14 +26,17 @@ import java.io.IOException;
 import org.eclipse.jetty.server.HttpOutputTest.ContentHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
+import static org.hamcrest.Matchers.containsString;
 import org.junit.After;
+import static org.junit.Assert.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
  *
  */
-public class ChunkedResponseOverNonPersistentConnectionHttpOutputTest
+public class ChunkEOFContentHttpOutputTest
 {
     private Server _server;
     private LocalConnector _connector;
@@ -68,7 +71,7 @@ public class ChunkedResponseOverNonPersistentConnectionHttpOutputTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testChunkedBig() throws Exception
     {
         Resource big = Resource.newClassPathResource("simple/big.txt");
         _handler._contentInputStream = new FilterInputStream(big.getInputStream())
@@ -85,11 +88,48 @@ public class ChunkedResponseOverNonPersistentConnectionHttpOutputTest
         );
 
         assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.not(containsString("Content-Length")));
         assertThat(response, containsString("Transfer-Encoding: chunked"));
         assertThat(response, containsString("1\tThis is a big file"));
         assertThat(response, containsString("400\tThis is a big file"));
         assertThat(response, containsString("\r\n0\r\n"));
     }
+
+    @Test
+    public void testNoContent() throws Exception
+    {
+        String response = _connector.getResponses(
+            "GET / HTTP/1.1\nHost: localhost:80\n\n"
+        );
+
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.not(containsString("Transfer-Encoding: chunked")));
+        assertThat(response, containsString("Content-Length: 0"));
+    }
+
+    @Test
+    public void testNoContentConnectionClose() throws Exception
+    {
+        String response = _connector.getResponses(
+            "GET / HTTP/1.1\nHost: localhost:80\nConnection: close\n\n"
+        );
+
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.not(containsString("Transfer-Encoding: chunked")));
+        assertThat(response, containsString("Content-Length: 0"));
+        assertThat(response, containsString("Connection: close"));
+    }
+
+    @Test
+    public void testHttp1_0() throws Exception
+    {
+        String response = _connector.getResponses(
+            "GET / HTTP/1.0\nHost: localhost:80\n\n"
+        );
+
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.not(containsString("Transfer-Encoding: chunked")));
+        assertThat(response, containsString("Content-Length: 0"));
+        assertThat(response, Matchers.not(containsString("Connection: close")));
+    }
 }
-
-

@@ -67,7 +67,7 @@ public class HttpGenerator
     private Boolean _persistent = null;
 
     private final int _send;
-    private final boolean _chunkedResponsesOverNonPersistentConnections;
+    private final boolean _chunkEOFContent;
     private final static int SEND_SERVER = 0x01;
     private final static int SEND_XPOWEREDBY = 0x02;
     private final static Set<String> __assumedContentMethods = new HashSet<>(Arrays.asList(new String[]{HttpMethod.POST.asString(),HttpMethod.PUT.asString()}));
@@ -92,10 +92,16 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpGenerator(boolean sendServerVersion, boolean sendXPoweredBy, boolean chunkedResponsesOverNonPersistentConnections)
+    public HttpGenerator(boolean sendServerVersion, boolean sendXPoweredBy)
+    {
+        this(sendServerVersion, sendServerVersion, false);
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public HttpGenerator(boolean sendServerVersion, boolean sendXPoweredBy, boolean chunkEOFContent)
     {
         _send=(sendServerVersion?SEND_SERVER:0) | (sendXPoweredBy?SEND_XPOWEREDBY:0);
-        _chunkedResponsesOverNonPersistentConnections = chunkedResponsesOverNonPersistentConnections;
+        _chunkEOFContent = chunkEOFContent;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -674,7 +680,7 @@ public class HttpGenerator
                                     {
                                         close=true;
                                         _persistent=false;
-                                        if (response != null && (!_chunkedResponsesOverNonPersistentConnections || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal()))
+                                        if (response != null && (!_chunkEOFContent || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal()))
                                         {
                                             if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
                                                 _endOfContent=EndOfContent.EOF_CONTENT;
@@ -776,7 +782,7 @@ public class HttpGenerator
                     // For a request with HTTP 1.0 & Connection: keep-alive
                     // we *must* close the connection, otherwise the client
                     // has no way to detect the end of the content.
-                    if ((!_chunkedResponsesOverNonPersistentConnections && !isPersistent()) || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal())
+                    if ((!_chunkEOFContent && !isPersistent()) || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal())
                         _endOfContent = EndOfContent.EOF_CONTENT;
                 }
                 break;

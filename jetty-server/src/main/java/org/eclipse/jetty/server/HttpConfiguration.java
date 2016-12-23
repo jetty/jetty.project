@@ -64,7 +64,7 @@ public class HttpConfiguration
     private boolean _sendDateHeader = true;
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
-    private boolean _chunkedResponsesOverNonPersistentConnections = false;
+    private boolean _chunkEOFContent = false;
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
 
@@ -125,7 +125,7 @@ public class HttpConfiguration
         _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
         _maxErrorDispatches=config._maxErrorDispatches;
         _minRequestDataRate=config._minRequestDataRate;
-        _chunkedResponsesOverNonPersistentConnections=config._chunkedResponsesOverNonPersistentConnections;
+        _chunkEOFContent=config._chunkEOFContent;
     }
 
     /* ------------------------------------------------------------ */
@@ -216,7 +216,7 @@ public class HttpConfiguration
     @ManagedAttribute("Whether chunked responses over persistent connections are enabled")
     public boolean isChunkedResponsesOverNonPersistentConnectionsEnabled()
     {
-        return _chunkedResponsesOverNonPersistentConnections;
+        return _chunkEOFContent;
     }
 
     /* ------------------------------------------------------------ */
@@ -280,7 +280,7 @@ public class HttpConfiguration
     /* ------------------------------------------------------------ */
     public void setChunkedResponsesOverNonPersistentConnectionsEnabled(boolean chunkedResponsesOverNonPersistentConnectionsEnabled)
     {
-        _chunkedResponsesOverNonPersistentConnections = chunkedResponsesOverNonPersistentConnectionsEnabled;
+        _chunkEOFContent = chunkedResponsesOverNonPersistentConnectionsEnabled;
     }
 
     /* ------------------------------------------------------------ */
