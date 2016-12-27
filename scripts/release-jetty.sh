@@ -66,6 +66,7 @@ GIT_USER_EMAIL=`git config --get user.email`
 #fi
 
 VER_CURRENT=`sed -e "s/xmlns/ignore/" pom.xml | xmllint --xpath "/project/version/text()" -`
+echo "Current pom.xml Version: ${VER_CURRENT}"
 read -e -p "Release Version  ? " VER_RELEASE
 read -e -p "Next Dev Version ? " VER_NEXT
 # VER_RELEASE=9.3.5.v20151012
@@ -87,8 +88,8 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
     mkdir -p "$ALT_DEPLOY_DIR"
 fi
 
-DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-# DEPLOY_OPTS="-Dtest=None"
+# DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
+DEPLOY_OPTS="-Dtest=None"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 echo ""
@@ -129,10 +130,13 @@ echo ""
 if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
-        mvn -N -Pupdate-version
+        mvn -N -Pupdate-version generate-resources
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup
+        echo "VERIFY the following files (in a different console window) before continuing."
+        echo "   VERSION.txt - top section"
+        echo "   target/vers-tag.txt - for the tag commit message"
     fi
 
     # This is equivalent to 'mvn release:prepare'
@@ -146,7 +150,8 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
     if proceedyn "Create Tag $TAG_NAME? (Y/n)" y; then
         echo "TODO: Sign tags with GIT_USER_EMAIL=$GIT_USER_EMAIL"
-        git tag -m "Creating tag $TAG_NAME" $TAG_NAME
+        echo "Using target/vers-tag.txt as tag text"
+        git tag --file=target/vers-tag.txt $TAG_NAME
     fi
 
     # This is equivalent to 'mvn release:perform'
