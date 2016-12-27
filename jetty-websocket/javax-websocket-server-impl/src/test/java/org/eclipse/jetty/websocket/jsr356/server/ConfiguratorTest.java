@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -36,6 +37,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -97,9 +99,19 @@ public class ConfiguratorTest
     public static class NoExtensionsSocket
     {
         @OnMessage
-        public String echo(String message)
+        public String echo(Session session, String message)
         {
-            return message;
+            List<Extension> negotiatedExtensions = session.getNegotiatedExtensions();
+            if (negotiatedExtensions == null)
+            {
+                return "negotiatedExtensions=null";
+            }
+            else
+            {
+                return "negotiatedExtensions=" + negotiatedExtensions.stream()
+                        .map((ext) -> ext.getName())
+                        .collect(Collectors.joining(",", "[", "]"));
+            }
         }
     }
 
@@ -420,8 +432,13 @@ public class ConfiguratorTest
             client.addExtensions("identity");
             client.connect();
             client.sendStandardRequest();
-            HttpResponse response = client.readResponseHeader();
-            Assert.assertThat("response.extensions", response.getExtensionsHeader(), nullValue());
+            HttpResponse response = client.expectUpgradeResponse();
+            assertThat("response.extensions", response.getExtensionsHeader(), nullValue());
+    
+            client.write(new TextFrame().setPayload("NegoExts"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            assertThat("Frame Response", frame.getPayloadAsUTF8(), is("negotiatedExtensions=[]"));
         }
     }
 
