@@ -76,7 +76,10 @@ server.setRequestLog(requestLog);
 This configures a request log in `{$jetty.home}/logs` with filenames including the date.
 Existing log files are appended to and the extended NCSA format is used in the GMT time zone.
 
-You can customize the number of days you wish to keep request logs.
+The above configuration enables Log Latency, which is the amount of time it took the server to handle the request.
+This value is measured in milliseconds and is appended to the the log file for each request.
+
+You can also customize the number of days you wish to keep request logs.
 By default, log files are kept for 90 days before being deleted.
 The value for `retainDays` (xml) or `setRetainDays` (Java) should be configured as _1 + n_ days.
 For example, if you wanted to keep the logs for the current day and the day prior you would set the `retainDays` (or `setRetainDays`) value to 2.
