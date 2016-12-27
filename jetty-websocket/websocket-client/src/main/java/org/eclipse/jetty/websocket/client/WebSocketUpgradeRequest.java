@@ -53,7 +53,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -91,10 +90,11 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             this.extensions = new ArrayList<>(request.getExtensions());
             this.subProtocols = new ArrayList<>(request.getSubProtocols());
+    
+            request.getHeaders().forEach((name, values) ->
+                values.forEach((value) -> header(name, value))
+            );
             
-            // Copy values from ClientUpgradeRequest into place
-            if (StringUtil.isNotBlank(request.getOrigin()))
-                header(HttpHeader.ORIGIN,request.getOrigin());
             for (HttpCookie cookie : request.getCookies())
             {
                 cookie(cookie);
