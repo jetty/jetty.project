@@ -56,6 +56,7 @@
     <module>test-integration</module>
     <module>test-quickstart</module>
     <module>test-jmx</module>
+    <module>jetty-load-generator</module>
     <module>test-http-client-transport</module>
   </modules>
 </project>
