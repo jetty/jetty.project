@@ -24,26 +24,6 @@
  */
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
@@ -56,8 +36,24 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -333,6 +329,29 @@ public class HttpConnectionTest
             "Connection: close\015\012"+
             "\015\012");
         checkContains(response,0,"HTTP/1.1 400");
+    }
+
+    @Test
+    public void testNoHost()
+        throws Exception
+    {
+        String response;
+
+        response = connector.getResponses( "GET / HTTP/1.1\r\n"
+                                               + "\r\n" );
+        checkContains( response, 0, "HTTP/1.1 400" );
+    }
+
+    @Test
+    public void testEmptyHost()
+        throws Exception
+    {
+        String response;
+
+        response = connector.getResponses( "GET / HTTP/1.1\r\n"
+                                               + "Host:\r\n"
+                                               + "\r\n" );
+        checkContains( response, 0, "HTTP/1.1 200" );
     }
 
     @Test

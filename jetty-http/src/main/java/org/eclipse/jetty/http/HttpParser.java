@@ -832,9 +832,10 @@ public class HttpParser
             case HOST:
                 add_to_connection_trie=_connectionFields!=null && _field==null;
                 _host=true;
+
                 if (_valueString==null || _valueString.length()==0)
                 {
-                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad Host header");
+                    break;
                 }
 
                 try

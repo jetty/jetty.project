@@ -546,7 +546,7 @@ public class PartialRFC2616Test
 
         offset=0;
         response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"Connection: close\n"+"\n");
-        offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
+        offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
     }
 
     @Test
