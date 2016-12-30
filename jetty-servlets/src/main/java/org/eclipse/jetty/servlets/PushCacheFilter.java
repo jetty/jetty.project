@@ -158,7 +158,7 @@ public class PushCacheFilter implements Filter
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} referrer={} conditional={} synthetic={}", request.getMethod(), request.getRequestURI(), referrer, conditional, isPushRequest(request));
+            LOG.debug("{} {} referrer={} conditional={} synthetic={}", request.getMethod(), request.getRequestURI(), referrer, conditional, jettyRequest.isPush());
 
         String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
         String query = request.getQueryString();
@@ -256,7 +256,7 @@ public class PushCacheFilter implements Filter
         }
 
         // Push associated resources.
-        if (!isPushRequest(request) && !conditional && !primaryResource._associated.isEmpty())
+        if (!jettyRequest.isPush() && !conditional && !primaryResource._associated.isEmpty())
         {
             PushBuilder pushBuilder = jettyRequest.getPushBuilder();
 
@@ -280,11 +280,6 @@ public class PushCacheFilter implements Filter
         }
 
         chain.doFilter(request, resp);
-    }
-
-    private boolean isPushRequest(HttpServletRequest request)
-    {
-        return Boolean.TRUE.equals(request.getAttribute("org.eclipse.jetty.pushed"));
     }
 
     @Override
