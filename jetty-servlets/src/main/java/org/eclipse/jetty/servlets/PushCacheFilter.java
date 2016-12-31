@@ -116,9 +116,11 @@ public class PushCacheFilter implements Filter
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
         HttpServletRequest request = (HttpServletRequest)req;
+        Request jettyRequest = Request.getBaseRequest(request);
 
-        if (HttpVersion.fromString(req.getProtocol()).getVersion() < 20 ||
-                !HttpMethod.GET.is(request.getMethod()))
+        if (HttpVersion.fromString(request.getProtocol()).getVersion() < 20 ||
+                !HttpMethod.GET.is(request.getMethod()) ||
+                !jettyRequest.isPushSupported())
         {
             chain.doFilter(req, resp);
             return;
@@ -127,7 +129,6 @@ public class PushCacheFilter implements Filter
         long now = System.nanoTime();
 
         // Iterating over fields is more efficient than multiple gets
-        Request jettyRequest = Request.getBaseRequest(request);
         HttpFields fields = jettyRequest.getHttpFields();
         boolean conditional = false;
         String referrer = null;
@@ -158,7 +159,7 @@ public class PushCacheFilter implements Filter
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} referrer={} conditional={} synthetic={}", request.getMethod(), request.getRequestURI(), referrer, conditional, jettyRequest.isPush());
+            LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
         String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
         String query = request.getQueryString();
@@ -256,7 +257,7 @@ public class PushCacheFilter implements Filter
         }
 
         // Push associated resources.
-        if (!jettyRequest.isPush() && !conditional && !primaryResource._associated.isEmpty())
+        if (!conditional && !primaryResource._associated.isEmpty())
         {
             PushBuilder pushBuilder = jettyRequest.getPushBuilder();
 
