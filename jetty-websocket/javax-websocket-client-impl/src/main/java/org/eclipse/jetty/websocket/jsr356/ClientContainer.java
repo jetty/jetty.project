@@ -105,7 +105,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
         this.scopeDelegate = scope;
         client = new WebSocketClient(scope,
-                new JsrEventDriverFactory(scope.getPolicy()),
+                new JsrEventDriverFactory(scope),
                 new JsrSessionFactory(this));
         client.getSslContextFactory().setTrustAll(trustAll);
         addBean(client);

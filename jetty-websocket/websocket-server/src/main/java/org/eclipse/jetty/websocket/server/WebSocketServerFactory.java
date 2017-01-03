@@ -152,7 +152,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.contextClassloader = Thread.currentThread().getContextClassLoader();
         
         this.defaultPolicy = policy;
-        this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
+        this.eventDriverFactory = new EventDriverFactory(this);
         this.bufferPool = bufferPool;
         this.extensionFactory = new WebSocketExtensionFactory(this);
         

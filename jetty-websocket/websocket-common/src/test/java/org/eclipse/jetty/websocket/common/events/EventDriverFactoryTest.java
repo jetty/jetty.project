@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.annotations.NotASocket;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class EventDriverFactoryTest
     @Test
     public void testAdapterConnectCloseSocket()
     {
-        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventDriverFactory factory = new EventDriverFactory(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
         EventDriver driver = factory.wrap(socket);
 
@@ -55,7 +56,7 @@ public class EventDriverFactoryTest
     @Test
     public void testBadNotASocket()
     {
-        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventDriverFactory factory = new EventDriverFactory(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         try
         {
             NotASocket bad = new NotASocket();
@@ -75,7 +76,7 @@ public class EventDriverFactoryTest
     @Test
     public void testListenerBasicSocket()
     {
-        EventDriverFactory factory = new EventDriverFactory(WebSocketPolicy.newClientPolicy());
+        EventDriverFactory factory = new EventDriverFactory(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = factory.wrap(socket);
 
