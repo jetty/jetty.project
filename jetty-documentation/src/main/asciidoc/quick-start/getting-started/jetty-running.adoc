@@ -105,6 +105,12 @@ jetty.home::
 jetty.base::
   The property that defines the location of a specific instance of a jetty server, its configuration, logs and web applications (typically start.ini, start.d, logs and webapps)
 
+____
+[IMPORTANT]
+Your Jetty Home directory should be treated as a standard of truth and remain unmodified or changed.
+Changes or additions to your configuration should take place in the Jetty Base directory.
+____
+
 The `jetty.home` and `jetty.base` properties may be explicitly set on the command line, or they can be inferred from the environment if used with commands like:
 
 [source, screen, subs="{sub-order}"]

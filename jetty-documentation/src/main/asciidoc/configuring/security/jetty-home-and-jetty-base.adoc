@@ -18,9 +18,9 @@
 === Using the $\{jetty.home} and $\{jetty.base} Concepts to Configure
 Security
 
-Jetty 9.1 introduced `${jetty.base}` and `${jetty.home}`.
+Jetty implementations are structured around the idea of `${jetty.base}` and `${jetty.home}` directories.
 
-* `${jetty.home}` is the directory location for the jetty distribution (the binaries).
+* `${jetty.home}` is the directory location for the Jetty distribution (the binaries) should not be modified.
 * `${jetty.base}` is the directory location for your customizations to the distribution.
 
 This separation:
