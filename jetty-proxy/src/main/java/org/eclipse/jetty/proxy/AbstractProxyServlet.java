@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -633,10 +632,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
             {
                 // Use Jetty specific behavior to close connection.
                 proxyResponse.sendError(-1);
-                AsyncContext asyncContext = clientRequest.getAsyncContext();
-                asyncContext.complete();
+                if (clientRequest.isAsyncStarted())
+                {
+                    AsyncContext asyncContext = clientRequest.getAsyncContext();
+                    asyncContext.complete();
+                }
             }
-            catch (IOException x)
+            catch (Throwable x)
             {
                 if (_log.isDebugEnabled())
                     _log.debug(getRequestId(clientRequest) + " could not close the connection", failure);
