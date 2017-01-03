@@ -307,6 +307,7 @@ public class Session implements SessionHandler.SessionIf
 
             if (_handler == null)
                 throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
+            
             _handler.doSessionAttributeListeners(this,name,oldValue,newValue);
         }
     }
@@ -897,10 +898,9 @@ public class Session implements SessionHandler.SessionIf
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("invalidate {}",_sessionData.getId());
-                if (isValid())
+                if (_state == State.VALID || _state == State.INVALIDATING)
                 {
                     Set<String> keys = null;
-
                     do
                     {
                         keys = _sessionData.getKeys();
