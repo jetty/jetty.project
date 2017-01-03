@@ -17,7 +17,8 @@
 [[startup-base-and-home]]
 === Managing Jetty Base and Jetty Home
 
-Starting with Jetty 9.1, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment (known as `${jetty.base}`).
+Instead of managing multiple Jetty implementations out of several different distribution locations, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment(s) (known as `${jetty.base}`).
+There should always only be one Jetty Home, but there can be multiple Jetty Base directories that references.
 
 Jetty Base::
   * Also known as the `${jetty.base}` property.
@@ -25,6 +26,14 @@ Jetty Base::
 Jetty Home::
   * Also known as the `${jetty.home}` property.
   * This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
+
+____
+[IMPORTANT]
+Jetty Home should always be treated as a standard of truth.
+All configuration modifications, changes and additions should be made in the appropriate Jetty Base directory.
+____
+
+[[base-vs-home-resolution]]
 
 Potential configuration is resolved from these 2 directory locations.
 
@@ -241,8 +250,8 @@ jetty.dump.stop=false
 --module=annotations
 ....
 
-The `${jetty.base}/start.ini` is the main startup configuration entry point for Jetty.
-In this example you will see that we are enabling a few modules for Jetty, specifying some properties, and also referencing some Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and `etc/test-realm.xml` files)
+In this example, `${jetty.base}/start.ini` is the main startup configuration entry point for Jetty.
+You will see that we are enabling a few modules for Jetty, specifying some properties, and also referencing some Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and `etc/test-realm.xml` files)
 
 When Jetty's `start.jar` resolves the entries in the `start.ini`, it will follow the link:#base-vs-home-resolution[resolution rules above].
 
