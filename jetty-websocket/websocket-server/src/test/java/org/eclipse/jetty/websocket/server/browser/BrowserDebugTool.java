@@ -108,6 +108,8 @@ public class BrowserDebugTool implements WebSocketCreator
 
         LOG.debug("User-Agent: {}",ua);
         LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
+        LOG.debug("Sec-WebSocket-Protocol (Request): {}",req.getHeader("Sec-WebSocket-Protocol"));
+        LOG.debug("Sec-WebSocket-Protocol (Response): {}",resp.getAcceptedSubProtocol());
 
         req.getExtensions();
         return new BrowserSocket(ua,rexts);
