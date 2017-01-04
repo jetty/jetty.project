@@ -110,6 +110,8 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     }
     
     private NativeWebSocketConfiguration configuration;
+    private ServletContext context;
+    private String instanceKey;
     private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
     
@@ -147,8 +149,10 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     @Override
     public void destroy()
     {
+        LOG.info(".destroy()");
         try
         {
+            context.setAttribute(instanceKey, null);
             alreadySetToAttribute = false;
             if(localConfiguration)
             {
@@ -286,6 +290,8 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     @Override
     public void init(FilterConfig config) throws ServletException
     {
+        LOG.info(".init()");
+        
         try
         {
             String configurationKey = config.getInitParameter(CONFIG_ATTRIBUTE_KEY);
@@ -343,15 +349,17 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 getFactory().getPolicy().setInputBufferSize(Integer.parseInt(max));
             }
             
-            String key = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
-            if (key == null)
+            instanceKey = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
+            if (instanceKey == null)
             {
                 // assume default
-                key = WebSocketUpgradeFilter.class.getName();
+                instanceKey = WebSocketUpgradeFilter.class.getName();
             }
             
+            this.context = config.getServletContext();
+            
             // Set instance of this filter to context attribute
-            setToAttribute(config.getServletContext(), key);
+            setToAttribute(config.getServletContext(), instanceKey);
         }
         catch (ServletException e)
         {
