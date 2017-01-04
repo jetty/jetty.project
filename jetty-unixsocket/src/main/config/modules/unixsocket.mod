@@ -21,11 +21,11 @@ maven://com.github.jnr/jnr-unixsocket/0.8|lib/jnr/jnr-unixsocket-0.8.jar
 maven://com.github.jnr/jnr-ffi/2.0.3|lib/jnr/jnr-ffi-2.0.3.jar
 maven://com.github.jnr/jffi/1.2.9|lib/jnr/jffi-1.2.9.jar
 maven://com.github.jnr/jffi/1.2.9/jar/native|lib/jnr/jffi-1.2.9-native.jar
-maven://org.ow2.asm/asm/5.0.1|lib/jnr/asm-5.0.1.jar
-maven://org.ow2.asm/asm-commons/5.0.1|lib/jnr/asm-commons-5.0.1.jar
-maven://org.ow2.asm/asm-analysis/5.0.3|lib/jnr/asm-analysis-5.0.3.jar
-maven://org.ow2.asm/asm-tree/5.0.3|lib/jnr/asm-tree-5.0.3.jar
-maven://org.ow2.asm/asm-util/5.0.3|lib/jnr/asm-util-5.0.3.jar
+maven://org.ow2.asm/asm/6.0_ALPHA|lib/jnr/asm-6.0_ALPHA.jar
+maven://org.ow2.asm/asm-commons/6.0_ALPHA|lib/jnr/asm-commons-6.0_ALPHA.jar
+maven://org.ow2.asm/asm-analysis/6.0_ALPHA|lib/jnr/asm-analysis-6.0_ALPHA.jar
+maven://org.ow2.asm/asm-tree/6.0_ALPHA|lib/jnr/asm-tree-6.0_ALPHA.jar
+maven://org.ow2.asm/asm-util/6.0_ALPHA|lib/jnr/asm-util-6.0_ALPHA.jar
 maven://com.github.jnr/jnr-x86asm/1.0.2|lib/jnr/jnr-x86asm-1.0.2.jar
 maven://com.github.jnr/jnr-constants/0.8.7|lib/jnr/jnr-constants-0.8.7.jar
 maven://com.github.jnr/jnr-enxio/0.9|lib/jnr/jnr-enxio-0.9.jar
