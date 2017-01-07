@@ -632,7 +632,9 @@ public class ResponseTest
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         NullSessionDataStore ds = new NullSessionDataStore();
         ss.setSessionDataStore(ds);
-        handler.setSessionIdManager(new DefaultSessionIdManager(_server));
+        DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
+        idMgr.setWorkerName(null);
+        handler.setSessionIdManager(idMgr);
         request.setSessionHandler(handler);
         TestSession tsession = new TestSession(handler, "12345");
         tsession.setExtendedId(handler.getSessionIdManager().getExtendedId("12345", null));
@@ -717,7 +719,9 @@ public class ResponseTest
                     DefaultSessionCache ss = new DefaultSessionCache(handler);
                     handler.setSessionCache(ss);
                     ss.setSessionDataStore(ds);
-                    handler.setSessionIdManager(new DefaultSessionIdManager(_server));
+                    DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
+                    idMgr.setWorkerName(null);
+                    handler.setSessionIdManager(idMgr);
                     request.setSessionHandler(handler);
                     request.setSession(new TestSession(handler, "12345"));
                     handler.setCheckingRemoteSessionIdEncoding(false);
