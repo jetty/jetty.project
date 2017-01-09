@@ -22,7 +22,7 @@
 The standalone Jetty distribution is available for download from the Eclipse Foundation:
 ____
 *Jetty*
-http://download.eclipse.org/jetty
+https://www.eclipse.org/jetty/download.html
 ____
 
 It is available in both zip and gzip formats; download the one most appropriate for your system.
