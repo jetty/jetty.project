@@ -80,20 +80,16 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
         if (_session!=null && _session.getAttribute(__J_AUTHENTICATED)!=null)
             _session.removeAttribute(__J_AUTHENTICATED);
 
-        doLogout(null);
+        doLogout();
     }
 
-    private void doLogout(HttpSessionBindingEvent event)
+    private void doLogout()
     {
         SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
         if (security!=null)
             security.logout(this);
-        //if we were called by an unbind event, it means the session is invalid
-        //so don't try and remove the attribute
-        if (_session!=null && event == null)
-        {
+        if (_session!=null)
             _session.removeAttribute(Session.SESSION_CREATED_SECURE);
-        }
     }
 
     @Override
@@ -129,7 +125,7 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
     @Override
     public void valueUnbound(HttpSessionBindingEvent event)
     {
-        doLogout(event);
+        doLogout();
     }
 
 }
