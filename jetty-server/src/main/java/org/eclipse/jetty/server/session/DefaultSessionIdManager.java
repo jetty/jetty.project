@@ -152,7 +152,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * lookup the worker name that can be dynamically set by a request
      * Customizer.
      *
-     * @param workerName the name of the worker
+     * @param workerName the name of the worker, if null it is coerced to empty string
      */
     public void setWorkerName(String workerName)
     {
