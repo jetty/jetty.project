@@ -28,8 +28,6 @@ import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -133,6 +131,7 @@ public class HttpParser
         CHUNK_SIZE,
         CHUNK_PARAMS,
         CHUNK,
+        CHUNK_TRAILER,
         CHUNK_END,
         END,
         CLOSE,  // The associated stream/endpoint should be closed
@@ -682,7 +681,7 @@ public class HttpParser
                                 if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
                                 {
                                     LOG.warn("URI is too large >"+_maxHeaderBytes);
-                                    throw new BadMessageException(HttpStatus.REQUEST_URI_TOO_LONG_414);
+                                    throw new BadMessageException(HttpStatus.URI_TOO_LONG_414);
                                 }
                                 _uri.append(array,p-1,len+1);
                                 buffer.position(i-buffer.arrayOffset());
@@ -1383,14 +1382,16 @@ public class HttpParser
                         break;
 
                     case EOF_CONTENT:
+                    case CHUNK_END:
                         setState(State.CLOSED);
                         return _handler.messageComplete();
 
-                    case  CONTENT:
-                    case  CHUNKED_CONTENT:
-                    case  CHUNK_SIZE:
-                    case  CHUNK_PARAMS:
-                    case  CHUNK:
+                    case CONTENT:
+                    case CHUNKED_CONTENT:
+                    case CHUNK_SIZE:
+                    case CHUNK_PARAMS:
+                    case CHUNK:
+                    case CHUNK_TRAILER:
                         setState(State.CLOSED);
                         _handler.earlyEOF();
                         break;
@@ -1592,7 +1593,6 @@ public class HttpParser
 
                 case CHUNK_END:
                 {
-                    // TODO handle chunk trailer
                     ch=next(buffer);
                     if (ch==0)
                         break;
@@ -1601,7 +1601,19 @@ public class HttpParser
                         setState(State.END);
                         return _handler.messageComplete();
                     }
-                    throw new IllegalCharacterException(_state,ch,buffer);
+                    setState(State.CHUNK_TRAILER);
+                    break;
+                }
+
+                case CHUNK_TRAILER:
+                {
+                    // TODO handle chunk trailer values
+                    ch=next(buffer);
+                    if (ch==0)
+                        break;
+                    if (ch == HttpTokens.LINE_FEED)
+                        setState(State.CHUNK_END);
+                    break;
                 }
 
                 case CLOSED:
