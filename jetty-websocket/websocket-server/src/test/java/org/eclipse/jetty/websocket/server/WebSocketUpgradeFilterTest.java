@@ -252,6 +252,33 @@ public class WebSocketUpgradeFilterTest
             }
         }});
     
+        // WSUF from web.xml, SCI active, apply app-ws configuration via ServletContextListener with WEB-INF/lib/jetty-http.jar
+    
+        cases.add(new Object[]{"wsuf/WebAppContext/web.xml/ServletContextListener/jetty-http.jar", new ServerProvider()
+        {
+            @Override
+            public Server newServer() throws Exception
+            {
+                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+            
+                WSServer server = new WSServer(testDir, "/");
+            
+                server.copyWebInf("wsuf-config-via-listener.xml");
+                server.copyClass(InfoSocket.class);
+                server.copyClass(InfoContextAttributeListener.class);
+                // Add a jetty-http.jar to ensure that the classloader constraints
+                // and the WebAppClassloader setup is sane and correct
+                // The odd version string is present to capture bad regex behavior in Jetty
+                server.copyLib(org.eclipse.jetty.http.pathmap.PathSpec.class, "jetty-http-9.99.999.jar");
+                server.start();
+            
+                WebAppContext webapp = server.createWebAppContext();
+                server.deployWebapp(webapp);
+            
+                return server.getServer();
+            }
+        }});
+
         // WSUF from web.xml, SCI active, apply app-ws configuration via Servlet.init
     
         cases.add(new Object[]{"wsuf/WebAppContext/web.xml/Servlet.init", new ServerProvider()
