@@ -11,7 +11,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <assembly-directory>${basedir}/target/home</assembly-directory>
+    <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
     <jetty-setuid-version>1.0.3</jetty-setuid-version>
   </properties>
 
@@ -336,6 +336,24 @@
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>set jetty.sh</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
+              </tasks>
             </configuration>
           </execution>
         </executions>

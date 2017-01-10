@@ -274,7 +274,8 @@ fi
 #####################################################
 if [ -z "$JETTY_RUN" ]
 then
-  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)
+  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)/jetty
+  [ -d "$JETTY_RUN" ] || mkdir $JETTY_RUN
 fi
 
 #####################################################
@@ -433,7 +434,7 @@ case "$ACTION" in
         CH_USER="-c$JETTY_USER"
       fi
 
-      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_BASE" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_LOGS/start.log"
+      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_BASE" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_RUN/start.log"
 
     else
 
@@ -455,7 +456,7 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
-          exec ${RUN_CMD[*]} start-log-file="$JETTY_LOGS/start.log" > /dev/null &
+          exec ${RUN_CMD[*]} start-log-file="$JETTY_RUN/start.log" > /dev/null &
           disown \$!
           echo \$! > '$JETTY_PID'"
       else
