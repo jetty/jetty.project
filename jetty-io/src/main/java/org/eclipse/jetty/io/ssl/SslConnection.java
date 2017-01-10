@@ -542,6 +542,9 @@ public class SslConnection extends AbstractConnection
                             // Let's try reading some encrypted data... even if we have some already.
                             int net_filled = getEndPoint().fill(_encryptedInput);
 
+                            if (net_filled > 0 && !_handshaken && _sslEngine.isOutboundDone())
+                                throw new SSLHandshakeException("Closed during handshake");
+
                             decryption: while (true)
                             {
                                 // Let's unwrap even if we have no net data because in that
