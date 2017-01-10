@@ -67,7 +67,7 @@ Here's how you would configure the virtual hosts with a link:#deployable-descrip
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/blah</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/blah.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>blah.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>333.444.555.666</Item>
@@ -107,7 +107,7 @@ For `blah` webapp:
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/blah</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/blah.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/blah.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.blah.com</Item>
@@ -133,7 +133,7 @@ For `other` webapp:
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/other</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/other.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/other.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.other.com</Item>
@@ -182,7 +182,7 @@ For foo webapp:
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/foo.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/foo.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.blah.com</Item>
@@ -202,7 +202,7 @@ For bar webapp:
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/bar.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/bar.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.other.com</Item>
