@@ -111,8 +111,9 @@ public class ServletUpgradeResponse implements UpgradeResponse
         {
             String name = entry.getKey();
             Collection<String> prepend = entry.getValue();
-            List<String> values = headers.getOrDefault(name,headers.containsKey(name)?null:new ArrayList<>());
+            List<String> values = headers.getOrDefault(name,new ArrayList<>());
             values.addAll(0,prepend);
+            headers.put(name, values);
         }
         
         status = response.getStatus();

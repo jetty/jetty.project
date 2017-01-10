@@ -145,7 +145,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         // Create Filter
         if(isEnabledViaContext(context.getServletContext(), ADD_DYNAMIC_FILTER_KEY, true))
         {
-            WebSocketUpgradeFilter.configureContext(context);
+            String instanceKey = WebSocketUpgradeFilter.class.getName() + ".SCI";
+            if(context.getAttribute(instanceKey) == null)
+            {
+                WebSocketUpgradeFilter wsuf = WebSocketUpgradeFilter.configureContext(context);
+                context.setAttribute(instanceKey, wsuf);
+            }
         }
     
         return jettyContainer;

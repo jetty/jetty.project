@@ -25,6 +25,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -46,6 +48,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -59,8 +62,16 @@ import org.junit.Test;
 public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
 {
 
-    protected TestServlet _servlet = new TestServlet();
+    protected TestServlet _servlet;
     protected AbstractTestServer _server1 = null;
+    protected CountDownLatch _synchronizer;
+    
+    @Before
+    public void setUp ()
+    {
+        _synchronizer = new CountDownLatch(1);
+        _servlet = new TestServlet(_synchronizer);
+    }
     
     
     /**
@@ -156,6 +167,9 @@ public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
             ContentResponse response = client.GET(url+"?action=forward");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
   
+            //ensure work has finished on the server side
+            _synchronizer.await();
+            
             //check that the sessions exist persisted
             checkSession(_servlet._id, true);
             checkSessionByKey (_servlet._id, "0_0_0_0:", true);
@@ -203,8 +217,10 @@ public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url+"?action=forwardinv");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-    
-
+            
+            //wait for the request to have finished before checking session
+            _synchronizer.await(10, TimeUnit.SECONDS);
+            
             //check that the session does not exist 
             checkSession(_servlet._id, false);           
         }
@@ -220,6 +236,12 @@ public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
     public static class TestServlet extends HttpServlet
     {
         public String _id = null;
+        public CountDownLatch _synchronizer;
+        
+        public TestServlet (CountDownLatch latch)
+        {
+            _synchronizer = latch;
+        }
 
 
         @Override
@@ -238,7 +260,9 @@ public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
                 dispatcherB.forward(request, httpServletResponse);
 
                 if (action.endsWith("inv"))
-                    session.invalidate();
+                    session.invalidate();            
+                
+                _synchronizer.countDown();
 
                 return;
             }
@@ -247,6 +271,9 @@ public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
             _id = session.getId();
             session.setAttribute("value", new Integer(1));
             session.invalidate();
+            assertNull(request.getSession(false));
+            assertNotNull(session);
+
         }
     }
 
@@ -256,10 +283,11 @@ public abstract class AbstractCreateAndInvalidateTest extends AbstractTestBase
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
+            assertNull(session);
             if (session == null) session = request.getSession(true);
 
             // Be sure nothing from contextA is present
-            Object objectA = session.getAttribute("A");
+            Object objectA = session.getAttribute("value");
             assertTrue(objectA == null);
 
             // Add something, so in contextA we can check if it is visible (it must not).

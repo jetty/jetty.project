@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -151,15 +152,20 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * lookup the worker name that can be dynamically set by a request
      * Customizer.
      *
-     * @param workerName the name of the worker
+     * @param workerName the name of the worker, if null it is coerced to empty string
      */
     public void setWorkerName(String workerName)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
-        if (workerName.contains("."))
-            throw new IllegalArgumentException("Name cannot contain '.'");
-        _workerName=workerName;
+        if (workerName == null)
+            _workerName = "";
+        else
+        {
+            if (workerName.contains("."))
+                throw new IllegalArgumentException("Name cannot contain '.'");
+            _workerName=workerName;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -281,7 +287,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
                                 //add in the id of the node to ensure unique id across cluster
                                 //NOTE this is different to the node suffix which denotes which node the request was received on
-                                if (_workerName!=null)
+                                if (!StringUtil.isBlank(_workerName))
                                     id=_workerName + id;
 
                                 id = id+Long.toString(COUNTER.getAndIncrement());
@@ -417,7 +423,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     public String getExtendedId(String clusterId, HttpServletRequest request)
     {
-        if (_workerName!=null)
+        if (!StringUtil.isBlank(_workerName))
         {
             if (_workerAttr==null)
                 return clusterId+'.'+_workerName;
@@ -472,7 +478,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         for (SessionHandler manager:getSessionHandlers())
         {         
             manager.invalidate(id);
-        } 
+        }
     }
 
     

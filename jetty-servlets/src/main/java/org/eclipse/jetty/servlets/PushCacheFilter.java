@@ -49,7 +49,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -161,7 +160,7 @@ public class PushCacheFilter implements Filter
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
-        String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+        String path = request.getRequestURI();
         String query = request.getQueryString();
         if (query != null)
             path += "?" + query;
@@ -183,12 +182,11 @@ public class PushCacheFilter implements Filter
                     String referrerPath = referrerURI.getPath();
                     if (referrerPath == null)
                         referrerPath = "/";
-                    if (referrerPath.startsWith(request.getContextPath()))
+                    if (referrerPath.startsWith(request.getContextPath() + "/"))
                     {
-                        String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
-                        if (!referrerPathNoContext.equals(path))
+                        if (!referrerPath.equals(path))
                         {
-                            PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
+                            PrimaryResource primaryResource = _cache.get(referrerPath);
                             if (primaryResource != null)
                             {
                                 long primaryTimestamp = primaryResource._timestamp.get();
@@ -203,19 +201,19 @@ public class PushCacheFilter implements Filter
                                             if (associated.add(path))
                                             {
                                                 if (LOG.isDebugEnabled())
-                                                    LOG.debug("Associated {} to {}", path, referrerPathNoContext);
+                                                    LOG.debug("Associated {} to {}", path, referrerPath);
                                             }
                                         }
                                         else
                                         {
                                             if (LOG.isDebugEnabled())
-                                                LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPathNoContext, _maxAssociations);
+                                                LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPath, _maxAssociations);
                                         }
                                     }
                                     else
                                     {
                                         if (LOG.isDebugEnabled())
-                                            LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPathNoContext, _associatePeriod);
+                                            LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPath, _associatePeriod);
                                     }
                                 }
                             }
@@ -223,8 +221,13 @@ public class PushCacheFilter implements Filter
                         else
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Not associated {} to {}, referring to self", path, referrerPathNoContext);
+                                LOG.debug("Not associated {} to {}, referring to self", path, referrerPath);
                         }
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Not associated {} to {}, different context", path, referrerPath);
                     }
                 }
             }

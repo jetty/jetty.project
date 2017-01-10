@@ -33,9 +33,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
@@ -54,10 +57,24 @@ import org.junit.Test;
 
 public class PushCacheFilterTest extends AbstractTest
 {
+    private String contextPath = "/push";
+
     @Override
     protected void customizeContext(ServletContextHandler context)
     {
+        context.setContextPath(contextPath);
         context.addFilter(PushCacheFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+    }
+
+    @Override
+    protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
+    {
+        return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField("localhost:" + connector.getLocalPort()), contextPath + servletPath + pathInfo, HttpVersion.HTTP_2, fields);
+    }
+
+    private String newURI(String pathInfo)
+    {
+        return "http://localhost:" + connector.getLocalPort() + contextPath + servletPath + pathInfo;
     }
 
     @Test
@@ -83,7 +100,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Request for the primary and secondary resource to build the cache.
-        final String referrerURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String referrerURI = newURI(primaryResource);
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
@@ -115,23 +132,16 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request again the primary resource, we should get the secondary resource pushed.
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
-        final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
-        final CountDownLatch pushLatch = new CountDownLatch(1);
+        final CountDownLatch primaryResponseLatch = new CountDownLatch(2);
+        final CountDownLatch pushLatch = new CountDownLatch(2);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
-            public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+            public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                return new Adapter()
-                {
-                    @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
-                    {
-                        callback.succeeded();
-                        if (frame.isEndStream())
-                            pushLatch.countDown();
-                    }
-                };
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                if (response.getStatus() == HttpStatus.OK_200)
+                    primaryResponseLatch.countDown();
             }
 
             @Override
@@ -140,6 +150,29 @@ public class PushCacheFilterTest extends AbstractTest
                 callback.succeeded();
                 if (frame.isEndStream())
                     primaryResponseLatch.countDown();
+            }
+
+            @Override
+            public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+            {
+                return new Adapter()
+                {
+                    @Override
+                    public void onHeaders(Stream stream, HeadersFrame frame)
+                    {
+                        MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                        if (response.getStatus() == HttpStatus.OK_200)
+                            pushLatch.countDown();
+                    }
+
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        callback.succeeded();
+                        if (frame.isEndStream())
+                            pushLatch.countDown();
+                    }
+                };
             }
         });
         Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
@@ -257,7 +290,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Request for the primary and secondary resource to build the cache.
-        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String primaryURI = newURI(primaryResource);
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
@@ -360,7 +393,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Request for the primary and secondary resource to build the cache.
-        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String primaryURI = newURI(primaryResource);
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
@@ -451,7 +484,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Request for the primary, secondary and tertiary resource to build the cache.
-        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String primaryURI = newURI(primaryResource);
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(2);
@@ -464,7 +497,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resources.
-                    String secondaryURI1 = "http://localhost:" + connector.getLocalPort() + servletPath + secondaryResource1;
+                    String secondaryURI1 = newURI(secondaryResource1);
                     HttpFields secondaryFields1 = new HttpFields();
                     secondaryFields1.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest1 = newRequest("GET", secondaryResource1, secondaryFields1);
@@ -636,7 +669,7 @@ public class PushCacheFilterTest extends AbstractTest
                 }
             }
         });
-        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String primaryURI = newURI(primaryResource);
 
         final Session session = newClient(new Session.Listener.Adapter());
 
@@ -733,7 +766,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Request for the primary and secondary resource to build the cache.
-        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String primaryURI = newURI(primaryResource);
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
@@ -776,7 +809,7 @@ public class PushCacheFilterTest extends AbstractTest
                 MetaData metaData = frame.getMetaData();
                 Assert.assertTrue(metaData instanceof MetaData.Request);
                 MetaData.Request pushedRequest = (MetaData.Request)metaData;
-                Assert.assertEquals(servletPath + secondaryResource, pushedRequest.getURI().getPathQuery());
+                Assert.assertEquals(contextPath + servletPath + secondaryResource, pushedRequest.getURI().getPathQuery());
                 return new Adapter()
                 {
                     @Override
@@ -826,7 +859,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Request for the primary and secondary resource to build the cache.
-        final String referrerURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String referrerURI = newURI(primaryResource);
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
@@ -921,7 +954,7 @@ public class PushCacheFilterTest extends AbstractTest
         });
 
         // Request for the primary and secondary resource to build the cache.
-        final String referrerURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String referrerURI = newURI(primaryResource);
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);

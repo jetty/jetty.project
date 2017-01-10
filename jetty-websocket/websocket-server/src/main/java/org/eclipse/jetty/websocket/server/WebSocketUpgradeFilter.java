@@ -110,6 +110,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     }
     
     private NativeWebSocketConfiguration configuration;
+    private String instanceKey;
     private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
     
@@ -343,15 +344,15 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 getFactory().getPolicy().setInputBufferSize(Integer.parseInt(max));
             }
             
-            String key = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
-            if (key == null)
+            instanceKey = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
+            if (instanceKey == null)
             {
                 // assume default
-                key = WebSocketUpgradeFilter.class.getName();
+                instanceKey = WebSocketUpgradeFilter.class.getName();
             }
             
             // Set instance of this filter to context attribute
-            setToAttribute(config.getServletContext(), key);
+            setToAttribute(config.getServletContext(), instanceKey);
         }
         catch (ServletException e)
         {
