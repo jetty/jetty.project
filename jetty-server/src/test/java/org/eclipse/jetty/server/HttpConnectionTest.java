@@ -421,7 +421,7 @@ public class HttpConnectionTest
 
         try(StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
-            response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\r\n"+
+            response=connector.getResponse("GET /bad/encoding%1 HTTP/1.1\r\n"+
                     "Host: localhost\r\n"+
                     "Connection: close\r\n"+
                     "\r\n");
