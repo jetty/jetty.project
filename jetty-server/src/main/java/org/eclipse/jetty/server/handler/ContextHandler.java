@@ -689,13 +689,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
     {
-        switch(_availability)
-        {
-            case SHUTDOWN:
-                return true;
-            default:
-                return false;
-        }
+        return _availability == Availability.SHUTDOWN;
     }
 
     /* ------------------------------------------------------------ */
