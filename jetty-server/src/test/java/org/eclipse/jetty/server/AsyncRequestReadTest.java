@@ -298,6 +298,7 @@ public class AsyncRequestReadTest
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             assertThat(in.readLine(),containsString("HTTP/1.1 200 OK"));
             assertThat(in.readLine(),containsString("Content-Length:"));
+            assertThat(in.readLine(),containsString("Connection: close"));
             assertThat(in.readLine(),containsString("Server:"));
             in.readLine();
             assertThat(in.readLine(),containsString("XXXXXXX"));
