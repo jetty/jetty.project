@@ -109,6 +109,15 @@ public class HttpParser
     public final static Trie<HttpField> CACHE = new ArrayTrie<>(2048);
 
     // States
+    public enum FieldState
+    {
+        FIELD,
+        IN_NAME,
+        VALUE,
+        IN_VALUE,
+    }
+    
+    // States
     public enum State
     {
         START,
@@ -122,17 +131,13 @@ public class HttpParser
         REASON,
         PROXY,
         HEADER,
-        HEADER_IN_NAME,
-        HEADER_VALUE,
-        HEADER_IN_VALUE,
         CONTENT,
         EOF_CONTENT,
         CHUNKED_CONTENT,
         CHUNK_SIZE,
         CHUNK_PARAMS,
         CHUNK,
-        CHUNK_TRAILER,
-        CHUNK_END,
+        TRAILER,
         END,
         CLOSE,  // The associated stream/endpoint should be closed
         CLOSED  // The associated stream/endpoint is at EOF
@@ -160,6 +165,7 @@ public class HttpParser
 
     /* ------------------------------------------------------------------------------- */
     private volatile State _state=State.START;
+    private volatile FieldState _fieldState=FieldState.FIELD;
     private volatile boolean _eof;
     private HttpMethod _method;
     private String _methodString;
@@ -956,6 +962,18 @@ public class HttpParser
         _field=null;
     }
 
+    private void parsedTrailer()
+    {
+        // handler last header if any.  Delayed to here just in case there was a continuation line (above)
+        if (_headerString!=null || _valueString!=null)
+            _handler.parsedTrailer(_field!=null?_field:new HttpField(_header,_headerString,_valueString));
+
+        _headerString=_valueString=null;
+        _header=null;
+        _value=null;
+        _field=null;
+    }
+    
     private long convertContentLength(String valueString)
     {
         try
@@ -973,12 +991,12 @@ public class HttpParser
     /*
      * Parse the message headers and return true if the handler has signaled for a return
      */
-    protected boolean parseHeaders(ByteBuffer buffer)
+    protected boolean parseFields(ByteBuffer buffer)
     {
         boolean handle=false;
 
         // Process headers
-        while (_state.ordinal()<State.CONTENT.ordinal() && buffer.hasRemaining() && !handle)
+        while ((_state==State.HEADER || _state==State.TRAILER) && buffer.hasRemaining() && !handle)
         {
             // process each character
             byte ch=next(buffer);
@@ -991,9 +1009,9 @@ public class HttpParser
                 throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
             }
 
-            switch (_state)
+            switch (_fieldState)
             {
-                case HEADER:
+                case FIELD:
                     switch(ch)
                     {
                         case HttpTokens.COLON:
@@ -1016,19 +1034,27 @@ public class HttpParser
                                 _length++;
                                 _valueString=null;
                             }
-                            setState(State.HEADER_VALUE);
+                            setState(FieldState.VALUE);
                             break;
                         }
 
                         case HttpTokens.LINE_FEED:
                         {
                             // process previous header
-                            parsedHeader();
+                            if (_state==State.HEADER)
+                                parsedHeader();
+                            else
+                                parsedTrailer();
 
                             _contentPosition=0;
 
-                            // End of headers!
-
+                            // End of headers or trailers?
+                            if (_state==State.TRAILER)
+                            {
+                                setState(State.END);
+                                return _handler.messageComplete();
+                            }
+                            
                             // Was there a required host header?
                             if (!_host && _version==HttpVersion.HTTP_1_1 && _requestHandler!=null)
                             {
@@ -1132,7 +1158,7 @@ public class HttpParser
                                     if (v==null)
                                     {
                                         // Header only
-                                        setState(State.HEADER_VALUE);
+                                        setState(FieldState.VALUE);
                                         _string.setLength(0);
                                         _length=0;
                                         buffer.position(buffer.position()+n.length()+1);
@@ -1148,7 +1174,7 @@ public class HttpParser
                                         {
                                             _field=field;
                                             _valueString=v;
-                                            setState(State.HEADER_IN_VALUE);
+                                            setState(FieldState.IN_VALUE);
 
                                             if (b==HttpTokens.CARRIAGE_RETURN)
                                             {
@@ -1161,7 +1187,7 @@ public class HttpParser
                                         }
                                         else
                                         {
-                                            setState(State.HEADER_IN_VALUE);
+                                            setState(FieldState.IN_VALUE);
                                             setString(v);
                                             buffer.position(pos);
                                             break;
@@ -1171,7 +1197,7 @@ public class HttpParser
                             }
 
                             // New header
-                            setState(State.HEADER_IN_NAME);
+                            setState(FieldState.IN_NAME);
                             _string.setLength(0);
                             _string.append((char)ch);
                             _length=1;
@@ -1180,7 +1206,7 @@ public class HttpParser
                     }
                     break;
 
-                case HEADER_IN_NAME:
+                case IN_NAME:
                     if (ch==HttpTokens.COLON)
                     {
                         if (_headerString==null)
@@ -1190,7 +1216,7 @@ public class HttpParser
                         }
                         _length=-1;
 
-                        setState(State.HEADER_VALUE);
+                        setState(FieldState.VALUE);
                         break;
                     }
 
@@ -1221,18 +1247,18 @@ public class HttpParser
                         _valueString="";
                         _length=-1;
 
-                        setState(State.HEADER);
+                        setState(FieldState.FIELD);
                         break;
                     }
 
                     throw new IllegalCharacterException(_state,ch,buffer);
 
-                case HEADER_VALUE:
+                case VALUE:
                     if (ch>HttpTokens.SPACE || ch<0)
                     {
                         _string.append((char)(0xff&ch));
                         _length=_string.length();
-                        setState(State.HEADER_IN_VALUE);
+                        setState(FieldState.IN_VALUE);
                         break;
                     }
 
@@ -1246,12 +1272,12 @@ public class HttpParser
                         _valueString="";
                         _length=-1;
 
-                        setState(State.HEADER);
+                        setState(FieldState.FIELD);
                         break;
                     }
                     throw new IllegalCharacterException(_state,ch,buffer);
 
-                case HEADER_IN_VALUE:
+                case IN_VALUE:
                     if (ch>=HttpTokens.SPACE || ch<0 || ch==HttpTokens.TAB)
                     {
                         if (_valueString!=null)
@@ -1274,7 +1300,7 @@ public class HttpParser
                             _valueString=takeString();
                             _length=-1;
                         }
-                        setState(State.HEADER);
+                        setState(FieldState.FIELD);
                         break;
                     }
 
@@ -1321,14 +1347,14 @@ public class HttpParser
             }
 
             // parse headers
-            if (_state.ordinal()>= State.HEADER.ordinal() && _state.ordinal()<State.CONTENT.ordinal())
+            if (_state== State.HEADER)
             {
-                if (parseHeaders(buffer))
+                if (parseFields(buffer))
                     return true;
             }
 
             // parse content
-            if (_state.ordinal()>= State.CONTENT.ordinal() && _state.ordinal()<State.END.ordinal())
+            if (_state.ordinal()>= State.CONTENT.ordinal() && _state.ordinal()<State.TRAILER.ordinal())
             {
                 // Handle HEAD response
                 if (_responseStatus>0 && _headResponse)
@@ -1341,6 +1367,13 @@ public class HttpParser
                     if (parseContent(buffer))
                         return true;
                 }
+            }
+
+            // parse headers
+            if (_state==State.TRAILER)
+            {
+                if (parseFields(buffer))
+                    return true;
             }
 
             // handle end states
@@ -1389,16 +1422,22 @@ public class HttpParser
                         break;
 
                     case EOF_CONTENT:
-                    case CHUNK_END:
+                    case TRAILER:
+                        if (_fieldState==FieldState.FIELD)
+                        {
+                            // Be forgiving of missing last CRLF
+                            setState(State.CLOSED);
+                            return _handler.messageComplete();
+                        }
                         setState(State.CLOSED);
-                        return _handler.messageComplete();
-
+                        _handler.earlyEOF();
+                        break;
+                        
                     case CONTENT:
                     case CHUNKED_CONTENT:
                     case CHUNK_SIZE:
                     case CHUNK_PARAMS:
                     case CHUNK:
-                    case CHUNK_TRAILER:
                         setState(State.CLOSED);
                         _handler.earlyEOF();
                         break;
@@ -1473,7 +1512,7 @@ public class HttpParser
 
         // Handle _content
         byte ch;
-        while (_state.ordinal() < State.END.ordinal() && remaining>0)
+        while (_state.ordinal() < State.TRAILER.ordinal() && remaining>0)
         {
             switch (_state)
             {
@@ -1541,7 +1580,7 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
-                            setState(State.CHUNK_END);
+                            setState(State.TRAILER);
                         else
                             setState(State.CHUNK);
                     }
@@ -1558,7 +1597,7 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
-                            setState(State.CHUNK_END);
+                            setState(State.TRAILER);
                         else
                             setState(State.CHUNK);
                     }
@@ -1586,31 +1625,6 @@ public class HttpParser
                         if (_handler.content(_contentChunk))
                             return true;
                     }
-                    break;
-                }
-
-                case CHUNK_END:
-                {
-                    ch=next(buffer);
-                    if (ch==0)
-                        break;
-                    if (ch == HttpTokens.LINE_FEED)
-                    {
-                        setState(State.END);
-                        return _handler.messageComplete();
-                    }
-                    setState(State.CHUNK_TRAILER);
-                    break;
-                }
-
-                case CHUNK_TRAILER:
-                {
-                    // TODO handle chunk trailer values
-                    ch=next(buffer);
-                    if (ch==0)
-                        break;
-                    if (ch == HttpTokens.LINE_FEED)
-                        setState(State.CHUNK_END);
                     break;
                 }
 
@@ -1687,6 +1701,14 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
+    protected void setState(FieldState state)
+    {
+        if (DEBUG)
+            LOG.debug("{}:{} --> {}",_state,_field,state);
+        _fieldState=state;
+    }
+
+    /* ------------------------------------------------------------------------------- */
     public Trie<HttpField> getFieldCache()
     {
         return _connectionFields;
@@ -1743,6 +1765,12 @@ public class HttpParser
          * @param field The field parsed
          */
         public void parsedHeader(HttpField field);
+        
+        /**
+         * This is the method called by parser when a HTTP Trailer name and value is found
+         * @param field The field parsed
+         */
+        public default void parsedTrailer(HttpField field) {}
 
         /* ------------------------------------------------------------ */
         /** Called to signal that an EOF was received unexpectedly
