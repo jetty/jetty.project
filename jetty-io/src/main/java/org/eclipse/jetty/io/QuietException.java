@@ -16,40 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server;
-
-import javax.servlet.ServletException;
-
-import org.eclipse.jetty.io.QuietException;
+package org.eclipse.jetty.io;
 
 
 /* ------------------------------------------------------------ */
-/** A ServletException that is logged less verbosely than
- * a normal ServletException.
- * <p>
- * Used for container generated exceptions that need only a message rather
- * than a stack trace.
- * </p>
+/** A Quiet Exception.
+ * <p> Exception classes that extend this interface will be logged
+ * less verbosely.
  */
-public class QuietServletException extends ServletException implements QuietException
+public interface QuietException
 {
-    public QuietServletException()
-    {
-        super();
-    }
-
-    public QuietServletException(String message, Throwable rootCause)
-    {
-        super(message,rootCause);
-    }
-
-    public QuietServletException(String message)
-    {
-        super(message);
-    }
-
-    public QuietServletException(Throwable rootCause)
-    {
-        super(rootCause);
-    }
 }
