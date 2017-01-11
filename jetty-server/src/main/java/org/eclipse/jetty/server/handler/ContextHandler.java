@@ -206,7 +206,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
     public enum Availability { UNAVAILABLE,STARTING,AVAILABLE,SHUTDOWN,};
-    private volatile Availability _availability;
+    private volatile Availability _availability = Availability.UNAVAILABLE;
 
     /* ------------------------------------------------------------ */
     public ContextHandler()
