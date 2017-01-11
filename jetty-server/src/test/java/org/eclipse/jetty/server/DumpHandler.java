@@ -216,7 +216,10 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
             }
             catch(IOException e)
             {
-                e.printStackTrace();
+                if (LOG.isDebugEnabled())
+                    LOG.warn(e);
+                else 
+                    LOG.warn(e.toString());
                 writer.write(e.toString());
             }
         }
