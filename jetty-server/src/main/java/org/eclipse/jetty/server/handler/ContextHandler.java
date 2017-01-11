@@ -684,7 +684,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @return true if this context is accepting new requests
+     * @return true if this context is shutting down
      */
     @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
