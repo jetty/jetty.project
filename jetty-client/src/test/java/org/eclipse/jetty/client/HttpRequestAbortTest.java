@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -266,7 +268,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 try
                 {
                     baseRequest.setHandled(true);
-                    IO.copy(request.getInputStream(), response.getOutputStream());
+                    if (request.getDispatcherType() != DispatcherType.ERROR)
+                        IO.copy(request.getInputStream(), response.getOutputStream());
                 }
                 catch (IOException x)
                 {
@@ -282,22 +285,22 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         try
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scheme)
-                    .onRequestCommit(request ->
-                    {
-                        aborted.set(request.abort(cause));
-                        latch.countDown();
-                    })
-                    .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
-                    {
-                        @Override
-                        public long getLength()
-                        {
-                            return -1;
-                        }
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+            .scheme(scheme)
+            .onRequestCommit(request ->
+            {
+                aborted.set(request.abort(cause));
+                latch.countDown();
+            })
+            .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+            {
+                @Override
+                public long getLength()
+                {
+                    return -1;
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
             Assert.fail();
         }
         catch (ExecutionException x)
@@ -312,57 +315,72 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
         Assert.assertEquals(0, connectionPool.getIdleConnections().size());
+
     }
 
     @Test
     public void testAbortOnContent() throws Exception
     {
-        start(new EmptyServerHandler()
+        try (StacklessLogging suppressor = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
         {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            CountDownLatch serverLatch = new CountDownLatch(1);
+            start(new EmptyServerHandler()
             {
-                super.handle(target, baseRequest, request, response);
-                IO.copy(request.getInputStream(), response.getOutputStream());
-            }
-        });
+                @Override
+                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                {
+                    try
+                    {
+                        super.handle(target, baseRequest, request, response);
+                        if (request.getDispatcherType() != DispatcherType.ERROR)
+                            IO.copy(request.getInputStream(), response.getOutputStream());
+                    }
+                    finally
+                    {
+                        serverLatch.countDown();
+                    }
+                }
+            });
 
-        final Throwable cause = new Exception();
-        final AtomicBoolean aborted = new AtomicBoolean();
-        final CountDownLatch latch = new CountDownLatch(1);
-        try
-        {
-            client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(scheme)
-                    .onRequestContent((request, content) ->
-                    {
-                        aborted.set(request.abort(cause));
-                        latch.countDown();
-                    })
-                    .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
-                    {
-                        @Override
-                        public long getLength()
+            final Throwable cause = new Exception();
+            final AtomicBoolean aborted = new AtomicBoolean();
+            final CountDownLatch latch = new CountDownLatch(1);
+            try
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                        .scheme(scheme)
+                        .onRequestContent((request, content) ->
                         {
-                            return -1;
-                        }
-                    })
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-            Assert.fail();
-        }
-        catch (ExecutionException x)
-        {
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-            if (aborted.get())
-                Assert.assertSame(cause, x.getCause());
-        }
+                            aborted.set(request.abort(cause));
+                            latch.countDown();
+                        })
+                        .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+                        {
+                            @Override
+                            public long getLength()
+                            {
+                                return -1;
+                            }
+                        })
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send();
+                Assert.fail();
+            }
+            catch (ExecutionException x)
+            {
+                Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+                if (aborted.get())
+                    Assert.assertSame(cause, x.getCause());
+            }
 
-        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        Assert.assertEquals(0, connectionPool.getConnectionCount());
-        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
-        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
+            Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+
+            HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+            Assert.assertEquals(0, connectionPool.getConnectionCount());
+            Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+            Assert.assertEquals(0, connectionPool.getIdleConnections().size());
+        }
     }
 
     @Test(expected = InterruptedException.class)
@@ -377,7 +395,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 try
                 {
                     baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * delay);
+                    if (request.getDispatcherType() != DispatcherType.ERROR)
+                        TimeUnit.MILLISECONDS.sleep(2 * delay);
                 }
                 catch (InterruptedException x)
                 {
@@ -391,22 +410,18 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 .scheme(scheme);
 
         final Thread thread = Thread.currentThread();
-        new Thread()
+        new Thread(() ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(delay);
-                    thread.interrupt();
-                }
-                catch (InterruptedException x)
-                {
-                    throw new RuntimeException(x);
-                }
+                TimeUnit.MILLISECONDS.sleep(delay);
+                thread.interrupt();
             }
-        }.start();
+            catch (InterruptedException x)
+            {
+                throw new RuntimeException(x);
+            }
+        }).start();
 
         request.send();
     }
@@ -423,7 +438,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 try
                 {
                     baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * delay);
+                    if (request.getDispatcherType() != DispatcherType.ERROR)
+                        TimeUnit.MILLISECONDS.sleep(2 * delay);
                 }
                 catch (InterruptedException x)
                 {
@@ -439,23 +455,19 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final Throwable cause = new Exception();
         final AtomicBoolean aborted = new AtomicBoolean();
         final CountDownLatch latch = new CountDownLatch(1);
-        new Thread()
+        new Thread(() ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(delay);
-                    aborted.set(request.abort(cause));
-                    latch.countDown();
-                }
-                catch (InterruptedException x)
-                {
-                    throw new RuntimeException(x);
-                }
+                TimeUnit.MILLISECONDS.sleep(delay);
+                aborted.set(request.abort(cause));
+                latch.countDown();
             }
-        }.start();
+            catch (InterruptedException x)
+            {
+                throw new RuntimeException(x);
+            }
+        }).start();
 
         try
         {
@@ -487,7 +499,8 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 try
                 {
                     baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * delay);
+                    if (request.getDispatcherType() != DispatcherType.ERROR)
+                        TimeUnit.MILLISECONDS.sleep(2 * delay);
                 }
                 catch (InterruptedException x)
                 {

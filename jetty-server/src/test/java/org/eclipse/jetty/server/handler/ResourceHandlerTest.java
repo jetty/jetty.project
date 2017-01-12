@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
+import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
+import static org.eclipse.jetty.http.HttpHeader.LOCATION;
+import static org.eclipse.jetty.http.HttpHeader.SERVER;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 
@@ -28,11 +36,11 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -40,7 +48,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -123,6 +130,7 @@ public class ResourceHandlerTest
         _resourceHandler = new ResourceHandler();
 
         _resourceHandler.setResourceBase(MavenTestingUtils.getTargetFile("test-classes/simple").getAbsolutePath());
+        _resourceHandler.setWelcomeFiles(new String[]{"welcome.txt"});
 
         _contextHandler = new ContextHandler("/resource");
         _contextHandler.setHandler(_resourceHandler);
@@ -143,59 +151,75 @@ public class ResourceHandlerTest
     }
 
     @Test
-    public void testJettyDirCss() throws Exception
+    public void testJettyDirRedirect() throws Exception
     {
-        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
-        Assert.assertNotNull(sr.getString("/resource/jetty-dir.css"));
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(302));
+        assertThat(response.get(LOCATION),containsString("/resource/"));
     }
 
     @Test
-    public void testSimple() throws Exception
+    public void testJettyDirListing() throws Exception
     {
-        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
-        Assert.assertEquals("simple text",sr.getString("/resource/simple.txt"));
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/ HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(200));
+        assertThat(response.getContent(),containsString("jetty-dir.css"));
+        assertThat(response.getContent(),containsString("<H1>Directory: /resource/"));
+        assertThat(response.getContent(),containsString("big.txt"));
+        assertThat(response.getContent(),containsString("bigger.txt"));
+        assertThat(response.getContent(),containsString("directory"));
+        assertThat(response.getContent(),containsString("simple.txt"));
     }
 
     @Test
     public void testHeaders() throws Exception
     {
-        String response = _local.getResponses("GET /resource/simple.txt HTTP/1.0\r\n\r\n");
-        assertThat(response,startsWith("HTTP/1.1 200 OK"));
-        assertThat(response,Matchers.containsString("Content-Type: text/plain"));
-        assertThat(response,Matchers.containsString("Last-Modified: "));
-        assertThat(response,Matchers.containsString("Content-Length: 11"));
-        assertThat(response,Matchers.containsString("Server: Jetty"));
-        assertThat(response,Matchers.containsString("simple text"));
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(200));
+        assertThat(response.get(CONTENT_TYPE),equalTo("text/plain"));
+        assertThat(response.get(LAST_MODIFIED),Matchers.notNullValue());
+        assertThat(response.get(CONTENT_LENGTH),equalTo("11"));
+        assertThat(response.get(SERVER),containsString("Jetty"));
+        assertThat(response.getContent(),containsString("simple text"));
     }
 
     @Test
     public void testBigFile() throws Exception
     {
         _config.setOutputBufferSize(2048);
-        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
-        String response = sr.getString("/resource/big.txt");
-        Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
-        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file" + LN));
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(200));
+        assertThat(response.getContent(),startsWith("     1\tThis is a big file"));
+        assertThat(response.getContent(),endsWith("   400\tThis is a big file" + LN));
     }
 
     @Test
     public void testBigFileBigBuffer() throws Exception
     {
         _config.setOutputBufferSize(16 * 1024);
-        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
-        String response = sr.getString("/resource/big.txt");
-        Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
-        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file" + LN));
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(200));
+        assertThat(response.getContent(),startsWith("     1\tThis is a big file"));
+        assertThat(response.getContent(),endsWith("   400\tThis is a big file" + LN));
     }
 
     @Test
     public void testBigFileLittleBuffer() throws Exception
     {
         _config.setOutputBufferSize(8);
-        SimpleRequest sr = new SimpleRequest(new URI("http://localhost:" + _connector.getLocalPort()));
-        String response = sr.getString("/resource/big.txt");
-        Assert.assertThat(response,Matchers.startsWith("     1\tThis is a big file"));
-        Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file" + LN));
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(200));
+        assertThat(response.getContent(),startsWith("     1\tThis is a big file"));
+        assertThat(response.getContent(),endsWith("   400\tThis is a big file" + LN));
     }
 
     @Test
@@ -209,6 +233,32 @@ public class ResourceHandlerTest
             Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
             Assert.assertThat(response,Matchers.containsString("   400\tThis is a big file" + LN + "     1\tThis is a big file"));
             Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file" + LN));
+        }
+    }
+    
+    @Test
+    public void testWelcome() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/directory/ HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(),equalTo(200));
+        assertThat(response.getContent(),containsString("Hello"));
+    }
+    
+    @Test
+    public void testWelcomeRedirect() throws Exception
+    {
+        try
+        {
+            _resourceHandler.setRedirectWelcome(true);
+            HttpTester.Response response = HttpTester.parseResponse(
+                _local.getResponse("GET /resource/directory/ HTTP/1.0\r\n\r\n"));
+            assertThat(response.getStatus(),equalTo(302));
+            assertThat(response.get(LOCATION),containsString("/resource/welcome.txt"));
+        }
+        finally
+        {
+            _resourceHandler.setRedirectWelcome(false);
         }
     }
     
@@ -235,12 +285,10 @@ public class ResourceHandlerTest
         
         try (Socket socket = new Socket("localhost",_connector.getLocalPort());OutputStream out=socket.getOutputStream();InputStream in=socket.getInputStream())
         {
-
             socket.getOutputStream().write("GET /resource/biggest.txt HTTP/1.0\n\n".getBytes());
             
             byte[] array = new byte[102400];
             ByteBuffer buffer=null;
-            int i=0;
             while(true)
             {
                 Thread.sleep(100);

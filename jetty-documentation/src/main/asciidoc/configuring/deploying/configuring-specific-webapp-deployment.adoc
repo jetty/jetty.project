@@ -44,7 +44,7 @@ For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.w
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -58,7 +58,7 @@ For example, if the system property is set to `myapp.home=/opt/myapp`, the previ
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -86,7 +86,7 @@ This can help make it clear that users should not make changes to the temporary 
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -102,7 +102,7 @@ However, since the `web.xml` for the web application is processed after the depl
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -123,7 +123,7 @@ This feature is useful when adding parameters or additional Servlet mappings wit
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -138,7 +138,7 @@ If the `web.xml` does not include a reference to this data source, an override d
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>

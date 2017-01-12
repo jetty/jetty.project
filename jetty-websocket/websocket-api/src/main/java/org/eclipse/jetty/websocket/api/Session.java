@@ -175,7 +175,7 @@ public interface Session extends Closeable
     void setIdleTimeout(long ms);
 
     /**
-     * Suspend a the incoming read events on the connection.
+     * Suspend the incoming read events on the connection.
      * 
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */

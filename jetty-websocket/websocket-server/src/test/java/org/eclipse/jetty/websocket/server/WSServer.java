@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
@@ -35,6 +38,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
@@ -47,7 +51,6 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
-import org.junit.Assert;
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
@@ -82,7 +85,7 @@ public class WSServer
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         String endpointPath = clazz.getName().replace('.','/') + ".class";
         URL classUrl = cl.getResource(endpointPath);
-        Assert.assertThat("Class URL for: " + clazz,classUrl,notNullValue());
+        assertThat("Class URL for: " + clazz,classUrl,notNullValue());
         File destFile = new File(classesDir,OS.separators(endpointPath));
         FS.ensureDirExists(destFile.getParentFile());
         File srcFile = new File(classUrl.toURI());
@@ -93,7 +96,31 @@ public class WSServer
     {
         copyClass(endpointClass);
     }
-
+    
+    public void copyLib(Class<?> clazz, String jarFileName) throws URISyntaxException, IOException
+    {
+        webinf = new File(contextDir,"WEB-INF");
+        FS.ensureDirExists(webinf);
+        File libDir = new File(webinf,"lib");
+        FS.ensureDirExists(libDir);
+        File jarFile = new File(libDir, jarFileName);
+        
+        URL codeSourceURL = clazz.getProtectionDomain().getCodeSource().getLocation();
+        assertThat("Class CodeSource URL is file scheme", codeSourceURL.getProtocol(), is("file"));
+    
+        File sourceCodeSourceFile = new File(codeSourceURL.toURI());
+        if (sourceCodeSourceFile.isDirectory())
+        {
+            LOG.info("Creating " + jarFile + " from " + sourceCodeSourceFile);
+            JAR.create(sourceCodeSourceFile, jarFile);
+        }
+        else
+        {
+            LOG.info("Copying " + sourceCodeSourceFile + " to " + jarFile);
+            IO.copy(sourceCodeSourceFile, jarFile);
+        }
+    }
+    
     public void copyWebInf(String testResourceName) throws IOException
     {
         webinf = new File(contextDir,"WEB-INF");
@@ -173,7 +200,7 @@ public class WSServer
         contexts = new ContextHandlerCollection();
         handlers.addHandler(contexts);
         server.setHandler(handlers);
-
+        
         server.start();
 
         String host = connector.getHost();

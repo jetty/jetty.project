@@ -63,10 +63,10 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
         endPoint.setConnection(sslConnection);
 
-        customize(sslConnection, context);
-
         EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
+
+        customize(sslConnection, context);
 
         return sslConnection;
     }

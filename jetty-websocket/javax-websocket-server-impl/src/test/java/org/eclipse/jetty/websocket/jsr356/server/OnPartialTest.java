@@ -60,9 +60,6 @@ public class OnPartialTest
         policy.setMaxBinaryMessageBufferSize(1024);
         policy.setMaxTextMessageBufferSize(1024);
 
-        // Event Driver Factory
-        EventDriverFactory factory = new EventDriverFactory(policy);
-        factory.addImplementation(new JsrServerEndpointImpl());
 
         // Create EventDriver
         EventDriverImpl driverImpl = new JsrServerEndpointImpl();
@@ -71,6 +68,9 @@ public class OnPartialTest
         Assert.assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint",anno,notNullValue());
         
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy);
+        // Event Driver Factory
+        EventDriverFactory factory = new EventDriverFactory(containerScope);
+        factory.addImplementation(new JsrServerEndpointImpl());
         
         ServerEndpointConfig config = new BasicServerEndpointConfig(containerScope,endpoint,"/");
         AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(containerScope,endpoint,config);

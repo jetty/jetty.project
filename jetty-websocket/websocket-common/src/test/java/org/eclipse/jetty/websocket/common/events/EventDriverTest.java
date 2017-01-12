@@ -234,7 +234,7 @@ public class EventDriverTest
     private EventDriver wrap(Object websocket)
     {
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
-        EventDriverFactory factory = new EventDriverFactory(policy);
+        EventDriverFactory factory = new EventDriverFactory(new SimpleContainerScope(policy));
         return factory.wrap(websocket);
     }
 }

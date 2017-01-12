@@ -347,7 +347,7 @@ Here's an example of the contents of a `META-INF/jetty-webapp-context.xml` file:
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="defaultsDescriptor"><Property name="bundle.root"/>META-INF/webdefault.xml</Set>
@@ -789,7 +789,7 @@ To set the pattern, you will need to provide your own etc files - see the sectio
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <Call name="addBean">
       <Arg>

@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.client.JsrClientEndpointImpl;
 
 public class JsrEventDriverFactory extends EventDriverFactory
 {
-    public JsrEventDriverFactory(WebSocketPolicy policy)
+    public JsrEventDriverFactory(WebSocketContainerScope containerScope)
     {
-        super(policy);
+        super(containerScope);
 
         clearImplementations();
         // Classes that extend javax.websocket.Endpoint

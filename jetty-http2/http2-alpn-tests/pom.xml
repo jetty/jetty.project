@@ -49,22 +49,36 @@
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>-Xbootclasspath/p:${project.build.directory}/alpn/alpn-boot-${alpn.version}.jar
-                            </argLine>
+                            <argLine>-Xbootclasspath/p:${project.build.directory}/alpn/alpn-boot-${alpn.version}.jar</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.jetty.alpn</groupId>
+                    <artifactId>alpn-api</artifactId>
+                    <version>${alpn.api.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>jdk9</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.jetty.alpn</groupId>
+                    <artifactId>alpn-api</artifactId>
+                    <version>${alpn.api.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 
     <dependencies>
-        <dependency>
-            <groupId>org.eclipse.jetty.alpn</groupId>
-            <artifactId>alpn-api</artifactId>
-            <version>${alpn.api.version}</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-alpn-server</artifactId>

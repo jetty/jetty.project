@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -179,7 +177,6 @@ public class StartArgs
     private boolean dryRun = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
-
 
     private boolean exec = false;
     private String exec_properties;
@@ -438,7 +435,7 @@ public class StartArgs
     }
 
     /**
-     * Expand any command line added <code>--lib</code> lib references.
+     * Expand any command line added {@code --lib} lib references.
      *
      * @throws IOException
      *             if unable to expand the libraries
@@ -861,7 +858,7 @@ public class StartArgs
             Path commands = baseHome.getPath(Props.getValue(arg));
 
             if (!Files.exists(commands) || !Files.isReadable(commands))
-                throw new UsageException(ERR_BAD_ARG,"--commands file must be readable: %s",commands);
+                throw new UsageException(UsageException.ERR_BAD_ARG,"--commands file must be readable: %s",commands);
             try
             {
                 TextFile file = new TextFile(commands);
@@ -947,7 +944,7 @@ public class StartArgs
         {
             exec_properties = Props.getValue(arg);
             if (!exec_properties.endsWith(".properties"))
-                throw new UsageException(ERR_BAD_ARG,"--exec-properties filename must have .properties suffix: %s",exec_properties);
+                throw new UsageException(UsageException.ERR_BAD_ARG,"--exec-properties filename must have .properties suffix: %s",exec_properties);
             return;
         }
 
@@ -1112,7 +1109,6 @@ public class StartArgs
                 key = key.substring(0,key.length() - 1);
                 if (getProperties().containsKey(key))
                     return;
-
             }
             else if (propertySource.containsKey(key))
             {
@@ -1147,7 +1143,7 @@ public class StartArgs
         }
 
         // Anything else is unrecognized
-        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
+        throw new UsageException(UsageException.ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
     private void enableModules(String source, List<String> moduleNames)
@@ -1158,7 +1154,7 @@ public class StartArgs
             List<String> list = sources.get(moduleName);
             if (list == null)
             {
-                list = new ArrayList<String>();
+                list = new ArrayList<>();
                 sources.put(moduleName,list);
             }
             list.add(source);
@@ -1219,13 +1215,20 @@ public class StartArgs
         properties.setProperty(key,value,source);
         if (key.equals("java.version"))
         {
-            Version ver = new Version(value);
-
-            properties.setProperty("java.version",ver.toShortString(),source);
-            properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
-            properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
-            properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
-            properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
+            try
+            {
+                JavaVersion ver = JavaVersion.parse(value);
+                properties.setProperty("java.version",ver.getVersion(),source);
+                properties.setProperty("java.version.platform",Integer.toString(ver.getPlatform()),source);
+                properties.setProperty("java.version.major",Integer.toString(ver.getMajor()),source);
+                properties.setProperty("java.version.minor",Integer.toString(ver.getMinor()),source);
+                properties.setProperty("java.version.micro",Integer.toString(ver.getMicro()),source);
+                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
+            }
+            catch (Throwable x)
+            {
+                throw new UsageException(UsageException.ERR_BAD_ARG, x.getMessage());
+            }
         }
     }
 
@@ -1249,5 +1252,4 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
-
 }

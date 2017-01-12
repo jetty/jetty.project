@@ -25,8 +25,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
  * Create EventDriver implementations.
@@ -34,12 +34,12 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class EventDriverFactory
 {
     private static final Logger LOG = Log.getLogger(EventDriverFactory.class);
-    private final WebSocketPolicy policy;
+    private final WebSocketContainerScope containerScope;
     private final List<EventDriverImpl> implementations;
 
-    public EventDriverFactory(WebSocketPolicy policy)
+    public EventDriverFactory(WebSocketContainerScope containerScope)
     {
-        this.policy = policy;
+        this.containerScope = containerScope;
         this.implementations = new ArrayList<>();
 
         addImplementation(new JettyListenerImpl());
@@ -117,7 +117,7 @@ public class EventDriverFactory
             {
                 try
                 {
-                    return impl.create(websocket,policy.clonePolicy());
+                    return impl.create(websocket,containerScope.getPolicy().clonePolicy());
                 }
                 catch (Throwable e)
                 {

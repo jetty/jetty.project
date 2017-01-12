@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.alpn.server;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.ServiceLoader;
 
 import javax.net.ssl.SSLEngine;
 
-import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.ALPNProcessor;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(ALPNServerConnectionFactory.class);
+    private final ALPNProcessor.Server alpnProcessor;
 
     public ALPNServerConnectionFactory(String protocols)
     {
@@ -43,25 +43,20 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
     public ALPNServerConnectionFactory(@Name("protocols") String... protocols)
     {
         super("alpn", protocols);
-        try
-        {
-            ClassLoader alpnClassLoader = ALPN.class.getClassLoader();
-            if (alpnClassLoader != null)
-            {
-                LOG.warn("ALPN must be in the boot classloader, not in: " + alpnClassLoader);
-                throw new IllegalStateException("ALPN must be in the boot classloader");
-            }
-        }
-        catch (Throwable x)
-        {
-            LOG.warn("ALPN not available", x);
-            throw new IllegalStateException("ALPN not available", x);
-        }
+        checkProtocolNegotiationAvailable();
+        Iterator<ALPNProcessor.Server> processors = ServiceLoader.load(ALPNProcessor.Server.class).iterator();
+        alpnProcessor = processors.hasNext() ? processors.next() : ALPNProcessor.Server.NOOP;
+    }
+
+    public ALPNProcessor.Server getALPNProcessor()
+    {
+        return alpnProcessor;
     }
 
     @Override
     protected AbstractConnection newServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
+        getALPNProcessor().configure(engine);
         return new ALPNServerConnection(connector, endPoint, engine, protocols, defaultProtocol);
     }
 }

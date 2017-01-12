@@ -705,7 +705,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (suspendToken.getAndSet(false))
         {
-            fillInterested();
+            if (!isReading())
+            {
+                fillInterested();
+            }
         }
     }
 

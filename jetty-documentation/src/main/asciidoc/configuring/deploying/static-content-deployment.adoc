@@ -24,7 +24,7 @@ Create a file called `scratch.xml` in the `${jetty.base}/webapps` directory and 
 ----
 
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
   <Set name="contextPath">/scratch</Set>
   <Set name="handler">

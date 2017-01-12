@@ -72,12 +72,12 @@ public class MessageWriterTest
         policy.setInputBufferSize(1024);
         policy.setMaxTextMessageBufferSize(1024);
 
-        // Event Driver factory
-        EventDriverFactory factory = new EventDriverFactory(policy);
-
         // Container
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
-
+    
+        // Event Driver factory
+        EventDriverFactory factory = new EventDriverFactory(containerScope);
+    
         // local socket
         EventDriver driver = factory.wrap(new TrackingSocket("local"));
 
