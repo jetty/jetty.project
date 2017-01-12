@@ -9,10 +9,6 @@ lib/jetty-alpn-server-${jetty.version}.jar
 [xml]
 etc/jetty-alpn.xml
 
-[files]
-lib/
-lib/alpn/
-
 [ini-template]
 ## Overrides the order protocols are chosen by the server.
 ## The default order is that specified by the order of the

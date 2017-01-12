@@ -13,11 +13,15 @@
 #            Jetty project in order to provide support for these future
 #            Java versions.
 #
-# All versions of alpn-boot can be found at
+# All versions of the alpn-boot jar can be found at
 # http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
 [depend]
 alpn-impl/alpn-${java.version}
+
+[files]
+lib/
+lib/alpn/
 
 [license]
 ALPN is a hosted at github under the GPL v2 with ClassPath Exception.
