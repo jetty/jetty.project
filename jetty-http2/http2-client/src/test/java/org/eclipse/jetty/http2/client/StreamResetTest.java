@@ -51,11 +51,12 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -409,7 +410,7 @@ public class StreamResetTest extends AbstractTest
     @Test
     public void testServerExceptionConsumesQueuedData() throws Exception
     {
-        try (StacklessLogging suppressor = new StacklessLogging(ServletHandler.class))
+        try (StacklessLogging suppressor = new StacklessLogging(HttpChannel.class))
         {
             start(new HttpServlet()
             {
@@ -430,6 +431,8 @@ public class StreamResetTest extends AbstractTest
             });
 
             Session client = newClient(new Session.Listener.Adapter());
+         
+            Log.getLogger(HttpChannel.class).info("Expecting java.lang.IllegalStateException: explictly_thrown_by_test");
             MetaData.Request request = newRequest("GET", new HttpFields());
             HeadersFrame frame = new HeadersFrame(request, null, false);
             FuturePromise<Stream> promise = new FuturePromise<>();
