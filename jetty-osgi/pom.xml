@@ -1,15 +1,19 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
     <version>9.4.1-SNAPSHOT</version>
   </parent>
+
+  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-project</artifactId>
   <name>Jetty :: OSGi</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
+
   <properties>
     <osgi-version>3.6.0.v20100517</osgi-version>
     <osgi-services-version>3.2.100.v20100503</osgi-services-version>
@@ -18,6 +22,7 @@
     <logback-version>0.9.29</logback-version>
     <slf4j-version>1.6.1</slf4j-version>
   </properties>
+
   <modules>
     <module>jetty-osgi-boot</module>
     <module>jetty-osgi-boot-jsp</module>
@@ -28,8 +33,20 @@
     <module>test-jetty-osgi-fragment</module>
     <module>test-jetty-osgi-server</module>
     <module>jetty-osgi-alpn</module>
-    <module>test-jetty-osgi</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>jdk9</id>
+      <activation>
+        <jdk>[1.8,1.9)</jdk>
+      </activation>
+      <modules>
+        <module>test-jetty-osgi</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <build>
     <resources>
       <resource>
@@ -79,6 +96,7 @@
       </plugin>
     </plugins>
   </build>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -180,4 +198,5 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
 </project>
