@@ -69,7 +69,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.5.3</version>
         <executions>
           <execution>
             <id>with-weld</id>

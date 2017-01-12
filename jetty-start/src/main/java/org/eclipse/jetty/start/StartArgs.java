@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1166,13 +1165,20 @@ public class StartArgs
             properties.setProperty(key,value,source);
             if(key.equals("java.version"))
             {
-                Version ver = new Version(value);
-
-                properties.setProperty("java.version",ver.toShortString(),source);
-                properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
-                properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
-                properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
-                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
+                try
+                {
+                    JavaVersion ver = JavaVersion.parse(value);
+                    properties.setProperty("java.version",ver.getVersion(),source);
+                    properties.setProperty("java.version.platform",Integer.toString(ver.getPlatform()),source);
+                    properties.setProperty("java.version.major",Integer.toString(ver.getMajor()),source);
+                    properties.setProperty("java.version.minor",Integer.toString(ver.getMinor()),source);
+                    properties.setProperty("java.version.micro",Integer.toString(ver.getMicro()),source);
+                    properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
+                }
+                catch (Throwable x)
+                {
+                    throw new UsageException(UsageException.ERR_BAD_ARG, x.getMessage());
+                }
             }
         }
     }

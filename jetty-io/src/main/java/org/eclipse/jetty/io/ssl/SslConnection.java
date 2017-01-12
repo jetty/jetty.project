@@ -107,8 +107,7 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.getFillInterest().fillable();
         }
     };
-    
-    Callback _nonBlockingReadCallback = new Callback.NonBlocking()
+    private final Callback _nonBlockingReadCallback = new Callback.NonBlocking()
     {
         @Override
         public void succeeded()

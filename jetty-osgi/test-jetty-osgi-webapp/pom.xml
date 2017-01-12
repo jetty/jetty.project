@@ -19,18 +19,18 @@
       <artifactId>jetty-webapp</artifactId>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.osgi</groupId>
-    	<artifactId>org.eclipse.osgi</artifactId>
-        <scope>provided</scope>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.osgi</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
-        <scope>provided</scope>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
-      <build> 
+      <build>
         <resources>
           <resource>
             <directory>src/main/resources</directory>
@@ -45,19 +45,13 @@
                <!-- DO NOT DEPLOY (or Release) -->
                <skip>true</skip>
              </configuration>
-            </plugin> 
+            </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId> 
-                <artifactId>maven-jar-plugin</artifactId> 
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>artifact-jar</id> 
-                        <goals>
-                            <goal>jar</goal> 
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>test-jar</id> 
+                        <id>test-jar</id>
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
@@ -65,7 +59,7 @@
                 </executions>
                 <configuration>
                     <archive>
-                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile> 
+                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
             </plugin>
@@ -81,7 +75,7 @@
                         <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at
-                        compilation time. --> 
+                        compilation time. -->
                         <Import-Package>
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",

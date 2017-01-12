@@ -35,12 +35,6 @@
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
-            <id>artifact-jar</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-          <execution>
             <id>test-jar</id>
             <goals>
               <goal>test-jar</goal>

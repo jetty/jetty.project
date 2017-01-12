@@ -19,18 +19,18 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.osgi</groupId>
-    	<artifactId>org.eclipse.osgi</artifactId>
-        <scope>provided</scope>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.osgi</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
-        <scope>provided</scope>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-schemas</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-schemas</artifactId>
     </dependency>
   </dependencies>
 
@@ -57,12 +57,6 @@
                 <groupId>org.apache.maven.plugins</groupId> 
                 <artifactId>maven-jar-plugin</artifactId> 
                 <executions>
-                    <execution>
-                        <id>artifact-jar</id> 
-                        <goals>
-                            <goal>jar</goal> 
-                        </goals>
-                    </execution>
                     <execution>
                         <id>test-jar</id> 
                         <goals>
