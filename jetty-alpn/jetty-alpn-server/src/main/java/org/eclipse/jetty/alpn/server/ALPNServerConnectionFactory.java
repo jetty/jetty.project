@@ -27,11 +27,12 @@ import javax.net.ssl.SSLEngine;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.util.annotation.Name;
 
-public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFactory
+public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFactory implements SslHandshakeListener
 {
     private final ALPNProcessor.Server alpnProcessor;
 
@@ -58,5 +59,19 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
     {
         getALPNProcessor().configure(engine);
         return new ALPNServerConnection(connector, endPoint, engine, protocols, defaultProtocol);
+    }
+
+    @Override
+    public void handshakeSucceeded(Event event)
+    {
+        if (alpnProcessor instanceof SslHandshakeListener)
+            ((SslHandshakeListener)alpnProcessor).handshakeSucceeded(event);
+    }
+
+    @Override
+    public void handshakeFailed(Event event, Throwable failure)
+    {
+        if (alpnProcessor instanceof SslHandshakeListener)
+            ((SslHandshakeListener)alpnProcessor).handshakeFailed(event, failure);
     }
 }

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.io.EndPoint;
@@ -44,7 +45,7 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
     @Override
     public void unsupported()
     {
-        select(Collections.<String>emptyList());
+        select(Collections.emptyList());
     }
 
     @Override
@@ -52,8 +53,11 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
     {
         SSLEngine sslEngine = getSSLEngine();
         List<String> serverProtocols = getProtocols();
-        String tlsProtocol = sslEngine.getHandshakeSession().getProtocol();
-        String tlsCipher = sslEngine.getHandshakeSession().getCipherSuite();
+        SSLSession sslSession = sslEngine.getHandshakeSession();
+        if (sslSession == null)
+            sslSession = sslEngine.getSession();
+        String tlsProtocol = sslSession.getProtocol();
+        String tlsCipher = sslSession.getCipherSuite();
         String negotiated = null;
 
         // RFC 7301 states that the server picks the protocol
@@ -83,12 +87,12 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} could not negotiate protocol: C{} | S{}", this, clientProtocols, serverProtocols);
+                    LOG.debug("{} could not negotiate protocol among client{} and server{}", this, clientProtocols, serverProtocols);
                 throw new IllegalStateException();
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} protocol selected {}", this, negotiated);
+            LOG.debug("{} protocol selected {} among client{} and server{}", this, negotiated, clientProtocols, serverProtocols);
         setProtocol(negotiated);
         ALPN.remove(sslEngine);
         return negotiated;
