@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
@@ -436,6 +438,28 @@ public class StartArgs
 
     /**
      * Expand any command line added {@code --lib} lib references.
+     *
+     * @throws IOException
+     *             if unable to expand the libraries
+     */
+    public void expandSystemProperties() throws IOException
+    {
+        StartLog.debug("Expanding Syste Properties");
+        
+        for (String key : systemPropertyKeys)
+        {
+            String value = properties.getString(key);
+            if (value!=null)
+            {
+                String expanded = properties.expand(value);
+                if (!value.equals(expanded))
+                    System.setProperty(key,expanded);
+            }
+        }
+    }
+    
+    /**
+     * Expand any command line added <code>--lib</code> lib references.
      *
      * @throws IOException
      *             if unable to expand the libraries
@@ -1054,20 +1078,17 @@ public class StartArgs
         if (arg.startsWith("-D"))
         {
             String[] assign = arg.substring(2).split("=",2);
-            systemPropertyKeys.add(assign[0]);
-            switch (assign.length)
-            {
-                case 2:
-                    System.setProperty(assign[0],assign[1]);
-                    setProperty(assign[0],assign[1],source);
-                    break;
-                case 1:
-                    System.setProperty(assign[0],"");
-                    setProperty(assign[0],"",source);
-                    break;
-                default:
-                    break;
-            }
+            
+            if (assign.length==0)
+                return;
+            String key = assign[0];
+            String value = assign.length==1?"":assign[1];
+            
+            setProperty(key,value,
+                k->{return System.getProperty(k);},
+                (k,v)->{System.setProperty(k,v);systemPropertyKeys.add(k);return null;},
+                source);
+                
             return;
         }
 
@@ -1089,35 +1110,10 @@ public class StartArgs
             String key = arg.substring(0,equals);
             String value = arg.substring(equals + 1);
 
-            if (key.endsWith("+"))
-            {
-                key = key.substring(0,key.length() - 1);
-                String orig = getProperties().getString(key);
-                if (orig == null || orig.isEmpty())
-                {
-                    if (value.startsWith(","))
-                        value = value.substring(1);
-                }
-                else
-                {
-                    value = orig + value;
-                    source = propertySource.get(key) + "," + source;
-                }
-            }
-            if (key.endsWith("?"))
-            {
-                key = key.substring(0,key.length() - 1);
-                if (getProperties().containsKey(key))
-                    return;
-            }
-            else if (propertySource.containsKey(key))
-            {
-                if (!propertySource.get(key).endsWith("[ini]"))
-                    StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
-                propertySource.put(key,source);
-            }
-
-            setProperty(key,value,source);
+            setProperty(key,value,
+                k->{return getProperties().getString(k);},
+                null,
+                source);
             return;
         }
 
@@ -1146,6 +1142,46 @@ public class StartArgs
         throw new UsageException(UsageException.ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
 
+    protected boolean setProperty(String key,String value,Function<String, String> getter, BiFunction<String, String, Void> setter, String source)
+    {
+        if (key.endsWith("+"))
+        {
+            key = key.substring(0,key.length() - 1);
+            String orig = getter.apply(key);
+            if (orig == null || orig.isEmpty())
+            {
+                if (value.startsWith(","))
+                    value = value.substring(1);
+            }
+            else
+            {
+                value = orig + value;
+                source = propertySource.get(key) + "," + source;
+            }
+        }
+        if (key.endsWith("?"))
+        {
+            key = key.substring(0,key.length() - 1);
+            String preset = getter.apply(key);
+            if (preset!=null)
+            {
+                source = source+"?=";
+                value = preset;
+            }
+        }
+        else if (propertySource.containsKey(key))
+        {
+            if (!propertySource.get(key).endsWith("[ini]"))
+                StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
+            propertySource.put(key,source);
+        }
+
+        setProperty(key,value,source);
+        if (setter!=null)
+            setter.apply(key,value);
+        return true;
+    }
+    
     private void enableModules(String source, List<String> moduleNames)
     {
         for (String moduleName : moduleNames)

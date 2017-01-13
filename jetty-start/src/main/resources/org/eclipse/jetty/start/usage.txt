@@ -172,8 +172,8 @@ Properties:
     + XML files using the <Property name="pname"/> element 
     + Module files using the ${pname} syntax
 
-  Propertues may be set on the command line, in a ini file or in a [ini]
-  section of a module using the following syntax:
+  Properties and System Properties may be set on the command line, 
+  in a ini file or in a [ini] section of a module using the following syntax:
 
     name=value
       Set a property that can be expanded in XML files with the <Property> element.
@@ -187,7 +187,10 @@ Properties:
     name?=value
       Set a property only if it is not already set.
 
-  Each module may definte it's own properties. Start properties defined include:
+  If any of the previous formats is preceded by -D, then a system property is set 
+  as well as a start property.
+   
+  Each module may define it's own properties. Start properties defined include:
 
     jetty.home=[directory]
       Set the home directory of the jetty distribution.

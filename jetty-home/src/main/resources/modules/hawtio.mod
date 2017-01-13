@@ -26,6 +26,6 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini-template]
 ## Hawt.io configuration
--Dhawtio.authenticationEnabled=false
--Dhawtio.dirname=/dirname
--Dhawtio.config.dir=${jetty.base}/etc/hawtio
+-Dhawtio.authenticationEnabled?=false
+-Dhawtio.dirname?=/dirname
+-Dhawtio.config.dir?=${jetty.base}/etc/hawtio

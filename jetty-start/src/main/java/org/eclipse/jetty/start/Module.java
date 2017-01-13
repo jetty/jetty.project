@@ -179,7 +179,7 @@ public class Module implements Comparable<Module>
         return _path.equals(other._path);
     }
 
-    public void expandProperties(Props props)
+    public void expandDependencies(Props props)
     {
         Function<String,String> expander = d->{return props.expand(d);};
         

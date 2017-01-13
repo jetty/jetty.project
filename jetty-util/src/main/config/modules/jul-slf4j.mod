@@ -23,5 +23,4 @@ basehome:modules/jul-slf4j
 lib/slf4j/jul-to-slf4j-${slf4j.version}.jar
 
 [exec]
--Djava.util.logging.config.file=etc/java-util-logging.properties
-
+-Djava.util.logging.config.file?=${jetty.base}/etc/java-util-logging.properties
