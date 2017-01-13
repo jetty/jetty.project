@@ -332,9 +332,9 @@ public class Main
 
         // ------------------------------------------------------------
         // 5) Lib & XML Expansion / Resolution
+        args.expandSystemProperties();
         args.expandLibs();
         args.expandModules(activeModules);
-
 
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs

@@ -322,7 +322,7 @@ public class Modules implements Iterable<Module>
             newlyEnabled.add(module.getName());
             
             // Expand module properties
-            module.expandProperties(_args.getProperties());
+            module.expandDependencies(_args.getProperties());
             
             // Apply default configuration
             if (module.hasDefaultConfig())
@@ -330,7 +330,7 @@ public class Modules implements Iterable<Module>
                 for(String line:module.getDefaultConfig())
                     _args.parse(line,module.getName()+"[ini]");
                 for (Module m:_modules)
-                    m.expandProperties(_args.getProperties());
+                    m.expandDependencies(_args.getProperties());
             }
         }
         
@@ -349,7 +349,7 @@ public class Modules implements Iterable<Module>
                 if (dependsOn.contains("/"))
                 {
                     Path file = _baseHome.getPath("modules/" + dependsOn + ".mod");
-                    registerModule(file).expandProperties(_args.getProperties());
+                    registerModule(file).expandDependencies(_args.getProperties());
                     providers = _provided.get(dependsOn);
                     if (providers==null || providers.isEmpty())
                         throw new UsageException("Module %s does not provide %s",_baseHome.toShortForm(file),dependsOn);

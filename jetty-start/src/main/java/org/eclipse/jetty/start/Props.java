@@ -190,7 +190,7 @@ public final class Props implements Iterable<Prop>
         return expand(str,new Stack<String>());
     }
 
-    public String expand(String str, Stack<String> seenStack)
+    private String expand(String str, Stack<String> seenStack)
     {
         if (str == null)
         {
