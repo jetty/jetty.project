@@ -38,12 +38,14 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
  * section 3.1) is configurable in SslContextFactory and works as expected.
  */
+@Ignore
 public class HostnameVerificationTest
 {
     private SslContextFactory clientSslContextFactory = new SslContextFactory();
