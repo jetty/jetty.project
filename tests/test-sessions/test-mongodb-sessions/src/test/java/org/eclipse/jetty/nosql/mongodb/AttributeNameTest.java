@@ -34,9 +34,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionCache;
+import org.eclipse.jetty.server.session.TestServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,24 +56,16 @@ public class AttributeNameTest
     @BeforeClass
     public static void beforeClass() throws Exception
     {
-        MongoTestServer.dropCollection();
-        MongoTestServer.createCollection();
+        MongoTestHelper.dropCollection();
+        MongoTestHelper.createCollection();
     }
 
     @AfterClass
     public static void afterClass() throws Exception
     {
-        MongoTestServer.dropCollection();
+        MongoTestHelper.dropCollection();
     }
 
-    public AbstractTestServer createServer(int port, int max, int scavenge,  int idlePassivate)
-    throws Exception
-    {   
-        MongoTestServer server = new MongoTestServer(port,max,scavenge,idlePassivate, true);
-        
-        return server;
-
-    }
 
     @Test
     public void testAttributeNamesWithDots() throws Exception
@@ -81,12 +74,19 @@ public class AttributeNameTest
         String servletMapping = "/server";
         int maxInactivePeriod = 10000;
         int scavengePeriod = 20000;
-        AbstractTestServer server1 = createServer(0,maxInactivePeriod,scavengePeriod, SessionCache.NEVER_EVICT);
+        
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory ();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+
+        MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
+        
+        TestServer server1 = new TestServer (0,maxInactivePeriod,scavengePeriod, cacheFactory, storeFactory);
         server1.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server1.start();
         int port1 = server1.getPort();
         
-        AbstractTestServer server2 = createServer(0,maxInactivePeriod,scavengePeriod, SessionCache.NEVER_EVICT);
+        TestServer server2 = new TestServer (0,maxInactivePeriod,scavengePeriod, cacheFactory, storeFactory);
         server2.addContext(contextPath).addServlet(TestServlet.class,servletMapping);
         server2.start();
         int port2 = server2.getPort();

@@ -30,15 +30,17 @@ import org.junit.Test;
  */
 public class ProxySerializationTest extends AbstractProxySerializationTest
 {
-
+    
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#createServer(int, int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return new JdbcTestServer(port, max, scavenge, evictionPolicy);
+       return JdbcTestHelper.newSessionDataStoreFactory();
     }
+    
+    
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#customizeContext(org.eclipse.jetty.servlet.ServletContextHandler)
@@ -61,6 +63,6 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
     @After
     public void tearDown() throws Exception 
     {
-        JdbcTestServer.shutdown(null);
+        JdbcTestHelper.shutdown(null);
     }
 }

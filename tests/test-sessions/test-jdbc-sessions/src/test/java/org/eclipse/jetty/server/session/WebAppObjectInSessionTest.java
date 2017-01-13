@@ -29,12 +29,18 @@ import org.junit.Test;
  */
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     */
     @Override
-    public AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         Resource.setDefaultUseCaches(false);
-        return new JdbcTestServer(port, maxInactive, scavengeInterval, evictionPolicy);
+       return JdbcTestHelper.newSessionDataStoreFactory();
     }
+    
+    
     @Test
     public void testWebappObjectInSession() throws Exception
     {
@@ -45,7 +51,7 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
     @After
     public void tearDown() throws Exception 
     {
-        JdbcTestServer.shutdown(null);
+        JdbcTestHelper.shutdown(null);
     }
   
 }

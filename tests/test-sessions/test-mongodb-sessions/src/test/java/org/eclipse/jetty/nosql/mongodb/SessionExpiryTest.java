@@ -35,7 +35,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
-import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.server.session.SessionCache;
+import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.server.session.TestServer;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
@@ -57,20 +60,22 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     @BeforeClass
     public static void beforeClass() throws Exception
     {
-        MongoTestServer.dropCollection();
-        MongoTestServer.createCollection();
+        MongoTestHelper.dropCollection();
+        MongoTestHelper.createCollection();
     }
 
     @AfterClass
     public static void afterClass() throws Exception
     {
-        MongoTestServer.dropCollection();
+        MongoTestHelper.dropCollection();
     }
-    
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-       return new MongoTestServer(port,max,scavenge, evictionPolicy);
+        return MongoTestHelper.newSessionDataStoreFactory();
     }
 
     @Test
@@ -98,8 +103,13 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = Integer.MAX_VALUE * 60; //integer overflow
         int scavengePeriod = 10;
-        int idlePassivatePeriod = 0;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
+        
+        DefaultSessionCacheFactory cacheFactory  = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        
+        MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -125,9 +135,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
-            String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
+            String sessionId = TestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = MongoTestServer.getCollection();
+            DBCollection sessions = MongoTestHelper.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is set in mongo
             verifySessionTimeout(sessions, sessionId, -1); //SessionManager sets -1 if maxInactive < 0
@@ -150,8 +160,11 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = 10;
         int scavengePeriod = 1;
-        int idlePassivatePeriod = 0;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, idlePassivatePeriod);
+        DefaultSessionCacheFactory cacheFactory  = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);        
+        MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -177,9 +190,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
-            String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
+            String sessionId = TestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = MongoTestServer.getCollection();
+            DBCollection sessions = MongoTestHelper.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is set in mongo
             verifySessionTimeout(sessions, sessionId, inactivePeriod);
@@ -227,9 +240,13 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         String servletMapping = "/server";
         int inactivePeriod = 10;
         int scavengePeriod = 1;
-        int inspectPeriod = 1;
-        int idlePassivatePeriod = 0;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod,idlePassivatePeriod);
+        
+        DefaultSessionCacheFactory cacheFactory  = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);        
+        MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
+        
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,cacheFactory, storeFactory);
         ImmediateChangeTimeoutServlet servlet = new ImmediateChangeTimeoutServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -257,9 +274,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
-            String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
+            String sessionId = TestServer.extractSessionId(sessionCookie);     
             
-            DBCollection sessions = MongoTestServer.getCollection();
+            DBCollection sessions = MongoTestHelper.getCollection();
             verifySessionCreated(listener,sessionId);
             //verify that the session timeout is the new value and not the default
             verifySessionTimeout(sessions, sessionId, inactivePeriod);             

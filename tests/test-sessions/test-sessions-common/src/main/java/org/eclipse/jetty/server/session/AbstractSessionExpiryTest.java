@@ -38,7 +38,6 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.server.session.Session.SessionInactivityTimeout;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
@@ -47,7 +46,8 @@ import org.junit.Test;
 /**
  * AbstractSessionExpiryTest
  *
- *
+ * Ensure session is not removed when server stops, and that a
+ * non-expired session can be loaded in after restart.
  */
 public abstract class AbstractSessionExpiryTest extends AbstractTestBase
 {
@@ -92,7 +92,14 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         String servletMapping = "/server";
         int inactivePeriod = 20;
         int scavengePeriod = 10;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+        
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+                                                            cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
@@ -152,7 +159,14 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         String servletMapping = "/server";
         int inactivePeriod = 4;
         int scavengePeriod = 1;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+        
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+                                                            cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -178,7 +192,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
-            String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
+            String sessionId = TestServer.extractSessionId(sessionCookie);     
 
             verifySessionCreated(listener,sessionId);
             
@@ -221,7 +235,14 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
       String servletMapping = "/server";
       int inactivePeriod = 5;
       int scavengePeriod = 1;
-      AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+      
+      DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+      cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+      SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+      ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+      
+      TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+                                                          cacheFactory, storeFactory);
       ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
       ServletHolder holder = new ServletHolder(servlet);
       ServletContextHandler context = server1.addContext(contextPath);

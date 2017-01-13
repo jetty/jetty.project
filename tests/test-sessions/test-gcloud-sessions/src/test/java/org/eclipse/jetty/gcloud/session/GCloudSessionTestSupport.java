@@ -27,6 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.server.session.SessionDataStore;
+import org.eclipse.jetty.server.session.SessionHandler;
+
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Entity;
@@ -47,7 +50,31 @@ public class GCloudSessionTestSupport
     LocalDatastoreHelper _helper = LocalDatastoreHelper.create(1.0);
     Datastore _ds;
 
+    
+    public static class TestGCloudSessionDataStoreFactory extends GCloudSessionDataStoreFactory
+    {
+        Datastore _d;
+        
+        public TestGCloudSessionDataStoreFactory(Datastore d)
+        {
+            _d = d;
+        }
+        /** 
+         * @see org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
+         */
+        @Override
+        public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+        {
+            GCloudSessionDataStore ds = new GCloudSessionDataStore();
+            ds.setDatastore(_d);
+            return ds;
+        }
 
+    }
+    public static GCloudSessionDataStoreFactory newSessionDataStoreFactory(Datastore d)
+    {
+       return new TestGCloudSessionDataStoreFactory(d);
+    }
 
     public GCloudSessionTestSupport ()
     {

@@ -20,13 +20,10 @@
 package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
-import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.After;
+import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.Assert;
+import org.junit.Test;
 
 
 /**
@@ -43,14 +40,14 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
        GCloudTestSuite.__testSupport.deleteSessions();
     }
     
-    
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return  new GCloudTestServer(port, max, scavenge, evictionPolicy);
+        return GCloudSessionTestSupport.newSessionDataStoreFactory(GCloudTestSuite.__testSupport.getDatastore());
     }
 
     @Test
