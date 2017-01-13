@@ -601,6 +601,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
+    <module>jetty-documentation</module>
     <!-- modules that need fixed and added back, or simply dropped and not maintained -->
     <!--<module>jetty-rhttp</module>-->
     <!--<module>jetty-overlay-deployer</module>-->
@@ -913,15 +914,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>jdk8</id>
-      <activation>
-        <jdk>[1.8,1.9)</jdk>
-      </activation>
-      <modules>
-        <module>jetty-documentation</module>
-      </modules>
     </profile>
     <profile>
       <id>8u00</id>
