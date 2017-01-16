@@ -514,6 +514,7 @@ public class SslConnection extends AbstractConnection
             {
                 synchronized (this)
                 {
+                    Throwable failure = null;
                     try
                     {
                         // Do we already have some decrypted data?
@@ -708,6 +709,7 @@ public class SslConnection extends AbstractConnection
                     catch (SSLHandshakeException x)
                     {
                         notifyHandshakeFailed(_sslEngine, x);
+                        failure = x;
                         throw x;
                     }
                     catch (SSLException x)
@@ -717,6 +719,12 @@ public class SslConnection extends AbstractConnection
                             x = (SSLException)new SSLHandshakeException(x.getMessage()).initCause(x);
                             notifyHandshakeFailed(_sslEngine, x);
                         }
+                        failure = x;
+                        throw x;
+                    }
+                    catch (Throwable x)
+                    {
+                        failure = x;
                         throw x;
                     }
                     finally
@@ -725,7 +733,7 @@ public class SslConnection extends AbstractConnection
                         if (_flushRequiresFillToProgress)
                         {
                             _flushRequiresFillToProgress = false;
-                            getExecutor().execute(_runCompletWrite);
+                            getExecutor().execute(failure == null ? _runCompletWrite : new FailFlusher(failure));
                         }
 
                         if (_encryptedInput != null && !_encryptedInput.hasRemaining())
@@ -1079,6 +1087,22 @@ public class SslConnection extends AbstractConnection
         public String toString()
         {
             return super.toString()+"->"+getEndPoint().toString();
+        }
+
+        private class FailFlusher implements Runnable
+        {
+            private final Throwable failure;
+
+            private FailFlusher(Throwable failure)
+            {
+                this.failure = failure;
+            }
+
+            @Override
+            public void run()
+            {
+                getWriteFlusher().onFail(failure);
+            }
         }
     }
 }
