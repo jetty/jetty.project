@@ -733,7 +733,7 @@ public class SslConnection extends AbstractConnection
                         if (_flushRequiresFillToProgress)
                         {
                             _flushRequiresFillToProgress = false;
-                            getExecutor().execute(failure == null ? _runCompletWrite : new FailFlusher(failure));
+                            getExecutor().execute(failure == null ? _runCompletWrite : new FailWrite(failure));
                         }
 
                         if (_encryptedInput != null && !_encryptedInput.hasRemaining())
@@ -1089,11 +1089,11 @@ public class SslConnection extends AbstractConnection
             return super.toString()+"->"+getEndPoint().toString();
         }
 
-        private class FailFlusher implements Runnable
+        private class FailWrite implements Runnable
         {
             private final Throwable failure;
 
-            private FailFlusher(Throwable failure)
+            private FailWrite(Throwable failure)
             {
                 this.failure = failure;
             }
