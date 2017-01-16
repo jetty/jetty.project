@@ -49,13 +49,17 @@ import org.junit.Test;
 public class HostnameVerificationTest
 {
     private SslContextFactory clientSslContextFactory = new SslContextFactory();
-    private Server server = new Server();
+    private Server server;
     private HttpClient client;
     private NetworkConnector connector;
 
     @Before
     public void setUp() throws Exception
     {
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+
         SslContextFactory serverSslContextFactory = new SslContextFactory();
         serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         serverSslContextFactory.setKeyStorePassword("storepwd");
@@ -76,10 +80,10 @@ public class HostnameVerificationTest
         clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         clientSslContextFactory.setKeyStorePassword("storepwd");
 
-        QueuedThreadPool executor = new QueuedThreadPool();
-        executor.setName(executor.getName() + "-client");
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
         client = new HttpClient(clientSslContextFactory);
-        client.setExecutor(executor);
+        client.setExecutor(clientThreads);
         client.start();
     }
 
