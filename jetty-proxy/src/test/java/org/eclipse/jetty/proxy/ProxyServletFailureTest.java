@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -397,7 +398,7 @@ public class ProxyServletFailureTest
     @Test
     public void testServerException() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             prepareProxy();
             prepareServer(new HttpServlet()
