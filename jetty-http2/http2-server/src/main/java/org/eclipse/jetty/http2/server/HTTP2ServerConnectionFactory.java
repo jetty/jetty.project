@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
@@ -131,7 +131,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             String reason = frame.tryConvertPayload();
             if (reason != null && !reason.isEmpty())
                 reason = " (" + reason + ")";
-            getConnection().onSessionFailure(new IOException("HTTP/2 " + error + reason));
+            getConnection().onSessionFailure(new EofException("HTTP/2 " + error + reason));
         }
 
         @Override
@@ -167,7 +167,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             ErrorCode error = ErrorCode.from(frame.getError());
             if (error == null)
                 error = ErrorCode.CANCEL_STREAM_ERROR;
-            getConnection().onStreamFailure((IStream)stream, new IOException("HTTP/2 " + error));
+            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error));
         }
 
         @Override
