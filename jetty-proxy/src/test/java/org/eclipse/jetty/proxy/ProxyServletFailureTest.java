@@ -49,7 +49,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
@@ -94,7 +93,7 @@ public class ProxyServletFailureTest
 
     private void prepareProxy() throws Exception
     {
-        prepareProxy(new HashMap<String, String>());
+        prepareProxy(new HashMap<>());
     }
 
     private void prepareProxy(Map<String, String> initParams) throws Exception
@@ -258,7 +257,7 @@ public class ProxyServletFailureTest
     public void testProxyRequestStallsContentServerIdlesTimeout() throws Exception
     {
         final byte[] content = new byte[]{'C', '0', 'F', 'F', 'E', 'E'};
-        int expected = -1;
+        int expected;
         if (proxyServlet instanceof AsyncProxyServlet)
         {
             // TODO should this be a 502 also???
@@ -309,7 +308,7 @@ public class ProxyServletFailureTest
         long idleTimeout = 1000;
         serverConnector.setIdleTimeout(idleTimeout);
         
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                     .content(new BytesContentProvider(content))
