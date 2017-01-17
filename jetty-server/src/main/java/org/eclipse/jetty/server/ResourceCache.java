@@ -354,23 +354,36 @@ public class ResourceCache implements HttpContent.Factory
         }
     }
 
+
     /* ------------------------------------------------------------ */
-    protected ByteBuffer getDirectBuffer(Resource resource)
+    protected ByteBuffer getMappedBuffer(Resource resource)
     {
         // Only use file mapped buffers for cached resources, otherwise too much virtual memory commitment for
         // a non shared resource.  Also ignore max buffer size
         try
         {
             if (_useFileMappedBuffer && resource.getFile()!=null && resource.length()<Integer.MAX_VALUE) 
-                return BufferUtil.toMappedBuffer(resource.getFile());
-            
+                return BufferUtil.toMappedBuffer(resource.getFile());            
+        }
+        catch(IOException|IllegalArgumentException e)
+        {
+            LOG.warn(e);
+        }
+        return null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected ByteBuffer getDirectBuffer(Resource resource)
+    {
+        try
+        {
             return BufferUtil.toBuffer(resource,true);
         }
         catch(IOException|IllegalArgumentException e)
         {
             LOG.warn(e);
-            return null;
         }
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -595,15 +608,15 @@ public class ResourceCache implements HttpContent.Factory
             ByteBuffer buffer = _directBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
-
-                if (buffer2==null)
+                ByteBuffer mapped = ResourceCache.this.getMappedBuffer(_resource);
+                ByteBuffer direct = mapped==null?ResourceCache.this.getDirectBuffer(_resource):mapped;
+                    
+                if (direct==null)
                     LOG.warn("Could not load "+this);
-                else if (_directBuffer.compareAndSet(null,buffer2))
+                else if (_directBuffer.compareAndSet(null,direct))
                 {
-                    buffer=buffer2;
-
-                    if (!BufferUtil.isMappedBuffer(buffer) && _cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
+                    buffer=direct;
+                    if (mapped==null && _cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
                         shrinkCache(); 
                 }
                 else
