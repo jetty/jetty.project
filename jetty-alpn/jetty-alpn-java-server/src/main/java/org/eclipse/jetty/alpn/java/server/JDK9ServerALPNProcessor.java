@@ -46,7 +46,7 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
             if (LOG.isDebugEnabled())
                 LOG.debug("ALPN selecting among client{}", protocols);
             ALPN.ServerProvider provider = (ALPN.ServerProvider)ALPN.remove(sslEngine);
-            return provider.select(protocols);
+            return provider == null ? "" : provider.select(protocols);
         }
         catch (SSLException x)
         {
