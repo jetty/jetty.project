@@ -23,6 +23,24 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>jdk9</id>
+      <activation>
+        <jdk>[1.9,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>@{argLine} --add-modules java.se.ee</argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -38,7 +56,6 @@
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.security.auth.message</artifactId>
     </dependency>
-    
     <dependency>
       <groupId>org.apache.geronimo.components</groupId>
       <artifactId>geronimo-jaspi</artifactId>
