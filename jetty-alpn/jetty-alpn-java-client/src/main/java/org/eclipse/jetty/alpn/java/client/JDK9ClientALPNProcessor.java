@@ -44,7 +44,8 @@ public class JDK9ClientALPNProcessor implements ALPNProcessor.Client
         try
         {
             ALPN.ClientProvider provider = (ALPN.ClientProvider)ALPN.get(sslEngine);
-            provider.selected(sslEngine.getApplicationProtocol());
+            if (provider != null)
+                provider.selected(sslEngine.getApplicationProtocol());
         }
         catch (SSLException x)
         {
