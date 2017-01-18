@@ -257,7 +257,21 @@ public class FormAuthenticator extends LoginAuthenticator
         if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())) &&!DeferredAuthentication.isDeferred(response))
             return new DeferredAuthentication(this);
 
-        HttpSession session = request.getSession(true);
+        HttpSession session = null;
+        try
+        {
+            session = request.getSession(true);
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
+        }
+        
+        //if unable to create a session, user must be
+        //unauthenticated
+        if (session == null)
+            return Authentication.UNAUTHENTICATED;
 
         try
         {
