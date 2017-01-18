@@ -137,9 +137,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                     else
                         throw new IllegalArgumentException("TLD not found: "+r);                    
                 }
-                
-                if (tlds.size()>0)
-                    context.setAttribute(MetaInfConfiguration.METAINF_TLDS,tlds);
+
+                //empty list signals that tlds were prescanned but none found.
+                //a missing METAINF_TLDS attribute means that prescanning was not done.
+                context.setAttribute(MetaInfConfiguration.METAINF_TLDS,tlds);
                 break;
             }
             
