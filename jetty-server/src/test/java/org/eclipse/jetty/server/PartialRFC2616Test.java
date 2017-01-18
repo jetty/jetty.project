@@ -16,12 +16,6 @@
 //  ========================================================================
 //
 
-/*
- * Created on 9/01/2004
- *
- * To change the template for this generated file go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
- */
 package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.containsString;
@@ -50,9 +44,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- *
- */
 @RunWith(AdvancedRunner.class)
 public class PartialRFC2616Test
 {
