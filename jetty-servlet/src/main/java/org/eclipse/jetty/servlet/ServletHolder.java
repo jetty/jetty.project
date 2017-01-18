@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
@@ -315,19 +316,19 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             // Look for a precompiled JSP Servlet
             String precompiled=getClassNameForJsp(_forcedPath);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Checking for precompiled servlet {} for jsp {}", precompiled, _forcedPath);
-            ServletHolder jsp=getServletHandler().getServlet(precompiled);
-            if (jsp!=null && jsp.getClassName() !=  null)
+            if (!StringUtil.isBlank(precompiled))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
-                // set the className for this servlet to the precompiled one
-                setClassName(jsp.getClassName());
-            }
-            else
-            {
-                if (getClassName() == null)
+                    LOG.debug("Checking for precompiled servlet {} for jsp {}", precompiled, _forcedPath);
+                ServletHolder jsp = getServletHandler().getServlet(precompiled);
+                if (jsp!=null && jsp.getClassName() !=  null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
+                    // set the className for this servlet to the precompiled one
+                    setClassName(jsp.getClassName());
+                } 
+                else
                 {
                     // Look for normal JSP servlet
                     jsp=getServletHandler().getServlet("jsp");
@@ -905,13 +906,24 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    private String getNameOfJspClass (String jsp)
+    /**
+     * @param jsp the jsp-file
+     * @return the simple classname of the jsp
+     */
+    protected String getNameOfJspClass (String jsp)
     {
-        if (jsp == null)
-            return "";
+        if (StringUtil.isBlank(jsp))
+            return ""; //empty
 
-        int i = jsp.lastIndexOf('/') + 1;
-        jsp = jsp.substring(i);
+        jsp = jsp.trim();
+        if ("/".equals(jsp))
+            return ""; //only slash
+
+        int i = jsp.lastIndexOf('/');
+        if (i == jsp.length()-1)
+            return ""; //ends with slash
+
+        jsp = jsp.substring(i+1);
         try
         {
             Class<?> jspUtil = Loader.loadClass("org.apache.jasper.compiler.JspUtil");
@@ -930,7 +942,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
 
     /* ------------------------------------------------------------ */
-    private String getPackageOfJspClass (String jsp)
+    protected String getPackageOfJspClass (String jsp)
     {
         if (jsp == null)
             return "";
@@ -942,11 +954,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             Class<?> jspUtil = Loader.loadClass("org.apache.jasper.compiler.JspUtil");
             Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
-            return (String)makeJavaPackage.invoke(null, jsp.substring(0,i));
+            String p = (String)makeJavaPackage.invoke(null, jsp.substring(0,i));
+            return p;
         }
         catch (Exception e)
         {
-            String tmp = jsp.substring(1).replace('/','.');
+            String tmp = jsp.substring(1,i).replace('/','.').trim();
+            tmp = (".".equals(tmp)? "": tmp);
             LOG.warn("Unable to make package for jsp "+jsp +" trying "+tmp+" instead");
             if (LOG.isDebugEnabled())
                 LOG.warn(e);
@@ -956,7 +970,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
 
     /* ------------------------------------------------------------ */
-    private String getJspPackagePrefix ()
+    /**
+     * @return the package for all jsps
+     */
+    protected String getJspPackagePrefix ()
     {
         String jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME );
         if (jspPackageName == null)
@@ -967,12 +984,40 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
 
     /* ------------------------------------------------------------ */
-    private String getClassNameForJsp (String jsp)
+    /**
+     * @param jsp the jsp-file from web.xml
+     * @return the fully qualified classname
+     */
+    protected String getClassNameForJsp (String jsp)
     {
         if (jsp == null)
             return null;
 
-        return getJspPackagePrefix() + "." +getPackageOfJspClass(jsp) + "." + getNameOfJspClass(jsp);
+        String name = getNameOfJspClass(jsp);
+        if (StringUtil.isBlank(name))
+            return null;
+
+        StringBuffer fullName = new StringBuffer();
+        appendPath(fullName, getJspPackagePrefix());
+        appendPath(fullName, getPackageOfJspClass(jsp));
+        appendPath(fullName, name);
+        return fullName.toString();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Concatenate an element on to fully qualified classname.
+     * 
+     * @param path the path under construction
+     * @param element the element of the name to add
+     */
+    protected void appendPath (StringBuffer path, String element)
+    {
+        if (StringUtil.isBlank(element))
+            return;
+        if (path.length() > 0)
+            path.append(".");
+        path.append(element);
     }
 
 
