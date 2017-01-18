@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,9 +29,13 @@ import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 public class ModulesTest
 {
@@ -71,8 +70,7 @@ public class ModulesTest
         modules.registerAll();
 
         // Check versions
-        assertThat("java.version.major", args.getProperties().getString("java.version.major"),equalTo("1"));
-        assertThat("java.version.minor", args.getProperties().getString("java.version.minor"),anyOf(equalTo("7"),Matchers.equalTo("8"),Matchers.equalTo("9")));
+        assertThat("java.version.platform", args.getProperties().getString("java.version.platform"),anyOf(equalTo("8"),equalTo("9")));
 
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)

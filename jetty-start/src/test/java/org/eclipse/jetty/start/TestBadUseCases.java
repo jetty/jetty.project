@@ -47,7 +47,7 @@ public class TestBadUseCases
         List<Object[]> ret = new ArrayList<>();
 
         ret.add(new Object[]{ "http2",
-                "Missing referenced dependency: alpn-impl/alpn-0.0.0_0",
+                "Invalid Java version",
                 new String[]{"java.version=0.0.0_0"}});
 
         ret.add(new Object[]{ "versioned-modules-too-new",

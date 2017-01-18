@@ -259,65 +259,63 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     @Test
     public void testAbortOnCommitWithContent() throws Exception
     {
-        try (StacklessLogging suppressor = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        final AtomicReference<IOException> failure = new AtomicReference<>();
+        start(new AbstractHandler()
         {
-            final AtomicReference<IOException> failure = new AtomicReference<>();
-            start(new AbstractHandler()
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    if (request.getDispatcherType() != DispatcherType.ERROR)
+                        IO.copy(request.getInputStream(), response.getOutputStream());
+                }
+                catch (IOException x)
+                {
+                    failure.set(x);
+                    throw x;
+                }
+            }
+        });
+
+        final Throwable cause = new Exception();
+        final AtomicBoolean aborted = new AtomicBoolean();
+        final CountDownLatch latch = new CountDownLatch(1);
+        try
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
+            .onRequestCommit(request ->
+            {
+                aborted.set(request.abort(cause));
+                latch.countDown();
+            })
+            .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
             {
                 @Override
-                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public long getLength()
                 {
-                    try
-                    {
-                        baseRequest.setHandled(true);
-                        if (request.getDispatcherType() != DispatcherType.ERROR)
-                            IO.copy(request.getInputStream(), response.getOutputStream());
-                    }
-                    catch (IOException x)
-                    {
-                        failure.set(x);
-                        throw x;
-                    }
+                    return -1;
                 }
-            });
-
-            final Throwable cause = new Exception();
-            final AtomicBoolean aborted = new AtomicBoolean();
-            final CountDownLatch latch = new CountDownLatch(1);
-            try
-            {
-                client.newRequest("localhost", connector.getLocalPort())
-                        .scheme(scheme)
-                        .onRequestCommit(request ->
-                        {
-                            aborted.set(request.abort(cause));
-                            latch.countDown();
-                        })
-                        .content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
-                        {
-                            @Override
-                            public long getLength()
-                            {
-                                return -1;
-                            }
-                        })
-                        .timeout(5, TimeUnit.SECONDS)
-                        .send();
-                Assert.fail();
-            }
-            catch (ExecutionException x)
-            {
-                Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-                if (aborted.get())
-                    Assert.assertSame(cause, x.getCause());
-            }
-
-            HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Assert.assertEquals(0, connectionPool.getConnectionCount());
-            Assert.assertEquals(0, connectionPool.getActiveConnections().size());
-            Assert.assertEquals(0, connectionPool.getIdleConnections().size());
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+            Assert.fail();
         }
+        catch (ExecutionException x)
+        {
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            if (aborted.get())
+                Assert.assertSame(cause, x.getCause());
+        }
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
+
     }
 
     @Test

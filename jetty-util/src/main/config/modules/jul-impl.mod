@@ -14,5 +14,5 @@ jul-impl
 basehome:modules/jul-impl
 
 [exec]
--Djava.util.logging.config.file=etc/java-util-logging.properties
+-Djava.util.logging.config.file?=${jetty.base}/etc/java-util-logging.properties
 

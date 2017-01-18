@@ -27,7 +27,7 @@ import java.io.EOFException;
  * the connection, vs and EOF thrown by some application talking to some other file/socket etc.
  * The only difference in handling is that Jetty EOFs are logged less verbosely.
  */
-public class EofException extends EOFException
+public class EofException extends EOFException implements QuietException
 {
     public EofException()
     {

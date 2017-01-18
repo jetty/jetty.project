@@ -20,6 +20,8 @@ package org.eclipse.jetty.server;
 
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.io.QuietException;
+
 
 /* ------------------------------------------------------------ */
 /** A ServletException that is logged less verbosely than
@@ -29,7 +31,7 @@ import javax.servlet.ServletException;
  * than a stack trace.
  * </p>
  */
-public class QuietServletException extends ServletException
+public class QuietServletException extends ServletException implements QuietException
 {
     public QuietServletException()
     {

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.start.Props.Prop;
@@ -127,7 +128,7 @@ public class ConfigurationAssert
         Set<String> expectedProperties = new HashSet<>();
         for (String line : textFile)
         {
-            if (line.startsWith("PROP|"))
+            if (line.startsWith("PROP|") || line.startsWith("SYS|"))
             {
                 expectedProperties.add(getValue(line));
             }
@@ -146,6 +147,17 @@ public class ConfigurationAssert
             actualProperties.add(prop.key + "=" + args.getProperties().expand(prop.value));
         }
         assertContainsUnordered("Properties", expectedProperties, actualProperties);
+        
+        // Validate PROPERTIES (order is not important)
+        for (String line : textFile)
+        {
+            if (line.startsWith("SYS|"))
+            {
+                String[] expected = getValue(line).split("=",2);
+                String actual = System.getProperty(expected[0]);
+                assertThat("System property "+expected[0],actual,Matchers.equalTo(expected[1]));
+            }
+        }
         
         // Validate Downloads
         List<String> expectedDownloads = new ArrayList<>();
@@ -215,8 +227,8 @@ public class ConfigurationAssert
         }
         catch (AssertionError e)
         {
-            System.err.println("Expected: " + expectedSet);
-            System.err.println("Actual  : " + actualSet);
+            System.err.println("Expected: " + expectedSet.stream().sorted().collect(Collectors.toList()));
+            System.err.println("Actual  : " + actualSet.stream().sorted().collect(Collectors.toList()));
             throw e;
         }
         

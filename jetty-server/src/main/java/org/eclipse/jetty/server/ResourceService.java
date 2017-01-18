@@ -399,7 +399,20 @@ public class ResourceService
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("welcome={}",welcome);
-            if (_redirectWelcome)
+
+            RequestDispatcher dispatcher=_redirectWelcome?null:request.getRequestDispatcher(welcome);
+            if (dispatcher!=null)
+            {
+                // Forward to the index
+                if (included)
+                    dispatcher.include(request,response);
+                else
+                {
+                    request.setAttribute("org.eclipse.jetty.server.welcome",welcome);
+                    dispatcher.forward(request,response);
+                }   
+            }
+            else
             {
                 // Redirect to the index
                 response.setContentLength(0);
@@ -408,21 +421,6 @@ public class ResourceService
                     response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),welcome)+"?"+q));
                 else
                     response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),welcome)));
-            }
-            else
-            {
-                // Forward to the index
-                RequestDispatcher dispatcher=request.getRequestDispatcher(welcome);
-                if (dispatcher!=null)
-                {
-                    if (included)
-                        dispatcher.include(request,response);
-                    else
-                    {
-                        request.setAttribute("org.eclipse.jetty.server.welcome",welcome);
-                        dispatcher.forward(request,response);
-                    }
-                }
             }
             return;
         }

@@ -32,15 +32,13 @@
       <version>${exam.version}</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- use the forked container so we can pass it system properties eg for alpn -->
+    <!-- Use the forked container so we can pass it system properties eg for alpn -->
     <dependency>
         <groupId>org.ops4j.pax.exam</groupId>
         <artifactId>pax-exam-container-forked</artifactId>
         <version>${exam.version}</version>
         <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-junit4</artifactId>
@@ -126,7 +124,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-httpservice</artifactId>
@@ -139,14 +136,12 @@
       <artifactId>jetty-osgi-servlet-api</artifactId>
       <version>3.1.0.M3</version>
     </dependency>
-
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>
       <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-atinject_1.0_spec</artifactId>
@@ -159,7 +154,6 @@
       <version>1.0.1</version>
      <scope>test</scope>
     </dependency>
-
     <dependency>
        <groupId>org.glassfish.web</groupId>
        <artifactId>javax.servlet.jsp.jstl</artifactId>
@@ -183,7 +177,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
     <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
@@ -330,7 +323,6 @@
       <artifactId>jetty-schemas</artifactId>
       <scope>runtime</scope>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
@@ -346,7 +338,6 @@
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-spec-webapp</artifactId>
@@ -354,14 +345,12 @@
       <type>war</type>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-container-initializer</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>test-jetty-osgi-fragment</artifactId>
@@ -379,7 +368,6 @@
       <artifactId>test-mock-resources</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>test-jetty-osgi-context</artifactId>
@@ -404,14 +392,13 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
-          <!-- But we do pass the sys property of the alpn-boot jar so that it can be configued inside tests -->
+          <!-- But we do pass the sys property of the alpn-boot jar so that it can be configured inside tests -->
           <argLine>-Dmortbay-alpn-boot=${settings.localRepository}/org/mortbay/jetty/alpn/alpn-boot/${alpn.version}/alpn-boot-${alpn.version}.jar</argLine>
         </configuration>
       </plugin>
@@ -458,5 +445,4 @@
       </plugins>
     </pluginManagement>
   </build>
-
 </project>

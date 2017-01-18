@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.Function;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
@@ -179,7 +178,6 @@ public class StartArgs
     private boolean dryRun = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
-
 
     private boolean exec = false;
     private String exec_properties;
@@ -438,6 +436,28 @@ public class StartArgs
     }
 
     /**
+     * Expand any command line added {@code --lib} lib references.
+     *
+     * @throws IOException
+     *             if unable to expand the libraries
+     */
+    public void expandSystemProperties() throws IOException
+    {
+        StartLog.debug("Expanding System Properties");
+        
+        for (String key : systemPropertyKeys)
+        {
+            String value = properties.getString(key);
+            if (value!=null)
+            {
+                String expanded = properties.expand(value);
+                if (!value.equals(expanded))
+                    System.setProperty(key,expanded);
+            }
+        }
+    }
+    
+    /**
      * Expand any command line added <code>--lib</code> lib references.
      *
      * @throws IOException
@@ -555,14 +575,29 @@ public class StartArgs
         {
             cmd.addRawArg(CommandLineBuilder.findJavaBin());
 
-            for (String x : jvmArgs)
-            {
-                cmd.addRawArg(x);
-            }
-
             cmd.addRawArg("-Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
+
+            for (String x : jvmArgs)
+            {
+                if (x.startsWith("-D"))
+                {            
+                    String[] assign = x.substring(2).split("=",2);
+                    String key = assign[0];
+                    String value = assign.length==1?"":assign[1];
+
+                    Property p = processProperty(key,value,"modules",k->{return System.getProperty(k);});
+                    if (p!=null)
+                    {   
+                        cmd.addRawArg("-D"+p.key+"="+getProperties().expand(p.value));
+                    }                    
+                }
+                else
+                {
+                    cmd.addRawArg(x);
+                }
+            }
 
             // System Properties
             for (String propKey : systemPropertyKeys)
@@ -861,7 +896,7 @@ public class StartArgs
             Path commands = baseHome.getPath(Props.getValue(arg));
 
             if (!Files.exists(commands) || !Files.isReadable(commands))
-                throw new UsageException(ERR_BAD_ARG,"--commands file must be readable: %s",commands);
+                throw new UsageException(UsageException.ERR_BAD_ARG,"--commands file must be readable: %s",commands);
             try
             {
                 TextFile file = new TextFile(commands);
@@ -947,7 +982,7 @@ public class StartArgs
         {
             exec_properties = Props.getValue(arg);
             if (!exec_properties.endsWith(".properties"))
-                throw new UsageException(ERR_BAD_ARG,"--exec-properties filename must have .properties suffix: %s",exec_properties);
+                throw new UsageException(UsageException.ERR_BAD_ARG,"--exec-properties filename must have .properties suffix: %s",exec_properties);
             return;
         }
 
@@ -1057,23 +1092,19 @@ public class StartArgs
         if (arg.startsWith("-D"))
         {
             String[] assign = arg.substring(2).split("=",2);
-            systemPropertyKeys.add(assign[0]);
-            switch (assign.length)
-            {
-                case 2:
-                    System.setProperty(assign[0],assign[1]);
-                    setProperty(assign[0],assign[1],source);
-                    break;
-                case 1:
-                    System.setProperty(assign[0],"");
-                    setProperty(assign[0],"",source);
-                    break;
-                default:
-                    break;
+            String key = assign[0];
+            String value = assign.length==1?"":assign[1];
+            
+            Property p = processProperty(key,value,source,k->{return System.getProperty(k);});
+            if (p!=null)
+            {   
+                systemPropertyKeys.add(p.key);
+                setProperty(p.key,p.value,p.source);
+                System.setProperty(p.key,p.value);
             }
             return;
         }
-
+        
         // Anything else with a "-" is considered a JVM argument
         if (arg.startsWith("-"))
         {
@@ -1092,36 +1123,11 @@ public class StartArgs
             String key = arg.substring(0,equals);
             String value = arg.substring(equals + 1);
 
-            if (key.endsWith("+"))
+            Property p = processProperty(key,value,source,k->{return getProperties().getString(k);});
+            if (p!=null)
             {
-                key = key.substring(0,key.length() - 1);
-                String orig = getProperties().getString(key);
-                if (orig == null || orig.isEmpty())
-                {
-                    if (value.startsWith(","))
-                        value = value.substring(1);
-                }
-                else
-                {
-                    value = orig + value;
-                    source = propertySource.get(key) + "," + source;
-                }
+                setProperty(p.key,p.value,p.source);
             }
-            if (key.endsWith("?"))
-            {
-                key = key.substring(0,key.length() - 1);
-                if (getProperties().containsKey(key))
-                    return;
-
-            }
-            else if (propertySource.containsKey(key))
-            {
-                if (!propertySource.get(key).endsWith("[ini]"))
-                    StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
-                propertySource.put(key,source);
-            }
-
-            setProperty(key,value,source);
             return;
         }
 
@@ -1147,9 +1153,46 @@ public class StartArgs
         }
 
         // Anything else is unrecognized
-        throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
+        throw new UsageException(UsageException.ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
     }
-
+    
+    protected Property processProperty(String key,String value,String source, Function<String, String> getter)
+    {
+        if (key.endsWith("+"))
+        {
+            key = key.substring(0,key.length() - 1);
+            String orig = getter.apply(key);
+            if (orig == null || orig.isEmpty())
+            {
+                if (value.startsWith(","))
+                    value = value.substring(1);
+            }
+            else
+            {
+                value = orig + value;
+                source = propertySource.get(key) + "," + source;
+            }
+        }
+        if (key.endsWith("?"))
+        {
+            key = key.substring(0,key.length() - 1);
+            String preset = getter.apply(key);
+            if (preset!=null)
+            {
+                source = source+"?=";
+                value = preset;
+            }
+        }
+        else if (propertySource.containsKey(key))
+        {
+            if (!propertySource.get(key).endsWith("[ini]"))
+                StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
+            propertySource.put(key,source);
+        }
+        
+        return new Property(key,value,source);
+    }
+    
     private void enableModules(String source, List<String> moduleNames)
     {
         for (String moduleName : moduleNames)
@@ -1158,7 +1201,7 @@ public class StartArgs
             List<String> list = sources.get(moduleName);
             if (list == null)
             {
-                list = new ArrayList<String>();
+                list = new ArrayList<>();
                 sources.put(moduleName,list);
             }
             list.add(source);
@@ -1219,13 +1262,20 @@ public class StartArgs
         properties.setProperty(key,value,source);
         if (key.equals("java.version"))
         {
-            Version ver = new Version(value);
-
-            properties.setProperty("java.version",ver.toShortString(),source);
-            properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
-            properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
-            properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
-            properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
+            try
+            {
+                JavaVersion ver = JavaVersion.parse(value);
+                properties.setProperty("java.version",ver.getVersion(),source);
+                properties.setProperty("java.version.platform",Integer.toString(ver.getPlatform()),source);
+                properties.setProperty("java.version.major",Integer.toString(ver.getMajor()),source);
+                properties.setProperty("java.version.minor",Integer.toString(ver.getMinor()),source);
+                properties.setProperty("java.version.micro",Integer.toString(ver.getMicro()),source);
+                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
+            }
+            catch (Throwable x)
+            {
+                throw new UsageException(UsageException.ERR_BAD_ARG, x.getMessage());
+            }
         }
     }
 
@@ -1249,5 +1299,23 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
-
+    
+    static class Property 
+    {
+        String key;
+        String value;
+        String source;
+        public Property(String key, String value, String source)
+        {
+            this.key = key;
+            this.value = value;
+            this.source = source;
+        }  
+        
+        @Override
+        public String toString()
+        {
+            return String.format("%s=%s(%s)",key,value,source);
+        }
+    }
 }

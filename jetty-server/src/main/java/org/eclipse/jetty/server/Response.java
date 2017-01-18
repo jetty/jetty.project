@@ -797,7 +797,12 @@ public class Response implements HttpServletResponse
     public String getCharacterEncoding()
     {
         if (_characterEncoding == null)
+        {
+            String encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+            if (encoding!=null)
+                return encoding;
             _characterEncoding = StringUtil.__ISO_8859_1;
+        }
         return _characterEncoding;
     }
 
@@ -837,10 +842,14 @@ public class Response implements HttpServletResponse
                     encoding=_mimeType.getCharsetString();
                 else
                 {
-                    encoding = MimeTypes.inferCharsetFromContentType(_contentType);
+                    encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
                     if (encoding == null)
-                        encoding = StringUtil.__ISO_8859_1;
-                    setCharacterEncoding(encoding,EncodingFrom.INFERRED);
+                    {
+                        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+                        if (encoding == null)
+                            encoding = StringUtil.__ISO_8859_1;
+                        setCharacterEncoding(encoding,EncodingFrom.INFERRED);
+                    }
                 }
             }
 

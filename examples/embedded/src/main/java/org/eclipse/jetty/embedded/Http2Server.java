@@ -46,7 +46,6 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
@@ -56,7 +55,6 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.PushCacheFilter;
-import org.eclipse.jetty.servlets.PushSessionCacheFilter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
@@ -109,7 +107,6 @@ public class Http2Server
         // HTTP/2 Connection Factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
 
-        NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http.getDefaultProtocol());
 

@@ -162,11 +162,8 @@ public class PostServletTest
         req.append("\r\n");
         req.append("\r\n");
 
-        try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
-        {
-            String resp = connector.getResponses(req.toString());
-            assertThat(resp,is("")); // Aborted before response committed
-        }
+        String resp = connector.getResponse(req.toString());
+        assertThat(resp,startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
         assertTrue(complete.await(5,TimeUnit.SECONDS));
         assertThat(ex0.get(),not(nullValue()));
         assertThat(ex1.get(),not(nullValue()));
@@ -181,31 +178,26 @@ public class PostServletTest
         req.append("Transfer-Encoding: chunked\r\n");
         req.append("\r\n");
 
-        try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
-        {
-            LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
-            Thread.sleep(1000);
-            assertFalse(posted.get());
+        LocalConnector.LocalEndPoint endp=connector.executeRequest(req.toString());
+        Thread.sleep(1000);
+        assertFalse(posted.get());
 
-            req.setLength(0);
-            // intentionally bad (not a valid chunked char here)
-            for (int i=1024;i-->0;)
-                req.append("xxxxxxxxxxxx");
-            req.append("\r\n");
-            req.append("\r\n");
+        req.setLength(0);
+        // intentionally bad (not a valid chunked char here)
+        for (int i=1024;i-->0;)
+            req.append("xxxxxxxxxxxx");
+        req.append("\r\n");
+        req.append("\r\n");
 
-            endp.addInput(req.toString());
+        endp.addInput(req.toString());
 
-            endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
-            String resp = endp.takeOutputString();
+        endp.waitUntilClosedOrIdleFor(1,TimeUnit.SECONDS);
+        String resp = endp.takeOutputString();
 
-            assertThat("resp", resp, containsString("HTTP/1.1 400 "));
-
-        }
-
-        // null because it was never dispatched!
-        assertThat(ex0.get(),nullValue());
-        assertThat(ex1.get(),nullValue());
+        assertThat(resp,startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
+        assertTrue(complete.await(5,TimeUnit.SECONDS));
+        assertThat(ex0.get(),not(nullValue()));
+        assertThat(ex1.get(),not(nullValue()));
     }
 
 
