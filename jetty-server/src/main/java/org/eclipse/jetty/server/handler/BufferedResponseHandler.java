@@ -150,7 +150,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         // If the mime type is known from the path, then apply mime type filtering 
-        String mimeType = context==null?null:context.getMimeType(path);
+        String mimeType = context==null?MimeTypes.getDefaultMimeByExtension(path):context.getMimeType(path);
         if (mimeType!=null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
