@@ -18,110 +18,119 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
-
-import java.net.Inet4Address;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 public class ShutdownHandlerTest
 {
-    @Mock private Request baseRequest;
-    @Mock private HttpServletRequest request;
-    @Mock private HttpServletResponse response;
-
-    private Server server  = new Server(0);
+    private Server server;
+    private ServerConnector connector;
     private String shutdownToken = "asdlnsldgnklns";
 
-    // class under test
-    private ShutdownHandler shutdownHandler;
-
-    @Before
-    public void startServer() throws Exception
+    public void start(HandlerWrapper wrapper) throws Exception
     {
-        MockitoAnnotations.initMocks(this);
-        shutdownHandler = new ShutdownHandler(shutdownToken);
-        server.setHandler(shutdownHandler);
+        server = new Server();
+        connector = new ServerConnector(server);
+        server.addConnector(connector);
+        Handler shutdown = new ShutdownHandler(shutdownToken);
+        Handler handler = shutdown;
+        if (wrapper != null)
+        {
+            wrapper.setHandler(shutdown);
+            handler = wrapper;
+        }
+        server.setHandler(handler);
         server.start();
     }
 
     @Test
-    public void shutdownServerWithCorrectTokenAndIPTest() throws Exception
+    public void testShutdownServerWithCorrectTokenAndIP() throws Exception
     {
-        setDefaultExpectations();
-        final CountDownLatch countDown = new CountDownLatch(1);
-        server.addLifeCycleListener(new AbstractLifeCycle.Listener ()
+        start(null);
+
+        CountDownLatch stopLatch = new CountDownLatch(1);
+        server.addLifeCycleListener(new AbstractLifeCycle.AbstractLifeCycleListener()
         {
-
-            public void lifeCycleStarting(LifeCycle event)
-            {
-            }
-
-            public void lifeCycleStarted(LifeCycle event)
-            {
-            }
-
-            public void lifeCycleFailure(LifeCycle event, Throwable cause)
-            {
-            }
-
-            public void lifeCycleStopping(LifeCycle event)
-            {
-            }
-
+            @Override
             public void lifeCycleStopped(LifeCycle event)
             {
-                countDown.countDown();
+                stopLatch.countDown();
             }
-
         });
-        when(baseRequest.getRemoteInetSocketAddress()).thenReturn(new InetSocketAddress(Inet4Address.getLoopbackAddress(),45454));
-        shutdownHandler.handle("/shutdown",baseRequest,request,response);
-        boolean stopped = countDown.await(1000, TimeUnit.MILLISECONDS); //wait up to 1 sec to stop
-        assertTrue("Server lifecycle stop listener called", stopped);
-        assertEquals("Server should be stopped","STOPPED",server.getState());
+
+        HttpTester.Response response = shutdown(shutdownToken);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Assert.assertTrue(stopLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(AbstractLifeCycle.STOPPED, server.getState());
     }
 
     @Test
-    public void wrongTokenTest() throws Exception
+    public void testWrongToken() throws Exception
     {
-        setDefaultExpectations();
-        when(request.getParameter("token")).thenReturn("anothertoken");
-        when(baseRequest.getRemoteInetSocketAddress()).thenReturn(new InetSocketAddress(Inet4Address.getLoopbackAddress(),45454));
-        shutdownHandler.handle("/shutdown",baseRequest,request,response);
-        assertEquals("Server should be running","STARTED",server.getState());
+        start(null);
+
+        HttpTester.Response response = shutdown("wrongToken");
+        Assert.assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+
+        Thread.sleep(1000);
+        Assert.assertEquals(AbstractLifeCycle.STARTED, server.getState());
     }
 
-     @Test
-     public void shutdownRequestNotFromLocalhostTest() throws Exception
-     {
-         setDefaultExpectations();
-         when(request.getRemoteAddr()).thenReturn("192.168.3.3");
-         when(baseRequest.getRemoteInetSocketAddress()).thenReturn(new InetSocketAddress(Inet4Address.getByName("192.168.3.3"),45454));
-         shutdownHandler.handle("/shutdown",baseRequest,request,response);
-         assertEquals("Server should be running","STARTED",server.getState());
-     }
+    @Test
+    public void testShutdownRequestNotFromLocalhost() throws Exception
+    {
+        start(new HandlerWrapper()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setRemoteAddr(new InetSocketAddress("192.168.0.1", 12345));
+                super.handle(target, baseRequest, request, response);
+            }
+        });
 
-     private void setDefaultExpectations()
-     {
-         when(request.getMethod()).thenReturn("POST");
-         when(request.getParameter("token")).thenReturn(shutdownToken);
-         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-     }
+        HttpTester.Response response = shutdown(shutdownToken);
+        Assert.assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
 
+        Thread.sleep(1000);
+        Assert.assertEquals(AbstractLifeCycle.STARTED, server.getState());
+    }
+
+    private HttpTester.Response shutdown(String shutdownToken) throws IOException
+    {
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            String request = "" +
+                    "POST /shutdown?token=" + shutdownToken + " HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            return HttpTester.parseResponse(input);
+        }
+    }
 }
