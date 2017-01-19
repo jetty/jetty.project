@@ -335,7 +335,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     if (jsp!=null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("JSP file {} for {} mapped to Servlet class {}",_forcedPath, getName(),jsp.getClassName());
+                            LOG.debug("JSP file {} for {} mapped to JspServlet class {}",_forcedPath, getName(),jsp.getClassName());
                         setClassName(jsp.getClassName());
                         //copy jsp init params that don't exist for this servlet
                         for (Map.Entry<String, String> entry:jsp.getInitParameters().entrySet())
@@ -351,6 +351,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     }
                 }
             }
+            else
+                LOG.warn("Bad jsp-file {} conversion to classname in holder {}", _forcedPath, getName());
         }
 
 
@@ -910,7 +912,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * @param jsp the jsp-file
      * @return the simple classname of the jsp
      */
-    protected String getNameOfJspClass (String jsp)
+    public String getNameOfJspClass (String jsp)
     {
         if (StringUtil.isBlank(jsp))
             return ""; //empty
@@ -933,16 +935,18 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         catch (Exception e)
         {
             String tmp = jsp.replace('.','_');
-            LOG.warn("Unable to make identifier for jsp "+jsp +" trying "+tmp+" instead");
             if (LOG.isDebugEnabled())
+            {
+                LOG.warn("JspUtil.makeJavaIdentifier failed for jsp "+jsp +" using "+tmp+" instead");
                 LOG.warn(e);
+            }
             return tmp;
         }
     }
 
 
     /* ------------------------------------------------------------ */
-    protected String getPackageOfJspClass (String jsp)
+    public String getPackageOfJspClass (String jsp)
     {
         if (jsp == null)
             return "";
@@ -959,11 +963,23 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
         catch (Exception e)
         {
-            String tmp = jsp.substring(1,i).replace('/','.').trim();
+            String tmp = jsp;
+            
+            //remove any leading slash
+            int s = 0;
+            if ('/' == (tmp.charAt(0)))
+                s = 1;
+            
+            //remove the element after last slash, which should be name of jsp
+            tmp = tmp.substring(s,i);
+
+            tmp = tmp.replace('/','.').trim();
             tmp = (".".equals(tmp)? "": tmp);
-            LOG.warn("Unable to make package for jsp "+jsp +" trying "+tmp+" instead");
             if (LOG.isDebugEnabled())
+            {
+                LOG.warn("JspUtil.makeJavaPackage failed for "+jsp +" using "+tmp+" instead");
                 LOG.warn(e);
+            }
             return tmp;
         }
     }
@@ -973,9 +989,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * @return the package for all jsps
      */
-    protected String getJspPackagePrefix ()
+    public String getJspPackagePrefix ()
     {
-        String jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME );
+        String jspPackageName = null;
+
+        if (getServletHandler() != null && getServletHandler().getServletContext() != null)
+            jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME );
+
         if (jspPackageName == null)
             jspPackageName = "org.apache.jsp";
 
@@ -988,7 +1008,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * @param jsp the jsp-file from web.xml
      * @return the fully qualified classname
      */
-    protected String getClassNameForJsp (String jsp)
+    public String getClassNameForJsp (String jsp)
     {
         if (jsp == null)
             return null;
@@ -1269,6 +1289,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,%d,%b",_name,hashCode(),_className,_initOrder,_servlet!=null);
+        return String.format("%s@%x==%s,jsp=%s,order=%d,inst=%b",_name,hashCode(),_className,_forcedPath,_initOrder,_servlet!=null);
     }
 }
