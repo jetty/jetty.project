@@ -30,8 +30,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.util.BufferUtil;
@@ -91,13 +91,17 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             Assert.assertTrue(read > 0);
             // Cannot decrypt, as the SSLEngine has been already closed
 
-            // Now if we read more, we should either read the TLS Close Alert, or directly -1
+            // It may happen that the read() above read both the ServerHello and the TLS Close Alert.
+            // Now if we can read more, we should read the TLS Close Alert and then the TCP FIN.
             encrypted.clear();
             read = channel.read(encrypted);
-            // Sending a TLS Close Alert during handshake results in an exception when
-            // unwrapping that the server react to by closing the connection abruptly.
-            Assert.assertTrue(read > 0);
-            Assert.assertEquals(21, encrypted.get(0));
+            if (read > 0)
+            {
+                encrypted.flip();
+                Assert.assertEquals(21, encrypted.get());
+                encrypted.clear();
+                Assert.assertEquals(-1, channel.read(encrypted));
+            }
         }
     }
 
@@ -147,12 +151,18 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             ByteBuffer decrypted = ByteBuffer.allocate(sslEngine.getSession().getApplicationBufferSize());
             sslEngine.unwrap(encrypted, decrypted);
 
-            // Now if we read more, we should read the TLS Close Alert.
+            // It may happen that the read() above read both the ServerHello and the TLS Close Alert.
+            if (!encrypted.hasRemaining())
+            {
+                // Now if we can read more, we should read the TLS Close Alert and then the TCP FIN.
+                encrypted.clear();
+                read = channel.read(encrypted);
+                Assert.assertTrue(read > 0);
+                encrypted.flip();
+            }
+            Assert.assertEquals(21, encrypted.get());
             encrypted.clear();
-            read = channel.read(encrypted);
-            encrypted.flip();
-            Assert.assertTrue(read > 0);
-            Assert.assertEquals(21, encrypted.get(0));
+            Assert.assertEquals(-1, channel.read(encrypted));
         }
     }
 
