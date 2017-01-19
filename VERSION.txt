@@ -1,4 +1,32 @@
-jetty-9.3.16-SNAPSHOT
+jetty-9.3.16.v20170119 - 19 January 2017
+ + 486 JDK 9 ALPN implementation
+ + Support no-value Host header in HttpParser
+ + 612 Support HTTP Trailer
+ + 1073 JDK9 support in Jetty 9.3.x
+ + 1195 Problem using STOP.PORT and STOP.KEY with --exec
+ + 1197 WebSocketClient not sending `Authorization` request header
+ + 1200 Context path not set for symlink from root
+ + 1202 NPE in JsrSession when dealing with a response missing the
+   `Sec-WebSocket-Extensions` header
+ + 1228 Internal error during SSL handshake
+ + 1229 ClassLoader constraint issue when using NativeWebSocketConfiguration
+   with WEB-INF/lib/jetty-http.jar present
+ + 1234 onBadMessage called from with handled message
+ + 1259 HostnameVerificationTest.simpleGetWithHostnameVerificationEnabledTest
+   is broken
+ + 1261 Intermittent H2C test failure AsyncIOServletTest.testAsyncReadEarlyEOF
+ + 1262 BufferUtil.isMappedBuffer() uses reflection on private JDK fields
+ + 1265 JAXB not available in JDK 9
+ + 1267 Request.getRemoteUser can throw undeclared IllegalStateException via
+   DeferredAuthentication & FormAuthenticator
+ + 1268 <jsp-file>incorrectly handled when the jsp is at the top directory
+ + 1269 Extensible assumed charset for mimetypes
+ + 1270 GzipHandler rework on dispatches
+ + 1272 Update ALPN versions for 8u111
+ + 1274 Distinguish no tlds vs no MetaInfConfiguration tld scanning for
+   quickstart
+ + 1275 Get rid of Mockito
+ + 1277 http2 alpn test error
 
 jetty-9.3.15.v20161220 - 20 December 2016
  + 240 Missing content for multipart request after upgrade to Jetty > 9.2.7
@@ -13,7 +41,7 @@ jetty-9.3.15.v20161220 - 20 December 2016
  + 1062 Jetty allows requests to hang under PUT load
  + 1063 HostPortHttpField should handle port-only values
  + 1064 HttpClient sets chunked transfer-encoding
- + 1065 Response.setBufferSize checks for written content.
+ + 1065 Response.setBufferSize checks for written content
  + 1069 Host header should be sent with HTTP/1.0
  + 1072 InetAccessHandler needs InetAddress & Path based restrictions like
    IPAccessHandler did
