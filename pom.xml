@@ -292,7 +292,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2016</copyright-range>
+            <copyright-range>${project.inceptionYear}-2017</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
@@ -623,7 +623,7 @@
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-              <Bundle-Copyright>Copyright (c) 2008-2016 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2017 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <Import-Package>javax.servlet*;version="[2.6.0,3.2)",javax.transaction*;version="[1.1,1.3)",org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             </instructions>
           </configuration>
