@@ -841,6 +841,9 @@ public class Response implements HttpServletResponse
             String encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
             if (encoding!=null)
                 return encoding;
+            encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+            if (encoding!=null)
+                return encoding;
             return StringUtil.__ISO_8859_1;
         }
         return _characterEncoding;
