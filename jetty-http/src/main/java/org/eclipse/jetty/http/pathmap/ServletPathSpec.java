@@ -40,6 +40,8 @@ public class ServletPathSpec extends PathSpec
     
     public ServletPathSpec(String servletPathSpec)
     {
+        if (servletPathSpec == null)
+            servletPathSpec = "";
         if (servletPathSpec.startsWith("servlet|"))
             servletPathSpec = servletPathSpec.substring("servlet|".length());
         assertValidServletPathSpec(servletPathSpec);
