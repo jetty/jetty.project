@@ -1,3 +1,5 @@
+jetty-9.4.2-SNAPSHOT
+
 jetty-9.4.1.v20170120 - 20 January 2017
  + 486 JDK 9 ALPN implementation
  + 592 Support no-value Host header in HttpParser
