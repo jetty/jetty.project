@@ -33,10 +33,12 @@ public class RegexPathSpec extends PathSpec
     public RegexPathSpec(String regex)
     {
         super.pathSpec = regex;
-        boolean inGrouping = false;
+        if (regex.startsWith("regex|"))
+            super.pathSpec = regex.substring("regex|".length());
         this.pathDepth = 0;
         this.specLength = pathSpec.length();
         // build up a simple signature we can use to identify the grouping
+        boolean inGrouping = false;
         StringBuilder signature = new StringBuilder();
         for (char c : pathSpec.toCharArray())
         {

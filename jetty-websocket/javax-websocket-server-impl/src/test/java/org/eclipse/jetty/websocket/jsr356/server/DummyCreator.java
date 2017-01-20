@@ -18,16 +18,20 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
-import org.eclipse.jetty.websocket.server.pathmap.PathSpec;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class DummyCreator implements MappedWebSocketCreator
 {
     @Override
-    public void addMapping(PathSpec spec, WebSocketCreator creator)
+    public void addMapping(String spec, WebSocketCreator creator)
+    {
+        /* do nothing */
+    }
+
+    @Override
+    public void addMapping(org.eclipse.jetty.websocket.server.pathmap.PathSpec spec, WebSocketCreator creator)
     {
         /* do nothing */
     }
@@ -43,10 +47,16 @@ public class DummyCreator implements MappedWebSocketCreator
     {
         return null;
     }
-    
+
     @Override
-    public MappedResource<WebSocketCreator> getMapping(String target)
+    public WebSocketCreator getMapping(String spec)
     {
         return null;
+    }
+
+    @Override
+    public boolean removeMapping(String spec)
+    {
+        return false;
     }
 }

@@ -24,11 +24,12 @@ public class ServletPathSpec extends PathSpec
 {
     public ServletPathSpec(String servletPathSpec)
     {
-        super();
+        if (servletPathSpec.startsWith("servlet|"))
+            servletPathSpec = servletPathSpec.substring("servlet|".length());
         assertValidServletPathSpec(servletPathSpec);
 
         // The Root Path Spec
-        if ((servletPathSpec == null) || (servletPathSpec.length() == 0))
+        if (servletPathSpec.length() == 0)
         {
             super.pathSpec = "";
             super.pathDepth = -1; // force this to be at the end of the sort order

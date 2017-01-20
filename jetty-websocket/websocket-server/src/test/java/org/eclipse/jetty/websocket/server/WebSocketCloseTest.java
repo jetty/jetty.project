@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -50,6 +47,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests various close scenarios
@@ -222,13 +223,13 @@ public class WebSocketCloseTest
         try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastclose");
-            client.setTimeout(1,TimeUnit.SECONDS);
+            client.setTimeout(5,TimeUnit.SECONDS);
             client.connect();
             client.sendStandardRequest();
             client.expectUpgradeResponse();
 
             // Verify that client got close frame
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,5,TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
@@ -238,7 +239,7 @@ public class WebSocketCloseTest
             client.write(close.asFrame()); // respond with close
 
             // ensure server socket got close event
-            assertThat("Fast Close Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+            assertThat("Fast Close Latch",closeSocket.closeLatch.await(5,TimeUnit.SECONDS),is(true));
             assertThat("Fast Close.statusCode",closeSocket.closeStatusCode,is(StatusCode.NORMAL));
         }
     }
@@ -255,14 +256,14 @@ public class WebSocketCloseTest
         try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
-            client.setTimeout(1,TimeUnit.SECONDS);
+            client.setTimeout(5,TimeUnit.SECONDS);
             try (StacklessLogging scope = new StacklessLogging(AbstractEventDriver.class))
             {
                 client.connect();
                 client.sendStandardRequest();
                 client.expectUpgradeResponse();
 
-                EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+                EventQueue<WebSocketFrame> frames = client.readFrames(1,5,TimeUnit.SECONDS);
                 WebSocketFrame frame = frames.poll();
                 assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
                 CloseInfo close = new CloseInfo(frame);
@@ -271,7 +272,7 @@ public class WebSocketCloseTest
                 client.write(close.asFrame()); // respond with close
 
                 // ensure server socket got close event
-                assertThat("Fast Fail Latch",closeSocket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
+                assertThat("Fast Fail Latch",closeSocket.closeLatch.await(5,TimeUnit.SECONDS),is(true));
                 assertThat("Fast Fail.statusCode",closeSocket.closeStatusCode,is(StatusCode.SERVER_ERROR));
                 assertThat("Fast Fail.errors",closeSocket.errors.size(),is(1));
             }

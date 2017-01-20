@@ -65,7 +65,19 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
     {
         configuration.addMapping(spec, creator);
     }
-    
+
+    @Override
+    public void addMapping(String spec, WebSocketCreator creator)
+    {
+        configuration.addMapping(spec, creator);
+    }
+
+    @Override
+    public boolean removeMapping(String spec)
+    {
+        return configuration.removeMapping(spec);
+    }
+
     @Override
     public org.eclipse.jetty.websocket.server.pathmap.PathMappings<WebSocketCreator> getMappings()
     {
@@ -74,9 +86,9 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
     }
     
     @Override
-    public MappedResource<WebSocketCreator> getMapping(String target)
+    public WebSocketCreator getMapping(String target)
     {
-        return this.configuration.getMatch(target);
+        return configuration.getMapping(target);
     }
     
     @Override
