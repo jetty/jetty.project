@@ -2,7 +2,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.3.16-SNAPSHOT</version>
+    <version>9.3.16.v20170120</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-io</artifactId>
