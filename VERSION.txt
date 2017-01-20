@@ -1,3 +1,5 @@
+jetty-9.2.22-SNAPSHOT
+
 jetty-9.2.21.v20170120 - 20 January 2017
  + 592 Support no-value Host header in HttpParser
  + 1229 ClassLoader constraint issue when using NativeWebSocketConfiguration
