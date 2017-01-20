@@ -24,7 +24,6 @@
                         <Bundle-Description>Websocket Servlet Interface</Bundle-Description>
                         <Bundle-Classpath />
                         <DynamicImport-Package>org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
-                        <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.websocket.servlet.WebSocketServletFactory)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
                     </instructions>
                 </configuration>
             </plugin>
