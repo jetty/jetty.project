@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.server;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -33,7 +32,7 @@ public class InfoContextAttributeListener implements WebSocketCreator, ServletCo
     {
         NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) sce.getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
         configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-        configuration.addMapping(new ServletPathSpec("/info/*"), this);
+        configuration.addMapping("/info/*", this);
     }
     
     @Override
