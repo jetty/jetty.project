@@ -26,7 +26,7 @@
                 osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
               </Require-Capability>
               <Provide-Capability>
-                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.websocket.servlet.WebSocketServletFactory,org.eclipse.jetty.webapp.Configuration
+                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
               </Provide-Capability>
             </instructions>
           </configuration>

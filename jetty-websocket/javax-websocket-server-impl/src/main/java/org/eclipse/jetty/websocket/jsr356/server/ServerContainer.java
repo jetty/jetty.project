@@ -30,7 +30,6 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -101,7 +100,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
         JsrCreator creator = new JsrCreator(this,metadata,this.configuration.getFactory().getExtensionFactory());
-        this.configuration.addMapping(new UriTemplatePathSpec(metadata.getPath()),creator);
+        this.configuration.addMapping("uri-template|" + metadata.getPath(), creator);
     }
 
     @Override

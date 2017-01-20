@@ -109,7 +109,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         }
     
         // Next, try attribute on context
-        Object enable = context.getAttribute(ENABLE_KEY);
+        Object enable = context.getAttribute(keyName);
     
         if(enable != null)
         {
@@ -148,6 +148,8 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             String instanceKey = WebSocketUpgradeFilter.class.getName() + ".SCI";
             if(context.getAttribute(instanceKey) == null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Dynamic filter add to support JSR356/javax.websocket.server: {}", WebSocketUpgradeFilter.class.getName());
                 WebSocketUpgradeFilter wsuf = WebSocketUpgradeFilter.configureContext(context);
                 context.setAttribute(instanceKey, wsuf);
             }
@@ -170,6 +172,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     {
         if(!isEnabledViaContext(context, ENABLE_KEY, true))
         {
+            LOG.info("JSR-356 is disabled by configuration");
             return;
         }
         
