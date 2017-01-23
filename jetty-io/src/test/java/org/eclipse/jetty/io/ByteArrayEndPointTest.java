@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
@@ -44,6 +34,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(AdvancedRunner.class)
 public class ByteArrayEndPointTest
@@ -269,31 +269,33 @@ public class ByteArrayEndPointTest
     public void testIdle() throws Exception
     {
         long idleTimeout = 1500;
+        long halfIdleTimeout = idleTimeout / 2;
+        long oneAndHalfIdleTimeout = idleTimeout + halfIdleTimeout;
+
         ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, idleTimeout);
-        endp.addInput("test");
         endp.setGrowOutput(false);
+        endp.addInput("test");
         endp.setOutput(BufferUtil.allocate(5));
 
-        // no idle check
         assertTrue(endp.isOpen());
-        Thread.sleep(idleTimeout * 2);
+        Thread.sleep(oneAndHalfIdleTimeout);
+        // Still open because it has not been oshut or closed explicitly
+        // and there are no callbacks, so idle timeout is ignored.
         assertTrue(endp.isOpen());
 
-        // normal read
+        // Normal read is immediate, since there is data to read.
         ByteBuffer buffer = BufferUtil.allocate(1024);
         FutureCallback fcb = new FutureCallback();
-
         endp.fillInterested(fcb);
-        fcb.get(idleTimeout,TimeUnit.MILLISECONDS);
+        fcb.get(idleTimeout, TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
-        assertEquals(null, fcb.get());
         assertEquals(4, endp.fill(buffer));
         assertEquals("test", BufferUtil.toString(buffer));
 
-        // read timeout
+        // Wait for a read timeout.
         fcb = new FutureCallback();
         endp.fillInterested(fcb);
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         try
         {
             fcb.get();
@@ -303,7 +305,7 @@ public class ByteArrayEndPointTest
         {
             assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
-        assertThat(System.currentTimeMillis() - start, greaterThan(idleTimeout / 2));
+        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), greaterThan(halfIdleTimeout));
         assertThat("Endpoint open", endp.isOpen(), is(true));
 
         // We need to delay the write timeout test below from the read timeout test above.
@@ -311,12 +313,12 @@ public class ByteArrayEndPointTest
         // because of the read timeout above runs concurrently with the write below, and
         // if it runs just after the write below, the test fails because the write callback
         // below fails immediately rather than after the idle timeout.
-        Thread.sleep(idleTimeout / 2);
+        Thread.sleep(halfIdleTimeout);
 
-        // write timeout
+        // Write more than the output capacity, then wait for idle timeout.
         fcb = new FutureCallback();
         endp.write(fcb, BufferUtil.toBuffer("This is too long"));
-        start = System.currentTimeMillis();
+        start = System.nanoTime();
         try
         {
             fcb.get();
@@ -326,20 +328,20 @@ public class ByteArrayEndPointTest
         {
             assertThat(t.getCause(), instanceOf(TimeoutException.class));
         }
-        assertThat(System.currentTimeMillis() - start, greaterThan(idleTimeout / 2));
+        assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), greaterThan(halfIdleTimeout));
+        // Still open because it has not been oshut or closed explicitly.
         assertThat("Endpoint open", endp.isOpen(), is(true));
 
+        // Make sure the endPoint is closed when the callback fails.
         endp.fillInterested(new Closer(endp));
-        
-        // Still no idle close (wait half the time)
-        Thread.sleep(idleTimeout / 2);
+        Thread.sleep(halfIdleTimeout);
+        // Still open because it has not been oshut or closed explicitly.
         assertThat("Endpoint open", endp.isOpen(), is(true));
 
-        // shutdown out
+        // Shutdown output.
         endp.shutdownOutput();
 
-        // idle close (wait double the time)
-        Thread.sleep(idleTimeout * 2);
-        assertThat("Endpoint open", endp.isOpen(), is(false));
+        Thread.sleep(idleTimeout);
+        assertThat("Endpoint closed", endp.isOpen(), is(false));
     }
 }
