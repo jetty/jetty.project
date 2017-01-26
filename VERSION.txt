@@ -11,6 +11,85 @@ jetty-9.4.0.v20161208 - 08 December 2016
  + 123 AbstractSessionIdManager can't atomically check for uniqueness of new
    session ID
 
+jetty-9.3.16.v20170120 - 20 January 2017
+ + 486 JDK 9 ALPN implementation
+ + 592 Support no-value Host header in HttpParser
+ + 612 Support HTTP Trailer
+ + 1073 JDK9 support in Jetty 9.3.x
+ + 1195 Problem using STOP.PORT and STOP.KEY with --exec
+ + 1197 WebSocketClient not sending `Authorization` request header
+ + 1200 Context path not set for symlink from root
+ + 1202 NPE in JsrSession when dealing with a response missing the
+   `Sec-WebSocket-Extensions` header
+ + 1228 Internal error during SSL handshake
+ + 1229 ClassLoader constraint issue when using NativeWebSocketConfiguration
+   with WEB-INF/lib/jetty-http.jar present
+ + 1234 onBadMessage called from with handled message
+ + 1259 HostnameVerificationTest.simpleGetWithHostnameVerificationEnabledTest
+   is broken
+ + 1261 Intermittent H2C test failure AsyncIOServletTest.testAsyncReadEarlyEOF
+ + 1262 BufferUtil.isMappedBuffer() uses reflection on private JDK fields
+ + 1265 JAXB not available in JDK 9
+ + 1267 Request.getRemoteUser can throw undeclared IllegalStateException via
+   DeferredAuthentication & FormAuthenticator
+ + 1268 <jsp-file>incorrectly handled when the jsp is at the top directory
+ + 1269 Extensible assumed charset for mimetypes
+ + 1270 GzipHandler rework on dispatches
+ + 1272 Update ALPN versions for 8u111
+ + 1274 Distinguish no tlds vs no MetaInfConfiguration tld scanning for
+   quickstart
+ + 1275 Get rid of Mockito
+ + 1276 Remove org.eclipse.jetty.websocket.server.WebSocketServerFactory from
+   SPI
+ + 1277 http2 alpn test error
+
+jetty-9.3.15.v20161220 - 20 December 2016
+ + 240 Missing content for multipart request after upgrade to Jetty > 9.2.7
+ + 905 Jetty terminates SSL connections too early with Connection: close
+ + 1020 Java Util Logging properties in wrong location
+ + 1050 Add multiple FilterHolder to a ServletContextHandler may cause problems
+ + 1051 NCSARequestLog/RolloverFileOutputStream does not roll day after DST
+   ends
+ + 1054 Using WebSocketPingPongListener with empty PING payload results in
+   NullPointerException
+ + 1057 Improve WebSocketUpgradeFilter fast path performance
+ + 1062 Jetty allows requests to hang under PUT load
+ + 1063 HostPortHttpField should handle port-only values
+ + 1064 HttpClient sets chunked transfer-encoding
+ + 1065 Response.setBufferSize checks for written content
+ + 1069 Host header should be sent with HTTP/1.0
+ + 1072 InetAccessHandler needs InetAddress & Path based restrictions like
+   IPAccessHandler did
+ + 1078 DigestAuthentication should use realm from server, even if unknown in
+   advance
+ + 1081 DigestAuthenticator does not check the realm sent by the client
+ + 1090 Allow WebSocketUpgradeFilter to be used by WEB-INF/web.xml
+ + 1092 jetty-runner jstl support
+ + 1098 MimeTypes.getCharsetFromContentType() unable parse "application/pdf;;;
+   charset=UTF-8"
+ + 1099 PushCacheFilter pushes POST requests
+ + 1108 Please improve logging in SslContextFactory when there are no approved
+   cipher suites
+ + 1114 Add testcase for WSUF for stop/start of the Server
+ + 1118 Filter.destroy() conflicts with ContainerLifeCycle.destroy() in
+   WebSocketUpgradeFilter
+ + 1123 Broken lifecycle for WebSocket's mappings
+ + 1124 Allow configuration of WebSocket mappings from Spring
+ + 1130 PROXY protocol support reports incorrect remote address
+ + 1134 Jetty HTTP/2 client problems
+ + 1135 Avoid allocations from Method.getParameterTypes() if possible
+ + 1146 jetty.server.HttpInput deadlock
+ + 1161 HttpClient and WebSocketClient should not remove all cookies on stop
+ + 1169 HTTP/2 reset on a stalled write does not unblock writer thread
+ + 1171 jetty-client throws NPE for request to IDN hosts only when
+   `HttpClient#send(...)` is called
+ + 1175 Reading HttpServletRequest InputStream from a Filter then accessing
+   getParameterNames() results in java.io.IOException: Missing content for
+   multipart request
+ + 1181 Review buffer underflow cases in SslConnection
+ + 1186 Where can i find SocketConnector .java and
+   BlockingChannelConnector.java etc?
+
 jetty-9.4.0.RC3 - 05 December 2016
  + 1051 NCSARequestLog/RolloverFileOutputStream does not roll day after DST
    ends
