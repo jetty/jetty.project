@@ -1117,7 +1117,10 @@ public class HttpParser
                                 throw new BadMessageException();
 
                             // process previous header
-                            parsedHeader();
+                            if (_state==State.HEADER)
+                                parsedHeader();
+                            else
+                                parsedTrailer();
 
                             // handle new header
                             if (buffer.hasRemaining())
