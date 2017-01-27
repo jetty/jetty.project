@@ -43,6 +43,21 @@
   </dependencies>
 
   <build>
+    <plugins>
+     <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+            <configuration>
+              <instructions>
+                <Bundle-Description>Http2 Hpack</Bundle-Description>
+                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.http.HttpFieldPreEncoder</Provide-Capability>
+                <_nouses>true</_nouses>
+              </instructions>
+            </configuration>
+      </plugin>
+    </plugins>
   </build>
 
 </project>

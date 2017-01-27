@@ -47,7 +47,7 @@ public class PreEncodedHttpField extends HttpField
     static
     { 
         List<HttpFieldPreEncoder> encoders = new ArrayList<>();
-        Iterator<HttpFieldPreEncoder> iter = ServiceLoader.load(HttpFieldPreEncoder.class,PreEncodedHttpField.class.getClassLoader()).iterator();
+        Iterator<HttpFieldPreEncoder> iter = ServiceLoader.load(HttpFieldPreEncoder.class).iterator();
         while (iter.hasNext())
         {
             try
