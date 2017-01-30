@@ -167,6 +167,15 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
+    public void onTrailers(IStream stream, HeadersFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing trailers {} on {}", frame, stream);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        if (channel != null)
+            channel.onRequestTrailers(frame);
+    }
+
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);

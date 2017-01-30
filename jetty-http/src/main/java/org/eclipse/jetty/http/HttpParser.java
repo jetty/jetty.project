@@ -497,7 +497,8 @@ public class HttpParser
                 _cr=true;
                 if (buffer.hasRemaining())
                 {
-                    if(_maxHeaderBytes>0 && _state.ordinal()<State.END.ordinal())
+                    // Don't count the CRs and LFs of the chunked encoding.
+                    if (_maxHeaderBytes>0 && (_state == State.HEADER || _state == State.TRAILER))
                         _headerBytes++;
                     return next(buffer);
                 }
@@ -509,7 +510,6 @@ public class HttpParser
             case LEGAL:
                 if (_cr)
                     throw new BadMessageException("Bad EOL");
-
         }
 
         return ch;
@@ -867,7 +867,6 @@ public class HttpParser
 
                 default:
                     throw new IllegalStateException(_state.toString());
-
             }
         }
 
@@ -993,10 +992,8 @@ public class HttpParser
      */
     protected boolean parseFields(ByteBuffer buffer)
     {
-        boolean handle=false;
-
         // Process headers
-        while ((_state==State.HEADER || _state==State.TRAILER) && buffer.hasRemaining() && !handle)
+        while ((_state==State.HEADER || _state==State.TRAILER) && buffer.hasRemaining())
         {
             // process each character
             byte ch=next(buffer);
@@ -1005,8 +1002,11 @@ public class HttpParser
 
             if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
             {
-                LOG.warn("Header is too large >"+_maxHeaderBytes);
-                throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
+                boolean header = _state == State.HEADER;
+                LOG.warn("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
+                throw new BadMessageException(header ?
+                        HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431 :
+                        HttpStatus.PAYLOAD_TOO_LARGE_413);
             }
 
             switch (_fieldState)
@@ -1084,29 +1084,34 @@ public class HttpParser
                             switch (_endOfContent)
                             {
                                 case EOF_CONTENT:
+                                {
                                     setState(State.EOF_CONTENT);
-                                    handle=_handler.headerComplete()||handle;
+                                    boolean handle=_handler.headerComplete();
                                     _headerComplete=true;
                                     return handle;
-
+                                }
                                 case CHUNKED_CONTENT:
+                                {
                                     setState(State.CHUNKED_CONTENT);
-                                    handle=_handler.headerComplete()||handle;
+                                    boolean handle=_handler.headerComplete();
                                     _headerComplete=true;
                                     return handle;
-
+                                }
                                 case NO_CONTENT:
+                                {
                                     setState(State.END);
-                                    handle=_handler.headerComplete()||handle;
+                                    boolean handle=_handler.headerComplete();
                                     _headerComplete=true;
                                     handle=_handler.messageComplete()||handle;
                                     return handle;
-
+                                }
                                 default:
+                                {
                                     setState(State.CONTENT);
-                                    handle=_handler.headerComplete()||handle;
+                                    boolean handle=_handler.headerComplete();
                                     _headerComplete=true;
                                     return handle;
+                                }
                             }
                         }
 
@@ -1315,7 +1320,7 @@ public class HttpParser
             }
         }
 
-        return handle;
+        return false;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1386,22 +1391,7 @@ public class HttpParser
                 while (buffer.remaining()>0 && buffer.get(buffer.position())<=HttpTokens.SPACE)
                     buffer.get();
             }
-            else if (_state==State.CLOSE)
-            {
-                // Seeking EOF
-                if (BufferUtil.hasContent(buffer))
-                {
-                    // Just ignore data when closed
-                    _headerBytes+=buffer.remaining();
-                    BufferUtil.clear(buffer);
-                    if (_maxHeaderBytes>0 && _headerBytes>_maxHeaderBytes)
-                    {
-                        // Don't want to waste time reading data of a closed request
-                        throw new IllegalStateException("too much data seeking EOF");
-                    }
-                }
-            }
-            else if (_state==State.CLOSED)
+            else if (isClose() || isClosed())
             {
                 BufferUtil.clear(buffer);
             }
@@ -1449,55 +1439,33 @@ public class HttpParser
                         if (DEBUG)
                             LOG.debug("{} EOF in {}",this,_state);
                         setState(State.CLOSED);
-                        _handler.badMessage(400,null);
+                        _handler.badMessage(HttpStatus.BAD_REQUEST_400,null);
                         break;
                 }
             }
         }
-        catch(BadMessageException e)
+        catch(BadMessageException x)
         {
             BufferUtil.clear(buffer);
-
-            Throwable cause = e.getCause();
-            boolean stack = LOG.isDebugEnabled() ||
-                    (!(cause instanceof NumberFormatException )  && (cause instanceof RuntimeException || cause instanceof Error));
-
-            if (stack)
-                LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler,e);
-            else
-                LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler);
-            setState(State.CLOSE);
-            _handler.badMessage(e.getCode(), e.getReason());
+            badMessage(x);
         }
-        catch(NumberFormatException|IllegalStateException e)
+        catch(Throwable x)
         {
             BufferUtil.clear(buffer);
-            LOG.warn("parse exception: {} in {} for {}",e.toString(),_state,_handler);
-            if (DEBUG)
-                LOG.debug(e);
-            badMessage();
-
-        }
-        catch(Exception|Error e)
-        {
-            BufferUtil.clear(buffer);
-            LOG.warn("parse exception: "+e.toString()+" for "+_handler,e);
-            badMessage();
+            badMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400, _requestHandler != null ? "Bad Request" : "Bad Response", x));
         }
         return false;
     }
     
-    protected void badMessage()
+    protected void badMessage(BadMessageException x)
     {
+        if (DEBUG)
+            LOG.debug("Parse exception: " + this + " for " + _handler, x);
+        setState(State.CLOSE);
         if (_headerComplete)
-        {
             _handler.earlyEOF();
-        }
-        else if (_state!=State.CLOSED)
-        {
-            setState(State.CLOSE);
-            _handler.badMessage(400,_requestHandler!=null?"Bad Request":"Bad Response");
-        }
+        else
+            _handler.badMessage(x._code, x._reason);
     }
 
     protected boolean parseContent(ByteBuffer buffer)

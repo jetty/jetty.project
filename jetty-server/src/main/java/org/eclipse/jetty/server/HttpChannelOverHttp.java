@@ -62,6 +62,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     private List<String> _complianceViolations;
+    private HttpFields _trailers;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
@@ -87,6 +88,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _connection = null;
         _fields.clear();
         _upgrade = null;
+        _trailers = null;
     }
 
     @Override
@@ -185,6 +187,14 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             }
         }
         _fields.add(field);
+    }
+
+    @Override
+    public void parsedTrailer(HttpField field)
+    {
+        if (_trailers == null)
+            _trailers = new HttpFields();
+        _trailers.add(field);
     }
 
     /**
@@ -460,6 +470,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean messageComplete()
     {
+        if (_trailers != null)
+            onTrailers(_trailers);
         boolean handle = onRequestComplete() || _delayedForContent;
         _delayedForContent = false;
         return handle;

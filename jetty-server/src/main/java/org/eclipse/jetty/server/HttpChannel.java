@@ -586,6 +586,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _request.getHttpInput().addContent(content);
     }
 
+    public void onTrailers(HttpFields trailers)
+    {
+        _request.setTrailers(trailers);
+    }
+
     public boolean onRequestComplete()
     {
         if (LOG.isDebugEnabled())

@@ -274,6 +274,20 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return handle || wasDelayed ? this : null;
     }
 
+    public void onRequestTrailers(HeadersFrame frame)
+    {
+        HttpFields trailers = frame.getMetaData().getFields();
+        onTrailers(trailers);
+        onRequestComplete();
+        if (LOG.isDebugEnabled())
+        {
+            Stream stream = getStream();
+            LOG.debug("HTTP2 Request #{}/{}, trailers:{}{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    System.lineSeparator(), trailers);
+        }
+    }
+
     public boolean isRequestHandled()
     {
         return _handled;
