@@ -330,6 +330,12 @@ public class HttpTester
         }
 
         @Override
+        public boolean contentComplete()
+        {
+            return false;
+        }
+        
+        @Override
         public boolean messageComplete()
         {
             _complete=true;

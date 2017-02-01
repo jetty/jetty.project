@@ -468,13 +468,19 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
+    public boolean contentComplete()
+    {
+        boolean handle = onContentComplete() || _delayedForContent;
+        _delayedForContent = false;
+        return handle;
+    }
+
+    @Override
     public boolean messageComplete()
     {
         if (_trailers != null)
             onTrailers(_trailers);
-        boolean handle = onRequestComplete() || _delayedForContent;
-        _delayedForContent = false;
-        return handle;
+        return onRequestComplete();
     }
 
     @Override

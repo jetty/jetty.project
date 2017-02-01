@@ -421,6 +421,12 @@ public class LocalConnector extends AbstractConnector
                 public void parsedHeader(HttpField field)
                 {
                 }
+
+                @Override
+                public boolean contentComplete()
+                {
+                    return false;
+                }
                 
                 @Override
                 public boolean messageComplete()

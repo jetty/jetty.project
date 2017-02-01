@@ -272,6 +272,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
+    public boolean contentComplete()
+    {
+        return false;
+    }
+    
+    @Override
     public boolean messageComplete()
     {
         HttpExchange exchange = getHttpExchange();
