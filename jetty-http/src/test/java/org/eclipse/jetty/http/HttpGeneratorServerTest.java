@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -409,7 +409,6 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
-        
         assertThat(out, containsString("HTTP/1.1 200 OK"));
         assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(out, not(containsString("Content-Length")));
@@ -423,6 +422,73 @@ public class HttpGeneratorServerTest
             "0\r\n"+
             "\r\n"));
     }
+    
+    @Test
+    public void testResponseWithHintedChunkedContent() throws Exception
+    {
+        ByteBuffer header = BufferUtil.allocate(4096);
+        ByteBuffer chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+        ByteBuffer content0 = BufferUtil.toBuffer("Hello World! ");
+        ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
+        HttpGenerator gen = new HttpGenerator();
+        gen.setPersistent(false);
+
+        HttpGenerator.Result result = gen.generateResponse(null, null, null, content0, false);
+        assertEquals(HttpGenerator.Result.NEED_INFO, result);
+        assertEquals(HttpGenerator.State.START, gen.getState());
+
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        info.getFields().add(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
+        result = gen.generateResponse(info, null, null, content0, false);
+        assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+        assertEquals(HttpGenerator.State.START, gen.getState());
+
+        result = gen.generateResponse(info, header, null, content0, false);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
+
+        String out = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        out += BufferUtil.toString(content0);
+        BufferUtil.clear(content0);
+
+        result = gen.generateResponse(null, null, chunk, content1, false);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
+        out += BufferUtil.toString(chunk);
+        BufferUtil.clear(chunk);
+        out += BufferUtil.toString(content1);
+        BufferUtil.clear(content1);
+
+        result = gen.generateResponse(null, null, chunk, null, true);
+        assertEquals(HttpGenerator.Result.CONTINUE, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+
+        result = gen.generateResponse(null, null, chunk, null, true);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+        out += BufferUtil.toString(chunk);
+        BufferUtil.clear(chunk);
+
+        result = gen.generateResponse(null, null, chunk, null, true);
+        assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
+        assertEquals(HttpGenerator.State.END, gen.getState());
+
+        assertThat(out, containsString("HTTP/1.1 200 OK"));
+        assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
+        assertThat(out, not(containsString("Content-Length")));
+        assertThat(out, containsString("Transfer-Encoding: chunked"));
+        
+        assertThat(out, endsWith(
+            "\r\n\r\nD\r\n"+
+            "Hello World! \r\n"+
+            "2E\r\n"+
+            "The quick brown fox jumped over the lazy dog. \r\n"+
+            "0\r\n"+
+            "\r\n"));
+    }
+
 
     @Test
     public void testResponseWithKnownContentLengthFromMetaData() throws Exception

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -42,6 +41,6 @@ public class InfoServlet extends HttpServlet implements WebSocketCreator
         ServletContext context = config.getServletContext();
         NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getAttribute(NativeWebSocketConfiguration.class.getName());
         configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-        configuration.addMapping(new ServletPathSpec("/info/*"), this);
+        configuration.addMapping("/info/*", this);
     }
 }

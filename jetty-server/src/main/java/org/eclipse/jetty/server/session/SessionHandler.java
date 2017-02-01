@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1292,15 +1292,18 @@ public class SessionHandler extends ScopedHandler
     {
         if (session == null)
             return;
-        
+
 
         //check if the session is:
         //1. valid
         //2. expired
         //3. idle
         boolean expired = false;
-        try (Lock lock = session.lock())
+        try (Lock lock = session.lockIfNotHeld())
         {
+            if (session.getRequests() > 0)
+                return; //session can't expire or be idle if there is a request in it
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("Inspecting session {}, valid={}", session.getId(), session.isValid());
             

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -272,6 +272,20 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (wasDelayed)
             _handled = true;
         return handle || wasDelayed ? this : null;
+    }
+
+    public void onRequestTrailers(HeadersFrame frame)
+    {
+        HttpFields trailers = frame.getMetaData().getFields();
+        onTrailers(trailers);
+        onRequestComplete();
+        if (LOG.isDebugEnabled())
+        {
+            Stream stream = getStream();
+            LOG.debug("HTTP2 Request #{}/{}, trailers:{}{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    System.lineSeparator(), trailers);
+        }
     }
 
     public boolean isRequestHandled()

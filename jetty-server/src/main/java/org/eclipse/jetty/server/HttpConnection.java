@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -416,10 +416,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
         // Reset the channel, parsers and generator
         _channel.recycle();
-        if (_generator.isPersistent() && !_parser.isClosed())
-            _parser.reset();
-        else
-            _parser.close();
+        if (!_parser.isClosed())
+        {
+            if (_generator.isPersistent())
+                _parser.reset();
+            else
+                _parser.close();
+        }
 
         // Not in a race here with onFillable, because it has given up control before calling handle.
         // in a slight race with #completed, but not sure what to do with that anyway.

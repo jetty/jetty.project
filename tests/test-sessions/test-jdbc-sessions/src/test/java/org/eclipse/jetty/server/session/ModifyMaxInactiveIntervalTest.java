@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,30 +28,20 @@ import org.junit.After;
  */
 public class ModifyMaxInactiveIntervalTest extends AbstractModifyMaxInactiveIntervalTest
 {
-
-    @After
-    public void tearDown() throws Exception 
-    {
-        JdbcTestHelper.shutdown(null);
-    }
-
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory();
+       return JdbcTestHelper.newSessionDataStoreFactory();
     }
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractModifyMaxInactiveIntervalTest#testSessionExpiryAfterModifiedMaxInactiveInterval()
-     */
-    @Override
-    public void testSessionExpiryAfterModifiedMaxInactiveInterval() throws Exception
-    {
-        super.testSessionExpiryAfterModifiedMaxInactiveInterval();
-    }
-
     
+    @After
+    public void tearDown() throws Exception 
+    {
+        JdbcTestHelper.shutdown(null);
+    }
+  
+
 }

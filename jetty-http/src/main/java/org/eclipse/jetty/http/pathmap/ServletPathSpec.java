@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,11 +40,14 @@ public class ServletPathSpec extends PathSpec
     
     public ServletPathSpec(String servletPathSpec)
     {
-        super();
+        if (servletPathSpec == null)
+            servletPathSpec = "";
+        if (servletPathSpec.startsWith("servlet|"))
+            servletPathSpec = servletPathSpec.substring("servlet|".length());
         assertValidServletPathSpec(servletPathSpec);
 
         // The Root Path Spec
-        if ((servletPathSpec == null) || (servletPathSpec.length() == 0))
+        if (servletPathSpec.length() == 0)
         {
             super.pathSpec = "";
             super.pathDepth = -1; // force this to be at the end of the sort order

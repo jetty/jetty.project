@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -165,6 +165,15 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (task != null)
                 offerTask(task, false);
         }
+    }
+
+    public void onTrailers(IStream stream, HeadersFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing trailers {} on {}", frame, stream);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        if (channel != null)
+            channel.onRequestTrailers(frame);
     }
 
     public boolean onStreamTimeout(IStream stream, Throwable failure)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -614,7 +614,7 @@ public class HttpGenerator
         HttpField transfer_encoding=null;
         boolean http11 = info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
-        boolean chunked = false;
+        boolean chunked_hint = false;
         boolean content_type = false;
         long content_length = info.getContentLength();
         boolean content_length_field = false;
@@ -661,7 +661,7 @@ public class HttpGenerator
                                 // Don't add yet, treat this only as a hint that there is content
                                 // with a preference to chunk if we can
                                 transfer_encoding = field;
-                                chunked = field.contains(HttpHeaderValue.CHUNKED.asString());
+                                chunked_hint = field.contains(HttpHeaderValue.CHUNKED.asString());
                             }
                             break;
                         }
@@ -704,7 +704,7 @@ public class HttpGenerator
         // settings from http://tools.ietf.org/html/rfc7230#section-3.3.3
 
         boolean assumed_content_request = request!=null && Boolean.TRUE.equals(__assumedContentMethods.get(request.getMethod()));
-        boolean assumed_content = assumed_content_request || content_type || chunked;
+        boolean assumed_content = assumed_content_request || content_type || chunked_hint;
         boolean nocontent_request = request!=null && content_length<=0 && !assumed_content;
 
         // If the message is known not to have content
@@ -728,12 +728,11 @@ public class HttpGenerator
             }
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent
-        // or it is a request with content (which cannot EOF)
-        else if (http11 && content_length<0 && (_persistent || assumed_content_request))
+        // or it is a request with content (which cannot EOF) or the app has requested chunking
+        else if (http11 && content_length<0 && (_persistent || assumed_content_request || chunked_hint))
         {
             // we use chunking
             _endOfContent = EndOfContent.CHUNKED_CONTENT;
-            chunked = true;
 
             // try to use user supplied encoding as it may have other values.
             if (transfer_encoding == null)
@@ -741,6 +740,11 @@ public class HttpGenerator
             else if (transfer_encoding.toString().endsWith(HttpHeaderValue.CHUNKED.toString()))
             {
                 putTo(transfer_encoding,header);
+                transfer_encoding = null;
+            }
+            else if (!chunked_hint)
+            {
+                putTo(new HttpField(HttpHeader.TRANSFER_ENCODING,transfer_encoding.getValue()+",chunked"),header);
                 transfer_encoding = null;
             }
             else
@@ -776,8 +780,20 @@ public class HttpGenerator
             LOG.debug(_endOfContent.toString());
         
         // Add transfer encoding if it is not chunking
-        if (transfer_encoding!=null && !chunked)
-            putTo(transfer_encoding,header);         
+        if (transfer_encoding!=null)
+        {
+            if (chunked_hint)
+            {
+                String v = transfer_encoding.getValue();
+                int c = v.lastIndexOf(',');
+                if (c>0 && v.lastIndexOf(HttpHeaderValue.CHUNKED.toString(),c)>c)
+                    putTo(new HttpField(HttpHeader.TRANSFER_ENCODING,v.substring(0,c).trim()),header);
+            }
+            else
+            {
+                putTo(transfer_encoding,header); 
+            }
+        }
         
         // Send server?
         int status=response!=null?response.getStatus():-1;

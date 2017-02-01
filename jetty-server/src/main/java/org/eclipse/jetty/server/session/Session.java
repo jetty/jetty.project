@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -149,7 +149,7 @@ public class Session implements SessionHandler.SessionIf
         @Override
         public void setIdleTimeout(long idleTimeout)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout called: "+idleTimeout);
+            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout called: old="+getIdleTimeout()+" new="+idleTimeout);
             super.setIdleTimeout(idleTimeout);
         }
 
@@ -231,6 +231,8 @@ public class Session implements SessionHandler.SessionIf
                 return false;
             _newSession=false;
             long lastAccessed = _sessionData.getAccessed();
+            if (_sessionInactivityTimer != null)
+                _sessionInactivityTimer.notIdle();
             _sessionData.setAccessed(time);
             _sessionData.setLastAccessed(lastAccessed);
            _sessionData.calcAndSetExpiry(time);
@@ -888,6 +890,16 @@ public class Session implements SessionHandler.SessionIf
     public Lock lock ()
     {
         return _lock.lock();
+    }
+    
+    
+    /* ------------------------------------------------------------- */
+    /** Grab the lock on the session if it isn't locked already
+     * @return the lock
+     */
+    public Lock lockIfNotHeld ()
+    {
+        return _lock.lockIfNotHeld();
     }
 
     /* ------------------------------------------------------------- */

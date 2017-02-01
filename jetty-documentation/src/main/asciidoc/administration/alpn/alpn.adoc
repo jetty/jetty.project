@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -241,6 +241,9 @@ The ALPN implementation, relying on modifications of OpenJDK classes, updates ev
 |1.8.0u92 |8.1.8.v20160420
 |1.8.0u101 |8.1.9.v20160720
 |1.8.0u102 |8.1.9.v20160720
+|1.8.0u111 |8.1.9.v20160720
+|1.8.0u112 |8.1.10.v20161026
+|1.8.0u121 |8.1.11.v20170118
 |=============================
 
 [[alpn-build]]

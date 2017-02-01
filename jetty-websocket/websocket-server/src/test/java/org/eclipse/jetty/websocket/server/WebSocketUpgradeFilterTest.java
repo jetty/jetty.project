@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
@@ -31,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -46,6 +41,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class WebSocketUpgradeFilterTest
@@ -79,7 +78,7 @@ public class WebSocketUpgradeFilterTest
             
             // direct configuration via WSUF
             wsuf.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-            wsuf.addMapping(new ServletPathSpec("/info/*"), infoCreator);
+            wsuf.addMapping("/info/*", infoCreator);
             
             server1.start();
             return server1;
@@ -104,7 +103,7 @@ public class WebSocketUpgradeFilterTest
             NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) context.getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
             assertThat("NativeWebSocketConfiguration", configuration, notNullValue());
             configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-            configuration.addMapping(new ServletPathSpec("/info/*"), infoCreator);
+            configuration.addMapping("/info/*", infoCreator);
             
             server12.start();
             
@@ -127,7 +126,7 @@ public class WebSocketUpgradeFilterTest
             
             NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
             configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-            configuration.addMapping(new ServletPathSpec("/info/*"), infoCreator);
+            configuration.addMapping("/info/*", infoCreator);
             context.setAttribute(NativeWebSocketConfiguration.class.getName(), configuration);
             
             server13.start();
@@ -153,7 +152,7 @@ public class WebSocketUpgradeFilterTest
             
                 NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(context.getServletContext());
                 configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
-                configuration.addMapping(new ServletPathSpec("/info/*"), infoCreator);
+                configuration.addMapping("/info/*", infoCreator);
                 context.addBean(configuration, true);
             
                 FilterHolder wsufHolder = new FilterHolder(new WebSocketUpgradeFilter(configuration));

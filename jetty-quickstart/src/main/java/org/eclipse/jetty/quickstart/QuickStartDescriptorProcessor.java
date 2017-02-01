@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -200,9 +200,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                     else
                         throw new IllegalArgumentException("TLD not found: "+r);                    
                 }
-                
-                if (tlds.size()>0)
-                    context.setAttribute(MetaInfConfiguration.METAINF_TLDS,tlds);
+
+                //empty list signals that tlds were prescanned but none found.
+                //a missing METAINF_TLDS attribute means that prescanning was not done.
+                context.setAttribute(MetaInfConfiguration.METAINF_TLDS,tlds);
                 break;
             }
             

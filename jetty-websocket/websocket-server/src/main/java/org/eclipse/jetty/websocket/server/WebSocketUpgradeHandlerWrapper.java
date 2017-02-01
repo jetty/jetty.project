@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -66,11 +66,23 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
     {
         configuration.addMapping(spec, creator);
     }
-    
+
     @Override
-    public MappedResource<WebSocketCreator> getMapping(String target)
+    public void addMapping(String spec, WebSocketCreator creator)
     {
-        return this.configuration.getMatch(target);
+        configuration.addMapping(spec, creator);
+    }
+
+    @Override
+    public boolean removeMapping(String spec)
+    {
+        return configuration.removeMapping(spec);
+    }
+
+    @Override
+    public WebSocketCreator getMapping(String target)
+    {
+        return configuration.getMapping(target);
     }
     
     @Override
