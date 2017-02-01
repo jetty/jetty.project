@@ -1987,6 +1987,12 @@ public class HttpParserTest
         }
 
         @Override
+        public boolean contentComplete()
+        {
+            return false;
+        }
+
+        @Override
         public boolean messageComplete()
         {
             _messageCompleted = true;

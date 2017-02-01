@@ -114,7 +114,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
             boolean endStream = frame.isEndStream();
             if (endStream)
+            {
+                onContentComplete();
                 onRequestComplete();
+            }
 
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
                     !endStream && !_expect100Continue;
@@ -150,6 +153,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         {
             onRequest(request);
             getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
+            onContentComplete();
             onRequestComplete();
 
             if (LOG.isDebugEnabled())
@@ -255,7 +259,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         boolean endStream = frame.isEndStream();
         if (endStream)
-            handle |= onRequestComplete();
+        {
+            boolean handle_content = onContentComplete();
+            boolean handle_request = onRequestComplete();
+            handle |= handle_content | handle_request;
+        }
 
         if (LOG.isDebugEnabled())
         {

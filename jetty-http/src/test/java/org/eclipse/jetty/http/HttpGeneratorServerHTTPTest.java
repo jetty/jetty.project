@@ -232,6 +232,12 @@ public class HttpGeneratorServerHTTPTest
         }
 
         @Override
+        public boolean contentComplete()
+        {
+            return true;
+        }
+
+        @Override
         public boolean messageComplete()
         {
             return true;

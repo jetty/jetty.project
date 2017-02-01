@@ -260,6 +260,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return !proceed || async;
     }
 
+
+    @Override
+    public boolean contentComplete()
+    {
+        return false;
+    }
+    
     @Override
     public boolean messageComplete()
     {
