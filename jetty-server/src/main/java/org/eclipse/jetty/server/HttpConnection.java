@@ -413,10 +413,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
         // Reset the channel, parsers and generator
         _channel.recycle();
-        if (_generator.isPersistent() && !_parser.isClosed())
-            _parser.reset();
-        else
-            _parser.close();
+        if (!_parser.isClosed())
+        {
+            if (_generator.isPersistent())
+                _parser.reset();
+            else
+                _parser.close();
+        }
 
         // Not in a race here with onFillable, because it has given up control before calling handle.
         // in a slight race with #completed, but not sure what to do with that anyway.

@@ -18,8 +18,16 @@
 
 package org.eclipse.jetty.http2.client;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -28,7 +36,9 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -79,6 +89,77 @@ public class TrailersTest extends AbstractTest
         MetaData trailers = new MetaData(HttpVersion.HTTP_2, trailerFields);
         HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailers, null, true);
         stream.headers(trailerFrame, Callback.NOOP);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testServletRequestTrailers() throws Exception
+    {
+        CountDownLatch trailerLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                Request jettyRequest = (Request)request;
+                // No trailers yet.
+                Assert.assertNull(jettyRequest.getTrailers());
+
+                trailerLatch.countDown();
+
+                // Read the content.
+                ServletInputStream input = jettyRequest.getInputStream();
+                while (true)
+                {
+                    int read = input.read();
+                    if (read < 0)
+                        break;
+                }
+
+                // Now we have the trailers.
+                HttpFields trailers = jettyRequest.getTrailers();
+                Assert.assertNotNull(trailers);
+                Assert.assertNotNull(trailers.get("X-Trailer"));
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+
+        HttpFields requestFields = new HttpFields();
+        requestFields.put("X-Request", "true");
+        MetaData.Request request = newRequest("GET", requestFields);
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+
+        // Send some data.
+        Callback.Completable callback = new Callback.Completable();
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), false), callback);
+
+        Assert.assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
+
+        // Send the trailers.
+        callback.thenRun(() ->
+        {
+            HttpFields trailerFields = new HttpFields();
+            trailerFields.put("X-Trailer", "true");
+            MetaData trailers = new MetaData(HttpVersion.HTTP_2, trailerFields);
+            HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailers, null, true);
+            stream.headers(trailerFrame, Callback.NOOP);
+        });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

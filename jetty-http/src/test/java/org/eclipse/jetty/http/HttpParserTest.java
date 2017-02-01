@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -124,7 +120,7 @@ public class HttpParserTest
         Assert.assertEquals("/999", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        assertThat(_complianceViolation,containsString("0.9"));
+        Assert.assertThat(_complianceViolation, Matchers.containsString("0.9"));
     }
 
     @Test
@@ -153,7 +149,7 @@ public class HttpParserTest
         Assert.assertEquals("/222", _uriOrStatus);
         Assert.assertEquals("HTTP/0.9", _versionOrReason);
         Assert.assertEquals(-1, _headers);
-        assertThat(_complianceViolation,containsString("0.9"));
+        Assert.assertThat(_complianceViolation, Matchers.containsString("0.9"));
     }
 
     @Test
@@ -269,7 +265,7 @@ public class HttpParserTest
         Assert.assertEquals("Name", _hdr[1]);
         Assert.assertEquals("value extra", _val[1]);
         Assert.assertEquals(1, _headers);
-        assertThat(_complianceViolation,containsString("folding"));
+        Assert.assertThat(_complianceViolation, Matchers.containsString("folding"));
     }
 
     @Test
@@ -379,7 +375,7 @@ public class HttpParserTest
         Assert.assertEquals("Other", _hdr[2]);
         Assert.assertEquals("value", _val[2]);
         Assert.assertEquals(2, _headers);
-        assertThat(_complianceViolation,containsString("name only"));
+        Assert.assertThat(_complianceViolation, Matchers.containsString("name only"));
     }
     
     @Test
@@ -612,7 +608,7 @@ public class HttpParserTest
             parser.parseNext(buffer);
         }
         
-        assertThat(BufferUtil.toUTF8String(buffer), is("FOOGRADE"));
+        Assert.assertThat(BufferUtil.toUTF8String(buffer), Matchers.is("FOOGRADE"));
     }
 
     @Test
@@ -716,7 +712,7 @@ public class HttpParserTest
         Assert.assertEquals("cOnNeCtIoN", _hdr[1]);
         Assert.assertEquals("ClOsE", _val[1]);
         Assert.assertEquals(1, _headers);
-        assertThat(_complianceViolation,containsString("case sensitive"));
+        Assert.assertThat(_complianceViolation, Matchers.containsString("case sensitive"));
     }
 
     @Test
@@ -828,6 +824,48 @@ public class HttpParserTest
         Assert.assertEquals("Header1", _hdr[0]);
         Assert.assertEquals("value1", _val[0]);
         Assert.assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
+        Assert.assertEquals(1, _trailers.size());
+        HttpField trailer1 = _trailers.get(0);
+        Assert.assertEquals("Trailer", trailer1.getName());
+        Assert.assertEquals("value", trailer1.getValue());
+
+        Assert.assertTrue(_headerCompleted);
+        Assert.assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testChunkParseTrailers() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET /chunk HTTP/1.0\r\n"
+                        + "Transfer-Encoding: chunked\r\n"
+                        + "\r\n"
+                        + "a;\r\n"
+                        + "0123456789\r\n"
+                        + "1a\r\n"
+                        + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
+                        + "0\r\n"
+                        + "Trailer: value\r\n"
+                        + "Foo: bar\r\n"
+                        + "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        Assert.assertEquals("GET", _methodOrVersion);
+        Assert.assertEquals("/chunk", _uriOrStatus);
+        Assert.assertEquals("HTTP/1.0", _versionOrReason);
+        Assert.assertEquals(0, _headers);
+        Assert.assertEquals("Transfer-Encoding", _hdr[0]);
+        Assert.assertEquals("chunked", _val[0]);
+        Assert.assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
+        Assert.assertEquals(2, _trailers.size());
+        HttpField trailer1 = _trailers.get(0);
+        Assert.assertEquals("Trailer", trailer1.getName());
+        Assert.assertEquals("value", trailer1.getValue());
+        HttpField trailer2 = _trailers.get(1);
+        Assert.assertEquals("Foo", trailer2.getName());
+        Assert.assertEquals("bar", trailer2.getValue());
 
         Assert.assertTrue(_headerCompleted);
         Assert.assertTrue(_messageCompleted);
@@ -1938,6 +1976,7 @@ public class HttpParserTest
     private String _uriOrStatus;
     private String _versionOrReason;
     private List<HttpField> _fields = new ArrayList<>();
+    private List<HttpField> _trailers = new ArrayList<>();
     private String[] _hdr;
     private String[] _val;
     private int _headers;
@@ -1948,8 +1987,6 @@ public class HttpParserTest
 
     private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, HttpParser.ComplianceHandler
     {
-        private HttpFields fields;
-
         @Override
         public boolean content(ByteBuffer ref)
         {
@@ -1965,14 +2002,13 @@ public class HttpParserTest
         public boolean startRequest(String method, String uri, HttpVersion version)
         {
             _fields.clear();
+            _trailers.clear();
             _headers = -1;
             _hdr = new String[10];
             _val = new String[10];
             _methodOrVersion = method;
             _uriOrStatus = uri;
             _versionOrReason = version == null ? null : version.asString();
-
-            fields = new HttpFields();
             _messageCompleted = false;
             _headerCompleted = false;
             _early = false;
@@ -1998,14 +2034,19 @@ public class HttpParserTest
         public boolean headerComplete()
         {
             _content = null;
-            String s0 = fields.toString();
-            String s1 = fields.toString();
-            if (!s0.equals(s1))
-            {
-                throw new IllegalStateException();
-            }
-
             _headerCompleted = true;
+            return false;
+        }
+
+        @Override
+        public void parsedTrailer(HttpField field)
+        {
+            _trailers.add(field);
+        }
+
+        @Override
+        public boolean contentComplete()
+        {
             return false;
         }
 
@@ -2026,14 +2067,12 @@ public class HttpParserTest
         public boolean startResponse(HttpVersion version, int status, String reason)
         {
             _fields.clear();
+            _trailers.clear();
             _methodOrVersion = version.asString();
             _uriOrStatus = Integer.toString(status);
             _versionOrReason = reason;
-
-            fields = new HttpFields();
             _hdr = new String[9];
             _val = new String[9];
-
             _messageCompleted = false;
             _headerCompleted = false;
             return false;

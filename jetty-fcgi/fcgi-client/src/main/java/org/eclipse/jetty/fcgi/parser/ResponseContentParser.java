@@ -285,6 +285,12 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
+        public boolean contentComplete()
+        {
+            return false;
+        }
+        
+        @Override
         public boolean messageComplete()
         {
             // No need to notify the end of the response to the

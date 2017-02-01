@@ -169,15 +169,12 @@ public class Request implements HttpServletRequest
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
     private final HttpInput _input;
-
     private MetaData.Request _metaData;
     private String _originalUri;
-
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
     private PathSpec _pathSpec;
-
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
     private boolean _newContext;
@@ -206,6 +203,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
+    private HttpFields _trailers;
 
     /* ------------------------------------------------------------ */
     public Request(HttpChannel channel, HttpInput input)
@@ -219,6 +217,11 @@ public class Request implements HttpServletRequest
     {
         MetaData.Request metadata=_metaData;
         return metadata==null?null:metadata.getFields();
+    }
+
+    public HttpFields getTrailers()
+    {
+        return _trailers;
     }
 
     /* ------------------------------------------------------------ */
@@ -1791,6 +1794,7 @@ public class Request implements HttpServletRequest
         _multiPartInputStream = null;
         _remote=null;
         _input.recycle();
+        _trailers = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -2158,6 +2162,11 @@ public class Request implements HttpServletRequest
     public void setUserIdentityScope(UserIdentity.Scope scope)
     {
         _scope = scope;
+    }
+
+    public void setTrailers(HttpFields trailers)
+    {
+        _trailers = trailers;
     }
 
     /* ------------------------------------------------------------ */

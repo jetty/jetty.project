@@ -142,8 +142,10 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
-            // Servers do not receive responses.
-            close(stream, "response_headers");
+            if (frame.isEndStream())
+                getConnection().onTrailers((IStream)stream, frame);
+            else
+                close(stream, "invalid_trailers");
         }
 
         @Override

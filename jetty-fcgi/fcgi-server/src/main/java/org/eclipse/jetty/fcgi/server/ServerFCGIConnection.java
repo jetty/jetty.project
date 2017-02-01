@@ -175,6 +175,7 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} end on {}", request, channel);
             if (channel != null)
             {
+                channel.onContentComplete();
                 channel.onRequestComplete();
             }
         }
