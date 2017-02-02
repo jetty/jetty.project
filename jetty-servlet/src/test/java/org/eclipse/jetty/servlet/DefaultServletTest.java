@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -241,7 +240,7 @@ public class DefaultServletTest
         assertTrue(wackyDir.mkdirs());
 
         /* create some content outside of the docroot */
-        File sekret = testdir.getFile("sekret");
+        File sekret = testdir.getPathFile("sekret").toFile();
         assertTrue(sekret.mkdirs());
         File pass = new File(sekret, "pass");
         createFile(pass, "Sssh, you shouldn't be seeing this");

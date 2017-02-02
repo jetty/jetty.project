@@ -70,7 +70,7 @@ public class XmlConfiguredJetty
         _xmlConfigurations = new ArrayList<>();
         Properties properties = new Properties();
 
-        String jettyHomeBase = testdir.getDir().getAbsolutePath();
+        String jettyHomeBase = testdir.getPath().toString();
         // Ensure we have a new (pristene) directory to work with.
         int idx = 0;
         _jettyHome = new File(jettyHomeBase + "#" + idx);
@@ -116,7 +116,7 @@ public class XmlConfiguredJetty
         System.setProperty("java.io.tmpdir",tmpDir.getAbsolutePath());
         properties.setProperty("jetty.home",_jettyHome.getAbsolutePath());
         System.setProperty("jetty.home",_jettyHome.getAbsolutePath());
-        properties.setProperty("test.basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
+        properties.setProperty("test.basedir",MavenTestingUtils.getBaseDir().getAbsolutePath());
         properties.setProperty("test.resourcesdir",MavenTestingUtils.getTestResourcesDir().getAbsolutePath());
         properties.setProperty("test.webapps",webappsDir.getAbsolutePath());
         properties.setProperty("test.targetdir",MavenTestingUtils.getTargetDir().getAbsolutePath());

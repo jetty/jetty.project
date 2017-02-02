@@ -32,8 +32,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,7 +46,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
     private final String CONTEXT_ATTRIBUTE = getClass().getName() + ".asyncContext";
     private boolean dispatch; // if true we dispatch, otherwise we complete
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "{0} dispatch={1}")
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]
@@ -73,9 +73,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 404", response.getCode(), is("404"));
+        assertThat("response code", response.getStatus(), is(404));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
@@ -86,9 +86,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code", response.getStatus(), is(500));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
@@ -129,9 +129,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertHeader(response, "content-length", "0");
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
@@ -143,9 +143,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code", response.getStatus(), is(500));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
@@ -187,9 +187,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertHeader(response, "content-length", "6");
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
@@ -201,9 +201,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code", response.getStatus(), is(500));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
@@ -253,10 +253,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -269,9 +269,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -325,9 +325,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -340,9 +340,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -394,9 +394,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked"); // HTTP/1.0 does not do chunked.  it will just send content and close
@@ -409,9 +409,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked"); 
@@ -466,9 +466,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -482,10 +482,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Buffer size is too small, so the content is written directly producing a 200 response
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -540,10 +540,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
         assertHeader(response, "content-length", "3");
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
@@ -555,11 +555,11 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         //TODO: should we expect 500 here?
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
         assertHeader(response, "content-length", "3");
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
@@ -612,11 +612,11 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         // jetty truncates the body when content-length is reached.! This is correct and desired behaviour?
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response body", response.getContent(), is("foo"));
         assertHeader(response, "content-length", "3");
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
@@ -628,11 +628,11 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // TODO: we throw before response is committed. should we expect 500?
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
         assertHeader(response, "content-length", "3");
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
@@ -685,9 +685,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
         //TODO: jetty ignores setContentLength and sends transfer-encoding header. Correct?
     }
@@ -699,9 +699,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
@@ -753,10 +753,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Setting a content-length too small throws an IllegalStateException
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code", response.getStatus(), is(500));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 
@@ -767,10 +767,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.setHandler(handler);
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Setting a content-length too small throws an IllegalStateException
-        assertThat(response.getCode(), is("500"));
+        assertThat("response code", response.getStatus(), is(500));
         assertThat("no exceptions", handler.failure(), is(nullValue()));
     }
 

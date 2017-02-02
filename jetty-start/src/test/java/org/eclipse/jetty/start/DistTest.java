@@ -69,7 +69,7 @@ public class DistTest
     @Test
     public void testLikeDistro_SetupHome() throws Exception
     {
-        Path basePath = testdir.getEmptyDir().toPath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
@@ -81,7 +81,7 @@ public class DistTest
     @Test
     public void testAddJstl() throws Exception
     {
-        Path basePath = testdir.getEmptyDir().toPath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-start=jstl");
@@ -116,7 +116,7 @@ public class DistTest
     @Test
     public void testReAddServerModule() throws Exception
     {
-        Path basePath = testdir.getEmptyDir().toPath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-startd=http");
@@ -146,7 +146,7 @@ public class DistTest
     @Test
     public void testReAddServerViaHttpModule() throws Exception
     {
-        Path basePath = testdir.getEmptyDir().toPath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-startd=http");
@@ -176,7 +176,7 @@ public class DistTest
     @Test
     public void testReAddHttpThenDeployViaStartD() throws Exception
     {
-        Path basePath = testdir.getEmptyDir().toPath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-start=http");
@@ -199,7 +199,7 @@ public class DistTest
     @Ignore("See https://bugs.eclipse.org/451973")
     public void testLikeDistro_SetupDemoBase() throws Exception
     {
-        Path basePath = testdir.getEmptyDir().toPath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 

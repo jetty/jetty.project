@@ -54,8 +54,7 @@ public class ReloadedSessionMissingClassTest
         Resource.setDefaultUseCaches(false);
         String contextPath = "/foo";
 
-        File unpackedWarDir = testdir.getDir();
-        testdir.ensureEmpty();
+        File unpackedWarDir = testdir.getEmptyPathDir().toFile();
 
         File webInfDir = new File (unpackedWarDir, "WEB-INF");
         webInfDir.mkdir();

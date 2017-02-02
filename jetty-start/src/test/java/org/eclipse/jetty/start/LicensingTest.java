@@ -21,10 +21,11 @@ package org.eclipse.jetty.start;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,11 +47,11 @@ public class LicensingTest
     @Rule
     public SystemExitAsException exitrule = new SystemExitAsException();
 
-    private String assertFileExists(File basePath, String name) throws IOException
+    private String assertFileExists(Path basePath, String name) throws IOException
     {
-        File file = new File(basePath, OS.separators(name));
-        FS.exists(file.toPath());
-        return IO.readToString(file);
+        Path file = basePath.resolve(OS.separators(name));
+        FS.exists(file);
+        return IO.readToString(file.toFile());
     }
 
     private void execMain(List<String> cmds) throws Exception
@@ -64,12 +65,12 @@ public class LicensingTest
         main.start(startArgs);
     }
 
-    public List<String> getBaseCommandLine(File basePath)
+    public List<String> getBaseCommandLine(Path basePath)
     {
         List<String> cmds = new ArrayList<String>();
         cmds.add("-Djava.io.tmpdir=" + MavenTestingUtils.getTargetDir().getAbsolutePath());
         cmds.add("-Djetty.home=" + MavenTestingUtils.getTestResourceDir("dist-home").getAbsolutePath());
-        cmds.add("-Djetty.base=" + basePath.getAbsolutePath());
+        cmds.add("-Djetty.base=" + basePath.toString());
         cmds.add("--testing-mode");
 
         return cmds;
@@ -78,7 +79,7 @@ public class LicensingTest
     @Test
     public void testAdd_NoLicensed() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
@@ -90,7 +91,7 @@ public class LicensingTest
     @Test
     public void testAdd_CDI_Licensed() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
@@ -103,7 +104,7 @@ public class LicensingTest
     @Test
     public void testAdd_HTTP2_Licensed() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
@@ -119,7 +120,7 @@ public class LicensingTest
     @Test
     public void testAdd_Http_Http2_Then_Deploy() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
@@ -144,7 +145,7 @@ public class LicensingTest
     @Test
     public void testCreate_HTTP2_Licensed() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
@@ -152,7 +153,7 @@ public class LicensingTest
         cmds.add("--dry-run");
         
         StringReader startIni = new StringReader("--module=http2\n");
-        try (FileWriter writer = new FileWriter(new File(basePath,"start.ini")))
+        try (BufferedWriter writer = Files.newBufferedWriter(basePath.resolve("start.ini")))
         {
             IO.copy(startIni,writer);
         }
@@ -163,7 +164,7 @@ public class LicensingTest
     @Test
     public void testCreate_CDI_Licensed() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
@@ -171,7 +172,7 @@ public class LicensingTest
         cmds.add("--create-files");
 
         StringReader startIni = new StringReader("--module=cdi\n");
-        try (FileWriter writer = new FileWriter(new File(basePath,"start.ini")))
+        try (BufferedWriter writer = Files.newBufferedWriter(basePath.resolve("start.ini")))
         {
             IO.copy(startIni,writer);
         }

@@ -105,7 +105,7 @@ public class GzipDefaultNoRecompressTest
     private void copyTestFileToServer(String testFilename) throws IOException
     {
         File testFile = MavenTestingUtils.getTestResourceFile(testFilename);
-        File outFile = testingdir.getFile(testFilename);
+        File outFile = testingdir.getPathFile(testFilename).toFile();
         IO.copy(testFile,outFile);
     }
 }

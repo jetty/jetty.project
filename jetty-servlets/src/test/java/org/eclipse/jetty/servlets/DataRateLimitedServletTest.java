@@ -66,7 +66,7 @@ public class DataRateLimitedServletTest
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
         
-        File baseResourceDir = testdir.getEmptyDir();
+        File baseResourceDir = testdir.getEmptyPathDir().toFile();
         // Use resolved real path for Windows and OSX
         Path baseResourcePath = baseResourceDir.toPath().toRealPath();
         
@@ -91,7 +91,7 @@ public class DataRateLimitedServletTest
     @Test
     public void testStream() throws Exception
     {
-        File content = testdir.getFile("content.txt");
+        File content = testdir.getPathFile("content.txt").toFile();
         String[] results=new String[10];
         try(OutputStream out = new FileOutputStream(content);)
         {

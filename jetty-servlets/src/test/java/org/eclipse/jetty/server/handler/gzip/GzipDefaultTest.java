@@ -39,7 +39,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.GzipHttpContent;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -159,7 +158,7 @@ public class GzipDefaultTest
 
             String content = tester.readResponse(response);
             assertThat("Response content size",content.length(),is(filesize));
-            String expectedContent = IO.readToString(testingdir.getFile("file.txt"));
+            String expectedContent = IO.readToString(testingdir.getPathFile("file.txt").toFile());
             assertThat("Response content",content,is(expectedContent));
         }
         finally
@@ -217,7 +216,7 @@ public class GzipDefaultTest
 
             String content = tester.readResponse(response);
             assertThat("Response content size",content.length(),is(0));
-            String expectedContent = IO.readToString(testingdir.getFile("empty.txt"));
+            String expectedContent = IO.readToString(testingdir.getPathFile("empty.txt").toFile());
             assertThat("Response content",content,is(expectedContent));
         }
         finally
@@ -738,7 +737,7 @@ public class GzipDefaultTest
                 assertThat("ETag",response.get("ETAG"),startsWith("W/"));
             }
 
-            File serverFile = testingdir.getFile(filename);
+            File serverFile = testingdir.getPathFile(filename).toFile();
             String expectedResponse = IO.readToString(serverFile);
 
             String actual = tester.readResponse(response);
