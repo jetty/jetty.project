@@ -25,7 +25,9 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
+import java.net.HttpURLConnection;
 import java.net.URI;
 
 import javax.management.MBeanServerConnection;
@@ -34,9 +36,12 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.eclipse.jetty.jmx.ConnectorServer;
+import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.SimpleRequest;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
@@ -138,8 +143,13 @@ public class JmxIT
     public void testBasic() throws Exception
     {
         URI serverURI = new URI("http://localhost:"+String.valueOf(__port)+"/jmx-webapp/");
-        SimpleRequest req = new SimpleRequest(serverURI);
-        assertThat(req.getString("ping"),startsWith("Servlet Pong at "));
+        HttpURLConnection http = (HttpURLConnection) serverURI.resolve("ping").toURL().openConnection();
+        assertThat("http response", http.getResponseCode(), is(200));
+        try(InputStream inputStream = http.getInputStream())
+        {
+            String resp = IO.toString(inputStream);
+            assertThat(resp,startsWith("Servlet Pong at "));
+        }
     }
     
     @Test

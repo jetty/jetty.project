@@ -712,6 +712,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, _config.isUseDirectByteBuffers());
                         continue;
                     }
+                    case NEED_CHUNK_TRAILER:
+                    {
+                        if (_chunk!=null)
+                            _bufferPool.release(_chunk);
+                        chunk = _chunk = _bufferPool.acquire(_config.getResponseHeaderSize(), _config.isUseDirectByteBuffers());
+                        continue;
+                    }
                     case FLUSH:
                     {
                         // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content

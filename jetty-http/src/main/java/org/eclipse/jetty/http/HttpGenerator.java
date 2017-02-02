@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -55,7 +56,7 @@ public class HttpGenerator
 
     // states
     public enum State { START, COMMITTED, COMPLETING, COMPLETING_1XX, END }
-    public enum Result { NEED_CHUNK,NEED_INFO,NEED_HEADER,FLUSH,CONTINUE,SHUTDOWN_OUT,DONE}
+    public enum Result { NEED_CHUNK,NEED_INFO,NEED_HEADER,NEED_CHUNK_TRAILER, FLUSH,CONTINUE,SHUTDOWN_OUT,DONE}
 
     // other statics
     public static final int CHUNK_SIZE = 12;
@@ -66,6 +67,7 @@ public class HttpGenerator
     private long _contentPrepared = 0;
     private boolean _noContentResponse = false;
     private Boolean _persistent = null;
+    private Supplier<HttpFields> _trailers = null; 
 
     private final int _send;
     private final static int SEND_SERVER = 0x01;
@@ -111,6 +113,7 @@ public class HttpGenerator
         _persistent = null;
         _contentPrepared = 0;
         _needCRLF = false;
+        _trailers = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -278,52 +281,12 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                int len = BufferUtil.length(content);
-
-                if (len>0)
-                {
-                    // Do we need a chunk buffer?
-                    if (isChunking())
-                    {
-                        // Do we need a chunk buffer?
-                        if (chunk==null)
-                            return Result.NEED_CHUNK;
-                        BufferUtil.clearToFill(chunk);
-                        prepareChunk(chunk,len);
-                        BufferUtil.flipToFlush(chunk,0);
-                    }
-                    _contentPrepared+=len;
-                }
-
-                if (last)
-                    _state=State.COMPLETING;
-
-                return len>0?Result.FLUSH:Result.CONTINUE;
+                return committed(chunk,content,last);
             }
 
             case COMPLETING:
             {
-                if (BufferUtil.hasContent(content))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("discarding content in COMPLETING");
-                    BufferUtil.clear(content);
-                }
-
-                if (isChunking())
-                {
-                    // Do we need a chunk buffer?
-                    if (chunk==null)
-                        return Result.NEED_CHUNK;
-                    BufferUtil.clearToFill(chunk);
-                    prepareChunk(chunk,0);
-                    BufferUtil.flipToFlush(chunk,0);
-                    _endOfContent=EndOfContent.UNKNOWN_CONTENT;
-                    return Result.FLUSH;
-                }
-
-                _state=State.END;
-               return Boolean.TRUE.equals(_persistent)?Result.DONE:Result.SHUTDOWN_OUT;
+                return completing(chunk,content);
             }
 
             case END:
@@ -340,7 +303,82 @@ public class HttpGenerator
         }
     }
 
+    private Result committed( ByteBuffer chunk, ByteBuffer content, boolean last)
+    {
+        int len = BufferUtil.length(content);
+
+        // handle the content.
+        if (len>0)
+        {
+            if (isChunking())
+            {
+                if (chunk==null)
+                    return Result.NEED_CHUNK;
+                BufferUtil.clearToFill(chunk);
+                prepareChunk(chunk,len);
+                BufferUtil.flipToFlush(chunk,0);
+            }
+            _contentPrepared+=len;
+        }
+
+        if (last)
+        {
+            _state=State.COMPLETING;
+            return len>0?Result.FLUSH:Result.CONTINUE;
+        }
+        return len>0?Result.FLUSH:Result.DONE;
+    }
+    
+    private Result completing( ByteBuffer chunk, ByteBuffer content)
+    {
+        if (BufferUtil.hasContent(content))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("discarding content in COMPLETING");
+            BufferUtil.clear(content);
+        }
+
+        if (isChunking())
+        {
+            if (_trailers!=null)
+            {
+                // Do we need a chunk buffer?
+                if (chunk==null || chunk.capacity()<=CHUNK_SIZE)
+                    return Result.NEED_CHUNK_TRAILER;
+                
+                HttpFields trailers = _trailers.get();
+
+                if (trailers!=null)
+                {
+                    // Write the last chunk
+                    BufferUtil.clearToFill(chunk);
+                    generateTrailers(chunk,trailers);
+                    BufferUtil.flipToFlush(chunk,0);
+                    _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+                    return Result.FLUSH;
+                }
+            }
+
+            // Do we need a chunk buffer?
+            if (chunk==null)
+                return Result.NEED_CHUNK;
+
+            // Write the last chunk
+            BufferUtil.clearToFill(chunk);
+            prepareChunk(chunk,0);
+            BufferUtil.flipToFlush(chunk,0);
+            _endOfContent=EndOfContent.UNKNOWN_CONTENT;
+            return Result.FLUSH;   
+        }
+
+        _state=State.END;
+       return Boolean.TRUE.equals(_persistent)?Result.DONE:Result.SHUTDOWN_OUT;
+
+    }
+    
+    
     /* ------------------------------------------------------------ */
+    @Deprecated
     public Result generateResponse(MetaData.Response info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
         return generateResponse(info,false,header,chunk,content,last);
@@ -386,7 +424,7 @@ public class HttpGenerator
                 // prepare the header
                 int pos=BufferUtil.flipToFill(header);
                 try
-                {
+                {   
                     // generate ResponseLine
                     generateResponseLine(info,header);
 
@@ -442,29 +480,7 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                int len = BufferUtil.length(content);
-
-                // handle the content.
-                if (len>0)
-                {
-                    if (isChunking())
-                    {
-                        if (chunk==null)
-                            return Result.NEED_CHUNK;
-                        BufferUtil.clearToFill(chunk);
-                        prepareChunk(chunk,len);
-                        BufferUtil.flipToFlush(chunk,0);
-                    }
-                    _contentPrepared+=len;
-                }
-
-                if (last)
-                {
-                    _state=State.COMPLETING;
-                    return len>0?Result.FLUSH:Result.CONTINUE;
-                }
-                return len>0?Result.FLUSH:Result.DONE;
-
+                return committed(chunk,content,last);
             }
 
             case COMPLETING_1XX:
@@ -475,30 +491,7 @@ public class HttpGenerator
 
             case COMPLETING:
             {
-                if (BufferUtil.hasContent(content))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("discarding content in COMPLETING");
-                    BufferUtil.clear(content);
-                }
-
-                if (isChunking())
-                {
-                    // Do we need a chunk buffer?
-                    if (chunk==null)
-                        return Result.NEED_CHUNK;
-
-                    // Write the last chunk
-                    BufferUtil.clearToFill(chunk);
-                    prepareChunk(chunk,0);
-                    BufferUtil.flipToFlush(chunk,0);
-                    _endOfContent=EndOfContent.UNKNOWN_CONTENT;
-                    return Result.FLUSH;
-                }
-
-                _state=State.END;
-
-               return Boolean.TRUE.equals(_persistent)?Result.DONE:Result.SHUTDOWN_OUT;
+                return completing(chunk,content);
             }
 
             case END:
@@ -534,6 +527,30 @@ public class HttpGenerator
             chunk.put(LAST_CHUNK);
             _needCRLF=false;
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void generateTrailers(ByteBuffer buffer, HttpFields trailer)
+    {
+        // if we need CRLF add this to header
+        if (_needCRLF)
+            BufferUtil.putCRLF(buffer);
+
+        // Add the chunk size to the header
+        buffer.put(ZERO_CHUNK);
+
+        int n=trailer.size();
+        for (int f=0;f<n;f++)
+        {
+            HttpField field = trailer.getField(f);
+            String v = field.getValue();
+            if (v==null || v.length()==0)
+                continue; // rfc7230 does not allow no value
+
+            putTo(field,buffer);
+        }
+
+        BufferUtil.putCRLF(buffer);
     }
 
     /* ------------------------------------------------------------ */
@@ -614,7 +631,8 @@ public class HttpGenerator
         HttpField transfer_encoding=null;
         boolean http11 = info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
-        boolean chunked_hint = false;
+        _trailers = http11?info.getTrailerSupplier():null;
+        boolean chunked_hint = _trailers!=null;
         boolean content_type = false;
         long content_length = info.getContentLength();
         boolean content_length_field = false;
@@ -697,7 +715,7 @@ public class HttpGenerator
         }
  
         // Can we work out the content length?
-        if (last && content_length<0)
+        if (last && content_length<0 && _trailers==null)
             content_length = _contentPrepared+BufferUtil.length(content);
         
         // Calculate how to end _content and connection, _content length and transfer encoding
@@ -840,6 +858,7 @@ public class HttpGenerator
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     // common _content
+    private static final byte[] ZERO_CHUNK =    { (byte) '0', (byte) '\015', (byte) '\012'};
     private static final byte[] LAST_CHUNK =    { (byte) '0', (byte) '\015', (byte) '\012', (byte) '\015', (byte) '\012'};
     private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
     private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");

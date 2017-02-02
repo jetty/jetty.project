@@ -335,7 +335,7 @@ public class FileSystemResourceTest
     public void testLastModified() throws Exception
     {
         Path dir = testdir.getPath().normalize().toRealPath();
-        File file = testdir.getFile("foo");
+        File file = testdir.getPathFile("foo").toFile();
         file.createNewFile();
 
         long expected = file.lastModified();

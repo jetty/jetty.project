@@ -67,7 +67,7 @@ public class DefaultServletRangesTest
 
 
         testdir.ensureEmpty();
-        File resBase = testdir.getFile("docroot");
+        File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
         File data = new File(resBase, "data.txt");
         createFile(data, DATA);

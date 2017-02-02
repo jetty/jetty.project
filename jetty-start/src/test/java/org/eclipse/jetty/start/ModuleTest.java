@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
@@ -44,16 +45,16 @@ public class ModuleTest
     public void testLoadMain() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyPathDir().toFile();
+        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path baseDir = testdir.getEmptyPathDir();
         String cmdLine[] = new String[] {"jetty.version=TEST"};
         
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
         
         // Initialize
         BaseHome basehome = new BaseHome(config);

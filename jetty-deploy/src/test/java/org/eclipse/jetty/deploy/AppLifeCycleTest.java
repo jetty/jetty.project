@@ -176,7 +176,7 @@ public class AppLifeCycleTest
         AppLifeCycle lifecycle = new AppLifeCycle();
         List<String> expected = new ArrayList<String>();
 
-        File outputDir = testdir.getEmptyDir();
+        File outputDir = testdir.getEmptyPathDir().toFile();
 
         // Modify graph to add new 'staging' -> 'staged' between 'deployed' and 'started'
         GraphOutputDot.write(lifecycle,new File(outputDir,"multiple-1.dot")); // before change

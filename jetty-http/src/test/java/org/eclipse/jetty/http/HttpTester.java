@@ -21,14 +21,13 @@ package org.eclipse.jetty.http;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 
@@ -88,7 +87,7 @@ public class HttpTester
         parser.parseNext(request);
         return r;
     }
-
+    
     public static Response parseResponse(String response)
     {
         Response r=new Response();
@@ -102,6 +101,17 @@ public class HttpTester
         Response r=new Response();
         HttpParser parser =new HttpParser(r);
         parser.parseNext(response);
+        return r;
+    }
+    
+    public static Response parseResponse(InputStream responseStream) throws IOException
+    {
+        ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
+        IO.copy(responseStream, contentStream);
+        
+        Response r=new Response();
+        HttpParser parser =new HttpParser(r);
+        parser.parseNext(ByteBuffer.wrap(contentStream.toByteArray()));
         return r;
     }
 
@@ -402,6 +412,10 @@ public class HttpTester
 
                         case NEED_CHUNK:
                             chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                            continue;
+
+                        case NEED_CHUNK_TRAILER:
+                            chunk=BufferUtil.allocate(8192);
                             continue;
 
                         case NEED_INFO:

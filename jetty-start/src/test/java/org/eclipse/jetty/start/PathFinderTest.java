@@ -42,8 +42,7 @@ public class PathFinderTest
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         Path homePath = homeDir.toPath().toAbsolutePath();
-        File baseDir = testdir.getEmptyDir();
-        Path basePath = baseDir.toPath().toAbsolutePath();
+        Path basePath = testdir.getEmptyPathDir();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher("glob:**/*.ini");
@@ -69,8 +68,7 @@ public class PathFinderTest
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         Path homePath = homeDir.toPath().toAbsolutePath();
-        File baseDir = testdir.getEmptyDir();
-        Path basePath = baseDir.toPath().toAbsolutePath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> expected = new ArrayList<>();
         File modulesDir = new File(homeDir,"modules");

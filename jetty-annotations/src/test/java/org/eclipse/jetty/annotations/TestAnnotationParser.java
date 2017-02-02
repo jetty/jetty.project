@@ -171,7 +171,7 @@ public class TestAnnotationParser
         // Intentionally using a base director name that starts with a "."
         // This mimics what you see in jenkins, hudson, hadoop, solr, camel, and selenium for their 
         // installed and/or managed webapps
-        File basedir = testdir.getFile(".base/workspace/classes");
+        File basedir = testdir.getPathFile(".base/workspace/classes").toFile();
         FS.ensureEmpty(basedir);
 
         // Copy in class that is known to have annotations.

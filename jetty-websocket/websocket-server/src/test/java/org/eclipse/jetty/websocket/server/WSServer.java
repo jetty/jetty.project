@@ -70,7 +70,7 @@ public class WSServer
 
     public WSServer(TestingDir testdir, String contextName)
     {
-        this(testdir.getDir(),contextName);
+        this(testdir.getPath().toFile(),contextName);
     }
 
     public WSServer(File testdir, String contextName)
