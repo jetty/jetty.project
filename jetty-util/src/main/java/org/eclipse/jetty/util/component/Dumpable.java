@@ -29,5 +29,7 @@ public interface Dumpable
     @ManagedOperation(value="Dump the nested Object state as a String", impact="INFO")
     String dump();
     
-    void dump(Appendable out,String indent) throws IOException;
+    default void dump(Appendable out,String indent) throws IOException {
+        out.append(toString()).append(System.lineSeparator());
+    }
 }

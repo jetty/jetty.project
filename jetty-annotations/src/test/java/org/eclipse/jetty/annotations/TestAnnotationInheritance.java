@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
@@ -47,7 +47,7 @@ public class TestAnnotationInheritance
     List<String> classNames = new ArrayList<String>();
   
     
-    class SampleHandler extends AbstractHandler
+    class SampleHandler implements Handler
     {
         public final List<String> annotatedClassNames = new ArrayList<String>();
         public final List<String> annotatedMethods = new ArrayList<String>();

@@ -20,7 +20,7 @@
 package org.eclipse.jetty.annotations;
 
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
@@ -33,7 +33,7 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
  *  method level. The specified annotation is derived from an <code>&#064;HandlesTypes</code> on
  *  a ServletContainerInitializer class.
  */
-public class ContainerInitializerAnnotationHandler extends AbstractHandler
+public class ContainerInitializerAnnotationHandler implements Handler
 {
     final ContainerInitializer _initializer;
     final Class _annotation;

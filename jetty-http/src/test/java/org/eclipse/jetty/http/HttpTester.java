@@ -321,11 +321,6 @@ public class HttpTester
         }
 
         @Override
-        public void earlyEOF()
-        {
-        }
-
-        @Override
         public boolean content(ByteBuffer ref)
         {
             try
@@ -337,12 +332,6 @@ public class HttpTester
                 throw new RuntimeException(e);
             }
             return false;
-        }
-
-        @Override
-        public void badMessage(int status, String reason)
-        {
-            throw new RuntimeException(reason);
         }
 
         public ByteBuffer generate()
@@ -410,12 +399,6 @@ public class HttpTester
 
         }
         abstract public MetaData getInfo();
-
-        @Override
-        public int getHeaderCacheSize()
-        {
-            return 0;
-        }
 
     }
 

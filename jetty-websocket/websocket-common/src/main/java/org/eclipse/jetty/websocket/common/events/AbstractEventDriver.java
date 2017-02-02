@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -197,24 +196,6 @@ public abstract class AbstractEventDriver extends AbstractLifeCycle implements I
         }
 
         appendMessage(buffer,fin);
-    }
-
-    @Override
-    public void onPong(ByteBuffer buffer)
-    {
-        /* TODO: provide annotation in future */
-    }
-
-    @Override
-    public void onPing(ByteBuffer buffer)
-    {
-        /* TODO: provide annotation in future */
-    }
-
-    @Override
-    public BatchMode getBatchMode()
-    {
-        return null;
     }
 
     @Override

@@ -27,7 +27,6 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.events.AbstractEventDriver;
@@ -81,12 +80,6 @@ public abstract class AbstractJsrEventDriver extends AbstractEventDriver
     }
 
     protected abstract void onClose(CloseReason closereason);
-
-    @Override
-    public void onFrame(Frame frame)
-    {
-        /* Ignored, not supported by JSR-356 */
-    }
 
     @Override
     public final void openSession(WebSocketSession session)

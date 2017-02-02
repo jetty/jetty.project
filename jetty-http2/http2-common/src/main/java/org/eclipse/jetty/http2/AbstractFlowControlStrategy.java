@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -234,11 +233,5 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     public String dump()
     {
         return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(toString()).append(System.lineSeparator());
     }
 }

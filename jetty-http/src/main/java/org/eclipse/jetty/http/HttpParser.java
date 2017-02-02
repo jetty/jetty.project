@@ -1767,19 +1767,27 @@ public class HttpParser
         /** Called to signal that an EOF was received unexpectedly
          * during the parsing of a HTTP message
          */
-        public void earlyEOF();
+        public default void earlyEOF()
+        {
+        }
 
         /* ------------------------------------------------------------ */
         /** Called to signal that a bad HTTP message has been received.
          * @param status The bad status to send
          * @param reason The textual reason for badness
          */
-        public void badMessage(int status, String reason);
+        public default void badMessage(int status, String reason)
+        {
+            throw new RuntimeException(reason);
+        }
 
         /* ------------------------------------------------------------ */
         /** @return the size in bytes of the per parser header cache
          */
-        public int getHeaderCacheSize();
+        public default int getHeaderCacheSize()
+        {
+            return 0;
+        }
     }
 
     /* ------------------------------------------------------------------------------- */

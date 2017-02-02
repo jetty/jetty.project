@@ -93,7 +93,13 @@ public interface Logger
      * @param msg the formatting string
      * @param value long value
      */
-    public void debug(String msg, long value);
+    public default void debug(String msg, long arg)
+    {
+        if (isDebugEnabled())
+        {
+            debug(msg,new Object[] { new Long(arg) });
+        }
+    }
 
     /**
      * Logs the given Throwable information at debug level

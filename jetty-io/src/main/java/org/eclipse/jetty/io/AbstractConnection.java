@@ -231,36 +231,6 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
-    public boolean onIdleExpired()
-    {
-        return true;
-    }
-
-    @Override
-    public int getMessagesIn()
-    {
-        return -1;
-    }
-
-    @Override
-    public int getMessagesOut()
-    {
-        return -1;
-    }
-
-    @Override
-    public long getBytesIn()
-    {
-        return -1;
-    }
-
-    @Override
-    public long getBytesOut()
-    {
-        return -1;
-    }
-
-    @Override
     public long getCreatedTimeStamp()
     {
         return _created;

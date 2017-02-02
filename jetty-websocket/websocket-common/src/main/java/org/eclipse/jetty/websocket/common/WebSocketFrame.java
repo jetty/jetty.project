@@ -236,12 +236,6 @@ public abstract class WebSocketFrame implements Frame
     }
 
     @Override
-    public Type getType()
-    {
-        return Type.from(getOpCode());
-    }
-
-    @Override
     public int hashCode()
     {
         final int prime = 31;

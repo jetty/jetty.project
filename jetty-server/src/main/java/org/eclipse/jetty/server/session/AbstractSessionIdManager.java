@@ -264,17 +264,5 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         return clusterId;
     }
 
-    /** Get the session ID without any worker ID.
-     *
-     * @param nodeId the node id
-     * @return sessionId without any worker ID.
-     */
-    @Override
-    public String getClusterId(String nodeId)
-    {
-        int dot=nodeId.lastIndexOf('.');
-        return (dot>0)?nodeId.substring(0,dot):nodeId;
-    }
-
 
 }

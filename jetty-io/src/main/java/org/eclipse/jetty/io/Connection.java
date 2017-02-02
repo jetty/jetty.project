@@ -84,12 +84,26 @@ public interface Connection extends Closeable
      * @return true to let the EndPoint handle the idle timeout,
      *         false to tell the EndPoint to halt the handling of the idle timeout.
      */
-    public boolean onIdleExpired();
+    public default boolean onIdleExpired() {
+        return true;
+    }
 
-    public int getMessagesIn();
-    public int getMessagesOut();
-    public long getBytesIn();
-    public long getBytesOut();
+    public default int getMessagesIn()
+    {
+        return -1;
+    }
+    public default int getMessagesOut()
+    {
+        return -1;
+    }
+    public default long getBytesIn()
+    {
+        return -1;
+    }
+    public default long getBytesOut()
+    {
+        return -1;
+    }
     public long getCreatedTimeStamp();
 
     public interface UpgradeFrom extends Connection

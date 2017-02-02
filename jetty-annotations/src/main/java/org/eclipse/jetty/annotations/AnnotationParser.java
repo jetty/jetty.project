@@ -31,6 +31,9 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
+import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
@@ -298,58 +301,32 @@ public class AnnotationParser
      */
     public static interface Handler
     {
-        public void handle(ClassInfo classInfo);
-        public void handle(MethodInfo methodInfo);
-        public void handle (FieldInfo fieldInfo);
-        public void handle (ClassInfo info, String annotationName);
-        public void handle (MethodInfo info, String annotationName);
-        public void handle (FieldInfo info, String annotationName);
-    }
-    
-    /**
-     * AbstractHandler
-     *
-     * Convenience base class to provide no-ops for all Handler methods.
-     */
-    public static abstract class AbstractHandler implements Handler
-    {
-
-        @Override
-        public void handle(ClassInfo classInfo)
+        public default void handle(ClassInfo classInfo)
         {
            //no-op
         }
-
-        @Override
-        public void handle(MethodInfo methodInfo)
+        public default void handle(MethodInfo methodInfo)
         {
             // no-op           
         }
-
-        @Override
-        public void handle(FieldInfo fieldInfo)
+        public default void handle (FieldInfo fieldInfo)
         {
             // no-op 
         }
-
-        @Override
-        public void handle(ClassInfo info, String annotationName)
+        public default void handle (ClassInfo info, String annotationName)
         {
             // no-op 
         }
-
-        @Override
-        public void handle(MethodInfo info, String annotationName)
+        public default void handle (MethodInfo info, String annotationName)
         {
             // no-op            
         }
-
-        @Override
-        public void handle(FieldInfo info, String annotationName)
+        public default void handle (FieldInfo info, String annotationName)
         {
            // no-op
-        }        
+        }
     }
+    
 
     
     
