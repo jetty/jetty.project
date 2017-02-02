@@ -404,6 +404,10 @@ public class HttpTester
                             chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
                             continue;
 
+                        case NEED_CHUNK_TRAILER:
+                            chunk=BufferUtil.allocate(8192);
+                            continue;
+
                         case NEED_INFO:
                             throw new IllegalStateException();
 

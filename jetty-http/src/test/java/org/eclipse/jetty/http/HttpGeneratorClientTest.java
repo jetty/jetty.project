@@ -69,7 +69,7 @@ public class HttpGeneratorClientTest
         String out = BufferUtil.toString(header);
         BufferUtil.clear(header);
 
-        result=gen.generateResponse(null,null,null,null, false);
+        result=gen.generateResponse(null,false,null,null, null, false);
         Assert.assertEquals(HttpGenerator.Result.DONE, result);
         Assert.assertEquals(HttpGenerator.State.END, gen.getState());
         Assert.assertTrue(!gen.isChunking());
@@ -106,7 +106,7 @@ public class HttpGeneratorClientTest
         String out = BufferUtil.toString(header);
         BufferUtil.clear(header);
 
-        result=gen.generateResponse(null,null,null,null, false);
+        result=gen.generateResponse(null,false,null,null, null, false);
         Assert.assertEquals(HttpGenerator.Result.DONE, result);
         Assert.assertEquals(HttpGenerator.State.END, gen.getState());
         Assert.assertTrue(!gen.isChunking());
@@ -146,7 +146,7 @@ public class HttpGeneratorClientTest
         out+=BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result=gen.generateResponse(null,null,null,null, false);
+        result=gen.generateResponse(null,false,null,null, null, false);
         Assert.assertEquals(HttpGenerator.Result.DONE, result);
         Assert.assertEquals(HttpGenerator.State.END, gen.getState());
         Assert.assertTrue(!gen.isChunking());
@@ -205,19 +205,19 @@ public class HttpGeneratorClientTest
         out+=BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result=gen.generateResponse(null,null,chunk,null, true);
+        result=gen.generateResponse(null,false,null,chunk, null, true);
         Assert.assertEquals(HttpGenerator.Result.CONTINUE, result);
         Assert.assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         Assert.assertTrue(gen.isChunking());
 
-        result=gen.generateResponse(null,null,chunk,null, true);
+        result=gen.generateResponse(null,false,null,chunk, null, true);
         Assert.assertEquals(HttpGenerator.Result.FLUSH, result);
         Assert.assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         out+=BufferUtil.toString(chunk);
         BufferUtil.clear(chunk);
         Assert.assertTrue(!gen.isChunking());
 
-        result=gen.generateResponse(null,null,chunk,null, true);
+        result=gen.generateResponse(null,false,null,chunk, null, true);
         Assert.assertEquals(HttpGenerator.Result.DONE, result);
         Assert.assertEquals(HttpGenerator.State.END, gen.getState());
 
@@ -271,12 +271,12 @@ public class HttpGeneratorClientTest
         out+=BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result=gen.generateResponse(null,null,null,null, true);
+        result=gen.generateResponse(null,false,null,null, null, true);
         Assert.assertEquals(HttpGenerator.Result.CONTINUE, result);
         Assert.assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         Assert.assertTrue(!gen.isChunking());
 
-        result=gen.generateResponse(null,null,null,null, true);
+        result=gen.generateResponse(null,false,null,null, null, true);
         Assert.assertEquals(HttpGenerator.Result.DONE, result);
         Assert.assertEquals(HttpGenerator.State.END, gen.getState());
         out+=BufferUtil.toString(chunk);

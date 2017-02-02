@@ -164,6 +164,11 @@ public class HttpGeneratorServerHTTPTest
                         chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
                         continue;
 
+                    case NEED_CHUNK_TRAILER:
+                        chunk = BufferUtil.allocate(2048);
+                        continue;
+
+
                     case FLUSH:
                         if (BufferUtil.hasContent(header))
                         {
