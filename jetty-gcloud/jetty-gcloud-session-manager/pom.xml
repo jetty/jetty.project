@@ -20,6 +20,17 @@
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-datastore</artifactId>
       <version>${gcloud.version}</version>
+      <exclusions>
+        <exclusion>
+	  <groupId>javax.servlet</groupId>
+	  <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+	  <groupId>javax.servlet</groupId>
+	  <artifactId>javax.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
+
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -69,6 +80,50 @@
                  </execution>
             </executions>
       </plugin>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+	  <version>3.0.0</version>
+	  <executions>
+	      <execution>
+	          <id>build-deps-file</id>
+		  <phase>generate-resources</phase>
+                  <goals>
+                      <goal>list</goal>
+                  </goals>
+                  <configuration>
+		    <appendOutput>false</appendOutput>
+		    <outputFile>${project.build.directory}/deps.txt</outputFile>
+		    <sort>true</sort>
+		    <prependGroupId>true</prependGroupId>
+		    <includeScope>runtime</includeScope>
+                  </configuration>
+	      </execution>
+	  </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>process-deps</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <replaceregexp file="${project.build.directory}/deps.txt"
+                               match=" *(.*):(.*):jar:(.*):[a-z]*"
+                               replace="maven://\1/\2/\3|lib/gcloud/\2-\3.jar"
+                               byline="true"
+		/>
+              </tasks>
+            </configuration>
+	  </execution>
+         </executions>
+      </plugin>
+
    </plugins>
   </build>
 
