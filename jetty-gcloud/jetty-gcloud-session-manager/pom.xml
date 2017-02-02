@@ -118,12 +118,48 @@
                                replace="maven://\1/\2/\3|lib/gcloud/\2-\3.jar"
                                byline="true"
 		/>
+                <replaceregexp file="${project.build.directory}/deps.txt"
+                               match="The following files have been resolved:"
+                               replace=""
+                />
               </tasks>
             </configuration>
 	  </execution>
+           <execution>
+            <id>process-mod</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <concat destfile="${project.build.directory}/gcloud-datastore.mod">
+                  <fileset file="src/main/config-template/modules/gcloud-datastore.mod"/>
+                  <fileset file="${project.build.directory}/deps.txt"/>
+                </concat>
+              </tasks>
+            </configuration>
+          </execution>
+
          </executions>
       </plugin>
-
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/config.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
    </plugins>
   </build>
 
