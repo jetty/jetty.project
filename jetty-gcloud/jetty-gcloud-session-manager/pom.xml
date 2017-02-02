@@ -120,7 +120,7 @@
 		/>
                 <replaceregexp file="${project.build.directory}/deps.txt"
                                match="The following files have been resolved:"
-                               replace=""
+                               replace="[files]"
                 />
               </tasks>
             </configuration>

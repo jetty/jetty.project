@@ -10,4 +10,3 @@ gcloud
 jcl-slf4j
 jul-impl
 
-[files]
