@@ -276,7 +276,7 @@ public class GzipTester
         Assert.assertThat(response.get("ETag"),Matchers.startsWith("W/"));
 
         // Assert that the decompressed contents are what we expect.
-        File serverFile = testdir.getFile(serverFilename);
+        File serverFile = testdir.getPathFile(serverFilename).toFile();
         String expected = IO.readToString(serverFile);
         String actual = null;
 
@@ -538,7 +538,7 @@ public class GzipTester
      */
     public File prepareServerFile(String filename, int filesize) throws IOException
     {
-        File dir = testdir.getDir();
+        File dir = testdir.getPath().toFile();
         File testFile = new File(dir,filename);
         // Make sure we have a uniq filename (to work around windows File.delete bug)
         int i = 0;
@@ -573,7 +573,7 @@ public class GzipTester
     public void copyTestServerFile(String filename) throws IOException
     {
         File srcFile = MavenTestingUtils.getTestResourceFile(filename);
-        File testFile = testdir.getFile(filename);
+        File testFile = testdir.getPathFile(filename).toFile();
 
         IO.copy(srcFile,testFile);
     }
@@ -587,10 +587,11 @@ public class GzipTester
      */
     public void setContentServlet(Class<? extends Servlet> servletClass) throws IOException
     {
+        String resourceBase = testdir.getPath().toString();
         tester.setContextPath("/context");
-        tester.setResourceBase(testdir.getDir().getCanonicalPath());
+        tester.setResourceBase(resourceBase);
         ServletHolder servletHolder = tester.addServlet(servletClass,"/");
-        servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
+        servletHolder.setInitParameter("baseDir",resourceBase);
         servletHolder.setInitParameter("etags","true");
     }
 

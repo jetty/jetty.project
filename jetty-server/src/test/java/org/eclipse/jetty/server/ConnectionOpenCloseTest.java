@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.BufferedReader;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -33,12 +35,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -136,30 +138,32 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
             }
         });
 
-        Socket socket = new Socket("localhost", connector.getLocalPort());
-        socket.setSoTimeout((int)connector.getIdleTimeout());
-        OutputStream output = socket.getOutputStream();
-        output.write((
-                "GET / HTTP/1.1\r\n" +
-                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        output.flush();
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        SimpleHttpResponse response = httpParser.readResponse(reader);
-        Assert.assertEquals("200", response.getCode());
-
-        Assert.assertEquals(-1, reader.read());
-        socket.close();
-
-        Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
-
-        // Wait some time to see if the callbacks are called too many times
-        TimeUnit.SECONDS.sleep(1);
-
-        Assert.assertEquals(2, callbacks.get());
+        try( Socket socket = new Socket("localhost", connector.getLocalPort()) )
+        {
+            socket.setSoTimeout((int) connector.getIdleTimeout());
+            OutputStream output = socket.getOutputStream();
+            output.write((
+                    "GET / HTTP/1.1\r\n" +
+                            "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                            "Connection: close\r\n" +
+                            "\r\n").getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            
+            InputStream inputStream = socket.getInputStream();
+            HttpTester.Response response = HttpTester.parseResponse(inputStream);
+            assertThat("Status Code", response.getStatus(), is(200));
+    
+            Assert.assertEquals(-1, inputStream.read());
+            socket.close();
+    
+            Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    
+            // Wait some time to see if the callbacks are called too many times
+            TimeUnit.SECONDS.sleep(1);
+    
+            Assert.assertEquals(2, callbacks.get());
+        }
     }
 
     @Slow
@@ -217,11 +221,11 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
                 "\r\n").getBytes(StandardCharsets.UTF_8));
         output.flush();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        SimpleHttpResponse response = httpParser.readResponse(reader);
-        Assert.assertEquals("200", response.getCode());
+        InputStream inputStream = socket.getInputStream();
+        HttpTester.Response response = HttpTester.parseResponse(inputStream);
+        Assert.assertEquals(200, response.getStatus());
 
-        Assert.assertEquals(-1, reader.read());
+        Assert.assertEquals(-1, inputStream.read());
         socket.close();
 
         Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));

@@ -291,7 +291,7 @@ public class PathWatcherTest
     @Test
     public void testConfig_ShouldRecurse_0() throws IOException
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Create a few directories
         Files.createDirectories(dir.resolve("a/b/c/d"));
@@ -307,7 +307,7 @@ public class PathWatcherTest
     @Test
     public void testConfig_ShouldRecurse_1() throws IOException
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Create a few directories
         Files.createDirectories(dir.resolve("a/b/c/d"));
@@ -323,7 +323,7 @@ public class PathWatcherTest
     @Test
     public void testConfig_ShouldRecurse_2() throws IOException
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Create a few directories
         Files.createDirectories(dir.resolve("a/b/c/d"));
@@ -341,7 +341,7 @@ public class PathWatcherTest
     @Test
     public void testConfig_ShouldRecurse_3() throws IOException
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
         
         //Create some deep dirs
         Files.createDirectories(dir.resolve("a/b/c/d/e/f/g"));
@@ -361,7 +361,7 @@ public class PathWatcherTest
     @Test
     public void testRestart() throws Exception
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
         Files.createDirectories(dir.resolve("b/c"));
         Files.createFile(dir.resolve("a.txt"));
         Files.createFile(dir.resolve("b.txt"));
@@ -427,7 +427,7 @@ public class PathWatcherTest
     @Test
     public void testStartupFindFiles() throws Exception
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Files we are interested in
         Files.createFile(dir.resolve("foo.war"));
@@ -479,7 +479,7 @@ public class PathWatcherTest
     @Test
     public void testGlobPattern () throws Exception
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Files we are interested in
         Files.createFile(dir.resolve("a.txt"));
@@ -531,7 +531,7 @@ public class PathWatcherTest
     @Test
     public void testDeployFiles_Update_Delete() throws Exception
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Files we are interested in
         Files.createFile(dir.resolve("foo.war"));
@@ -592,7 +592,7 @@ public class PathWatcherTest
     @Test
     public void testDeployFiles_NewWar() throws Exception
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Files we are interested in
         Files.createFile(dir.resolve("foo.war"));
@@ -656,7 +656,7 @@ public class PathWatcherTest
     @Test
     public void testDeployFiles_NewWar_LargeSlowCopy() throws Exception
     {
-        Path dir = testdir.getEmptyDir().toPath();
+        Path dir = testdir.getEmptyPathDir();
 
         // Files we are interested in
         Files.createFile(dir.resolve("foo.war"));

@@ -35,8 +35,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -71,9 +71,9 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
         server.setHandler(new SetHandledWriteSomeDataHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code is 500", response.getStatus(), is(500));
     }
 
     private class SetHandledWriteSomeDataHandler extends ThrowExceptionOnDemandHandler
