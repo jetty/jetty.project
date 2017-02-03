@@ -418,6 +418,47 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     }
 
     @Test
+    public void testSetContentLengthFlushAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
+        server.start();
+        try
+        {
+            HttpTester.Response response = executeRequest();
+            char badChar = (char) -1;
+            String failed_body = "" + badChar + badChar + badChar;
+            assertThat("response code", response.getStatus(), is(200));
+            assertHeader(response, "content-length", "6");
+            assertThat(response.getContent(), endsWith(failed_body));
+        }
+        catch(EOFException e)
+        {
+            // possible good response
+        }
+    }
+
+    @Test
+    public void testSetContentLengthAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(false));
+        server.start();
+
+        try
+        {
+            HttpTester.Response response = executeRequest();
+            char badChar = (char) -1;
+            String failed_body = "" + badChar + badChar + badChar;
+            assertThat("response code is 200", response.getStatus(), is(200));
+            assertHeader(response, "content-length", "6");
+            assertThat(response.getContent(), endsWith(failed_body));
+        }
+        catch(EOFException e)
+        {
+            // expected
+        }
+    }
+    
+    @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytes() throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(false));
