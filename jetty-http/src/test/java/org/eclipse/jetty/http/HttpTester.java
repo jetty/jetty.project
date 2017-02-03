@@ -25,10 +25,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -59,6 +62,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpTester
 {
+    private final static Logger LOG = Log.getLogger(HttpTester.class);
+    
     private HttpTester()
     {
     }
@@ -243,6 +248,13 @@ public class HttpTester
         
         if (r.isComplete())
             return r;
+
+        String te = r.get(HttpHeader.TRANSFER_ENCODING);
+        if(te != null && te.toLowerCase(Locale.ENGLISH).contains("chunked"))
+            return r;
+        
+        LOG.info("Incomplete Response: (parser={}) {}", parser, r);
+        
         in.setHttpParser(parser);
         return null;
     }
