@@ -429,10 +429,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         try
         {
             HttpTester.Response response = executeRequest();
-            String failed_body = ""+(char)-1+(char)-1+(char)-1;
+            char badChar = (char) -1;
+            String failed_body = "" + badChar + badChar + badChar;
             assertThat("response code", response.getStatus(), is(200));
-            assertThat(response.getContent(), endsWith(failed_body));
             assertHeader(response, "content-length", "6");
+            assertThat(response.getContent(), endsWith(failed_body));
         }
         catch(EOFException e)
         {
@@ -449,10 +450,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         try
         {
             HttpTester.Response response = executeRequest();
-            String failed_body = ""+(char)-1+(char)-1+(char)-1;
+            char badChar = (char) -1;
+            String failed_body = "" + badChar + badChar + badChar;
             assertThat("response code is 200", response.getStatus(), is(200));
-            assertThat(response.getContent(), endsWith(failed_body));
             assertHeader(response, "content-length", "6");
+            assertThat(response.getContent(), endsWith(failed_body));
         }
         catch(EOFException e)
         {
