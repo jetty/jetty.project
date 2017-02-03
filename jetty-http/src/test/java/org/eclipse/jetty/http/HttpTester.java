@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -217,7 +216,17 @@ public class HttpTester
     }
     
     public static Response parseResponse(Input in) throws IOException
-    {   
+    {
+        return parseResponse(in, false);
+    }
+    
+    public static Response parsePartialResponse(Input in) throws IOException
+    {
+        return parseResponse(in, true);
+    }
+    
+    private static Response parseResponse(Input in, boolean allowIncomplete) throws IOException
+    {
         Response r;
         HttpParser parser=in.takeHttpParser();
         if (parser==null)
@@ -246,13 +255,9 @@ public class HttpTester
             }
         }
         
-        if (r.isComplete())
+        if (allowIncomplete || r.isComplete())
             return r;
 
-        String te = r.get(HttpHeader.TRANSFER_ENCODING);
-        if(te != null && te.toLowerCase(Locale.ENGLISH).contains("chunked"))
-            return r;
-        
         LOG.info("Incomplete Response: (parser={}) {}", parser, r);
         
         in.setHttpParser(parser);

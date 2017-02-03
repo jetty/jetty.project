@@ -93,7 +93,7 @@ public abstract class AbstractHttpTest
                 writer.flush();
     
                 HttpTester.Input input = HttpTester.from(socket.getInputStream());
-                HttpTester.Response response = HttpTester.parseResponse(input);
+                HttpTester.Response response = HttpTester.parsePartialResponse(input);
                 if ("HTTP/1.1".equals(httpVersion)
                         && response.get("content-length") == null
                         && response.get("transfer-encoding") == null
