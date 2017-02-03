@@ -118,7 +118,7 @@ public class HttpTester
         parser.parseNext(ByteBuffer.wrap(contentStream.toByteArray()));
         return r;
     }
-
+    
     public abstract static class Input
     {
         boolean _eof=false;
@@ -194,26 +194,40 @@ public class HttpTester
     
     public static Response parseResponse(Input in) throws IOException
     {
-        return parseResponse(in, false);
-    }
-    
-    public static Response parsePartialResponse(Input in) throws IOException
-    {
-        return parseResponse(in, true);
-    }
-    
-    private static Response parseResponse(Input in, boolean allowIncomplete) throws IOException
-    {
         Response r;
         HttpParser parser=in.takeHttpParser();
         if (parser==null)
         {
             r=new Response();
-            parser =new HttpParser(r);
+            parser = new HttpParser(r);
         }
         else
             r=(Response)parser.getHandler();
         
+        parseResponse(in, parser, r);
+    
+        if(r.isComplete())
+            return r;
+    
+        in.setHttpParser(parser);
+        return null;
+    }
+    
+    public static void parseResponse(Input in, Response response) throws IOException
+    {
+        HttpParser parser = in.takeHttpParser();
+        if (parser == null)
+        {
+            parser = new HttpParser(response);
+        }
+        parseResponse(in, parser, response);
+    
+        if (!response.isComplete())
+            in.setHttpParser(parser);
+    }
+    
+    private static void parseResponse(Input in, HttpParser parser, Response r) throws IOException
+    {
         ByteBuffer buffer = in.getBuffer();
         
         int len=0;
@@ -226,18 +240,12 @@ public class HttpTester
                 break;
         }
         
-        if (allowIncomplete || r.isComplete())
-            return r;
-
-        LOG.info("Incomplete Response: (parser={}) {}", parser, r);
-        
-        in.setHttpParser(parser);
-        return null;
+        System.out.printf("parseResponse() parser=%s%n%s%n", parser, r.toString());
     }
-
 
     public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
     {
+        boolean _earlyEOF;
         boolean _complete=false;
         ByteArrayOutputStream _content;
         HttpVersion _version=HttpVersion.HTTP_1_0;
@@ -350,8 +358,14 @@ public class HttpTester
         @Override
         public void earlyEOF()
         {
+            _earlyEOF = true;
         }
-
+    
+        public boolean isEarlyEOF()
+        {
+            return _earlyEOF;
+        }
+    
         @Override
         public boolean content(ByteBuffer ref)
         {

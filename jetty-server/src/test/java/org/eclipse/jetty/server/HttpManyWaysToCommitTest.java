@@ -21,9 +21,9 @@ package org.eclipse.jetty.server;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -423,20 +423,14 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
         server.start();
-        try
-        {
-            HttpTester.Response response = executeRequest();
-            assertThat("response code", response.getStatus(), is(200));
-            assertHeader(response, "content-length", "6");
-            byte content[] = response.getContentBytes();
-            assertThat("content bytes", content.length, is(6));
-            String contentStr = new String(content, StandardCharsets.UTF_8);
-            assertThat("content bytes as string", contentStr, is("foo"));
-        }
-        catch(EOFException e)
-        {
-            // possible good response
-        }
+        
+        HttpTester.Response response = executeRequest();
+        System.out.println(response.toString());
+        assertThat("response code", response.getStatus(), is(200));
+        assertHeader(response, "content-length", "6");
+        byte content[] = response.getContentBytes();
+        assertThat("content bytes", content.length, is(0));
+        assertTrue("response eof", response.isEarlyEOF());
     }
 
     @Test
@@ -445,20 +439,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(false));
         server.start();
 
-        try
-        {
-            HttpTester.Response response = executeRequest();
-            assertThat("response code is 200", response.getStatus(), is(200));
-            assertHeader(response, "content-length", "6");
-            byte content[] = response.getContentBytes();
-            assertThat("content bytes", content.length, is(3));
-            String contentStr = new String(content, StandardCharsets.UTF_8);
-            assertThat("content bytes as string", contentStr, is("foo"));
-        }
-        catch(EOFException e)
-        {
-            // expected
-        }
+        HttpTester.Response response = executeRequest();
+        assertThat("response has no status", response.getStatus(), is(0));
+        assertTrue("response eof", response.isEarlyEOF());
     }
     
     @Test
