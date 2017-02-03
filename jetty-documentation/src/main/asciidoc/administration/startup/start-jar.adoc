@@ -55,6 +55,7 @@ When executed `start.jar` performs the following actions:
 
 * Loads and parses all INIs found in `${jetty.base}/start.d/*.ini` as command line arguments.
 * Loads and parses `${jetty.base}/start.ini` as command line arguments.
+** Please see link:#start-vs-startd[Start.ini vs. Start.d] for more information on the difference between these.
 * Parses actual command line arguments used to execute `start.jar` itself.
 * Resolves any XML configuration files, modules, and libraries using base vs. home resolution steps:
 1.  Checks whether file exists as relative reference to `${jetty.base}.`
@@ -217,3 +218,18 @@ The time (in seconds) to wait for confirmation that the running Jetty server has
 If not specified, the stopper waits indefinitely for the server to stop.
 +
 If the time specified elapses, without a confirmation of server stop, then the `--stop` command exits with a non-zero return code.
+
+===== Advanced Commands
+
+--lib=<classpath>::
+Add arbitrary classpath entries to the the server classpath.
+
+--include-jetty-dir=<path>::
+Include an extra Jetty directory to use as a source for configuration details.
+This directory behaves similarly to `${jetty.base}` but sits at a layer between `${jetty.base}` and `${jetty.home}`.
+This allows for some complex hierarchies of configuration details.
+
+--download=<http-uri>|<location>::
+If the file does not exist at the given location, download it from the given http URI.
+Note: location is always relative to `${jetty.base}`.
+You might need to escape the slash "\|" to use this on some environments.

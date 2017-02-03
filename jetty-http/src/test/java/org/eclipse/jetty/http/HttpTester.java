@@ -29,6 +29,8 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -59,6 +61,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpTester
 {
+    private final static Logger LOG = Log.getLogger(HttpTester.class);
+    
     private HttpTester()
     {
     }
@@ -212,7 +216,17 @@ public class HttpTester
     }
     
     public static Response parseResponse(Input in) throws IOException
-    {   
+    {
+        return parseResponse(in, false);
+    }
+    
+    public static Response parsePartialResponse(Input in) throws IOException
+    {
+        return parseResponse(in, true);
+    }
+    
+    private static Response parseResponse(Input in, boolean allowIncomplete) throws IOException
+    {
         Response r;
         HttpParser parser=in.takeHttpParser();
         if (parser==null)
@@ -241,8 +255,11 @@ public class HttpTester
             }
         }
         
-        if (r.isComplete())
+        if (allowIncomplete || r.isComplete())
             return r;
+
+        LOG.info("Incomplete Response: (parser={}) {}", parser, r);
+        
         in.setHttpParser(parser);
         return null;
     }

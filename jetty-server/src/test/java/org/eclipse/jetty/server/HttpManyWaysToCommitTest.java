@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -429,10 +429,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         try
         {
             HttpTester.Response response = executeRequest();
-            String failed_body = ""+(char)-1+(char)-1+(char)-1;
             assertThat("response code", response.getStatus(), is(200));
-            assertThat(response.getContent(), endsWith(failed_body));
             assertHeader(response, "content-length", "6");
+            byte content[] = response.getContentBytes();
+            assertThat("content bytes", content.length, is(6));
+            String contentStr = new String(content, StandardCharsets.UTF_8);
+            assertThat("content bytes as string", contentStr, is("foo"));
         }
         catch(EOFException e)
         {
@@ -449,10 +451,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         try
         {
             HttpTester.Response response = executeRequest();
-            String failed_body = ""+(char)-1+(char)-1+(char)-1;
             assertThat("response code is 200", response.getStatus(), is(200));
-            assertThat(response.getContent(), endsWith(failed_body));
             assertHeader(response, "content-length", "6");
+            byte content[] = response.getContentBytes();
+            assertThat("content bytes", content.length, is(3));
+            String contentStr = new String(content, StandardCharsets.UTF_8);
+            assertThat("content bytes as string", contentStr, is("foo"));
         }
         catch(EOFException e)
         {
