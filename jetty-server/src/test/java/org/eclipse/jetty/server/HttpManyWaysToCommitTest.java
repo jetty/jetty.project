@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -425,11 +426,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         try
         {
             HttpTester.Response response = executeRequest();
-            char badChar = (char) -1;
-            String failed_body = "" + badChar + badChar + badChar;
             assertThat("response code", response.getStatus(), is(200));
             assertHeader(response, "content-length", "6");
-            assertThat(response.getContent(), endsWith(failed_body));
+            byte content[] = response.getContentBytes();
+            assertThat("content bytes", content.length, is(6));
+            String contentStr = new String(content, StandardCharsets.UTF_8);
+            assertThat("content bytes as string", contentStr, is("foo"));
         }
         catch(EOFException e)
         {
@@ -446,11 +448,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         try
         {
             HttpTester.Response response = executeRequest();
-            char badChar = (char) -1;
-            String failed_body = "" + badChar + badChar + badChar;
             assertThat("response code is 200", response.getStatus(), is(200));
             assertHeader(response, "content-length", "6");
-            assertThat(response.getContent(), endsWith(failed_body));
+            byte content[] = response.getContentBytes();
+            assertThat("content bytes", content.length, is(3));
+            String contentStr = new String(content, StandardCharsets.UTF_8);
+            assertThat("content bytes as string", contentStr, is("foo"));
         }
         catch(EOFException e)
         {
