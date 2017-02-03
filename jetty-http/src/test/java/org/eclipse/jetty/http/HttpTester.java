@@ -239,8 +239,6 @@ public class HttpTester
             if (in.fillBuffer()<=0)
                 break;
         }
-        
-        System.out.printf("parseResponse() parser=%s%n%s%n", parser, r.toString());
     }
 
     public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
