@@ -66,7 +66,7 @@ public abstract class AbstractHttpTest
     {
         server = new Server();
         connector = new ServerConnector(server,null,null,new ArrayByteBufferPool(64,2048,64*1024),1,1,new HttpConnectionFactory());
-        connector.setIdleTimeout(10000);
+        connector.setIdleTimeout(100000);
         
         server.addConnector(connector);
         stacklessChannelLogging =new StacklessLogging(HttpChannel.class);
@@ -92,9 +92,12 @@ public abstract class AbstractHttpTest
                 writer.write("\r\n");
                 writer.flush();
     
+                HttpTester.Response response = new HttpTester.Response();
                 HttpTester.Input input = HttpTester.from(socket.getInputStream());
-                HttpTester.Response response = HttpTester.parsePartialResponse(input);
+                HttpTester.parseResponse(input, response);
+                
                 if ("HTTP/1.1".equals(httpVersion)
+                        && response.isComplete()
                         && response.get("content-length") == null
                         && response.get("transfer-encoding") == null
                         && !__noBodyCodes.contains(response.getStatus()))
