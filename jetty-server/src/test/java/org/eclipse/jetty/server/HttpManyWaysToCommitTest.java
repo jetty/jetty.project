@@ -33,6 +33,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -419,6 +421,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     }
 
     @Test
+    @Ignore("Not implemented in Jetty 9.3 (Proper support present in Jetty 9.4+)")
     public void testSetContentLengthFlushAndWriteInsufficientBytes() throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
@@ -434,6 +437,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     }
 
     @Test
+    @Ignore("Not implemented in Jetty 9.3 (Proper support present in Jetty 9.4+)")
     public void testSetContentLengthAndWriteInsufficientBytes() throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(false));
@@ -469,7 +473,26 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         assertThat("response code", response.getStatus(), is(200));
         assertThat("response body", response.getContent(), is("foo"));
     }
-
+    
+    private class SetContentLengthAndWriteInsufficientBytesHandler extends AbstractHandler
+    {
+        boolean flush;
+        private SetContentLengthAndWriteInsufficientBytesHandler(boolean flush)
+        {
+            this.flush = flush;
+        }
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentLength(6);
+            if (flush)
+                response.flushBuffer();
+            response.getWriter().write("foo");
+        }
+    }
+    
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
     {
         private SetContentLengthAndWriteThatAmountOfBytesHandler(boolean throwException)
