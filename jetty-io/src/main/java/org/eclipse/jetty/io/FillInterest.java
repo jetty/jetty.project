@@ -86,8 +86,6 @@ public abstract class FillInterest
         
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} register {}",this,callback);
             needsFillInterest();
         }
         catch (Throwable e)
