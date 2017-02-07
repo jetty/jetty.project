@@ -823,17 +823,11 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     .setProjection(_model.getExpiry())
                     .setFilter(PropertyFilter.eq(_model.getId(), "-"))
                     .build();
-            start = System.currentTimeMillis();
-            System.err.println("Checking indexes at "+start);
             _datastore.run(query);
-            long end = System.currentTimeMillis();
-            System.err.println("Done checking, elapsed "+(end-start));
             return true;
         }
         catch (DatastoreException e)
         {
-            long end = System.currentTimeMillis();
-            System.err.println("Done checking, no indexes, elapsed="+(end-start));
             //need to assume that the problem is the index doesn't exist, because there
             //is no specific code for that
             if (LOG.isDebugEnabled())
