@@ -281,7 +281,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             int filled = fillRequestBuffer();
             handled = parseRequestBuffer();
-            if (handled || filled<=0 || _channel.getRequest().getHttpInput().hasContent())
+            if (handled || filled<=0 || _input.hasContent())
                 break;
         }
         return handled;
@@ -395,7 +395,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         else if (_parser.inContentState() && _generator.isPersistent())
         {
             // If we are async, then we have problems to complete neatly
-            if (_channel.getRequest().getHttpInput().isAsync())
+            if (_input.isAsync())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("unconsumed async input {}", this);
@@ -406,7 +406,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (LOG.isDebugEnabled())
                     LOG.debug("unconsumed input {}", this);
                 // Complete reading the request
-                if (!_channel.getRequest().getHttpInput().consumeAll())
+                if (!_input.consumeAll())
                     _channel.abort(new IOException("unconsumed input"));
             }
         }
@@ -548,7 +548,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public void asyncReadFillInterested()
     {
-        getEndPoint().fillInterested(_asyncReadCallback);
+        getEndPoint().tryFillInterested(_asyncReadCallback);
     }
 
     public void blockingReadFillInterested()
@@ -624,7 +624,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (fillAndParseForContent())
                 _channel.handle();
-            else if (!_input.isFinished())
+            else if (!_input.isFinished() && !_input.hasContent())
                 asyncReadFillInterested();
         }
 
