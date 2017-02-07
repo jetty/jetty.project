@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.Duration;
+
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Entity;
@@ -73,7 +75,7 @@ public class GCloudSessionTestSupport
     public void tearDown()
             throws Exception
     {
-        _helper.stop();
+        _helper.stop(Duration.millis(5)); //wait up to 5ms for shutdown
     }
     
     
