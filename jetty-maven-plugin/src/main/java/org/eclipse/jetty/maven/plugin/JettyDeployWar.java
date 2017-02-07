@@ -53,7 +53,7 @@ public class JettyDeployWar extends JettyRunWarMojo
      * cntrl-c to stop it.
      * 
      * 
-     * @parameter  default-value="true"
+     * @parameter property="jetty.daemon" default-value="true"
      */
     protected boolean daemon = true;
     
