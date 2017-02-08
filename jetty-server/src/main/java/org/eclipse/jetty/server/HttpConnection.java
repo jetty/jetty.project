@@ -551,7 +551,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public void asyncReadFillInterested()
     {
-        getEndPoint().tryFillInterested(_asyncReadCallback);
+        getEndPoint().fillInterested(_asyncReadCallback);
     }
 
     public void blockingReadFillInterested()
