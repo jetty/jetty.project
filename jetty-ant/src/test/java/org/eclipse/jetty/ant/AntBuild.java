@@ -64,7 +64,7 @@ public class AntBuild
             Project antProject = new Project();
             try
             {
-                antProject.setBaseDir(MavenTestingUtils.getBasedir());
+                antProject.setBaseDir(MavenTestingUtils.getBaseDir());
                 antProject.setUserProperty("ant.file",buildFile.getAbsolutePath());
                 DefaultLogger logger = new DefaultLogger();
 

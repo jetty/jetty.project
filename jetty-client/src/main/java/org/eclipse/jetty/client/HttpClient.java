@@ -224,7 +224,7 @@ public class HttpClient extends ContainerLifeCycle
         handlers.put(new WWWAuthenticationProtocolHandler(this));
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
 
-        decoderFactories.add(new GZIPContentDecoder.Factory());
+        decoderFactories.add(new GZIPContentDecoder.Factory(byteBufferPool));
 
         cookieManager = newCookieManager();
         cookieStore = cookieManager.getCookieStore();

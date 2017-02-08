@@ -844,36 +844,14 @@ public class Session implements SessionHandler.SessionIf
         if (_handler == null)
             throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
 
-        boolean result = false;
-
-        try (Lock lock = _lock.lockIfNotHeld())
-        {
-            switch (_state)
-            {
-                case INVALID:
-                {
-                    throw new IllegalStateException(); //spec does not allow invalidate of already invalid session
-                }
-                case VALID:
-                {
-                    //only first change from valid to invalidating should be actionable
-                    result = true;
-                    _state = State.INVALIDATING;
-                    break;
-                }
-                default:
-                {
-                    LOG.info("Session {} already being invalidated", _sessionData.getId());
-                }
-            }
-        }
+        boolean result = beginInvalidate();
 
         try
         {
             //if the session was not already invalid, or in process of being invalidated, do invalidate
             if (result)
             {
-                //tell id mgr to remove session from all other contexts
+                //tell id mgr to remove session from all contexts
                 _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
             }
         }
@@ -901,6 +879,39 @@ public class Session implements SessionHandler.SessionIf
     {
         return _lock.lockIfNotHeld();
     }
+    
+    /* ------------------------------------------------------------- */
+    /**
+     * @return true if the session is not already invalid or being invalidated.
+     */
+    protected boolean beginInvalidate()
+    {
+        boolean result = false;
+        
+        try (Lock lock = _lock.lockIfNotHeld())
+        {
+            switch (_state)
+            {
+                case INVALID:
+                {
+                    throw new IllegalStateException(); //spec does not allow invalidate of already invalid session
+                }
+                case VALID:
+                {
+                    //only first change from valid to invalidating should be actionable
+                    result = true;
+                    _state = State.INVALIDATING;
+                    break;
+                }
+                default:
+                {
+                    LOG.info("Session {} already being invalidated", _sessionData.getId());
+                }
+            }
+        }
+        
+        return result;
+    }
 
     /* ------------------------------------------------------------- */
     /** Call HttpSessionAttributeListeners as part of invalidating
@@ -908,7 +919,20 @@ public class Session implements SessionHandler.SessionIf
      * 
      * @throws IllegalStateException
      */
+    @Deprecated 
     protected void doInvalidate() throws IllegalStateException
+    {
+       finishInvalidate();
+    }
+    
+    
+    /* ------------------------------------------------------------- */
+    /** Call HttpSessionAttributeListeners as part of invalidating
+     * a Session.
+     * 
+     * @throws IllegalStateException
+     */
+    protected void finishInvalidate() throws IllegalStateException
     {
         try (Lock lock = _lock.lockIfNotHeld())
         {

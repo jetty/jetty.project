@@ -20,12 +20,14 @@ package org.eclipse.jetty.http;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
 {
     private HttpVersion _httpVersion;
-    private HttpFields _fields;
+    private final HttpFields _fields;
     private long _contentLength;
+    private Supplier<HttpFields> _trailers;
 
     public MetaData(HttpVersion version, HttpFields fields)
     {
@@ -88,6 +90,16 @@ public class MetaData implements Iterable<HttpField>
     public HttpFields getFields()
     {
         return _fields;
+    }
+
+    public Supplier<HttpFields> getTrailerSupplier()
+    {
+        return _trailers;
+    }
+
+    public void setTrailerSupplier(Supplier<HttpFields> trailers)
+    {
+        _trailers = trailers;
     }
 
     /**

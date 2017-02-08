@@ -22,6 +22,7 @@ package org.eclipse.jetty.gcloud.session;
 import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,8 +35,8 @@ import org.junit.Test;
 public class SessionExpiryTest extends AbstractSessionExpiryTest
 {
 
-    @AfterClass
-    public static void teardown () throws Exception
+    @After
+    public void teardown () throws Exception
     {
        GCloudTestSuite.__testSupport.deleteSessions();
     }
@@ -50,25 +51,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         return GCloudSessionTestSupport.newSessionDataStoreFactory(GCloudTestSuite.__testSupport.getDatastore());
     }
 
-    @Test
-    @Override
-    public void testSessionNotExpired() throws Exception
-    {
-        super.testSessionNotExpired();
-        GCloudTestSuite.__testSupport.deleteSessions();
-    }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiry()
-     */
-    @Test
-    @Override
-    public void testSessionExpiry() throws Exception
-    {
-        super.testSessionExpiry();
-
-        GCloudTestSuite.__testSupport.deleteSessions();
-    }
 
     @Override
     public void verifySessionCreated(TestHttpSessionListener listener, String sessionId)
@@ -76,6 +59,9 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         super.verifySessionCreated(listener, sessionId);
         try {GCloudTestSuite.__testSupport.assertSessions(1);}catch(Exception e){ Assert.fail(e.getMessage());}
     }
+
+
+
 
     @Override
     public void verifySessionDestroyed(TestHttpSessionListener listener, String sessionId)

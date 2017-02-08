@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncContext;
@@ -37,10 +34,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -67,7 +63,8 @@ public class AsyncContextListenersTest
     {
         _server.stop();
     }
-
+    
+    @SuppressWarnings("Duplicates")
     @Test
     public void testListenerClearedOnSecondRequest() throws Exception
     {
@@ -105,7 +102,7 @@ public class AsyncContextListenersTest
                 asyncContext.complete();
             }
         });
-
+    
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             OutputStream output = socket.getOutputStream();
@@ -116,11 +113,10 @@ public class AsyncContextListenersTest
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            SimpleHttpParser parser = new SimpleHttpParser();
-            SimpleHttpResponse response = parser.readResponse(reader);
-            Assert.assertEquals("200", response.getCode());
+    
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
@@ -128,12 +124,13 @@ public class AsyncContextListenersTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            response = parser.readResponse(reader);
-            Assert.assertEquals("200", response.getCode());
+            response = HttpTester.parseResponse(input);
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Test
     public void testListenerAddedFromListener() throws Exception
     {
@@ -188,19 +185,18 @@ public class AsyncContextListenersTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            SimpleHttpParser parser = new SimpleHttpParser();
-            SimpleHttpResponse response = parser.readResponse(reader);
-            Assert.assertEquals("200", response.getCode());
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
             completes.set(new CountDownLatch(1));
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-
-            response = parser.readResponse(reader);
-            Assert.assertEquals("200", response.getCode());
+    
+            response = HttpTester.parseResponse(input);
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
         }
     }
@@ -265,11 +261,10 @@ public class AsyncContextListenersTest
                     "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            SimpleHttpParser parser = new SimpleHttpParser();
-            SimpleHttpResponse response = parser.readResponse(reader);
-            Assert.assertEquals("200", response.getCode());
+    
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
 
             // Send a second request
@@ -277,8 +272,8 @@ public class AsyncContextListenersTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            response = parser.readResponse(reader);
-            Assert.assertEquals("200", response.getCode());
+            response = HttpTester.parseResponse(input);
+            Assert.assertEquals(200, response.getStatus());
             completes.get().await(10,TimeUnit.SECONDS);
         }
     }

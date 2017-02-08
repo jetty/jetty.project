@@ -124,7 +124,7 @@ public class WebSocketServletRFCTest
             client.write(bin); // write buf3 (fin=true)
 
             // Read frame echo'd back (hopefully a single binary frame)
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1000,TimeUnit.MILLISECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
             Frame binmsg = frames.poll();
             int expectedSize = buf1.length + buf2.length + buf3.length;
             Assert.assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
@@ -293,7 +293,7 @@ public class WebSocketServletRFCTest
             client.writeRaw(bbHeader);
             client.writeRaw(txt.getPayload());
 
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,30,TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);

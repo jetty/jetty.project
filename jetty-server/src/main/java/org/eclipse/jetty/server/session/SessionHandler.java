@@ -1048,6 +1048,8 @@ public class SessionHandler extends ScopedHandler
             {
                 if (invalidate)
                 {
+                    session.beginInvalidate();
+                    
                     if (_sessionListeners!=null)
                     {
                         HttpSessionEvent event=new HttpSessionEvent(session);      
@@ -1214,8 +1216,7 @@ public class SessionHandler extends ScopedHandler
     
     /* ------------------------------------------------------------ */
     /**
-     * Called either when a session has expired, or the app has
-     * invalidated it.
+     * Called when a session has expired.
      * 
      * @param id the id to invalidate
      */
@@ -1232,7 +1233,7 @@ public class SessionHandler extends ScopedHandler
             if (session != null)
             {
                 _sessionTimeStats.set(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
-                session.doInvalidate();   
+                session.finishInvalidate();   
             }
         }
         catch (Exception e)
@@ -1242,7 +1243,11 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Called periodically by the HouseKeeper to handle the list of
+     * sessions that have expired since the last call to scavenge.
+     */
     public void scavenge ()
     {
         //don't attempt to scavenge if we are shutting down
@@ -1279,7 +1284,7 @@ public class SessionHandler extends ScopedHandler
         }
     }
     
-    
+    /* ------------------------------------------------------------ */
     /**
      * Each session has a timer that is configured to go off
      * when either the session has not been accessed for a 

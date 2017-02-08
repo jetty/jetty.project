@@ -21,15 +21,16 @@ package org.eclipse.jetty.http;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -60,6 +61,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpTester
 {
+    private final static Logger LOG = Log.getLogger(HttpTester.class);
+    
     private HttpTester()
     {
     }
@@ -88,7 +91,7 @@ public class HttpTester
         parser.parseNext(request);
         return r;
     }
-
+    
     public static Response parseResponse(String response)
     {
         Response r=new Response();
@@ -104,7 +107,18 @@ public class HttpTester
         parser.parseNext(response);
         return r;
     }
-
+    
+    public static Response parseResponse(InputStream responseStream) throws IOException
+    {
+        ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
+        IO.copy(responseStream, contentStream);
+        
+        Response r=new Response();
+        HttpParser parser =new HttpParser(r);
+        parser.parseNext(ByteBuffer.wrap(contentStream.toByteArray()));
+        return r;
+    }
+    
     public abstract static class Input
     {
         final ByteBuffer _buffer;
@@ -202,17 +216,41 @@ public class HttpTester
     }
     
     public static Response parseResponse(Input in) throws IOException
-    {   
+    {
         Response r;
         HttpParser parser=in.takeHttpParser();
         if (parser==null)
         {
             r=new Response();
-            parser =new HttpParser(r);
+            parser = new HttpParser(r);
         }
         else
             r=(Response)parser.getHandler();
         
+        parseResponse(in, parser, r);
+    
+        if(r.isComplete())
+            return r;
+    
+        in.setHttpParser(parser);
+        return null;
+    }
+    
+    public static void parseResponse(Input in, Response response) throws IOException
+    {
+        HttpParser parser = in.takeHttpParser();
+        if (parser == null)
+        {
+            parser = new HttpParser(response);
+        }
+        parseResponse(in, parser, response);
+    
+        if (!response.isComplete())
+            in.setHttpParser(parser);
+    }
+    
+    private static void parseResponse(Input in, HttpParser parser, Response r) throws IOException
+    {
         ByteBuffer buffer = in.getBuffer();
         
         while(true)
@@ -230,16 +268,11 @@ public class HttpTester
                 break;
             }
         }
-        
-        if (r.isComplete())
-            return r;
-        in.setHttpParser(parser);
-        return null;
     }
-
 
     public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
     {
+        boolean _earlyEOF;
         boolean _complete=false;
         ByteArrayOutputStream _content;
         HttpVersion _version=HttpVersion.HTTP_1_0;
@@ -330,6 +363,12 @@ public class HttpTester
         }
 
         @Override
+        public boolean contentComplete()
+        {
+            return false;
+        }
+        
+        @Override
         public boolean messageComplete()
         {
             _complete=true;
@@ -346,8 +385,14 @@ public class HttpTester
         @Override
         public void earlyEOF()
         {
+            _earlyEOF = true;
         }
-
+    
+        public boolean isEarlyEOF()
+        {
+            return _earlyEOF;
+        }
+    
         @Override
         public boolean content(ByteBuffer ref)
         {
@@ -396,6 +441,10 @@ public class HttpTester
 
                         case NEED_CHUNK:
                             chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                            continue;
+
+                        case NEED_CHUNK_TRAILER:
+                            chunk=BufferUtil.allocate(8192);
                             continue;
 
                         case NEED_INFO:

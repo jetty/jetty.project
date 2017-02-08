@@ -588,6 +588,24 @@ public class HttpParser
         _length=-1;
         return s;
     }
+    
+    /* ------------------------------------------------------------------------------- */
+    private boolean handleHeaderContentMessage()
+    {
+        boolean handle_header = _handler.headerComplete();
+        _headerComplete = true;
+        boolean handle_content = _handler.contentComplete();
+        boolean handle_message = _handler.messageComplete();
+        return handle_header || handle_content || handle_message;
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    private boolean handleContentMessage()
+    {
+        boolean handle_content = _handler.contentComplete();
+        boolean handle_message = _handler.messageComplete();
+        return handle_content || handle_message;
+    }
 
     /* ------------------------------------------------------------------------------- */
     /* Parse a request or response line
@@ -736,10 +754,7 @@ public class HttpParser
                         handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                         setState(State.END);
                         BufferUtil.clear(buffer);
-                        handle=_handler.headerComplete()||handle;
-                        _headerComplete=true;
-                        handle=_handler.messageComplete()||handle;
-                        return handle;
+                        handle= handleHeaderContentMessage() || handle;
                     }
                     else
                     {
@@ -807,10 +822,7 @@ public class HttpParser
                             handle=_requestHandler.startRequest(_methodString,_uri.toString(), HttpVersion.HTTP_0_9);
                             setState(State.END);
                             BufferUtil.clear(buffer);
-                            handle=_handler.headerComplete()||handle;
-                            _headerComplete=true;
-                            handle=_handler.messageComplete()||handle;
-                            return handle;
+                            handle= handleHeaderContentMessage() || handle;
                         }
                     }
                     else if (ch<0)
@@ -1100,10 +1112,7 @@ public class HttpParser
                                 case NO_CONTENT:
                                 {
                                     setState(State.END);
-                                    boolean handle=_handler.headerComplete();
-                                    _headerComplete=true;
-                                    handle=_handler.messageComplete()||handle;
-                                    return handle;
+                                    return handleHeaderContentMessage();
                                 }
                                 default:
                                 {
@@ -1368,7 +1377,7 @@ public class HttpParser
                 if (_responseStatus>0 && _headResponse)
                 {
                     setState(State.END);
-                    return _handler.messageComplete();
+                    return handleContentMessage();
                 }
                 else
                 {
@@ -1420,7 +1429,7 @@ public class HttpParser
                         {
                             // Be forgiving of missing last CRLF
                             setState(State.CLOSED);
-                            return _handler.messageComplete();
+                            return handleContentMessage();
                         }
                         setState(State.CLOSED);
                         _handler.earlyEOF();
@@ -1477,7 +1486,7 @@ public class HttpParser
             if (content == 0)
             {
                 setState(State.END);
-                return _handler.messageComplete();
+                return handleContentMessage();
             }
         }
 
@@ -1501,7 +1510,7 @@ public class HttpParser
                     if (content == 0)
                     {
                         setState(State.END);
-                        return _handler.messageComplete();
+                        return handleContentMessage();
                     }
                     else
                     {
@@ -1524,7 +1533,7 @@ public class HttpParser
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
-                            return _handler.messageComplete();
+                            return handleContentMessage();
                         }
                     }
                     break;
@@ -1551,7 +1560,11 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
+                        {
                             setState(State.TRAILER);
+                            if (_handler.contentComplete())
+                                return true;
+                        }
                         else
                             setState(State.CHUNK);
                     }
@@ -1568,7 +1581,11 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
+                        {
                             setState(State.TRAILER);
+                            if (_handler.contentComplete())
+                                return true;
+                        }
                         else
                             setState(State.CHUNK);
                     }
@@ -1729,6 +1746,8 @@ public class HttpParser
 
         public boolean headerComplete();
 
+        public boolean contentComplete(); 
+        
         public boolean messageComplete();
 
         /**

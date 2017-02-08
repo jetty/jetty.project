@@ -50,9 +50,16 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             super.testSessionExpiry();
         }
     }
-    
-    
-    
+
+    /**
+     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiresWithListener()
+     */
+    @Test
+    public void testSessionExpiresWithListener() throws Exception
+    {
+        super.testSessionExpiresWithListener();
+    }
+
     
     
     @Test
