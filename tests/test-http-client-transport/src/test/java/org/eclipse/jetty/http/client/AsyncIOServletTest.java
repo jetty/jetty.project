@@ -980,7 +980,7 @@ public class AsyncIOServletTest extends AbstractTest
                         while (input.isReady() && !input.isFinished())
                         {
                             int read = input.read();
-                            System.err.printf("%x%n", read);
+                            // System.err.printf("%x%n", read);
                             readLatch.countDown();
                         }
                     }
