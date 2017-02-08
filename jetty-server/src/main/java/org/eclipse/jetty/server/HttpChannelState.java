@@ -1198,6 +1198,7 @@ public class HttpChannelState
             if(DEBUG)
                 LOG.debug("onReadReady {}",toStringLocked());
             
+            _asyncRead=Interest.INTERESTED;
             _asyncReadPossible=true;
             if (_state==State.ASYNC_WAIT)
             {
@@ -1220,19 +1221,19 @@ public class HttpChannelState
         {
             if(DEBUG)
                 LOG.debug("onReadEof {}",toStringLocked());
-            
+
             if (_state==State.ASYNC_WAIT)
             {
-                _state=State.ASYNC_WOKEN;
-                _asyncReadUnready=true;
-                _asyncReadPossible=true;
                 woken=true;
+                _state=State.ASYNC_WOKEN;
+                _asyncRead=Interest.INTERESTED;
+                _asyncReadPossible=true;
             }
         }
         return woken;
     }
 
-
+    /* ------------------------------------------------------------ */
     public boolean isReadPossible()
     {
         try(Locker.Lock lock= _locker.lock())
@@ -1241,6 +1242,7 @@ public class HttpChannelState
         }
     }
 
+    /* ------------------------------------------------------------ */
     public boolean onWritePossible()
     {
         boolean handle=false;
