@@ -119,7 +119,7 @@ public class HttpChannelState
     private boolean _initial;
     private boolean _asyncReadPossible;
     private Interest _asyncRead=Interest.NONE;
-    private boolean _asyncWrite; // TODO refactor same as read
+    private boolean _asyncWritePossible;
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
 
@@ -186,7 +186,7 @@ public class HttpChannelState
                 _initial,
                 _asyncRead,
                 _asyncReadPossible,
-                _asyncWrite);
+                _asyncWritePossible);
         }
     }
 
@@ -231,10 +231,10 @@ public class HttpChannelState
                         return Action.READ_CALLBACK;
                     }
 
-                    if (_asyncWrite)
+                    if (_asyncWritePossible)
                     {
                         _state=State.ASYNC_IO;
-                        _asyncWrite=false;
+                        _asyncWritePossible=false;
                         return Action.WRITE_CALLBACK;
                     }
 
@@ -421,7 +421,7 @@ public class HttpChannelState
                 case EXPIRED:
                     _state=State.DISPATCHED;
                     _async=Async.NOT_ASYNC;
-                    action = Action.ERROR_DISPATCH;
+                    action=Action.ERROR_DISPATCH;
                     break;
 
                 case STARTED:
@@ -429,12 +429,12 @@ public class HttpChannelState
                     {
                         _state=State.ASYNC_IO;
                         _asyncRead=Interest.NONE;
-                        action = Action.READ_CALLBACK;
+                        action=Action.READ_CALLBACK;
                     }
-                    else if (_asyncWrite) // TODO refactor same as read
+                    else if (_asyncWritePossible)
                     {
-                        _asyncWrite=false;
                         _state=State.ASYNC_IO;
+                        _asyncWritePossible=false;
                         action=Action.WRITE_CALLBACK;
                     }
                     else
@@ -782,7 +782,7 @@ public class HttpChannelState
             _initial=true;
             _asyncReadPossible=false;
             _asyncRead=Interest.NONE;
-            _asyncWrite=false;
+            _asyncWritePossible=false;
             _timeoutMs=DEFAULT_TIMEOUT;
             _event=null;
         }
@@ -807,7 +807,7 @@ public class HttpChannelState
             _initial=true;
             _asyncReadPossible=false;
             _asyncRead=Interest.NONE;
-            _asyncWrite=false;
+            _asyncWritePossible=false;
             _timeoutMs=DEFAULT_TIMEOUT;
             _event=null;
         }
@@ -1062,7 +1062,7 @@ public class HttpChannelState
 
         try(Locker.Lock lock= _locker.lock())
         {
-            _asyncWrite=true;
+            _asyncWritePossible=true;
             if (_state==State.ASYNC_WAIT)
             {
                 _state=State.ASYNC_WOKEN;
