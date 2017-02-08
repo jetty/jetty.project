@@ -75,9 +75,14 @@ public class GCloudSessionTestSupport
     public void tearDown()
             throws Exception
     {
-        _helper.stop(Duration.millis(5)); //wait up to 5ms for shutdown
+        _helper.stop(Duration.standardMinutes(1)); //wait up to 1min for shutdown
     }
     
+    
+    public void reset() throws Exception
+    {
+        _helper.reset();
+    }
     
     
     public Set<String> getSessionIds () throws Exception
