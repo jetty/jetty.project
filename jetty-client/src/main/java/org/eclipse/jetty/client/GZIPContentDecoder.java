@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 
 /**
  * {@link ContentDecoder} for the "gzip" encoding.
@@ -26,14 +27,21 @@ package org.eclipse.jetty.client;
 public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecoder implements ContentDecoder
 {
 
+    private static final int DEFAULT_BUFFER_SIZE = 2048;
+
     public GZIPContentDecoder()
     {
-        this(2048);
+        this(DEFAULT_BUFFER_SIZE);
     }
 
     public GZIPContentDecoder(int bufferSize)
     {
-        super(null,bufferSize);
+        this(null,bufferSize);
+    }
+
+    public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)
+    {
+        super(byteBufferPool, bufferSize);
     }
 
     /**
@@ -42,22 +50,34 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     public static class Factory extends ContentDecoder.Factory
     {
         private final int bufferSize;
+        private final ByteBufferPool byteBufferPool;
 
         public Factory()
         {
-            this(2048);
+            this(DEFAULT_BUFFER_SIZE);
         }
 
         public Factory(int bufferSize)
         {
+            this(null, bufferSize);
+        }
+
+        public Factory(ByteBufferPool byteBufferPool)
+        {
+            this(byteBufferPool, DEFAULT_BUFFER_SIZE);
+        }
+
+        public Factory(ByteBufferPool byteBufferPool, int bufferSize)
+        {
             super("gzip");
+            this.byteBufferPool = byteBufferPool;
             this.bufferSize = bufferSize;
         }
 
         @Override
         public ContentDecoder newContentDecoder()
         {
-            return new GZIPContentDecoder(bufferSize);
+            return new GZIPContentDecoder(byteBufferPool, bufferSize);
         }
     }
 }

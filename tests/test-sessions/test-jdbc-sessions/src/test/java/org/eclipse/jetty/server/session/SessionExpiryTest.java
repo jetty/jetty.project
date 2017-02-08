@@ -31,15 +31,16 @@ import org.junit.Test;
  */
 public class SessionExpiryTest extends AbstractSessionExpiryTest
 {
-
+    
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return new JdbcTestServer(port,max,scavenge, evictionPolicy);
+       return JdbcTestHelper.newSessionDataStoreFactory();
     }
+    
 
     @Test
     public void testSessionExpiry() throws Exception
@@ -49,9 +50,16 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             super.testSessionExpiry();
         }
     }
-    
-    
-    
+
+    /**
+     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#testSessionExpiresWithListener()
+     */
+    @Test
+    public void testSessionExpiresWithListener() throws Exception
+    {
+        super.testSessionExpiresWithListener();
+    }
+
     
     
     @Test
@@ -63,7 +71,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
     @After
     public void tearDown() throws Exception 
     {
-        JdbcTestServer.shutdown(null);
+        JdbcTestHelper.shutdown(null);
     }
     
 }

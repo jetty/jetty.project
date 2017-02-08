@@ -42,7 +42,7 @@ import org.junit.Test;
 /**
  * AbstractProxySerializationTest
  *
- *
+ * For SessionDataStores that passivate with serialization.
  */
 public abstract class AbstractProxySerializationTest extends AbstractTestBase
 {
@@ -71,7 +71,14 @@ public abstract class AbstractProxySerializationTest extends AbstractTestBase
         String contextPath = "";
         String servletMapping = "/server";
         int scavengePeriod = 10;
-        AbstractTestServer server = createServer(0, 20, scavengePeriod, SessionCache.NEVER_EVICT);
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        
+        TestServer server = new TestServer(0, 20, scavengePeriod,
+                                                           cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
 
         InputStream is = this.getClass().getClassLoader().getResourceAsStream("proxy-serialization.jar");

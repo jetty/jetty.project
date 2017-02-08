@@ -26,5 +26,5 @@ package org.eclipse.jetty.server.session;
  */
 public abstract class AbstractTestBase
 {
-    public abstract AbstractTestServer createServer(int port, int maxInactive, int scavengeInterval, int evictionPolicy) throws Exception;
+    public abstract SessionDataStoreFactory createSessionDataStoreFactory ();
 }

@@ -87,8 +87,12 @@ public class ReloadedSessionMissingClassTest
         URLClassLoader loaderWithFoo = new URLClassLoader(foobarUrls, Thread.currentThread().getContextClassLoader());
         URLClassLoader loaderWithoutFoo = new URLClassLoader(barUrls, Thread.currentThread().getContextClassLoader());
 
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = JdbcTestHelper.newSessionDataStoreFactory();   
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
        
-        AbstractTestServer server1 = new JdbcTestServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE, AbstractTestServer.DEFAULT_SCAVENGE_SEC, AbstractTestServer.DEFAULT_EVICTIONPOLICY);
+        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,cacheFactory, storeFactory);
         
         WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.getCanonicalPath(), contextPath);
         webApp.getSessionHandler().getSessionCache().setRemoveUnloadableSessions(true);
@@ -147,7 +151,7 @@ public class ReloadedSessionMissingClassTest
     @After
     public void tearDown() throws Exception 
     {
-        JdbcTestServer.shutdown(null);
+        JdbcTestHelper.shutdown(null);
     }
     
 }
