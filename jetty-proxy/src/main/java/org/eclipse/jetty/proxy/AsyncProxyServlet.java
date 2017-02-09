@@ -184,7 +184,6 @@ public class AsyncProxyServlet extends ProxyServlet
                 {
                     if (_log.isDebugEnabled())
                         _log.debug("{} asynchronous read complete on {}", requestId, input);
-                    provider.close(); // TODO the need for this suggests that onAllDataRead is not always being called!
                     return Action.SUCCEEDED;
                 }
             }
