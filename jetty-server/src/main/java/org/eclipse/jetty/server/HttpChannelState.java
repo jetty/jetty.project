@@ -1225,10 +1225,6 @@ public class HttpChannelState
                 _asyncRead=Interest.REGISTERED;
                 _asyncReadPossible=true;
             }
-            else
-            {
-                _asyncRead=Interest.REGISTERED;
-            }
         }
         return woken;
     }
