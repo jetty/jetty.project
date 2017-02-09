@@ -432,7 +432,9 @@ public class HttpChannelState
                     break;
 
                 case STARTED:
-                    if (_asyncRead.isInterested() && _asyncReadPossible)
+                    // If a read is possible and either we are interested in reads or we have
+                    // to call onAllDataRead, then we need a READ_CALLBACK
+                    if (_asyncReadPossible && ( _asyncRead.isInterested() || _channel.getRequest().getHttpInput().isAsyncEOF()))
                     {
                         _state=State.ASYNC_IO;
                         _asyncRead=Interest.NONE;
