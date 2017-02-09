@@ -52,18 +52,19 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class AsyncProxyServletLoadTest
+public class ProxyServletLoadTest
 {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data()
     {
         return Arrays.asList(new Object[][]{
-                // TODO {AsyncProxyServlet.class},
+                {ProxyServlet.class},
+                {AsyncProxyServlet.class},
                 {AsyncMiddleManServlet.class}
         });
     }
 
-    private static final Logger LOG = Log.getLogger(AsyncProxyServletLoadTest.class);
+    private static final Logger LOG = Log.getLogger(ProxyServletLoadTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
 
     private HttpClient client;
@@ -73,7 +74,7 @@ public class AsyncProxyServletLoadTest
     private Server server;
     private ServerConnector serverConnector;
 
-    public AsyncProxyServletLoadTest(Class<?> proxyServletClass) throws Exception
+    public ProxyServletLoadTest(Class<?> proxyServletClass) throws Exception
     {
         proxyServlet = (AbstractProxyServlet)proxyServletClass.newInstance();
     }

@@ -168,9 +168,7 @@ public class AsyncProxyServlet extends ProxyServlet
             int requestId = _log.isDebugEnabled() ? getRequestId(request) : 0;
             ServletInputStream input = request.getInputStream();
 
-            // First check for isReady() because it has
-            // side effects, and then for isFinished().
-            while (input.isReady() && !input.isFinished())
+            while (input.isReady())
             {
                 int read = input.read(buffer);
                 if (_log.isDebugEnabled())
@@ -182,20 +180,18 @@ public class AsyncProxyServlet extends ProxyServlet
                     onRequestContent(request, proxyRequest, provider, buffer, 0, read, this);
                     return Action.SCHEDULED;
                 }
+                else if (read < 0)
+                {
+                    if (_log.isDebugEnabled())
+                        _log.debug("{} asynchronous read complete on {}", requestId, input);
+                    provider.close(); // TODO the need for this suggests that onAllDataRead is not always being called!
+                    return Action.SUCCEEDED;
+                }
             }
 
-            if (input.isFinished())
-            {
-                if (_log.isDebugEnabled())
-                    _log.debug("{} asynchronous read complete on {}", requestId, input);
-                return Action.SUCCEEDED;
-            }
-            else
-            {
-                if (_log.isDebugEnabled())
-                    _log.debug("{} asynchronous read pending on {}", requestId, input);
-                return Action.IDLE;
-            }
+            if (_log.isDebugEnabled())
+                _log.debug("{} asynchronous read pending on {}", requestId, input);
+            return Action.IDLE;
         }
 
         protected void onRequestContent(HttpServletRequest request, Request proxyRequest, DeferredContentProvider provider, byte[] buffer, int offset, int length, Callback callback)
