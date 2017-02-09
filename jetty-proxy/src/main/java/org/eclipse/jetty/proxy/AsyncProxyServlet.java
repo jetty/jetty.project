@@ -125,7 +125,7 @@ public class AsyncProxyServlet extends ProxyServlet
             return delegate.rewriteTarget(clientRequest);
         }
     }
-
+    
     protected class StreamReader extends IteratingCallback implements ReadListener
     {
         private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
@@ -133,6 +133,7 @@ public class AsyncProxyServlet extends ProxyServlet
         private final HttpServletResponse response;
         private final Request proxyRequest;
         private final DeferredContentProvider provider;
+        
 
         protected StreamReader(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, DeferredContentProvider provider)
         {
