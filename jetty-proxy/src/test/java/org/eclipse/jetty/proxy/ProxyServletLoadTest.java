@@ -171,7 +171,7 @@ public class ProxyServletLoadTest
             thread.start();
         }
 
-        Assert.assertTrue(activeClientLatch.await(clientCount * iterations * 10, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(activeClientLatch.await(Math.max(clientCount * iterations * 10, 5000), TimeUnit.MILLISECONDS));
         Assert.assertTrue(success.get());
     }
 
