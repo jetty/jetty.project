@@ -114,13 +114,19 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                Map<String,String[]> map = null;
-                //do the parse
-                map = request.getParameterMap();
-                assertEquals("aaa"+Utf8Appendable.REPLACEMENT+"bbb",map.get("param")[0]);
-                assertEquals("value",map.get("other")[0]);
-
-                return true;
+                try
+                {
+                    Map<String, String[]> map = null;
+                    // do the parse
+                    map = request.getParameterMap();
+                    return false;
+                }
+                catch(IllegalArgumentException e)
+                {
+                    // Should be able to retrieve the raw query
+                    String rawQuery = request.getQueryString();
+                    return rawQuery.equals("param=aaa%ZZbbb&other=value");
+                }
             }
         };
 
@@ -134,7 +140,6 @@ public class RequestTest
 
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
-
     }
 
     @Test
@@ -401,8 +406,18 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
-                String value=request.getParameter("param");
-                return value.startsWith("aaa") && value.endsWith("bb");
+                try
+                {
+                    // This throws an exception if attempted
+                    request.getParameter("param");
+                    return false;
+                }
+                catch(Utf8Appendable.NotUtf8Exception e)
+                {
+                    // Should still be able to get the raw query.
+                    String rawQuery = request.getQueryString();
+                    return rawQuery.equals("param=aaa%E7bbb");
+                }
             }
         };
 
