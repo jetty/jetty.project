@@ -352,29 +352,9 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         case '%':
                             if (i+2<end)
                             {
-                                if ('u'==query.charAt(i+1))
-                                {
-                                    i++;
-                                    if (i+4<end)
-                                    {
-                                        char top=query.charAt(++i);
-                                        char hi=query.charAt(++i);
-                                        char lo=query.charAt(++i);
-                                        char bot=query.charAt(++i);
-                                        buffer.getStringBuilder().append(Character.toChars((convertHexDigit(top)<<12) +(convertHexDigit(hi)<<8) + (convertHexDigit(lo)<<4) +convertHexDigit(bot)));
-                                    }
-                                    else
-                                    {
-                                        buffer.getStringBuilder().append(Utf8Appendable.REPLACEMENT);
-                                        i=end;
-                                    }
-                                }
-                                else
-                                {
-                                    char hi=query.charAt(++i);
-                                    char lo=query.charAt(++i);
-                                    buffer.append((byte)((convertHexDigit(hi)<<4) + convertHexDigit(lo)));
-                                }
+                                char hi=query.charAt(++i);
+                                char lo=query.charAt(++i);
+                                buffer.append((byte)((convertHexDigit(hi)<<4) + convertHexDigit(lo)));
                             }
                             else
                             {
@@ -472,21 +452,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         
                     case '%':
                         int code0=in.read();
-                        if ('u'==code0)
-                        {
-                            int code1=in.read();
-                            if (code1>=0)
-                            {
-                                int code2=in.read();
-                                if (code2>=0)
-                                {
-                                    int code3=in.read();
-                                    if (code3>=0)
-                                        buffer.append(Character.toChars((convertHexDigit(code0)<<12)+(convertHexDigit(code1)<<8)+(convertHexDigit(code2)<<4)+convertHexDigit(code3)));
-                                }
-                            }
-                        }
-                        else if (code0>=0)
+                        if (code0>=0)
                         {
                             int code1=in.read();
                             if (code1>=0)
@@ -575,29 +541,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         case '%':
                             int code0=in.read();
                             boolean decoded=false;
-                            if ('u'==code0)
-                            {
-                                code0=in.read(); // XXX: we have to read the next byte, otherwise code0 is always 'u'
-                                if (code0>=0)
-                                {
-                                    int code1=in.read();
-                                    if (code1>=0)
-                                    {
-                                        int code2=in.read();
-                                        if (code2>=0)
-                                        {
-                                            int code3=in.read();
-                                            if (code3>=0)
-                                            {
-                                                buffer.getStringBuilder().append(Character.toChars
-                                                    ((convertHexDigit(code0)<<12)+(convertHexDigit(code1)<<8)+(convertHexDigit(code2)<<4)+convertHexDigit(code3)));
-                                                decoded=true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else if (code0>=0)
+                            if (code0>=0)
                             {
                                 int code1=in.read();
                                 if (code1>=0)
@@ -768,22 +712,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             break;
                         case '%':
                             int code0=in.read();
-                            if ('u'==code0)
-                            {
-                                int code1=in.read();
-                                if (code1>=0)
-                                {
-                                    int code2=in.read();
-                                    if (code2>=0)
-                                    {
-                                        int code3=in.read();
-                                        if (code3>=0)
-                                            output.write(new String(Character.toChars((convertHexDigit(code0)<<12)+(convertHexDigit(code1)<<8)+(convertHexDigit(code2)<<4)+convertHexDigit(code3))).getBytes(charset));
-                                    }
-                                }
-
-                            }
-                            else if (code0>=0)
+                            if (code0>=0)
                             {
                                 int code1=in.read();
                                 if (code1>=0)
@@ -876,28 +805,10 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                     {
                         try
                         {
-                            if ('u'==encoded.charAt(offset+i+1))
-                            {
-                                if((i+5)<length)
-                                {
-                                    int o=offset+i+2;
-                                    i+=5;
-                                    String unicode = new String(Character.toChars(TypeUtil.parseInt(encoded,o,4,16)));
-                                    buffer.getStringBuffer().append(unicode); 
-                                }
-                                else
-                                {
-                                    i=length;
-                                    buffer.getStringBuffer().append(Utf8Appendable.REPLACEMENT); 
-                                }
-                            }
-                            else
-                            {
-                                int o=offset+i+1;
-                                i+=2;
-                                byte b=(byte)TypeUtil.parseInt(encoded,o,2,16);
-                                buffer.append(b);
-                            }
+                            int o=offset+i+1;
+                            i+=2;
+                            byte b=(byte)TypeUtil.parseInt(encoded,o,2,16);
+                            buffer.append(b);
                         }
                         catch(NotUtf8Exception e)
                         {
@@ -975,30 +886,10 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             {
                                 try
                                 {
-                                    if ('u'==encoded.charAt(offset+i+1))
-                                    {
-                                        if (i+6<length)
-                                        {
-                                            int o=offset+i+2;
-                                            i+=6;
-                                            String unicode = new String(Character.toChars(TypeUtil.parseInt(encoded,o,4,16)));
-                                            byte[] reencoded = unicode.getBytes(charset);
-                                            System.arraycopy(reencoded,0,ba,n,reencoded.length);
-                                            n+=reencoded.length;
-                                        }
-                                        else
-                                        {
-                                            ba[n++] = (byte)'?';
-                                            i=length;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        int o=offset+i+1;
-                                        i+=3;
-                                        ba[n]=(byte)TypeUtil.parseInt(encoded,o,2,16);
-                                        n++;
-                                    }
+                                    int o=offset+i+1;
+                                    i+=3;
+                                    ba[n]=(byte)TypeUtil.parseInt(encoded,o,2,16);
+                                    n++;
                                 }
                                 catch(Exception e)
                                 {   

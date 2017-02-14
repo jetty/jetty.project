@@ -120,39 +120,6 @@ public class URLEncodedTest
         assertEquals("encoded param size",1, url_encoded.size());
         assertEquals("encoded encode","Name8=xx%2C++yy++%2Czz", url_encoded.encode());
         assertEquals("encoded get", url_encoded.getString("Name8"),"xx,  yy  ,zz");
-
-        url_encoded.clear();
-        url_encoded.decode("Name11=%u30EDxxVerdi+%C6+og+2zz", StandardCharsets.ISO_8859_1);
-        assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", "?xxVerdi \u00c6 og 2zz",url_encoded.getString("Name11"));
-
-        url_encoded.clear();
-        url_encoded.decode("Name12=%u30EDxxVerdi+%2F+og+2zz", StandardCharsets.UTF_8);
-        assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", url_encoded.getString("Name12"),"\u30edxxVerdi / og 2zz");
-
-        url_encoded.clear();
-        url_encoded.decode("Name14=%uXXXXa%GGb%+%c%+%d", StandardCharsets.ISO_8859_1);
-        assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get","?a?b?c?d", url_encoded.getString("Name14"));
-
-        url_encoded.clear();
-        url_encoded.decode("Name14=%uXXXX%GG%+%%+%", StandardCharsets.UTF_8);
-        assertEquals("encoded param size",1, url_encoded.size());
-        assertEquals("encoded get", "\ufffd\ufffd\ufffd\ufffd",url_encoded.getString("Name14"));
-
-        
-        /* Not every jvm supports this encoding */
-
-        if (java.nio.charset.Charset.isSupported("SJIS"))
-        {
-            url_encoded.clear();
-            url_encoded.decode("Name9=%u30ED%83e%83X%83g", Charset.forName("SJIS")); // "Test" in Japanese Katakana
-            assertEquals("encoded param size",1, url_encoded.size());
-            assertEquals("encoded get", "\u30ed\u30c6\u30b9\u30c8", url_encoded.getString("Name9"));   
-        }
-        else
-            assertTrue("Charset SJIS not supported by jvm", true);
     }
 
 
@@ -188,11 +155,6 @@ public class URLEncodedTest
 
         assertEquals("xxx",UrlEncoded.decodeString("xxx",0,3,StandardCharsets.UTF_8));
         assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%",0,4,StandardCharsets.UTF_8));
-        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u",0,5,StandardCharsets.UTF_8));
-        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u1",0,6,StandardCharsets.UTF_8));
-        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u12",0,7,StandardCharsets.UTF_8));
-        assertEquals("xxx\ufffd",UrlEncoded.decodeString("xxx%u123",0,8,StandardCharsets.UTF_8));
-        assertEquals("xxx\u1234",UrlEncoded.decodeString("xxx%u1234",0,9,StandardCharsets.UTF_8));
     }
 
 
