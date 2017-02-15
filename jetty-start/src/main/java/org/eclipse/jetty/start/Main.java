@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import static org.eclipse.jetty.start.UsageException.ERR_BAD_GRAPH;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
 import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
 import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
 import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
@@ -464,19 +465,38 @@ public class Main
 
     private void doStop(StartArgs args)
     {
-        String stopHost = args.getProperties().getString("STOP.HOST");
-        int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-        String stopKey = args.getProperties().getString("STOP.KEY");
-
-        if (args.getProperties().getString("STOP.WAIT") != null)
+        Props.Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
+        Props.Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
+        Props.Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
+        Props.Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
+        
+        String stopHost = "127.0.0.1";
+        int stopPort = -1;
+        String stopKey = "";
+    
+        if (stopHostProp != null)
         {
-            int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
+            stopHost = stopHostProp.value;
+        }
+    
+        if (stopPortProp != null)
+        {
+            stopPort = Integer.parseInt(stopPortProp.value);
+        }
+        
+        if(stopKeyProp != null)
+        {
+            stopKey = stopKeyProp.value;
+        }
 
-            stop(stopHost,stopPort,stopKey,stopWait);
+        if (stopWaitProp != null)
+        {
+            int stopWait = Integer.parseInt(stopWaitProp.value);
+            stop(stopHost, stopPort, stopKey, stopWait);
         }
         else
         {
-            stop(stopHost,stopPort,stopKey);
+            stop(stopHost, stopPort, stopKey);
         }
     }
 
@@ -494,18 +514,21 @@ public class Main
     public void stop(String host, int port, String key, int timeout)
     {
         if (host==null || host.length()==0)
-            host="127.0.0.1";
+        {
+            host = "127.0.0.1";
+        }
         
         try
         {
-            if (port <= 0)
+            if ( (port <= 0) || (port > 65535) )
             {
-                System.err.println("STOP.PORT system property must be specified");
+                System.err.println("STOP.PORT property must be specified with a valid port number");
+                usageExit(ERR_BAD_STOP_PROPS);
             }
             if (key == null)
             {
                 key = "";
-                System.err.println("STOP.KEY system property must be specified");
+                System.err.println("STOP.KEY property must be specified");
                 System.err.println("Using empty key");
             }
 
