@@ -709,6 +709,14 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
+    public boolean isAsyncEOF()
+    {
+        synchronized (_inputQ)
+        {
+            return _state == AEOF;
+        }
+    }
+
     @Override
     public boolean isReady()
     {
@@ -1121,4 +1129,5 @@ public class HttpInput extends ServletInputStream implements Runnable
             return "AEOF";
         }
     };
+
 }

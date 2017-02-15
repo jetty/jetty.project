@@ -19,8 +19,10 @@
 package org.eclipse.jetty.util;
 
 
+import org.eclipse.jetty.toolchain.test.JDK;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class TypeUtilTest
@@ -124,7 +126,17 @@ public class TypeUtilTest
     @Test
     public void testLoadedFrom() throws Exception
     {
+        Assume.assumeFalse(JDK.IS_9);
         Assert.assertThat(TypeUtil.getLoadedFrom(String.class).toString(),Matchers.containsString("/rt.jar"));
+        Assert.assertThat(TypeUtil.getLoadedFrom(Assert.class).toString(),Matchers.containsString(".jar"));
+        Assert.assertThat(TypeUtil.getLoadedFrom(TypeUtil.class).toString(),Matchers.containsString("/classes/"));
+    }
+    
+    @Test
+    public void testLoadedFrom9() throws Exception
+    {
+        Assume.assumeTrue(JDK.IS_9);
+        Assert.assertThat(TypeUtil.getLoadedFrom(String.class).toString(),Matchers.containsString("jrt:/java.base/java/lang/String.clas"));
         Assert.assertThat(TypeUtil.getLoadedFrom(Assert.class).toString(),Matchers.containsString(".jar"));
         Assert.assertThat(TypeUtil.getLoadedFrom(TypeUtil.class).toString(),Matchers.containsString("/classes/"));
     }

@@ -34,13 +34,14 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.memcached.sessions.MemcachedTestServer.MockDataStore;
-import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.memcached.sessions.MemcachedTestHelper.MockDataStore;
 import org.eclipse.jetty.server.session.CachingSessionDataStore;
-import org.eclipse.jetty.server.session.SessionCache;
+import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataMap;
 import org.eclipse.jetty.server.session.SessionDataStore;
+import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.server.session.TestServer;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 /**
@@ -50,10 +51,7 @@ import org.junit.Test;
  */
 public class CachingSessionDataStoreTest
 {
-    public AbstractTestServer createServer (int port, int max, int scavenge,int evictionPolicy) throws Exception
-    {
-       return new MemcachedTestServer(port, max, scavenge, evictionPolicy);
-    }
+
     
     @Test
     public void testSessionCRUD () throws Exception
@@ -61,8 +59,11 @@ public class CachingSessionDataStoreTest
         String servletMapping = "/server";
         int scavengePeriod = -1;
         int maxInactivePeriod = -1;
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        SessionDataStoreFactory storeFactory = MemcachedTestHelper.newSessionDataStoreFactory();
+        
         //Make sure sessions are evicted on request exit so they will need to be reloaded via cache/persistent store
-        AbstractTestServer server = createServer(0, maxInactivePeriod, scavengePeriod, SessionCache.EVICT_ON_SESSION_EXIT);
+        TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";
@@ -84,7 +85,7 @@ public class CachingSessionDataStoreTest
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                String id = AbstractTestServer.extractSessionId(sessionCookie);
+                String id = TestServer.extractSessionId(sessionCookie);
                 
                 //check that the memcache contains the session, and the session data store contains the session
                 CachingSessionDataStore ds = (CachingSessionDataStore)context.getSessionHandler().getSessionCache().getSessionDataStore();

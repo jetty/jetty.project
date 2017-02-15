@@ -19,10 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.io.File;
-
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,24 +35,24 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
     @Before
     public void before() throws Exception
     {
-       FileTestServer.setup();
+       FileTestHelper.setup();
     }
     
     @After 
     public void after()
     {
-       FileTestServer.teardown();
+       FileTestHelper.teardown();
     }
+
+
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#createServer(int, int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge,int evictionPolicy ) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return new FileTestServer(port,max,scavenge, evictionPolicy);
+        return FileTestHelper.newSessionDataStoreFactory();
     }
-    
-    
     
 
 

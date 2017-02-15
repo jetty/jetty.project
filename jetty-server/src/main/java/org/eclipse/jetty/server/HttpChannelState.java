@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
-import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +37,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
+import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
@@ -87,7 +87,7 @@ public class HttpChannelState
     /**
      * The state of the servlet async API.
      */
-    public enum Async
+    private enum Async
     {
         NOT_ASYNC,
         STARTED,          // AsyncContext.startAsync() has been called
@@ -99,17 +99,31 @@ public class HttpChannelState
         ERRORED           // The error has been processed
     }
 
-    private final boolean DEBUG=LOG.isDebugEnabled();
+    private enum Interest
+    {
+        NONE(false),
+        NEEDED(true),
+        REGISTERED(true);
+        
+        private final boolean _interested;
+
+        Interest(boolean interest)
+        {
+            _interested = interest;
+        }
+
+        private boolean isInterested() { return _interested;}
+    }
+
     private final Locker _locker=new Locker();
     private final HttpChannel _channel;
-
     private List<AsyncListener> _asyncListeners;
     private State _state;
     private Async _async;
     private boolean _initial;
     private boolean _asyncReadPossible;
-    private boolean _asyncReadUnready;
-    private boolean _asyncWrite; // TODO refactor same as read
+    private Interest _asyncRead=Interest.NONE;
+    private boolean _asyncWritePossible;
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
 
@@ -174,9 +188,15 @@ public class HttpChannelState
 
     public String toStringLocked()
     {
-        return String.format("%s@%x{s=%s a=%s i=%b r=%s w=%b}",getClass().getSimpleName(),hashCode(),_state,_async,_initial,
-                _asyncReadPossible?(_asyncReadUnready?"PU":"P!U"):(_asyncReadUnready?"!PU":"!P!U"),
-                _asyncWrite);
+            return String.format("%s@%x{s=%s a=%s i=%b r=%s/%s w=%b}",
+                getClass().getSimpleName(),
+                hashCode(),
+                _state,
+                _async,
+                _initial,
+                _asyncRead,
+                _asyncReadPossible,
+                _asyncWritePossible);
     }
     
 
@@ -200,7 +220,7 @@ public class HttpChannelState
     {
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("handling {}",toStringLocked());
             
             switch(_state)
@@ -215,17 +235,17 @@ public class HttpChannelState
                     return Action.TERMINATED;
 
                 case ASYNC_WOKEN:
-                    if (_asyncReadPossible)
+                    if (_asyncRead.isInterested() && _asyncReadPossible)
                     {
                         _state=State.ASYNC_IO;
-                        _asyncReadUnready=false;
+                        _asyncRead=Interest.NONE;
                         return Action.READ_CALLBACK;
                     }
 
-                    if (_asyncWrite)
+                    if (_asyncWritePossible)
                     {
                         _state=State.ASYNC_IO;
-                        _asyncWrite=false;
+                        _asyncWritePossible=false;
                         return Action.WRITE_CALLBACK;
                     }
 
@@ -275,7 +295,7 @@ public class HttpChannelState
 
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}",toStringLocked());
             if (_state!=State.DISPATCHED || _async!=Async.NOT_ASYNC)
                 throw new IllegalStateException(this.getStatusStringLocked());
@@ -316,7 +336,6 @@ public class HttpChannelState
             runInContext(event,callback);
         }
     }
-
 
     public void asyncError(Throwable failure)
     {
@@ -371,7 +390,7 @@ public class HttpChannelState
 
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("unhandle {}",toStringLocked());
             
             switch(_state)
@@ -409,24 +428,29 @@ public class HttpChannelState
                     break;
 
                 case STARTED:
-                    if (_asyncReadUnready && _asyncReadPossible)
+                    // If a read is possible and either we are interested in reads or we have
+                    // to call onAllDataRead, then we need a READ_CALLBACK
+                    if (_asyncReadPossible && (_asyncRead.isInterested() || _channel.getRequest().getHttpInput().isAsyncEOF()))
                     {
                         _state=State.ASYNC_IO;
-                        _asyncReadUnready=false;
-                        action = Action.READ_CALLBACK;
+                        _asyncRead=Interest.NONE;
+                        action=Action.READ_CALLBACK;
                     }
-                    else if (_asyncWrite) // TODO refactor same as read
+                    else if (_asyncWritePossible)
                     {
-                        _asyncWrite=false;
                         _state=State.ASYNC_IO;
+                        _asyncWritePossible=false;
                         action=Action.WRITE_CALLBACK;
                     }
                     else
                     {
                         _state=State.ASYNC_WAIT;
                         action=Action.WAIT; 
-                        if (_asyncReadUnready)
+                        if (_asyncRead==Interest.NEEDED)
+                        {
+                            _asyncRead=Interest.REGISTERED;
                             read_interested=true;
+                        }
                         Scheduler scheduler=_channel.getScheduler();
                         if (scheduler!=null && _timeoutMs>0)
                             _event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
@@ -477,7 +501,7 @@ public class HttpChannelState
         AsyncContextEvent event;
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("dispatch {} -> {}",toStringLocked(),path);
             
             boolean started=false;
@@ -531,7 +555,7 @@ public class HttpChannelState
         AsyncContextEvent event;
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onTimeout {}",toStringLocked());
             
             if (_async!=Async.STARTED)
@@ -630,7 +654,7 @@ public class HttpChannelState
         AsyncContextEvent event;
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("complete {}",toStringLocked());
             
             boolean started=false;
@@ -668,7 +692,7 @@ public class HttpChannelState
     {
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("error complete {}",toStringLocked());
             
             _async=Async.COMPLETE;
@@ -703,7 +727,7 @@ public class HttpChannelState
         
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onError {} {}",toStringLocked(),failure);
             
             // Set error on request.
@@ -713,8 +737,7 @@ public class HttpChannelState
                 _event.getSuppliedRequest().setAttribute(ERROR_STATUS_CODE,code);
                 _event.getSuppliedRequest().setAttribute(ERROR_EXCEPTION,failure);
                 _event.getSuppliedRequest().setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,failure==null?null:failure.getClass());
-                    
-                _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE,reason!=null?reason:null);
+                _event.getSuppliedRequest().setAttribute(ERROR_MESSAGE,reason);
             }
             else
             {
@@ -724,7 +747,7 @@ public class HttpChannelState
                 baseRequest.setAttribute(ERROR_STATUS_CODE,code);
                 baseRequest.setAttribute(ERROR_EXCEPTION,failure);
                 baseRequest.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,failure==null?null:failure.getClass());
-                baseRequest.setAttribute(ERROR_MESSAGE,reason!=null?reason:null);
+                baseRequest.setAttribute(ERROR_MESSAGE,reason);
             }
             
             // Are we blocking?
@@ -821,7 +844,7 @@ public class HttpChannelState
 
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onComplete {}",toStringLocked());
             
             switch(_state)
@@ -878,7 +901,7 @@ public class HttpChannelState
         cancelTimeout();
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("recycle {}",toStringLocked());
             
             switch(_state)
@@ -895,8 +918,9 @@ public class HttpChannelState
             _state=State.IDLE;
             _async=Async.NOT_ASYNC;
             _initial=true;
-            _asyncReadPossible=_asyncReadUnready=false;
-            _asyncWrite=false;
+            _asyncReadPossible=false;
+            _asyncRead=Interest.NONE;
+            _asyncWritePossible=false;
             _timeoutMs=DEFAULT_TIMEOUT;
             _event=null;
         }
@@ -907,7 +931,7 @@ public class HttpChannelState
         cancelTimeout();
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}",toStringLocked());
             
             switch(_state)
@@ -922,8 +946,9 @@ public class HttpChannelState
             _state=State.UPGRADED;
             _async=Async.NOT_ASYNC;
             _initial=true;
-            _asyncReadPossible=_asyncReadUnready=false;
-            _asyncWrite=false;
+            _asyncReadPossible=false;
+            _asyncRead=Interest.NONE;
+            _asyncWritePossible=false;
             _timeoutMs=DEFAULT_TIMEOUT;
             _event=null;
         }
@@ -1096,9 +1121,8 @@ public class HttpChannelState
         _channel.getRequest().setAttribute(name,attribute);
     }
 
-
-    /* ------------------------------------------------------------ */
-    /** Called to signal async read isReady() has returned false.
+    /**
+     * Called to signal async read isReady() has returned false.
      * This indicates that there is no content available to be consumed
      * and that once the channel enteres the ASYNC_WAIT state it will
      * register for read interest by calling {@link HttpChannel#asyncReadFillInterested()}
@@ -1109,16 +1133,20 @@ public class HttpChannelState
         boolean interested=false;
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onReadUnready {}",toStringLocked());
             
             // We were already unready, this is not a state change, so do nothing
-            if (!_asyncReadUnready)
+            if (_asyncRead!=Interest.REGISTERED)
             {
-                _asyncReadUnready=true;
                 _asyncReadPossible=false; // Assumes this has been checked in isReady() with lock held
                 if (_state==State.ASYNC_WAIT)
+                {
                     interested=true;
+                    _asyncRead=Interest.REGISTERED;
+                }
+                else
+                    _asyncRead=Interest.NEEDED;
             }
         }
 
@@ -1126,8 +1154,8 @@ public class HttpChannelState
             _channel.asyncReadFillInterested();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Called to signal that content is now available to read.
+    /**
+     * Called to signal that content is now available to read.
      * If the channel is in ASYNC_WAIT state and unready (ie isReady() has
      * returned false), then the state is changed to ASYNC_WOKEN and true
      * is returned.
@@ -1138,11 +1166,11 @@ public class HttpChannelState
         boolean woken=false;
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onReadPossible {}",toStringLocked());
             
             _asyncReadPossible=true;
-            if (_state==State.ASYNC_WAIT && _asyncReadUnready)
+            if (_state==State.ASYNC_WAIT && _asyncRead.isInterested())
             {
                 woken=true;
                 _state=State.ASYNC_WOKEN;
@@ -1151,8 +1179,8 @@ public class HttpChannelState
         return woken;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Called to signal that the channel is ready for a callback.
+    /**
+     * Called to signal that the channel is ready for a callback.
      * This is similar to calling {@link #onReadUnready()} followed by
      * {@link #onReadPossible()}, except that as content is already
      * available, read interest is never set.
@@ -1163,10 +1191,10 @@ public class HttpChannelState
         boolean woken=false;
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onReadReady {}",toStringLocked());
             
-            _asyncReadUnready=true;
+            _asyncRead=Interest.REGISTERED;
             _asyncReadPossible=true;
             if (_state==State.ASYNC_WAIT)
             {
@@ -1177,8 +1205,8 @@ public class HttpChannelState
         return woken;
     }
     
-    /* ------------------------------------------------------------ */
-    /** Called to signal that a read has read -1.
+    /**
+     * Called to signal that a read has read -1.
      * Will wake if the read was called while in ASYNC_WAIT state
      * @return true if woken
      */
@@ -1187,20 +1215,19 @@ public class HttpChannelState
         boolean woken=false;
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onReadEof {}",toStringLocked());
-            
+
             if (_state==State.ASYNC_WAIT)
             {
-                _state=State.ASYNC_WOKEN;
-                _asyncReadUnready=true;
-                _asyncReadPossible=true;
                 woken=true;
+                _state=State.ASYNC_WOKEN;
+                _asyncRead=Interest.REGISTERED;
+                _asyncReadPossible=true;
             }
         }
         return woken;
     }
-
 
     public boolean isReadPossible()
     {
@@ -1216,10 +1243,10 @@ public class HttpChannelState
 
         try(Locker.Lock lock= _locker.lock())
         {
-            if(DEBUG)
+            if (LOG.isDebugEnabled())
                 LOG.debug("onWritePossible {}",toStringLocked());
             
-            _asyncWrite=true;
+            _asyncWritePossible=true;
             if (_state==State.ASYNC_WAIT)
             {
                 _state=State.ASYNC_WOKEN;
@@ -1229,5 +1256,4 @@ public class HttpChannelState
 
         return handle;
     }
-
 }

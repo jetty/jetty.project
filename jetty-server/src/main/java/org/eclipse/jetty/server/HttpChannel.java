@@ -417,7 +417,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                     status == HttpStatus.NO_CONTENT_204 ||
                                     status == HttpStatus.NOT_MODIFIED_304);
                             if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                                _transport.abort(new IOException("insufficient content written"));
+                            {
+                                if (isCommitted())
+                                    _transport.abort(new IOException("insufficient content written"));
+                                else
+                                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500,"insufficient content written");
+                            }
                         }
                         _response.closeOutput();
                         _request.setHandled(true);

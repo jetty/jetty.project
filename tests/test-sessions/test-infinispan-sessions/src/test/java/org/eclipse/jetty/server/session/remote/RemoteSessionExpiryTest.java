@@ -20,8 +20,8 @@
 package org.eclipse.jetty.server.session.remote;
 
 import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
-import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
+import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,11 +44,16 @@ public class RemoteSessionExpiryTest extends AbstractSessionExpiryTest
         __testSupport.teardown();
     }
     
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-       InfinispanTestSessionServer server =  new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache());
-       return server;
+        InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
+        factory.setCache(__testSupport.getCache());
+        return factory;
     }
 
     @Test
