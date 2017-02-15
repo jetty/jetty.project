@@ -150,6 +150,24 @@ readConfig()
   source "$1"
 }
 
+dumpEnv()
+{
+    echo "JAVA           =  $JAVA"
+    echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
+    echo "JETTY_HOME     =  $JETTY_HOME"
+    echo "JETTY_BASE     =  $JETTY_BASE"
+    echo "START_D        =  $START_D"
+    echo "START_INI      =  $START_INI"
+    echo "JETTY_START    =  $JETTY_START"
+    echo "JETTY_CONF     =  $JETTY_CONF"
+    echo "JETTY_ARGS     =  ${JETTY_ARGS[*]}"
+    echo "JETTY_RUN      =  $JETTY_RUN"
+    echo "JETTY_PID      =  $JETTY_PID"
+    echo "JETTY_START_LOG=  $JETTY_START_LOG"
+    echo "JETTY_STATE    =  $JETTY_STATE"
+    echo "RUN_CMD        =  ${RUN_CMD[*]}"
+}
+
 
 
 ##################################################
@@ -279,6 +297,14 @@ then
 fi
 
 #####################################################
+# define start log location
+#####################################################
+if [ -z "$JETTY_START_LOG" ]
+then
+  JETTY_START_LOG="$JETTY_RUN/$NAME-start.log"
+fi
+
+#####################################################
 # Find a pid and state file
 #####################################################
 if [ -z "$JETTY_PID" ]
@@ -401,17 +427,7 @@ RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
 #####################################################
 if (( DEBUG ))
 then
-  echo "START_INI      =  $START_INI"
-  echo "START_D        =  $START_D"
-  echo "JETTY_HOME     =  $JETTY_HOME"
-  echo "JETTY_BASE     =  $JETTY_BASE"
-  echo "JETTY_CONF     =  $JETTY_CONF"
-  echo "JETTY_PID      =  $JETTY_PID"
-  echo "JETTY_START    =  $JETTY_START"
-  echo "JETTY_ARGS     =  ${JETTY_ARGS[*]}"
-  echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
-  echo "JAVA           =  $JAVA"
-  echo "RUN_CMD        =  ${RUN_CMD[*]}"
+  dumpEnv
 fi
 
 ##################################################
@@ -434,7 +450,7 @@ case "$ACTION" in
         CH_USER="-c$JETTY_USER"
       fi
 
-      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_BASE" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_RUN/start.log"
+      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_BASE" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_START_LOG"
 
     else
 
@@ -456,7 +472,7 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
-          exec ${RUN_CMD[*]} start-log-file="$JETTY_RUN/start.log" > /dev/null &
+          exec ${RUN_CMD[*]} start-log-file="$JETTY_START_LOG" > /dev/null &
           disown \$!
           echo \$! > '$JETTY_PID'"
       else
@@ -569,20 +585,7 @@ case "$ACTION" in
       echo "Jetty NOT running"
     fi
     echo
-    echo "START_INI      =  $START_INI"
-    echo "START_D        =  $START_D"
-    echo "JETTY_HOME     =  $JETTY_HOME"
-    echo "JETTY_BASE     =  $JETTY_BASE"
-    echo "JETTY_CONF     =  $JETTY_CONF"
-    echo "JETTY_PID      =  $JETTY_PID"
-    echo "JETTY_START    =  $JETTY_START"
-    echo "JETTY_LOGS     =  $JETTY_LOGS"
-    echo "JETTY_STATE    =  $JETTY_STATE"
-    echo "CLASSPATH      =  $CLASSPATH"
-    echo "JAVA           =  $JAVA"
-    echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
-    echo "JETTY_ARGS     =  ${JETTY_ARGS[*]}"
-    echo "RUN_CMD        =  ${RUN_CMD[*]}"
+    dumpEnv
     echo
 
     if running "$JETTY_PID"

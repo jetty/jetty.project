@@ -1252,7 +1252,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
-                        while (input.isReady() && !input.isFinished())
+                        while (input.isReady())
                         {
                             int b = input.read();
                             if (b>0)
@@ -1260,8 +1260,8 @@ public class AsyncIOServletTest extends AbstractTest
                                 // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
                                 out.write(b);
                             }
-                            else
-                                onAllDataRead();
+                            else if (b<0)
+                                return;
                         }
                     }
 

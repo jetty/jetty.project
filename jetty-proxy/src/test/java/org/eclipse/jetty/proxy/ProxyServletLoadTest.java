@@ -52,18 +52,19 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class AsyncProxyServletLoadTest
+public class ProxyServletLoadTest
 {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data()
     {
         return Arrays.asList(new Object[][]{
+                {ProxyServlet.class},
                 {AsyncProxyServlet.class},
                 {AsyncMiddleManServlet.class}
         });
     }
 
-    private static final Logger LOG = Log.getLogger(AsyncProxyServletLoadTest.class);
+    private static final Logger LOG = Log.getLogger(ProxyServletLoadTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
 
     private HttpClient client;
@@ -73,7 +74,7 @@ public class AsyncProxyServletLoadTest
     private Server server;
     private ServerConnector serverConnector;
 
-    public AsyncProxyServletLoadTest(Class<?> proxyServletClass) throws Exception
+    public ProxyServletLoadTest(Class<?> proxyServletClass) throws Exception
     {
         proxyServlet = (AbstractProxyServlet)proxyServletClass.newInstance();
     }
@@ -170,7 +171,7 @@ public class AsyncProxyServletLoadTest
             thread.start();
         }
 
-        Assert.assertTrue(activeClientLatch.await(clientCount * iterations * 10, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(activeClientLatch.await(Math.max(clientCount * iterations * 10, 5000), TimeUnit.MILLISECONDS));
         Assert.assertTrue(success.get());
     }
 
@@ -211,7 +212,7 @@ public class AsyncProxyServletLoadTest
 
                     if (response.getStatus() != 200)
                     {
-                        LOG.warn("Got response <{}>, expecting <{}>", response.getStatus(), 200);
+                        LOG.warn("Got response <{}>, expecting <{}> iteration=", response.getStatus(), 200,iterations);
                         // allow all ClientLoops to finish
                         success.set(false);
                     }
@@ -224,7 +225,7 @@ public class AsyncProxyServletLoadTest
             }
             catch (Throwable x)
             {
-                LOG.warn("Error processing request", x);
+                LOG.warn("Error processing request "+iterations, x);
                 success.set(false);
             }
             finally

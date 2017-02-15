@@ -1114,8 +1114,10 @@ public class Response implements HttpServletResponse
     @Override
     public void setBufferSize(int size)
     {
-        if (isCommitted() || getContentCount() > 0)
-            throw new IllegalStateException("cannot set buffer size when response is committed or written to");
+        if (isCommitted())
+            throw new IllegalStateException("cannot set buffer size after response is in committed state");
+        if (getContentCount() > 0)
+            throw new IllegalStateException("cannot set buffer size after response has " + getContentCount() + " bytes already written");
         if (size < __MIN_BUFFER_SIZE)
             size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
@@ -1215,7 +1217,9 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        return new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
+        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
+        // TODO info.setTrailerSupplier(trailers);
+        return info;
     }
 
     /** Get the MetaData.Response committed for this response.

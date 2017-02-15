@@ -761,7 +761,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             throw new IllegalStateException("Null contextPath");
 
         if (_logger==null)
-            _logger = Log.getLogger(getDisplayName() == null?getContextPath():getDisplayName());
+        {
+            String log_name = getDisplayName();
+            if (log_name == null || log_name.isEmpty())
+            {
+                log_name = getContextPath();
+                if (log_name!=null || log_name.startsWith("/"))
+                    log_name = log_name.substring(1);
+                if (log_name==null || log_name.isEmpty())
+                    log_name = Integer.toHexString(hashCode());
+            }
+            _logger = Log.getLogger("org.eclipse.jetty.ContextHandler."+log_name);
+        }
         ClassLoader old_classloader = null;
         Thread current_thread = null;
         Context old_context = null;
