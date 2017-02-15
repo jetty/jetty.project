@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -57,15 +58,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -96,6 +98,10 @@ public class RequestTest
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);
+        
+        ErrorHandler errors = new ErrorHandler();
+        errors.setShowStacks(true);
+        _server.addBean(errors);
         _server.start();
     }
 
@@ -121,7 +127,7 @@ public class RequestTest
                     map = request.getParameterMap();
                     return false;
                 }
-                catch(IllegalArgumentException e)
+                catch(BadMessageException e)
                 {
                     // Should be able to retrieve the raw query
                     String rawQuery = request.getQueryString();
@@ -269,7 +275,7 @@ public class RequestTest
             "Accept-Language: XX;q=0, en-au;q=0.9\r\n"+
             "\r\n";
         String response = _connector.getResponses(request);
-        assertThat(response,Matchers.containsString(" 200 OK"));
+        assertThat(response, containsString(" 200 OK"));
     }
 
 
@@ -412,7 +418,7 @@ public class RequestTest
                     request.getParameter("param");
                     return false;
                 }
-                catch(Utf8Appendable.NotUtf8Exception e)
+                catch(BadMessageException e)
                 {
                     // Should still be able to get the raw query.
                     String rawQuery = request.getQueryString();
@@ -532,7 +538,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         int i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -546,7 +552,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -558,7 +564,7 @@ public class RequestTest
                 "GET http://myhost:8888/ HTTP/1.0\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -571,7 +577,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("myhost",results.get(i++));
@@ -586,7 +592,7 @@ public class RequestTest
                 "\n");
         i=0;
 
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://1.2.3.4/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
@@ -600,7 +606,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://1.2.3.4:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("1.2.3.4",results.get(i++));
@@ -614,7 +620,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://[::1]/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("[::1]",results.get(i++));
@@ -628,7 +634,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("http://[::1]:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
         assertEquals("[::1]",results.get(i++));
@@ -644,7 +650,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("https://[::1]/",results.get(i++));
         assertEquals("remote",results.get(i++));
         assertEquals("[::1]",results.get(i++));
@@ -660,7 +666,7 @@ public class RequestTest
                 "x-forwarded-proto: https\n"+
                 "\n");
         i=0;
-        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, containsString("200 OK"));
         assertEquals("https://[::1]:8888/",results.get(i++));
         assertEquals("remote",results.get(i++));
         assertEquals("[::1]",results.get(i++));
@@ -708,7 +714,7 @@ public class RequestTest
             Log.getRootLogger().debug("test l={}",l);
             String response = _connector.getResponses(request);
             Log.getRootLogger().debug(response);
-            assertThat(response, Matchers.containsString(" 200 OK"));
+            assertThat(response, containsString(" 200 OK"));
             assertEquals(l,length.get());
             content+="x";
         }
@@ -737,7 +743,7 @@ public class RequestTest
             "\r\n"+
             content;
         String response = _connector.getResponses(request);
-        assertThat(response,Matchers.containsString(" 200 OK"));
+        assertThat(response, containsString(" 200 OK"));
     }
 
     @Test
@@ -761,7 +767,7 @@ public class RequestTest
             "\r\n"+
             content;
         String response = _connector.getResponses(request);
-        assertThat(response,Matchers.containsString(" 200 OK"));
+        assertThat(response, containsString(" 200 OK"));
     }
 
     @Test
@@ -787,7 +793,7 @@ public class RequestTest
             "\r\n"+
             content;
         String response = _connector.getResponses(request);
-        assertThat(response,Matchers.containsString(" 200 OK"));
+        assertThat(response, containsString(" 200 OK"));
     }
     
     @Test
@@ -815,7 +821,7 @@ public class RequestTest
             "\r\n"+
             content;
         String response = _connector.getResponses(request);
-        assertThat(response,Matchers.containsString(" 200 OK"));
+        assertThat(response, containsString(" 200 OK"));
     }
     
     @Test
@@ -843,7 +849,7 @@ public class RequestTest
             "\r\n"+
             content;
         String response = _connector.getResponses(request);
-        assertThat(response,Matchers.containsString(" 200 OK"));
+        assertThat(response, containsString(" 200 OK"));
     }
     
     
@@ -1036,8 +1042,8 @@ public class RequestTest
                                                 "Host: myhost\n"+
                                                 "Connection: close\n"+
                                                 "\n");
-        assertThat(response,Matchers.containsString(" 302 Found"));
-        assertThat(response,Matchers.containsString("Location: http://myhost/foo"));
+        assertThat(response, containsString(" 302 Found"));
+        assertThat(response, containsString("Location: http://myhost/foo"));
     }
 
     @Test
@@ -1106,9 +1112,9 @@ public class RequestTest
                     "\n",
                     200, TimeUnit.MILLISECONDS
                     );
-        assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.not(Matchers.containsString("Connection: close")));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200"));
+        assertThat(response, Matchers.not(containsString("Connection: close")));
+        assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
@@ -1116,9 +1122,9 @@ public class RequestTest
                     "Connection: close\n"+
                     "\n"
                     );
-        assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.containsString("Connection: close"));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200"));
+        assertThat(response, containsString("Connection: close"));
+        assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
@@ -1127,18 +1133,18 @@ public class RequestTest
                     "\n"
                     );
 
-        assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.containsString("Connection: close"));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200"));
+        assertThat(response, containsString("Connection: close"));
+        assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
                     "\n"
                     );
-        assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.not(Matchers.containsString("Connection: close")));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200"));
+        assertThat(response, Matchers.not(containsString("Connection: close")));
+        assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
@@ -1146,8 +1152,8 @@ public class RequestTest
                     "Connection: Other, close\n"+
                     "\n"
                     );
-        assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200"));
+        assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
@@ -1156,9 +1162,9 @@ public class RequestTest
                     "\n",
                     200, TimeUnit.MILLISECONDS
                     );
-        assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.containsString("Connection: keep-alive"));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200"));
+        assertThat(response, containsString("Connection: keep-alive"));
+        assertThat(response, containsString("Hello World"));
 
         _handler._checker = new RequestTester()
         {
@@ -1178,9 +1184,9 @@ public class RequestTest
                     "\n",
                     200, TimeUnit.MILLISECONDS
                     );
-        assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.containsString("Connection: TE,Other"));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200"));
+        assertThat(response, containsString("Connection: TE,Other"));
+        assertThat(response, containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
@@ -1188,9 +1194,9 @@ public class RequestTest
                     "Connection: close\n"+
                     "\n"
                     );
-        assertThat(response, Matchers.containsString("200 OK"));
-        assertThat(response, Matchers.containsString("Connection: close"));
-        assertThat(response, Matchers.containsString("Hello World"));
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Connection: close"));
+        assertThat(response, containsString("Hello World"));
     }
 
     @Test
@@ -1267,7 +1273,7 @@ public class RequestTest
                 "\n"
         );
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
-        assertThat(response.substring(15), Matchers.containsString("HTTP/1.1 200 OK"));
+        assertThat(response.substring(15), containsString("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
         assertEquals("name", cookies.get(0).getName());
         assertEquals("value", cookies.get(0).getValue());
@@ -1292,7 +1298,7 @@ public class RequestTest
                 "\n"
         );
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
-        assertThat(response.substring(15), Matchers.containsString("HTTP/1.1 200 OK"));
+        assertThat(response.substring(15), containsString("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
         assertEquals("name", cookies.get(0).getName());
         assertEquals("value", cookies.get(0).getValue());
@@ -1430,10 +1436,9 @@ public class RequestTest
     {
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
+            // Expecting maxFormKeys limit and Closing HttpParser exceptions...
             _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
             _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
-
 
             StringBuilder buf = new StringBuilder(4000000);
             buf.append("a=b");
@@ -1442,7 +1447,7 @@ public class RequestTest
             File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
             if (evil_keys.exists())
             {
-                LOG.info("Using real evil keys!");
+                // Using real evil keys!
                 try (BufferedReader in = new BufferedReader(new FileReader(evil_keys)))
                 {
                     String key=null;
@@ -1477,8 +1482,11 @@ public class RequestTest
                     buf;
 
             long start=System.currentTimeMillis();
-            String response = _connector.getResponses(request);
-            assertThat(response,Matchers.containsString("IllegalStateException"));
+            String rawResponse = _connector.getResponses(request);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat("Response.status", response.getStatus(), is(400));
+            assertThat("Response body content", response.getContent(),containsString(BadMessageException.class.getName()));
+            assertThat("Response body content", response.getContent(),containsString(IllegalStateException.class.getName()));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
         }
@@ -1518,8 +1526,11 @@ public class RequestTest
                     buf;
 
             long start=System.currentTimeMillis();
-            String response = _connector.getResponses(request);
-            assertTrue(response.contains("IllegalStateException"));
+            String rawResponse = _connector.getResponses(request);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat("Response.status", response.getStatus(), is(400));
+            assertThat("Response body content", response.getContent(),containsString(BadMessageException.class.getName()));
+            assertThat("Response body content", response.getContent(),containsString(IllegalStateException.class.getName()));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
         }
