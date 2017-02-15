@@ -15,4 +15,4 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini-template]
 ## Hide the gcloud libraries from deployed webapps
-jetty.webapp.addServerClasses+=,file:${jetty.base}/lib/gcloud/
+jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/gcloud/
