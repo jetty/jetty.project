@@ -1,3 +1,5 @@
+jetty-9.4.3-SNAPSHOT
+
 jetty-9.4.2.v20170220 - 20 February 2017
  + 612 Support HTTP Trailer
  + 1047 ReadPendingException and then thread death
