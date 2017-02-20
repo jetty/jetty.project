@@ -1,4 +1,30 @@
-jetty-9.4.2-SNAPSHOT
+jetty-9.4.2.v20170220 - 20 February 2017
+ + 612 Support HTTP Trailer
+ + 1047 ReadPendingException and then thread death
+ + 1150 Rationalize the session tests
+ + 1226 Undefined JETTY_LOGS breaks jetty.sh 
+ + 1282 ByteArrayEndPointTest.testIdle() failure
+ + 1284 IllegalStateException updating session inactive interval
+ + 1290 http2-hpack not visible in OSGi
+ + Allow application to hint that chunking should be used
+ + 1292 jetty-home has unresolvable dependencies
+ + 1296 Introduce HTTP parser "content complete" event
+ + 1298 Generate gcloud-datastore.mod
+ + 1300 Update to gcloud-datastore 0.8.2
+ + 1307 Session scavenge needs to invalidate session
+ + 1309 HttpClient GZIPContentDecoder should use the clients ByteBufferPool
+ + 1313 Insufficient Bytes behavior change in jetty 9.4.x due to HTTP Trailers
+   support?
+ + 1315 Update to gcloud datastore 0.8.3-beta
+ + 1317 AsyncProxyServletLoadTest fails
+ + 1318 SessionEvictionFailure test fails on Windows
+ + 1326 Jetty shutdown command got NullPointerException (http2 module added to
+   start)
+ + 1328 Response.setBufferSize(int) ISE should be more clear on reason
+ + 1329 Update to gcloud-datastore 0.9.2-beta
+ + 1331 NPE in ClasspathPattern.add when using module logging-log4j2.mod and
+   other logging modules
+ + 1342 Improve ByteBufferPool scalability
 
 jetty-9.4.1.v20170120 - 20 January 2017
  + 486 JDK 9 ALPN implementation
@@ -46,25 +72,25 @@ jetty-9.4.1.v20170120 - 20 January 2017
  + 1222 Authenticated sessions throw exception on invalidate
  + 1223 Allow session workername to be null
  + 1224 HttpSessionListener.sessionDestroyed can no longer access session
- + 1226 Undefined JETTY_LOGS breaks jetty.sh 
+ + 1226 Undefined JETTY_LOGS breaks jetty.sh
  + 1228 Internal error during SSL handshake
  + 1229 ClassLoader constraint issue when using NativeWebSocketConfiguration
    with WEB-INF/lib/jetty-http.jar present
  + 1234 onBadMessage called from with handled message
  + 1239 Charset=unknown produces Exception during testing
- + 1242
+ + 1242 
    org.eclipse.jetty.client.HttpRequestAbortTest.testAbortOnCommitWithContent[1]()
    results in EofException
- + 1243
+ + 1243 
    org.eclipse.jetty.proxy.ProxyServletFailureTest.testServerException[0]()
    results in ServletException
- + 1244
+ + 1244 
    ProxyServletFailureTest.testProxyRequestStallsContentServerIdlesTimeout()
    has TimeoutException visible
- + 1248
+ + 1248 
    org.eclipse.jetty.http2.client.StreamResetTest.testServerExceptionConsumesQueuedData
    results in visible Stacktrace
- + 1252
+ + 1252 
    HttpClientStreamTest.testInputStreamContentProviderThrowingWhileReading[transport:
    HTTPS]() results in Early EOF
  + 1254 9.4.x Server resource handler welcome files forwarding not working
@@ -349,7 +375,7 @@ jetty-9.4.0.M1 - 15 August 2016
  + 623 Add --gzip suffix to 304 responses with ETAGs
  + 624 AsyncContext.onCompleted called twice
  + 627 Use only start.ini or start.d, not both
- + 628 IOException: Unable to open root Jar file .
+ + 628 IOException: Unable to open root Jar file
    MetaInfConfiguration.getTlds(MetaInfConfiguration.java:406) with Spring boot
    loader + WebAppContext + non-expanded war
  + 632 JMX tests rely on fixed port
