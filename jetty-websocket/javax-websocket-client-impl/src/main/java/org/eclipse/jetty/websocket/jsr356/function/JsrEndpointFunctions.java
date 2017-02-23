@@ -543,11 +543,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
     {
         Arg SESSION = new Arg(Session.class);
         UnorderedSignature sigPong = new UnorderedSignature(createCallArgs(SESSION, new Arg(PongMessage.class).required()));
-        if (sigPong.test(onMsg))
+        int argMapping[] = sigPong.getArgMapping(onMsg);
+        if (argMapping != null)
         {
             assertOnMessageSignature(onMsg);
             
-            final Object[] args = newCallArgs(sigPong.getCallArgs());
+            final Object[] args = newFunctionArgs(sigPong.getCallArgs(), onMsg, argMapping);
             BiFunction<Object, Object[], Object> invoker = sigPong.newFunction(onMsg);
             // No decoder for PongMessage
             setOnPong((pong) ->
@@ -588,11 +589,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.BinaryStream.class))
         {
             UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-            if (sig.test(onMsg))
+            int argMapping[] = sig.getArgMapping(onMsg);
+            if (argMapping != null)
             {
                 assertOnMessageSignature(onMsg);
                 
-                final Object[] args = newCallArgs(sig.getCallArgs());
+                final Object[] args = newFunctionArgs(sig.getCallArgs(), onMsg, argMapping);
                 BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
                 Decoder.BinaryStream decoderInstance = decoders.getInstanceOf(decoder);
                 DecodedInputStreamMessageSink streamSink = new DecodedInputStreamMessageSink(
@@ -627,11 +629,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.TextStream.class))
         {
             UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-            if (sig.test(onMsg))
+            int argMapping[] = sig.getArgMapping(onMsg);
+            if (argMapping != null)
             {
                 assertOnMessageSignature(onMsg);
                 
-                final Object[] args = newCallArgs(sig.getCallArgs());
+                final Object[] args = newFunctionArgs(sig.getCallArgs(), onMsg, argMapping);
                 BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
                 Decoder.TextStream decoderInstance = decoders.getInstanceOf(decoder);
                 DecodedReaderMessageSink streamSink = new DecodedReaderMessageSink(
@@ -667,12 +670,13 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         Arg ARG_BYTE_BUFFER = new Arg(ByteBuffer.class).required();
         Arg ARG_PARTIAL_BOOL = new Arg(boolean.class).required();
         UnorderedSignature sigPartialByteBuffer = new UnorderedSignature(createCallArgs(SESSION, ARG_BYTE_BUFFER, ARG_PARTIAL_BOOL));
-        if (sigPartialByteBuffer.test(onMsg))
+        int argMapping[] = sigPartialByteBuffer.getArgMapping(onMsg);
+        if (argMapping != null)
         {
             // Found partial binary array args
             assertOnMessageSignature(onMsg);
             
-            final Object[] args = newCallArgs(sigPartialByteBuffer.getCallArgs());
+            final Object[] args = newFunctionArgs(sigPartialByteBuffer.getCallArgs(), onMsg, argMapping);
             BiFunction<Object, Object[], Object> invoker = sigPartialByteBuffer.newFunction(onMsg);
             // No decoders for Partial messages per JSR-356 (PFD1 spec)
             setOnBinary(new PartialBinaryMessageSink((partial) ->
@@ -703,12 +707,13 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         Arg ARG_BYTE_ARRAY = new Arg(byte[].class).required();
         Arg ARG_PARTIAL_BOOL = new Arg(boolean.class).required();
         UnorderedSignature sigPartialBinaryArray = new UnorderedSignature(createCallArgs(SESSION, ARG_BYTE_ARRAY, ARG_PARTIAL_BOOL));
-        if (sigPartialBinaryArray.test(onMsg))
+        int argMapping[] = sigPartialBinaryArray.getArgMapping(onMsg);
+        if (argMapping != null)
         {
             // Found partial binary array args
             assertOnMessageSignature(onMsg);
             
-            final Object[] args = newCallArgs(sigPartialBinaryArray.getCallArgs());
+            final Object[] args = newFunctionArgs(sigPartialBinaryArray.getCallArgs(), onMsg, argMapping);
             BiFunction<Object, Object[], Object> invoker = sigPartialBinaryArray.newFunction(onMsg);
             // No decoders for Partial messages per JSR-356 (PFD1 spec)
             setOnBinary(new PartialBinaryMessageSink((partial) ->
@@ -740,12 +745,14 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         Arg ARG_PARTIAL_BOOL = new Arg(boolean.class).required();
         Arg ARG_STRING = new Arg(String.class).required();
         UnorderedSignature sigPartialText = new UnorderedSignature(createCallArgs(SESSION, ARG_STRING, ARG_PARTIAL_BOOL));
-        if (sigPartialText.test(onMsg))
+
+        int argMapping[] = sigPartialText.getArgMapping(onMsg);
+        if (argMapping != null)
         {
             // Found partial text args
             assertOnMessageSignature(onMsg);
-            
-            final Object[] args = newCallArgs(sigPartialText.getCallArgs());
+    
+            final Object[] args = newFunctionArgs(sigPartialText.getCallArgs(), onMsg, argMapping);
             BiFunction<Object, Object[], Object> invoker = sigPartialText.newFunction(onMsg);
             // No decoders for Partial messages per JSR-356 (PFD1 spec)
             setOnText(new PartialTextMessageSink((partial) ->
@@ -776,11 +783,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.Binary.class))
         {
             UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-            if (sig.test(onMsg))
+            int argMapping[] = sig.getArgMapping(onMsg);
+            if (argMapping != null)
             {
                 assertOnMessageSignature(onMsg);
                 
-                final Object[] args = newCallArgs(sig.getCallArgs());
+                final Object[] args = newFunctionArgs(sig.getCallArgs(), onMsg, argMapping);
                 BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
                 Decoder.Binary decoderInstance = decoders.getInstanceOf(decoder);
                 DecodedBinaryMessageSink binarySink = new DecodedBinaryMessageSink(
@@ -812,11 +820,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         for (AvailableDecoders.RegisteredDecoder decoder : decoders.supporting(Decoder.Text.class))
         {
             UnorderedSignature sig = new UnorderedSignature(createCallArgs(SESSION, new Arg(decoder.objectType).required()));
-            if (sig.test(onMsg))
+            int argMapping[] = sig.getArgMapping(onMsg);
+            if (argMapping != null)
             {
                 assertOnMessageSignature(onMsg);
-                
-                final Object[] args = newCallArgs(sig.getCallArgs());
+
+                final Object[] args = newFunctionArgs(sig.getCallArgs(), onMsg, argMapping);
                 BiFunction<Object, Object[], Object> invoker = sig.newFunction(onMsg);
                 Decoder.Text decoderInstance = decoders.getInstanceOf(decoder);
                 DecodedTextMessageSink textSink = new DecodedTextMessageSink(
@@ -893,6 +902,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
     }
     
+    @Deprecated
     protected Object[] newCallArgs(Arg[] callArgs) throws DecodeException
     {
         int len = callArgs.length;
@@ -903,6 +913,30 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             args[i] = AvailableDecoders.decodePrimitive(staticRawValue, callArgs[i].getType());
         }
         return args;
+    }
+    
+    protected Object[] newFunctionArgs(Arg[] callArgs, Method destMethod, int argMapping[]) throws DecodeException
+    {
+        Object[] potentialArgs = new Object[callArgs.length];
+    
+        if ((staticArgs == null) || (staticArgs.isEmpty()))
+        {
+            // No static args, then potentialArgs is empty too
+            return potentialArgs;
+        }
+        
+        Class<?>[] paramTypes = destMethod.getParameterTypes();
+        int paramTypesLen = paramTypes.length;
+        
+        for (int i = 0; i < paramTypesLen; i++)
+        {
+            Class destType = paramTypes[i];
+            Arg callArg = callArgs[argMapping[i]];
+            String staticRawValue = staticArgs.get(callArg.getTag());
+            potentialArgs[argMapping[i]] = AvailableDecoders.decodePrimitive(staticRawValue, destType);
+            
+        }
+        return potentialArgs;
     }
     
     private Object getDecodedStaticValue(String name, Class<?> type) throws DecodeException
