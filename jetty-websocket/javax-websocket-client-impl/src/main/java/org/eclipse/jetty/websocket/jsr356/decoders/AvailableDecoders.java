@@ -370,7 +370,7 @@ public class AvailableDecoders implements Predicate<Class<?>>
         }
         catch (NumberFormatException e)
         {
-            throw new DecodeException(value, "Unable to decode as type " + type.getName());
+            throw new DecodeException(value, "Unable to decode as type " + type.getName(), e);
         }
     }
     

@@ -177,11 +177,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             AvailableDecoders availableDecoders = new AvailableDecoders(config);
             Map<String, String> pathParameters = new HashMap<>();
             
-            // if any pathspec has a URI Template with variables, we should include them (as empty String value)
+            // if any pathspec has a URI Template with variables, we should include them (as String value 0)
             // in the test for validity of the declared @OnMessage methods that use @PathParam annotation
+            // We chose the default string "0" as that is the most reliably converted to a
+            // Java Primitive during this initial "is valid" test (the real URITemplate value
+            // is used when a real connection is established later)
             for (String variable : new UriTemplatePathSpec(config.getPath()).getVariables())
             {
-                pathParameters.put(variable, "");
+                pathParameters.put(variable, "0");
             }
             
             endpointFunctions = newJsrEndpointFunction(endpoint, availableEncoders, availableDecoders, pathParameters, config);

@@ -72,9 +72,15 @@ public class UnorderedSignature implements Signature, Predicate<Method>
     }
     
     @Override
+    @Deprecated
     public boolean test(Method method)
     {
         return getArgMapping(method, false, callArgs) != null;
+    }
+    
+    public int[] getArgMapping(Method method)
+    {
+        return getArgMapping(method, false, callArgs);
     }
     
     public void appendDescription(StringBuilder str)
