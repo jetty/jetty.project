@@ -529,7 +529,7 @@ Certificate fingerprints:
 	 Signature algorithm name: SHA256withRSA
 	 Version: 3
 
-Extensions: 
+Extensions:
 
 #1: ObjectId: 2.5.29.35 Criticality=false
 AuthorityKeyIdentifier [
@@ -571,7 +571,7 @@ Certificate fingerprints:
 	 Signature algorithm name: SHA256withRSA
 	 Version: 3
 
-Extensions: 
+Extensions:
 
 #1: ObjectId: 2.5.29.35 Criticality=false
 AuthorityKeyIdentifier [
@@ -797,7 +797,8 @@ When using the `ExtendedSSlContextFactory`, the correct certificate is automatic
 [[configuring-sslcontextfactory-cipherSuites]]
 ==== Disabling/Enabling Specific Cipher Suites
 
-As an example, to avoid the BEAST attack it is necessary to configure a specific set of cipher suites. This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
+To avoid specific attacks it is often necessary to configure a specific set of cipher suites to include or exclude.
+This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
 
 ____
 [NOTE]
@@ -815,7 +816,7 @@ ____
 
 Both `setIncludeCipherSuites` and `setExcludeCipherSuites` can be fed by the exact cipher suite name used in the JDK or by using regular expressions.
 
-If you have a need to adjust the Includes or Excludes, then this is best done with a custom blow-in XML that configures the `SslContextFactory` to suit your needs.
+If you have a need to adjust the Includes or Excludes, then this is best done with a custom XML that configures the `SslContextFactory` to suit your needs.
 
 To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can be any name, just avoid prefixing it with "jetty-").
 
@@ -930,3 +931,97 @@ ____
 ----
   <Set name="renegotiationAllowed">FALSE</Set>
 ----
+
+[[ssl-dump-ciphers]]
+
+You can view what cipher suites are enabled and disabled by performing a server dump.
+
+To perform a server dump upon server startup, add `jetty.server.dumpAfterStart=true` to the command line when starting the server.
+You can also dump the server when shutting down the server instance by adding `jetty.server.dumpBeforeStop`.
+
+Specifically, you will want to look for the `SslConnectionFactory` portion of the dump.
+
+[source, screen, subs="{sub-order}"]
+----
+[my-base]$ java -jar ${JETTY_HOME}/start.jar jetty.server.dumpAfterStart=true
+
+...
+|   += SslConnectionFactory@18be83e4{SSL->http/1.1} - STARTED
+|   |   += SslContextFactory@42530531(null,null) trustAll=false
+|   |       +- Protocol Selections
+|   |       |   +- Enabled (size=3)
+|   |       |   |   +- TLSv1
+|   |       |   |   +- TLSv1.1
+|   |       |   |   +- TLSv1.2
+|   |       |   +- Disabled (size=2)
+|   |       |       +- SSLv2Hello - ConfigExcluded:'SSLv2Hello'
+|   |       |       +- SSLv3 - JreDisabled:java.security, ConfigExcluded:'SSLv3'
+|   |       +- Cipher Suite Selections
+|   |           +- Enabled (size=15)
+|   |           |   +- TLS_DHE_DSS_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_DHE_DSS_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_DHE_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+|   |           |   +- TLS_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_RSA_WITH_AES_128_GCM_SHA256
+|   |           +- Disabled (size=42)
+|   |               +- SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_DSS_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_NULL_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DHE_DSS_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DHE_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DH_anon_WITH_AES_128_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DH_anon_WITH_AES_128_CBC_SHA256 - JreDisabled:java.security
+|   |               +- TLS_DH_anon_WITH_AES_128_GCM_SHA256 - JreDisabled:java.security
+|   |               +- TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_ECDSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_AES_128_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_3DES_EDE_CBC_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_DES_CBC_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_RSA_WITH_NULL_SHA256 - JreDisabled:java.security
+...
+----
+
+In the example above you can see both the enabled/disabled protocols and included/excluded ciper suites.
+For disabled or excluded protocols and ciphers, the reason they are disabled is given - either due to JVM restrictions, configuration or both.
+As a reminder, when configuring your includes/excludes, *excludes always win*.
+
+Dumps can be configured as part of the `jetty.xml` configuration for your server.
+Please see the documentation on the link:#jetty-dump-tool[Jetty Dump Tool] for more information.
