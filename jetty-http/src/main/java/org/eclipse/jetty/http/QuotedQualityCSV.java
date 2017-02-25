@@ -67,7 +67,14 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     @Override
     protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
     {
-        if (buffer.charAt(paramName)=='q' && paramValue>paramName && buffer.charAt(paramName+1)=='=')
+        if (paramName<0)
+        {
+            if (buffer.charAt(buffer.length()-1)==';')
+                buffer.setLength(buffer.length()-1);
+        }
+        if (paramValue>=0 && 
+            buffer.charAt(paramName)=='q' && paramValue>paramName && 
+            buffer.length()>=paramName && buffer.charAt(paramName+1)=='=')
         {
             Double q;
             try
@@ -108,7 +115,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         _sorted=true;
 
         Double last = ZERO;
-        int len = Integer.MIN_VALUE;
 
         for (int i = _values.size(); i-- > 0;)
         {
@@ -116,20 +122,18 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             Double q = _quality.get(i);
 
             int compare=last.compareTo(q);
-            if (compare > 0  || (compare==0 && v.length()<len))
+            if (compare > 0)
             {
                 _values.set(i, _values.get(i + 1));
                 _values.set(i + 1, v);
                 _quality.set(i, _quality.get(i + 1));
                 _quality.set(i + 1, q);
                 last = ZERO;
-                len=0;
                 i = _values.size();
                 continue;
             }
 
             last=q;
-            len=v.length();
         }
         
         int last_element=_quality.size();

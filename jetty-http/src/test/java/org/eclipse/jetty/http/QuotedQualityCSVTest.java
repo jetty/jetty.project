@@ -47,7 +47,9 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("text/*, text/plain, text/plain;format=flowed, */*");
-        Assert.assertThat(values,Matchers.contains("text/plain;format=flowed","text/plain","text/*","*/*"));
+        
+        // Note this sort is only on quality and not the most specific type as per 5.3.2
+        Assert.assertThat(values,Matchers.contains("text/*","text/plain","text/plain;format=flowed","*/*"));
     }
     
     @Test
@@ -78,9 +80,9 @@ public class QuotedQualityCSVTest
         Assert.assertThat(values,Matchers.contains(
                 "compress",
                 "gzip",
-                "gzip",
-                "gzip",
                 "*",
+                "gzip",
+                "gzip",
                 "compress",
                 "identity"
                 ));
@@ -144,4 +146,22 @@ public class QuotedQualityCSVTest
                 "value1.0",
                 "value0.5;p=v"));
     }
+    
+
+    @Test
+    public void testSameQuality()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV();
+        values.addValue("one;q=0.5,two;q=0.5,three;q=0.5");
+        Assert.assertThat(values.getValues(),Matchers.contains("one","two","three"));
+    }
+
+    @Test
+    public void testNoQuality()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV();
+        values.addValue("one,two;,three;x=y");
+        Assert.assertThat(values.getValues(),Matchers.contains("one","two","three;x=y"));
+    }
+    
 }
