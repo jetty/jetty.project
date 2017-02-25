@@ -180,8 +180,7 @@ public class ClasspathPattern extends AbstractSet<String>
             if (_entries.get(name)!=null)
                 return false;
             
-            _entries.put(name,entry);
-            return true;
+            return _entries.put(name,entry);
         }
         
         @Override

@@ -228,4 +228,21 @@ public class ClasspathPatternTest
         assertThat(pattern.match(JDK.class),is(true));
         assertThat(pattern.match(ClasspathPatternTest.class),is(false));
     }
+    
+
+    
+    @Test
+    public void testLarge()
+    {
+        ClasspathPattern pattern = new ClasspathPattern();
+        for (int i=0; i<500; i++)
+        {
+            assertTrue(pattern.add("n"+i+"."+Integer.toHexString(100+i)+".Name"));
+        }
+        
+        for (int i=0; i<500; i++)
+        {
+            assertTrue(pattern.match("n"+i+"."+Integer.toHexString(100+i)+".Name"));
+        }
+    }
 }
