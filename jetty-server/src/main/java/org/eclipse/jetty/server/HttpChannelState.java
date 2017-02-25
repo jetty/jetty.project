@@ -96,17 +96,15 @@ public class HttpChannelState
     {
         NONE(false),
         NEEDED(true),
-        INTERESTED(true);
+        REGISTERED(true);
         
         final boolean _interested;
         boolean isInterested() { return _interested;}
-        boolean notInterested() { return !_interested;}
         
         Interest(boolean interest)
         {
             _interested = interest;
         }
-
     }
     
     private final boolean DEBUG=LOG.isDebugEnabled();
@@ -443,7 +441,7 @@ public class HttpChannelState
                         action=Action.WAIT; 
                         if (_asyncRead==Interest.NEEDED)
                         {
-                            _asyncRead=Interest.INTERESTED;
+                            _asyncRead=Interest.REGISTERED;
                             read_interested=true;
                         }
                         Scheduler scheduler=_channel.getScheduler();
@@ -986,13 +984,13 @@ public class HttpChannelState
         try(Locker.Lock lock= _locker.lock())
         {
             // We were already unready, this is not a state change, so do nothing
-            if (_asyncRead!=Interest.INTERESTED)
+            if (_asyncRead!=Interest.REGISTERED)
             {
                 _asyncReadPossible=false; // Assumes this has been checked in isReady() with lock held
                 if (_state==State.ASYNC_WAIT)
                 {
                     interested=true;
-                    _asyncRead=Interest.INTERESTED;
+                    _asyncRead=Interest.REGISTERED;
                 }
                 else
                     _asyncRead=Interest.NEEDED;
@@ -1037,7 +1035,7 @@ public class HttpChannelState
         boolean woken=false;
         try(Locker.Lock lock= _locker.lock())
         {
-            _asyncRead=Interest.INTERESTED;
+            _asyncRead=Interest.REGISTERED;
             _asyncReadPossible=true;
             if (_state==State.ASYNC_WAIT)
             {
