@@ -24,7 +24,9 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -173,26 +175,44 @@ public class RolloverFileOutputStream extends FilterOutputStream
             
             _rollTask=new RollTask();
 
-            midnight = Calendar.getInstance();
-            midnight.setTimeZone(zone);
-            // set to midnight
-            midnight.set(Calendar.HOUR, 0);
-            midnight.set(Calendar.MINUTE, 0);
-            midnight.set(Calendar.SECOND, 0);
-            midnight.set(Calendar.MILLISECOND, 0);
+            midnight = toMidnight(ZonedDateTime.now(), zone.toZoneId());
             
             scheduleNextRollover();
         }
     }
     
-    private void scheduleNextRollover()
+    /**
+     * Get the "start of day" for the provided DateTime at the zone specified.
+     *
+     * @param dateTime the date time to calculate from
+     * @param zone the zone to return the date in
+     * @return start of the day of the date provided
+     */
+    public static ZonedDateTime toMidnight(ZonedDateTime dateTime, ZoneId zone)
+    {
+        return dateTime.toLocalDate().atStartOfDay(zone);
+    }
+    
+    /**
+     * Get the next "start of day" for the provided date.
+     *
+     * @param dateTime the date to calculate from
+     * @return the start of the next day
+     */
+    public static ZonedDateTime nextMidnight(ZonedDateTime dateTime)
     {
         // Increment to next day.
         // Using Calendar.add(DAY, 1) takes in account Daylights Savings
         // differences, and still maintains the "midnight" settings for
         // Hour, Minute, Second, Milliseconds
-        midnight.add(Calendar.DAY_OF_MONTH, 1);
-        __rollover.schedule(_rollTask,midnight.getTime());
+        return dateTime.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(dateTime.getZone());
+    }
+    
+    private void scheduleNextRollover()
+    {
+        long lastMs = midnight.toInstant().toEpochMilli();
+        midnight = nextMidnight(midnight);
+        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - lastMs);
     }
 
     /* ------------------------------------------------------------ */
