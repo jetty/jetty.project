@@ -222,9 +222,8 @@ public class RolloverFileOutputStream extends FilterOutputStream
     
     private void scheduleNextRollover()
     {
-        long lastMs = midnight.toInstant().toEpochMilli();
         midnight = nextMidnight(midnight);
-        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - lastMs);
+        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - System.currentTimeMillis());
     }
 
     /* ------------------------------------------------------------ */
