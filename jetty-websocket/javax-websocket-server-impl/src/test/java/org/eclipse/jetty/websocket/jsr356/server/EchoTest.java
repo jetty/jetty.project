@@ -26,12 +26,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -272,15 +272,15 @@ public class EchoTest
     @Test(timeout=10000)
     public void testEcho() throws Exception
     {
-        int messageCount = testcase.getMessageCount();
-        EchoClientSocket socket = new EchoClientSocket(messageCount);
+        EchoClientSocket socket = new EchoClientSocket();
         URI toUri = serverUri.resolve(testcase.path.substring(1));
 
         try
         {
+            Future<List<String>> clientMessagesFuture = socket.expectedMessages(testcase.expectedStrings.size());
+            
             // Connect
             client.connectToServer(socket,toUri);
-            socket.waitForConnected(10,TimeUnit.SECONDS);
 
             // Send Messages
             for (Object msg : testcase.messages)
@@ -310,8 +310,7 @@ public class EchoTest
             }
 
             // Collect Responses
-            socket.awaitAllEvents(1,TimeUnit.SECONDS);
-            EventQueue<String> received = socket.eventQueue;
+            List<String> received = clientMessagesFuture.get(5, TimeUnit.SECONDS);
     
             // Validate Responses
             assertOrdered("Received Events", testcase.expectedStrings, received);
@@ -324,7 +323,7 @@ public class EchoTest
     }
     
     @SuppressWarnings("Duplicates")
-    public static void assertOrdered(String msg, List<String> expectedList, EventQueue<String> actualList)
+    public static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
     {
         try
         {

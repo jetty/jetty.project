@@ -20,8 +20,12 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
@@ -34,19 +38,29 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.CloseException;
 
 @ClientEndpoint
-public class EchoClientSocket extends TrackingSocket
+public class EchoClientSocket
 {
-    public final CountDownLatch eventCountLatch;
+    private static final Logger LOG = Log.getLogger(EchoClientSocket.class);
+    public CountDownLatch openLatch = new CountDownLatch(1);
+    public CountDownLatch closeLatch = new CountDownLatch(1);
     private Session session;
     private Basic remote;
+    private CompletableFuture<List<String>> expectedMessagesFuture;
+    private AtomicInteger expectedMessageCount;
+    private List<String> messages = new ArrayList<>();
 
-    public EchoClientSocket(int expectedEventCount)
+    public Future<List<String>> expectedMessages(int expected)
     {
-        this.eventCountLatch = new CountDownLatch(expectedEventCount);
+        expectedMessagesFuture = new CompletableFuture<>();
+        expectedMessageCount = new AtomicInteger(expected);
+        return expectedMessagesFuture;
     }
-
+    
     public void close() throws IOException
     {
         if (session != null)
@@ -59,20 +73,25 @@ public class EchoClientSocket extends TrackingSocket
     public void onClose(CloseReason close)
     {
         this.session = null;
-        super.closeReason = close;
-        super.closeLatch.countDown();
+        remote = null;
+        synchronized (expectedMessagesFuture)
+        {
+            if ((close.getCloseCode() != CloseReason.CloseCodes.NORMAL_CLOSURE) ||
+                    (close.getCloseCode() != CloseReason.CloseCodes.NO_STATUS_CODE))
+            {
+                expectedMessagesFuture.completeExceptionally(new CloseException(close.getCloseCode().getCode(), close.getReasonPhrase()));
+            }
+        }
+        closeLatch.countDown();
     }
 
     @OnError
     public void onError(Throwable t)
     {
-        if (t == null)
+        LOG.warn(t);
+        synchronized (expectedMessagesFuture)
         {
-            addError(new NullPointerException("Throwable should not be null"));
-        }
-        else
-        {
-            addError(t);
+            expectedMessagesFuture.completeExceptionally(t);
         }
     }
 
@@ -85,17 +104,19 @@ public class EchoClientSocket extends TrackingSocket
     }
 
     @OnMessage
-    public void onText(String text)
+    public void onText(String text) throws IOException, EncodeException
     {
-        addEvent(text);
-        eventCountLatch.countDown();
+        messages.add(text);
+        synchronized (expectedMessagesFuture)
+        {
+            int countLeft = expectedMessageCount.decrementAndGet();
+            if (countLeft <= 0)
+            {
+                expectedMessagesFuture.complete(messages);
+            }
+        }
     }
 
-    public boolean awaitAllEvents(long timeout, TimeUnit unit) throws InterruptedException
-    {
-        return eventCountLatch.await(timeout,unit);
-    }
-    
     public void sendText(String msg) throws IOException, EncodeException
     {
         remote.sendText(msg);

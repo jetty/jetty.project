@@ -46,6 +46,6 @@ public class PongMessageEndpoint extends Endpoint implements MessageHandler.Whol
     {
         byte buf[] = BufferUtil.toArray(pong.getApplicationData());
         String message = new String(buf,StandardCharsets.UTF_8);
-        this.session.getAsyncRemote().sendText("PongMessage[" + path + "]:" + message);
+        this.session.getAsyncRemote().sendText("PongMessageEndpoint.onMessage(PongMessage):[" + path + "]:" + message);
     }
 }

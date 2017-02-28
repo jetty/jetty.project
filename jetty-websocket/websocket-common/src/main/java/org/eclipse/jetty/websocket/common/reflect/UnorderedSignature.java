@@ -170,7 +170,7 @@ public class UnorderedSignature implements Signature, Predicate<Method>
             if (ref < 0)
             {
                 StringBuilder err = new StringBuilder();
-                err.append("Unable to map type [");
+                err.append("Invalid mapping of type [");
                 err.append(methodArgs[ai].getType());
                 err.append("] in method ");
                 ReflectUtils.append(err, method);

@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 /**
  * This is a Jetty API version of a websocket.
  * <p>
- * This is used a a client socket during the server tests.
+ * This is used as a client socket during the server tests.
  */
 @WebSocket
 public class JettyEchoSocket
