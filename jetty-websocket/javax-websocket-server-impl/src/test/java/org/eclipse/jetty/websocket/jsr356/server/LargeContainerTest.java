@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Queue;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -46,6 +46,7 @@ public class LargeContainerTest
     @Rule
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
+    @SuppressWarnings("Duplicates")
     @Test
     public void testEcho() throws Exception
     {
@@ -68,6 +69,7 @@ public class LargeContainerTest
                 client.getPolicy().setMaxTextMessageSize(128*1024);
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
+                Future<List<String>> clientMessagesFuture = clientEcho.expectedMessages(1);
                 Future<Session> foo = client.connect(clientEcho,uri.resolve("echo/large"));
                 // wait for connect
                 foo.get(1,TimeUnit.SECONDS);
@@ -76,8 +78,8 @@ public class LargeContainerTest
                 Arrays.fill(txt,(byte)'o');
                 String msg = new String(txt,StandardCharsets.UTF_8);
                 clientEcho.sendMessage(msg);
-                Queue<String> msgs = clientEcho.awaitMessages(1);
-                Assert.assertEquals("Expected message",msg,msgs.poll());
+                List<String> msgs = clientMessagesFuture.get(1, TimeUnit.SECONDS);
+                Assert.assertEquals("Expected message",msg,msgs.get(0));
             }
             finally
             {

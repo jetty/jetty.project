@@ -99,13 +99,14 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
     
     public EndpointFunctions newJsrEndpointFunction(Object endpoint,
+                                                    WebSocketPolicy sessionPolicy,
                                                     AvailableEncoders availableEncoders,
                                                     AvailableDecoders availableDecoders,
                                                     Map<String, String> pathParameters,
                                                     EndpointConfig config)
     {
         return new JsrEndpointFunctions(endpoint,
-                getPolicy(),
+                sessionPolicy,
                 getExecutor(),
                 availableEncoders,
                 availableDecoders,

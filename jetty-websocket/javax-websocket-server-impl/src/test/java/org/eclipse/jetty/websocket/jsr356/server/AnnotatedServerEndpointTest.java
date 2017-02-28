@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Queue;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -82,6 +82,7 @@ public class AnnotatedServerEndpointTest
         {
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
+            Future<List<String>> clientMessagesFuture = clientEcho.expectedMessages(1);
             URI uri = server.getServerBaseURI().resolve("echo");
             ClientUpgradeRequest req = new ClientUpgradeRequest();
             req.setSubProtocols("echo");
@@ -90,9 +91,9 @@ public class AnnotatedServerEndpointTest
             foo.get(1,TimeUnit.SECONDS);
 
             clientEcho.sendMessage(message);
-            Queue<String> msgs = clientEcho.awaitMessages(1);
+            List<String> msgs = clientMessagesFuture.get(1, TimeUnit.SECONDS);
 
-            String response = msgs.poll();
+            String response = msgs.get(0);
             for (String expected : expectedTexts)
             {
                 Assert.assertThat("Expected message",response,containsString(expected));

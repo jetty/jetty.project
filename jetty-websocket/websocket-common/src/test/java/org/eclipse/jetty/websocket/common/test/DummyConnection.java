@@ -108,7 +108,13 @@ public class DummyConnection implements LogicalConnection
     {
         return 0;
     }
-
+    
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
+    }
+    
     @Override
     public InetSocketAddress getRemoteAddress()
     {

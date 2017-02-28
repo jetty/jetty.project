@@ -314,7 +314,7 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
 
         // Create WebSocket Session
         SessionFactory sessionFactory = connectPromise.getClient().getSessionFactory();
-        WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,policy,connection);
+        WebSocketSession session = sessionFactory.createSession(request.getRequestURI(),websocket,connection);
         session.setUpgradeRequest(request);
         session.setUpgradeResponse(response);
 

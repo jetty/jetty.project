@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.rules.TestName;
 
 public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames, ConnectionStateListener
@@ -44,7 +45,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     private final String id;
     private final ByteBufferPool bufferPool;
     private final Executor executor;
-    private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+    private WebSocketPolicy policy;
     private IncomingFrames incoming;
     private IOState ioState = new IOState();
 
@@ -59,11 +60,18 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         this.bufferPool = bufferPool;
         this.executor = new ExecutorThreadPool();
         this.ioState.addListener(this);
+        this.policy = WebSocketPolicy.newServerPolicy();
     }
 
     public LocalWebSocketConnection(TestName testname, ByteBufferPool bufferPool)
     {
         this(testname.getMethodName(),bufferPool);
+    }
+    
+    public LocalWebSocketConnection(TestName testname, WebSocketContainerScope containerScope)
+    {
+        this(testname.getMethodName(), containerScope.getBufferPool());
+        this.policy = containerScope.getPolicy();
     }
     
     @Override
@@ -141,7 +149,13 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     {
         return 0;
     }
-
+    
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
+    }
+    
     @Override
     public InetSocketAddress getRemoteAddress()
     {

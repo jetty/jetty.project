@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.common;
 
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-
 /**
  * Interface for creating jetty {@link WebSocketSession} objects.
  */
@@ -39,9 +37,8 @@ public interface SessionFactory
      *
      * @param requestURI
      * @param websocket
-     * @param policy
      * @param connection
      * @return
      */
-    WebSocketSession createSession(URI requestURI, Object websocket, WebSocketPolicy policy, LogicalConnection connection);
+    WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection);
 }

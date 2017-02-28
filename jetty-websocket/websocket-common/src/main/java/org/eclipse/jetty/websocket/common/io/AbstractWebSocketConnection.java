@@ -214,6 +214,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final Scheduler scheduler;
     private final Generator generator;
     private final Parser parser;
+    private final WebSocketPolicy policy;
     private final WebSocketBehavior behavior;
     private final AtomicBoolean suspendToken;
     private final FrameFlusher flusher;
@@ -233,6 +234,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 endp.getLocalAddress().getPort(),
                 endp.getRemoteAddress().getAddress().getHostAddress(),
                 endp.getRemoteAddress().getPort());
+        this.policy = policy;
         this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);
@@ -389,7 +391,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         return parser;
     }
-
+    
+    public WebSocketPolicy getPolicy()
+    {
+        return policy;
+    }
+    
     @Override
     public InetSocketAddress getRemoteAddress()
     {

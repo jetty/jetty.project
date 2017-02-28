@@ -35,6 +35,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
@@ -182,7 +183,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
                 pathParameters.put(variable, "0");
             }
             
-            endpointFunctions = newJsrEndpointFunction(endpoint, availableEncoders, availableDecoders, pathParameters, config);
+            endpointFunctions = newJsrEndpointFunction(endpoint, getPolicy(), availableEncoders, availableDecoders, pathParameters, config);
             endpointFunctions.start(); // this should trigger an exception if endpoint is invalid.
         }
         catch (InstantiationException e)
@@ -216,13 +217,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     
     @Override
     public EndpointFunctions newJsrEndpointFunction(Object endpoint,
+                                                    WebSocketPolicy sessionPolicy,
                                                     AvailableEncoders availableEncoders,
                                                     AvailableDecoders availableDecoders,
                                                     Map<String, String> pathParameters,
                                                     EndpointConfig config)
     {
         return new JsrServerEndpointFunctions(endpoint,
-                getPolicy(),
+                sessionPolicy,
                 getExecutor(),
                 availableEncoders,
                 availableDecoders,

@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.net.URI;
-import java.util.Queue;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -61,12 +61,13 @@ public class OnMessageReturnTest
             {
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
+                Future<List<String>> clientMessagesFuture = clientEcho.expectedMessages(1);
                 Future<Session> future = client.connect(clientEcho,uri.resolve("echoreturn"));
                 // wait for connect
                 future.get(1,TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello World");
-                Queue<String> msgs = clientEcho.awaitMessages(1);
-                Assert.assertEquals("Expected message","Hello World",msgs.poll());
+                List<String> msgs = clientMessagesFuture.get(1, TimeUnit.SECONDS);
+                Assert.assertEquals("Expected message","Hello World",msgs.get(0));
             }
             finally
             {
