@@ -100,7 +100,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private UpgradeResponse upgradeResponse;
     private CompletableFuture<Session> openFuture;
 
-    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, WebSocketPolicy policy, LogicalConnection connection)
+    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
     {
         Objects.requireNonNull(containerScope, "Container Scope cannot be null");
         Objects.requireNonNull(requestURI, "Request URI cannot be null");
@@ -113,7 +113,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
         this.connection.getIOState().addListener(this);
-        this.policy = policy;
+        this.policy = connection.getPolicy();
 
         addBean(this.connection);
     }

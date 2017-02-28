@@ -19,18 +19,19 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -46,92 +47,73 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class JettyEchoSocket
 {
     private static final Logger LOG = Log.getLogger(JettyEchoSocket.class);
-    @SuppressWarnings("unused")
-    private Session session;
-    private Lock remoteLock = new ReentrantLock();
     private RemoteEndpoint remote;
-    private EventQueue<String> incomingMessages = new EventQueue<>();
-
-    public Queue<String> awaitMessages(int expected) throws TimeoutException, InterruptedException
+    private CompletableFuture<List<String>> expectedMessagesFuture;
+    private AtomicInteger expectedMessageCount;
+    private List<String> messages = new ArrayList<>();
+    
+    public Future<List<String>> expectedMessages(int expected)
     {
-        incomingMessages.awaitEventCount(expected,2,TimeUnit.SECONDS);
-        return incomingMessages;
+        expectedMessagesFuture = new CompletableFuture<>();
+        expectedMessageCount = new AtomicInteger(expected);
+        return expectedMessagesFuture;
     }
-
-    public boolean getClosed()
-    {
-        remoteLock.lock();
-        try
-        {
-            return (remote == null);
-        }
-        finally
-        {
-            remoteLock.unlock();
-        }
-    }
-
+    
     @OnWebSocketClose
     public void onClose(int code, String reason)
     {
-        session = null;
-        remoteLock.lock();
-        try
+        remote = null;
+        synchronized (expectedMessagesFuture)
         {
-            remote = null;
-        }
-        finally
-        {
-            remoteLock.unlock();
+            if ((code != StatusCode.NORMAL) ||
+                    (code != StatusCode.NO_CODE))
+            {
+                expectedMessagesFuture.completeExceptionally(new CloseException(code, reason));
+            }
         }
     }
-
+    
     @OnWebSocketError
     public void onError(Throwable t)
     {
         LOG.warn(t);
+        synchronized (expectedMessagesFuture)
+        {
+            expectedMessagesFuture.completeExceptionally(t);
+        }
     }
-
+    
     @OnWebSocketMessage
     public void onMessage(String msg) throws IOException
     {
-        incomingMessages.add(msg);
+        messages.add(msg);
+        synchronized (expectedMessagesFuture)
+        {
+            int countLeft = expectedMessageCount.decrementAndGet();
+            if (countLeft <= 0)
+            {
+                expectedMessagesFuture.complete(messages);
+            }
+        }
         sendMessage(msg);
     }
-
+    
     @OnWebSocketConnect
     public void onOpen(Session session)
     {
-        this.session = session;
-        remoteLock.lock();
-        try
-        {
-            this.remote = session.getRemote();
-        }
-        finally
-        {
-            remoteLock.unlock();
-        }
+        this.remote = session.getRemote();
     }
-
+    
     public void sendMessage(String msg) throws IOException
     {
-        remoteLock.lock();
-        try
+        RemoteEndpoint r = remote;
+        if (r == null)
         {
-            RemoteEndpoint r = remote;
-            if (r == null)
-            {
-                return;
-            }
-
-            r.sendStringByFuture(msg);
-            if (r.getBatchMode() == BatchMode.ON)
-                r.flush();
+            return;
         }
-        finally
-        {
-            remoteLock.unlock();
-        }
+        
+        r.sendStringByFuture(msg);
+        if (r.getBatchMode() == BatchMode.ON)
+            r.flush();
     }
 }

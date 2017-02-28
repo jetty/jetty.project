@@ -82,7 +82,7 @@ public class JsrEndpointFunctions_OnMessage_BinaryStreamTest
         DummyConnection connection = new DummyConnection(policy);
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
         ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket, config);
-        return new JsrSession(container, id, requestURI, ei, policy, connection);
+        return new JsrSession(container, id, requestURI, ei, connection);
     }
     
     @SuppressWarnings("Duplicates")

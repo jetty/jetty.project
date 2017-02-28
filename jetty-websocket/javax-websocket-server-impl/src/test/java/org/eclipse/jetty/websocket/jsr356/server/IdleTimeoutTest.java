@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.net.URI;
-import java.util.Queue;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -32,7 +34,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.IdleTimeoutContextListener;
@@ -80,6 +84,8 @@ public class IdleTimeoutTest
         {
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
+            Future<List<String>> clientMessagesFuture = clientEcho.expectedMessages(1);
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("Client Attempting to connect");
             Future<Session> future = client.connect(clientEcho,uri);
@@ -93,18 +99,26 @@ public class IdleTimeoutTest
             TimeUnit.SECONDS.sleep(1);
             if (LOG.isDebugEnabled())
                 LOG.debug("Waited 1 second");
-            if (clientEcho.getClosed() == false)
+            
+            // Try to write
+            clientEcho.sendMessage("You shouldn't be there");
+            try
             {
-                // Try to write
-                clientEcho.sendMessage("You shouldn't be there");
-                try
+                List<String> msgs = clientMessagesFuture.get(1, TimeUnit.SECONDS);
+                assertThat("Should not have received messages echoed back",msgs,is(empty()));
+            }
+            catch (ExecutionException e)
+            {
+                Throwable cause = e.getCause();
+                if(cause instanceof CloseException)
                 {
-                    Queue<String> msgs = clientEcho.awaitMessages(1);
-                    assertThat("Should not have received messages echoed back",msgs,is(empty()));
+                    CloseException ce = (CloseException) cause;
+                    assertThat("CloseException.statusCode", ce.getStatusCode(), is(StatusCode.SHUTDOWN));
+                    assertThat("CloseException.reason", ce.getMessage(), containsString("Idle Timeout"));
                 }
-                catch (TimeoutException | InterruptedException e)
+                else
                 {
-                    // valid success path
+                    throw e;
                 }
             }
         }

@@ -265,7 +265,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             {
                 try
                 {
-                    return impl.createSession(requestURI, websocket, containerPolicy, connection);
+                    return impl.createSession(requestURI, websocket, connection);
                 }
                 catch (Throwable e)
                 {
@@ -562,7 +562,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Setup websocket connection
         AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, getPolicy().clonePolicy(), bufferPool);
 
-        extensionStack.setPolicy(containerPolicy);
+        extensionStack.setPolicy(wsConnection.getPolicy());
         extensionStack.configure(wsConnection.getParser());
         extensionStack.configure(wsConnection.getGenerator());
         

@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 public class StringMessageSink implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
-    private final WebSocketPolicy policy;
+    private WebSocketPolicy policy;
     private final Function<String, Void> onMessageFunction;
     private Utf8StringBuilder utf;
     private int size = 0;

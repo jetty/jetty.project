@@ -24,7 +24,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -139,12 +138,13 @@ public class SessionTest
         {
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
+            Future<List<String>> clientMessagesFuture = clientEcho.expectedMessages(1);
             Future<Session> future = client.connect(clientEcho,serverUri.resolve(requestPath));
             // wait for connect
             future.get(1,TimeUnit.SECONDS);
             clientEcho.sendMessage(requestMessage);
-            Queue<String> msgs = clientEcho.awaitMessages(1);
-            Assert.assertThat("Expected message",msgs.poll(),is(expectedResponse));
+            List<String> msgs = clientMessagesFuture.get(1, TimeUnit.SECONDS);
+            Assert.assertThat("Expected message",msgs.get(0),is(expectedResponse));
         }
         finally
         {
