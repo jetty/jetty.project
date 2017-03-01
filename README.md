@@ -3,16 +3,11 @@ Eclipse Jetty Canonical Repository
 
 This is the canonical repository for the Jetty project, feel free to fork and contribute now!  
 
-Build Status
-------------
+Submitting a patch or pull request?
 
-- Master Branch - [![Build Status](http://ci.webtide.net:9099/build/job/jetty-master/badge/icon)](http://ci.webtide.net:9099/build/job/jetty-master/)
-- Jetty 9.3.x Branch - [![Build Status](http://ci.webtide.net:9099/build/job/jetty-9.3.x/badge/icon)](http://ci.webtide.net:9099/build/job/jetty-9.3.x/)
-- Jetty 9.2.x Branch - [![Build Status](http://ci.webtide.net:9099/build/job/jetty-9.2.x/badge/icon)](http://ci.webtide.net:9099/build/job/jetty-9.2.x/)
+Make sure you have an Eclipse Contributor Agreement (ECA) on file.
 
-Make sure you have a CLA on file!
-
-- [https://www.eclipse.org/legal/clafaq.php](https://www.eclipse.org/legal/clafaq.php)
+- [eclipse.org/legal/ecafaq](https://www.eclipse.org/legal/ecafaq.php)
 
 Project description
 -------------------
@@ -34,7 +29,8 @@ Building
 ========
 
 To build, use:
-```shell
+
+``` shell
   mvn clean install
 ```
 
