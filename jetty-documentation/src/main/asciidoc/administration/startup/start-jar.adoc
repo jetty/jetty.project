@@ -36,7 +36,7 @@ At its most basic, you configure Jetty from two elements:
 
 Instead of editing these directly, Jetty 9.1 introduced more options on how to configure Jetty (these are merely syntactic sugar that eventually resolve into the two basic configuration components).
 
-Jetty 9.1 Startup Features include:
+Jetty Startup Features include:
 
 * A separation of the Jetty distribution binaries in `${jetty.home}` and the environment specific configurations (and binaries) found in `${jetty.base}` (detailed in link:#startup-jetty-base-and-jetty-home[Managing Jetty Base and Jetty Home.])
 * You can enable a set of libraries and XML configuration files via the newly introduced link:#startup-modules[module system.]
@@ -145,6 +145,25 @@ $ dot -Tpng -o modules.png modules.dot
 +
 See http://graphviz.org/[graphviz.org] for details on http://graphviz.org/content/command-line-invocation[how to post-process this dotty file] into the output best suited for your needs.
 
+--create-files::
+Create any missing files that are required by initialized modules.
+This may download a file from the network if the module provides a URL.
+
+--skip-file-validation=<modulename>(,<modulename)*::
+Disable the [files] section validation of content in the `${jetty.base}` directory for a specific module.
+Useful for modules that have downloadable content that is being overridden with alternatives in the `${jetty.base}`` directory.
+
+____
+[CAUTION]
+This advanced option is for administrators that fully understand the configuration of their `${jetty.base}` and are willing to forego some of the safety checks built into the jetty-start mechanism.
+____
+
+--approve-all-licenses::
+Approve all license questions.
+Useful for enabling modules from a script that does not require user interaction.
+
+===== Startup / Shutdown Command Line
+
 --stop::
 Sends a stop signal to the running Jetty instance.
 +
@@ -165,3 +184,18 @@ The time (in seconds) to wait for confirmation that the running Jetty server has
 If not specified, the stopper waits indefinitely for the server to stop.
 +
 If the time specified elapses, without a confirmation of server stop, then the `--stop` command exits with a non-zero return code.
+
+===== Advanced Commands
+
+--lib=<classpath>::
+Add arbitrary classpath entries to the the server classpath.
+
+--include-jetty-dir=<path>::
+Include an extra Jetty directory to use as a source for configuration details.
+This directory behaves similarly to `${jetty.base}` but sits at a layer between `${jetty.base}` and `${jetty.home}`.
+This allows for some complex hierarchies of configuration details.
+
+--download=<http-uri>|<location>::
+If the file does not exist at the given location, download it from the given http URI.
+Note: location is always relative to `${jetty.base}`.
+You might need to escape the slash "\|" to use this on some environments.
