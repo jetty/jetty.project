@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.session.SessionDataStore;
 
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
+import com.mongodb.MongoURI;
 
 /**
  * MongoSessionDataStoreFactory
@@ -37,11 +38,12 @@ import com.mongodb.MongoException;
  */
 public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
-    String _dbName;  
+    String _dbName;
     String _collectionName;
     String _host;
+    String _connectionString;
     int _port = -1;
-    
+
     /**
      * @return the host
      */
@@ -74,10 +76,6 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         _port = port;
     }
 
-
-
-    
-    
     /**
      * @return the dbName
      */
@@ -92,6 +90,22 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     public void setDbName(String dbName)
     {
         _dbName = dbName;
+    }
+
+    /**
+     * @return the connectionString
+     */
+    public String getConnectionString()
+    {
+        return _connectionString;
+    }
+
+    /**
+     * @param  connectionString the connection string to set. This has priority over dbHost and port
+     */
+    public void setConnectionString(String connectionString)
+    {
+        _connectionString = connectionString;
     }
 
     /**
@@ -110,10 +124,10 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         _collectionName = collectionName;
     }
 
-    
-    /** 
-     * @throws MongoException 
-     * @throws UnknownHostException 
+
+    /**
+     * @throws MongoException
+     * @throws UnknownHostException
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -122,7 +136,10 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
         Mongo mongo;
-        if (!StringUtil.isBlank(getHost()) && getPort() != -1)
+
+        if (!StringUtil.isBlank(getConnectionString()))
+            mongo = new Mongo(new MongoURI(getConnectionString()));
+        else if (!StringUtil.isBlank(getHost()) && getPort() != -1)
             mongo = new Mongo(getHost(), getPort());
         else if (!StringUtil.isBlank(getHost()))
             mongo = new Mongo(getHost());
