@@ -366,8 +366,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         //these candidates will be for our node
         BasicDBObject query = new BasicDBObject();     
         query.append(__ID,new BasicDBObject("$in", candidates));
-        query.append(__EXPIRY, new BasicDBObject("$gt", 0));
-        query.append(__EXPIRY, new BasicDBObject("$lt", upperBound));   
+        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lt", upperBound));  
 
         DBCursor verifiedExpiredSessions = null;
         try  
