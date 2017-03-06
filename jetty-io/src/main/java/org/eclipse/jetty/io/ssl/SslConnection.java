@@ -345,6 +345,12 @@ public class SslConnection extends AbstractConnection
                     }
                 }, x);
             }
+
+            @Override
+            public boolean isNonBlocking()
+            {
+                return getWriteFlusher().isCallbackNonBlocking();
+            }
         };
 
         public DecryptedEndPoint()
