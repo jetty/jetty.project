@@ -21,13 +21,19 @@ package org.eclipse.jetty.http2.client.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
+import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -91,7 +97,32 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     @Override
     public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
     {
-        // Not supported.
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return null;
+
+        HttpRequest request = exchange.getRequest();
+        MetaData.Request metaData = (MetaData.Request)frame.getMetaData();
+        HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
+
+        BiFunction<Request, Request, Response.CompleteListener> pushListener = request.getPushListener();
+        if (pushListener != null)
+        {
+            Response.CompleteListener listener = pushListener.apply(request, pushRequest);
+            if (listener != null)
+            {
+                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().newHttpChannel(true);
+                List<Response.ResponseListener> listeners = Collections.singletonList(listener);
+                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, listeners);
+                pushChannel.associate(pushExchange);
+                pushChannel.setStream(stream);
+                // TODO: idle timeout ?
+                pushExchange.requestComplete(null);
+                pushExchange.terminateRequest();
+                return pushChannel.getStreamListener();
+            }
+        }
+
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
         return null;
     }

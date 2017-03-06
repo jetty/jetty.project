@@ -111,7 +111,6 @@ public class HttpChannelState
         {
             _interested = interest;
         }
-
         private boolean isInterested() { return _interested;}
     }
 
