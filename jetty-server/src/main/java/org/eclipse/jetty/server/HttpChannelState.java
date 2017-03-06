@@ -234,7 +234,7 @@ public class HttpChannelState
                     return Action.TERMINATED;
 
                 case ASYNC_WOKEN:
-                    if (_asyncRead.isInterested() && _asyncReadPossible)
+                    if (_asyncReadPossible && _asyncRead.isInterested())
                     {
                         _state=State.ASYNC_IO;
                         _asyncRead=Interest.NONE;
@@ -427,8 +427,7 @@ public class HttpChannelState
                     break;
 
                 case STARTED:
-                    // TODO this is a deadlock!!!
-                    if (_asyncReadPossible && (_asyncRead.isInterested() || _channel.getRequest().getHttpInput().isAsyncEOF()))
+                    if (_asyncReadPossible && _asyncRead.isInterested())
                     {
                         _state=State.ASYNC_IO;
                         _asyncRead=Interest.NONE;
@@ -1210,7 +1209,7 @@ public class HttpChannelState
      * Will wake if the read was called while in ASYNC_WAIT state
      * @return true if woken
      */
-    public boolean onEof()
+    public boolean onReadEof()
     {
         boolean woken=false;
         try(Locker.Lock lock= _locker.lock())
@@ -1218,7 +1217,7 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("onEof {}",toStringLocked());
 
-            // TODO is this always right?
+            // Force read interest so onAllDataRead can be called
             _asyncRead=Interest.REGISTERED;
             _asyncReadPossible=true;
             if (_state==State.ASYNC_WAIT)

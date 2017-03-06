@@ -308,7 +308,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     
                     // If EOF do we need to wake for allDataRead callback?
                     if (l<0)
-                        wake = _channelState.onEof();
+                        wake = _channelState.onReadEof();
                     break;
                 }
             }
@@ -769,7 +769,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 else if (_state == EOF)
                 {
                     _state = AEOF;
-                    woken = _channelState.onEof();
+                    woken = _channelState.onReadEof();
                 }
                 else 
                 {
@@ -835,23 +835,22 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (!aeof && error==null)
             {
                 Content content = nextInterceptedContent();
-
-                // Consume EOF
+                if (content==null)
+                    return;
+                
+                // Consume a directly received EOF without first calling onDataAvailable
+                // So -1 will never be read and only onAddDataRread or onError will be called
                 if (content instanceof EofContent)
                 {
                     consume(content);
                     if (_state == EARLY_EOF)
                         error = _state.getError();
-                    else
+                    else if (_state == AEOF)
                     {
-                        if (_state == AEOF)
-                            aeof = true;
-                        // TODO should we signal EOF here?
-                        // _channelState.onEof();
+                        aeof = true;
+                        _state = EOF;
                     }
                 }
-                else if (content==null)
-                    return;
             }
         }
 
@@ -869,16 +868,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             else
             {
                 listener.onDataAvailable();
-                synchronized (_inputQ)
-                {
-                    if (_state == AEOF)
-                    {
-                        _state = EOF;
-                        aeof = !_channelState.isAsyncComplete();
-                    }
-                }
-                if (aeof)
-                    listener.onAllDataRead();
+                // If -1 was read, then HttpChannelState#onEOF will have been called and a subsequent
+                // unhandle will call run again so onAllDataRead() can be called.
             }
         }
         catch (Throwable e)
