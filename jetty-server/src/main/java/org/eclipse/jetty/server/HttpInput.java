@@ -296,7 +296,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
                     // Consume any following poison pills
                     if (item.isEmpty())
-                        pollReadableContent();
+                        nextInterceptedContent();
                     break;
                 }
 
@@ -308,7 +308,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     
                     // If EOF do we need to wake for allDataRead callback?
                     if (l<0)
-                        wake = _channelState.onReadEof();
+                        wake = _channelState.onEof();
                     break;
                 }
             }
@@ -339,11 +339,11 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     protected Content nextContent() throws IOException
     {
-        Content content = pollNonEmptyContent();
+        Content content = nextNonSentinelContent();
         if (content == null && !isFinished())
         {
             produceContent();
-            content = pollNonEmptyContent();
+            content = nextNonSentinelContent();
         }
         return content;
     }
@@ -353,47 +353,51 @@ public class HttpInput extends ServletInputStream implements Runnable
      *
      * @return Content or null
      */
-    protected Content pollNonEmptyContent()
+    protected Content nextNonSentinelContent()
     {
         while (true)
         {            
             // Get the next content (or EOF)
-            Content content = pollReadableContent();
+            Content content = nextInterceptedContent();
             
             // If it is EOF, consume it here
             if (content instanceof SentinelContent)
             {
-                if (content instanceof EofContent)
-                {
-                    if (content == EARLY_EOF_CONTENT)
-                        _state = EARLY_EOF;
-                    else if (_listener == null)
-                        _state = EOF;
-                    else
-                        _state = AEOF;
-                }
-                
                 // Consume the EOF content, either if it was original content
                 // or if it was produced by interception
-                content.succeeded();
-                if (_content==content)
-                    _content = null;
-                else if (_intercepted==content)
-                    _intercepted = null;
+                consume(content);
                 continue;
             }
 
             return content;
         }
-        
     }
 
+    /**
+     * Get the next readable from the inputQ, calling {@link #produceContent()} if need be. EOF is NOT processed and state is not changed.
+     *
+     * @return the content or EOF or null if none available.
+     * @throws IOException
+     *             if retrieving the content fails
+     */
+    protected Content produceNextContext() throws IOException
+    {
+        Content content = nextInterceptedContent();
+        if (content == null && !isFinished())
+        {
+            produceContent();
+            content = nextInterceptedContent();
+        }
+        return content;
+    }
+
+    
     /**
      * Poll the inputQ for Content or EOF. Consumed buffers and non EOF {@link SentinelContent}s are removed. EOF state is not updated.
      * Interception is done within this method.
      * @return Content with remaining, a {@link SentinelContent},  or null
      */
-    protected Content pollReadableContent()
+    protected Content nextInterceptedContent()
     {
         // If we have a chunk produced by interception
         if (_intercepted!=null)
@@ -450,28 +454,28 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         
         return null;
-
     }
     
-
-    /**
-     * Get the next readable from the inputQ, calling {@link #produceContent()} if need be. EOF is NOT processed and state is not changed.
-     *
-     * @return the content or EOF or null if none available.
-     * @throws IOException
-     *             if retrieving the content fails
-     */
-    protected Content nextReadable() throws IOException
+    private void consume(Content content)
     {
-        Content content = pollReadableContent();
-        if (content == null && !isFinished())
+        if (content instanceof EofContent)
         {
-            produceContent();
-            content = pollReadableContent();
+            if (content == EARLY_EOF_CONTENT)
+                _state = EARLY_EOF;
+            else if (_listener == null)
+                _state = EOF;
+            else
+                _state = AEOF;
         }
-        return content;
+        
+        // Consume the content, either if it was original content
+        // or if it was produced by interception
+        content.succeeded();
+        if (_content==content)
+            _content = null;
+        else if (_intercepted==content)
+            _intercepted = null;
     }
-
 
     /**
      * Copies the given content into the given byte buffer.
@@ -507,7 +511,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         _contentConsumed += l;
         if (l > 0 && content.isEmpty())
-            pollNonEmptyContent(); // hungry succeed
+            nextNonSentinelContent(); // hungry succeed
 
     }
 
@@ -603,7 +607,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addContent {}",this,content);
 
-            if (pollReadableContent()!=null)
+            if (nextInterceptedContent()!=null)
             {
                 if (_listener == null)
                     _inputQ.notify();
@@ -728,7 +732,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     return true;
                 if (_state instanceof EOFState)
                     return true;
-                if (nextReadable() != null)
+                if (produceNextContext() != null)
                     return true;
 
                 _channelState.onReadUnready();
@@ -756,7 +760,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                
                 _listener = readListener;
                 
-                Content content = nextReadable();
+                Content content = produceNextContext();
                 if (content!=null)
                 {
                     _state = ASYNC;
@@ -765,7 +769,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 else if (_state == EOF)
                 {
                     _state = AEOF;
-                    woken = _channelState.onReadReady();
+                    woken = _channelState.onEof();
                 }
                 else 
                 {
@@ -830,23 +834,20 @@ public class HttpInput extends ServletInputStream implements Runnable
             
             if (!aeof && error==null)
             {
-                Content content = pollReadableContent();
+                Content content = nextInterceptedContent();
 
                 // Consume EOF
                 if (content instanceof EofContent)
                 {
-                    content.succeeded();
-                    if (_content==content)
-                        _content = null;
-                    if (content == EARLY_EOF_CONTENT)
-                    {
-                        _state = EARLY_EOF;
+                    consume(content);
+                    if (_state == EARLY_EOF)
                         error = _state.getError();
-                    }
-                    else 
+                    else
                     {
-                        _state = EOF;
-                        aeof = true;
+                        if (_state == AEOF)
+                            aeof = true;
+                        // TODO should we signal EOF here?
+                        // _channelState.onEof();
                     }
                 }
                 else if (content==null)
