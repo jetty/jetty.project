@@ -111,7 +111,6 @@ public class HttpChannelState
         {
             _interested = interest;
         }
-
         private boolean isInterested() { return _interested;}
     }
 
@@ -235,7 +234,7 @@ public class HttpChannelState
                     return Action.TERMINATED;
 
                 case ASYNC_WOKEN:
-                    if (_asyncRead.isInterested() && _asyncReadPossible)
+                    if (_asyncReadPossible && _asyncRead.isInterested())
                     {
                         _state=State.ASYNC_IO;
                         _asyncRead=Interest.NONE;
@@ -428,9 +427,7 @@ public class HttpChannelState
                     break;
 
                 case STARTED:
-                    // If a read is possible and either we are interested in reads or we have
-                    // to call onAllDataRead, then we need a READ_CALLBACK
-                    if (_asyncReadPossible && (_asyncRead.isInterested() || _channel.getRequest().getHttpInput().isAsyncEOF()))
+                    if (_asyncReadPossible && _asyncRead.isInterested())
                     {
                         _state=State.ASYNC_IO;
                         _asyncRead=Interest.NONE;
@@ -1146,7 +1143,9 @@ public class HttpChannelState
                     _asyncRead=Interest.REGISTERED;
                 }
                 else
+                {
                     _asyncRead=Interest.NEEDED;
+                }
             }
         }
 
@@ -1216,14 +1215,15 @@ public class HttpChannelState
         try(Locker.Lock lock= _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadEof {}",toStringLocked());
+                LOG.debug("onEof {}",toStringLocked());
 
+            // Force read interest so onAllDataRead can be called
+            _asyncRead=Interest.REGISTERED;
+            _asyncReadPossible=true;
             if (_state==State.ASYNC_WAIT)
             {
                 woken=true;
                 _state=State.ASYNC_WOKEN;
-                _asyncRead=Interest.REGISTERED;
-                _asyncReadPossible=true;
             }
         }
         return woken;
@@ -1239,7 +1239,7 @@ public class HttpChannelState
 
     public boolean onWritePossible()
     {
-        boolean handle=false;
+        boolean wake=false;
 
         try(Locker.Lock lock= _locker.lock())
         {
@@ -1250,10 +1250,10 @@ public class HttpChannelState
             if (_state==State.ASYNC_WAIT)
             {
                 _state=State.ASYNC_WOKEN;
-                handle=true;
+                wake=true;
             }
         }
 
-        return handle;
+        return wake;
     }
 }

@@ -21,14 +21,15 @@ package org.eclipse.jetty.websocket.client;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -72,7 +74,6 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.RawFrameBuilder;
 import org.hamcrest.Matcher;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -91,14 +92,15 @@ public class ClientCloseTest
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public AtomicInteger closeCount = new AtomicInteger(0);
         public CountDownLatch openLatch = new CountDownLatch(1);
+        public CountDownLatch errorLatch = new CountDownLatch(1);
 
         public EventQueue<String> messageQueue = new EventQueue<>();
-        public EventQueue<Throwable> errorQueue = new EventQueue<>();
+        public AtomicReference<Throwable> error = new AtomicReference<>();
 
         public void assertNoCloseEvent()
         {
-            Assert.assertThat("Client Close Event",closeLatch.getCount(),is(1L));
-            Assert.assertThat("Client Close Event Status Code ",closeCode,is(-1));
+            assertThat("Client Close Event",closeLatch.getCount(),is(1L));
+            assertThat("Client Close Event Status Code ",closeCode,is(-1));
         }
 
         public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher)
@@ -106,39 +108,22 @@ public class ClientCloseTest
         {
             long maxTimeout = clientTimeoutMs * 2;
 
-            Assert.assertThat("Client Close Event Occurred",closeLatch.await(maxTimeout,TimeUnit.MILLISECONDS),is(true));
-            Assert.assertThat("Client Close Event Count",closeCount.get(),is(1));
-            Assert.assertThat("Client Close Event Status Code",closeCode,statusCodeMatcher);
+            assertThat("Client Close Event Occurred",closeLatch.await(maxTimeout,TimeUnit.MILLISECONDS),is(true));
+            assertThat("Client Close Event Count",closeCount.get(),is(1));
+            assertThat("Client Close Event Status Code",closeCode,statusCodeMatcher);
             if (reasonMatcher == null)
             {
-                Assert.assertThat("Client Close Event Reason",closeReason,nullValue());
+                assertThat("Client Close Event Reason",closeReason,nullValue());
             }
             else
             {
-                Assert.assertThat("Client Close Event Reason",closeReason,reasonMatcher);
-            }
-        }
-
-        public void assertReceivedError(Class<? extends Throwable> expectedThrownClass, Matcher<String> messageMatcher) throws TimeoutException,
-                InterruptedException
-        {
-            errorQueue.awaitEventCount(1,30,TimeUnit.SECONDS);
-            Throwable actual = errorQueue.poll();
-            Assert.assertThat("Client Error Event",actual,instanceOf(expectedThrownClass));
-            if (messageMatcher == null)
-            {
-                Assert.assertThat("Client Error Event Message",actual.getMessage(),nullValue());
-            }
-            else
-            {
-                Assert.assertThat("Client Error Event Message",actual.getMessage(),messageMatcher);
+                assertThat("Client Close Event Reason",closeReason,reasonMatcher);
             }
         }
 
         public void clearQueues()
         {
             messageQueue.clear();
-            errorQueue.clear();
         }
 
         @Override
@@ -164,7 +149,8 @@ public class ClientCloseTest
         public void onWebSocketError(Throwable cause)
         {
             LOG.debug("onWebSocketError",cause);
-            Assert.assertThat("Error capture",errorQueue.offer(cause),is(true));
+            assertThat("Unique Error Event", error.compareAndSet(null, cause), is(true));
+            errorLatch.countDown();
         }
 
         @Override
@@ -177,15 +163,15 @@ public class ClientCloseTest
         public EndPoint getEndPoint() throws Exception
         {
             Session session = getSession();
-            Assert.assertThat("Session type",session,instanceOf(WebSocketSession.class));
+            assertThat("Session type",session,instanceOf(WebSocketSession.class));
 
             WebSocketSession wssession = (WebSocketSession)session;
             Field fld = wssession.getClass().getDeclaredField("connection");
             fld.setAccessible(true);
-            Assert.assertThat("Field: connection",fld,notNullValue());
+            assertThat("Field: connection",fld,notNullValue());
 
             Object val = fld.get(wssession);
-            Assert.assertThat("Connection type",val,instanceOf(AbstractWebSocketConnection.class));
+            assertThat("Connection type",val,instanceOf(AbstractWebSocketConnection.class));
             @SuppressWarnings("resource")
             AbstractWebSocketConnection wsconn = (AbstractWebSocketConnection)val;
             return wsconn.getEndPoint();
@@ -204,7 +190,7 @@ public class ClientCloseTest
         clientFuture.get(30,TimeUnit.SECONDS);
 
         // Wait for client connect via client websocket
-        Assert.assertThat("Client WebSocket is Open",clientSocket.openLatch.await(30,TimeUnit.SECONDS),is(true));
+        assertThat("Client WebSocket is Open",clientSocket.openLatch.await(30,TimeUnit.SECONDS),is(true));
 
         try
         {
@@ -220,8 +206,8 @@ public class ClientCloseTest
             serverCapture.assertNoErrors();
             serverCapture.assertFrameCount(1);
             WebSocketFrame frame = serverCapture.getFrames().poll();
-            Assert.assertThat("Server received frame",frame.getOpCode(),is(OpCode.TEXT));
-            Assert.assertThat("Server received frame payload",frame.getPayloadAsUTF8(),is(echoMsg));
+            assertThat("Server received frame",frame.getOpCode(),is(OpCode.TEXT));
+            assertThat("Server received frame payload",frame.getPayloadAsUTF8(),is(echoMsg));
 
             // Server send echo reply
             serverConns.write(new TextFrame().setPayload(echoMsg));
@@ -231,10 +217,10 @@ public class ClientCloseTest
 
             // Verify received message
             String recvMsg = clientSocket.messageQueue.poll();
-            Assert.assertThat("Received message",recvMsg,is(echoMsg));
+            assertThat("Received message",recvMsg,is(echoMsg));
 
             // Verify that there are no errors
-            Assert.assertThat("Error events",clientSocket.errorQueue,empty());
+            assertThat("Error events",clientSocket.error.get(),nullValue());
         }
         finally
         {
@@ -250,16 +236,16 @@ public class ClientCloseTest
         serverCapture.assertFrameCount(1);
         serverCapture.assertHasFrame(OpCode.CLOSE,1);
         WebSocketFrame frame = serverCapture.getFrames().poll();
-        Assert.assertThat("Server received close frame",frame.getOpCode(),is(OpCode.CLOSE));
+        assertThat("Server received close frame",frame.getOpCode(),is(OpCode.CLOSE));
         CloseInfo closeInfo = new CloseInfo(frame);
-        Assert.assertThat("Server received close code",closeInfo.getStatusCode(),is(expectedCloseCode));
+        assertThat("Server received close code",closeInfo.getStatusCode(),is(expectedCloseCode));
         if (closeReasonMatcher == null)
         {
-            Assert.assertThat("Server received close reason",closeInfo.getReason(),nullValue());
+            assertThat("Server received close reason",closeInfo.getReason(),nullValue());
         }
         else
         {
-            Assert.assertThat("Server received close reason",closeInfo.getReason(),closeReasonMatcher);
+            assertThat("Server received close reason",closeInfo.getReason(),closeReasonMatcher);
         }
     }
 
@@ -364,12 +350,12 @@ public class ClientCloseTest
 
         // Verify received messages
         String recvMsg = clientSocket.messageQueue.poll();
-        Assert.assertThat("Received message 1",recvMsg,is("Hello"));
+        assertThat("Received message 1",recvMsg,is("Hello"));
         recvMsg = clientSocket.messageQueue.poll();
-        Assert.assertThat("Received message 2",recvMsg,is("World"));
+        assertThat("Received message 2",recvMsg,is("World"));
 
         // Verify that there are no errors
-        Assert.assertThat("Error events",clientSocket.errorQueue,empty());
+        assertThat("Error events",clientSocket.error.get(),nullValue());
 
         // client close event on ws-endpoint
         clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.NORMAL),containsString("From Server"));
@@ -399,7 +385,7 @@ public class ClientCloseTest
         // when write is congested, client enqueue close frame
         // client initiate write, but write never completes
         EndPoint endp = clientSocket.getEndPoint();
-        Assert.assertThat("EndPoint is testable",endp,instanceOf(TestEndPoint.class));
+        assertThat("EndPoint is testable",endp,instanceOf(TestEndPoint.class));
         TestEndPoint testendp = (TestEndPoint)endp;
 
         char msg[] = new char[10240];
@@ -418,7 +404,7 @@ public class ClientCloseTest
         LOG.debug("Wrote {} frames totalling {} bytes of payload before congestion kicked in",writeCount,writeSize);
 
         // Verify that there are no errors
-        Assert.assertThat("Error events",clientSocket.errorQueue,empty());
+        assertThat("Error events",clientSocket.error.get(),nullValue());
 
         // client idle timeout triggers close event on client ws-endpoint
         // client close event on ws-endpoint
@@ -462,7 +448,9 @@ public class ClientCloseTest
             serverConn.write(bad);
 
             // client should have noticed the error
-            clientSocket.assertReceivedError(ProtocolException.class,containsString("Invalid control frame"));
+            assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+            assertThat("OnError", clientSocket.error.get(), instanceOf(ProtocolException.class));
+            assertThat("OnError", clientSocket.error.get().getMessage(), containsString("Invalid control frame"));
 
             // client parse invalid frame, notifies server of close (protocol error)
             confirmServerReceivedCloseFrame(serverConn,StatusCode.PROTOCOL,allOf(containsString("Invalid control frame"),containsString("length")));
@@ -512,8 +500,6 @@ public class ClientCloseTest
     }
 
     @Test
-    // TODO work out why this test is failing
-    @Ignore
     public void testServerNoCloseHandshake() throws Exception
     {
         // Set client timeout
@@ -545,7 +531,9 @@ public class ClientCloseTest
         // server sits idle
 
         // client idle timeout triggers close event on client ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.SHUTDOWN),containsString("Timeout"));
+        assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+        assertThat("OnError", clientSocket.error.get(), instanceOf(SocketTimeoutException.class));
+        assertThat("OnError", clientSocket.error.get().getMessage(), containsString("Timeout on Read"));
     }
 
     @Test(timeout = 5000L)
@@ -617,8 +605,9 @@ public class ClientCloseTest
         // client write failure
         final String origCloseReason = "Normal Close";
         clientSocket.getSession().close(StatusCode.NORMAL,origCloseReason);
-
-        clientSocket.assertReceivedError(EofException.class,null);
+    
+        assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+        assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
 
         // client triggers close event on client ws-endpoint
         // assert - close code==1006 (abnormal)

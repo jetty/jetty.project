@@ -630,15 +630,16 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         public boolean put(String s, V v)
         {
             boolean added = _trie.put(s,v);
-            while (!added)
+            while (!added && _growby>0)
             {
                 ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie._key.length+_growby);
                 for (Map.Entry<String,V> entry : _trie.entrySet())
                     bigger.put(entry.getKey(),entry.getValue());
+                _trie = bigger;
                 added = _trie.put(s,v);
             }
             
-            return true;
+            return added;
         }
 
         public V get(String s, int offset, int len)

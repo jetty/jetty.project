@@ -160,14 +160,16 @@ public class ErrorHandler extends AbstractHandler
         List<String> acceptable=baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT);
         
         if (acceptable.isEmpty() && !baseRequest.getHttpFields().contains(HttpHeader.ACCEPT))
+        {
             generateAcceptableResponse(baseRequest,request,response,code,message,MimeTypes.Type.TEXT_HTML.asString());
+        }
         else
         {
             for (String mimeType:acceptable)
             {
                 generateAcceptableResponse(baseRequest,request,response,code,message,mimeType);
                 if (baseRequest.isHandled())
-                    return;
+                    break;
             }
         }
         baseRequest.setHandled(true);

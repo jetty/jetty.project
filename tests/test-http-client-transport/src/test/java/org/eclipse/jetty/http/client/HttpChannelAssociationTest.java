@@ -146,9 +146,9 @@ public class HttpChannelAssociationTest extends AbstractTest
                         return new HttpConnectionOverHTTP2(destination, session)
                         {
                             @Override
-                            protected HttpChannelOverHTTP2 newHttpChannel()
+                            protected HttpChannelOverHTTP2 newHttpChannel(boolean push)
                             {
-                                return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession())
+                                return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession(), push)
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)

@@ -36,7 +36,7 @@ At its most basic, you configure Jetty from two elements:
 
 Instead of editing these directly, Jetty 9.1 introduced more options on how to configure Jetty (these are merely syntactic sugar that eventually resolve into the two basic configuration components).
 
-Jetty 9.1 Startup Features include:
+Jetty Startup Features include:
 
 * A separation of the Jetty distribution binaries in `${jetty.home}` and the environment specific configurations (and binaries) found in `${jetty.base}` (detailed in link:#startup-jetty-base-and-jetty-home[Managing Jetty Base and Jetty Home.])
 * You can enable a set of libraries and XML configuration files via the newly introduced link:#startup-modules[module system.]

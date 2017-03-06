@@ -34,17 +34,24 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 {
     private final HttpConnectionOverHTTP2 connection;
     private final Session session;
+    private final boolean push;
     private final HttpSenderOverHTTP2 sender;
     private final HttpReceiverOverHTTP2 receiver;
     private Stream stream;
 
-    public HttpChannelOverHTTP2(HttpDestination destination, HttpConnectionOverHTTP2 connection, Session session)
+    public HttpChannelOverHTTP2(HttpDestination destination, HttpConnectionOverHTTP2 connection, Session session, boolean push)
     {
         super(destination);
         this.connection = connection;
         this.session = session;
+        this.push = push;
         this.sender = new HttpSenderOverHTTP2(this);
         this.receiver = new HttpReceiverOverHTTP2(this);
+    }
+
+    protected HttpConnectionOverHTTP2 getHttpConnection()
+    {
+        return connection;
     }
 
     public Session getSession()
@@ -110,6 +117,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
-        release();
+        if (!push)
+            release();
     }
 }
