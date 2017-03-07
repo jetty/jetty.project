@@ -241,7 +241,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             
             this.batchMode = websocket.batchMode();
             
-            Method onmethod = null;
+            Method onmethod;
             
             // OnWebSocketConnect [0..1]
             onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketConnect.class);
@@ -524,7 +524,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         return onPongFunction;
     }
     
-    public void setOnOpen(Function<T, Void> function, Object origin)
+    protected void setOnOpen(Function<T, Void> function, Object origin)
     {
         assertNotSet(this.onOpenFunction, "Open Handler", origin);
         this.onOpenFunction = function;
@@ -534,7 +534,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         }
     }
     
-    public void setOnClose(Function<CloseInfo, Void> function, Object origin)
+    protected void setOnClose(Function<CloseInfo, Void> function, Object origin)
     {
         assertNotSet(this.onCloseFunction, "Close Handler", origin);
         this.onCloseFunction = function;
@@ -544,7 +544,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         }
     }
     
-    public void setOnError(Function<Throwable, Void> function, Object origin)
+    protected void setOnError(Function<Throwable, Void> function, Object origin)
     {
         assertNotSet(this.onErrorFunction, "Error Handler", origin);
         this.onErrorFunction = function;
@@ -554,7 +554,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         }
     }
     
-    public void setOnText(MessageSink messageSink, Object origin)
+    protected void setOnText(MessageSink messageSink, Object origin)
     {
         assertNotSet(this.onTextSink, "TEXT Handler", origin);
         this.onTextSink = messageSink;
@@ -564,7 +564,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         }
     }
     
-    public void setOnBinary(MessageSink messageSink, Object origin)
+    protected void setOnBinary(MessageSink messageSink, Object origin)
     {
         assertNotSet(this.onBinarySink, "BINARY Handler", origin);
         this.onBinarySink = messageSink;
@@ -574,7 +574,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         }
     }
     
-    public void setOnFrame(Function<Frame, Void> function, Object origin)
+    protected void setOnFrame(Function<Frame, Void> function, Object origin)
     {
         assertNotSet(this.onFrameFunction, "Frame Handler", origin);
         this.onFrameFunction = function;
@@ -584,7 +584,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         }
     }
     
-    public void setOnPing(Function<ByteBuffer, Void> function, Object origin)
+    protected void setOnPing(Function<ByteBuffer, Void> function, Object origin)
     {
         assertNotSet(this.onPingFunction, "Ping Handler", origin);
         this.onPingFunction = function;
@@ -594,7 +594,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         }
     }
     
-    public void setOnPong(Function<ByteBuffer, Void> function, Object origin)
+    protected void setOnPong(Function<ByteBuffer, Void> function, Object origin)
     {
         assertNotSet(this.onPongFunction, "Pong Handler", origin);
         this.onPongFunction = function;
@@ -644,7 +644,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         return obj.toString();
     }
     
-    protected void assertNotSet(Object val, String role, Object origin)
+    private void assertNotSet(Object val, String role, Object origin)
     {
         if (val == null)
             return;
@@ -759,7 +759,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             onPongFunction.apply(payload);
     }
     
-    protected void assertIsStarted()
+    private void assertIsStarted()
     {
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");

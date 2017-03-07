@@ -22,14 +22,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.reflect.DynamicArgs.Signature;
+import org.eclipse.jetty.websocket.common.FunctionCallException;
+import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
-public class UnorderedSignature implements Signature, Predicate<Method>
+public class UnorderedSignature
 {
     private class SelectedArg extends Arg
     {
@@ -59,28 +59,29 @@ public class UnorderedSignature implements Signature, Predicate<Method>
         this.callArgs = args;
     }
     
-    @Override
     public Arg[] getCallArgs()
     {
         return this.callArgs;
     }
     
-    @Override
-    public Predicate<Method> getPredicate()
-    {
-        return this;
-    }
-    
-    @Override
-    @Deprecated
-    public boolean test(Method method)
-    {
-        return getArgMapping(method, false, callArgs) != null;
-    }
-    
     public int[] getArgMapping(Method method)
     {
         return getArgMapping(method, false, callArgs);
+    }
+    
+    public int[] getArgMapping(Method method, boolean throwOnFailure)
+    {
+        return getArgMapping(method, throwOnFailure, callArgs);
+    }
+    
+    /**
+     * Test if the provided method is a match for this UnorderedSignature declaration
+     * @param method the method to test
+     * @return true if a match, false if not a match
+     */
+    public boolean test(Method method)
+    {
+        return getArgMapping(method, false, callArgs) != null;
     }
     
     public void appendDescription(StringBuilder str)
@@ -116,7 +117,7 @@ public class UnorderedSignature implements Signature, Predicate<Method>
      * </p>
      *
      * @param method the method that we want to eventually call
-     * @param throwOnFailure true to toss a {@link DynamicArgsException} if there is a problem
+     * @param throwOnFailure true to toss a {@link org.eclipse.jetty.websocket.common.FunctionCallException} if there is a problem
      * attempting to identify the mapping.  false to debug log the issue.
      * @param callArgs the calling args for this signature
      */
@@ -133,7 +134,7 @@ public class UnorderedSignature implements Signature, Predicate<Method>
         int argMappingLength = argMapping.length;
         
         // ServiceLoader for argument identification plugins
-        List<ArgIdentifier> argIdentifiers = DynamicArgs.lookupArgIdentifiers();
+        List<ArgIdentifier> argIdentifiers = ArgIdentifiers.get();
         Arg methodArgs[] = new Arg[paramTypesLength];
         for (int pi = 0; pi < paramTypesLength; pi++)
         {
@@ -187,7 +188,7 @@ public class UnorderedSignature implements Signature, Predicate<Method>
                 
                 if (throwOnFailure)
                 {
-                    throw new DynamicArgsException(err.toString());
+                    throw new InvalidSignatureException(err.toString());
                 }
                 else
                 {
@@ -214,7 +215,7 @@ public class UnorderedSignature implements Signature, Predicate<Method>
                 ReflectUtils.append(err, method);
                 
                 if (throwOnFailure)
-                    throw new DynamicArgsException(err.toString());
+                    throw new FunctionCallException(err.toString());
                 else
                 {
                     LOG.debug("{}", err.toString());
@@ -226,7 +227,6 @@ public class UnorderedSignature implements Signature, Predicate<Method>
         return argMapping;
     }
     
-    @Override
     public BiFunction<Object, Object[], Object> getInvoker(Method method, Arg... callArgs)
     {
         int argMapping[] = getArgMapping(method, true, callArgs);
@@ -297,7 +297,7 @@ public class UnorderedSignature implements Signature, Predicate<Method>
                     delim = true;
                 }
                 err.append("]");
-                throw new DynamicArgsException(err.toString(), e);
+                throw new FunctionCallException(err.toString(), e);
             }
         }
     }

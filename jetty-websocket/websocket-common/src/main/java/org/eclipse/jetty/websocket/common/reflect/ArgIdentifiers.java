@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,28 @@
 
 package org.eclipse.jetty.websocket.common.reflect;
 
-/**
- * A set of potential arguments, only one of which is allowed
- */
-public class ArgSwitch extends Arg
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.ServiceLoader;
+
+public class ArgIdentifiers
 {
-    public ArgSwitch(Class<?> type)
+    private static List<ArgIdentifier> argIdentifiers;
+    
+    public static List<ArgIdentifier> get()
     {
-        super(type);
+        if (argIdentifiers == null)
+        {
+            ServiceLoader<ArgIdentifier> loader = ServiceLoader.load(ArgIdentifier.class);
+            List<ArgIdentifier> identifiers = new ArrayList<>();
+            for (ArgIdentifier argId : loader)
+            {
+                identifiers.add(argId);
+            }
+            argIdentifiers = Collections.unmodifiableList(identifiers);
+        }
+        
+        return argIdentifiers;
     }
 }

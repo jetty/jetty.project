@@ -65,7 +65,6 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.message.MessageSink;
-import org.eclipse.jetty.websocket.common.reflect.DynamicArgsException;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
@@ -290,12 +289,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         if (t instanceof FunctionCallException)
         {
-            return ((FunctionCallException) t).getInvokedCause();
-        }
-        else if (t instanceof DynamicArgsException)
-        {
-            Throwable cause = ((DynamicArgsException) t).getInvokedCause();
-            if (cause != null)
+            Throwable cause = ((FunctionCallException) t).getInvokedCause();
+            if(cause != null)
                 return cause;
         }
 
