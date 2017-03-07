@@ -24,6 +24,11 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 
 public class FunctionCallException extends WebSocketException
 {
+    public FunctionCallException(String message)
+    {
+        super(message);
+    }
+    
     public FunctionCallException(String message, Throwable cause)
     {
         super(message, cause);

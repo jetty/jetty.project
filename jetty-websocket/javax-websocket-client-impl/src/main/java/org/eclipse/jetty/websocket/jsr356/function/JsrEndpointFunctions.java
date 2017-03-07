@@ -58,7 +58,6 @@ import org.eclipse.jetty.websocket.common.message.MessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
-import org.eclipse.jetty.websocket.common.reflect.DynamicArgs;
 import org.eclipse.jetty.websocket.common.reflect.UnorderedSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
@@ -78,12 +77,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
 {
     private static final Logger LOG = Log.getLogger(JsrEndpointFunctions.class);
     
-    protected static class MessageHandlerPongFunction implements Function<ByteBuffer, Void>
+    private static class MessageHandlerPongFunction implements Function<ByteBuffer, Void>
     {
-        public final MessageHandler messageHandler;
+        final MessageHandler messageHandler;
         public final Function<ByteBuffer, Void> function;
         
-        public MessageHandlerPongFunction(MessageHandler messageHandler, Function<ByteBuffer, Void> function)
+        MessageHandlerPongFunction(MessageHandler messageHandler, Function<ByteBuffer, Void> function)
         {
             this.messageHandler = messageHandler;
             this.function = function;
@@ -96,12 +95,12 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
     }
     
-    protected static class MessageHandlerSink implements MessageSink
+    private static class MessageHandlerSink implements MessageSink
     {
-        public final MessageHandler messageHandler;
-        public final MessageSink delegateSink;
+        final MessageHandler messageHandler;
+        final MessageSink delegateSink;
         
-        public MessageHandlerSink(MessageHandler messageHandler, MessageSink messageSink)
+        MessageHandlerSink(MessageHandler messageHandler, MessageSink messageSink)
         {
             this.messageHandler = messageHandler;
             this.delegateSink = messageSink;
@@ -140,6 +139,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
     }
     
+    @SuppressWarnings("unused")
     public AvailableDecoders getAvailableDecoders()
     {
         return decoders;
@@ -196,6 +196,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         {
             PartialTextMessageSink sink = new PartialTextMessageSink((partial) ->
             {
+                //noinspection unchecked
                 handler.onMessage((T) partial.getPayload(), partial.isFin());
                 return null;
             });
@@ -207,6 +208,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         {
             PartialBinaryMessageSink sink = new PartialBinaryMessageSink((partial) ->
             {
+                //noinspection unchecked
                 handler.onMessage((T) partial.getPayload(), partial.isFin());
                 return null;
             });
@@ -254,6 +256,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             {
                 Function<ByteBuffer, Void> pongFunction = (payload) ->
                 {
+                    //noinspection unchecked
                     handler.onMessage((T) new JsrPongMessage(payload));
                     return null;
                 };
@@ -271,6 +274,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         policy, this, decoderInstance,
                         (msg) ->
                         {
+                            //noinspection unchecked
                             handler.onMessage((T) msg);
                             return null;
                         }
@@ -286,6 +290,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         policy, this, decoderInstance,
                         (msg) ->
                         {
+                            //noinspection unchecked
                             handler.onMessage((T) msg);
                             return null;
                         }
@@ -301,6 +306,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         this, decoderInstance,
                         (msg) ->
                         {
+                            //noinspection unchecked
                             handler.onMessage((T) msg);
                             return null;
                         }
@@ -316,6 +322,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                         this, decoderInstance,
                         (msg) ->
                         {
+                            //noinspection unchecked
                             handler.onMessage((T) msg);
                             return null;
                         }
@@ -425,7 +432,8 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
     protected void discoverJsrAnnotatedEndpointFunctions(Object endpoint) throws DecodeException
     {
         Class<?> endpointClass = endpoint.getClass();
-        Method method = null;
+        Method method;
+        Arg SESSION = new Arg(Session.class);
         
         // OnOpen [0..1]
         method = ReflectUtils.findAnnotatedMethod(endpointClass, OnOpen.class);
@@ -433,24 +441,29 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         {
             ReflectUtils.assertIsPublicNonStatic(method);
             ReflectUtils.assertIsReturn(method, Void.TYPE);
+    
+            Arg ENDPOINT_CONFIG = new Arg(EndpointConfig.class);
             
             // Analyze @OnOpen method declaration techniques
-            DynamicArgs.Builder builder = createDynamicArgs(
-                    new Arg(Session.class),
-                    new Arg(EndpointConfig.class));
+            UnorderedSignature sigOpen = new UnorderedSignature(
+                    createCallArgs(SESSION, ENDPOINT_CONFIG));
             
-            DynamicArgs.Signature sig = builder.getMatchingSignature(method);
-            assertSignatureValid(sig, OnOpen.class, method);
-            
-            final Object[] args = newCallArgs(sig.getCallArgs());
-            DynamicArgs invoker = builder.build(method, sig);
-            setOnOpen((jsrSession) ->
+            int argMapping[] = sigOpen.getArgMapping(method, true);
+            if(argMapping != null)
             {
-                args[0] = jsrSession;
-                args[1] = endpointConfig;
-                invoker.invoke(endpoint, args);
-                return null;
-            }, method);
+                assertSignatureValid(sigOpen, OnOpen.class, method);
+    
+                final Object[] args = newFunctionArgs(sigOpen.getCallArgs(), method, argMapping);
+                BiFunction<Object, Object[], Object> invoker = sigOpen.newFunction(method);
+    
+                setOnOpen((jsrSession) ->
+                {
+                    args[0] = jsrSession;
+                    args[1] = endpointConfig;
+                    invoker.apply(endpoint, args);
+                    return null;
+                }, method);
+            }
         }
         
         // OnClose [0..1]
@@ -460,26 +473,31 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             ReflectUtils.assertIsPublicNonStatic(method);
             ReflectUtils.assertIsReturn(method, Void.TYPE);
             
+            Arg CLOSE_REASON = new Arg(CloseReason.class);
+            
             // Analyze @OnClose method declaration techniques
-            DynamicArgs.Builder builder = createDynamicArgs(
-                    new Arg(Session.class),
-                    new Arg(CloseReason.class));
+            UnorderedSignature sigClose = new UnorderedSignature(
+                    createCallArgs(SESSION, CLOSE_REASON));
             
-            DynamicArgs.Signature sig = builder.getMatchingSignature(method);
-            assertSignatureValid(sig, OnClose.class, method);
-            
-            final Object[] args = newCallArgs(sig.getCallArgs());
-            DynamicArgs invoker = builder.build(method, sig);
-            setOnClose((closeInfo) ->
+            int argMapping[] = sigClose.getArgMapping(method, true);
+            if(argMapping != null)
             {
-                // Convert Jetty CloseInfo to JSR CloseReason
-                CloseReason.CloseCode closeCode = CloseReason.CloseCodes.getCloseCode(closeInfo.getStatusCode());
-                CloseReason closeReason = new CloseReason(closeCode, closeInfo.getReason());
-                args[0] = getSession();
-                args[1] = closeReason;
-                invoker.invoke(endpoint, args);
-                return null;
-            }, method);
+                assertSignatureValid(sigClose, OnClose.class, method);
+    
+                final Object[] args = newFunctionArgs(sigClose.getCallArgs(), method, argMapping);
+                BiFunction<Object, Object[], Object> invoker = sigClose.newFunction(method);
+                
+                setOnClose((closeInfo) ->
+                {
+                    // Convert Jetty CloseInfo to JSR CloseReason
+                    CloseReason.CloseCode closeCode = CloseReason.CloseCodes.getCloseCode(closeInfo.getStatusCode());
+                    CloseReason closeReason = new CloseReason(closeCode, closeInfo.getReason());
+                    args[0] = getSession();
+                    args[1] = closeReason;
+                    invoker.apply(endpoint, args);
+                    return null;
+                }, method);
+            }
         }
         
         // OnError [0..1]
@@ -489,47 +507,50 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             ReflectUtils.assertIsPublicNonStatic(method);
             ReflectUtils.assertIsReturn(method, Void.TYPE);
             
+            Arg CAUSE = new Arg(Throwable.class);
+            
             // Analyze @OnError method declaration techniques
-            DynamicArgs.Builder builder = createDynamicArgs(
-                    new Arg(Session.class),
-                    new Arg(Throwable.class));
+            UnorderedSignature sigError = new UnorderedSignature(
+                   createCallArgs(SESSION, CAUSE));
             
-            DynamicArgs.Signature sig = builder.getMatchingSignature(method);
-            assertSignatureValid(sig, OnError.class, method);
-            
-            final Object[] args = newCallArgs(sig.getCallArgs());
-            DynamicArgs invoker = builder.build(method, sig);
-            setOnError((cause) ->
+            int argMapping[] = sigError.getArgMapping(method, true);
+            if(argMapping != null)
             {
-                args[0] = getSession();
-                args[1] = cause;
-                invoker.invoke(endpoint, args);
-                return null;
-            }, method);
+                assertSignatureValid(sigError, OnError.class, method);
+    
+                final Object[] args = newFunctionArgs(sigError.getCallArgs(), method, argMapping);
+                BiFunction<Object, Object[], Object> invoker = sigError.newFunction(method);
+                setOnError((cause) ->
+                {
+                    args[0] = getSession();
+                    args[1] = cause;
+                    invoker.apply(endpoint, args);
+                    return null;
+                }, method);
+            }
         }
         
         // OnMessage [0..3] (TEXT / BINARY / PONG)
         Method onMessages[] = ReflectUtils.findAnnotatedMethods(endpointClass, OnMessage.class);
         if (onMessages != null && onMessages.length > 0)
         {
-            onmsgloop:
             for (Method onMsg : onMessages)
             {
                 // Whole TEXT / Binary Message
-                if (discoverOnMessageWholeText(onMsg)) continue onmsgloop;
-                if (discoverOnMessageWholeBinary(onMsg)) continue onmsgloop;
+                if (discoverOnMessageWholeText(onMsg)) continue;
+                if (discoverOnMessageWholeBinary(onMsg)) continue;
                 
                 // Partial TEXT / BINARY
-                if (discoverOnMessagePartialText(onMsg)) continue onmsgloop;
-                if (discoverOnMessagePartialBinaryArray(onMsg)) continue onmsgloop;
-                if (discoverOnMessagePartialBinaryBuffer(onMsg)) continue onmsgloop;
+                if (discoverOnMessagePartialText(onMsg)) continue;
+                if (discoverOnMessagePartialBinaryArray(onMsg)) continue;
+                if (discoverOnMessagePartialBinaryBuffer(onMsg)) continue;
                 
                 // Streaming TEXT / BINARY
-                if (discoverOnMessageTextStream(onMsg)) continue onmsgloop;
-                if (discoverOnMessageBinaryStream(onMsg)) continue onmsgloop;
+                if (discoverOnMessageTextStream(onMsg)) continue;
+                if (discoverOnMessageBinaryStream(onMsg)) continue;
                 
                 // PONG
-                if (discoverOnMessagePong(onMsg)) continue onmsgloop;
+                if (discoverOnMessagePong(onMsg)) continue;
                 
                 // If we reached this point, then we have a @OnMessage annotated method
                 // that doesn't match any known signature above.
@@ -851,7 +872,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         return false;
     }
     
-    private void assertSignatureValid(DynamicArgs.Signature sig, Class<? extends Annotation> annotationClass, Method method)
+    private void assertSignatureValid(UnorderedSignature sig, Class<? extends Annotation> annotationClass, Method method)
     {
         if (sig != null)
             return;
@@ -902,20 +923,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         }
     }
     
-    @Deprecated
-    protected Object[] newCallArgs(Arg[] callArgs) throws DecodeException
-    {
-        int len = callArgs.length;
-        Object[] args = new Object[callArgs.length];
-        for (int i = 0; i < len; i++)
-        {
-            String staticRawValue = staticArgs.get(callArgs[i].getTag());
-            args[i] = AvailableDecoders.decodePrimitive(staticRawValue, callArgs[i].getType());
-        }
-        return args;
-    }
-    
-    protected Object[] newFunctionArgs(Arg[] callArgs, Method destMethod, int argMapping[]) throws DecodeException
+    private Object[] newFunctionArgs(Arg[] callArgs, Method destMethod, int argMapping[]) throws DecodeException
     {
         Object[] potentialArgs = new Object[callArgs.length];
     
@@ -939,21 +947,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
         return potentialArgs;
     }
     
-    private Object getDecodedStaticValue(String name, Class<?> type) throws DecodeException
-    {
-        String value = staticArgs.get(name);
-        return AvailableDecoders.decodePrimitive(value, type);
-    }
-    
-    private DynamicArgs.Builder createDynamicArgs(Arg... args)
-    {
-        DynamicArgs.Builder argBuilder = new DynamicArgs.Builder();
-        Arg[] callArgs = createCallArgs(args);
-        argBuilder.addSignature(callArgs);
-        return argBuilder;
-    }
-    
-    protected Arg[] createCallArgs(Arg... args)
+    private Arg[] createCallArgs(Arg... args)
     {
         int argCount = args.length;
         if (this.staticArgs != null)
