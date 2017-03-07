@@ -18,13 +18,23 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.MessageHandler;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
@@ -46,17 +56,17 @@ public class JsrSessionTest
     
     private ClientContainer container;
     private JsrSession session;
-
+    
     @Before
     public void initSession() throws Exception
     {
         String id = JsrSessionTest.class.getSimpleName();
         URI requestURI = URI.create("ws://localhost/" + id);
-    
+        
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-    
+        
         // Container
-        container = new ClientContainer(new SimpleContainerScope(policy,bufferPool));
+        container = new ClientContainer(new SimpleContainerScope(policy, bufferPool));
         container.start();
         LocalWebSocketConnection connection = new LocalWebSocketConnection(bufferPool);
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
@@ -73,20 +83,20 @@ public class JsrSessionTest
         session.stop();
         container.stop();
     }
-
+    
     @Test
     public void testMessageHandlerBinary() throws DeploymentException
     {
         session.addMessageHandler(new ByteBufferPartialHandler());
     }
-
+    
     @Test
     public void testMessageHandlerBoth() throws DeploymentException
     {
         session.addMessageHandler(new StringWholeHandler());
         session.addMessageHandler(new ByteArrayWholeHandler());
     }
-
+    
     @Test
     public void testMessageHandlerReplaceTextHandler() throws DeploymentException
     {
@@ -96,10 +106,64 @@ public class JsrSessionTest
         session.removeMessageHandler(strHandler); // remove original TEXT handler
         session.addMessageHandler(new LongMessageHandler()); // add new TEXT handler
     }
-
+    
     @Test
     public void testMessageHandlerText() throws DeploymentException
     {
         session.addMessageHandler(new StringWholeHandler());
+    }
+    
+    /**
+     * Test Java 8 Lamba of {@link javax.websocket.MessageHandler.Whole}
+     */
+    @Test
+    public void testMessageHandler_11_Whole() throws DeploymentException
+    {
+        final List<String> received = new ArrayList<>();
+        
+        // Whole Message
+        session.addMessageHandler(String.class, (msg) -> received.add(msg));
+        
+        session.open();
+        
+        session.incomingFrame(new TextFrame().setPayload("G'day").setFin(true));
+        session.incomingFrame(new TextFrame().setPayload("Hello World").setFin(true));
+        
+        assertThat("Received msgs", received.size(), is(2));
+        assertThat("Received Message[0]", received.get(0), is("G'day"));
+        assertThat("Received Message[1]", received.get(1), is("Hello World"));
+        
+        session.close();
+    }
+    
+    /**
+     * Test Java 8 Lamba of {@link javax.websocket.MessageHandler.Partial}
+     */
+    @Test
+    public void testMessageHandler_11_Partial() throws DeploymentException
+    {
+        final List<Object[]> received = new ArrayList<>();
+        
+        // Partial Message
+        session.addMessageHandler(ByteBuffer.class, (partialMsg, isLast) ->
+        {
+            ByteBuffer copy = ByteBuffer.allocate(partialMsg.remaining());
+            copy.put(partialMsg);
+            copy.flip();
+            received.add(new Object[]{copy, isLast});
+        });
+        
+        session.open();
+        
+        session.incomingFrame(new BinaryFrame().setPayload("G'day").setFin(false));
+        session.incomingFrame(new ContinuationFrame().setPayload(" World").setFin(true));
+        
+        assertThat("Received partial", received.size(), is(2));
+        assertThat("Received Message[0].buffer", BufferUtil.toUTF8String((ByteBuffer) received.get(0)[0]), is("G'day"));
+        assertThat("Received Message[0].last", received.get(0)[1], is(false));
+        assertThat("Received Message[1].buffer", BufferUtil.toUTF8String((ByteBuffer) received.get(1)[0]), is(" World"));
+        assertThat("Received Message[1].last", received.get(1)[1], is(true));
+        
+        session.close();
     }
 }
