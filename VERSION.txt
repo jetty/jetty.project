@@ -1,4 +1,19 @@
-jetty-9.3.17-SNAPSHOT
+jetty-9.3.17.RC0 - 07 March 2017
+ + 329 Javadoc for HttpTester and ServletTester needs to reference limited HTTP
+   version scope
+ + 609 websocket ClientCloseTest testServerNoCloseHandshake is failing
+ + 1047 ReadPendingException and then thread death
+ + 1282 ByteArrayEndPointTest.testIdle() failure
+ + 1296 Introduce HTTP parser "content complete" event
+ + 1326 Jetty shutdown command got NullPointerException (http2 module added to
+   start)
+ + 1328 Response.setBufferSize(int) ISE should be more clear on reason
+ + 1342 Improve ByteBufferPool scalability
+ + 1351 StringIndexOutOfBoundsException thrown on incomplete Accept-Language
+   header
+ + 1357 RolloverFileOutputStream: No rollout performed at midnight
+ + 1375 Support pushed resources in HTTP client
+ + 1378 Slow TLS clients may hang the server
 
 jetty-9.3.16.v20170120 - 20 January 2017
  + 486 JDK 9 ALPN implementation
