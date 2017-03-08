@@ -82,7 +82,10 @@ public class AllowSymLinkAliasCheckerTest
     @After
     public void teardown() throws Exception
     {
-        server.stop();
+        if( server != null )
+        {
+            server.stop();
+        }
     }
 
     private void setupRoot() throws IOException
