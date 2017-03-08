@@ -28,10 +28,10 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -55,6 +55,13 @@ public class WebSocketUpgradeFilterTest
     interface ServerProvider
     {
         Server newServer() throws Exception;
+    }
+    
+    private static AtomicInteger uniqTestDirId = new AtomicInteger(0);
+    
+    private static File getNewTestDir()
+    {
+        return MavenTestingUtils.getTargetTestingDir("WSUF-webxml-" + uniqTestDirId.getAndIncrement());
     }
     
     @Parameterized.Parameters(name = "{0}")
@@ -236,7 +243,7 @@ public class WebSocketUpgradeFilterTest
             @Override
             public Server newServer() throws Exception
             {
-                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+                File testDir = getNewTestDir();
                 
                 WSServer server = new WSServer(testDir, "/");
     
@@ -259,7 +266,7 @@ public class WebSocketUpgradeFilterTest
             @Override
             public Server newServer() throws Exception
             {
-                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+                File testDir = getNewTestDir();
             
                 WSServer server = new WSServer(testDir, "/");
             
@@ -286,7 +293,7 @@ public class WebSocketUpgradeFilterTest
             @Override
             public Server newServer() throws Exception
             {
-                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+                File testDir = getNewTestDir();
             
                 WSServer server = new WSServer(testDir, "/");
     
@@ -309,7 +316,7 @@ public class WebSocketUpgradeFilterTest
             @Override
             public Server newServer() throws Exception
             {
-                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+                File testDir = getNewTestDir();
             
                 WSServer server = new WSServer(testDir, "/");
     

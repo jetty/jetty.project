@@ -227,7 +227,7 @@ public class AttributeNormalizerTest
     {
         // Normalize WAR deep path as File
         File testWarDeep = new File(new File(war), OS.separators("deep/ref")).getAbsoluteFile();
-        assertNormalize(testWarDeep, "${WAR.path}/deep/ref");
+        assertNormalize(testWarDeep, "${WAR.path}" + OS.separators("/deep/ref"));
     }
     
     @Test
