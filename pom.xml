@@ -73,7 +73,7 @@
             <id>attach-sources</id>
             <phase>process-classes</phase>
             <goals>
-              <goal>jar-no-fork</goal>
+              <goal>jar</goal>
             </goals>
             <configuration>
               <archive>
