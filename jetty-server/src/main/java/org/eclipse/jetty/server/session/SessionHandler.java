@@ -90,7 +90,8 @@ public class SessionHandler extends ScopedHandler
      * Session id path parameter name.
      * Defaults to <code>jsessionid</code>, but can be set with the
      * <code>org.eclipse.jetty.servlet.SessionIdPathParameterName</code> context init parameter.
-     * If set to null or "none" no URL rewriting will be done.
+     * If context init param is "none", or setSessionIdPathParameterName is called with null or "none",
+     * no URL rewriting will be done.
      */
     public final static String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
     public final static String __DefaultSessionIdPathParameterName = "jsessionid";
