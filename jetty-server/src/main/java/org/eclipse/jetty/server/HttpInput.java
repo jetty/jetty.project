@@ -271,7 +271,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 }
             }
 
-            // Caclulate minimum request rate for DOS protection
+            // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
             {
@@ -858,6 +858,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             if (error != null)
             {
+                // TODO is this necessary to add here?
                 _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                 listener.onError(error);
             }
