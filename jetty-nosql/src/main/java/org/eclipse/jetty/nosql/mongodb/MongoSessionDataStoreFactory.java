@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.session.SessionDataStore;
 
 import com.mongodb.Mongo;
 import com.mongodb.MongoException;
+import com.mongodb.MongoURI;
 
 /**
  * MongoSessionDataStoreFactory
@@ -40,6 +41,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     String _dbName;  
     String _collectionName;
     String _host;
+    String _connectionString;
     int _port = -1;
     
     /**
@@ -72,11 +74,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     public void setPort(int port)
     {
         _port = port;
-    }
-
-
-
-    
+    }    
     
     /**
      * @return the dbName
@@ -94,6 +92,22 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         _dbName = dbName;
     }
 
+    /**
+     * @return the connectionString
+     */
+    public String getConnectionString()
+    {
+		return _connectionString;
+    }
+    
+    /**
+     * @param  connectionString the connection string to set. This has priority over dbHost and port
+     */
+    public void setConnectionString(String connectionString)
+    {
+    	_connectionString = connectionString;
+    }
+    
     /**
      * @return the collectionName
      */
@@ -122,7 +136,10 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
         Mongo mongo;
-        if (!StringUtil.isBlank(getHost()) && getPort() != -1)
+        
+        if (!StringUtil.isBlank(getConnectionString()))
+        	mongo = new Mongo(new MongoURI(getConnectionString()));
+        else if (!StringUtil.isBlank(getHost()) && getPort() != -1)
             mongo = new Mongo(getHost(), getPort());
         else if (!StringUtil.isBlank(getHost()))
             mongo = new Mongo(getHost());
