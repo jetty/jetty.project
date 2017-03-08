@@ -128,14 +128,21 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             {
                 if (dir != _storeDir)
                     return false;
-                
-                String s = name.substring(0, name.indexOf('_'));
-                long expiry = (s==null?0:Long.parseLong(s));
-                    
-                if (expiry > 0 && expiry < now)
-                    return true;
-                else
+
+                //dir may contain files that don't match our naming pattern
+                int index = name.indexOf('_');
+                if (index < 0)
                     return false;
+
+                try
+                {
+                    long expiry = Long.parseLong(name.substring(0, index));
+                    return expiry > 0 && expiry < now;
+                }
+                catch (NumberFormatException e)
+                {
+                    return false;
+                }
             }
         });
         
