@@ -22,7 +22,6 @@ import org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTes
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * NonClusteredSessionScavengingTest
@@ -50,11 +49,5 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return MongoTestHelper.newSessionDataStoreFactory();
-    }
-
-    @Test
-    public void testNewSession() throws Exception
-    {
-        super.testNewSession();
     }
 }

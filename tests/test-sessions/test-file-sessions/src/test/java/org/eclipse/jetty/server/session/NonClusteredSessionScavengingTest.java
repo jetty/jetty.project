@@ -50,10 +50,5 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     {
         return FileTestHelper.newSessionDataStoreFactory();
     }
-
-    @Test
-    public void testNewSession() throws Exception
-    {
-        super.testNewSession();
-    }
+    
 }
