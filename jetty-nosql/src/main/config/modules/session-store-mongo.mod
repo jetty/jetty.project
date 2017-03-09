@@ -11,7 +11,7 @@ session-store
 sessions
 
 [files]
-maven://org.mongodb/mongo-java-driver/2.6.1|lib/nosql/mongo-java-driver-2.6.1.jar
+maven://org.mongodb/mongo-java-driver/2.13.2|lib/nosql/mongo-java-driver-2.13.2.jar
 
 [lib]
 lib/jetty-nosql-${jetty.version}.jar
