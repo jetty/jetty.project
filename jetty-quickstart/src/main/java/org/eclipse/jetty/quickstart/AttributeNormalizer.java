@@ -372,7 +372,7 @@ public class AttributeNormalizer
             }
 
             if (path.startsWith(a.path))
-                return String.format("${%s}/%s",a.key,a.path.relativize(path).toString());
+                return String.format("${%s}%c%s",a.key,File.separatorChar,a.path.relativize(path).toString());
         }
 
         return path.toString();

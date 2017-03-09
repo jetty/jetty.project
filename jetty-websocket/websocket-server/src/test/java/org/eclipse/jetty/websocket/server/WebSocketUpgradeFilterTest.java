@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.DispatcherType;
 
@@ -42,16 +47,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 @RunWith(Parameterized.class)
 public class WebSocketUpgradeFilterTest
 {
     interface ServerProvider
     {
         Server newServer() throws Exception;
+    }
+    
+    private static AtomicInteger uniqTestDirId = new AtomicInteger(0);
+    
+    private static File getNewTestDir()
+    {
+        return MavenTestingUtils.getTargetTestingDir("WSUF-webxml-" + uniqTestDirId.getAndIncrement());
     }
     
     @Parameterized.Parameters(name = "{0}")
@@ -188,7 +196,7 @@ public class WebSocketUpgradeFilterTest
         
         cases.add(new Object[]{"wsuf/WebAppContext/web.xml/ServletContextListener", (ServerProvider) () ->
         {
-            File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+            File testDir = getNewTestDir();
             
             WSServer server15 = new WSServer(testDir, "/");
 
@@ -210,7 +218,7 @@ public class WebSocketUpgradeFilterTest
             @Override
             public Server newServer() throws Exception
             {
-                File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+                File testDir = getNewTestDir();
             
                 WSServer server = new WSServer(testDir, "/");
             
@@ -234,7 +242,7 @@ public class WebSocketUpgradeFilterTest
     
         cases.add(new Object[]{"wsuf/WebAppContext/web.xml/Servlet.init", (ServerProvider) () ->
         {
-            File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+            File testDir = getNewTestDir();
         
             WSServer server16 = new WSServer(testDir, "/");
 
@@ -253,7 +261,7 @@ public class WebSocketUpgradeFilterTest
 
         cases.add(new Object[]{"wsuf/WebAppContext/web.xml/ServletContextListener/alt-config", (ServerProvider) () ->
         {
-            File testDir = MavenTestingUtils.getTargetTestingDir("WSUF-webxml");
+            File testDir = getNewTestDir();
         
             WSServer server17 = new WSServer(testDir, "/");
 
