@@ -59,8 +59,8 @@ public class SlowClientsTest
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
 
-        int maxThreads = 8;
-        int contentLength = 32 * 1024 * 1024;
+        int maxThreads = 6;
+        int contentLength = 8 * 1024 * 1024;
         QueuedThreadPool serverThreads = new QueuedThreadPool(maxThreads);
         serverThreads.setDetailedDump(true);
         Server server = new Server(serverThreads);
