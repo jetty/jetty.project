@@ -75,7 +75,7 @@ public abstract class AbstractConnectHandlerTest
     protected Socket newSocket() throws IOException
     {
         Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
-        socket.setSoTimeout(5000);
+        socket.setSoTimeout(20000);
         return socket;
     }
 }
