@@ -35,13 +35,7 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     {
        return JdbcTestHelper.newSessionDataStoreFactory();
     }
-    
 
-    @Test
-    public void testNewSession() throws Exception
-    {
-        super.testNewSession();
-    }
     
     @After
     public void tearDown() throws Exception 

@@ -59,13 +59,4 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
         factory.setCache(__testSupport.getCache());
         return factory;
     }
-
-  
-    @Override
-    public void testNewSession() throws Exception
-    {
-        super.testNewSession();
-    }
-
-    
 }

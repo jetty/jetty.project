@@ -18,13 +18,19 @@
 
 package org.eclipse.jetty.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -38,9 +44,6 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertTrue;
 
 public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 {
@@ -114,7 +117,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         try (Socket socket = new Socket((String)null,connector.getLocalPort()))
         {
             socket.setSoTimeout(10 * MAX_IDLE_TIME);
-            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
+            socket.getOutputStream().write(request.getBytes(UTF_8));
             InputStream inputStream = socket.getInputStream();
             long start = System.currentTimeMillis();
             String response = IO.toString(inputStream);
@@ -137,35 +140,64 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
         });
-        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         client.setSoTimeout(10000);
-
+    
         Assert.assertFalse(client.isClosed());
-
-        OutputStream os=client.getOutputStream();
-        InputStream is=client.getInputStream();
-
+    
+        final OutputStream os = client.getOutputStream();
+        final InputStream is = client.getInputStream();
+        final StringBuilder response = new StringBuilder();
+    
+        CompletableFuture<Void> responseFuture = CompletableFuture.runAsync(() ->
+        {
+            try (InputStreamReader reader = new InputStreamReader(is, UTF_8))
+            {
+                int c;
+                while ((c = reader.read()) != -1)
+                {
+                    response.append((char) c);
+                }
+            }
+            catch (IOException e)
+            {
+                // Valid path (as connection is forcibly closed)
+                // t.printStackTrace(System.err);
+            }
+        });
+    
+        CompletableFuture<Void> requestFuture = CompletableFuture.runAsync(() ->
+        {
+            try
+            {
+                os.write((
+                        "POST /echo HTTP/1.0\r\n" +
+                                "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                                "content-type: text/plain; charset=utf-8\r\n" +
+                                "content-length: 20\r\n" +
+                                "\r\n").getBytes("utf-8"));
+                os.flush();
+            
+                os.write("123456789\n".getBytes("utf-8"));
+                os.flush();
+                TimeUnit.SECONDS.sleep(1);
+                os.write("=========\n".getBytes("utf-8"));
+                os.flush();
+            }
+            catch (InterruptedException | IOException e)
+            {
+                // Valid path, as write of second half of content can fail
+                // e.printStackTrace(System.err);
+            }
+        });
+    
         try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
-            os.write((
-                    "POST /echo HTTP/1.0\r\n"+
-                            "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
-                            "content-type: text/plain; charset=utf-8\r\n"+
-                            "content-length: 20\r\n"+
-                            "\r\n").getBytes("utf-8"));
-            os.flush();
-
-            os.write("123456789\n".getBytes("utf-8"));
-            os.flush();
-            Thread.sleep(1000);
-            os.write("=========\n".getBytes("utf-8"));
-            os.flush();
-
-            Thread.sleep(2000);
-
-            String response =IO.toString(is);
-            Assert.assertThat(response,containsString(" 500 "));
-            Assert.assertThat(response, Matchers.not(containsString("=========")));
+            requestFuture.get(2, TimeUnit.SECONDS);
+            responseFuture.get(3, TimeUnit.SECONDS);
+        
+            Assert.assertThat(response.toString(), containsString(" 500 "));
+            Assert.assertThat(response.toString(), Matchers.not(containsString("=========")));
         }
     }
 }

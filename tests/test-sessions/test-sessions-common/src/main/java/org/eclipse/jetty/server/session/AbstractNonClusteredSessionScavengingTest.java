@@ -111,8 +111,62 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
         {
             server.stop();
         }
-
     }
+    
+    @Test
+    public void testImmortalSession() throws Exception
+    {
+        String servletMapping = "/server";
+        int scavengePeriod = 3;
+        int maxInactivePeriod = 0;
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        
+        TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod,
+                                                           cacheFactory, storeFactory);
+        ServletContextHandler context = server.addContext("/");
+        context.addServlet(TestServlet.class, servletMapping);
+        String contextPath = "";
+
+        try
+        {
+            server.start();
+            int port=server.getPort();
+            HttpClient client = new HttpClient();
+            client.start();
+            try
+            {
+                //create an immortal session
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
+                assertTrue(sessionCookie != null);
+                // Mangle the cookie, replacing Path with $Path, etc.
+                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+
+                // Let's wait for the scavenger to run
+                pause(2*scavengePeriod);
+
+                // Test that the session is still there
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=old-test");
+                request.header("Cookie", sessionCookie);
+                response = request.send();
+                assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+            }
+            finally
+            {
+                client.stop();
+            }
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+    
     public static class TestServlet extends HttpServlet
     {
         String id;
@@ -134,6 +188,12 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
                 s = request.getSession(true);
                 assertNotNull(s);
                 assertFalse(s.getId().equals(id));
+            }
+            else if ("old-test".equals(action))
+            {
+                HttpSession s = request.getSession(false);
+                assertNotNull(s);
+                assertTrue(s.getId().equals(id));
             }
             else
             {

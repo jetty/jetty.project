@@ -50,10 +50,4 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
         return GCloudSessionTestSupport.newSessionDataStoreFactory(GCloudTestSuite.__testSupport.getDatastore());
     }
     
-
-    @Test
-    public void testNewSession() throws Exception
-    {
-        super.testNewSession();
-    }
 }

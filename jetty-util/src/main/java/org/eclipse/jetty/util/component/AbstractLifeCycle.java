@@ -234,4 +234,23 @@ public abstract class AbstractLifeCycle implements LifeCycle
         @Override public void lifeCycleStopped(LifeCycle event) {}
         @Override public void lifeCycleStopping(LifeCycle event) {}
     }
+    
+    /**
+     * A LifeCycle Listener that will call stop if any failures are notified.
+     */
+    public static final LifeCycle.Listener STOP_ON_FAILURE = new AbstractLifeCycleListener()
+    {
+        @Override 
+        public void lifeCycleFailure(LifeCycle lifecycle, Throwable cause) 
+        {
+            try
+            {
+                lifecycle.stop();
+            }
+            catch(Exception e)
+            {
+                cause.addSuppressed(e);
+            }
+        }
+    };
 }
