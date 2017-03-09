@@ -71,6 +71,8 @@ import org.eclipse.jetty.util.log.Logger;
  * secondary resources are pushed to the client, unless the request carries
  * {@code If-xxx} header that hint that the client has the resources in its
  * cache.</p>
+ * <p>If the init param useQueryInKey is set, then the query string is used as
+ * as part of the key to identify a resource</p>
  */
 @ManagedObject("Push cache based on the HTTP 'Referer' header")
 public class PushCacheFilter implements Filter
@@ -83,6 +85,7 @@ public class PushCacheFilter implements Filter
     private long _associatePeriod = 4000L;
     private int _maxAssociations = 16;
     private long _renew = System.nanoTime();
+    private boolean _useQueryInKey;
 
     @Override
     public void init(FilterConfig config) throws ServletException
@@ -104,6 +107,8 @@ public class PushCacheFilter implements Filter
             for (String p : StringUtil.csvSplit(ports))
                 _ports.add(Integer.parseInt(p));
 
+        _useQueryInKey = Boolean.parseBoolean(config.getInitParameter("useQueryInKey"));
+        
         // Expose for JMX.
         config.getServletContext().setAttribute(config.getFilterName(), this);
 
@@ -162,7 +167,7 @@ public class PushCacheFilter implements Filter
 
         String path = request.getRequestURI();
         String query = request.getQueryString();
-        if (query != null)
+        if (_useQueryInKey && query != null)
             path += "?" + query;
         if (referrer != null)
         {
@@ -179,7 +184,7 @@ public class PushCacheFilter implements Filter
             {
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
-                    String referrerPath = referrerURI.getPath();
+                    String referrerPath = _useQueryInKey?referrerURI.getPathQuery():referrerURI.getPath();
                     if (referrerPath == null)
                         referrerPath = "/";
                     if (referrerPath.startsWith(request.getContextPath() + "/"))
