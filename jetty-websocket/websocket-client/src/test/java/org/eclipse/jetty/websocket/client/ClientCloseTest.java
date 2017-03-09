@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -103,7 +102,7 @@ public class ClientCloseTest
         public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher)
                 throws InterruptedException
         {
-            long maxTimeout = clientTimeoutMs * 2;
+            long maxTimeout = clientTimeoutMs * 4;
 
             assertThat("Client Close Event Occurred",closeLatch.await(maxTimeout,TimeUnit.MILLISECONDS),is(true));
             assertThat("Client Close Event Count",closeCount.get(),is(1));
@@ -144,7 +143,7 @@ public class ClientCloseTest
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            LOG.debug("onWebSocketError",cause);
+            LOG.warn("onWebSocketError",cause);
             assertThat("Unique Error Event", error.compareAndSet(null, cause), is(true));
             errorLatch.countDown();
         }
@@ -417,16 +416,11 @@ public class ClientCloseTest
             writeCount++;
             writeSize += msg.length;
         }
-        LOG.debug("Wrote {} frames totalling {} bytes of payload before congestion kicked in",writeCount,writeSize);
+        LOG.info("Wrote {} frames totalling {} bytes of payload before congestion kicked in",writeCount,writeSize);
 
-        // Verify that there are no errors
-        assertThat("Error events",clientSocket.error.get(),nullValue());
-
-        // client idle timeout triggers close event on client ws-endpoint
-        // client close event on ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,
-                anyOf(is(StatusCode.SHUTDOWN),is(StatusCode.ABNORMAL)),
-                anyOf(containsString("Timeout"),containsString("timeout"),containsString("Write")));
+        // Verify timeout error
+        assertThat("OnError Latch", clientSocket.errorLatch.await(2, TimeUnit.SECONDS), is(true));
+        assertThat("OnError", clientSocket.error.get(), instanceOf(SocketTimeoutException.class));
     }
 
     @Test
