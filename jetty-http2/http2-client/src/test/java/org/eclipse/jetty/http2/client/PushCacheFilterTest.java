@@ -704,7 +704,7 @@ public class PushCacheFilterTest extends AbstractTest
     {
         String name = "foo";
         String value = "bar";
-        final String primaryResource = "/primary.html";
+        final String primaryResource = "/primary.html?"+name + "=" +value;
         final String secondaryResource = "/secondary.html?" + name + "=" + value;
         start(new HttpServlet()
         {
