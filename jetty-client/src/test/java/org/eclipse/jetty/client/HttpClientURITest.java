@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -47,10 +49,15 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class HttpClientURITest extends AbstractHttpClientServerTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
     public HttpClientURITest(SslContextFactory sslContextFactory)
     {
         super(sslContextFactory);
@@ -74,14 +81,15 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assert.assertEquals(HttpStatus.OK_200, request.send().getStatus());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIDNHost() throws Exception
     {
         startClient();
+        expectedException.expect(IllegalArgumentException.class);
         client.newRequest(scheme + "://пример.рф"); // example.com-like host in IDN domain
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIDNRedirect() throws Exception
     {
         // Internationalized Domain Name.
@@ -104,19 +112,12 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             HttpField location = response.getHeaders().getField(HttpHeader.LOCATION);
             Assert.assertEquals(incorrectlyDecoded, location.getValue());
 
-            try
-            {
-                client.newRequest("localhost", server.getLocalPort())
-                        .timeout(5, TimeUnit.SECONDS)
-                        .followRedirects(true)
-                        .send();
-            }
-            catch (ExecutionException x)
-            {
-                Throwable cause = x.getCause();
-                if (cause instanceof IllegalArgumentException)
-                    throw (IllegalArgumentException)cause;
-            }
+            expectedException.expect(ExecutionException.class);
+            expectedException.expectCause(instanceOf(IllegalArgumentException.class));
+            client.newRequest("localhost", server.getLocalPort())
+                    .timeout(5, TimeUnit.SECONDS)
+                    .followRedirects(true)
+                    .send();
         }
         finally
         {
