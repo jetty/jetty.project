@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
@@ -331,7 +332,7 @@ public class ContinuationsTest
     private String process(String query, String content) throws Exception
     {
         Server server = new Server();
-        
+        server.setStopTimeout(20000);
         try 
         {
             ServerConnector connector = new ServerConnector(server);
@@ -341,7 +342,9 @@ public class ContinuationsTest
                 log.clear();
             }
             history.clear();
-            server.setHandler(this.setupHandler);
+            StatisticsHandler stats = new StatisticsHandler();
+            server.setHandler(stats);
+            stats.setHandler(this.setupHandler);
         
             server.start();
             int port=connector.getLocalPort();
