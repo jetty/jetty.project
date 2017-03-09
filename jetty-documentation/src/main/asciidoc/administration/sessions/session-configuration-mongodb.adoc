@@ -39,11 +39,13 @@ The following 1 module(s):
   + http://www.apache.org/licenses/LICENSE-2.0.html
 
 Proceed (y/N)? y
-INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
-INFO : session-store-mongo initialised in ${jetty.base}/start.d/session-store-mongo.ini
-DOWNLOAD: http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.6.1/mongo-java-driver-2.6.1.jar to ${jetty.base}/lib/nosql/mongo-java-driver-2.6.1.jar
-INFO : Base directory was modified
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-mongo initialized in ${jetty.base}/start.d/session-store-mongo.ini
+INFO  : sessions/mongo/address dynamic dependency of session-store-mongo
+MKDIR : ${jetty.base}/lib/nosql
+DOWNLD: http://central.maven.org/maven2/org/mongodb/mongo-java-driver/2.13.2/mongo-java-driver-2.13.2.jar to ${jetty.base}/lib/nosql/mongo-java-driver-2.13.2.jar
+INFO  : Base directory was modified
 ----
 
 Doing this enables the MongoDB Session module and any dependent modules or files needed for it to run on the server.
@@ -70,18 +72,37 @@ Opening the `start.d/session-store-mongo.ini` will show a list of all the config
 
 #jetty.session.mongo.dbName=HttpSessions
 #jetty.session.mongo.collectionName=jettySessions
+#jetty.session.gracePeriod.seconds=3600
+
+connection-type=address
 #jetty.session.mongo.host=localhost
 #jetty.session.mongo.port=27017
-#jetty.session.gracePeriod.seconds=3600
+
+#connection-type=uri
+#jetty.session.mongo.connectionString=mongodb://localhost
 ----
 
 jetty.session.mongo.dbName::
 Name of the database in Mongo used to store the Session collection.
 jetty.session.mongo.collectionName::
 Name of the collection in Mongo used to keep all of the Sessions.
-jetty.session.mongo.host::
-Host name or address for the remote Mongo instance.
-jetty.session.mongo.port::
-Port number for the remote Mongo instance.
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+connection-type=address::
+Used when utilizing a direct connection to the Mongo server.
+jetty.session.mongo.host;;
+Host name or address for the remote Mongo instance.
+jetty.session.mongo.port;;
+Port number for the remote Mongo instance.
+connection-type=uri::
+Used when utilizing MongoURI for secured connections.
+jetty.session.mongo.connectionString;;
+The string defining the MongoURI value, such as `mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]`.
+More information on how to format the MongoURI string can be found in the https://docs.mongodb.com/manual/reference/connection-string/[official documentation for mongo.]
++
+____
+[NOTE]
+You will only use *one* `connection-type` at a time, `address` or `uri`.
+If both are utilized in your `session-store-mongo.ini`, only the last `connection-type` configured in the file will be used.
+By default, the `connection-type` of `address` is used.
+____
