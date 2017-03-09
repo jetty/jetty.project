@@ -34,6 +34,7 @@ public class WebAppConfiguration extends AbstractConfiguration
         protectAndExpose(
             "org.eclipse.jetty.util.log.",
             "org.eclipse.jetty.server.session.SessionData",
+            "org.eclipse.jetty.servlet.StatisticsServlet", 
             "org.eclipse.jetty.servlet.DefaultServlet", 
             "org.eclipse.jetty.servlet.NoJspServlet",
             "org.eclipse.jetty.continuation.");
