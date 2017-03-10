@@ -14,8 +14,8 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <exam.version>4.9.2</exam.version>
-    <url.version>1.5.2</url.version>
+    <exam.version>4.10.0</exam.version>
+    <url.version>2.5.2</url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
   </properties>
   <dependencies>
@@ -64,30 +64,16 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- OSGi R4 frameworks -->
-<!--
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.framework</artifactId>
-      <version>4.4.0</version>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+      <version>3.11.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.enterprise</artifactId>
-      <version>5.0.0</version>
-      <scope>test</scope>
-    </dependency>
--->
-    <dependency>
-      <groupId>org.eclipse</groupId>
-      <artifactId>osgi</artifactId>
-      <version>3.10.0-v20140606-1445</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.eclipse.osgi</groupId>
+        <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
+        <version>3.5.100</version>
         <scope>test</scope>
     </dependency>
 
