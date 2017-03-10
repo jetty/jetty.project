@@ -18,16 +18,22 @@
 
 package org.eclipse.jetty.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,12 +42,6 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
@@ -71,15 +71,16 @@ public class TestJettyOSGiBootWithJsp
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
+        options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[options.size()]);
     }
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
     {
-        File etc = new File("src/test/config/etc");
+        File etc = new File(OS.separators("src/test/config/etc"));
         
         List<Option> options = new ArrayList<Option>();
-        StringBuffer xmlConfigs = new StringBuffer();    
+        StringBuffer xmlConfigs = new StringBuffer();
         xmlConfigs.append(new File(etc, "jetty.xml").toURI());
         xmlConfigs.append(";");
         if (ssl)
