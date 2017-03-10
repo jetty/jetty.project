@@ -32,6 +32,8 @@ import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.osgi.framework.BundleContext;
 
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
@@ -42,6 +44,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  * HTTP2 setup.
  */
 @RunWith(PaxExam.class)
+@ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2
 {
     private static final String LOG_LEVEL = "WARN";
@@ -59,9 +62,8 @@ public class TestJettyOSGiBootHTTP2
         options.addAll(http2JettyDependencies());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
-        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.osgi.LEVEL").value(LOG_LEVEL))));
+        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
+        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         return options.toArray(new Option[options.size()]);
     }
 

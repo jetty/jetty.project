@@ -71,9 +71,8 @@ public class TestJettyOSGiBootWithAnnotations
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
      
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
-        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.annotations.LEVEL").value(LOG_LEVEL))));
+        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
+        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         // options.addAll(TestJettyOSGiBootCore.consoleDependencies());
         options.addAll(jspDependencies());
         options.addAll(annotationDependencies());
@@ -103,7 +102,9 @@ public class TestJettyOSGiBootWithAnnotations
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs));
         options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
         options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
-        options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
+
+        
         return options;
     }
 
@@ -121,13 +122,14 @@ public class TestJettyOSGiBootWithAnnotations
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-spec-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
-    
+
 
     @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
+        TestOSGiUtil.debugBundles(bundleContext);
     }
 
     // at the moment can't run httpservice with jsp at the same time.

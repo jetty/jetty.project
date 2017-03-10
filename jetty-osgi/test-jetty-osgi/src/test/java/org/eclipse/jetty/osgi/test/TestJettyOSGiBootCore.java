@@ -90,7 +90,7 @@ public class TestJettyOSGiBootCore
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-
+        
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
