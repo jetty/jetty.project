@@ -76,7 +76,7 @@ public class TestJettyOSGiBootHTTP2
         File checkALPNBoot = new File(alpnBoot);
         if (!checkALPNBoot.exists()) { throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot); }
 
-        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + alpnBoot));
+        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + checkALPNBoot.getAbsolutePath()));
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
