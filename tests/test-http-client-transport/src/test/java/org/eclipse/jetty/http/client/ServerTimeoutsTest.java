@@ -128,7 +128,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @Test
     public void testBlockingTimeoutSmallerThanIdleTimeoutBlockingReadBlockingTimeoutFires() throws Exception
     {
-        long blockingTimeout = 1000;
+        long blockingTimeout = 2500;
         httpConfig.setBlockingTimeout(blockingTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         start(new BlockingReadHandler(handlerLatch));
@@ -227,7 +227,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @Test
     public void testBlockingTimeoutSmallerThanIdleTimeoutBlockingWriteBlockingTimeoutFires() throws Exception
     {
-        long blockingTimeout = 1000;
+        long blockingTimeout = 2500;
         httpConfig.setBlockingTimeout(blockingTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         start(new BlockingWriteHandler(handlerLatch));
@@ -532,7 +532,7 @@ public class ServerTimeoutsTest extends AbstractTest
         for (int i = 0; i < 3; ++i)
         {
             contentProvider.offer(ByteBuffer.allocate(bytesPerSecond / 2));
-            Thread.sleep(1000);
+            Thread.sleep(2500);
         }
         contentProvider.close();
 
@@ -577,7 +577,7 @@ public class ServerTimeoutsTest extends AbstractTest
         for (int i = 0; i < 3; ++i)
         {
             contentProvider.offer(ByteBuffer.allocate(bytesPerSecond * 2));
-            Thread.sleep(1000);
+            Thread.sleep(2500);
         }
         contentProvider.close();
 
