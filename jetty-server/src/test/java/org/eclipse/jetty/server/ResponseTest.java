@@ -29,12 +29,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
+import java.net.HttpCookie;
 import java.net.Socket;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -481,9 +484,6 @@ public class ResponseTest
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
     }
 
-    
-    
-    
     @Test
     public void testContentTypeWithOther() throws Exception
     {
@@ -799,7 +799,38 @@ public class ResponseTest
 
         assertEquals("name=value;Version=1;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
     }
-
+    
+    /**
+     * Testing behavior documented in Chrome bug
+     * https://bugs.chromium.org/p/chromium/issues/detail?id=700618
+     */
+    @Test
+    public void testAddCookie_JavaxServletHttp() throws Exception
+    {
+        Response response = getResponse();
+    
+        Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", UTF_8.toString()));
+        cookie.setPath("/secure");
+    
+        response.addCookie(cookie);
+    
+        String set = response.getHttpFields().get("Set-Cookie");
+    
+        assertEquals("foo=bar%3Bbaz;Path=/secure", set);
+    }
+    
+    /**
+     * Testing behavior documented in Chrome bug
+     * https://bugs.chromium.org/p/chromium/issues/detail?id=700618
+     */
+    @Test
+    public void testAddCookie_JavaNet() throws Exception
+    {
+        HttpCookie cookie = new HttpCookie("foo", URLEncoder.encode("bar;baz", UTF_8.toString()));
+        cookie.setPath("/secure");
+        
+        assertEquals("foo=\"bar%3Bbaz\";$Path=\"/secure\"", cookie.toString());
+    }
 
     @Test
     public void testCookiesWithReset() throws Exception
