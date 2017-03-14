@@ -49,8 +49,8 @@ import org.junit.Test;
 public class SlowClientsTest
 {
     private Logger logger = Log.getLogger(getClass());
-
-    @Test
+    
+    @Test(timeout = 10000)
     public void testSlowClientsWithSmallThreadPool() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
