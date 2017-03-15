@@ -259,8 +259,7 @@ public class Response implements HttpServletResponse
 
         // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
         // Per RFC6265, Cookie.name follows RFC2616 Section 2.2 token rules
-        if(isQuoteNeededForCookie(name))
-            throw new IllegalArgumentException("Cookie name not RFC6265 compliant");
+        assertRFC2616Token("RFC6265 Cookie name", name);
         // Ensure that Per RFC6265, Cookie.value follows syntax rules
         assertRFC6265CookieValue(value);
 
@@ -364,6 +363,54 @@ public class Response implements HttpServletResponse
         }
     }
     
+    /**
+     * Per RFC2616: Section 2.2, a token follows these syntax rules
+     * <pre>
+     *  token          = 1*&lt;any CHAR except CTLs or separators&gt;
+     *  CHAR           = &lt;any US-ASCII character (octets 0 - 127)&gt;
+     *  CTL            = &lt;any US-ASCII control character
+     *                   (octets 0 - 31) and DEL (127)&gt;
+     *  separators     = "(" | ")" | "&lt;" | "&gt;" | "@"
+     *                 | "," | ";" | ":" | "\" | &lt;"&gt;
+     *                 | "/" | "[" | "]" | "?" | "="
+     *                 | "{" | "}" | SP | HT
+     * </pre>
+     * @param value the value to test
+     * @throws IllegalArgumentException if the value is invalid per spec
+     */
+    public static void assertRFC2616Token(String scope, String value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+        
+        int valueLen = value.length();
+        if (valueLen == 0)
+        {
+            return;
+        }
+    
+        for (int i = 0; i < valueLen; i++)
+        {
+            char c = value.charAt(i);
+        
+            // 0x00 - 0x1F are low order control characters
+            // 0x7F is the DEL control character
+            if ((c <= 0x1F) || (c == 0x7F))
+                throw new IllegalArgumentException(scope + ": Control characters not allowed in RFC2616 token");
+            if (c == '(' || c == ')' || c == '<' || c == '>' || c == '@'
+                    || c == ',' || c == ';' || c == ':' || c == '\\' || c == '"'
+                    || c == '/' || c == '[' || c == ']' || c == '?' || c == '='
+                    || c == '{' || c == '}' || c == ' ')
+            {
+                throw new IllegalArgumentException(scope + ": RFC2616 token may not contain separator character: [" + c + "]");
+            }
+            if (c >= 0x80)
+                throw new IllegalArgumentException(scope + ": RFC2616 token characters restricted to US-ASCII range: 0x" + Integer.toHexString(c));
+        }
+    }
+
     /**
      * Format a set cookie value
      *

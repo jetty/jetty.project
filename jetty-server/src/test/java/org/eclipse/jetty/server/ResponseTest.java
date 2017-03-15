@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -78,6 +79,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -1185,15 +1187,31 @@ public class ResponseTest
         assertEquals("everything=value;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
-        fields.clear();
-        
-        try
+        String badNameExamples[] = {
+                "\"name\"",
+                "name\t",
+                "na me",
+                "name\u0082",
+                "na\tme",
+                "na;me",
+                "{name}",
+                "[name]",
+                "\""
+        };
+    
+        for (String badNameExample : badNameExamples)
         {
-            response.addSetRFC6265Cookie("ev erything","va lue","do main","pa th",1,true,true);
-        }
-        catch(IllegalArgumentException ex)
-        {
-            assertThat(ex.getMessage(),Matchers.containsString("RFC6265"));
+            fields.clear();
+            try
+            {
+                response.addSetRFC6265Cookie(badNameExample, "value", null, "/", 1, true, true);
+            }
+            catch (IllegalArgumentException ex)
+            {
+                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
+                assertThat("Testing bad name: [" + badNameExample + "]", ex.getMessage(),
+                        allOf(containsString("RFC6265"), containsString("RFC2616")));
+            }
         }
     
         String badValueExamples[] = {
@@ -1219,11 +1237,27 @@ public class ResponseTest
             }
             catch (IllegalArgumentException ex)
             {
+                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
                 assertThat("Testing bad value [" + badValueExample + "]", ex.getMessage(), Matchers.containsString("RFC6265"));
             }
         }
+        
+        String goodNameExamples[] = {
+                "name",
+                "n.a.m.e",
+                "na-me",
+                "+name",
+                "na*me",
+                "na$me",
+                "#name"
+        };
     
-        fields.clear();
+        for (String goodNameExample : goodNameExamples)
+        {
+            fields.clear();
+            response.addSetRFC6265Cookie(goodNameExample, "value", null, "/", 1, true, true);
+            // should not throw an exception
+        }
     
         String goodValueExamples[] = {
                 "value",
@@ -1239,6 +1273,7 @@ public class ResponseTest
         {
             fields.clear();
             response.addSetRFC6265Cookie("name", goodValueExample, null, "/", 1, true, true);
+            // should not throw an exception
         }
         
         fields.clear();
@@ -1256,7 +1291,7 @@ public class ResponseTest
         response.addSetRFC6265Cookie("foo","bob","domain",null,-1,false,false);
         assertThat(fields.get("Set-Cookie"), Matchers.startsWith("name=value"));
     }
-
+    
     private Response getResponse()
     {
         _channel.recycle();
