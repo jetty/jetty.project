@@ -1186,6 +1186,7 @@ public class ResponseTest
         assertFalse(e.hasMoreElements());
 
         fields.clear();
+        
         try
         {
             response.addSetRFC6265Cookie("ev erything","va lue","do main","pa th",1,true,true);
@@ -1194,17 +1195,54 @@ public class ResponseTest
         {
             assertThat(ex.getMessage(),Matchers.containsString("RFC6265"));
         }
-        fields.clear();
-        try
+    
+        String badValueExamples[] = {
+                "va\tlue",
+                "\t",
+                "value\u0000",
+                "val\u0082ue",
+                "va lue",
+                "va;lue",
+                "\"value",
+                "value\"",
+                "val\\ue",
+                "val\"ue",
+                "\""
+        };
+    
+        for (String badValueExample : badValueExamples)
         {
-            response.addSetRFC6265Cookie("everything","va lue","do main","pa th",1,true,true);
+            fields.clear();
+            try
+            {
+                response.addSetRFC6265Cookie("name", badValueExample, null, "/", 1, true, true);
+            }
+            catch (IllegalArgumentException ex)
+            {
+                assertThat("Testing bad value [" + badValueExample + "]", ex.getMessage(), Matchers.containsString("RFC6265"));
+            }
         }
-        catch(IllegalArgumentException ex)
+    
+        fields.clear();
+    
+        String goodValueExamples[] = {
+                "value",
+                "",
+                null,
+                "val=ue",
+                "val-ue",
+                "val/ue",
+                "v.a.l.u.e"
+        };
+    
+        for (String goodValueExample : goodValueExamples)
         {
-            assertThat(ex.getMessage(),Matchers.containsString("RFC6265"));
+            fields.clear();
+            response.addSetRFC6265Cookie("name", goodValueExample, null, "/", 1, true, true);
         }
         
         fields.clear();
+        
         response.addSetRFC6265Cookie("name","value","domain",null,-1,false,false);
         response.addSetRFC6265Cookie("name","other","domain",null,-1,false,false);
         response.addSetRFC6265Cookie("name","more","domain",null,-1,false,false);
