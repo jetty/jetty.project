@@ -275,8 +275,11 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
-        if (_complianceViolations != null)
+        if (_complianceViolations != null && !_complianceViolations.isEmpty())
+        {
             this.getRequest().setAttribute(ATTR_COMPLIANCE_VIOLATIONS, _complianceViolations);
+            _complianceViolations=null;
+        }
 
         boolean persistent;
 

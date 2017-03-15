@@ -172,7 +172,8 @@ public class Response implements HttpServletResponse
 
     public void addCookie(HttpCookie cookie)
     {
-        addSetCookie(
+        if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
+            addSetRFC2965Cookie(
                 cookie.getName(),
                 cookie.getValue(),
                 cookie.getDomain(),
@@ -182,6 +183,15 @@ public class Response implements HttpServletResponse
                 cookie.isSecure(),
                 cookie.isHttpOnly(),
                 cookie.getVersion());
+        else
+            addSetRFC6265Cookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                cookie.isSecure(),
+                cookie.isHttpOnly());
     }
 
     @Override
@@ -201,7 +211,9 @@ public class Response implements HttpServletResponse
                     comment = null;
             }
         }
-        addSetCookie(cookie.getName(),
+
+        if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
+            addSetRFC2965Cookie(cookie.getName(),
                 cookie.getValue(),
                 cookie.getDomain(),
                 cookie.getPath(),
@@ -210,9 +222,90 @@ public class Response implements HttpServletResponse
                 cookie.getSecure(),
                 httpOnly || cookie.isHttpOnly(),
                 cookie.getVersion());
+        else
+            addSetRFC6265Cookie(cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                cookie.getSecure(),
+                httpOnly || cookie.isHttpOnly());
     }
 
+    
+    /**
+     * Format a set cookie value by RFC6265
+     *
+     * @param name the name
+     * @param value the value
+     * @param domain the domain
+     * @param path the path
+     * @param maxAge the maximum age
+     * @param isSecure true if secure cookie
+     * @param isHttpOnly true if for http only
+     */
+    public void addSetRFC6265Cookie(
+            final String name,
+            final String value,
+            final String domain,
+            final String path,
+            final long maxAge,
+            final boolean isSecure,
+            final boolean isHttpOnly)
+    {
+        // Check arguments
+        if (name == null || name.length() == 0)
+            throw new IllegalArgumentException("Bad cookie name");
 
+        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
+        boolean quote_name=isQuoteNeededForCookie(name);
+        boolean quote_value=value==null?false:isQuoteNeededForCookie(value);
+        if (quote_name || quote_value)
+            throw new IllegalArgumentException("Cookie name or value not RFC6265 compliant");
+        
+
+        // Format value and params
+        StringBuilder buf = __cookieBuilder.get();
+        buf.setLength(0);
+        buf.append(name).append('=').append(value==null?"":value);
+        
+        // Append path
+        if (path!=null && path.length()>0)
+            buf.append(";Path=").append(path);
+        
+        // Append domain
+        if (domain!=null && domain.length()>0)
+            buf.append(";Domain=").append(domain);
+
+        // Handle max-age and/or expires
+        if (maxAge >= 0)
+        {
+            // Always use expires
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            buf.append(";Expires=");
+            if (maxAge == 0)
+                buf.append(__01Jan1970_COOKIE);
+            else
+                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
+
+            buf.append(";Max-Age=");
+            buf.append(maxAge);
+        }
+
+        // add the other fields
+        if (isSecure)
+            buf.append(";Secure");
+        if (isHttpOnly)
+            buf.append(";HttpOnly");
+        
+        // add the set cookie
+        _fields.add(HttpHeader.SET_COOKIE, buf.toString());
+
+        // Expire responses with set-cookie headers so they do not get cached.
+        _fields.put(__EXPIRES_01JAN1970);
+        
+    }
+    
     /**
      * Format a set cookie value
      *
@@ -226,7 +319,7 @@ public class Response implements HttpServletResponse
      * @param isHttpOnly true if for http only
      * @param version version of cookie logic to use (0 == default behavior)
      */
-    public void addSetCookie(
+    public void addSetRFC2965Cookie(
             final String name,
             final String value,
             final String domain,

@@ -66,6 +66,7 @@ public class HttpConfiguration
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
+    private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -124,6 +125,7 @@ public class HttpConfiguration
         _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
         _maxErrorDispatches=config._maxErrorDispatches;
         _minRequestDataRate=config._minRequestDataRate;
+        _cookieCompliance=config._cookieCompliance;
     }
     
     /* ------------------------------------------------------------ */
@@ -526,5 +528,23 @@ public class HttpConfiguration
     public void setMinRequestDataRate(long bytesPerSecond)
     {
         _minRequestDataRate=bytesPerSecond;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public CookieCompliance getCookieCompliance()
+    {
+        return _cookieCompliance;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _cookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isCookieCompliance(CookieCompliance compliance)
+    {
+        return _cookieCompliance.equals(compliance);
     }
 }
