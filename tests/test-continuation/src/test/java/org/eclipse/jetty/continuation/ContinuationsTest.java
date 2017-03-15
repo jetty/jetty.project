@@ -378,15 +378,18 @@ public class ContinuationsTest
         } 
         finally 
         {
-            server.stop();
-            
             if (log != null)
             {
+                for (int i=0;log.isEmpty()&&i<60;i++)
+                {
+                    Thread.sleep(100);
+                }
                 assertThat("Log.size", log.size(),is(1));
                 String entry = log.get(0);
                 assertThat("Log entry", entry, startsWith("200 "));
                 assertThat("Log entry", entry, endsWith(" /"));
             }
+            server.stop();
         }
     }
 
