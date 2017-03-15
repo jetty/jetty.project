@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,12 +42,7 @@ public class AnnotatedRuntimeOnOpen
     @OnOpen
     public void onOpen(Session session, EndpointConfig config)
     {
-        // Intentional runtime exception.
-        int[] arr = new int[5];
-        for (int i = 0; i < 10; i++)
-        {
-            arr[i] = 222;
-        }
+        throw new RuntimeException("Intentionally Misbehaving");
     }
 
     @OnClose

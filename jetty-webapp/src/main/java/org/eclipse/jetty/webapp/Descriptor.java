@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ public abstract class Descriptor
 {
     protected Resource _xml;
     protected XmlParser.Node _root;
-    protected XmlParser _parser;
+    protected String _dtd;
     protected boolean _validating;
     
     public Descriptor (Resource xml)
@@ -33,8 +33,9 @@ public abstract class Descriptor
         _xml = xml;
     }
     
-    public abstract void ensureParser()
+    public abstract XmlParser ensureParser()
     throws ClassNotFoundException;
+    
     
     public void setValidating (boolean validating)
     {
@@ -44,14 +45,15 @@ public abstract class Descriptor
     public void parse ()
     throws Exception
     {
-        if (_parser == null)
-           ensureParser();
+
         
         if (_root == null)
         {
             try
             {
-                _root = _parser.parse(_xml.getInputStream());
+                XmlParser parser = ensureParser();
+                _root = parser.parse(_xml.getInputStream());
+                _dtd = parser.getDTD();
             }
             finally
             {

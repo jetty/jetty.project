@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@
 [[jetty-sessions-architecture]]
 === Session Architecture
 
+// TODO: Remove in Jetty 9.5/10 - This paragraph is dated and only really useful for upgrading into 9.4 from prior versions.
 ==== Changes in Session Architecture
 The architecture of Session Management Jetty changed significantly in Jetty 9.4.
 These changes have resulted in Sessions not only being easier to configure but making them much more pluggable for various technologies.
@@ -42,11 +43,7 @@ However, it is possible to provide your own implementation that never shares Ses
 Where the `SessionCache` handles Session information, Session data is stored in a `SessionDataStore` that is specific to the clustering technology being implemented.
 There is only one (1) `SessionDataStore` per `SessionCache`.
 
-//TODO : Information on memcache-d, when to use different config options. "Configuration Scenarios?"
-// Null cache, memcache, non-sticky load-balancer
-// in-memory caching
-
-Visually the Session Hierarchy can be represented like this:
+Visually the session architecture can be represented like this:
 
 image::images/SessionsHierarchy.png[]
 

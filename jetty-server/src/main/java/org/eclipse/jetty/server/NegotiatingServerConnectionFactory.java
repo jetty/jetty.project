@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,22 +34,24 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
 {
     public static void checkProtocolNegotiationAvailable()
     {
-        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN"))
-            throw new IllegalStateException("No ALPN classes available");
-    }
-
-    private static boolean isAvailableInBootClassPath(String className)
-    {
         try
         {
-            Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(className);
-            if (klass.getClassLoader() != null)
-                throw new IllegalStateException(className + " must be on JVM boot classpath");
-            return true;
+            String javaVersion = System.getProperty("java.version");
+            String alpnClassName = "org.eclipse.jetty.alpn.ALPN";
+            if (javaVersion.startsWith("1."))
+            {
+                Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(alpnClassName);
+                if (klass.getClassLoader() != null)
+                    throw new IllegalStateException(alpnClassName + " must be on JVM boot classpath");
+            }
+            else
+            {
+                NegotiatingServerConnectionFactory.class.getClassLoader().loadClass(alpnClassName);
+            }
         }
         catch (ClassNotFoundException x)
         {
-            return false;
+            throw new IllegalStateException("No ALPN classes available");
         }
     }
 

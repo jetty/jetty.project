@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -46,6 +47,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -55,11 +57,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.Utf8Appendable;
@@ -188,7 +192,7 @@ public class RequestTest
             {
                 try
                 {
-                    Part foo = request.getPart("stuff");
+                    request.getPart("stuff");
                     return false;
                 }
                 catch (IllegalStateException e)
@@ -832,8 +836,79 @@ public class RequestTest
         String response = _connector.getResponse(request);
         assertThat(response,Matchers.containsString(" 200 OK"));
     }
-
-
+    
+    
+    @Test
+    @Ignore("See issue #1175")
+    public void testMultiPartFormDataReadInputThenParams() throws Exception
+    {
+        final File tmpdir = MavenTestingUtils.getTargetTestingDir("multipart");
+        FS.ensureEmpty(tmpdir);
+    
+        Handler handler = new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
+            {
+                if (baseRequest.getDispatcherType() != DispatcherType.REQUEST)
+                    return;
+            
+                // Fake a @MultiPartConfig'd servlet endpoint
+                MultipartConfigElement multipartConfig = new MultipartConfigElement(tmpdir.getAbsolutePath());
+                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
+            
+                // Normal processing
+                baseRequest.setHandled(true);
+            
+                // Fake the commons-fileupload behavior
+                int length = request.getContentLength();
+                InputStream in = request.getInputStream();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                IO.copy(in, out, length); // KEY STEP (Don't Change!) commons-fileupload does not read to EOF
+            
+                // Record what happened as servlet response headers
+                response.setIntHeader("x-request-content-length", request.getContentLength());
+                response.setIntHeader("x-request-content-read", out.size());
+                String foo = request.getParameter("foo"); // uri query parameter
+                String bar = request.getParameter("bar"); // form-data content parameter
+                response.setHeader("x-foo", foo == null ? "null" : foo);
+                response.setHeader("x-bar", bar == null ? "null" : bar);
+            }
+        };
+        
+        _server.stop();
+        _server.setHandler(handler);
+        _server.start();
+    
+        String multipart =  "--AaBbCc\r\n"+
+                "content-disposition: form-data; name=\"bar\"\r\n"+
+                "\r\n"+
+                "BarContent\r\n"+
+                "--AaBbCc\r\n"+
+                "content-disposition: form-data; name=\"stuff\"\r\n"+
+                "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
+                "\r\n"+
+                "000000000000000000000000000000000000000000000000000\r\n"+
+                "--AaBbCc--\r\n";
+    
+        String request="POST /?foo=FooUri HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Content-Type: multipart/form-data; boundary=\"AaBbCc\"\r\n"+
+                "Content-Length: "+multipart.getBytes().length+"\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                multipart;
+    
+    
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+    
+        // It should always be possible to read query string
+        assertThat("response.x-foo", response.get("x-foo"), is("FooUri"));
+        // Not possible to read request content parameters?
+        assertThat("response.x-bar", response.get("x-bar"), is("null")); // TODO: should this work?
+    }
+    
     @Test
     public void testPartialRead() throws Exception
     {
@@ -850,36 +925,35 @@ public class RequestTest
                 response.getOutputStream().write(b);
                 response.flushBuffer();
             }
-
+            
         };
         _server.stop();
         _server.setHandler(handler);
         _server.start();
-
-        String requests="GET / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: text/plane\r\n"+
-        "Content-Length: "+10+"\r\n"+
-        "\r\n"+
-        "0123456789\r\n"+
-        "GET / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Content-Type: text/plane\r\n"+
-        "Content-Length: "+10+"\r\n"+
-        "Connection: close\r\n"+
-        "\r\n"+
-        "ABCDEFGHIJ\r\n";
-
-        LocalEndPoint endp = _connector.executeRequest(requests);
-        String response = endp.getResponse()+endp.getResponse();
-
-        int index=response.indexOf("read="+(int)'0');
+        
+        String request="GET / HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Content-Type: text/plane\r\n"+
+                "Content-Length: "+10+"\r\n"+
+                "\r\n"+
+                "0123456789\r\n"+
+                "GET / HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Content-Type: text/plane\r\n"+
+                "Content-Length: "+10+"\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                "ABCDEFGHIJ\r\n";
+        
+        String responses = _connector.getResponses(request);
+        
+        int index=responses.indexOf("read="+(int)'0');
         assertTrue(index>0);
-
-        index=response.indexOf("read="+(int)'A',index+7);
+        
+        index=responses.indexOf("read="+(int)'A',index+7);
         assertTrue(index>0);
     }
-
+    
     @Test
     public void testQueryAfterRead()
         throws Exception
@@ -1096,7 +1170,8 @@ public class RequestTest
                     200, TimeUnit.MILLISECONDS
                     );
         assertThat(response, Matchers.containsString("200"));
-        assertThat(response, Matchers.containsString("Connection: TE,Other"));
+        assertThat(response, Matchers.containsString("Connection: TE"));
+        assertThat(response, Matchers.containsString("Connection: Other"));
         assertThat(response, Matchers.containsString("Hello World"));
 
         response=_connector.getResponse(
@@ -1493,14 +1568,14 @@ public class RequestTest
         boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException;
     }
 
-    private class RequestHandler extends AbstractHandler
+    private class RequestHandler extends AbstractHandler.ErrorDispatchHandler
     {
         private RequestTester _checker;
         @SuppressWarnings("unused")
         private String _content;
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,21 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Deque;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,6 +55,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -135,7 +142,7 @@ public class AsyncIOServletTest extends AbstractTest
         scope.set(null);
     }
 
-    private void sleep(long ms) throws IOException
+    private void sleep(long ms)
     {
         try
         {
@@ -143,7 +150,7 @@ public class AsyncIOServletTest extends AbstractTest
         }
         catch (InterruptedException e)
         {
-            throw new InterruptedIOException();
+            throw new UncheckedIOException(new InterruptedIOException());
         }
     }
 
@@ -469,6 +476,112 @@ public class AsyncIOServletTest extends AbstractTest
 
         assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testAsyncWriteLessThanContentLengthFlushed() throws Exception
+    {
+        CountDownLatch complete = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentLength(10);
+
+                AsyncContext async = request.startAsync();
+                ServletOutputStream out = response.getOutputStream();
+                AtomicInteger state = new AtomicInteger(0);
+                
+                out.setWriteListener(new WriteListener()
+                {
+                    @Override
+                    public void onWritePossible() throws IOException
+                    {
+                        while(true)
+                        {
+                            if (!out.isReady())
+                                return;
+                            
+                            switch(state.get())
+                            {
+                                case 0:
+                                    state.incrementAndGet();
+                                    WriteListener listener = this;
+                                    new Thread(()->
+                                    {
+                                        try
+                                        {
+                                            Thread.sleep(50);
+                                            listener.onWritePossible();
+                                        }
+                                        catch(Exception e)
+                                        {}
+                                    }).start();
+                                    return;
+                                
+                                case 1:
+                                    state.incrementAndGet();
+                                    out.flush();
+                                    break;
+                                    
+                                case 2:
+                                    state.incrementAndGet();
+                                    out.write("12345".getBytes());
+                                    break;
+                                    
+                                case 3:
+                                    async.complete();
+                                    complete.countDown();
+                                    return;
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                    }
+                });
+            }
+        });
+
+        AtomicBoolean failed = new AtomicBoolean(false);
+        CountDownLatch clientLatch = new CountDownLatch(3);
+        client.newRequest(newURI())
+                .path(servletPath)
+                .onResponseHeaders(response ->
+                {
+                    if (response.getStatus() == HttpStatus.OK_200)
+                        clientLatch.countDown();
+                })
+                .onResponseContent(new Response.ContentListener()
+                {                    
+                    @Override
+                    public void onContent(Response response, ByteBuffer content)
+                    {
+                        // System.err.println("Content: "+BufferUtil.toDetailString(content));
+                    }
+                })
+                .onResponseFailure(new Response.FailureListener()
+                {
+                    @Override
+                    public void onFailure(Response response, Throwable failure)
+                    {
+                        clientLatch.countDown();
+                    }
+                })
+                .send(result -> 
+                {
+                    failed.set(result.isFailed());
+                    clientLatch.countDown();
+                    clientLatch.countDown();
+                    clientLatch.countDown();
+                });
+
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(failed.get());
     }
 
     @Test
@@ -895,6 +1008,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        asyncContext.complete();
                     }
 
                     @Override
@@ -979,7 +1093,7 @@ public class AsyncIOServletTest extends AbstractTest
                         while (input.isReady() && !input.isFinished())
                         {
                             int read = input.read();
-                            System.err.printf("%x%n", read);
+                            // System.err.printf("%x%n", read);
                             readLatch.countDown();
                         }
                     }
@@ -1030,6 +1144,10 @@ public class AsyncIOServletTest extends AbstractTest
                 break;
             case H2C:
             case H2:
+                // In case of HTTP/2, we not only send the request, but also the preface and
+                // SETTINGS frames. SETTINGS frame need to be replied, so we want to wait to
+                // write the reply before shutting output down, so that the test does not fail.
+                Thread.sleep(1000);
                 Session session = ((HttpConnectionOverHTTP2)connection).getSession();
                 ((HTTP2Session)session).getEndPoint().shutdownOutput();
                 break;
@@ -1134,7 +1252,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
-                        while (input.isReady() && !input.isFinished())
+                        while (input.isReady())
                         {
                             int b = input.read();
                             if (b>0)
@@ -1142,8 +1260,8 @@ public class AsyncIOServletTest extends AbstractTest
                                 // System.err.printf("0x%2x %s %n", b, Character.isISOControl(b)?"?":(""+(char)b));
                                 out.write(b);
                             }
-                            else
-                                onAllDataRead();
+                            else if (b<0)
+                                return;
                         }
                     }
 
@@ -1213,5 +1331,136 @@ public class AsyncIOServletTest extends AbstractTest
         
 
     }
-        
+
+    @Test
+    public void testWriteListenerFromOtherThread() throws Exception
+    {
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                request.getInputStream().setReadListener(new Listener(asyncContext));
+            }
+        });
+
+        int cores = 4;
+        int iterations = 10;
+        CountDownLatch latch = new CountDownLatch(cores * iterations);
+        Deque<Throwable> failures = new LinkedBlockingDeque<>();
+        for (int i = 0; i < cores; ++i)
+        {
+            client.getExecutor().execute(() ->
+            {
+                for (int j = 0; j < iterations; ++j)
+                {
+                    try
+                    {
+                        ContentResponse response = client.newRequest(newURI())
+                                .method(HttpMethod.POST)
+                                .path(servletPath)
+                                .content(new InputStreamContentProvider(new ByteArrayInputStream(new byte[16 * 1024])
+                                {
+                                    @Override
+                                    public int read(byte[] b, int off, int len)
+                                    {
+                                        sleep(5);
+                                        return super.read(b, off, Math.min(len, 4242));
+                                    }
+                                }))
+                                .send();
+                        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                        latch.countDown();
+                    }
+                    catch (Throwable x)
+                    {
+                        failures.offer(x);
+                    }
+                }
+            });
+        }
+
+        Assert.assertTrue(latch.await(30, TimeUnit.SECONDS));
+        Assert.assertTrue(failures.isEmpty());
+    }
+
+    private class Listener implements ReadListener, WriteListener
+    {
+        private final Executor executor = Executors.newFixedThreadPool(32);
+        private final CompletableFuture<?> inputComplete = new CompletableFuture<>();
+        private final CompletableFuture<?> outputComplete = new CompletableFuture<>();
+        private final AtomicBoolean responseWritten = new AtomicBoolean();
+        private final AsyncContext asyncContext;
+        private final HttpServletResponse response;
+        private final ServletInputStream input;
+        private final ServletOutputStream output;
+
+        public Listener(AsyncContext asyncContext) throws IOException
+        {
+            this.asyncContext = asyncContext;
+            this.response = (HttpServletResponse)asyncContext.getResponse();
+            this.input = asyncContext.getRequest().getInputStream();
+            this.output = response.getOutputStream();
+            CompletableFuture.allOf(inputComplete, outputComplete)
+                    .whenComplete((ignoredResult, ignoredThrowable) -> asyncContext.complete());
+            // Dispatch setting the write listener to another thread.
+            executor.execute(() -> output.setWriteListener(this));
+        }
+
+        @Override
+        public void onDataAvailable() throws IOException
+        {
+            byte[] buffer = new byte[16 * 1024];
+            while (input.isReady())
+            {
+                if (input.read(buffer) < 0)
+                    return;
+            }
+        }
+
+        @Override
+        public void onAllDataRead() throws IOException
+        {
+            inputComplete.complete(null);
+        }
+
+        @Override
+        public void onWritePossible() throws IOException
+        {
+            // Dispatch OWP to another thread.
+            executor.execute(() ->
+            {
+                while (output.isReady())
+                {
+                    if (responseWritten.compareAndSet(false, true))
+                    {
+                        try
+                        {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("text/plain;charset=utf-8");
+                            output.write("Hello world".getBytes());
+                        }
+                        catch (IOException x)
+                        {
+                            throw new UncheckedIOException(x);
+                        }
+                    }
+                    else
+                    {
+                        outputComplete.complete(null);
+                        return;
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onError(Throwable t)
+        {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            asyncContext.complete();
+        }
+    }
 }

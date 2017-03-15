@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -114,7 +114,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
             boolean endStream = frame.isEndStream();
             if (endStream)
+            {
+                onContentComplete();
                 onRequestComplete();
+            }
 
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
                     !endStream && !_expect100Continue;
@@ -126,7 +129,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                 LOG.debug("HTTP2 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
                         stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                         _delayedUntilContent, System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getVersion(),
+                        request.getMethod(), request.getURI(), request.getHttpVersion(),
                         System.lineSeparator(), fields);
             }
 
@@ -150,6 +153,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         {
             onRequest(request);
             getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
+            onContentComplete();
             onRequestComplete();
 
             if (LOG.isDebugEnabled())
@@ -157,7 +161,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                 Stream stream = getStream();
                 LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
                         stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getVersion(),
+                        request.getMethod(), request.getURI(), request.getHttpVersion(),
                         System.lineSeparator(), request.getFields());
             }
 
@@ -199,7 +203,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         {
             Stream stream = getStream();
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getVersion(), info.getStatus(), info.getReason(),
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
                     System.lineSeparator(), info.getFields());
         }
     }
@@ -255,7 +259,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         boolean endStream = frame.isEndStream();
         if (endStream)
-            handle |= onRequestComplete();
+        {
+            boolean handle_content = onContentComplete();
+            boolean handle_request = onRequestComplete();
+            handle |= handle_content | handle_request;
+        }
 
         if (LOG.isDebugEnabled())
         {
@@ -272,6 +280,20 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (wasDelayed)
             _handled = true;
         return handle || wasDelayed ? this : null;
+    }
+
+    public void onRequestTrailers(HeadersFrame frame)
+    {
+        HttpFields trailers = frame.getMetaData().getFields();
+        onTrailers(trailers);
+        onRequestComplete();
+        if (LOG.isDebugEnabled())
+        {
+            Stream stream = getStream();
+            LOG.debug("HTTP2 Request #{}/{}, trailers:{}{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    System.lineSeparator(), trailers);
+        }
     }
 
     public boolean isRequestHandled()
@@ -296,6 +318,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public void onFailure(Throwable failure)
     {
+        getHttpTransport().onStreamFailure(failure);
         if (onEarlyEOF())
             handle();
         else

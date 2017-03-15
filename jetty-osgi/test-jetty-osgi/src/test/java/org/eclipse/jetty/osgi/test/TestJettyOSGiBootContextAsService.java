@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,31 +76,29 @@ public class TestJettyOSGiBootContextAsService
         // a bundle that registers a webapp as a service for the jetty osgi core
         // to pick up and deploy
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
-
-        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
+        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
+        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         
         return options.toArray(new Option[options.size()]);
     }
 
     public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
     {
-        File etcFolder = new File("src/test/config/etc");
-        String etc = "file://" + etcFolder.getAbsolutePath();
+        File etc = new File("src/test/config/etc");
+        StringBuffer xmlConfigs = new StringBuffer();
+        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
+        xmlConfigs.append(";");
+        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
+        xmlConfigs.append(";");
+        xmlConfigs.append(new File(etc,"jetty-deployer.xml").toURI());
+        xmlConfigs.append(";");
+        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+        
         List<Option> options = new ArrayList<Option>();
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(etc     + "/jetty.xml;"
-                + etc
-                + "/"
-                + jettySelectorFileName
-                + ";"
-                + etc
-                + "/jetty-deployer.xml;"
-                + etc
-                + "/jetty-testrealm.xml"));
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
         options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
         options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
-        options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }
 

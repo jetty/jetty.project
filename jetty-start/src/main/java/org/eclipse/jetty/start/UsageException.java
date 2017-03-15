@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ public class UsageException extends RuntimeException
     public static final int ERR_NOT_STOPPED = -4;
     public static final int ERR_BAD_ARG = -5;
     public static final int ERR_BAD_GRAPH = -6;
+    public static final int ERR_BAD_STOP_PROPS = -7;
     public static final int ERR_UNKNOWN = -9;
     private int exitCode;
 

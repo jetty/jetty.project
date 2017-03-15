@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -33,11 +31,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -129,7 +126,7 @@ public class AsyncServletLongPollTest
 
             Assert.assertTrue(asyncLatch.await(5, TimeUnit.SECONDS));
 
-            String error = "408";
+            int error = 408;
             try (Socket socket2 = new Socket("localhost", connector.getLocalPort()))
             {
                 String request2 = "DELETE " + uri + "?error=" + error + " HTTP/1.1\r\n" +
@@ -139,17 +136,16 @@ public class AsyncServletLongPollTest
                 output2.write(request2.getBytes(StandardCharsets.UTF_8));
                 output2.flush();
 
-                SimpleHttpParser parser2 = new SimpleHttpParser();
-                BufferedReader input2 = new BufferedReader(new InputStreamReader(socket2.getInputStream(), StandardCharsets.UTF_8));
-                SimpleHttpResponse response2 = parser2.readResponse(input2);
-                Assert.assertEquals("200", response2.getCode());
+                HttpTester.Input input2 = HttpTester.from(socket2.getInputStream());
+                HttpTester.Response response2 = HttpTester.parseResponse(input2);
+                Assert.assertEquals(200, response2.getStatus());
             }
 
             socket1.setSoTimeout(2 * wait);
-            SimpleHttpParser parser1 = new SimpleHttpParser();
-            BufferedReader input1 = new BufferedReader(new InputStreamReader(socket1.getInputStream(), StandardCharsets.UTF_8));
-            SimpleHttpResponse response1 = parser1.readResponse(input1);
-            Assert.assertEquals(error, response1.getCode());
+            
+            HttpTester.Input input1 = HttpTester.from(socket1.getInputStream());
+            HttpTester.Response response1 = HttpTester.parseResponse(input1);
+            Assert.assertEquals(error, response1.getStatus());
 
             // Now try to make another request on the first connection
             // to verify that we set correctly the read interest (#409842)
@@ -159,8 +155,8 @@ public class AsyncServletLongPollTest
             output1.write(request3.getBytes(StandardCharsets.UTF_8));
             output1.flush();
 
-            SimpleHttpResponse response3 = parser1.readResponse(input1);
-            Assert.assertEquals("200", response3.getCode());
+            HttpTester.Response response3 = HttpTester.parseResponse(input1);
+            Assert.assertEquals(200, response3.getStatus());
         }
     }
 }

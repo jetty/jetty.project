@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -85,7 +85,7 @@ public class StartIniBuilder implements BaseBuilder.Config
     }
 
     @Override
-    public String addModule(Module module) throws IOException
+    public String addModule(Module module, Props props) throws IOException
     {
         if (modulesPresent.contains(module.getName()))
         {
@@ -109,7 +109,7 @@ public class StartIniBuilder implements BaseBuilder.Config
             // Append to start.ini
             try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
             {
-                module.writeIniSection(writer);
+                module.writeIniSection(writer, props);
             }
             return baseHome.toShortForm(startIni);
         }

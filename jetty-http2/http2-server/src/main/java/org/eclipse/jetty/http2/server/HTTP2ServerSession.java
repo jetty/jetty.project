@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -95,9 +95,25 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 stream.setListener(listener);
             }
         }
+        else if (metaData.isResponse())
+        {
+            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_request");
+        }
         else
         {
-            onConnectionFailure(ErrorCode.INTERNAL_ERROR.code, "invalid_request");
+            // Trailers.
+            int streamId = frame.getStreamId();
+            IStream stream = getStream(streamId);
+            if (stream != null)
+            {
+                stream.process(frame, Callback.NOOP);
+                notifyHeaders(stream, frame);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -390,10 +390,6 @@ public class HttpInputTest
         Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
-        _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
         Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
@@ -411,10 +407,6 @@ public class HttpInputTest
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
         Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-
-        _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
@@ -466,10 +458,6 @@ public class HttpInputTest
         Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
-        _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onDataAvailable"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-
         _in.eof();
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
@@ -478,7 +466,6 @@ public class HttpInputTest
 
         Assert.assertThat(_in.read(), Matchers.equalTo(-1));
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("ready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
     }
 
@@ -488,10 +475,6 @@ public class HttpInputTest
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
         Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-
-        _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
@@ -527,7 +510,6 @@ public class HttpInputTest
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
         Assert.assertThat(_in.read(), Matchers.equalTo(-1));
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("ready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
@@ -540,9 +522,6 @@ public class HttpInputTest
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
         Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-        _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -169,9 +168,7 @@ public class AsyncContextTest
         BufferedReader br = new BufferedReader(new StringReader(responseString));
 
         assertEquals("HTTP/1.1 500 Server Error", br.readLine());
-        br.readLine();// connection close
-        br.readLine();// server
-        br.readLine();// empty
+        readHeader(br);
         Assert.assertEquals("ERROR: /error", br.readLine());
         Assert.assertEquals("PathInfo= /IOE", br.readLine());
         Assert.assertEquals("EXCEPTION: org.eclipse.jetty.server.QuietServletException: java.io.IOException: Test", br.readLine());
@@ -192,9 +189,7 @@ public class AsyncContextTest
             BufferedReader br = new BufferedReader(new StringReader(responseString));
 
             assertEquals("HTTP/1.1 200 OK",br.readLine());
-            br.readLine();// connection close
-            br.readLine();// server
-            br.readLine();// empty
+            readHeader(br);
 
             Assert.assertEquals("error servlet","completeBeforeThrow",br.readLine());
         }
@@ -273,10 +268,15 @@ public class AsyncContextTest
     @Test
     public void testDispatch() throws Exception
     {
-        String request = "GET /ctx/forward HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Connection: close\r\n"
-                + "\r\n";
+        String request = 
+            "GET /ctx/forward HTTP/1.1\r\n" + 
+            "Host: localhost\r\n" + 
+            "Content-Type: application/x-www-form-urlencoded\r\n" + 
+            "Connection: close\r\n" + 
+            "\r\n";
 
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
+        System.err.println(responseString);
         BufferedReader br = parseHeader(responseString);
         assertThat("!ForwardingServlet", br.readLine(), equalTo("Dispatched back to ForwardingServlet"));
     }
@@ -300,13 +300,16 @@ public class AsyncContextTest
     private BufferedReader parseHeader(String responseString) throws IOException
     {
         BufferedReader br = new BufferedReader(new StringReader(responseString));
-
         assertEquals("HTTP/1.1 200 OK", br.readLine());
-
-        br.readLine();// connection close
-        br.readLine();// server
-        br.readLine();// empty
+        readHeader(br);
         return br;
+    }
+    
+    private void readHeader(BufferedReader br) throws IOException
+    {
+        String line = br.readLine();
+        while (line!=null && !line.isEmpty())
+            line = br.readLine();
     }
 
     private class ForwardingServlet extends HttpServlet
@@ -371,11 +374,7 @@ public class AsyncContextTest
         BufferedReader br = new BufferedReader(new StringReader(responseString));
 
         assertEquals("HTTP/1.1 500 Server Error", br.readLine());
-
-        br.readLine();// connection close
-        br.readLine();// server
-        br.readLine();// empty
-
+        readHeader(br);
         Assert.assertEquals("error servlet", "ERROR: /error", br.readLine());
     }
 
@@ -392,9 +391,7 @@ public class AsyncContextTest
         BufferedReader br = new BufferedReader(new StringReader(responseString));
 
         assertEquals("HTTP/1.1 500 Server Error", br.readLine());
-        br.readLine();// connection close
-        br.readLine();// server
-        br.readLine();// empty
+        readHeader(br);
 
         Assert.assertEquals("error servlet", "ERROR: /error", br.readLine());
         Assert.assertEquals("error servlet", "PathInfo= /500", br.readLine());

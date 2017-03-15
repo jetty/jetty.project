@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -197,6 +197,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         stream.data(frame, callback);
     }
 
+    public void onStreamFailure(Throwable failure)
+    {
+        transportCallback.failed(failure);
+    }
+
     public boolean onStreamTimeout(Throwable failure)
     {
         return transportCallback.onIdleTimeout(failure);
@@ -217,7 +222,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         // Consume the existing queued data frames to
         // avoid stalling the session flow control.
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        channel.consumeInput();
+        if (channel != null)
+            channel.consumeInput();
     }
 
     @Override
@@ -263,9 +269,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             synchronized (this)
             {
                 commit = this.commit;
-                if (state != State.TIMEOUT)
+                if (state == State.WRITING)
                 {
                     callback = this.callback;
+                    this.callback = null;
                     this.state = State.IDLE;
                 }
             }
@@ -283,9 +290,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             synchronized (this)
             {
                 commit = this.commit;
-                if (state != State.TIMEOUT)
+                if (state == State.WRITING)
                 {
                     callback = this.callback;
+                    this.callback = null;
                     this.state = State.FAILED;
                 }
             }
@@ -316,6 +324,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 if (result)
                 {
                     callback = this.callback;
+                    this.callback = null;
                     this.state = State.TIMEOUT;
                 }
             }

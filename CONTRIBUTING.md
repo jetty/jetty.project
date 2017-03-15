@@ -52,3 +52,13 @@ Create a new bug
 Be sure to search for existing bugs before you create another one. Remember that contributions are always welcome!
 
 - [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)
+
+Reporting Security Issues
+-----------------
+There are a number of avenues for reporting security issues to the Jetty project available. 
+If the issue is directly related to Jetty itself then reporting to the Jetty developers is encouraged. 
+The most direct method is to mail [security@webtide.com](mailto:security@webtide.com). 
+Webtide is comprised of the active committers of the Jetty project is our preferred reporting method. 
+We are flexible in how we work with reporters of security issues but we reserve the right to act in the interests of the Jetty project in all circumstances.
+
+If the issue is related to Eclipse or its Jetty integration then we encourage you to reach out to [security@eclipse.org](mailto:security@eclipse.org).

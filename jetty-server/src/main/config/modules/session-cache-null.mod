@@ -1,7 +1,7 @@
 [description]
 A trivial SessionCache that does not actually cache sessions.
 
-[Tags]
+[tags]
 session
 
 [provides]

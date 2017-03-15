@@ -6,8 +6,12 @@ and logback-access
 logging
 internal
 
+[depends]
+resources
+
 [files]
 maven://ch.qos.logback/logback-core/${logback.version}|lib/logback/logback-core-${logback.version}.jar
+basehome:modules/logback-impl
 
 [lib]
 lib/logback/logback-core-${logback.version}.jar
@@ -32,6 +36,3 @@ or (per the licensee's choosing) under
 [ini]
 logback.version=1.1.7
 
-[ini-template]
-## After changing versions, run 'java -jar $JETTY_HOME/start.jar --create-files' 
-#logback.version=1.1.7

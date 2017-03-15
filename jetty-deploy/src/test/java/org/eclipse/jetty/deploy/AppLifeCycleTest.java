@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -176,7 +176,7 @@ public class AppLifeCycleTest
         AppLifeCycle lifecycle = new AppLifeCycle();
         List<String> expected = new ArrayList<String>();
 
-        File outputDir = testdir.getEmptyDir();
+        File outputDir = testdir.getEmptyPathDir().toFile();
 
         // Modify graph to add new 'staging' -> 'staged' between 'deployed' and 'started'
         GraphOutputDot.write(lifecycle,new File(outputDir,"multiple-1.dot")); // before change

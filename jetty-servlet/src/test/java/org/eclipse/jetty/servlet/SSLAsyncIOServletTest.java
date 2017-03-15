@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
@@ -35,10 +34,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
@@ -49,7 +47,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class SSLAsyncIOServletTest
 {
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "ssl={0}")
     public static Collection<SslContextFactory[]> parameters()
     {
         return Arrays.asList(new SslContextFactory[]{null}, new SslContextFactory[]{new SslContextFactory()});
@@ -159,16 +157,16 @@ public class SSLAsyncIOServletTest
             String request = "" +
                     "GET " + contextPath + servletPath + " HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
+                    "Connection: close\r\n" +
                     "\r\n";
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();
-
-            BufferedReader input = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
-            SimpleHttpParser parser = new SimpleHttpParser();
-            SimpleHttpResponse response = parser.readResponse(input);
-            Assert.assertEquals("200", response.getCode());
-            Assert.assertArrayEquals(content, response.getBody().getBytes("UTF-8"));
+    
+            InputStream inputStream = client.getInputStream();
+            HttpTester.Response response = HttpTester.parseResponse(inputStream);
+            Assert.assertEquals(200, response.getStatus());
+            Assert.assertArrayEquals(content, response.getContent().getBytes("UTF-8"));
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.server.session.SessionDataStore;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.joda.time.Duration;
+
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.Entity;
@@ -47,7 +51,31 @@ public class GCloudSessionTestSupport
     LocalDatastoreHelper _helper = LocalDatastoreHelper.create(1.0);
     Datastore _ds;
 
+    
+    public static class TestGCloudSessionDataStoreFactory extends GCloudSessionDataStoreFactory
+    {
+        Datastore _d;
+        
+        public TestGCloudSessionDataStoreFactory(Datastore d)
+        {
+            _d = d;
+        }
+        /** 
+         * @see org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
+         */
+        @Override
+        public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+        {
+            GCloudSessionDataStore ds = new GCloudSessionDataStore();
+            ds.setDatastore(_d);
+            return ds;
+        }
 
+    }
+    public static GCloudSessionDataStoreFactory newSessionDataStoreFactory(Datastore d)
+    {
+       return new TestGCloudSessionDataStoreFactory(d);
+    }
 
     public GCloudSessionTestSupport ()
     {
@@ -73,9 +101,14 @@ public class GCloudSessionTestSupport
     public void tearDown()
             throws Exception
     {
-        _helper.stop();
+        _helper.stop(Duration.standardMinutes(1)); //wait up to 1min for shutdown
     }
     
+    
+    public void reset() throws Exception
+    {
+        _helper.reset();
+    }
     
     
     public Set<String> getSessionIds () throws Exception

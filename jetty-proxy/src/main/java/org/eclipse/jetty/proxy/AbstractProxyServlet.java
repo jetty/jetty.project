@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -633,10 +632,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
             {
                 // Use Jetty specific behavior to close connection.
                 proxyResponse.sendError(-1);
-                AsyncContext asyncContext = clientRequest.getAsyncContext();
-                asyncContext.complete();
+                if (clientRequest.isAsyncStarted())
+                {
+                    AsyncContext asyncContext = clientRequest.getAsyncContext();
+                    asyncContext.complete();
+                }
             }
-            catch (IOException x)
+            catch (Throwable x)
             {
                 if (_log.isDebugEnabled())
                     _log.debug(getRequestId(clientRequest) + " could not close the connection", failure);

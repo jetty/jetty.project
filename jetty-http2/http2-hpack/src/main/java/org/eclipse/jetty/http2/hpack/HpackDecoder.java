@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -93,7 +93,7 @@ public class HpackDecoder
                 Entry entry=_context.get(index);
                 if (entry==null)
                 {
-                    throw new BadMessageException("Unknown index "+index);
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Unknown index "+index);
                 }
                 else if (entry.isStatic())
                 {
@@ -246,7 +246,8 @@ public class HpackDecoder
                 if (indexed)
                 {
                     // add to dynamic table
-                    _context.add(field);
+                    if (_context.add(field)==null)
+                        throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431,"Indexed field value too large");
                 }
 
             }

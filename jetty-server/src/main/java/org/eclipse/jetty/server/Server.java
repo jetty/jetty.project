@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -376,22 +377,35 @@ public class Server extends HandlerWrapper implements Attributes
         }
         
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
-        MultiException mex=new MultiException();
 
-        // check size of thread pool
+        // Check that the thread pool size is enough.
         SizedThreadPool pool = getBean(SizedThreadPool.class);
         int max=pool==null?-1:pool.getMaxThreads();
         int selectors=0;
         int acceptors=0;
-        if (mex.size()==0)
+
+        for (Connector connector : _connectors)
         {
-            for (Connector connector : _connectors)
+            if (connector instanceof AbstractConnector)
             {
-                if (connector instanceof AbstractConnector)
-                    acceptors+=((AbstractConnector)connector).getAcceptors();
+                AbstractConnector abstractConnector = (AbstractConnector)connector;
+                Executor connectorExecutor = connector.getExecutor();
+
+                if (connectorExecutor != pool)
+                {
+                    // Do not count the selectors and acceptors from this connector at
+                    // the server level, because the connector uses a dedicated executor.
+                    continue;
+                }
+
+                acceptors += abstractConnector.getAcceptors();
 
                 if (connector instanceof ServerConnector)
-                    selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
+                {
+                    // The SelectorManager uses 2 threads for each selector,
+                    // one for the normal and one for the low priority strategies.
+                    selectors += 2 * ((ServerConnector)connector).getSelectorManager().getSelectorCount();
+                }
             }
         }
 
@@ -399,6 +413,7 @@ public class Server extends HandlerWrapper implements Attributes
         if (max>0 && needed>max)
             throw new IllegalStateException(String.format("Insufficient threads: max=%d < needed(acceptors=%d + selectors=%d + request=1)",max,acceptors,selectors));
 
+        MultiException mex=new MultiException();
         try
         {
             super.doStart();

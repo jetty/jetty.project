@@ -1,2 +1,2 @@
-EX|IllegalStateException
+EX|CyclicException
 EX|cyclic

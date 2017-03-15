@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,6 @@ Not only does the `quickstart-web.xml` contain all the discovered Servlets, Filt
 
 With the quickstart mechanism, Jetty is able to entirely bypass all scanning and discovery modes and start a webapp in a predictable and fast way.
 Tests have shown that webapps that took many seconds to scan and deploy can now be deployed in a few hundred milliseconds.
-Additionally, if debug logging is enabled, the generated quickstart information is tagged with the origin of every element, which can be useful for debugging purposes. 
 
 ==== Setting up Quickstart
 
@@ -71,6 +70,27 @@ autoPreconfigure::
                    (true/false). 
                    If true, the first time the webapp is run, the WEB-INF/quickstart-web.xml is generated BEFORE the webapp is deployed.
                    Subsequent runs use the previously generated quickstart file.
+originAttribute::
+                   The name of an attribute to insert into the generated elements in quickstart-web.xml that gives the origin of the element.
+                   By default it is `origin`.
+generateOrigin::
+                    (true/false).
+                    By default it is `false`.
+                    If true, the origin attribute will be inserted into each element in quickstart-web.xml.
+                    Note that origin attributes will also be generated if debug log level is enabled.
+
+
+The origin is either a descriptor eg web.xml,web-fragment.xml,override-web.xml file, or an annotation eg @WebServlet.
+For xml validation each attribute must be unique, and therefore an integer counter is appended to each value.
+Some examples of elements with origin attribute information are:
+
+[source, xml, subs="{sub-order}"]
+----
+<listener origin="DefaultsDescriptor(file:///path/to/distro/etc/webdefault.xml):21">
+<listener origin="WebDescriptor(file:///path/to/base/webapps/test-spec/WEB-INF/web.xml):22">
+<servlet-class origin="FragmentDescriptor(jar:file:///path/to/base/webapps/test-spec/WEB-INF/lib/test-web-fragment.jar!/META-INF/web-fragment.xml):23">
+<servlet-class origin="@WebServlet(com.acme.test.TestServlet):24">
+----
 
 ====== In XML
 If a web application already has a context xml file, eg `webapps/myapp.xml` file, simply change the class in the `Configure` element.

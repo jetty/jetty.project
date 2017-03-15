@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -50,329 +53,263 @@ import org.junit.runner.RunWith;
 public class WebSocketClientTest
 {
     private BlockheadServer server;
+    private WebSocketClient client;
 
     @Before
-    public void startServer() throws Exception
+    public void startClientServer() throws Exception
     {
+        client = new WebSocketClient();
+        client.start();
         server = new BlockheadServer();
         server.start();
     }
 
     @After
-    public void stopServer() throws Exception
+    public void stopClientServer() throws Exception
     {
+        client.stop();
         server.stop();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testAddExtension_NotInstalled() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
-        try
-        {
-            JettyTrackingSocket cliSock = new JettyTrackingSocket();
+        JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
-            client.getPolicy().setIdleTimeout(10000);
+        client.getPolicy().setIdleTimeout(10000);
 
-            URI wsUri = server.getWsUri();
-            ClientUpgradeRequest request = new ClientUpgradeRequest();
-            request.setSubProtocols("echo");
-            request.addExtensions("x-bad");
+        URI wsUri = server.getWsUri();
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        request.addExtensions("x-bad");
 
-            // Should trigger failure on bad extension
-            client.connect(cliSock,wsUri,request);
-        }
-        finally
-        {
-            client.stop();
-        }
+        // Should trigger failure on bad extension
+        client.connect(cliSock,wsUri,request);
     }
 
     @Test
     public void testBasicEcho_FromClient() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
-        try
-        {
-            JettyTrackingSocket cliSock = new JettyTrackingSocket();
+        JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
-            client.getPolicy().setIdleTimeout(10000);
+        client.getPolicy().setIdleTimeout(10000);
 
-            URI wsUri = server.getWsUri();
-            ClientUpgradeRequest request = new ClientUpgradeRequest();
-            request.setSubProtocols("echo");
-            Future<Session> future = client.connect(cliSock,wsUri,request);
+        URI wsUri = server.getWsUri();
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            final IBlockheadServerConnection srvSock = server.accept();
-            srvSock.upgrade();
+        final IBlockheadServerConnection srvSock = server.accept();
+        srvSock.upgrade();
 
-            Session sess = future.get(30,TimeUnit.SECONDS);
-            Assert.assertThat("Session",sess,notNullValue());
-            Assert.assertThat("Session.open",sess.isOpen(),is(true));
-            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+        Session sess = future.get(30,TimeUnit.SECONDS);
+        Assert.assertThat("Session",sess,notNullValue());
+        Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
-            cliSock.assertWasOpened();
-            cliSock.assertNotClosed();
+        cliSock.assertWasOpened();
+        cliSock.assertNotClosed();
 
-            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
-            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
+        Collection<WebSocketSession> sessions = client.getOpenSessions();
+        Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
-            RemoteEndpoint remote = cliSock.getSession().getRemote();
-            remote.sendStringByFuture("Hello World!");
-            if (remote.getBatchMode() == BatchMode.ON)
-                remote.flush();
-            srvSock.echoMessage(1,30,TimeUnit.SECONDS);
-            // wait for response from server
-            cliSock.waitForMessage(30,TimeUnit.SECONDS);
+        RemoteEndpoint remote = cliSock.getSession().getRemote();
+        remote.sendStringByFuture("Hello World!");
+        if (remote.getBatchMode() == BatchMode.ON)
+            remote.flush();
+        srvSock.echoMessage(1,30,TimeUnit.SECONDS);
+        // wait for response from server
+        cliSock.waitForMessage(30,TimeUnit.SECONDS);
 
-            cliSock.assertMessage("Hello World!");
-        }
-        finally
-        {
-            client.stop();
-        }
+        cliSock.assertMessage("Hello World!");
     }
 
     @Test
     public void testBasicEcho_UsingCallback() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
-        try
-        {
-            JettyTrackingSocket cliSock = new JettyTrackingSocket();
+        client.setMaxIdleTimeout(160000);
+        JettyTrackingSocket cliSock = new JettyTrackingSocket();
 
-            client.getPolicy().setIdleTimeout(10000);
+        URI wsUri = server.getWsUri();
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock,wsUri,request);
 
-            URI wsUri = server.getWsUri();
-            ClientUpgradeRequest request = new ClientUpgradeRequest();
-            request.setSubProtocols("echo");
-            Future<Session> future = client.connect(cliSock,wsUri,request);
+        final IBlockheadServerConnection srvSock = server.accept();
+        srvSock.upgrade();
 
-            final IBlockheadServerConnection srvSock = server.accept();
-            srvSock.upgrade();
+        Session sess = future.get(30,TimeUnit.SECONDS);
+        Assert.assertThat("Session",sess,notNullValue());
+        Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
-            Session sess = future.get(30,TimeUnit.SECONDS);
-            Assert.assertThat("Session",sess,notNullValue());
-            Assert.assertThat("Session.open",sess.isOpen(),is(true));
-            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+        cliSock.assertWasOpened();
+        cliSock.assertNotClosed();
 
-            cliSock.assertWasOpened();
-            cliSock.assertNotClosed();
+        Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
+        Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
 
-            Collection<WebSocketSession> sessions = client.getBeans(WebSocketSession.class);
-            Assert.assertThat("client.connectionManager.sessions.size",sessions.size(),is(1));
+        FutureWriteCallback callback = new FutureWriteCallback();
 
-            FutureWriteCallback callback = new FutureWriteCallback();
-
-            cliSock.getSession().getRemote().sendString("Hello World!",callback);
-            callback.get(1,TimeUnit.SECONDS);
-        }
-        finally
-        {
-            client.stop();
-        }
+        cliSock.getSession().getRemote().sendString("Hello World!",callback);
+        callback.get(1,TimeUnit.SECONDS);
     }
 
     @Test
     public void testBasicEcho_FromServer() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
-        try
-        {
-            JettyTrackingSocket wsocket = new JettyTrackingSocket();
-            Future<Session> future = client.connect(wsocket,server.getWsUri());
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
+        Future<Session> future = client.connect(wsocket,server.getWsUri());
 
-            // Server
-            final IBlockheadServerConnection srvSock = server.accept();
-            srvSock.upgrade();
+        // Server
+        final IBlockheadServerConnection srvSock = server.accept();
+        srvSock.upgrade();
 
-            // Validate connect
-            Session sess = future.get(30,TimeUnit.SECONDS);
-            Assert.assertThat("Session",sess,notNullValue());
-            Assert.assertThat("Session.open",sess.isOpen(),is(true));
-            Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
-            Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
+        // Validate connect
+        Session sess = future.get(30,TimeUnit.SECONDS);
+        Assert.assertThat("Session",sess,notNullValue());
+        Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        Assert.assertThat("Session.upgradeRequest",sess.getUpgradeRequest(),notNullValue());
+        Assert.assertThat("Session.upgradeResponse",sess.getUpgradeResponse(),notNullValue());
 
-            // Have server send initial message
-            srvSock.write(new TextFrame().setPayload("Hello World"));
+        // Have server send initial message
+        srvSock.write(new TextFrame().setPayload("Hello World"));
 
-            // Verify connect
-            future.get(30,TimeUnit.SECONDS);
-            wsocket.assertWasOpened();
-            wsocket.awaitMessage(1,TimeUnit.SECONDS,2);
+        // Verify connect
+        future.get(30,TimeUnit.SECONDS);
+        wsocket.assertWasOpened();
+        wsocket.awaitMessage(1,TimeUnit.SECONDS,2);
 
-            wsocket.assertMessage("Hello World");
-        }
-        finally
-        {
-            client.stop();
-        }
+        wsocket.assertMessage("Hello World");
     }
 
     @Test
     public void testLocalRemoteAddress() throws Exception
     {
-        WebSocketClient fact = new WebSocketClient();
-        fact.start();
-        try
-        {
-            JettyTrackingSocket wsocket = new JettyTrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
-            URI wsUri = server.getWsUri();
-            Future<Session> future = fact.connect(wsocket,wsUri);
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
 
-            IBlockheadServerConnection ssocket = server.accept();
-            ssocket.upgrade();
+        IBlockheadServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-            future.get(30,TimeUnit.SECONDS);
+        future.get(30,TimeUnit.SECONDS);
 
-            Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
+        Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
-            InetSocketAddress local = wsocket.getSession().getLocalAddress();
-            InetSocketAddress remote = wsocket.getSession().getRemoteAddress();
+        InetSocketAddress local = wsocket.getSession().getLocalAddress();
+        InetSocketAddress remote = wsocket.getSession().getRemoteAddress();
 
-            Assert.assertThat("Local Socket Address",local,notNullValue());
-            Assert.assertThat("Remote Socket Address",remote,notNullValue());
+        Assert.assertThat("Local Socket Address",local,notNullValue());
+        Assert.assertThat("Remote Socket Address",remote,notNullValue());
 
-            // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
-            Assert.assertThat("Local Socket Address / Host",local.getAddress().getHostAddress(),notNullValue());
-            Assert.assertThat("Local Socket Address / Port",local.getPort(),greaterThan(0));
+        // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
+        Assert.assertThat("Local Socket Address / Host",local.getAddress().getHostAddress(),notNullValue());
+        Assert.assertThat("Local Socket Address / Port",local.getPort(),greaterThan(0));
 
-            Assert.assertThat("Remote Socket Address / Host",remote.getAddress().getHostAddress(),is(wsUri.getHost()));
-            Assert.assertThat("Remote Socket Address / Port",remote.getPort(),greaterThan(0));
-        }
-        finally
-        {
-            fact.stop();
-        }
+        Assert.assertThat("Remote Socket Address / Host",remote.getAddress().getHostAddress(),is(wsUri.getHost()));
+        Assert.assertThat("Remote Socket Address / Port",remote.getPort(),greaterThan(0));
     }
 
     @Test
     public void testMessageBiggerThanBufferSize() throws Exception
     {
-        WebSocketClient factSmall = new WebSocketClient();
-        factSmall.start();
-        try
+        int bufferSize = 512;
+
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
+
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
+
+        IBlockheadServerConnection ssocket = server.accept();
+        ssocket.upgrade();
+
+        future.get(30,TimeUnit.SECONDS);
+
+        Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
+
+        int length = bufferSize + (bufferSize / 2); // 1.5 times buffer size
+        ssocket.write(0x80 | 0x01); // FIN + TEXT
+        ssocket.write(0x7E); // No MASK and 2 bytes length
+        ssocket.write(length >> 8); // first length byte
+        ssocket.write(length & 0xFF); // second length byte
+        for (int i = 0; i < length; ++i)
         {
-            int bufferSize = 512;
-
-            JettyTrackingSocket wsocket = new JettyTrackingSocket();
-
-            URI wsUri = server.getWsUri();
-            Future<Session> future = factSmall.connect(wsocket,wsUri);
-
-            IBlockheadServerConnection ssocket = server.accept();
-            ssocket.upgrade();
-
-            future.get(30,TimeUnit.SECONDS);
-
-            Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
-
-            int length = bufferSize + (bufferSize / 2); // 1.5 times buffer size
-            ssocket.write(0x80 | 0x01); // FIN + TEXT
-            ssocket.write(0x7E); // No MASK and 2 bytes length
-            ssocket.write(length >> 8); // first length byte
-            ssocket.write(length & 0xFF); // second length byte
-            for (int i = 0; i < length; ++i)
-            {
-                ssocket.write('x');
-            }
-            ssocket.flush();
-
-            Assert.assertTrue(wsocket.dataLatch.await(1000,TimeUnit.SECONDS));
+            ssocket.write('x');
         }
-        finally
-        {
-            factSmall.stop();
-        }
+        ssocket.flush();
+
+        Assert.assertTrue(wsocket.dataLatch.await(1000,TimeUnit.SECONDS));
     }
 
+    /**
+     * Ensure that <code>@WebSocket(maxTextMessageSize = 100*1024)</code> behaves as expected.
+     * 
+     * @throws Exception
+     *             on test failure
+     */
     @Test
     public void testMaxMessageSize() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
-        try
-        {
-            MaxMessageSocket wsocket = new MaxMessageSocket();
+        MaxMessageSocket wsocket = new MaxMessageSocket();
 
-            URI wsUri = server.getWsUri();
-            Future<Session> future = client.connect(wsocket,wsUri);
+        URI wsUri = server.getWsUri();
+        Future<Session> future = client.connect(wsocket,wsUri);
 
-            IBlockheadServerConnection ssocket = server.accept();
-            ssocket.upgrade();
+        IBlockheadServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-            wsocket.awaitConnect(1,TimeUnit.SECONDS);
+        wsocket.awaitConnect(1,TimeUnit.SECONDS);
 
-            Session sess = future.get(30,TimeUnit.SECONDS);
-            Assert.assertThat("Session",sess,notNullValue());
-            Assert.assertThat("Session.open",sess.isOpen(),is(true));
+        Session sess = future.get(30,TimeUnit.SECONDS);
+        Assert.assertThat("Session",sess,notNullValue());
+        Assert.assertThat("Session.open",sess.isOpen(),is(true));
 
-            // Create string that is larger than default size of 64k
-            // but smaller than maxMessageSize of 100k
-            byte buf[] = new byte[80 * 1024];
-            Arrays.fill(buf,(byte)'x');
-            String msg = StringUtil.toUTF8String(buf,0,buf.length);
+        // Create string that is larger than default size of 64k
+        // but smaller than maxMessageSize of 100k
+        byte buf[] = new byte[80 * 1024];
+        Arrays.fill(buf,(byte)'x');
+        String msg = StringUtil.toUTF8String(buf,0,buf.length);
 
-            wsocket.getSession().getRemote().sendStringByFuture(msg);
-            ssocket.echoMessage(1,2,TimeUnit.SECONDS);
-            // wait for response from server
-            wsocket.waitForMessage(1,TimeUnit.SECONDS);
+        wsocket.getSession().getRemote().sendStringByFuture(msg);
+        ssocket.echoMessage(1,2,TimeUnit.SECONDS);
+        // wait for response from server
+        wsocket.waitForMessage(1,TimeUnit.SECONDS);
 
-            wsocket.assertMessage(msg);
+        wsocket.assertMessage(msg);
 
-            Assert.assertTrue(wsocket.dataLatch.await(2,TimeUnit.SECONDS));
-        }
-        finally
-        {
-            client.stop();
-        }
+        Assert.assertTrue(wsocket.dataLatch.await(2,TimeUnit.SECONDS));
     }
 
     @Test
     public void testParameterMap() throws Exception
     {
-        WebSocketClient fact = new WebSocketClient();
-        fact.start();
-        try
-        {
-            JettyTrackingSocket wsocket = new JettyTrackingSocket();
+        JettyTrackingSocket wsocket = new JettyTrackingSocket();
 
-            URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
-            Future<Session> future = fact.connect(wsocket,wsUri);
+        URI wsUri = server.getWsUri().resolve("/test?snack=cashews&amount=handful&brand=off");
+        Future<Session> future = client.connect(wsocket,wsUri);
 
-            IBlockheadServerConnection ssocket = server.accept();
-            ssocket.upgrade();
+        IBlockheadServerConnection ssocket = server.accept();
+        ssocket.upgrade();
 
-            future.get(30,TimeUnit.SECONDS);
+        future.get(30,TimeUnit.SECONDS);
 
-            Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
+        Assert.assertTrue(wsocket.openLatch.await(1,TimeUnit.SECONDS));
 
-            Session session = wsocket.getSession();
-            UpgradeRequest req = session.getUpgradeRequest();
-            Assert.assertThat("Upgrade Request",req,notNullValue());
+        Session session = wsocket.getSession();
+        UpgradeRequest req = session.getUpgradeRequest();
+        Assert.assertThat("Upgrade Request",req,notNullValue());
 
-            Map<String, List<String>> parameterMap = req.getParameterMap();
-            Assert.assertThat("Parameter Map",parameterMap,notNullValue());
+        Map<String, List<String>> parameterMap = req.getParameterMap();
+        Assert.assertThat("Parameter Map",parameterMap,notNullValue());
 
-            Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(Arrays.asList(new String[]
-            { "cashews" })));
-            Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(Arrays.asList(new String[]
-            { "handful" })));
-            Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(Arrays.asList(new String[]
-            { "off" })));
+        Assert.assertThat("Parameter[snack]",parameterMap.get("snack"),is(Arrays.asList(new String[] { "cashews" })));
+        Assert.assertThat("Parameter[amount]",parameterMap.get("amount"),is(Arrays.asList(new String[] { "handful" })));
+        Assert.assertThat("Parameter[brand]",parameterMap.get("brand"),is(Arrays.asList(new String[] { "off" })));
 
-            Assert.assertThat("Parameter[cost]",parameterMap.get("cost"),nullValue());
-        }
-        finally
-        {
-            fact.stop();
-        }
+        Assert.assertThat("Parameter[cost]",parameterMap.get("cost"),nullValue());
     }
 }

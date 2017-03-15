@@ -2,7 +2,7 @@
 Enable GzipHandler for dynamic gzip compression
 for the entire server.
 
-[Tags]
+[tags]
 handler
 
 [depend]

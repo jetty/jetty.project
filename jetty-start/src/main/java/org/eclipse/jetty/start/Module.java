@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,6 +36,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.config.CommandLineConfigSource;
+
 /**
  * Represents a Module metadata, as defined in Jetty.
  * 
@@ -58,7 +61,8 @@ import java.util.stream.Collectors;
 public class Module implements Comparable<Module>
 {
     private static final String VERSION_UNSPECIFIED = "9.2";
-    private static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
+    static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod",Pattern.CASE_INSENSITIVE);
+    static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
 
     /** The file of the module */
     private final Path _path;
@@ -175,7 +179,7 @@ public class Module implements Comparable<Module>
         return _path.equals(other._path);
     }
 
-    public void expandProperties(Props props)
+    public void expandDependencies(Props props)
     {
         Function<String,String> expander = d->{return props.expand(d);};
         
@@ -353,7 +357,7 @@ public class Module implements Comparable<Module>
                                 _license.add(line);
                                 break;
                             case "NAME":
-                                StartLog.warn("Deprecated [Name] used in %s",basehome.toShortForm(_path));
+                                StartLog.warn("Deprecated [name] used in %s",basehome.toShortForm(_path));
                                 _provides.add(line);
                                 break;
                             case "PROVIDE":
@@ -377,7 +381,7 @@ public class Module implements Comparable<Module>
                                 _xmls.add(line);
                                 break;
                             default:
-                                throw new IOException("Unrecognized Module section: [" + sectionType + "]");
+                                throw new IOException("Unrecognized module section: [" + sectionType + "]");
                         }
                     }
                 }
@@ -474,9 +478,9 @@ public class Module implements Comparable<Module>
     }
 
     /**
-     * @param source
-     * @param transitive
-     * @return True if the module was not previously enabled
+     * @param source String describing where the module was enabled from
+     * @param transitive True if the enable is transitive
+     * @return true if the module was not previously enabled
      */
     public boolean enable(String source,boolean transitive)
     {
@@ -505,8 +509,8 @@ public class Module implements Comparable<Module>
     {
         return isEnabled() && !_notTransitive;
     }
-
-    public void writeIniSection(BufferedWriter writer)
+    
+    public void writeIniSection(BufferedWriter writer, Props props)
     {
         PrintWriter out = new PrintWriter(writer);
         out.println("# --------------------------------------- ");
@@ -517,7 +521,23 @@ public class Module implements Comparable<Module>
         out.println("--module=" + getName());
         out.println();
         for (String line : getIniTemplate())
-            out.println(line);
+        {
+            Matcher m = SET_PROPERTY.matcher(line);
+            if (m.matches() && m.groupCount()==3)
+            {
+                String name = m.group(2);
+                Prop p = props.getProp(name);
+                if (p!=null && p.origin.startsWith(CommandLineConfigSource.ORIGIN_CMD_LINE))
+                {
+                    StartLog.info("%-15s property set %s=%s",this._name,name,p.value);
+                    out.printf("%s=%s%n",name,p.value);
+                }
+                else
+                    out.println(line);
+            }
+            else
+                out.println(line);
+        }
         out.println();
         out.flush();
     }

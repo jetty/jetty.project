@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -707,7 +707,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (suspendToken.getAndSet(false))
         {
-            fillInterested();
+            if (!isReading())
+            {
+                fillInterested();
+            }
         }
     }
 
@@ -763,11 +766,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public String toString()
+    public String toConnectionString()
     {
-        return String.format("%s@%X{endp=%s,ios=%s,f=%s,g=%s,p=%s}",getClass().getSimpleName(),hashCode(),getEndPoint(),ioState,flusher,generator,parser);
+        return String.format("%s@%x[ios=%s,f=%s,g=%s,p=%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                ioState,flusher,generator,parser);
     }
-
+    
     @Override
     public int hashCode()
     {
@@ -813,6 +819,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onUpgradeTo(ByteBuffer prefilled)
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(prefilled));
+        }
+    
         setInitialBuffer(prefilled);
     }
 }

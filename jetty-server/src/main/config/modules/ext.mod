@@ -2,7 +2,7 @@
 Adds all jar files discovered in $JETTY_HOME/lib/ext
 and $JETTY_BASE/lib/ext to the servers classpath.
 
-[Tags]
+[tags]
 classpath
 
 [lib]

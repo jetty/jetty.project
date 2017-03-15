@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,14 @@ package org.eclipse.jetty.http;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
 {
     private HttpVersion _httpVersion;
-    private HttpFields _fields;
+    private final HttpFields _fields;
     private long _contentLength;
+    private Supplier<HttpFields> _trailers;
 
     public MetaData(HttpVersion version, HttpFields fields)
     {
@@ -58,9 +60,18 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
+     * @deprecated use {@link #getHttpVersion()} instead
+     */
+    @Deprecated
+    public HttpVersion getVersion()
+    {
+        return getHttpVersion();
+    }
+
+    /**
      * @return the HTTP version of this MetaData object
      */
-    public HttpVersion getVersion()
+    public HttpVersion getHttpVersion()
     {
         return _httpVersion;
     }
@@ -79,6 +90,16 @@ public class MetaData implements Iterable<HttpField>
     public HttpFields getFields()
     {
         return _fields;
+    }
+
+    public Supplier<HttpFields> getTrailerSupplier()
+    {
+        return _trailers;
+    }
+
+    public void setTrailerSupplier(Supplier<HttpFields> trailers)
+    {
+        _trailers = trailers;
     }
 
     /**
@@ -155,7 +176,7 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(Request request)
         {
-            this(request.getMethod(),new HttpURI(request.getURI()), request.getVersion(), new HttpFields(request.getFields()), request.getContentLength());
+            this(request.getMethod(),new HttpURI(request.getURI()), request.getHttpVersion(), new HttpFields(request.getFields()), request.getContentLength());
         }
 
         public void recycle()
@@ -216,8 +237,8 @@ public class MetaData implements Iterable<HttpField>
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{u=%s,%s,h=%d}",
-                    getMethod(), getURI(), getVersion(), fields == null ? -1 : fields.size());
+            return String.format("%s{u=%s,%s,h=%d,cl=%d}",
+                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
 
@@ -291,7 +312,7 @@ public class MetaData implements Iterable<HttpField>
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{s=%d,h=%d}", getVersion(), getStatus(), fields == null ? -1 : fields.size());
+            return String.format("%s{s=%d,h=%d,cl=%d}", getHttpVersion(), getStatus(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
 }

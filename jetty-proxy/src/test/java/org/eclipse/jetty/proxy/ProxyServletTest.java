@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -360,13 +360,18 @@ public class ProxyServletTest
                     resp.addHeader(PROXIED_HEADER, "true");
                 InputStream input = req.getInputStream();
                 int index = 0;
+                
+                byte[] buffer = new byte[16*1024];
                 while (true)
                 {
-                    int value = input.read();
+                    int value = input.read(buffer);
                     if (value < 0)
                         break;
-                    Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, value);
-                    ++index;
+                    for (int i=0;i<value;i++)
+                    {
+                        Assert.assertEquals("Content mismatch at index=" + index, content[index] & 0xFF, buffer[i] & 0xFF);
+                        ++index;
+                    }
                 }
             }
         });
@@ -931,9 +936,10 @@ public class ProxyServletTest
         Assert.assertArrayEquals(content, response.getContent());
     }
 
-    @Test(expected = TimeoutException.class)
+    @Test
     public void testWrongContentLength() throws Exception
     {
+        
         startServer(new HttpServlet()
         {
             @Override
@@ -948,11 +954,17 @@ public class ProxyServletTest
         startProxy();
         startClient();
 
-        client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(1, TimeUnit.SECONDS)
+        try
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
                 .send();
-
-        Assert.fail();
+            Assert.assertThat(response.getStatus(),Matchers.greaterThanOrEqualTo(500));   
+        }
+        catch(ExecutionException e)
+        {     
+            Assert.assertThat(e.getCause(),Matchers.instanceOf(IOException.class));
+        }
     }
 
     @Test

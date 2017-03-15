@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -275,6 +275,11 @@ abstract public class WriteFlusher
         {
             return Invocable.getInvocationType(_callback);
         }
+
+        public Object getCallback()
+        {
+            return _callback;
+        }
     }
 
     public InvocationType getCallbackInvocationType()
@@ -523,7 +528,8 @@ abstract public class WriteFlusher
     @Override
     public String toString()
     {
-        return String.format("WriteFlusher@%x{%s}", hashCode(), _state.get());
+        State s = _state.get();
+        return String.format("WriteFlusher@%x{%s}->%s", hashCode(), s,s instanceof PendingState?((PendingState)s).getCallback():null);
     }
 
     public String toStateString()

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -86,7 +86,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
-        if (!checkWrite(callback))
+        if (!startWrite(callback))
             return;
         session.frames(this, this, frame, Frame.EMPTY_ARRAY);
     }
@@ -100,7 +100,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     @Override
     public void data(DataFrame frame, Callback callback)
     {
-        if (!checkWrite(callback))
+        if (!startWrite(callback))
             return;
         session.data(this, this, frame);
     }
@@ -114,7 +114,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         session.frames(this, callback, frame, Frame.EMPTY_ARRAY);
     }
 
-    private boolean checkWrite(Callback callback)
+    private boolean startWrite(Callback callback)
     {
         if (writing.compareAndSet(null, callback))
             return true;
@@ -381,15 +381,22 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     @Override
     public void succeeded()
     {
-        Callback callback = writing.getAndSet(null);
-        callback.succeeded();
+        Callback callback = endWrite();
+        if (callback != null)
+            callback.succeeded();
     }
 
     @Override
     public void failed(Throwable x)
     {
-        Callback callback = writing.getAndSet(null);
-        callback.failed(x);
+        Callback callback = endWrite();
+        if (callback != null)
+            callback.failed(x);
+    }
+
+    private Callback endWrite()
+    {
+        return writing.getAndSet(null);
     }
 
     private void notifyData(Stream stream, DataFrame frame, Callback callback)

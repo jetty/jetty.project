@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[jetty-xml-config]]
-=== `jetty.xml`
+=== jetty.xml
 
 `jetty.xml` is the default configuration file for Jetty, typically located at ` $JETTY_HOME/etc/jetty.xml`. Usually the `jetty.xml` configures:
 
@@ -47,7 +47,7 @@ The selection of which configuration files to use is controlled by xref:advanced
  ...
 </Configure>
 
-      
+
 ----
 
 [[jetty-xml-examples]]

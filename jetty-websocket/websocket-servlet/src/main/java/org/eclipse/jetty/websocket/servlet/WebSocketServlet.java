@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -90,7 +90,14 @@ public abstract class WebSocketServlet extends HttpServlet
     @Override
     public void destroy()
     {
-        factory.cleanup();
+        try
+        {
+            factory.stop();
+        }
+        catch (Exception ignore)
+        {
+            // ignore;
+        }
     }
 
     /**
@@ -126,14 +133,13 @@ public abstract class WebSocketServlet extends HttpServlet
             {
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
-
-            factory = WebSocketServletFactory.Loader.create(policy);
+    
+            ServletContext ctx = getServletContext();
+            factory = WebSocketServletFactory.Loader.load(ctx, policy);
 
             configure(factory);
             
-            ServletContext ctx = getServletContext();
-
-            factory.init(ctx);
+            factory.start();
             
             ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
         }

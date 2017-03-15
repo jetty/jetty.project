@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -186,7 +186,28 @@ public class HttpServerTestFixture
             response.getOutputStream().print("Hello world\r\n");
         }
     }
+    
+    protected static class ReadHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
 
+            try
+            {
+                InputStream in = request.getInputStream();
+                String input= IO.toString(in);
+                response.getWriter().printf("read %d%n",input.length());
+            }
+            catch(Exception e)
+            {
+                response.getWriter().printf("caught %s%n",e); 
+            }
+        }
+    }
+    
     protected static class DataHandler extends AbstractHandler
     {
         @Override

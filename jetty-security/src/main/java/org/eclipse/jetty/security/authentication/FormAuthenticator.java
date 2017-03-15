@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -257,7 +257,21 @@ public class FormAuthenticator extends LoginAuthenticator
         if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())) &&!DeferredAuthentication.isDeferred(response))
             return new DeferredAuthentication(this);
 
-        HttpSession session = request.getSession(true);
+        HttpSession session = null;
+        try
+        {
+            session = request.getSession(true);
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
+        }
+        
+        //if unable to create a session, user must be
+        //unauthenticated
+        if (session == null)
+            return Authentication.UNAUTHENTICATED;
 
         try
         {

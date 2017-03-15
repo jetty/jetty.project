@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -55,34 +55,47 @@ public abstract class FillInterest
      */
     public void register(Callback callback) throws ReadPendingException
     {
-        if (callback == null)
-            throw new IllegalArgumentException();
-
-        if (_interested.compareAndSet(null, callback))
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{} register {}",this,callback);
-                _lastSet=new Throwable(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()) + ":" + Thread.currentThread().getName());
-            }
-        }
-        else
+        if (!tryRegister(callback))
         {
             LOG.warn("Read pending for {} prevented {}", _interested, callback);
             if (LOG.isDebugEnabled())
                 LOG.warn("callback set at ",_lastSet);
             throw new ReadPendingException();
+        }   
+    }
+    
+    /**
+     * Call to register interest in a callback when a read is possible.
+     * The callback will be called either immediately if {@link #needsFillInterest()}
+     * returns true or eventually once {@link #fillable()} is called.
+     *
+     * @param callback the callback to register
+     * @return true if the register succeeded
+     */
+    public boolean tryRegister(Callback callback)
+    {
+        if (callback == null)
+            throw new IllegalArgumentException();
+
+        if (!_interested.compareAndSet(null, callback))
+            return false;
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{} register {}",this,callback);
+            _lastSet=new Throwable(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()) + ":" + Thread.currentThread().getName());
         }
+        
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} register {}",this,callback);
             needsFillInterest();
         }
         catch (Throwable e)
         {
             onFail(e);
         }
+        
+        return true;
     }
 
     /**

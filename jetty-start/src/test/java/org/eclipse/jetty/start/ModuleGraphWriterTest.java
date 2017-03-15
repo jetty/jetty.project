@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.is;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -43,26 +42,25 @@ public class ModuleGraphWriterTest
     public void testGenerate_NothingEnabled() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyDir();
+        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path baseDir = testdir.getEmptyPathDir();
         String cmdLine[] = new String[] {"jetty.version=TEST"};
         
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
         
         // Initialize
         BaseHome basehome = new BaseHome(config);
         
-        StartArgs args = new StartArgs();
+        StartArgs args = new StartArgs(basehome);
         args.parse(config);
 
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
-        modules.sort();
 
         Path outputFile = basehome.getBasePath("graph.dot");
 

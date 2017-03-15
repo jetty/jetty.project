@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.start;
 
 import static org.eclipse.jetty.start.UsageException.ERR_BAD_GRAPH;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
 import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
 import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
 import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
@@ -39,8 +40,11 @@ import java.net.SocketTimeoutException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
+import org.eclipse.jetty.start.config.ConfigSource;
 
 /**
  * Main start class.
@@ -76,7 +80,7 @@ public class Main
         }
         catch (UsageException e)
         {
-            StartLog.warn(e.getMessage());
+            StartLog.error(e.getMessage());
             usageExit(e.getCause(),e.getExitCode(),test);
         }
         catch (Throwable e)
@@ -107,7 +111,7 @@ public class Main
     }
 
     private BaseHome baseHome;
-    private StartArgs startupArgs;
+    private StartArgs jsvcStartArgs;
 
     public Main() throws IOException
     {
@@ -197,7 +201,7 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            StartLog.warn("Nothing to start, exiting ...");
+            StartLog.error("Nothing to start, exiting ...");
             StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;
@@ -205,7 +209,7 @@ public class Main
 
         StartLog.debug("%s - %s",invoked_class,invoked_class.getPackage().getImplementationVersion());
 
-        CommandLineBuilder cmd = args.getMainArgs(baseHome,false);
+        CommandLineBuilder cmd = args.getMainArgs(false);
         String argArray[] = cmd.getArgs().toArray(new String[0]);
         StartLog.debug("Command Line Args: %s",cmd.toString());
 
@@ -223,7 +227,7 @@ public class Main
         StartLog.endStartLog();
         
         // Dump Jetty Home / Base
-        args.dumpEnvironment(baseHome);
+        args.dumpEnvironment();
 
         // Dump JVM Args
         args.dumpJvmArgs();
@@ -238,7 +242,7 @@ public class Main
         dumpClasspathWithVersions(args.getClasspath());
 
         // Dump Resolved XMLs
-        args.dumpActiveXmls(baseHome);
+        args.dumpActiveXmls();
     }
 
     public void listModules(StartArgs args)
@@ -288,7 +292,7 @@ public class Main
         // the various start inis
         // and then the raw command line arguments
         StartLog.debug("Parsing collected arguments");
-        StartArgs args = new StartArgs();
+        StartArgs args = new StartArgs(baseHome);
         args.parse(baseHome.getConfigSources());
 
         // ------------------------------------------------------------
@@ -308,19 +312,8 @@ public class Main
             }
         }
 
-        StartLog.debug("Sorting Modules");
-        try
-        {
-            modules.sort();
-        }
-        catch (Exception e)
-        {
-            throw new UsageException(ERR_BAD_GRAPH,e);
-        }
-
         args.setAllModules(modules);
         List<Module> activeModules = modules.getEnabled();
-
 
         final Version START_VERSION = new Version(StartArgs.VERSION);
 
@@ -341,17 +334,17 @@ public class Main
 
         // ------------------------------------------------------------
         // 5) Lib & XML Expansion / Resolution
-        args.expandLibs(baseHome);
-        args.expandModules(baseHome,activeModules);
-
+        args.expandSystemProperties();
+        args.expandLibs();
+        args.expandModules(activeModules);
 
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
-        args.resolveExtraXmls(baseHome);
+        args.resolveExtraXmls();
         
         // ------------------------------------------------------------
         // 9) Resolve Property Files
-        args.resolvePropertyFiles(baseHome);
+        args.resolvePropertyFiles();
         
         return args;
     }
@@ -402,7 +395,7 @@ public class Main
         // Show Command Line to execute Jetty
         if (args.isDryRun())
         {
-            CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
+            CommandLineBuilder cmd = args.getMainArgs(true);
             System.out.println(cmd.toString(StartLog.isDebugEnabled()?" \\\n":" "));
         }
 
@@ -411,11 +404,37 @@ public class Main
             doStop(args);
         }
         
+        if (args.isUpdateIni())
+        {
+            for (ConfigSource config : baseHome.getConfigSources())
+            {
+                System.out.printf("ConfigSource %s%n",config.getId());
+                for (StartIni ini : config.getStartInis())
+                {
+                    for (String line : ini.getAllLines())
+                    {
+                        Matcher m = Module.SET_PROPERTY.matcher(line);
+                        if (m.matches() && m.groupCount()==3)
+                        {
+                            String name = m.group(2);
+                            String value = m.group(3);
+                            Prop p = args.getProperties().getProp(name);
+                            if (p!=null && ("#".equals(m.group(1)) || !value.equals(p.value)))
+                            {
+                                ini.update(baseHome,args.getProperties());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         // Check base directory
         BaseBuilder baseBuilder = new BaseBuilder(baseHome,args);
         if(baseBuilder.build())
             StartLog.info("Base directory was modified");
-        else if (args.isDownload() || !args.getStartModules().isEmpty())
+        else if (args.isCreateFiles() || !args.getStartModules().isEmpty())
             StartLog.info("Base directory was not modified");
 
         // Check module dependencies
@@ -430,7 +449,7 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
+            CommandLineBuilder cmd = args.getMainArgs(true);
             cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();
@@ -466,27 +485,47 @@ public class Main
         {
             invokeMain(cl, args);
         }
-        catch (Exception e)
+        catch (Throwable e)
         {
-            usageExit(e,ERR_INVOKE_MAIN,startupArgs.isTestingModeEnabled());
+            e.printStackTrace();
+            usageExit(e,ERR_INVOKE_MAIN,args.isTestingModeEnabled());
         }
     }
 
     private void doStop(StartArgs args)
     {
-        String stopHost = args.getProperties().getString("STOP.HOST");
-        int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-        String stopKey = args.getProperties().getString("STOP.KEY");
-
-        if (args.getProperties().getString("STOP.WAIT") != null)
+        Props.Prop stopHostProp = args.getProperties().getProp("STOP.HOST", true);
+        Props.Prop stopPortProp = args.getProperties().getProp("STOP.PORT", true);
+        Props.Prop stopKeyProp = args.getProperties().getProp("STOP.KEY", true);
+        Props.Prop stopWaitProp = args.getProperties().getProp("STOP.WAIT", true);
+        
+        String stopHost = "127.0.0.1";
+        int stopPort = -1;
+        String stopKey = "";
+    
+        if (stopHostProp != null)
         {
-            int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
+            stopHost = stopHostProp.value;
+        }
+    
+        if (stopPortProp != null)
+        {
+            stopPort = Integer.parseInt(stopPortProp.value);
+        }
+        
+        if(stopKeyProp != null)
+        {
+            stopKey = stopKeyProp.value;
+        }
 
-            stop(stopHost,stopPort,stopKey,stopWait);
+        if (stopWaitProp != null)
+        {
+            int stopWait = Integer.parseInt(stopWaitProp.value);
+            stop(stopHost, stopPort, stopKey, stopWait);
         }
         else
         {
-            stop(stopHost,stopPort,stopKey);
+            stop(stopHost, stopPort, stopKey);
         }
     }
 
@@ -504,19 +543,22 @@ public class Main
     public void stop(String host, int port, String key, int timeout)
     {
         if (host==null || host.length()==0)
-            host="127.0.0.1";
+        {
+            host = "127.0.0.1";
+        }
         
         try
         {
-            if (port <= 0)
+            if ( (port <= 0) || (port > 65535) )
             {
-                StartLog.warn("STOP.PORT system property must be specified");
+                System.err.println("STOP.PORT property must be specified with a valid port number");
+                usageExit(ERR_BAD_STOP_PROPS);
             }
             if (key == null)
             {
                 key = "";
-                StartLog.info("STOP.KEY system property must be specified");
-                StartLog.info("Using empty key");
+                System.err.println("STOP.KEY property must be specified");
+                System.err.println("Using empty key");
             }
 
             try (Socket s = new Socket(InetAddress.getByName(host),port))
@@ -555,11 +597,11 @@ public class Main
         }
         catch (ConnectException e)
         {
-            usageExit(e,ERR_NOT_STOPPED,startupArgs.isTestingModeEnabled());
+            usageExit(e,ERR_NOT_STOPPED,jsvcStartArgs.isTestingModeEnabled());
         }
         catch (Exception e)
         {
-            usageExit(e,ERR_UNKNOWN,startupArgs.isTestingModeEnabled());
+            usageExit(e,ERR_UNKNOWN,jsvcStartArgs.isTestingModeEnabled());
         }
     }
 
@@ -612,29 +654,35 @@ public class Main
     {
         try
         {
-            startupArgs = processCommandLine(args);
+            jsvcStartArgs = processCommandLine(args);
         }
         catch (UsageException e)
         {
-            StartLog.warn(e.getMessage());
-            usageExit(e.getCause(),e.getExitCode(),startupArgs.isTestingModeEnabled());
+            StartLog.error(e.getMessage());
+            usageExit(e.getCause(),e.getExitCode(),false);
         }
         catch (Throwable e)
         {
-            usageExit(e,UsageException.ERR_UNKNOWN,startupArgs.isTestingModeEnabled());
+            usageExit(e,UsageException.ERR_UNKNOWN,false);
         }
     }
 
+    // ------------------------------------------------------------
+    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
     public void start() throws Exception
     {
-        start(startupArgs);
+        start(jsvcStartArgs);
     }
 
+    // ------------------------------------------------------------
+    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
     public void stop() throws Exception
     {
-        doStop(startupArgs);
+        doStop(jsvcStartArgs);
     }
 
+    // ------------------------------------------------------------
+    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
     public void destroy()
     {
     }

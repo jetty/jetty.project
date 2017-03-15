@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.CRL;
@@ -71,6 +72,8 @@ import javax.net.ssl.X509TrustManager;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -84,7 +87,7 @@ import org.eclipse.jetty.util.security.Password;
  * creates SSL context based on these parameters to be
  * used by the SSL connectors.
  */
-public class SslContextFactory extends AbstractLifeCycle
+public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 {
     public final static TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509TrustManager()
     {
@@ -326,7 +329,50 @@ public class SslContextFactory extends AbstractLifeCycle
             LOG.debug("Selected Ciphers   {} of {}", Arrays.asList(_selectedCipherSuites), Arrays.asList(supported.getCipherSuites()));
         }
     }
-
+    
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+    
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append(" trustAll=").append(Boolean.toString(_trustAll)).append(System.lineSeparator());
+    
+        try
+        {
+            /* Use a pristine SSLEngine (not one from this SslContextFactory).
+             * This will allow for proper detection and identification
+             * of JRE/lib/security/java.security level disabled features
+             */
+            SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
+    
+            List<Object> selections = new ArrayList<>();
+            
+            // protocols
+            selections.add(new SslSelectionDump("Protocol",
+                    sslEngine.getSupportedProtocols(),
+                    sslEngine.getEnabledProtocols(),
+                    getExcludeProtocols(),
+                    getIncludeProtocols()));
+            
+            // ciphers
+            selections.add(new SslSelectionDump("Cipher Suite",
+                    sslEngine.getSupportedCipherSuites(),
+                    sslEngine.getEnabledCipherSuites(),
+                    getExcludeCipherSuites(),
+                    getIncludeCipherSuites()));
+            
+            ContainerLifeCycle.dump(out, indent, selections);
+        }
+        catch (NoSuchAlgorithmException ignore)
+        {
+            LOG.ignore(ignore);
+        }
+    }
+    
     @Override
     protected void doStop() throws Exception
     {
@@ -1602,7 +1648,6 @@ public class SslContextFactory extends AbstractLifeCycle
      * <p>
      * This is based on the information on effective key lengths in RFC 2246 - The TLS Protocol
      * Version 1.0, Appendix C. CipherSuite definitions:
-     * <p>
      * <pre>
      *                         Effective
      *     Cipher       Type    Key Bits

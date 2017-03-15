@@ -1,5 +1,5 @@
 [description]
-Provides SLF4J API.  Requires a slf4j implementation (eg slf4j-simple)
+Provides SLF4J API.  Requires a slf4j implementation (eg slf4j-simple-impl)
 otherwise a noop implementation is used.
 
 [tags]
@@ -15,10 +15,6 @@ lib/slf4j/slf4j-api-${slf4j.version}.jar
 
 [ini]
 slf4j.version=1.7.21
-
-[ini-template]
-## After changing versions, run 'java -jar $JETTY_HOME/start.jar --create-files' 
-#slf4j.version=1.7.21
 
 [license]
 SLF4J is distributed under the MIT License.

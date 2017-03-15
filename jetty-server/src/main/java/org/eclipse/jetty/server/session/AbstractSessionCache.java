@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,13 +19,16 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker.Lock;
@@ -649,7 +652,28 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
        
        if (LOG.isDebugEnabled())
            LOG.debug("SessionDataStore checking expiration on {}", candidates);
-       return _sessionDataStore.getExpired(candidates);
+       Set<String> allCandidates = _sessionDataStore.getExpired(candidates);
+       Set<String> sessionsInUse = new HashSet<>();
+       if (allCandidates != null)
+       {
+           for (String c:allCandidates)
+           {
+               Session s = doGet(c);
+               if (s != null && s.getRequests() > 0) //if the session is in my cache, check its not in use first
+                   sessionsInUse.add(c);
+           }
+           try
+           {
+               allCandidates.removeAll(sessionsInUse);
+           }
+           catch (UnsupportedOperationException e)
+           {
+               Set<String> tmp = new HashSet<>(allCandidates);
+               tmp.removeAll(sessionsInUse);
+               allCandidates = tmp;
+           }
+       }
+       return allCandidates;
     }
 
     
@@ -781,5 +805,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             LOG.warn("Save of new session {} failed", id, e);
         }
         return session;
+    }
+
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[evict=%d,removeUnloadable=%b,saveOnCreate=%b,saveOnInactiveEvict=%b]",
+                             this.getClass().getName(),this.hashCode(),_evictionPolicy,_removeUnloadableSessions,_saveOnCreate,_saveOnInactiveEviction);
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +31,6 @@ import java.util.TreeSet;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
 
 
 /**
@@ -131,8 +129,15 @@ public class TopologicalSort<T> implements Dumpable
                 ordered_deps.addAll(dependencies);
                 
                 // recursively visit each dependency
-                for (T d:ordered_deps)
-                    visit(d,visited,sorted,comparator);
+                try
+                {
+                    for (T d:ordered_deps)
+                        visit(d,visited,sorted,comparator);
+                }
+                catch (CyclicException e)
+                {
+                    throw new CyclicException(item,e);
+                }
             }
             
             // Now that we have visited all our dependencies, they and their 
@@ -143,7 +148,7 @@ public class TopologicalSort<T> implements Dumpable
         else if (!sorted.contains(item))
             // If we have already visited an item, but it has not yet been put in the
             // sorted list, then we must be in a cycle!
-            throw new IllegalStateException("cyclic at "+item);
+            throw new CyclicException(item);
     }
     
     
@@ -200,5 +205,18 @@ public class TopologicalSort<T> implements Dumpable
     {
         out.append(String.format("TopologicalSort@%x%n",hashCode()));
         ContainerLifeCycle.dump(out, indent,_dependencies.entrySet());
+    }
+    
+    private static class CyclicException extends IllegalStateException
+    {
+        CyclicException(Object item)
+        {
+            super("cyclic at "+item);
+        }
+        
+        CyclicException(Object item,CyclicException e)
+        {
+            super("cyclic at "+item,e);
+        }
     }
 }

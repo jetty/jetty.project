@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,8 @@ import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
@@ -102,7 +104,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         //canonicalize the patterns
         ArrayList<String> urlPatternList = new ArrayList<String>();
         for (String p : urlPatterns)
-            urlPatternList.add(Util.normalizePattern(p));
+            urlPatternList.add(ServletPathSpec.normalize(p));
 
         String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
 

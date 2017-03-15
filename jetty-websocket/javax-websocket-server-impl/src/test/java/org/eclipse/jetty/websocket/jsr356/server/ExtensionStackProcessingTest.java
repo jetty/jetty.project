@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -58,21 +58,18 @@ public class ExtensionStackProcessingTest
 {
     private Server server;
     private ServerConnector connector;
-    private ExtensionFactory serverExtensionFactory;
     private WebSocketContainer client;
-
+    private ServletContextHandler servletContextHandler;
+    
     @Before
     public void prepare() throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
-
-        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
-        ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
-        
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)context.getAttribute(WebSocketUpgradeFilter.class.getName());
-        serverExtensionFactory = filter.getFactory().getExtensionFactory();
+    
+        servletContextHandler = new ServletContextHandler(server, "/", true, false);
+        ServerContainer container = WebSocketServerContainerInitializer.configureContext(servletContextHandler);
         
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         container.addEndpoint(config);
@@ -88,11 +85,19 @@ public class ExtensionStackProcessingTest
     {
         server.stop();
     }
+    
+    private void assumeDeflateFrameAvailable()
+    {
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) servletContextHandler
+                .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+        ExtensionFactory serverExtensionFactory = configuration.getFactory().getExtensionFactory();
+        Assume.assumeTrue("Server has permessage-deflate extension registered",serverExtensionFactory.isAvailable("permessage-deflate"));
+    }
 
     @Test
     public void testDeflateFrameExtension() throws Exception
     {
-        Assume.assumeTrue("Server has deflate-frame extension registered",serverExtensionFactory.isAvailable("deflate-frame"));
+        assumeDeflateFrameAvailable();
         
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
@@ -140,7 +145,7 @@ public class ExtensionStackProcessingTest
     @Test
     public void testPerMessageDeflateExtension() throws Exception
     {
-        Assume.assumeTrue("Server has permessage-deflate extension registered",serverExtensionFactory.isAvailable("permessage-deflate"));
+        assumeDeflateFrameAvailable();
         
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
                 .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))

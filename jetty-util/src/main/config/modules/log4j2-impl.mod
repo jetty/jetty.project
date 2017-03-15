@@ -16,9 +16,9 @@ resources
 log4j2-impl
 
 [files]
-basehome:modules/log4j2/log4j2.xml|resources/log4j2.xml
-maven://org.apache.logging.log4j/log4j-core/${log4j2.version}|lib/log4j/log4j-core-${log4j2.version}.jar
+maven://org.apache.logging.log4j/log4j-core/${log4j2.version}|lib/log4j2/log4j-core-${log4j2.version}.jar
+basehome:modules/log4j2-impl
 
 [lib]
-lib/log4j/log4j-core-${log4j2.version}.jar
+lib/log4j2/*.jar
 

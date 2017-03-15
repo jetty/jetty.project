@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,6 +37,8 @@ public class HostPortTest
     public static List<String[]> testCases()
     {
         String data[][] = new String[][] { 
+            {"","",null},
+            {":80","","80"},
             {"host","host",null},
             {"host:80","host","80"},
             {"10.10.10.1","10.10.10.1",null},
@@ -46,8 +48,6 @@ public class HostPortTest
 
             {null,null,null},
             {"host:",null,null},
-            {"",null,null},
-            {":80",null,"80"},
             {"127.0.0.1:",null,null},
             {"[0::0::0::0::1]:",null,null},
             {"host:xxx",null,null},
@@ -76,16 +76,18 @@ public class HostPortTest
         try
         {
             HostPort hostPort = new HostPort(_authority);
-            assertThat(hostPort.getHost(),is(_expectedHost));
+            assertThat(_authority,hostPort.getHost(),is(_expectedHost));
             
             if (_expectedPort==null)
-                assertThat(hostPort.getPort(),is(0));
+                assertThat(_authority,hostPort.getPort(),is(0));
             else
-                assertThat(hostPort.getPort(),is(Integer.valueOf(_expectedPort)));
+                assertThat(_authority,hostPort.getPort(),is(Integer.valueOf(_expectedPort)));
         }
         catch (Exception e)
         {
-            assertNull(_expectedHost);
+            if (_expectedHost!=null)
+                e.printStackTrace();
+            assertNull(_authority,_expectedHost);
         }
     }
 

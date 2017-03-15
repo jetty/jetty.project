@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,15 +19,18 @@
 package org.eclipse.jetty.cdi.servlet;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.SimpleRequest;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.JettyLogHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -91,25 +94,27 @@ public class WeldInitializationTest
     @Test
     public void testRequestParamServletDefault() throws Exception
     {
-        SimpleRequest req = new SimpleRequest(serverHttpURI);
-        String resp = req.getString("req-info");
-
-        System.out.println(resp);
-
-        assertThat("Response",resp,containsString("request is PRESENT"));
-        assertThat("Response",resp,containsString("parameters.size = [0]"));
+        HttpURLConnection http = (HttpURLConnection) serverHttpURI.resolve("req-info").toURL().openConnection();
+        assertThat("response code", http.getResponseCode(), is(200));
+        try(InputStream inputStream = http.getInputStream())
+        {
+            String resp = IO.toString(inputStream);
+            assertThat("Response", resp, containsString("request is PRESENT"));
+            assertThat("Response", resp, containsString("parameters.size = [0]"));
+        }
     }
 
     @Test
     public void testRequestParamServletAbc() throws Exception
     {
-        SimpleRequest req = new SimpleRequest(serverHttpURI);
-        String resp = req.getString("req-info?abc=123");
-
-        System.out.println(resp);
-
-        assertThat("Response",resp,containsString("request is PRESENT"));
-        assertThat("Response",resp,containsString("parameters.size = [1]"));
-        assertThat("Response",resp,containsString(" param[abc] = [123]"));
+        HttpURLConnection http = (HttpURLConnection) serverHttpURI.resolve("req-info?abc=123").toURL().openConnection();
+        assertThat("response code", http.getResponseCode(), is(200));
+        try(InputStream inputStream = http.getInputStream())
+        {
+            String resp = IO.toString(inputStream);
+            assertThat("Response", resp, containsString("request is PRESENT"));
+            assertThat("Response", resp, containsString("parameters.size = [1]"));
+            assertThat("Response", resp, containsString(" param[abc] = [123]"));
+        }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -542,6 +542,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         StringBuilder resp = new StringBuilder();
         resp.append("HTTP/1.1 101 Upgrade\r\n");
         resp.append("Connection: upgrade\r\n");
+        resp.append("Content-Length: 0\r\n");
         resp.append("Sec-WebSocket-Accept: ");
         resp.append(AcceptHash.hashKey(key)).append("\r\n");
         if (extensionStack.hasNegotiatedExtensions())
@@ -571,7 +572,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
             }
         }
         resp.append("\r\n");
-
+        
         // Write Response
         LOG.debug("Response: {}",resp.toString());
         write(resp.toString().getBytes());

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -129,7 +129,7 @@ public abstract class ScopedHandler extends HandlerWrapper
         }
     }
 
-    /* ------------------------------------------------------------ */
+    /** ------------------------------------------------------------ */
     /*
      */
     @Override
@@ -145,22 +145,23 @@ public abstract class ScopedHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
      * Scope the handler
+     * <p>Derived implementations should call {@link #nextScope(String, Request, HttpServletRequest, HttpServletResponse)}
      */
-    public abstract void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException;
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
+    {
+        nextScope(target,baseRequest,request,response);
+    }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
      * Scope the handler
      */
     public final void nextScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
-        // this method has been manually inlined in several locations, but
-        // is called protected by an if(never()), so your IDE can find those
-        // locations if this code is changed.
         if (_nextScope!=null)
             _nextScope.doScope(target,baseRequest,request, response);
         else if (_outerScope!=null)
@@ -170,8 +171,9 @@ public abstract class ScopedHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
      * Do the handler work within the scope.
+     * <p>Derived implementations should call {@link #nextHandle(String, Request, HttpServletRequest, HttpServletResponse)} 
      */
     public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
@@ -182,19 +184,9 @@ public abstract class ScopedHandler extends HandlerWrapper
      */
     public final void nextHandle(String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // this method has been manually inlined in several locations, but
-        // is called protected by an if(never()), so your IDE can find those
-        // locations if this code is changed.
         if (_nextScope!=null && _nextScope==_handler)
             _nextScope.doHandle(target,baseRequest,request, response);
         else if (_handler!=null)
-            _handler.handle(target,baseRequest, request, response);
+            super.handle(target,baseRequest,request,response);
     }
-
-    /* ------------------------------------------------------------ */
-    protected boolean never()
-    {
-        return false;
-    }
-
 }

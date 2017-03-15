@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
@@ -37,73 +38,125 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.WebSocketConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.util.WSURI;
 
 /**
  * Servlet specific {@link UpgradeRequest} implementation.
  */
-public class ServletUpgradeRequest extends UpgradeRequest
+public class ServletUpgradeRequest implements UpgradeRequest
 {
+    private static final String CANNOT_MODIFY_SERVLET_REQUEST = "Cannot modify Servlet Request";
+    private final URI requestURI;
     private final UpgradeHttpServletRequest request;
+    private final boolean secure;
+    private List<HttpCookie> cookies;
+    private Map<String, List<String>> parameterMap;
+    private List<String> subprotocols;
 
     public ServletUpgradeRequest(HttpServletRequest httpRequest) throws URISyntaxException
     {
-        super(WSURI.toWebsocket(httpRequest.getRequestURL(), httpRequest.getQueryString()));
+        URI servletURI = URI.create(httpRequest.getRequestURL().toString());
+        this.secure = httpRequest.isSecure();
+        String scheme = secure ? "wss" : "ws";
+        String authority = servletURI.getAuthority();
+        String path = servletURI.getPath();
+        String query = httpRequest.getQueryString();
+        String fragment = null;
+        this.requestURI = new URI(scheme,authority,path,query,fragment);
         this.request = new UpgradeHttpServletRequest(httpRequest);
-
-        // Parse protocols.
-        Enumeration<String> requestProtocols = request.getHeaders("Sec-WebSocket-Protocol");
-        if (requestProtocols != null)
-        {
-            List<String> protocols = new ArrayList<>(2);
-            while (requestProtocols.hasMoreElements())
-            {
-                String candidate = requestProtocols.nextElement();
-                Collections.addAll(protocols, parseProtocols(candidate));
-            }
-            setSubProtocols(protocols);
-        }
-
-        // Parse extensions.
-        Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
-        setExtensions(ExtensionConfig.parseEnum(e));
-
-        // Copy cookies.
-        Cookie[] requestCookies = request.getCookies();
-        if (requestCookies != null)
-        {
-            List<HttpCookie> cookies = new ArrayList<>();
-            for (Cookie requestCookie : requestCookies)
-            {
-                HttpCookie cookie = new HttpCookie(requestCookie.getName(), requestCookie.getValue());
-                // No point handling domain/path/expires/secure/httponly on client request cookies
-                cookies.add(cookie);
-            }
-            setCookies(cookies);
-        }
-
-        setHeaders(request.getHeaders());
-
-        // Copy parameters.
-        Map<String, String[]> requestParams = request.getParameterMap();
-        if (requestParams != null)
-        {
-            Map<String, List<String>> params = new HashMap<>(requestParams.size());
-            for (Map.Entry<String, String[]> entry : requestParams.entrySet())
-                params.put(entry.getKey(), Arrays.asList(entry.getValue()));
-            setParameterMap(params);
-        }
-
-        setSession(request.getSession(false));
-
-        setHttpVersion(request.getProtocol());
-        setMethod(request.getMethod());
     }
 
+    @Override
+    public void addExtensions(ExtensionConfig... configs)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void addExtensions(String... configs)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void clearHeaders()
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    public void complete()
+    {
+        request.complete();
+    }
+
+    @SuppressWarnings("unused")
     public X509Certificate[] getCertificates()
     {
         return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
+    }
+
+    @Override
+    public List<HttpCookie> getCookies()
+    {
+        if(cookies == null)
+        {
+            Cookie[] requestCookies = request.getCookies();
+            if (requestCookies != null)
+            {
+                cookies = new ArrayList<>();
+                for (Cookie requestCookie : requestCookies)
+                {
+                    HttpCookie cookie = new HttpCookie(requestCookie.getName(), requestCookie.getValue());
+                    // No point handling domain/path/expires/secure/httponly on client request cookies
+                    cookies.add(cookie);
+                }
+            }
+        }
+        
+        return cookies;
+    }
+
+    @Override
+    public List<ExtensionConfig> getExtensions()
+    {
+        Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
+        return ExtensionConfig.parseEnum(e);
+    }
+
+    @Override
+    public String getHeader(String name)
+    {
+        return request.getHeader(name);
+    }
+
+    @Override
+    public int getHeaderInt(String name)
+    {
+        String val = request.getHeader(name);
+        if (val == null)
+        {
+            return -1;
+        }
+        return Integer.parseInt(val);
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return request.getHeaders();
+    }
+
+    @Override
+    public List<String> getHeaders(String name)
+    {
+        return request.getHeaders().get(name);
+    }
+
+    @Override
+    public String getHost()
+    {
+        return requestURI.getHost();
     }
 
     /**
@@ -119,6 +172,12 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return request;
     }
 
+    @Override
+    public String getHttpVersion()
+    {
+        return request.getProtocol();
+    }
+
     /**
      * Equivalent to {@link HttpServletRequest#getLocalAddr()}
      *
@@ -127,6 +186,26 @@ public class ServletUpgradeRequest extends UpgradeRequest
     public String getLocalAddress()
     {
         return request.getLocalAddr();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocale()}
+     *
+     * @return the preferred <code>Locale</code> for the client
+     */
+    public Locale getLocale()
+    {
+        return request.getLocale();
+    }
+
+    /**
+     * Equivalent to {@link HttpServletRequest#getLocales()}
+     *
+     * @return an Enumeration of preferred Locale objects
+     */
+    public Enumeration<Locale> getLocales()
+    {
+        return request.getLocales();
     }
 
     /**
@@ -161,26 +240,34 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return new InetSocketAddress(getLocalAddress(), getLocalPort());
     }
 
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocale()}
-     *
-     * @return the preferred {@code Locale} for the client
-     */
-    public Locale getLocale()
+    @Override
+    public String getMethod()
     {
-        return request.getLocale();
+        return request.getMethod();
     }
 
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocales()}
-     *
-     * @return an Enumeration of preferred Locale objects
-     */
-    public Enumeration<Locale> getLocales()
+    @Override
+    public String getOrigin()
     {
-        return request.getLocales();
+        return getHeader("Origin");
     }
 
+    @Override
+    public Map<String, List<String>> getParameterMap()
+    {
+        if (parameterMap == null)
+        {
+            Map<String, String[]> requestParams = request.getParameterMap();
+            if (requestParams != null)
+            {
+                parameterMap = new HashMap<>(requestParams.size());
+                for (Map.Entry<String, String[]> entry : requestParams.entrySet())
+                    parameterMap.put(entry.getKey(),Arrays.asList(entry.getValue()));
+            }
+        }
+        return parameterMap;
+    }
+    
     /**
      * @return the principal
      * @deprecated use {@link #getUserPrincipal()} instead
@@ -191,12 +278,21 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return getUserPrincipal();
     }
 
-    /**
-     * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
-     */
-    public Principal getUserPrincipal()
+    @Override
+    public String getProtocolVersion()
     {
-        return request.getUserPrincipal();
+        String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
+        if(version == null)
+        {
+            return Integer.toString(WebSocketConstants.SPEC_VERSION);
+        }
+        return version;
+    }
+    
+    @Override
+    public String getQueryString()
+    {
+        return requestURI.getQuery();
     }
 
     /**
@@ -241,11 +337,32 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return new InetSocketAddress(getRemoteAddress(), getRemotePort());
     }
 
+    public String getRequestPath()
+    {
+        // Since this can be called from a filter, we need to be smart about determining the target request path.
+        String contextPath = request.getContextPath();
+        String requestPath = request.getRequestURI();
+        if (requestPath.startsWith(contextPath))
+            requestPath = requestPath.substring(contextPath.length());
+        return requestPath;
+    }
+
+    @Override
+    public URI getRequestURI()
+    {
+        return requestURI;
+    }
+
+    public Object getServletAttribute(String name)
+    {
+        return request.getAttribute(name);
+    }
+
     public Map<String, Object> getServletAttributes()
     {
         return request.getAttributes();
     }
-
+    
     public Map<String, List<String>> getServletParameters()
     {
         return getParameterMap();
@@ -263,29 +380,61 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return request.getSession(false);
     }
 
-    public void setServletAttribute(String name, Object value)
+    @Override
+    public List<String> getSubProtocols()
     {
-        request.setAttribute(name, value);
+        if (subprotocols == null)
+        {
+            Enumeration<String> requestProtocols = request.getHeaders("Sec-WebSocket-Protocol");
+            if (requestProtocols != null)
+            {
+                subprotocols = new ArrayList<>(2);
+                while (requestProtocols.hasMoreElements())
+                {
+                    String candidate = requestProtocols.nextElement();
+                    Collections.addAll(subprotocols,parseProtocols(candidate));
+                }
+            }
+        }
+        return subprotocols;
     }
 
-    public Object getServletAttribute(String name)
+    /**
+     * Equivalent to {@link HttpServletRequest#getUserPrincipal()}
+     */
+    public Principal getUserPrincipal()
     {
-        return request.getAttribute(name);
+        return request.getUserPrincipal();
+    }
+
+    @Override
+    public boolean hasSubProtocol(String test)
+    {
+        for (String protocol : getSubProtocols())
+        {
+            if (protocol.equalsIgnoreCase(test))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    @Override
+    public boolean isOrigin(String test)
+    {
+        return test.equalsIgnoreCase(getOrigin());
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return this.secure;
     }
 
     public boolean isUserInRole(String role)
     {
         return request.isUserInRole(role);
-    }
-
-    public String getRequestPath()
-    {
-        // Since this can be called from a filter, we need to be smart about determining the target request path.
-        String contextPath = request.getContextPath();
-        String requestPath = request.getRequestURI();
-        if (requestPath.startsWith(contextPath))
-            requestPath = requestPath.substring(contextPath.length());
-        return requestPath;
     }
 
     private String[] parseProtocols(String protocol)
@@ -298,8 +447,74 @@ public class ServletUpgradeRequest extends UpgradeRequest
         return protocol.split("\\s*,\\s*");
     }
 
-    public void complete()
+    @Override
+    public void setCookies(List<HttpCookie> cookies)
     {
-        request.complete();
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setExtensions(List<ExtensionConfig> configs)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setHeader(String name, List<String> values)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setHeader(String name, String value)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setHeaders(Map<String, List<String>> headers)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setHttpVersion(String httpVersion)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setMethod(String method)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setRequestURI(URI uri)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    public void setServletAttribute(String name, Object value)
+    {
+        request.setAttribute(name, value);
+    }
+
+    @Override
+    public void setSession(Object session)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setSubProtocols(List<String> subProtocols)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
+    }
+
+    @Override
+    public void setSubProtocols(String... protocols)
+    {
+        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
     }
 }

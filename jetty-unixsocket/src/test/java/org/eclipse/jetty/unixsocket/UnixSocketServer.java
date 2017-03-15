@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,12 +41,11 @@ public class UnixSocketServer
         UnixSocketConnector connector = new UnixSocketConnector(server,proxy,http);
         server.addConnector(connector);
         
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
-
             @Override
-            protected void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                    throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);

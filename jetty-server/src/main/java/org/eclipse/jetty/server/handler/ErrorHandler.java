@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,8 +27,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import javax.servlet.ServletContext;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -74,6 +74,12 @@ public class ErrorHandler extends AbstractHandler
      */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        doError(target,baseRequest,request,response);
+    }
+    
+    @Override
+    public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String method = request.getMethod();
         if (!HttpMethod.GET.is(method) && !HttpMethod.POST.is(method) && !HttpMethod.HEAD.is(method))
@@ -154,17 +160,20 @@ public class ErrorHandler extends AbstractHandler
         List<String> acceptable=baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT);
         
         if (acceptable.isEmpty() && !baseRequest.getHttpFields().contains(HttpHeader.ACCEPT))
+        {
             generateAcceptableResponse(baseRequest,request,response,code,message,MimeTypes.Type.TEXT_HTML.asString());
+        }
         else
         {
             for (String mimeType:acceptable)
             {
                 generateAcceptableResponse(baseRequest,request,response,code,message,mimeType);
                 if (baseRequest.isHandled())
-                    return;
+                    break;
             }
         }
         baseRequest.setHandled(true);
+        baseRequest.getResponse().closeOutput();
     }
 
     /** 

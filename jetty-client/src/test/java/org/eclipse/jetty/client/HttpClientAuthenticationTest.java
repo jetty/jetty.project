@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -133,6 +133,14 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         startDigest(new EmptyServerHandler());
         URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
         test_Authentication(new DigestAuthentication(uri, realm, "digest", "digest"));
+    }
+
+    @Test
+    public void test_DigestAnyRealm() throws Exception
+    {
+        startDigest(new EmptyServerHandler());
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        test_Authentication(new DigestAuthentication(uri, Authentication.ANY_REALM, "digest", "digest"));
     }
 
     private void test_Authentication(Authentication authentication) throws Exception

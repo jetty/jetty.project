@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,10 @@
 //
 
 package org.eclipse.jetty.websocket.jsr356;
+
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.net.HttpCookie;
 import java.net.URI;
@@ -73,14 +77,15 @@ public class CookiesTest
         final String cookieName = "name";
         final String cookieValue = "value";
         final String cookieString = cookieName + "=" + cookieValue;
+        
         startServer(new EchoHandler()
         {
             @Override
             public Object createWebSocket(ServletUpgradeRequest request, ServletUpgradeResponse response)
             {
                 List<HttpCookie> cookies = request.getCookies();
-                Assert.assertNotNull(cookies);
-                Assert.assertEquals(1, cookies.size());
+                assertThat("Cookies", cookies, notNullValue());
+                assertThat("Cookies", cookies.size(), is(1));
                 HttpCookie cookie = cookies.get(0);
                 Assert.assertEquals(cookieName, cookie.getName());
                 Assert.assertEquals(cookieValue, cookie.getValue());

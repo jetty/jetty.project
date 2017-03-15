@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -104,6 +104,12 @@ jetty.home::
   The property that defines the location of the jetty distribution, its libs, default modules and default XML files (typically start.jar, lib, etc)
 jetty.base::
   The property that defines the location of a specific instance of a jetty server, its configuration, logs and web applications (typically start.ini, start.d, logs and webapps)
+
+____
+[IMPORTANT]
+Your Jetty Home directory should be treated as a standard of truth and remain unmodified or changed.
+Changes or additions to your configuration should take place in the Jetty Base directory.
+____
 
 The `jetty.home` and `jetty.base` properties may be explicitly set on the command line, or they can be inferred from the environment if used with commands like:
 

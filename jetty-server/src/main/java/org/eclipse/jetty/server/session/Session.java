@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -86,12 +86,12 @@ public class Session implements SessionHandler.SessionIf
     protected SessionHandler _handler; //the manager of the session
     protected String _extendedId; //the _id plus the worker name
     protected long _requests;
-    private boolean _idChanged; 
-    private boolean _newSession;
-    private State _state = State.VALID; //state of the session:valid,invalid or being invalidated
-    private Locker _lock = new Locker(); //sync lock
-    private boolean _resident = false;
-    private SessionInactivityTimeout _sessionInactivityTimer = null;
+    protected boolean _idChanged; 
+    protected boolean _newSession;
+    protected State _state = State.VALID; //state of the session:valid,invalid or being invalidated
+    protected Locker _lock = new Locker(); //sync lock
+    protected boolean _resident = false;
+    protected SessionInactivityTimeout _sessionInactivityTimer = null;
     
     
 
@@ -149,7 +149,7 @@ public class Session implements SessionHandler.SessionIf
         @Override
         public void setIdleTimeout(long idleTimeout)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout called: "+idleTimeout);
+            if (LOG.isDebugEnabled()) LOG.debug("setIdleTimeout called: old="+getIdleTimeout()+" new="+idleTimeout);
             super.setIdleTimeout(idleTimeout);
         }
 
@@ -169,6 +169,7 @@ public class Session implements SessionHandler.SessionIf
         _handler = handler;
         _sessionData = data;
         _newSession = true;
+        _sessionData.setDirty(true);
         _requests = 1; //access will not be called on this new session, but we are obviously in a request
     }
     
@@ -230,10 +231,11 @@ public class Session implements SessionHandler.SessionIf
                 return false;
             _newSession=false;
             long lastAccessed = _sessionData.getAccessed();
+            if (_sessionInactivityTimer != null)
+                _sessionInactivityTimer.notIdle();
             _sessionData.setAccessed(time);
             _sessionData.setLastAccessed(lastAccessed);
-            int maxInterval=getMaxInactiveInterval();
-           _sessionData.setExpiry(maxInterval <= 0 ? 0 : (time + maxInterval*1000L));
+           _sessionData.calcAndSetExpiry(time);
             if (isExpiredAt(time))
             {
                 invalidate();
@@ -307,6 +309,7 @@ public class Session implements SessionHandler.SessionIf
 
             if (_handler == null)
                 throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
+            
             _handler.doSessionAttributeListeners(this,name,oldValue,newValue);
         }
     }
@@ -604,8 +607,11 @@ public class Session implements SessionHandler.SessionIf
     {    
         checkLocked();
 
-        if (_state != State.VALID)
+        if (_state == State.INVALID)
             throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
+        
+        if (_state == State.INVALIDATING)
+            return;  //in the process of being invalidated, listeners may try to remove attributes
         
         if (!isResident())
             throw new IllegalStateException("Not valid for write: id="+_sessionData.getId()+" not resident");
@@ -624,6 +630,9 @@ public class Session implements SessionHandler.SessionIf
         
         if (_state == State.INVALID)
             throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" created="+_sessionData.getCreated()+" accessed="+_sessionData.getAccessed()+" lastaccessed="+_sessionData.getLastAccessed()+" maxInactiveMs="+_sessionData.getMaxInactiveMs()+" expiry="+_sessionData.getExpiry());
+        
+        if (_state == State.INVALIDATING)
+            return;
         
         if (!isResident())
             throw new IllegalStateException("Invalid for read: id="+_sessionData.getId()+" not resident");
@@ -810,7 +819,13 @@ public class Session implements SessionHandler.SessionIf
             extendedId = getExtendedId();
         }
         
-        _handler._sessionIdManager.renewSessionId(id, extendedId, request); 
+        String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request); 
+        try (Lock lock = _lock.lockIfNotHeld())
+        {
+            checkValidForWrite(); 
+            _sessionData.setId(newId);
+            setExtendedId(_handler._sessionIdManager.getExtendedId(newId, request));
+        }
         setIdChanged(true);
     }
        
@@ -829,8 +844,50 @@ public class Session implements SessionHandler.SessionIf
         if (_handler == null)
             throw new IllegalStateException ("No session manager for session "+ _sessionData.getId());
 
-        boolean result = false;
+        boolean result = beginInvalidate();
 
+        try
+        {
+            //if the session was not already invalid, or in process of being invalidated, do invalidate
+            if (result)
+            {
+                //tell id mgr to remove session from all contexts
+                _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
+    }
+
+    /* ------------------------------------------------------------- */
+    /** Grab the lock on the session
+     * @return the lock
+     */
+    public Lock lock ()
+    {
+        return _lock.lock();
+    }
+    
+    
+    /* ------------------------------------------------------------- */
+    /** Grab the lock on the session if it isn't locked already
+     * @return the lock
+     */
+    public Lock lockIfNotHeld ()
+    {
+        return _lock.lockIfNotHeld();
+    }
+    
+    /* ------------------------------------------------------------- */
+    /**
+     * @return true if the session is not already invalid or being invalidated.
+     */
+    protected boolean beginInvalidate()
+    {
+        boolean result = false;
+        
         try (Lock lock = _lock.lockIfNotHeld())
         {
             switch (_state)
@@ -852,29 +909,8 @@ public class Session implements SessionHandler.SessionIf
                 }
             }
         }
-
-        try
-        {
-            //if the session was not already invalid, or in process of being invalidated, do invalidate
-            if (result)
-            {
-                //tell id mgr to remove session from all other contexts
-                ((DefaultSessionIdManager)_handler.getSessionIdManager()).invalidateAll(_sessionData.getId());
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn(e);
-        }
-    }
-
-    /* ------------------------------------------------------------- */
-    /** Grab the lock on the session
-     * @return the lock
-     */
-    public Lock lock ()
-    {
-        return _lock.lock();
+        
+        return result;
     }
 
     /* ------------------------------------------------------------- */
@@ -883,7 +919,20 @@ public class Session implements SessionHandler.SessionIf
      * 
      * @throws IllegalStateException
      */
+    @Deprecated 
     protected void doInvalidate() throws IllegalStateException
+    {
+       finishInvalidate();
+    }
+    
+    
+    /* ------------------------------------------------------------- */
+    /** Call HttpSessionAttributeListeners as part of invalidating
+     * a Session.
+     * 
+     * @throws IllegalStateException
+     */
+    protected void finishInvalidate() throws IllegalStateException
     {
         try (Lock lock = _lock.lockIfNotHeld())
         {
@@ -891,10 +940,9 @@ public class Session implements SessionHandler.SessionIf
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("invalidate {}",_sessionData.getId());
-                if (isValid())
+                if (_state == State.VALID || _state == State.INVALIDATING)
                 {
                     Set<String> keys = null;
-
                     do
                     {
                         keys = _sessionData.getKeys();

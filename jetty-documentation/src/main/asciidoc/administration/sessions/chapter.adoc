@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,12 +24,13 @@ If you need a session manager that can work in a clustered scenario with multipl
 Jetty also offers more niche session managers that leverage backends such as MongoDB, Inifinispan, or even Google's Cloud Data Store.
 
 include::session-hierarchy.adoc[]
+include::sessions-details.adoc[]
+include::session-configuration-memory.adoc[]
 include::session-configuration-file-system.adoc[]
 include::session-configuration-jdbc.adoc[]
 include::session-configuration-mongodb.adoc[]
 include::session-configuration-infinispan.adoc[]
 include::session-configuration-gcloud.adoc[]
-include::session-configuration-gcloud-module.adoc[]
 //include::setting-session-characteristics.adoc[]
 //include::using-persistent-sessions.adoc[]
 //include::session-clustering-jdbc.adoc[]

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -94,7 +94,7 @@ public class PropertyUserStoreTest
 
     private File initUsersText() throws Exception
     {
-        Path dir = testdir.getDir().toPath().toRealPath();
+        Path dir = testdir.getPath().toRealPath();
         FS.ensureDirExists(dir.toFile());
         File users = dir.resolve("users.txt").toFile();
         

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -134,6 +134,16 @@ public abstract class AbstractConnection implements Connection
         getEndPoint().fillInterested(_readCallback);
     }
 
+    public void tryFillInterested()
+    {
+        tryFillInterested(_readCallback);
+    }
+
+    public void tryFillInterested(Callback callback)
+    {
+        getEndPoint().tryFillInterested(callback);
+    }
+
     public boolean isFillInterested()
     {
         return getEndPoint().isFillInterested();
@@ -249,12 +259,16 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
-    public String toString()
+    public final String toString()
     {
-        return String.format("%s@%x[%s]",
-                getClass().getSimpleName(),
-                hashCode(),
-                _endPoint);
+        return String.format("%s<-%s",toConnectionString(),getEndPoint());
+    }
+
+    public String toConnectionString()
+    {
+        return String.format("%s@%h",
+            getClass().getSimpleName(),
+            this);
     }
 
     private class ReadCallback implements Callback
@@ -274,7 +288,8 @@ public abstract class AbstractConnection implements Connection
         @Override
         public String toString()
         {
-            return String.format("AC.ReadCB@%x{%s}", AbstractConnection.this.hashCode(),AbstractConnection.this);
+            return String.format("AC.ReadCB@%h{%s}", AbstractConnection.this,AbstractConnection.this);
         }
     }
+
 }

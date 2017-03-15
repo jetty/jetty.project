@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -267,6 +267,51 @@ public class HttpConnectionTest
     }
 
     @Test
+    public void testEmptyNotPersistent() throws Exception
+    {
+        String response=connector.getResponse("GET /R1?empty=true HTTP/1.0\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkNotContained(response,offset,"Content-Length");
+
+        response=connector.getResponse("GET /R1?empty=true HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "Connection: close\r\n"+
+            "\r\n");
+
+        offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"Connection: close");
+        checkNotContained(response,offset,"Content-Length");
+    }
+
+    @Test
+    public void testEmptyPersistent() throws Exception
+    {
+        String response=connector.getResponse("GET /R1?empty=true HTTP/1.0\r\n"+
+            "Host: localhost\r\n"+
+            "Connection: keep-alive\r\n"+
+            "\r\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"Content-Length: 0");
+        checkNotContained(response,offset,"Connection: close");
+
+        response=connector.getResponse("GET /R1?empty=true HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "\r\n");
+
+        offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"Content-Length: 0");
+        checkNotContained(response,offset,"Connection: close");
+    }
+
+    @Test
     public void testEmptyChunk() throws Exception
     {
         String response=connector.getResponse("GET /R1 HTTP/1.1\r\n"+
@@ -281,6 +326,66 @@ public class HttpConnectionTest
         int offset=0;
         offset = checkContains(response,offset,"HTTP/1.1 200");
         checkContains(response,offset,"/R1");
+    }
+
+    @Test
+    public void testChunk() throws Exception
+    {
+        String response=connector.getResponse("GET /R1 HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "Transfer-Encoding: chunked\r\n"+
+                "Content-Type: text/plain\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                "A\r\n" +
+                "0123456789\r\n"+
+                "0\r\n" +
+                "\r\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"/R1");
+        checkContains(response,offset,"0123456789");
+    }
+
+    @Test
+    public void testChunkTrailer() throws Exception
+    {
+        String response=connector.getResponse("GET /R1 HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "Transfer-Encoding: chunked\r\n"+
+                "Content-Type: text/plain\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                "A\r\n" +
+                "0123456789\r\n"+
+                "0\r\n" +
+                "Trailer: ignored\r\n" +
+                "\r\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"/R1");
+        checkContains(response,offset,"0123456789");
+    }
+
+    @Test
+    public void testChunkNoTrailer() throws Exception
+    {
+        String response=connector.getResponse("GET /R1 HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "Transfer-Encoding: chunked\r\n"+
+                "Content-Type: text/plain\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                "A\r\n" +
+                "0123456789\r\n"+
+                "0\r\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"/R1");
+        checkContains(response,offset,"0123456789");
     }
 
     @Test
@@ -537,16 +642,18 @@ public class HttpConnectionTest
             checkContains(response,offset,"12345");
 
             offset=0;
+            Log.getLogger(DumpHandler.class).info("Expecting java.io.UnsupportedEncodingException");
             response=connector.getResponse("GET /R1 HTTP/1.1\r\n"+
-                                           "Host: localhost\r\n"+
-                                           "Transfer-Encoding: chunked\r\n"+
-                                           "Content-Type: text/plain; charset=unknown\r\n"+
-                                           "Connection: close\r\n"+
-                                           "\r\n"+
-                                           "5;\r\n"+
-                                           "12345\r\n"+
-                                           "0;\r\n" +
-                                           "\r\n");
+                "Host: localhost\r\n"+
+                "Transfer-Encoding: chunked\r\n"+
+                "Content-Type: text/plain; charset=unknown\r\n"+
+                "Connection: close\r\n"+
+                "\r\n"+
+                "5;\r\n"+
+                "12345\r\n"+
+                "0;\r\n" +
+                "\r\n");
+
             offset = checkContains(response,offset,"HTTP/1.1 200");
             offset = checkContains(response,offset,"encoding=unknown");
             offset = checkContains(response,offset,"/R1");
@@ -812,10 +919,10 @@ public class HttpConnectionTest
         final CountDownLatch checkError = new CountDownLatch(1);
         String response = null;
         server.stop();
-        server.setHandler(new DumpHandler()
+        server.setHandler(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(),MimeTypes.Type.TEXT_HTML.toString());

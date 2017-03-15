@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,8 +42,7 @@ public class PathFinderTest
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         Path homePath = homeDir.toPath().toAbsolutePath();
-        File baseDir = testdir.getEmptyDir();
-        Path basePath = baseDir.toPath().toAbsolutePath();
+        Path basePath = testdir.getEmptyPathDir();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher("glob:**/*.ini");
@@ -69,8 +68,7 @@ public class PathFinderTest
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         Path homePath = homeDir.toPath().toAbsolutePath();
-        File baseDir = testdir.getEmptyDir();
-        Path basePath = baseDir.toPath().toAbsolutePath();
+        Path basePath = testdir.getEmptyPathDir();
 
         List<String> expected = new ArrayList<>();
         File modulesDir = new File(homeDir,"modules");

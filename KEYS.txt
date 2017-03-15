@@ -1,0 +1,7 @@
+# GPG Release Key Fingerprints
+Jan Bartel      <janb@mortbay.com>          AED5 EE6C 45D0 FE8D 5D1B  164F 27DE D4BF 6216 DB8F
+Jesse McConnell <jesse.mcconnell@gmail.com> 2A68 4B57 436A 81FA 8706  B53C 61C3 351A 438A 3B7D
+Joakim Erdfelt  <joakim.erdfelt@gmail.com>  5989 BAF7 6217 B843 D66B  E55B 2D0E 1FB8 FE4B 68B4
+Joakim Erdfelt  <joakim@apache.org>         B59B 67FD 7904 9843 67F9  3180 0818 D9D6 8FB6 7BAC
+Joakim Erdfelt  <joakim@erdfelt.com>        BFBB 21C2 46D7 7768 3628  7A48 A04E 0C74 ABB3 5FEA
+Simone Bordet   <simone.bordet@gmail.com>   8B09 6546 B1A8 F026 56B1  5D3B 1677 D141 BCF3 584D

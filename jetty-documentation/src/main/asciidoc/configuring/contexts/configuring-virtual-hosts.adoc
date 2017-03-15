@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,11 +63,11 @@ Here's how you would configure the virtual hosts with a link:#deployable-descrip
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/blah</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/blah.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>blah.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>333.444.555.666</Item>
@@ -103,11 +103,11 @@ For `blah` webapp:
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/blah</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/blah.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/blah.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.blah.com</Item>
@@ -129,11 +129,11 @@ For `other` webapp:
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/other</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/other.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/other.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.other.com</Item>
@@ -178,11 +178,11 @@ For foo webapp:
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/foo.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/foo.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.blah.com</Item>
@@ -198,11 +198,11 @@ For bar webapp:
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
-  <Set name="war"><Property name="jetty.webapps"/>/webapps/bar.war</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/bar.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
       <Item>www.other.com</Item>

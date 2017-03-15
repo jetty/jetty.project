@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,7 @@ For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.w
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -52,16 +52,13 @@ For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.w
 </Configure>
 ----
 
-____
-[NOTE]
 Both `SystemProperty` and `Property` elements can be used in the descriptor file.
 For example, if the system property is set to `myapp.home=/opt/myapp`, the previous example can be rewritten as:
-____
 
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -71,6 +68,11 @@ ____
 
 If the home path for an application needs altered, only the system property needs changed.
 This is useful if the version of an app is frequently changed.
+
+____
+[NOTE]
+To ensure your `web.xml` files are validated, you will need to set the `validateXml` attribute to true as described link:#jetty-xml-dtd[here.]
+____
 
 [[configuring-advanced-descriptor-files]]
 ==== Configuring Advanced Descriptor Files
@@ -84,7 +86,7 @@ This can help make it clear that users should not make changes to the temporary 
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -100,7 +102,7 @@ However, since the `web.xml` for the web application is processed after the depl
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -121,7 +123,7 @@ This feature is useful when adding parameters or additional Servlet mappings wit
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -130,13 +132,13 @@ This feature is useful when adding parameters or additional Servlet mappings wit
 </Configure>
 ----
 
-The next example configures not only the web application context, but also a database connection pool (see xref:jndi-datasource-examples[]) that the application can then use. 
+The next example configures not only the web application context, but also a database connection pool (see xref:jndi-datasource-examples[]) that the application can then use.
 If the `web.xml` does not include a reference to this data source, an override descriptor mechanism (as shown in the previous example) can be used to include it.
 
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>

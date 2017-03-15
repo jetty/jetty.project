@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -258,6 +258,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
         if(_defaultConnectionFactory==null)
             throw new IllegalStateException("No protocol factory for default protocol '"+_defaultProtocol+"' in "+this);
+        SslConnectionFactory ssl = getConnectionFactory(SslConnectionFactory.class);
+        if (ssl != null)
+        {
+            String next = ssl.getNextProtocol();
+            ConnectionFactory cf = getConnectionFactory(next);
+            if (cf == null)
+                throw new IllegalStateException("No protocol factory for SSL next protocol: '" + next + "' in " + this);
+        }
 
         super.doStart();
 

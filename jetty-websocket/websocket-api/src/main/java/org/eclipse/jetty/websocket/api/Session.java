@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -175,7 +175,7 @@ public interface Session extends Closeable
     void setIdleTimeout(long ms);
 
     /**
-     * Suspend a the incoming read events on the connection.
+     * Suspend the incoming read events on the connection.
      * 
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */

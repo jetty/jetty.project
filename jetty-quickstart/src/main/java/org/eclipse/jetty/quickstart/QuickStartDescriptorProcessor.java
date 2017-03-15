@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,9 +28,12 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.DefaultsDescriptor;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -44,11 +47,18 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
 {
+    
+    private String _originAttributeName = null;
+    
+    /**
+     * 
+     */
     public QuickStartDescriptorProcessor()
     {
         try
         {
             registerVisitor("context-param", this.getClass().getMethod("visitContextParam", __signature));
+            registerVisitor("servlet-mapping", this.getClass().getMethod("visitServletMapping", __signature));
         }    
         catch (Exception e)
         {
@@ -62,6 +72,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
     @Override
     public void start(WebAppContext context, Descriptor descriptor)
     {
+        _originAttributeName = context.getInitParameter(QuickStartDescriptorGenerator.ORIGIN);
     }
 
     /**
@@ -70,8 +81,50 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
     @Override
     public void end(WebAppContext context, Descriptor descriptor)
     { 
+        _originAttributeName = null;
+    }
+    
+    
+    /**
+     * Process a servlet-mapping element
+     * 
+     * @param context the webapp
+     * @param descriptor the xml file to process
+     * @param node the servlet-mapping element in the xml file to process
+     */
+    public void visitServletMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        String servletName = node.getString("servlet-name", false, true);
+        ServletMapping mapping = null;
+        ServletMapping[] mappings = context.getServletHandler().getServletMappings();
+
+        if (mappings != null)
+        {
+            for (ServletMapping m:mappings)
+            {
+                if (servletName.equals(m.getServletName()))
+                {
+                    mapping = m;
+                    break;
+                }
+            }
+        }
+        
+        if (mapping != null && _originAttributeName != null)
+        {
+            String origin = node.getAttribute(_originAttributeName);
+            if (!StringUtil.isBlank(origin) && origin.startsWith(DefaultsDescriptor.class.getSimpleName()))
+                mapping.setDefault(true);
+        }
     }
 
+    /**
+     * Process a context-param element
+     * @param context  the webapp 
+     * @param descriptor the xml file to process
+     * @param node the context-param node in the xml file
+     * @throws Exception
+     */
     public void visitContextParam (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
             throws Exception
     {
@@ -82,11 +135,16 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         // extract values
         switch(name)
         {
+            case QuickStartDescriptorGenerator.ORIGIN:
+            {
+                //value already contains what we need
+                break;
+            }
             case ServletContext.ORDERED_LIBS:
             case AnnotationConfiguration.CONTAINER_INITIALIZERS:
             case MetaInfConfiguration.METAINF_TLDS:
             case MetaInfConfiguration.METAINF_RESOURCES:
-
+            {
                 context.removeAttribute(name);
                 
                 QuotedStringTokenizer tok = new QuotedStringTokenizer(value,",");
@@ -94,7 +152,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                     values.add(tok.nextToken().trim());
                 
                 break;
-                
+            }
             default:
                 values.add(value);
         }
@@ -103,6 +161,11 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         // handle values
         switch(name)
         {
+            case QuickStartDescriptorGenerator.ORIGIN:
+            {
+                context.setAttribute(QuickStartDescriptorGenerator.ORIGIN, value);
+                break;
+            }
             case ServletContext.ORDERED_LIBS:
             {
                 List<Object> libs = new ArrayList<>();
@@ -137,9 +200,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
                     else
                         throw new IllegalArgumentException("TLD not found: "+r);                    
                 }
-                
-                if (tlds.size()>0)
-                    context.setAttribute(MetaInfConfiguration.METAINF_TLDS,tlds);
+
+                //empty list signals that tlds were prescanned but none found.
+                //a missing METAINF_TLDS attribute means that prescanning was not done.
+                context.setAttribute(MetaInfConfiguration.METAINF_TLDS,tlds);
                 break;
             }
             

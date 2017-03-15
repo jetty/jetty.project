@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,11 +23,5 @@ include::configuring-jetty-logging.adoc[]
 include::default-logging-with-stderrlog.adoc[]
 include::configuring-jetty-request-logs.adoc[]
 include::configuring-logging-modules.adoc[]
-// TODO - Remove following
-// include::example-apache-log4j.adoc[]
-// include::example-java-util-logging.adoc[]
-// include::example-java-util-logging-native.adoc[]
-// include::example-logback.adoc[]
-// include::example-slf4j-multiple-loggers.adoc[]
 include::example-logback-centralized-logging.adoc[]
 include::dump-tool.adoc[]

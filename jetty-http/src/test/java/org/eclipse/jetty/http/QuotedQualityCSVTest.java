@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -50,6 +50,17 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("text/*, text/plain, text/plain;format=flowed, */*");
+        
+        // Note this sort is only on quality and not the most specific type as per 5.3.2
+        Assert.assertThat(values,Matchers.contains("text/*","text/plain","text/plain;format=flowed","*/*"));
+    }
+    
+    @Test
+    public void test7231_5_3_2_example3_most_specific()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV(QuotedQualityCSV.MOST_SPECIFIC);
+        values.addValue("text/*, text/plain, text/plain;format=flowed, */*");
+        
         Assert.assertThat(values,Matchers.contains("text/plain;format=flowed","text/plain","text/*","*/*"));
     }
     
@@ -81,9 +92,9 @@ public class QuotedQualityCSVTest
         Assert.assertThat(values,Matchers.contains(
                 "compress",
                 "gzip",
-                "gzip",
-                "gzip",
                 "*",
+                "gzip",
+                "gzip",
                 "compress",
                 "identity"
                 ));
@@ -217,4 +228,22 @@ public class QuotedQualityCSVTest
         values.addValue("gzip, *");
         assertThat(values, contains("*", "gzip"));
     }
+    
+
+    @Test
+    public void testSameQuality()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV();
+        values.addValue("one;q=0.5,two;q=0.5,three;q=0.5");
+        Assert.assertThat(values.getValues(),Matchers.contains("one","two","three"));
+    }
+
+    @Test
+    public void testNoQuality()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV();
+        values.addValue("one,two;,three;x=y");
+        Assert.assertThat(values.getValues(),Matchers.contains("one","two","three;x=y"));
+    }
+    
 }

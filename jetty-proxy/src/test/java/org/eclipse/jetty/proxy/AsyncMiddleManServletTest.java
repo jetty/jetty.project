@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,6 +63,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -518,49 +519,52 @@ public class AsyncMiddleManServletTest
     @Test
     public void testUpstreamTransformationThrowsAfterCommittingProxyRequest() throws Exception
     {
-        startServer(new EchoHttpServlet());
-        startProxy(new AsyncMiddleManServlet()
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
-            @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            startServer(new EchoHttpServlet());
+            startProxy(new AsyncMiddleManServlet()
             {
-                return new ContentTransformer()
+                @Override
+                protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
                 {
-                    private int count;
-
-                    @Override
-                    public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+                    return new ContentTransformer()
                     {
-                        if (++count < 2)
-                            output.add(input);
-                        else
-                            throw new NullPointerException("explicitly_thrown_by_test");
-                    }
-                };
-            }
-        });
-        startClient();
+                        private int count;
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        DeferredContentProvider content = new DeferredContentProvider();
-        client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(content)
-                .send(new Response.CompleteListener()
+                        @Override
+                        public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+                        {
+                            if (++count < 2)
+                                output.add(input);
+                            else
+                                throw new NullPointerException("explicitly_thrown_by_test");
+                        }
+                    };
+                }
+            });
+            startClient();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            DeferredContentProvider content = new DeferredContentProvider();
+            client.newRequest("localhost", serverConnector.getLocalPort())
+            .content(content)
+            .send(new Response.CompleteListener()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded() && result.getResponse().getStatus() == 502)
-                            latch.countDown();
-                    }
-                });
+                    if (result.isSucceeded() && result.getResponse().getStatus() == 502)
+                        latch.countDown();
+                }
+            });
 
-        content.offer(ByteBuffer.allocate(512));
-        sleep(1000);
-        content.offer(ByteBuffer.allocate(512));
-        content.close();
+            content.offer(ByteBuffer.allocate(512));
+            sleep(1000);
+            content.offer(ByteBuffer.allocate(512));
+            content.close();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @Test
@@ -791,41 +795,44 @@ public class AsyncMiddleManServletTest
     @Test
     public void testClientRequestReadFailsOnSecondRead() throws Exception
     {
-        startServer(new EchoHttpServlet());
-        startProxy(new AsyncMiddleManServlet()
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
-            private int count;
-
-            @Override
-            protected int readClientRequestContent(ServletInputStream input, byte[] buffer) throws IOException
+            startServer(new EchoHttpServlet());
+            startProxy(new AsyncMiddleManServlet()
             {
-                if (++count < 2)
-                    return super.readClientRequestContent(input, buffer);
-                else
-                    throw new IOException("explicitly_thrown_by_test");
-            }
-        });
-        startClient();
+                private int count;
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        DeferredContentProvider content = new DeferredContentProvider();
-        client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(content)
-                .send(new Response.CompleteListener()
+                @Override
+                protected int readClientRequestContent(ServletInputStream input, byte[] buffer) throws IOException
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.getResponse().getStatus() == 502)
-                            latch.countDown();
-                    }
-                });
-        content.offer(ByteBuffer.allocate(512));
-        sleep(1000);
-        content.offer(ByteBuffer.allocate(512));
-        content.close();
+                    if (++count < 2)
+                        return super.readClientRequestContent(input, buffer);
+                    else
+                        throw new IOException("explicitly_thrown_by_test");
+                }
+            });
+            startClient();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            final CountDownLatch latch = new CountDownLatch(1);
+            DeferredContentProvider content = new DeferredContentProvider();
+            client.newRequest("localhost", serverConnector.getLocalPort())
+            .content(content)
+            .send(new Response.CompleteListener()
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    if (result.getResponse().getStatus() == 502)
+                        latch.countDown();
+                }
+            });
+            content.offer(ByteBuffer.allocate(512));
+            sleep(1000);
+            content.offer(ByteBuffer.allocate(512));
+            content.close();
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @Test

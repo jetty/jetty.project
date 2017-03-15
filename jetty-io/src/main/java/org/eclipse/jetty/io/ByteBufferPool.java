@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,13 +19,11 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -128,8 +126,7 @@ public interface ByteBufferPool
 
     class Bucket
     {
-        private final Lock _lock = new ReentrantLock();
-        private final Queue<ByteBuffer> _queue = new ArrayDeque<>();
+        private final Deque<ByteBuffer> _queue = new ConcurrentLinkedDeque<>();
         private final ByteBufferPool _pool;
         private final int _capacity;
         private final AtomicInteger _space;
@@ -181,72 +178,27 @@ public interface ByteBufferPool
 
         private void queueOffer(ByteBuffer buffer)
         {
-            Lock lock = _lock;
-            lock.lock();
-            try
-            {
-                _queue.offer(buffer);
-            }
-            finally
-            {
-                lock.unlock();
-            }
+            _queue.offerFirst(buffer);
         }
 
         private ByteBuffer queuePoll()
         {
-            Lock lock = _lock;
-            lock.lock();
-            try
-            {
-                return _queue.poll();
-            }
-            finally
-            {
-                lock.unlock();
-            }
+            return _queue.poll();
         }
 
         private void queueClear()
         {
-            Lock lock = _lock;
-            lock.lock();
-            try
-            {
-                _queue.clear();
-            }
-            finally
-            {
-                lock.unlock();
-            }
+            _queue.clear();
         }
 
         boolean isEmpty()
         {
-            Lock lock = _lock;
-            lock.lock();
-            try
-            {
-                return _queue.isEmpty();
-            }
-            finally
-            {
-                lock.unlock();
-            }
+            return _queue.isEmpty();
         }
 
         int size()
         {
-            Lock lock = _lock;
-            lock.lock();
-            try
-            {
-                return _queue.size();
-            }
-            finally
-            {
-                lock.unlock();
-            }
+            return _queue.size();
         }
 
         @Override

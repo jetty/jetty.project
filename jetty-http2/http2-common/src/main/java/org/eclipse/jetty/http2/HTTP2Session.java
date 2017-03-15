@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -310,7 +310,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.HEADER_TABLE_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update HPACK header table size to {}", value);
+                        LOG.debug("Update HPACK header table size to {} for {}", value, this);
                     generator.setHeaderTableSize(value);
                     break;
                 }
@@ -323,26 +323,28 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         return;
                     }
                     pushEnabled = value == 1;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} push for {}", pushEnabled ? "Enable" : "Disable", this);
                     break;
                 }
                 case SettingsFrame.MAX_CONCURRENT_STREAMS:
                 {
                     maxLocalStreams = value;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update max local concurrent streams to {}", maxLocalStreams);
+                        LOG.debug("Update max local concurrent streams to {} for {}", maxLocalStreams, this);
                     break;
                 }
                 case SettingsFrame.INITIAL_WINDOW_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update initial window size to {}", value);
+                        LOG.debug("Update initial window size to {} for {}", value, this);
                     flowControl.updateInitialStreamWindow(this, value, false);
                     break;
                 }
                 case SettingsFrame.MAX_FRAME_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update max frame size to {}", value);
+                        LOG.debug("Update max frame size to {} for {}", value, this);
                     // SPEC: check the max frame size is sane.
                     if (value < Frame.DEFAULT_MAX_LENGTH || value > Frame.MAX_MAX_LENGTH)
                     {
@@ -355,14 +357,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Update max header list size to {}", value);
+                        LOG.debug("Update max header list size to {} for {}", value, this);
                     generator.setMaxHeaderListSize(value);
                     break;
                 }
                 default:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Unknown setting {}:{}", key, value);
+                        LOG.debug("Unknown setting {}:{} for {}", key, value, this);
                     break;
                 }
             }
@@ -965,7 +967,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         endPoint.close();
     }
 
-    private void terminate()
+    private void terminate(Throwable cause)
     {
         while (true)
         {
@@ -978,7 +980,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 {
                     if (closed.compareAndSet(current, CloseState.CLOSED))
                     {
-                        flusher.terminate();
+                        flusher.terminate(cause);
                         for (IStream stream : streams.values())
                             stream.close();
                         streams.clear();
@@ -998,7 +1000,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     protected void abort(Throwable failure)
     {
         notifyFailure(this, failure);
-        terminate();
+        terminate(failure);
     }
 
     public boolean isDisconnected()
@@ -1090,6 +1092,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         try
         {
             listener.onFailure(session, failure);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
+    protected void notifyHeaders(IStream stream, HeadersFrame frame)
+    {
+        Stream.Listener listener = stream.getListener();
+        if (listener == null)
+            return;
+        try
+        {
+            listener.onHeaders(stream, frame);
         }
         catch (Throwable x)
         {
@@ -1206,7 +1223,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
                 case DISCONNECT:
                 {
-                    terminate();
+                    terminate(new ClosedChannelException());
                     break;
                 }
                 default:

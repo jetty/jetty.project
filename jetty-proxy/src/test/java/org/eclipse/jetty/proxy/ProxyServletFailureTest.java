@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -44,15 +42,14 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -68,7 +65,7 @@ public class ProxyServletFailureTest
 {
     private static final String PROXIED_HEADER = "X-Proxied";
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data()
     {
         return Arrays.asList(new Object[][]{
@@ -93,7 +90,7 @@ public class ProxyServletFailureTest
 
     private void prepareProxy() throws Exception
     {
-        prepareProxy(new HashMap<String, String>());
+        prepareProxy(new HashMap<>());
     }
 
     private void prepareProxy(Map<String, String> initParams) throws Exception
@@ -206,14 +203,13 @@ public class ProxyServletFailureTest
             // Do not send the promised content, wait to idle timeout.
 
             socket.setSoTimeout(2 * idleTimeout);
-            SimpleHttpParser parser = new SimpleHttpParser();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-            SimpleHttpResponse response = parser.readResponse(reader);
-            Assert.assertTrue(Integer.parseInt(response.getCode()) >= 500);
-            String connectionHeader = response.getHeaders().get("connection");
+    
+            HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
+            Assert.assertTrue(response.getStatus() >= 500);
+            String connectionHeader = response.get("connection");
             Assert.assertNotNull(connectionHeader);
             Assert.assertTrue(connectionHeader.contains("close"));
-            Assert.assertEquals(-1, reader.read());
+            Assert.assertEquals(-1, socket.getInputStream().read());
         }
     }
 
@@ -242,14 +238,13 @@ public class ProxyServletFailureTest
             // Do not send all the promised content, wait to idle timeout.
 
             socket.setSoTimeout(2 * idleTimeout);
-            SimpleHttpParser parser = new SimpleHttpParser();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-            SimpleHttpResponse response = parser.readResponse(reader);
-            Assert.assertTrue(Integer.parseInt(response.getCode()) >= 500);
-            String connectionHeader = response.getHeaders().get("connection");
+            
+            HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
+            Assert.assertTrue(response.getStatus() >= 500);
+            String connectionHeader = response.get("connection");
             Assert.assertNotNull(connectionHeader);
             Assert.assertTrue(connectionHeader.contains("close"));
-            Assert.assertEquals(-1, reader.read());
+            Assert.assertEquals(-1, socket.getInputStream().read());
         }
     }
 
@@ -257,8 +252,11 @@ public class ProxyServletFailureTest
     public void testProxyRequestStallsContentServerIdlesTimeout() throws Exception
     {
         final byte[] content = new byte[]{'C', '0', 'F', 'F', 'E', 'E'};
+        int expected;
         if (proxyServlet instanceof AsyncProxyServlet)
         {
+            // TODO should this be a 502 also???
+            expected = 500;
             proxyServlet = new AsyncProxyServlet()
             {
                 @Override
@@ -281,6 +279,7 @@ public class ProxyServletFailureTest
         }
         else
         {
+            expected = 502;
             proxyServlet = new ProxyServlet()
             {
                 @Override
@@ -304,13 +303,13 @@ public class ProxyServletFailureTest
         long idleTimeout = 1000;
         serverConnector.setIdleTimeout(idleTimeout);
         
-        try(StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try(StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                     .content(new BytesContentProvider(content))
                     .send();
 
-            Assert.assertEquals(500, response.getStatus());
+            Assert.assertEquals(expected, response.getStatus());
         }
     }
 
@@ -393,7 +392,7 @@ public class ProxyServletFailureTest
     @Test
     public void testServerException() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(ServletHandler.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             prepareProxy();
             prepareServer(new HttpServlet()

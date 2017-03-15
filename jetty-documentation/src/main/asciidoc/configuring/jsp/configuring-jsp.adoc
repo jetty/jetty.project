@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,13 +22,13 @@ This document provides information about configuring Java Server Pages (JSP) for
 [[which-jsp-implementation]]
 ==== Which JSP Implementation
 
-As of Jetty 9.2, Jetty is using Jasper from http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache] as the default JSP container implementation.
+Jetty uses Jasper from http://tomcat.apache.org/tomcat-8.0-doc/jasper-howto.html[Apache] as the default JSP container implementation.
 
-By default the Jetty distribution enables the JSP link:#startup-modules[module], and by default, this link:#startup-modules[module] is set to Apache Jasper.
+By default the Jetty distribution enables the JSP link:#startup-modules[module], and by default, this module is set to Apache Jasper.
 
 [source, plain, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-distribution/src/main/resources/modules/jsp.mod[]
+include::{SRCDIR}/jetty-home/src/main/resources/modules/jsp.mod[]
 ----
 
 Note that the availability of some JSP features may depend on which JSP container implementation you are using.
@@ -213,7 +213,7 @@ If you are using the Jetty distribution, and you want to change the JSP settings
 If you want to change the JSP settings for all webapps, edit the `{$jetty.home}/etc/webdefaults.xml` file directly instead.
 
 [[configuring-jsp-servlet-in-web.xml]]
-===== Configuring the JSP Servlet in `web.xml`
+===== Configuring the JSP Servlet in web.xml
 
 Another option is to add an entry for the JSPServlet to the `WEB-INF/web.xml` file of your webapp and change or add init-params.
 You may also add (but not remove) servlet-mappings.
@@ -259,11 +259,25 @@ You can use the entry in link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] 
       ...
 ----
 
+[[jsp-async-support]]
+===== Configuring Async Support
+
+By default, Jetty does not enable async support for the JSP servlet.
+Configuring the JSP servlet for async is relatively easy - simply define the `async-supported` parameter as `true` in either your `webdefault.xml` or the `web.xml` for a specific context.
+
+[source, xml, subs="{sub-order}"]
+----
+<servlet id="jsp">
+  <servlet-name>jsp</servlet-name>
+  <async-supported>true</async-supported>
+</servlet>
+----
+
 [[using-jstl-taglibs-for-jetty7-jetty8]]
 ==== Using JSTL Taglibs
 
 The JavaServer Pages Standlard Tag Library (JSTL) is part of the Jetty distribution and is automatically put on the classpath when you link:#which-jsp-implementation[select your flavour of JSP].
-It is also automatically on the classpath for the Jetty Maven plugin, which uses the Apache JSP engine as of Jetty 9.2.
+It is also automatically on the classpath for the Jetty Maven plugin, which uses the Apache JSP engine.
 
 ===== Embedding
 

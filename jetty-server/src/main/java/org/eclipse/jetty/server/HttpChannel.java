@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server;
 
+import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -32,12 +35,14 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -48,9 +53,6 @@ import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
-
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 
 /**
@@ -345,7 +347,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         if (_response.isCommitted())
                         {
-                            LOG.warn("Error Dispatch already committed");
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Could not perform Error Dispatch because the response is already committed, aborting");
                             _transport.abort((Throwable)_request.getAttribute(ERROR_EXCEPTION));
                         }
                         else
@@ -359,7 +362,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 _request.setAttribute(ERROR_STATUS_CODE,code);
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
-                            
+
                             try
                             {
                                 _request.setDispatcherType(DispatcherType.ERROR);
@@ -401,11 +404,30 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case COMPLETE:
                     {
                         if (!_response.isCommitted() && !_request.isHandled())
+                        {
                             _response.sendError(HttpStatus.NOT_FOUND_404);
+                        }
+                        else
+                        {
+                            // RFC 7230, section 3.3.
+                            int status = _response.getStatus();
+                            boolean hasContent = !(_request.isHead() ||
+                                    HttpMethod.CONNECT.is(_request.getMethod()) && status == HttpStatus.OK_200 ||
+                                    HttpStatus.isInformational(status) ||
+                                    status == HttpStatus.NO_CONTENT_204 ||
+                                    status == HttpStatus.NOT_MODIFIED_304);
+                            if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                            {
+                                if (isCommitted())
+                                    _transport.abort(new IOException("insufficient content written"));
+                                else
+                                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500,"insufficient content written");
+                            }
+                        }
                         _response.closeOutput();
                         _request.setHandled(true);
 
-                         _state.onComplete();
+                        _state.onComplete();
 
                         onCompleted();
 
@@ -419,7 +441,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 }
             }
             catch (Throwable failure)
-            {               
+            {
                 if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
                     LOG.ignore(failure);
                 else
@@ -468,7 +490,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (failure instanceof RuntimeIOException)
             failure = failure.getCause();
 
-        if (failure instanceof QuietServletException || !getServer().isRunning())
+        if (failure instanceof QuietException || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
@@ -552,21 +574,35 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _oldIdleTimeout=getIdleTimeout();
         if (idleTO>=0 && _oldIdleTimeout!=idleTO)
             setIdleTimeout(idleTO);
-        
+
         _request.setMetaData(request);
 
         if (LOG.isDebugEnabled())
             LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}",request.getURIString(),this,System.lineSeparator(),
-                request.getMethod(),request.getURIString(),request.getVersion(),System.lineSeparator(),
-                request.getFields());
+                    request.getMethod(),request.getURIString(),request.getHttpVersion(),System.lineSeparator(),
+                    request.getFields());
     }
 
     public boolean onContent(HttpInput.Content content)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} content {}", this, content);
+            LOG.debug("{} onContent {}", this, content);
 
         return _request.getHttpInput().addContent(content);
+    }
+
+    public boolean onContentComplete()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onContentComplete", this);
+        return false;
+    }
+
+    public void onTrailers(HttpFields trailers)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onTrailers {}", this, trailers);
+        _request.setTrailers(trailers);
     }
 
     public boolean onRequestComplete()
@@ -580,14 +616,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("COMPLETE for {} written={}",getRequest().getRequestURI(),getBytesWritten());
-        
+
         if (_requestLog!=null )
             _requestLog.log(_request, _response);
 
         long idleTO=_configuration.getIdleTimeout();
         if (idleTO>=0 && getIdleTimeout()!=_oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
-        
+
         _transport.onCompleted();
     }
 
@@ -604,7 +640,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         Action action;
         try
         {
-           action=_state.handling();
+            action=_state.handling();
         }
         catch(IllegalStateException e)
         {
@@ -649,12 +685,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (LOG.isDebugEnabled())
             LOG.debug("sendResponse info={} content={} complete={} committing={} callback={}",
-                info,
-                BufferUtil.toDetailString(content),
-                complete,
-                committing,
-                callback);
-        
+                    info,
+                    BufferUtil.toDetailString(content),
+                    complete,
+                    committing,
+                    callback);
+
         if (committing)
         {
             // We need an info to commit
@@ -703,8 +739,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committedMetaData=info;
         if (LOG.isDebugEnabled())
             LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}",getRequest().getRequestURI(),this,System.lineSeparator(),
-                info.getStatus(),info.getReason(),info.getVersion(),System.lineSeparator(),
-                info.getFields());
+                    info.getStatus(),info.getReason(),info.getHttpVersion(),System.lineSeparator(),
+                    info.getFields());
     }
 
     public boolean isCommitted()
@@ -725,8 +761,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
     }
-    
-    @Override 
+
+    @Override
     public void resetBuffer()
     {
         if(isCommitted())

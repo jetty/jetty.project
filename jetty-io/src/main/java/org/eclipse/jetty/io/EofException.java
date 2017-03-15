@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ import java.io.EOFException;
  * the connection, vs and EOF thrown by some application talking to some other file/socket etc.
  * The only difference in handling is that Jetty EOFs are logged less verbosely.
  */
-public class EofException extends EOFException
+public class EofException extends EOFException implements QuietException
 {
     public EofException()
     {

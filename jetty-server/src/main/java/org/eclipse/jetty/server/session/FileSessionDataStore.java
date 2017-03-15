@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -128,14 +128,21 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             {
                 if (dir != _storeDir)
                     return false;
-                
-                String s = name.substring(0, name.indexOf('_'));
-                long expiry = (s==null?0:Long.parseLong(s));
-                    
-                if (expiry > 0 && expiry < now)
-                    return true;
-                else
+
+                //dir may contain files that don't match our naming pattern
+                int index = name.indexOf('_');
+                if (index < 0)
                     return false;
+
+                try
+                {
+                    long expiry = Long.parseLong(name.substring(0, index));
+                    return expiry > 0 && expiry < now;
+                }
+                catch (NumberFormatException e)
+                {
+                    return false;
+                }
             }
         });
         
@@ -453,6 +460,15 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             }
             data.putAllAttributes(attributes);
         }
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[dir=%s,deleteUnrestorableFiles=%b]",super.toString(),_storeDir,_deleteUnrestorableFiles);
     }
 
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,9 @@ package org.eclipse.jetty.server;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,18 +32,19 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
-@RunWith(value = Parameterized.class)
+@RunWith(Parameterized.class)
 public class HttpManyWaysToCommitTest extends AbstractHttpTest
 {
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data()
     {
         Object[][] data = new Object[][]{{HttpVersion.HTTP_1_0.asString()}, {HttpVersion.HTTP_1_1.asString()}};
@@ -58,10 +61,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     {
         server.setHandler(new DoesNotSetHandledHandler(false));
         server.start();
+    
+        HttpTester.Response response = executeRequest();
 
-        SimpleHttpResponse response = executeRequest();
-
-        assertThat("response code is 404", response.getCode(), is("404"));
+        assertThat("response code", response.getStatus(), is(404));
     }
 
     @Test
@@ -69,10 +72,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
     {
         server.setHandler(new DoesNotSetHandledHandler(true));
         server.start();
+    
+        HttpTester.Response response = executeRequest();
 
-        SimpleHttpResponse response = executeRequest();
-
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code", response.getStatus(), is(500));
     }
 
     private class DoesNotSetHandledHandler extends ThrowExceptionOnDemandHandler
@@ -83,10 +86,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(false); // not needed, but lets be explicit about what the test does
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -96,10 +99,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new OnlySetHandledHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertHeader(response, "content-length", "0");
+        assertThat("response code", response.getStatus(), is(200));
+        if (HttpVersion.HTTP_1_1.asString().equals(httpVersion))
+            assertHeader(response, "content-length", "0");
     }
 
     @Test
@@ -108,9 +112,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new OnlySetHandledHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code", response.getStatus(), is(500));
     }
 
     private class OnlySetHandledHandler extends ThrowExceptionOnDemandHandler
@@ -121,10 +125,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -134,9 +138,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetHandledWriteSomeDataHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobar");
         assertHeader(response, "content-length", "6");
     }
@@ -147,10 +151,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetHandledWriteSomeDataHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
-        assertThat("response body is not foobar", response.getBody(), not(is("foobar")));
+        assertThat("response code", response.getStatus(), is(500));
+        assertThat("response body", response.getContent(), not(is("foobar")));
     }
 
     private class SetHandledWriteSomeDataHandler extends ThrowExceptionOnDemandHandler
@@ -161,11 +165,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -175,9 +179,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new ExplicitFlushHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -189,11 +193,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new ExplicitFlushHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Since the 200 was committed, the 500 did not get the chance to be written
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foobar", response.getBody(), is("foobar"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foobar"));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -206,12 +210,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foobar");
             response.flushBuffer();
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -221,9 +225,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetHandledAndFlushWithoutContentHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -234,9 +238,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetHandledAndFlushWithoutContentHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -249,11 +253,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.flushBuffer();
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -263,9 +267,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new WriteFlushWriteMoreHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -277,11 +281,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new WriteFlushWriteMoreHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Since the 200 was committed, the 500 did not get the chance to be written
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
     }
@@ -294,13 +297,13 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foo");
             response.flushBuffer();
             response.getWriter().write("bar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -310,9 +313,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new OverflowHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -324,9 +327,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new Overflow2Handler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobarfoobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -338,9 +341,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new Overflow3Handler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobarfoobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -352,10 +355,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new OverflowHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Response was committed when we throw, so 200 expected
-        assertThat("response code is 200", response.getCode(), is("200"));
+        assertThat("response code", response.getStatus(), is(200));
         assertResponseBody(response, "foobar");
         if (!"HTTP/1.0".equals(httpVersion))
             assertHeader(response, "transfer-encoding", "chunked");
@@ -369,12 +372,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setBufferSize(4);
             response.getWriter().write("foobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -386,13 +389,13 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setBufferSize(8);
             response.getWriter().write("fo");
             response.getWriter().write("obarfoobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
     
@@ -404,7 +407,7 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setBufferSize(8);
@@ -414,20 +417,58 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
             response.getWriter().write("fo");
             response.getWriter().write("ob");
             response.getWriter().write("ar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
+    @Test
+    public void testSetContentLengthFlushAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
+        server.start();
+        
+        HttpTester.Response response = executeRequest();
+        System.out.println(response.toString());
+        assertThat("response code", response.getStatus(), is(200));
+        assertHeader(response, "content-length", "6");
+        byte content[] = response.getContentBytes();
+        assertThat("content bytes", content.length, is(0));
+        assertTrue("response eof", response.isEarlyEOF());
+    }
+
+    @Test
+    public void testSetContentLengthAndWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(false));
+        server.start();
+
+        HttpTester.Response response = executeRequest();
+        assertThat("response is error", response.getStatus(), is(500));
+        assertFalse("response not eof", response.isEarlyEOF());
+    }
+
+    @Test
+    public void testSetContentLengthAndFlushWriteInsufficientBytes() throws Exception
+    {
+        server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
+        server.start();
+
+        HttpTester.Response response = executeRequest();
+        assertThat("response has no status", response.getStatus(), is(200));
+        assertTrue("response eof", response.isEarlyEOF());
+    }
+    
+    
     @Test
     public void testSetContentLengthAndWriteExactlyThatAmountOfBytes() throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
         assertHeader(response, "content-length", "3");
     }
 
@@ -437,13 +478,32 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetContentLengthAndWriteThatAmountOfBytesHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Setting the content-length and then writing the bytes commits the response
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
     }
 
+    private class SetContentLengthAndWriteInsufficientBytesHandler extends AbstractHandler
+    {
+        boolean flush;
+        private SetContentLengthAndWriteInsufficientBytesHandler(boolean flush)
+        {
+            this.flush = flush;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentLength(6);
+            if (flush)
+                response.flushBuffer();
+            response.getWriter().write("foo");
+        }
+    }
+    
     private class SetContentLengthAndWriteThatAmountOfBytesHandler extends ThrowExceptionOnDemandHandler
     {
         private SetContentLengthAndWriteThatAmountOfBytesHandler(boolean throwException)
@@ -452,12 +512,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setContentLength(3);
             response.getWriter().write("foo");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -467,10 +527,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
         assertHeader(response, "content-length", "3");
     }
 
@@ -480,11 +540,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new SetContentLengthAndWriteMoreBytesHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Setting the content-length and then writing the bytes commits the response
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
     }
 
     private class SetContentLengthAndWriteMoreBytesHandler extends ThrowExceptionOnDemandHandler
@@ -495,13 +555,13 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setContentLength(3);
             // Only "foo" will get written and "bar" will be discarded
             response.getWriter().write("foobar");
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -511,10 +571,10 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new WriteAndSetContentLengthHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
         assertHeader(response, "content-length", "3");
     }
 
@@ -524,11 +584,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new WriteAndSetContentLengthHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Writing the bytes and then setting the content-length commits the response
-        assertThat("response code is 200", response.getCode(), is("200"));
-        assertThat("response body is foo", response.getBody(), is("foo"));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
     }
 
     private class WriteAndSetContentLengthHandler extends ThrowExceptionOnDemandHandler
@@ -539,12 +599,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foo");
             response.setContentLength(3);
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 
@@ -554,11 +614,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new WriteAndSetContentLengthTooSmallHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Setting a content-length too small throws an IllegalStateException
-        assertThat("response code is 500", response.getCode(), is("500"));
-        assertThat("response body is not foo", response.getBody(), not(is("foo")));
+        assertThat("response code", response.getStatus(), is(500));
+        assertThat("response body", response.getContent(), not(is("foo")));
     }
 
     @Test
@@ -567,11 +627,11 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.setHandler(new WriteAndSetContentLengthTooSmallHandler(true));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
         // Setting a content-length too small throws an IllegalStateException
-        assertThat("response code is 500", response.getCode(), is("500"));
-        assertThat("response body is not foo", response.getBody(), not(is("foo")));
+        assertThat("response code", response.getStatus(), is(500));
+        assertThat("response body", response.getContent(), not(is("foo")));
     }
 
     private class WriteAndSetContentLengthTooSmallHandler extends ThrowExceptionOnDemandHandler
@@ -582,12 +642,12 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.getWriter().write("foobar");
             response.setContentLength(3);
-            super.doHandle(target, baseRequest, request, response);
+            super.doNonErrorHandle(target, baseRequest, request, response);
         }
     }
 }

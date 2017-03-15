@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -94,7 +94,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (BufferUtil.hasContent(buffer))
         {
             ByteBuffer upgradeBuffer = ByteBuffer.allocate(buffer.remaining());
-            upgradeBuffer.put(buffer);
+            upgradeBuffer.put(buffer).flip();
             return upgradeBuffer;
         }
         return null;
@@ -271,6 +271,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return !proceed || async;
     }
 
+    @Override
+    public boolean contentComplete()
+    {
+        return false;
+    }
+    
     @Override
     public boolean messageComplete()
     {

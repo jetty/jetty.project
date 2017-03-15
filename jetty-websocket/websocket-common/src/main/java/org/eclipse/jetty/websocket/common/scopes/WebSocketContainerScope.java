@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,7 +65,14 @@ public interface WebSocketContainerScope
      * @return the SslContextFactory in use by the container (can be null if no SSL context is defined)
      */
     SslContextFactory getSslContextFactory();
-
+    
+    /**
+     * Test for if the container has been started.
+     *
+     * @return true if container is started and running
+     */
+    boolean isRunning();
+    
     /**
      * A Session has been opened
      * 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
@@ -130,7 +130,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             String reason = frame.tryConvertPayload();
             if (reason != null && !reason.isEmpty())
                 reason = " (" + reason + ")";
-            getConnection().onSessionFailure(new IOException("HTTP/2 " + error + reason));
+            getConnection().onSessionFailure(new EofException("HTTP/2 " + error + reason));
         }
 
         @Override
@@ -142,8 +142,10 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
-            // Servers do not receive responses.
-            close(stream, "response_headers");
+            if (frame.isEndStream())
+                getConnection().onTrailers((IStream)stream, frame);
+            else
+                close(stream, "invalid_trailers");
         }
 
         @Override
@@ -166,7 +168,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             ErrorCode error = ErrorCode.from(frame.getError());
             if (error == null)
                 error = ErrorCode.CANCEL_STREAM_ERROR;
-            getConnection().onStreamFailure((IStream)stream, new IOException("HTTP/2 " + error));
+            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error));
         }
 
         @Override

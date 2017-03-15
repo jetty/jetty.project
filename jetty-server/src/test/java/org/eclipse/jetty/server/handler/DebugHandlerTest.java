@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -50,7 +50,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.After;
@@ -155,8 +154,8 @@ public class DebugHandlerTest
     @Test
     public void testThreadName() throws IOException
     {
-        SimpleRequest req = new SimpleRequest(serverURI);
-        req.getString("/foo/bar?a=b");
+        HttpURLConnection http = (HttpURLConnection) serverURI.resolve("/foo/bar?a=b").toURL().openConnection();
+        assertThat("Response Code", http.getResponseCode(), is(200));
         
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
         String expectedThreadName = String.format("//%s:%s/foo/bar?a=b",serverURI.getHost(),serverURI.getPort());
@@ -169,8 +168,8 @@ public class DebugHandlerTest
     @Test
     public void testSecureThreadName() throws IOException
     {
-        SimpleRequest req = new SimpleRequest(secureServerURI);
-        req.getString("/foo/bar?a=b");
+        HttpURLConnection http = (HttpURLConnection) secureServerURI.resolve("/foo/bar?a=b").toURL().openConnection();
+        assertThat("Response Code", http.getResponseCode(), is(200));
         
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
         String expectedThreadName = String.format("https://%s:%s/foo/bar?a=b",secureServerURI.getHost(),secureServerURI.getPort());

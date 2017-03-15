@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,10 +26,11 @@ $ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
 
 $ java -jar ../start.jar --add-to-start=session-store-jdbc
-INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
-INFO : session-store-jdbc initialised in ${jetty.base}/start.d/session-store-jdbc.ini
-INFO : Base directory was modified
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : sessions/jdbc/datasource dynamic dependency of session-store-jdbc
+INFO  : session-store-jdbc initialized in ${jetty.base}/start.d/session-store-jdbc.ini
+INFO  : Base directory was modified
 ----
 
 Doing this enables the JDBC Session module and any dependent modules or files needed for it to run on the server.

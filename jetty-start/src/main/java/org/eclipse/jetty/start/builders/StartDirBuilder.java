@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,7 @@ import org.eclipse.jetty.start.BaseBuilder;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Module;
+import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartLog;
 
 /**
@@ -46,11 +47,12 @@ public class StartDirBuilder implements BaseBuilder.Config
     {
         this.baseHome = baseBuilder.getBaseHome();
         this.startDir = baseHome.getBasePath("start.d");
-        FS.ensureDirectoryExists(startDir);
+        if (FS.ensureDirectoryExists(startDir))
+            StartLog.log("MKDIR",baseHome.toShortForm(startDir));
     }
 
     @Override
-    public String addModule(Module module) throws IOException
+    public String addModule(Module module, Props props) throws IOException
     {
         if (module.isDynamic())
         {
@@ -68,7 +70,7 @@ public class StartDirBuilder implements BaseBuilder.Config
             Path ini = startDir.resolve(module.getName() + ".ini");
             try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
             {
-                module.writeIniSection(writer);
+                module.writeIniSection(writer,props);
             }
             return baseHome.toShortForm(ini);
         }

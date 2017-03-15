@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -131,8 +131,8 @@ Jetty attempts to gently close all TCP/IP connections with proper half close sem
 [[jetty-connectors-http-configuration]]
 ==== HTTP Configuration
 
-The link:{JDURL}/org/eclipse/jetty/server/HttpConfiguration.html[HttpConfiguration] class holds the configuration for link:{JDURL}/org/eclipse/jetty/server/HttpChannel.html[`HTTPChannel`]s, which you can create 1:1 with each HTTP connection or 1:n on a multiplexed HTTP/2 connection.
-Thus a `HTTPConfiguration` object is injected into both the HTTP and HTTP/2 connection factories.
+The link:{JDURL}/org/eclipse/jetty/server/HttpConfiguration.html[`HttpConfiguration`] class holds the configuration for link:{JDURL}/org/eclipse/jetty/server/HttpChannel.html[`HttpChannel`]s, which you can create 1:1 with each HTTP connection or 1:n on a multiplexed HTTP/2 connection.
+Thus a `HttpConfiguration` object is injected into both the HTTP and HTTP/2 connection factories.
 To avoid duplicate configuration, the standard Jetty distribution creates the common `HttpConfiguration` instance in link:{SRCDIR}/jetty-server/src/main/config/etc/jetty.xml[`jetty.xml`], which is a `Ref` element then used in link:{SRCDIR}/jetty-server/src/main/config/etc/jetty-http.xml[`jetty-http.xml`], link:{SRCDIR}/jetty-server/src/main/config/etc/jetty-https.xml[`jetty-https.xml`] and in link:{SRCDIR}/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml[`jetty-http2.xml`].
 
 A typical configuration of link:{JDURL}/org/eclipse/jetty/server/HttpConfiguration.html[HttpConfiguration] is:
@@ -170,6 +170,9 @@ This example HttpConfiguration may be used by reference to the ID "`httpConfig`"
   </Arg>
 </Call>
 ----
+
+This same `httpConfig` is referenced by the link:{JDURL}/org/eclipse/jetty/server/handler/SecuredRedirectHandler.html[`SecuredRedirectHandler`] when redirecting secure requests.
+Please note that if your `httpConfig` does not include a `secureScheme` or `securePort` or there is no `HttpConfiguration` present these types of secured requests will be returned a `403` error.
 
 For SSL based connectors (in `jetty-https.xml` and `jetty-http2.xml`), the common "`httpConfig`" instance is used as the basis to create an SSL specific configuration with ID "`sslHttpConfig`":
 

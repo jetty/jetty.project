@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -29,9 +31,9 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.junit.Assert;
 
@@ -84,16 +86,19 @@ public class JettyTrackingSocket extends WebSocketAdapter
 
     public void assertNotClosed()
     {
+        LOG.debug("assertNotClosed() - {}", closeLatch.getCount());
         Assert.assertThat("Closed Latch",closeLatch.getCount(),greaterThanOrEqualTo(1L));
     }
 
     public void assertNotOpened()
     {
+        LOG.debug("assertNotOpened() - {}", openLatch.getCount());
         Assert.assertThat("Open Latch",openLatch.getCount(),greaterThanOrEqualTo(1L));
     }
 
     public void assertWasOpened() throws InterruptedException
     {
+        LOG.debug("assertWasOpened() - {}", openLatch.getCount());
         Assert.assertThat("Was Opened",openLatch.await(30,TimeUnit.SECONDS),is(true));
     }
 
@@ -128,6 +133,7 @@ public class JettyTrackingSocket extends WebSocketAdapter
     public void onWebSocketConnect(Session session)
     {
         super.onWebSocketConnect(session);
+        assertThat("Session", session, notNullValue());
         connectUpgradeRequest = session.getUpgradeRequest();
         connectUpgradeResponse = session.getUpgradeResponse();
         openLatch.countDown();

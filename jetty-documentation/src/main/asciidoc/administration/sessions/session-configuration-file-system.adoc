@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,11 +26,11 @@ $ java -jar ../start.jar --create-startd
 INFO : Base directory was modified
 
 $ java -jar ../start.jar --add-to-start=session-store-file
-INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
-INFO : session-store-file initialised in ${jetty.base}/start.d/session-store-file.ini
-MKDIR: ${jetty.base}/sessions
-INFO : Base directory was modified
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-file initialized in ${jetty.base}/start.d/session-store-file.ini
+MKDIR : ${jetty.base}/sessions
+INFO  : Base directory was modified
 ----
 
 //TODO - Callout default Session file location - note it is configurable

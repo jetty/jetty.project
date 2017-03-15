@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,20 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     private final static Double ZERO=new Double(0.0);
     private final static Double ONE=new Double(1.0);
     
+
+    /**
+     * Function to apply a most specific MIME encoding secondary ordering 
+     */
+    public static Function<String, Integer> MOST_SPECIFIC = new Function<String, Integer>()
+    {
+        @Override
+        public Integer apply(String s)
+        {
+            String[] elements = s.split("/");
+            return 1000000*elements.length+1000*elements[0].length()+elements[elements.length-1].length();
+        }
+    };
+    
     private final List<Double> _quality = new ArrayList<>();
     private boolean _sorted = false;
     private final Function<String, Integer> _secondaryOrdering;
@@ -50,7 +64,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV()
     {
-        this((s) -> s.length());
+        this((s) -> 0);
     }
 
     /* ------------------------------------------------------------ */
@@ -101,7 +115,14 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     @Override
     protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
     {
-        if (buffer.charAt(paramName)=='q' && paramValue>paramName && buffer.charAt(paramName+1)=='=')
+        if (paramName<0)
+        {
+            if (buffer.charAt(buffer.length()-1)==';')
+                buffer.setLength(buffer.length()-1);
+        }
+        if (paramValue>=0 && 
+            buffer.charAt(paramName)=='q' && paramValue>paramName && 
+            buffer.length()>=paramName && buffer.charAt(paramName+1)=='=')
         {
             Double q;
             try
@@ -142,7 +163,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         _sorted=true;
 
         Double last = ZERO;
-        int lastOrderIndex = Integer.MIN_VALUE;
+        int lastSecondaryOrder = Integer.MIN_VALUE;
 
         for (int i = _values.size(); i-- > 0;)
         {
@@ -150,20 +171,20 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             Double q = _quality.get(i);
 
             int compare=last.compareTo(q);
-            if (compare>0 || (compare==0 && _secondaryOrdering.apply(v)<lastOrderIndex))
+            if (compare>0 || (compare==0 && _secondaryOrdering.apply(v)<lastSecondaryOrder))
             {
                 _values.set(i, _values.get(i + 1));
                 _values.set(i + 1, v);
                 _quality.set(i, _quality.get(i + 1));
                 _quality.set(i + 1, q);
                 last = ZERO;
-                lastOrderIndex=0;
+                lastSecondaryOrder=0;
                 i = _values.size();
                 continue;
             }
 
             last=q;
-            lastOrderIndex=_secondaryOrdering.apply(v);
+            lastSecondaryOrder=_secondaryOrdering.apply(v);
         }
         
         int last_element=_quality.size();

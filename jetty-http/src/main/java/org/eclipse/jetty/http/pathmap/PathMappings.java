@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.Trie;
@@ -80,6 +81,11 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         _mappings.clear();
         _prefixMap.clear();
         _suffixMap.clear();
+    }
+    
+    public void removeIf(Predicate<MappedResource<E>> predicate)
+    {
+        _mappings.removeIf(predicate);
     }
     
     /**
@@ -173,7 +179,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     }
                     
                     default:
-                }   
+                }
             }
             
             if (mr.getPathSpec().matches(path))

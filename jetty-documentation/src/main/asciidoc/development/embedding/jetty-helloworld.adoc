@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,13 +23,19 @@ This section provides a tutorial that shows how you can quickly develop embedded
 ==== Downloading the Jars
 
 Jetty is decomposed into many jars and dependencies to achieve a minimal footprint by selecting the minimal set of jars.
-Typically it is best to use something like Maven to manage jars, however this tutorial uses an aggregate Jar that contains all of the Jetty classes in one Jar.
-You can manually download the aggregate link:http://central.maven.org/maven2/org/eclipse/jetty/aggregate/jetty-all/{VERSION}/jetty-all-{VERSION}-uber.jar[`jetty-all.jar`] using `curl`) or a browser.
+Typically it is best to use something like link:#jetty-maven-helloworld[Maven] to manage jars, however this tutorial uses an aggregate Jar that contains all of the required Jetty classes in one Jar.
+You can manually download the aggregate link:http://central.maven.org/maven2/org/eclipse/jetty/aggregate/jetty-all/{VERSION}/jetty-all-{VERSION}-uber.jar[`jetty-all.jar`] using `curl` or a browser.
 
 ____
 [NOTE]
 The central Maven repository has started to aggressively reject/deny access to the repository from the `wget` command line tool (due to abusive use of the tool by some groups).
 The administrators of the central maven repository have stated that the recommended command line download tool is now curl.
+____
+
+____
+[IMPORTANT]
+The `jetty-all` jar referenced in this section is for example purposes only and should not be used outside of this context.
+Please consider using link:#jetty-maven-helloworld[Maven] to manage your project dependencies.
 ____
 
 Use curl as follows:

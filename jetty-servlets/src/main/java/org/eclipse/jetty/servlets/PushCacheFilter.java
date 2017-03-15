@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,12 +43,12 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.PushBuilder;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -71,6 +71,8 @@ import org.eclipse.jetty.util.log.Logger;
  * secondary resources are pushed to the client, unless the request carries
  * {@code If-xxx} header that hint that the client has the resources in its
  * cache.</p>
+ * <p>If the init param useQueryInKey is set, then the query string is used as
+ * as part of the key to identify a resource</p>
  */
 @ManagedObject("Push cache based on the HTTP 'Referer' header")
 public class PushCacheFilter implements Filter
@@ -83,6 +85,7 @@ public class PushCacheFilter implements Filter
     private long _associatePeriod = 4000L;
     private int _maxAssociations = 16;
     private long _renew = System.nanoTime();
+    private boolean _useQueryInKey;
 
     @Override
     public void init(FilterConfig config) throws ServletException
@@ -104,6 +107,8 @@ public class PushCacheFilter implements Filter
             for (String p : StringUtil.csvSplit(ports))
                 _ports.add(Integer.parseInt(p));
 
+        _useQueryInKey = Boolean.parseBoolean(config.getInitParameter("useQueryInKey"));
+        
         // Expose for JMX.
         config.getServletContext().setAttribute(config.getFilterName(), this);
 
@@ -114,17 +119,21 @@ public class PushCacheFilter implements Filter
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
-        if (HttpVersion.fromString(req.getProtocol()).getVersion() < 20)
+        HttpServletRequest request = (HttpServletRequest)req;
+        Request jettyRequest = Request.getBaseRequest(request);
+
+        if (HttpVersion.fromString(request.getProtocol()).getVersion() < 20 ||
+                !HttpMethod.GET.is(request.getMethod()) ||
+                !jettyRequest.isPushSupported())
         {
             chain.doFilter(req, resp);
             return;
         }
 
         long now = System.nanoTime();
-        HttpServletRequest request = (HttpServletRequest)req;
 
         // Iterating over fields is more efficient than multiple gets
-        HttpFields fields = Request.getBaseRequest(request).getHttpFields();
+        HttpFields fields = jettyRequest.getHttpFields();
         boolean conditional = false;
         String referrer = null;
         loop:
@@ -154,11 +163,11 @@ public class PushCacheFilter implements Filter
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} referrer={} conditional={} synthetic={}", request.getMethod(), request.getRequestURI(), referrer, conditional, isPushRequest(request));
+            LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
-        String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+        String path = request.getRequestURI();
         String query = request.getQueryString();
-        if (query != null)
+        if (_useQueryInKey && query != null)
             path += "?" + query;
         if (referrer != null)
         {
@@ -173,17 +182,16 @@ public class PushCacheFilter implements Filter
 
             if (referredFromHere)
             {
-                if ("GET".equalsIgnoreCase(request.getMethod()))
+                if (HttpMethod.GET.is(request.getMethod()))
                 {
-                    String referrerPath = referrerURI.getPath();
+                    String referrerPath = _useQueryInKey?referrerURI.getPathQuery():referrerURI.getPath();
                     if (referrerPath == null)
                         referrerPath = "/";
-                    if (referrerPath.startsWith(request.getContextPath()))
+                    if (referrerPath.startsWith(request.getContextPath() + "/"))
                     {
-                        String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
-                        if (!referrerPathNoContext.equals(path))
+                        if (!referrerPath.equals(path))
                         {
-                            PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
+                            PrimaryResource primaryResource = _cache.get(referrerPath);
                             if (primaryResource != null)
                             {
                                 long primaryTimestamp = primaryResource._timestamp.get();
@@ -198,19 +206,19 @@ public class PushCacheFilter implements Filter
                                             if (associated.add(path))
                                             {
                                                 if (LOG.isDebugEnabled())
-                                                    LOG.debug("Associated {} to {}", path, referrerPathNoContext);
+                                                    LOG.debug("Associated {} to {}", path, referrerPath);
                                             }
                                         }
                                         else
                                         {
                                             if (LOG.isDebugEnabled())
-                                                LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPathNoContext, _maxAssociations);
+                                                LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPath, _maxAssociations);
                                         }
                                     }
                                     else
                                     {
                                         if (LOG.isDebugEnabled())
-                                            LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPathNoContext, _associatePeriod);
+                                            LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPath, _associatePeriod);
                                     }
                                 }
                             }
@@ -218,8 +226,13 @@ public class PushCacheFilter implements Filter
                         else
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Not associated {} to {}, referring to self", path, referrerPathNoContext);
+                                LOG.debug("Not associated {} to {}, referring to self", path, referrerPath);
                         }
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Not associated {} to {}, different context", path, referrerPath);
                     }
                 }
             }
@@ -252,9 +265,9 @@ public class PushCacheFilter implements Filter
         }
 
         // Push associated resources.
-        if (!isPushRequest(request) && !conditional && !primaryResource._associated.isEmpty())
+        if (!conditional && !primaryResource._associated.isEmpty())
         {
-            PushBuilder pushBuilder = Request.getBaseRequest(request).getPushBuilder();
+            PushBuilder pushBuilder = jettyRequest.getPushBuilder();
 
             // Breadth-first push of associated resources.
             Queue<PrimaryResource> queue = new ArrayDeque<>();
@@ -276,11 +289,6 @@ public class PushCacheFilter implements Filter
         }
 
         chain.doFilter(request, resp);
-    }
-
-    private boolean isPushRequest(HttpServletRequest request)
-    {
-        return Boolean.TRUE.equals(request.getAttribute("org.eclipse.jetty.pushed"));
     }
 
     @Override

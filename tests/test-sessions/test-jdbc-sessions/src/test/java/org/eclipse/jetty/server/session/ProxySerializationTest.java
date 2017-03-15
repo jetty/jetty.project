@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,15 +30,17 @@ import org.junit.Test;
  */
 public class ProxySerializationTest extends AbstractProxySerializationTest
 {
-
+    
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#createServer(int, int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
+    public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return new JdbcTestServer(port, max, scavenge, evictionPolicy);
+       return JdbcTestHelper.newSessionDataStoreFactory();
     }
+    
+    
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractProxySerializationTest#customizeContext(org.eclipse.jetty.servlet.ServletContextHandler)
@@ -61,6 +63,6 @@ public class ProxySerializationTest extends AbstractProxySerializationTest
     @After
     public void tearDown() throws Exception 
     {
-        JdbcTestServer.shutdown(null);
+        JdbcTestHelper.shutdown(null);
     }
 }

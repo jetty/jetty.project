@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.start.config;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.RawArgs;
+import org.eclipse.jetty.start.StartIni;
 
 /**
  * A Configuration Source
@@ -72,4 +76,9 @@ public interface ConfigSource
      * @return the value of the property, or null if not found
      */
     public String getProperty(String key);
+    
+    public default Set<StartIni> getStartInis() 
+    {
+        return Collections.emptySet();
+    }
 }

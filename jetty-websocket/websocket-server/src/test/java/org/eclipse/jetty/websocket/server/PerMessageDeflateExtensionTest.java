@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,22 +34,16 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.util.Sha1Sum;
 import org.eclipse.jetty.websocket.server.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 public class PerMessageDeflateExtensionTest
@@ -82,9 +80,6 @@ public class PerMessageDeflateExtensionTest
 
         return modes;
     }
-
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private SimpleServletServer server;
     private String scheme;
@@ -132,7 +127,7 @@ public class PerMessageDeflateExtensionTest
         serverPolicy.setMaxBinaryMessageSize(binBufferSize);
         serverPolicy.setMaxBinaryMessageBufferSize(binBufferSize);
 
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
+        WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
         WebSocketPolicy clientPolicy = client.getPolicy();
         clientPolicy.setMaxBinaryMessageSize(binBufferSize);
         clientPolicy.setMaxBinaryMessageBufferSize(binBufferSize);
@@ -155,7 +150,7 @@ public class PerMessageDeflateExtensionTest
             Future<Session> fut = client.connect(clientSocket,server.getServerUri(),request);
 
             // Wait for connect
-            Session session = fut.get(5,TimeUnit.SECONDS);
+            Session session = fut.get(30,TimeUnit.SECONDS);
 
             assertThat("Response.extensions",getNegotiatedExtensionList(session),containsString("permessage-deflate"));
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -159,15 +159,27 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        Runnable task = channel.onRequestContent(frame, callback);
-        if (task != null)
-            offerTask(task, false);
+        if (channel != null)
+        {
+            Runnable task = channel.onRequestContent(frame, callback);
+            if (task != null)
+                offerTask(task, false);
+        }
+    }
+
+    public void onTrailers(IStream stream, HeadersFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing trailers {} on {}", frame, stream);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        if (channel != null)
+            channel.onRequestTrailers(frame);
     }
 
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        boolean result = channel.onStreamTimeout(failure);
+        boolean result = channel != null && channel.onStreamTimeout(failure);
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
         return result;
@@ -178,7 +190,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing failure on {}: {}", stream, failure);
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        channel.onFailure(failure);
+        if (channel != null)
+            channel.onFailure(failure);
     }
 
     public boolean onSessionTimeout(Throwable failure)
@@ -188,7 +201,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         for (Stream stream : session.getStreams())
         {
             HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-            result &= !channel.isRequestHandled();
+            if (channel != null)
+                result &= !channel.isRequestHandled();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);

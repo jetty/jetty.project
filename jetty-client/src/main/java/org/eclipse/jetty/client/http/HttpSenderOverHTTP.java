@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 public class HttpSenderOverHTTP extends HttpSender
 {
     private final HttpGenerator generator = new HttpGenerator();
+    private boolean shutdown;
 
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -149,7 +150,12 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Request shutdown output {}", getHttpExchange().getRequest());
-        getHttpChannel().getHttpConnection().getEndPoint().shutdownOutput();
+        shutdown = true;
+    }
+
+    protected boolean isShutdown()
+    {
+        return shutdown;
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -150,7 +150,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         // If the mime type is known from the path, then apply mime type filtering 
-        String mimeType = context==null?null:context.getMimeType(path);
+        String mimeType = context==null?MimeTypes.getDefaultMimeByExtension(path):context.getMimeType(path);
         if (mimeType!=null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);

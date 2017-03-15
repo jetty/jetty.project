@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.frames;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
@@ -127,5 +128,15 @@ public abstract class ControlFrame extends WebSocketFrame
             throw new ProtocolException("Control Payloads can not exceed " + MAX_CONTROL_PAYLOAD + " bytes in length.");
         }
         return super.setPayload(buf);
+    }
+
+    @Override
+    public ByteBuffer getPayload()
+    {
+        if (super.getPayload() == null)
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+        return super.getPayload();
     }
 }

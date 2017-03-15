@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,10 +30,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.BaseHomeFileInitializer;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
+import org.eclipse.jetty.start.fileinits.LocalFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
 
@@ -48,12 +50,12 @@ public class BaseBuilder
         /**
          * Add a module to the start environment in <code>${jetty.base}</code>
          *
-         * @param module
-         *            the module to add
+         * @param module the module to add
+         * @param props The properties to substitute into a template
          * @return The ini file if module was added, null if module was not added.
          * @throws IOException if unable to add the module
          */
-        public String addModule(Module module) throws IOException;
+        public String addModule(Module module, Props props) throws IOException;
     }
 
     private static final String EXITING_LICENSE_NOT_ACKNOWLEDGED = "Exiting: license not acknowledged!";
@@ -73,19 +75,25 @@ public class BaseBuilder
         {
             // Copy from basehome
             fileInitializers.add(new BaseHomeFileInitializer(baseHome));
+
+            // Handle local directories
+            fileInitializers.add(new LocalFileInitializer(baseHome));
             
             // No downloads performed
-            fileInitializers.add(new TestFileInitializer());
+            fileInitializers.add(new TestFileInitializer(baseHome));
         }
-        else if (args.isDownload())
+        else if (args.isCreateFiles())
         {
+            // Handle local directories
+            fileInitializers.add(new LocalFileInitializer(baseHome));
+            
             // Downloads are allowed to be performed
             // Setup Maven Local Repo
-            Path localRepoDir = args.getMavenLocalRepoDir();
+            Path localRepoDir = args.findMavenLocalRepoDir();
             if (localRepoDir != null)
             {
                 // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome,localRepoDir));
+                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome,localRepoDir,args.getMavenLocalRepoDir()==null));
             }
             else
             {
@@ -163,7 +171,10 @@ public class BaseBuilder
         if (startArgs.isCreateStartd() && !Files.exists(startd))
         {
             if(FS.ensureDirectoryExists(startd))
+            {
+                StartLog.log("MKDIR",baseHome.toShortForm(startd));
                 modified.set(true);
+            }
             if (Files.exists(startini)) 
             {
                 int ini=0;
@@ -199,7 +210,7 @@ public class BaseBuilder
                         // if (explictly added and ini file modified)
                         if (startArgs.getStartModules().contains(module.getName()))
                         {
-                            ini=builder.get().addModule(module);
+                            ini=builder.get().addModule(module, startArgs.getProperties());
                             if (ini!=null)
                                 modified.set(true);
                         }
@@ -230,7 +241,6 @@ public class BaseBuilder
                     StartLog.info("%-15s initialized in %s",
                     module.getName(),
                     ini);
-                    
             });            
         }
 
@@ -255,100 +265,35 @@ public class BaseBuilder
     /**
      * Process a specific file resource
      * 
-     * @param arg
-     *            the fileArg to work with
-     * @param file
-     *            the resolved file reference to work with
+     * @param arg the fileArg to work with
      * @return true if change was made as a result of the file, false if no change made.
      * @throws IOException
-     *             if there was an issue in processing this file
+     *         if there was an issue in processing this file
      */
-    private boolean processFileResource(FileArg arg, Path file) throws IOException
+    private boolean processFileResource(FileArg arg) throws IOException
     {
-        // now on copy/download paths (be safe above all else)
-        if (!file.startsWith(baseHome.getBasePath()))
-            throw new IOException("For security reasons, Jetty start is unable to process maven file resource not in ${jetty.base} - " + file);
-        
-        if (startArgs.isDownload() && (arg.uri != null))
-        {
-            // make the directories in ${jetty.base} that we need
-            boolean modified = FS.ensureDirectoryExists(file.getParent());
-            
-            URI uri = URI.create(arg.uri);
+        URI uri = arg.uri==null?null:URI.create(arg.uri);
 
-            // Process via initializers
+        if (startArgs.isCreateFiles())
+        {
             for (FileInitializer finit : fileInitializers)
             {
-                if (finit.init(uri,file,arg.location))
-                {
-                    // Completed successfully
-                    return true;
-                }
+                if (finit.isApplicable(uri))
+                    return finit.create(uri,arg.location);
             }
-
-            if (!FS.exists(file))
-              System.err.println("Failed to initialize: "+arg.uri+"|"+arg.location);
             
-            return modified;
+            throw new IOException(String.format("Unable to create %s",arg));
         }
-        else
+
+        for (FileInitializer finit : fileInitializers)
         {
-            // Process directly
-            boolean isDir = arg.location.endsWith("/");
-
-            if (FS.exists(file))
-            {
-                // Validate existence
-                if (isDir)
-                {
-                    if (!Files.isDirectory(file))
-                    {
-                        throw new IOException("Invalid: path should be a directory (but isn't): " + file);
-                    }
-                    if (!FS.canReadDirectory(file))
-                    {
-                        throw new IOException("Unable to read directory: " + file);
-                    }
-                }
-                else
-                {
-                    if (!FS.canReadFile(file))
-                    {
-                        throw new IOException("Unable to read file: " + file);
-                    }
-                }
-
-                return false;
-            }
-
-            if (isDir)
-            {
-                // Create directory
-                StartLog.log("MKDIR",baseHome.toShortForm(file));
-                return FS.ensureDirectoryExists(file);
-            }
-            else
-            {
-                // Warn on missing file (this has to be resolved manually by user)
-                String shortRef = baseHome.toShortForm(file);
-                if (startArgs.isTestingModeEnabled())
-                {
-                    StartLog.log("TESTING MODE","Skipping required file check on: %s",shortRef);
-                    return false;
-                }
-
-                StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
-                startArgs.setRun(false);
-                if (arg.uri != null)
-                {
-                    StartLog.warn("  Can be downloaded From: %s",arg.uri);
-                    StartLog.warn("  Run start.jar --create-files to download");
-                }
-
-                return false;
-            }
+            if (finit.isApplicable(uri))
+                if (!finit.check(uri,arg.location))
+                    startArgs.setRun(false);
         }
+        return false;
     }
+        
 
     /**
      * Process the {@link FileArg} for startup, assume that all licenses have
@@ -371,16 +316,15 @@ public class BaseBuilder
 
         for (FileArg arg : files)
         {
-            Path file = baseHome.getBasePath(arg.location);
             try
             {
-                boolean processed = processFileResource(arg,file);
+                boolean processed = processFileResource(arg);
                 dirty |= processed;
             }
             catch (Throwable t)
             {
                 StartLog.warn(t);
-                failures.add(String.format("[%s] %s - %s",t.getClass().getSimpleName(),t.getMessage(),file.toAbsolutePath().toString()));
+                failures.add(String.format("[%s] %s - %s",t.getClass().getSimpleName(),t.getMessage(),arg.location));
             }
         }
 

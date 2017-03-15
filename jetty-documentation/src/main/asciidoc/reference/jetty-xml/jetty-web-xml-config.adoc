@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[jetty-web-xml-config]]
-=== `jetty-web.xml`
+=== jetty-web.xml
 
 `jetty-web.xml` is a Jetty configuration file that you can bundle with a specific web application.
 The format of `jetty-web.xml` is the same as xref:jetty-xml-config[] – it is an XML mapping of the Jetty API.
@@ -44,7 +44,7 @@ Make sure you are applying the configuration to an instance of the proper class.
 ____
 
 [[using-jetty-web-xml]]
-==== Using `jetty-web.xml`
+==== Using jetty-web.xml
 
 Place the `jetty-web.xml` into your web application's `WEB-INF` folder.
 When Jetty deploys a web application, it looks for a file called `WEB-INF/jetty-web.xml` or `WEB-INF/web-jetty.xml` within the web application (or WAR) and applies the configuration found there.

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -108,6 +108,8 @@ public class BrowserDebugTool implements WebSocketCreator
 
         LOG.debug("User-Agent: {}",ua);
         LOG.debug("Sec-WebSocket-Extensions (Request) : {}",rexts);
+        LOG.debug("Sec-WebSocket-Protocol (Request): {}",req.getHeader("Sec-WebSocket-Protocol"));
+        LOG.debug("Sec-WebSocket-Protocol (Response): {}",resp.getAcceptedSubProtocol());
 
         req.getExtensions();
         return new BrowserSocket(ua,rexts);

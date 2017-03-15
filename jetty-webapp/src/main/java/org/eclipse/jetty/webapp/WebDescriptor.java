@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,7 +41,7 @@ public class WebDescriptor extends Descriptor
 {
     private static final Logger LOG = Log.getLogger(WebDescriptor.class);
 
-    protected static XmlParser _parserSingleton;
+    protected static XmlParser _nonValidatingStaticParser;
     protected MetaDataComplete _metaDataComplete;
     protected int _majorVersion = 3; //default to container version
     protected int _minorVersion = 0;
@@ -52,18 +52,18 @@ public class WebDescriptor extends Descriptor
     protected List<String> _ordering = new ArrayList<String>();
 
     @Override
-    public void ensureParser() throws ClassNotFoundException
+    public XmlParser ensureParser() throws ClassNotFoundException
     {
         synchronized (WebDescriptor.class)
         {
-            if (_parserSingleton == null)
-                _parserSingleton = newParser(isValidating());
+            if (_nonValidatingStaticParser == null)
+                _nonValidatingStaticParser = newParser(false);
         }
         
-        if (_parserSingleton.isValidating()==isValidating())
-            _parser = _parserSingleton;
+        if (!isValidating())
+            return _nonValidatingStaticParser;
         else
-            _parser = newParser(isValidating());
+            return newParser(true);
     }
 
     public static XmlParser newParser(boolean validating) throws ClassNotFoundException
@@ -232,8 +232,8 @@ public class WebDescriptor extends Descriptor
         {
             _majorVersion = 2;
             _minorVersion = 3;
-            String dtd = _parser.getDTD();
-            if (dtd != null && dtd.indexOf("web-app_2_2") >= 0)
+
+            if (_dtd != null && _dtd.indexOf("web-app_2_2") >= 0)
             {
                 _majorVersion = 2;
                 _minorVersion = 2;

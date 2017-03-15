@@ -1,6 +1,6 @@
 [description]
 Configure jetty logging to use Log4j Logging
-Uses SLF4j as a logging bridge.
+SLF4J is used as the core logging mechanism.
 
 [tags]
 logging
@@ -9,12 +9,11 @@ logging
 slf4j-log4j
 log4j-impl
 
-[provide]
+[provides]
 logging
 
 [exec]
--Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+-Dorg.eclipse.jetty.util.log.class?=org.eclipse.jetty.util.log.Slf4jLog
 
-[ini-template]
-## Hide logging classes from deployed webapps
-jetty.webapp.addServerClasses,=file:${jetty.base}/lib/slf4j/,file:${jetty.base}/lib/log4j/
+[ini]
+jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/slf4j/,${jetty.base.uri}/lib/log4j/

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -81,6 +82,7 @@ public class HttpRequest implements Request
     private List<HttpCookie> cookies;
     private Map<String, Object> attributes;
     private List<RequestListener> requestListeners;
+    private BiFunction<Request, Request, Response.CompleteListener> pushListener;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -567,6 +569,26 @@ public class HttpRequest implements Request
         return this;
     }
 
+    /**
+     * <p>Sets a listener for pushed resources.</p>
+     * <p>When resources are pushed from the server, the given {@code listener}
+     * is invoked for every pushed resource.
+     * The parameters to the {@code BiFunction} are this request and the
+     * synthesized request for the pushed resource.
+     * The {@code BiFunction} should return a {@code CompleteListener} that
+     * may also implement other listener interfaces to be notified of various
+     * response events, or {@code null} to signal that the pushed resource
+     * should be canceled.</p>
+     *
+     * @param listener a listener for pushed resource events
+     * @return this request object
+     */
+    public Request pushListener(BiFunction<Request, Request, Response.CompleteListener> listener)
+    {
+        this.pushListener = listener;
+        return this;
+    }
+
     @Override
     public ContentProvider getContent()
     {
@@ -696,6 +718,11 @@ public class HttpRequest implements Request
     protected List<Response.ResponseListener> getResponseListeners()
     {
         return responseListeners;
+    }
+
+    public BiFunction<Request, Request, Response.CompleteListener> getPushListener()
+    {
+        return pushListener;
     }
 
     @Override

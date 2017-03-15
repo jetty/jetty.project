@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -96,6 +97,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private OutgoingFrames outgoingHandler;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
+    private CompletableFuture<Session> openFuture;
 
     public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
     {
@@ -373,7 +375,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     }
 
     /**
-     * Incoming Errors from Parser
+     * Incoming Errors
      */
     @Override
     public void incomingError(Throwable t)
@@ -543,6 +545,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
     public void notifyError(Throwable cause)
     {
+        if (openFuture != null && !openFuture.isDone())
+            openFuture.completeExceptionally(cause);
         incomingError(cause);
     }
 
@@ -636,6 +640,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             {
                 LOG.debug("open -> {}", dump());
             }
+            
+            if(openFuture != null)
+            {
+                openFuture.complete(this);
+            }
         }
         catch (CloseException ce)
         {
@@ -663,6 +672,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void setExtensionFactory(ExtensionFactory extensionFactory)
     {
         this.extensionFactory = extensionFactory;
+    }
+
+    public void setFuture(CompletableFuture<Session> fut)
+    {
+        this.openFuture = fut;
     }
 
     /**

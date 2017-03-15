@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,19 +17,19 @@
 [[what-jetty-version]]
 === What Version Do I Use?
 
-Jetty 9 is the most recent version of Jetty and has a great many improvements over previous versions. 
-One improvement is this documentation which focuses on Jetty 9. 
+Jetty 9 is the most recent version of Jetty and has a great many improvements over previous versions.
+This documentation which focuses on Jetty 9.
 While many people continue to use older versions of Jetty, we generally recommend using Jetty 9 as it represents the version of Jetty that we will actively maintain and improve over the next few years.
 
 .Jetty Versions
 [width="100%",cols="12%,9%,15%,6%,21%,10%,6%,21%",options="header",]
 |=======================================================================
 |Version |Year |Home |JVM |Protocols |Servlet |JSP |Status
+|9.4 |2016 |Eclipse |1.8 |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Stable
 |9.3 |2015 |Eclipse |1.8 |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Stable
 |9.2 |2014 |Eclipse |1.7 |HTTP/1.1 RFC2616, javax.websocket, SPDY v3 |3.1 |2.3 |Stable
-|8.2 |2009- |Eclipse/Codehaus |1.7 |HTTP/1.1 RFC2616, WebSocket RFC 6455, SPDY v3 |3.0 |2.2 |Venerable
-|8.1 |2009- |Eclipse/Codehaus |1.6 |HTTP/1.1 RFC2616, WebSocket RFC 6455, SPDY v3 |3.0 |2.2 |Venerable
-|7 |2008- |Eclipse/Codehaus |1.5 |HTTP/1.1 RFC2616, WebSocket RFC 6455, SPDY v3 |2.5 |2.1 |Venerable
+|8 |2009-2014 |Eclipse/Codehaus |1.6 |HTTP/1.1 RFC2616, WebSocket RFC 6455, SPDY v3 |3.0 |2.2 |Deprecated
+|7 |2008-2014 |Eclipse/Codehaus |1.5 |HTTP/1.1 RFC2616, WebSocket RFC 6455, SPDY v3 |2.5 |2.1 |Deprecated
 |6 |2006-2010 |Codehaus |1.4-1.5 |HTTP/1.1 RFC2616 |2.5 |2.0 |Deprecated
 |5 |2003-2009 |Sourceforge |1.2-1.5 |HTTP/1.1 RFC2616 |2.4 |2.0 |Deprecated
 |4 |2001-2006 |Sourceforge |1.2, J2ME |HTTP/1.1 RFC2616 |2.3 |1.2 |Ancient

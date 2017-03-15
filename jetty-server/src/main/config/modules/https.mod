@@ -1,7 +1,7 @@
 [description]
 Adds HTTPS protocol support to the TLS(SSL) Connector
 
-[Tags]
+[tags]
 connector
 https
 http

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,6 +46,9 @@ public class QuickStartWebApp extends WebAppContext
     private boolean _autoPreconfigure=false;
     private boolean _startWebapp=false;
     private PreconfigureDescriptorProcessor _preconfigProcessor;
+    private String _originAttribute;
+    private boolean _generateOrigin;
+    
     
     public static final String[] __preconfigurationClasses = new String[]
     { 
@@ -89,6 +92,35 @@ public class QuickStartWebApp extends WebAppContext
         _autoPreconfigure = autoPrecompile;
     }
     
+    public void setOriginAttribute (String name)
+    {
+        _originAttribute = name;
+    }
+    
+    /**
+     * @return the originAttribute
+     */
+    public String getOriginAttribute()
+    {
+        return _originAttribute;
+    }
+
+    /**
+     * @return the generateOrigin
+     */
+    public boolean getGenerateOrigin()
+    {
+        return _generateOrigin;
+    }
+
+    /**
+     * @param generateOrigin the generateOrigin to set
+     */
+    public void setGenerateOrigin(boolean generateOrigin)
+    {
+        _generateOrigin = generateOrigin;
+    }
+
     @Override
     protected void startWebapp() throws Exception
     {
@@ -174,7 +206,7 @@ public class QuickStartWebApp extends WebAppContext
         Resource descriptor = getWebInf().addPath(QuickStartDescriptorGenerator.DEFAULT_QUICKSTART_DESCRIPTOR_NAME);
         if (!descriptor.exists())
             descriptor.getFile().createNewFile();
-        QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, extraXML);
+        QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, extraXML, _originAttribute, _generateOrigin);
         try (FileOutputStream fos = new FileOutputStream(descriptor.getFile()))
         {
             generator.generateQuickStartWebXml(fos);

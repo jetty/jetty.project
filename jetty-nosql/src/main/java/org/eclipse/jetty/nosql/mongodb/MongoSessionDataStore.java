@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -366,8 +366,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         //these candidates will be for our node
         BasicDBObject query = new BasicDBObject();     
         query.append(__ID,new BasicDBObject("$in", candidates));
-        query.append(__EXPIRY, new BasicDBObject("$gt", 0));
-        query.append(__EXPIRY, new BasicDBObject("$lt", upperBound));   
+        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lt", upperBound));  
 
         DBCursor verifiedExpiredSessions = null;
         try  
@@ -689,4 +688,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         return true;
     }
 
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[collection=%s]", super.toString(),getDBCollection());
+    }
+
+    
 }

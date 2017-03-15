@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -106,7 +106,7 @@ public class GzipDefaultNoRecompressTest
     private void copyTestFileToServer(String testFilename) throws IOException
     {
         File testFile = MavenTestingUtils.getTestResourceFile(testFilename);
-        File outFile = testingdir.getFile(testFilename);
+        File outFile = testingdir.getPathFile(testFilename).toFile();
         IO.copy(testFile,outFile);
     }
 }

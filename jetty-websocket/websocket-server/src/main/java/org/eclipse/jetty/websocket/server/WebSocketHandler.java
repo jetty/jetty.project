@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,8 +53,9 @@ public abstract class WebSocketHandler extends HandlerWrapper
             factory.register(websocketPojo);
         }
     }
-
-    private final WebSocketServletFactory webSocketFactory;
+    
+    private final ByteBufferPool bufferPool;
+    private WebSocketServletFactory webSocketFactory;
 
     public WebSocketHandler()
     {
@@ -63,10 +64,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
     
     public WebSocketHandler(ByteBufferPool bufferPool)
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        configurePolicy(policy);
-        webSocketFactory = new WebSocketServerFactory(policy, bufferPool);
-        addBean(webSocketFactory);
+        this.bufferPool = bufferPool;
     }
 
     public abstract void configure(WebSocketServletFactory factory);
@@ -79,12 +77,18 @@ public abstract class WebSocketHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        configurePolicy(policy);
+        webSocketFactory = new WebSocketServerFactory(policy, getServer().getThreadPool(), bufferPool);
+        addBean(webSocketFactory);
         configure(webSocketFactory);
         super.doStart();
     }
-
+    
     public WebSocketServletFactory getWebSocketFactory()
     {
+        if (!isRunning())
+            throw new IllegalStateException("Not Started yet");
         return webSocketFactory;
     }
 

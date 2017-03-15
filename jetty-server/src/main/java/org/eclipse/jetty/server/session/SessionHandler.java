@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -90,7 +90,8 @@ public class SessionHandler extends ScopedHandler
      * Session id path parameter name.
      * Defaults to <code>jsessionid</code>, but can be set with the
      * <code>org.eclipse.jetty.servlet.SessionIdPathParameterName</code> context init parameter.
-     * If set to null or "none" no URL rewriting will be done.
+     * If context init param is "none", or setSessionIdPathParameterName is called with null or "none",
+     * no URL rewriting will be done.
      */
     public final static String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
     public final static String __DefaultSessionIdPathParameterName = "jsessionid";
@@ -241,8 +242,8 @@ public class SessionHandler extends ScopedHandler
     protected final CounterStatistic _sessionsCreatedStats = new CounterStatistic();
     public Set<SessionTrackingMode> _sessionTrackingModes;
 
-    private boolean _usingURLs;
-    private boolean _usingCookies=true;
+    protected boolean _usingURLs;
+    protected boolean _usingCookies=true;
     
     protected ConcurrentHashSet<String> _candidateSessionIdsForExpiry = new ConcurrentHashSet<String>();
 
@@ -792,13 +793,13 @@ public class SessionHandler extends ScopedHandler
         session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
         session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
         
-        if (request.isSecure())
-            session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
         try
         {
-
             _sessionCache.put(id, session);
-            _sessionsCreatedStats.increment();         
+            _sessionsCreatedStats.increment();  
+            
+            if (request.isSecure())
+                session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             
             if (_sessionListeners!=null)
             {
@@ -1048,6 +1049,8 @@ public class SessionHandler extends ScopedHandler
             {
                 if (invalidate)
                 {
+                    session.beginInvalidate();
+                    
                     if (_sessionListeners!=null)
                     {
                         HttpSessionEvent event=new HttpSessionEvent(session);      
@@ -1214,8 +1217,7 @@ public class SessionHandler extends ScopedHandler
     
     /* ------------------------------------------------------------ */
     /**
-     * Called either when a session has expired, or the app has
-     * invalidated it.
+     * Called when a session has expired.
      * 
      * @param id the id to invalidate
      */
@@ -1232,7 +1234,7 @@ public class SessionHandler extends ScopedHandler
             if (session != null)
             {
                 _sessionTimeStats.set(round((System.currentTimeMillis() - session.getSessionData().getCreated())/1000.0));
-                session.doInvalidate();   
+                session.finishInvalidate();   
             }
         }
         catch (Exception e)
@@ -1242,7 +1244,11 @@ public class SessionHandler extends ScopedHandler
     }
 
 
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Called periodically by the HouseKeeper to handle the list of
+     * sessions that have expired since the last call to scavenge.
+     */
     public void scavenge ()
     {
         //don't attempt to scavenge if we are shutting down
@@ -1279,7 +1285,7 @@ public class SessionHandler extends ScopedHandler
         }
     }
     
-    
+    /* ------------------------------------------------------------ */
     /**
      * Each session has a timer that is configured to go off
      * when either the session has not been accessed for a 
@@ -1292,15 +1298,18 @@ public class SessionHandler extends ScopedHandler
     {
         if (session == null)
             return;
-        
+
 
         //check if the session is:
         //1. valid
         //2. expired
         //3. idle
         boolean expired = false;
-        try (Lock lock = session.lock())
+        try (Lock lock = session.lockIfNotHeld())
         {
+            if (session.getRequests() > 0)
+                return; //session can't expire or be idle if there is a request in it
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("Inspecting session {}, valid={}", session.getId(), session.isValid());
             
@@ -1317,9 +1326,13 @@ public class SessionHandler extends ScopedHandler
             //session ids that need to be expired. This is an efficiency measure: as
             //the expiration involves the SessionDataStore doing a delete, it is 
             //most efficient if it can be done as a bulk operation to eg reduce
-            //roundtrips to the persistent store.
-            _candidateSessionIdsForExpiry.add(session.getId());
-            if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+            //roundtrips to the persistent store. Only do this if the HouseKeeper that
+            //does the scavenging is configured to actually scavenge
+            if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+            {
+                _candidateSessionIdsForExpiry.add(session.getId());
+                if (LOG.isDebugEnabled())LOG.debug("Session {} is candidate for expiry", session.getId());
+            }
         }
         else 
             _sessionCache.checkInactiveSession(session); //if inactivity eviction is enabled the session will be deleted from the cache
@@ -1577,14 +1590,7 @@ public class SessionHandler extends ScopedHandler
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // start manual inline of nextHandle(target,baseRequest,request,response);
-        if (never())
-            nextHandle(target,baseRequest,request,response);
-        else if (_nextScope != null && _nextScope == _handler)
-            _nextScope.doHandle(target,baseRequest,request,response);
-        else if (_handler != null)
-            _handler.handle(target,baseRequest,request,response);
-        // end manual inline
+        nextHandle(target,baseRequest,request,response);
     }
 
     /* ------------------------------------------------------------ */
@@ -1679,6 +1685,16 @@ public class SessionHandler extends ScopedHandler
         baseRequest.setRequestedSessionIdFromCookie(requested_session_id!=null && requested_session_id_from_cookie);
         if (session != null && isValid(session))
             baseRequest.setSession(session);
+    }
+
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s%d==dftMaxIdleSec=%d", this.getClass().getName(),this.hashCode(),_dftMaxIdleSecs);
     }
 
   

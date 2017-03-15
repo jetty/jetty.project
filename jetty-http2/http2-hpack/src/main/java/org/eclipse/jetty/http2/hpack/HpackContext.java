@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -116,7 +116,7 @@ public class HpackContext
     private static final Trie<StaticEntry> __staticNameMap = new ArrayTernaryTrie<>(true,512);
     private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.UNKNOWN.ordinal()];
     private static final StaticEntry[] __staticTable=new StaticEntry[STATIC_TABLE.length];
-    private static final int STATIC_SIZE = STATIC_TABLE.length-1;
+    public static final int STATIC_SIZE = STATIC_TABLE.length-1;
     static
     {
         Set<String> added = new HashSet<>();
@@ -378,7 +378,7 @@ public class HpackContext
                 _offset = (_offset+1)%_entries.length;
                 _size--;
                 if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("HdrTbl[%x] evict %s",hashCode(),entry));
+                    LOG.debug(String.format("HdrTbl[%x] evict %s",HpackContext.this.hashCode(),entry));
                 _dynamicTableSizeInBytes-=entry.getSize();
                 entry._slot=-1;
                 _fieldMap.remove(entry.getHttpField());
@@ -388,7 +388,7 @@ public class HpackContext
 
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes));
+                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",HpackContext.this.hashCode(),_dynamicTable.size(),_dynamicTableSizeInBytes,_maxDynamicTableSizeInBytes));
         }
 
     }

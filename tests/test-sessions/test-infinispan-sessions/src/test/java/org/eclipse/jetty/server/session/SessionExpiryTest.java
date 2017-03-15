@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,13 +42,18 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
         __testSupport.teardown();
     }
     
-    @Override
-    public AbstractTestServer createServer(int port, int max, int scavenge, int evictionPolicy) throws Exception
-    {
-       InfinispanTestSessionServer server =  new InfinispanTestSessionServer(port, max, scavenge, evictionPolicy, __testSupport.getCache());
-       return server;
-    }
 
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     */
+    @Override
+    public SessionDataStoreFactory createSessionDataStoreFactory()
+    {
+        InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
+        factory.setCache(__testSupport.getCache());
+        return factory;
+    }
+    
     @Test
     @Override
     public void testSessionNotExpired() throws Exception

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,12 +21,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -175,7 +172,8 @@ public class Response implements HttpServletResponse
 
     public void addCookie(HttpCookie cookie)
     {
-        addSetCookie(
+        if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
+            addSetRFC2965Cookie(
                 cookie.getName(),
                 cookie.getValue(),
                 cookie.getDomain(),
@@ -185,6 +183,15 @@ public class Response implements HttpServletResponse
                 cookie.isSecure(),
                 cookie.isHttpOnly(),
                 cookie.getVersion());
+        else
+            addSetRFC6265Cookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                cookie.isSecure(),
+                cookie.isHttpOnly());
     }
 
     @Override
@@ -204,7 +211,9 @@ public class Response implements HttpServletResponse
                     comment = null;
             }
         }
-        addSetCookie(cookie.getName(),
+
+        if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
+            addSetRFC2965Cookie(cookie.getName(),
                 cookie.getValue(),
                 cookie.getDomain(),
                 cookie.getPath(),
@@ -213,9 +222,90 @@ public class Response implements HttpServletResponse
                 cookie.getSecure(),
                 httpOnly || cookie.isHttpOnly(),
                 cookie.getVersion());
+        else
+            addSetRFC6265Cookie(cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                cookie.getSecure(),
+                httpOnly || cookie.isHttpOnly());
     }
 
+    
+    /**
+     * Format a set cookie value by RFC6265
+     *
+     * @param name the name
+     * @param value the value
+     * @param domain the domain
+     * @param path the path
+     * @param maxAge the maximum age
+     * @param isSecure true if secure cookie
+     * @param isHttpOnly true if for http only
+     */
+    public void addSetRFC6265Cookie(
+            final String name,
+            final String value,
+            final String domain,
+            final String path,
+            final long maxAge,
+            final boolean isSecure,
+            final boolean isHttpOnly)
+    {
+        // Check arguments
+        if (name == null || name.length() == 0)
+            throw new IllegalArgumentException("Bad cookie name");
 
+        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
+        boolean quote_name=isQuoteNeededForCookie(name);
+        boolean quote_value=value==null?false:isQuoteNeededForCookie(value);
+        if (quote_name || quote_value)
+            throw new IllegalArgumentException("Cookie name or value not RFC6265 compliant");
+        
+
+        // Format value and params
+        StringBuilder buf = __cookieBuilder.get();
+        buf.setLength(0);
+        buf.append(name).append('=').append(value==null?"":value);
+        
+        // Append path
+        if (path!=null && path.length()>0)
+            buf.append(";Path=").append(path);
+        
+        // Append domain
+        if (domain!=null && domain.length()>0)
+            buf.append(";Domain=").append(domain);
+
+        // Handle max-age and/or expires
+        if (maxAge >= 0)
+        {
+            // Always use expires
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            buf.append(";Expires=");
+            if (maxAge == 0)
+                buf.append(__01Jan1970_COOKIE);
+            else
+                DateGenerator.formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
+
+            buf.append(";Max-Age=");
+            buf.append(maxAge);
+        }
+
+        // add the other fields
+        if (isSecure)
+            buf.append(";Secure");
+        if (isHttpOnly)
+            buf.append(";HttpOnly");
+        
+        // add the set cookie
+        _fields.add(HttpHeader.SET_COOKIE, buf.toString());
+
+        // Expire responses with set-cookie headers so they do not get cached.
+        _fields.put(__EXPIRES_01JAN1970);
+        
+    }
+    
     /**
      * Format a set cookie value
      *
@@ -229,7 +319,7 @@ public class Response implements HttpServletResponse
      * @param isHttpOnly true if for http only
      * @param version version of cookie logic to use (0 == default behavior)
      */
-    public void addSetCookie(
+    public void addSetRFC2965Cookie(
             final String name,
             final String value,
             final String domain,
@@ -253,10 +343,7 @@ public class Response implements HttpServletResponse
         quoteOnlyOrAppend(buf,name,quote_name);
 
         buf.append('=');
-
-        // Remember name= part to look for other matching set-cookie
-        String name_equals=buf.toString();
-
+       
         // Append the value
         boolean quote_value=isQuoteNeededForCookie(value);
         quoteOnlyOrAppend(buf,value,quote_value);
@@ -563,7 +650,7 @@ public class Response implements HttpServletResponse
             if (error_handler!=null)
                 error_handler.handle(null, request, request, this);
             else
-                _out.close();
+                closeOutput();
         }
     }
 
@@ -803,7 +890,15 @@ public class Response implements HttpServletResponse
     public String getCharacterEncoding()
     {
         if (_characterEncoding == null)
-            _characterEncoding = StringUtil.__ISO_8859_1;
+        {
+            String encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+            if (encoding!=null)
+                return encoding;
+            encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+            if (encoding!=null)
+                return encoding;
+            return StringUtil.__ISO_8859_1;
+        }
         return _characterEncoding;
     }
 
@@ -843,10 +938,14 @@ public class Response implements HttpServletResponse
                     encoding=_mimeType.getCharsetString();
                 else
                 {
-                    encoding = MimeTypes.inferCharsetFromContentType(_contentType);
+                    encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
                     if (encoding == null)
-                        encoding = StringUtil.__ISO_8859_1;
-                    setCharacterEncoding(encoding,EncodingFrom.INFERRED);
+                    {
+                        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+                        if (encoding == null)
+                            encoding = StringUtil.__ISO_8859_1;
+                        setCharacterEncoding(encoding,EncodingFrom.INFERRED);
+                    }
                 }
             }
 
@@ -879,13 +978,13 @@ public class Response implements HttpServletResponse
         if (isCommitted() || isIncluding())
             return;
 
-        _contentLength = len;
-        if (_contentLength > 0)
+        if (len>0)
         {
             long written = _out.getWritten();
             if (written > len)
                 throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
+            _contentLength = len;
             _fields.putLongField(HttpHeader.CONTENT_LENGTH, len);
             if (isAllContentWritten(written))
             {
@@ -899,15 +998,19 @@ public class Response implements HttpServletResponse
                 }
             }
         }
-        else if (_contentLength==0)
+        else if (len==0)
         {
             long written = _out.getWritten();
             if (written > 0)
                 throw new IllegalArgumentException("setContentLength(0) when already written " + written);
+            _contentLength = len;
             _fields.put(HttpHeader.CONTENT_LENGTH, "0");
         }
         else
+        {
+            _contentLength = len;
             _fields.remove(HttpHeader.CONTENT_LENGTH);
+        }
     }
 
     public long getContentLength()
@@ -918,6 +1021,11 @@ public class Response implements HttpServletResponse
     public boolean isAllContentWritten(long written)
     {
         return (_contentLength >= 0 && written >= _contentLength);
+    }
+    
+    public boolean isContentComplete(long written)
+    {
+        return (_contentLength < 0 || written >= _contentLength);
     }
 
     public void closeOutput() throws IOException
@@ -1094,15 +1202,16 @@ public class Response implements HttpServletResponse
                 _fields.put(_mimeType.getContentTypeField());
             }
         }
-
     }
 
     @Override
     public void setBufferSize(int size)
     {
-        if (isCommitted() || getContentCount() > 0)
-            throw new IllegalStateException("cannot set buffer size on committed response");
-        if (size <= 0)
+        if (isCommitted())
+            throw new IllegalStateException("cannot set buffer size after response is in committed state");
+        if (getContentCount() > 0)
+            throw new IllegalStateException("cannot set buffer size after response has " + getContentCount() + " bytes already written");
+        if (size < __MIN_BUFFER_SIZE)
             size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
     }
@@ -1201,7 +1310,9 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        return new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
+        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
+        // TODO info.setTrailerSupplier(trailers);
+        return info;
     }
 
     /** Get the MetaData.Response committed for this response.

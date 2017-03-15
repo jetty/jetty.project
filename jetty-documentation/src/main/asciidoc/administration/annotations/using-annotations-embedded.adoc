@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@
 ==== Setting up the Classpath
 
 You will need to place the following Jetty jar files onto the classpath of your application.
-You can obtain them from the http://download.eclipse.org/jetty/stable-9/dist/[Jetty distribution], or the http://central.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
+You can obtain them from the https://www.eclipse.org/jetty/download.html[Jetty distribution], or the http://central.maven.org/maven2/org/eclipse/jetty/jetty-annotations[Maven repository]:
 
 ....
 jetty-plus.jar

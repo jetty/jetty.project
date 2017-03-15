@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,12 +39,14 @@ The following 1 module(s):
   + http://www.apache.org/licenses/LICENSE-2.0.html
 
 Proceed (y/N)? y
-INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
-INFO : session-store-infinispan-remote initialised in ${jetty.base}/start.d/session-store-infinispan-remote.ini
-DOWNLOAD: https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-infinispan/src/main/infinispan-resources/hotrod-client.properties?id=master to ${jetty.base}/resources/hotrod-client.properties
-DOWNLOAD: http://central.maven.org/maven2/org/infinispan/infinispan-remote/7.1.1.Final/infinispan-remote-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-7.1.1.Final.jar
-INFO : Base directory was modified
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-infinispan-remote initialized in ${jetty.base}/start.d/session-store-infinispan-remote.ini
+MKDIR : ${jetty.base}/lib/infinispan
+DOWNLD: http://central.maven.org/maven2/org/infinispan/infinispan-remote/7.1.1.Final/infinispan-remote-7.1.1.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-7.1.1.Final.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/session-store-infinispan-remote/resources/hotrod-client.properties to ${jetty.base}/resources/hotrod-client.properties
+INFO  : Base directory was modified
 ----
 
 Doing this enables the remote Infinispan Session module and any dependent modules or files needed for it to run on the server.

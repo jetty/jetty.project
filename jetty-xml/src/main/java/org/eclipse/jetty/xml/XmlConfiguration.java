@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -526,8 +527,10 @@ public class XmlConfiguration
             Method set = null;
             for (int s = 0; sets != null && s < sets.length; s++)
             {
+                if (sets[s].getParameterCount()!=1)
+                    continue;
                 Class<?>[] paramTypes = sets[s].getParameterTypes();
-                if (name.equals(sets[s].getName()) && paramTypes.length == 1)
+                if (name.equals(sets[s].getName()))
                 {
                     // lets try it
                     try
@@ -1429,13 +1432,12 @@ public class XmlConfiguration
      */
     public static void main(final String... args) throws Exception
     {
-        final AtomicReference<Throwable> exception = new AtomicReference<>();
-
-        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        try
         {
-            public Object run()
+            AccessController.doPrivileged(new PrivilegedExceptionAction<Void>()
             {
-                try
+                @Override
+                public Void run() throws Exception
                 {
                     Properties properties = null;
 
@@ -1509,26 +1511,15 @@ public class XmlConfiguration
                                 lc.start();
                         }
                     }
-                }
-                catch (Exception e)
-                {
-                    LOG.debug(Log.EXCEPTION,e);
-                    exception.set(e);
-                }
-                return null;
-            }
-        });
 
-        Throwable th = exception.get();
-        if (th != null)
+                    return null;
+                }
+            });
+        } 
+        catch (Error|Exception e)
         {
-            if (th instanceof RuntimeException)
-                throw (RuntimeException)th;
-            else if (th instanceof Exception)
-                throw (Exception)th;
-            else if (th instanceof Error)
-                throw (Error)th;
-            throw new Error(th);
+            LOG.warn(e);
+            throw e;
         }
     }
 }

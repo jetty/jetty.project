@@ -1,14 +1,14 @@
 [description]
 Enables logback request log.
 
-[Tags]
+[tags]
 requestlog
 logging
 logback
 
 [depend]
 server
-logback-core
+logback-impl
 resources
 
 [provide]

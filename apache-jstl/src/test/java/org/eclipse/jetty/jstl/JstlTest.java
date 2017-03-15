@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +19,16 @@
 package org.eclipse.jetty.jstl;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.jsp.JspException;
 
@@ -33,7 +37,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.SimpleRequest;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
@@ -104,32 +108,43 @@ public class JstlTest
     @Test
     public void testUrlsBasic() throws IOException
     {
-        SimpleRequest req = new SimpleRequest(baseUri);
-        String resp = req.getString("/urls.jsp");
-        assertThat("Response should be JSP processed", resp, not(containsString("<c:url")));
-        assertThat("Response", resp, containsString("[c:url value] = /ref.jsp;jsessionid="));
-        assertThat("Response", resp, containsString("[c:url param] = ref.jsp;key=value;jsessionid="));
+        HttpURLConnection http = (HttpURLConnection) baseUri.resolve("/urls.jsp").toURL().openConnection();
+        assertThat("http response", http.getResponseCode(), is(200));
+        try(InputStream input = http.getInputStream())
+        {
+            String resp = IO.toString(input, StandardCharsets.UTF_8);
+            assertThat("Response should be JSP processed", resp, not(containsString("<c:url")));
+            assertThat("Response", resp, containsString("[c:url value] = /ref.jsp;jsessionid="));
+            assertThat("Response", resp, containsString("[c:url param] = ref.jsp;key=value;jsessionid="));
+        }
     }
     
     @Test
     public void testCatchBasic() throws IOException
     {
-        SimpleRequest req = new SimpleRequest(baseUri);
-        String resp = req.getString("/catch-basic.jsp");
-        assertThat("Response should be JSP processed", resp, not(containsString("<c:catch")));
-        assertThat("Response", resp, containsString("[c:catch] exception : " + JspException.class.getName()));
-        assertThat("Response", resp, containsString("[c:catch] exception.message : In &lt;parseNumber&gt;"));
+        HttpURLConnection http = (HttpURLConnection) baseUri.resolve("/catch-basic.jsp").toURL().openConnection();
+        assertThat("http response", http.getResponseCode(), is(200));
+        try(InputStream input = http.getInputStream())
+        {
+            String resp = IO.toString(input, StandardCharsets.UTF_8);
+            assertThat("Response should be JSP processed", resp, not(containsString("<c:catch")));
+            assertThat("Response", resp, containsString("[c:catch] exception : " + JspException.class.getName()));
+            assertThat("Response", resp, containsString("[c:catch] exception.message : In &lt;parseNumber&gt;"));
+        }
     }
     
     @Test
     @Ignore
     public void testCatchTaglib() throws IOException
     {
-        SimpleRequest req = new SimpleRequest(baseUri);
-        String resp = req.getString("/catch-taglib.jsp");
-        System.out.println("resp = " + resp);
-        assertThat("Response should be JSP processed", resp, not(containsString("<c:catch>")));
-        assertThat("Response should be JSP processed", resp, not(containsString("<jtest:errorhandler>")));
-        assertThat("Response", resp, not(containsString("[jtest:errorhandler] exception is null")));
+        HttpURLConnection http = (HttpURLConnection) baseUri.resolve("/catch-taglib.jsp").toURL().openConnection();
+        assertThat("http response", http.getResponseCode(), is(200));
+        try(InputStream input = http.getInputStream())
+        {
+            String resp = IO.toString(input, StandardCharsets.UTF_8);
+            assertThat("Response should be JSP processed", resp, not(containsString("<c:catch>")));
+            assertThat("Response should be JSP processed", resp, not(containsString("<jtest:errorhandler>")));
+            assertThat("Response", resp, not(containsString("[jtest:errorhandler] exception is null")));
+        }
     }
 }

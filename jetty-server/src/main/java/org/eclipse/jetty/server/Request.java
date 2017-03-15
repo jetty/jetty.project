@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -80,7 +80,6 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
@@ -167,14 +166,11 @@ public class Request implements HttpServletRequest
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
     private final HttpInput _input;
-
     private MetaData.Request _metaData;
     private String _originalURI;
-
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
-
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
     private boolean _newContext;
@@ -203,6 +199,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
+    private HttpFields _trailers;
 
     /* ------------------------------------------------------------ */
     public Request(HttpChannel channel, HttpInput input)
@@ -216,6 +213,11 @@ public class Request implements HttpServletRequest
     {
         MetaData.Request metadata=_metaData;
         return metadata==null?null:metadata.getFields();
+    }
+
+    public HttpFields getTrailers()
+    {
+        return _trailers;
     }
 
     /* ------------------------------------------------------------ */
@@ -276,7 +278,7 @@ public class Request implements HttpServletRequest
     public PushBuilder getPushBuilder()
     {
         if (!isPushSupported())
-            throw new IllegalStateException();
+            throw new IllegalStateException(String.format("%s,push=%b,channel=%s", this, isPush(), getHttpChannel()));
 
         HttpFields fields = new HttpFields(getHttpFields().size()+5);
         boolean conditional=false;
@@ -1085,7 +1087,7 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         if (metadata==null)
             return null;
-        HttpVersion version = metadata.getVersion();
+        HttpVersion version = metadata.getHttpVersion();
         if (version==null)
             return null;
         return version.toString();
@@ -1098,7 +1100,7 @@ public class Request implements HttpServletRequest
     public HttpVersion getHttpVersion()
     {
         MetaData.Request metadata = _metaData;
-        return metadata==null?null:metadata.getVersion();
+        return metadata==null?null:metadata.getHttpVersion();
     }
 
     /* ------------------------------------------------------------ */
@@ -1735,9 +1737,10 @@ public class Request implements HttpServletRequest
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
         _metaData=request;
-        _originalURI=_metaData.getURIString();
+        
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
+        _originalURI=uri.isAbsolute()&&request.getHttpVersion()!=HttpVersion.HTTP_2?uri.toString():uri.getPathQuery();
 
         String path = uri.getDecodedPath();
         String info;
@@ -1847,6 +1850,7 @@ public class Request implements HttpServletRequest
         _multiPartInputStream = null;
         _remote=null;
         _input.recycle();
+        _trailers = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -2058,6 +2062,13 @@ public class Request implements HttpServletRequest
             metadata.setMethod(method);
     }
 
+    public void setHttpVersion(HttpVersion version)
+    {
+        MetaData.Request metadata = _metaData;
+        if (metadata!=null)
+            metadata.setHttpVersion(version);
+    }
+
     /* ------------------------------------------------------------ */
     public boolean isHead()
     {
@@ -2206,6 +2217,11 @@ public class Request implements HttpServletRequest
     public void setUserIdentityScope(UserIdentity.Scope scope)
     {
         _scope = scope;
+    }
+
+    public void setTrailers(HttpFields trailers)
+    {
+        _trailers = trailers;
     }
 
     /* ------------------------------------------------------------ */

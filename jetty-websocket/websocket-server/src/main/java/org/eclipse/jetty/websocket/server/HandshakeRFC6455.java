@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -50,18 +49,9 @@ public class HandshakeRFC6455 implements WebSocketHandshake
         response.addHeader("Connection","Upgrade");
         response.addHeader("Sec-WebSocket-Accept",AcceptHash.hashKey(key));
 
-        if (response.getExtensions() != null)
-        {
-            String value = ExtensionConfig.toHeaderValue(response.getExtensions());
-            if (value != null)
-            {
-                response.addHeader("Sec-WebSocket-Extensions",value);
-            }
-        }
-
         request.complete();
 
-        response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+        response.setStatusCode(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         response.complete();
     }
 }

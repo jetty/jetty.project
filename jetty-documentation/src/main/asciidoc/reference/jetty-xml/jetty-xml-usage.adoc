@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,7 @@ It is grounded in Java's Reflection API. Classes in the `java.lang.reflect` repr
 Behind the scenes, Jetty's XML config parser translates the XML elements and attributes into Reflection calls.
 
 [[using-jettyxml]]
-==== Using `jetty.xml`
+==== Using jetty.xml
 
 To use `jetty.xml`, specify it as a configuration file when running Jetty.
 

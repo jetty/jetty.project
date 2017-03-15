@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -99,7 +99,10 @@ public class DigestAuthentication extends AbstractAuthentication
                 clientQOP = "auth-int";
         }
 
-        return new DigestResult(headerInfo.getHeader(), response.getContent(), getRealm(), user, password, algorithm, nonce, clientQOP, opaque);
+        String realm = getRealm();
+        if (ANY_REALM.equals(realm))
+            realm = headerInfo.getRealm();
+        return new DigestResult(headerInfo.getHeader(), response.getContent(), realm, user, password, algorithm, nonce, clientQOP, opaque);
     }
 
     private Map<String, String> parseParameters(String wwwAuthenticate)

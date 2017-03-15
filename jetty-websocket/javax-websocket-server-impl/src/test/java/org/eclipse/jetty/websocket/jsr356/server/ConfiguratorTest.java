@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -31,11 +32,13 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -97,9 +100,19 @@ public class ConfiguratorTest
     public static class NoExtensionsSocket
     {
         @OnMessage
-        public String echo(String message)
+        public String echo(Session session, String message)
         {
-            return message;
+            List<Extension> negotiatedExtensions = session.getNegotiatedExtensions();
+            if (negotiatedExtensions == null)
+            {
+                return "negotiatedExtensions=null";
+            }
+            else
+            {
+                return "negotiatedExtensions=" + negotiatedExtensions.stream()
+                        .map((ext) -> ext.getName())
+                        .collect(Collectors.joining(",", "[", "]"));
+            }
         }
     }
 
@@ -273,7 +286,7 @@ public class ConfiguratorTest
         {
             List<String> selectedProtocol = response.getHeaders().get("Sec-WebSocket-Protocol");
             String protocol = "<>";
-            if (selectedProtocol != null || !selectedProtocol.isEmpty())
+            if (selectedProtocol != null && !selectedProtocol.isEmpty())
                 protocol = selectedProtocol.get(0);
             config.getUserProperties().put("selected-subprotocol", protocol);
         }
@@ -338,7 +351,7 @@ public class ConfiguratorTest
 
         private SimpleDateFormat newDateFormat()
         {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss Z");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss Z", Locale.ENGLISH);
             dateFormat.setTimeZone(TZ);
             return dateFormat;
         }
@@ -420,8 +433,13 @@ public class ConfiguratorTest
             client.addExtensions("identity");
             client.connect();
             client.sendStandardRequest();
-            HttpResponse response = client.readResponseHeader();
-            Assert.assertThat("response.extensions", response.getExtensionsHeader(), nullValue());
+            HttpResponse response = client.expectUpgradeResponse();
+            assertThat("response.extensions", response.getExtensionsHeader(), nullValue());
+    
+            client.write(new TextFrame().setPayload("NegoExts"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1, TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            assertThat("Frame Response", frame.getPayloadAsUTF8(), is("negotiatedExtensions=[]"));
         }
     }
 

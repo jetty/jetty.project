@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -234,4 +234,23 @@ public abstract class AbstractLifeCycle implements LifeCycle
         @Override public void lifeCycleStopped(LifeCycle event) {}
         @Override public void lifeCycleStopping(LifeCycle event) {}
     }
+    
+    /**
+     * A LifeCycle Listener that will call stop if any failures are notified.
+     */
+    public static final LifeCycle.Listener STOP_ON_FAILURE = new AbstractLifeCycleListener()
+    {
+        @Override 
+        public void lifeCycleFailure(LifeCycle lifecycle, Throwable cause) 
+        {
+            try
+            {
+                lifecycle.stop();
+            }
+            catch(Exception e)
+            {
+                cause.addSuppressed(e);
+            }
+        }
+    };
 }

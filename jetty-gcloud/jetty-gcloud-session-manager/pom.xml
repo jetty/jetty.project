@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.gcloud</groupId>
     <artifactId>gcloud-parent</artifactId>
-    <version>9.4.0-SNAPSHOT</version>
+    <version>9.4.3-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -20,6 +20,17 @@
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-datastore</artifactId>
       <version>${gcloud.version}</version>
+      <exclusions>
+        <exclusion>
+	  <groupId>javax.servlet</groupId>
+	  <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+	  <groupId>javax.servlet</groupId>
+	  <artifactId>javax.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
+
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -68,6 +79,86 @@
                     </configuration>
                  </execution>
             </executions>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+	  <version>3.0.0</version>
+	  <executions>
+	      <execution>
+	          <id>build-deps-file</id>
+		  <phase>generate-resources</phase>
+                  <goals>
+                      <goal>list</goal>
+                  </goals>
+                  <configuration>
+		    <appendOutput>false</appendOutput>
+		    <outputFile>${project.build.directory}/deps.txt</outputFile>
+		    <sort>true</sort>
+		    <prependGroupId>true</prependGroupId>
+		    <includeScope>runtime</includeScope>
+                  </configuration>
+	      </execution>
+	  </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>process-deps</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <replaceregexp file="${project.build.directory}/deps.txt"
+                               match=" *(.*):(.*):jar:(.*):[a-z]*"
+                               replace="maven://\1/\2/\3|lib/gcloud/\2-\3.jar"
+                               byline="true"
+		/>
+                <replaceregexp file="${project.build.directory}/deps.txt"
+                               match="The following files have been resolved:"
+                               replace="[files]"
+                />
+              </tasks>
+            </configuration>
+	  </execution>
+           <execution>
+            <id>process-mod</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <concat destfile="${project.build.directory}/gcloud-datastore.mod">
+                  <fileset file="src/main/config-template/modules/gcloud-datastore.mod"/>
+                  <fileset file="${project.build.directory}/deps.txt"/>
+                </concat>
+              </tasks>
+            </configuration>
+          </execution>
+
+         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/config.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
    </plugins>
   </build>

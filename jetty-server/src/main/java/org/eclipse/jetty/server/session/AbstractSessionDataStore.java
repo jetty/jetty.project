@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,13 +23,14 @@ package org.eclipse.jetty.server.session;
 import java.util.Set;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
  * AbstractSessionDataStore
  *
  *
  */
-public abstract class AbstractSessionDataStore extends AbstractLifeCycle implements SessionDataStore
+public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
     protected SessionContext _context; //context associated with this session data store
     protected int _gracePeriodSec = 60 * 60; //default of 1hr 
@@ -146,4 +147,16 @@ public abstract class AbstractSessionDataStore extends AbstractLifeCycle impleme
         _gracePeriodSec = sec;
     }
 
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+       return String.format("%s@%x[passivating=%b,graceSec=%d]",this.getClass().getName(),this.hashCode(),isPassivating(),getGracePeriodSec());
+
+    }
+
+    
 }

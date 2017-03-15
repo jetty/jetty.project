@@ -1,26 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  // ========================================================================
-  // Copyright (c) Webtide LLC
-  //
-  // All rights reserved. This program and the accompanying materials
-  // are made available under the terms of the Eclipse Public License v1.0
-  // and Apache License v2.0 which accompanies this distribution.
-  //
-  // The Eclipse Public License is available at
-  // http://www.eclipse.org/legal/epl-v10.html
-  //
-  // The Apache License v2.0 is available at
-  // http://www.apache.org/licenses/LICENSE-2.0.txt
-  //
-  // You may elect to redistribute this code under either of these licenses.
-  // ========================================================================
--->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.cdi</groupId>
     <artifactId>jetty-cdi-parent</artifactId>
-    <version>9.4.0-SNAPSHOT</version>
+    <version>9.4.3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-cdi-webapp</artifactId>

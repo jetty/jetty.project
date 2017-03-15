@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,25 +42,23 @@ import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
     
-    private final MappedWebSocketCreator mappedCreator;
-    private final WebSocketServerFactory webSocketServerFactory;
+    private final NativeWebSocketConfiguration configuration;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
-    
-    public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
+
+    public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
     {
-        super(factory);
-        this.mappedCreator = creator;
-        this.webSocketServerFactory = factory;
-        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
-        addBean(webSocketServerFactory);
+        super(configuration.getFactory());
+        this.configuration = configuration;
+        this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this));
+        addBean(this.configuration);
     }
     
     @Override
@@ -118,7 +116,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             deferredEndpointClasses.add(endpointClass);
         }
     }
-    
+
     /**
      * Register a ServerEndpointConfig to the server
      *
@@ -156,8 +154,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         assertIsValidEndpoint(config);
         
-        JsrCreator creator = new JsrCreator(this, config, webSocketServerFactory.getExtensionFactory());
-        mappedCreator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+        JsrCreator creator = new JsrCreator(this, config, this.configuration.getFactory().getExtensionFactory());
+        this.configuration.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
     }
     
     private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException
@@ -261,32 +259,37 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public long getDefaultAsyncSendTimeout()
     {
-        return webSocketServerFactory.getPolicy().getAsyncWriteTimeout();
+        return this.configuration.getPolicy().getAsyncWriteTimeout();
     }
     
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
-        return webSocketServerFactory.getPolicy().getMaxBinaryMessageSize();
+        return this.configuration.getPolicy().getMaxBinaryMessageSize();
     }
     
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
-        return webSocketServerFactory.getPolicy().getIdleTimeout();
+        return this.configuration.getPolicy().getIdleTimeout();
     }
     
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
-        return webSocketServerFactory.getPolicy().getMaxTextMessageSize();
+        return this.configuration.getPolicy().getMaxTextMessageSize();
+    }
+    
+    public WebSocketServerFactory getWebSocketServerFactory()
+    {
+        return this.configuration.getFactory();
     }
     
     @Override
     public void setAsyncSendTimeout(long ms)
     {
         super.setAsyncSendTimeout(ms);
-        webSocketServerFactory.getPolicy().setAsyncWriteTimeout(ms);
+        this.configuration.getPolicy().setAsyncWriteTimeout(ms);
     }
     
     @Override
@@ -294,16 +297,16 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         super.setDefaultMaxBinaryMessageBufferSize(max);
         // overall message limit (used in non-streaming)
-        webSocketServerFactory.getPolicy().setMaxBinaryMessageSize(max);
+        this.configuration.getPolicy().setMaxBinaryMessageSize(max);
         // incoming streaming buffer size
-        webSocketServerFactory.getPolicy().setMaxBinaryMessageBufferSize(max);
+        this.configuration.getPolicy().setMaxBinaryMessageBufferSize(max);
     }
     
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
         super.setDefaultMaxSessionIdleTimeout(ms);
-        webSocketServerFactory.getPolicy().setIdleTimeout(ms);
+        this.configuration.getPolicy().setIdleTimeout(ms);
     }
     
     @Override
@@ -311,26 +314,26 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         super.setDefaultMaxTextMessageBufferSize(max);
         // overall message limit (used in non-streaming)
-        webSocketServerFactory.getPolicy().setMaxTextMessageSize(max);
+        this.configuration.getPolicy().setMaxTextMessageSize(max);
         // incoming streaming buffer size
-        webSocketServerFactory.getPolicy().setMaxTextMessageBufferSize(max);
+        this.configuration.getPolicy().setMaxTextMessageBufferSize(max);
     }
     
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        webSocketServerFactory.onSessionClosed(session);
+        getWebSocketServerFactory().onSessionClosed(session);
     }
     
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        webSocketServerFactory.onSessionOpened(session);
+        getWebSocketServerFactory().onSessionOpened(session);
     }
     
     @Override
     public Set<Session> getOpenSessions()
     {
-        return new HashSet<>(webSocketServerFactory.getBeans(Session.class));
+        return new HashSet<>(getWebSocketServerFactory().getBeans(Session.class));
     }
 }

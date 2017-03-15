@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -182,15 +182,15 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     }
 
     @Override
-    public String toString()
+    public String toConnectionString()
     {
-        return String.format("%s@%h(l:%s <-> r:%s,closed=%b)[%s]",
-                getClass().getSimpleName(),
-                this,
-                getEndPoint().getLocalAddress(),
-                getEndPoint().getRemoteAddress(),
-                closed.get(),
-                channel);
+        return String.format("%s@%x(l:%s <-> r:%s,closed=%b)=>%s",
+            getClass().getSimpleName(),
+            hashCode(),
+            getEndPoint().getLocalAddress(),
+            getEndPoint().getRemoteAddress(),
+            closed.get(),
+            channel);
     }
 
     private class Delegate extends HttpConnection

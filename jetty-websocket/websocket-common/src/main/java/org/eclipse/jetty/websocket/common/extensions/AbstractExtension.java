@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -75,10 +75,16 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         out.append(bean.toString());
     }
     
+    @Deprecated
     public void init(WebSocketContainerScope container)
     {
-        this.policy = container.getPolicy();
-        this.bufferPool = container.getBufferPool();
+        init(container.getPolicy(),container.getBufferPool());
+    }
+    
+    public void init(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    {
+        this.policy = policy;
+        this.bufferPool = bufferPool;
     }
 
     public ByteBufferPool getBufferPool()

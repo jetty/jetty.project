@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ Its purpose is to provide almost the same functionality as the Jetty plugin for 
    <groupId>org.eclipse.jetty</groupId>
    <artifactId>jetty-ant</artifactId>
  </dependency>
-    
+
 ----
 
 [[jetty-ant-preparation]]
@@ -35,7 +35,7 @@ Its purpose is to provide almost the same functionality as the Jetty plugin for 
 
 To set up your project for Ant to run Jetty, you need a Jetty distribution and the jetty-ant Jar:
 
-1.  http://download.eclipse.org/jetty/[Download] a Jetty distribution and unpack it in the local filesystem.
+1.  https://www.eclipse.org/jetty/download.html[Download] a Jetty distribution and unpack it in the local filesystem.
 2.  http://central.maven.org/maven2/org/eclipse/jetty/jetty-ant/[Get] the jetty-ant Jar.
 3.  Make a directory in your project called `jetty-lib/`.
 4.  Copy all of the Jars in your Jetty distribution's `lib` directory, and all its subdirectories, into your new `jetty-lib` dir.
@@ -52,8 +52,8 @@ Begin with an empty `build.xml`:
 [source, xml, subs="{sub-order}"]
 ----
 <project name="Jetty-Ant integration test" basedir=".">
-</project>  
-      
+</project>
+
 ----
 
 Add a `<taskdef>` that imports all available Jetty tasks:
@@ -68,8 +68,8 @@ Add a `<taskdef>` that imports all available Jetty tasks:
 
   <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
 
-</project> 
-      
+</project>
+
 ----
 
 Now you are ready to add a new target for running Jetty:
@@ -89,7 +89,7 @@ Now you are ready to add a new target for running Jetty:
   </target>
 
 </project>
-      
+
 ----
 
 This is the minimal configuration you need. You can now start Jetty on the default port of 8080.
@@ -133,7 +133,7 @@ ports and connectors:::
   </target>
 
 </project>
-            
+
 ----
 +
 ____
@@ -168,7 +168,7 @@ login services:::
   </target>
 
 </project>
-            
+
 ----
 request log:::
   The `requestLog` option allows you to specify a request logger for the Jetty instance.
@@ -190,7 +190,7 @@ request log:::
   </target>
 
 </project>
-            
+
 ----
 temporary directory:::
   You can configure a directory as a temporary file store for uses such as expanding files and compiling JSPs by supplying the `tempDirectory` option:
@@ -211,7 +211,7 @@ temporary directory:::
   </target>
 
 </project>
-            
+
 ----
 other context handlers:::
   You may need to configure some other context handlers to run at the same time as your web application.
@@ -241,7 +241,7 @@ other context handlers:::
   </target>
 
 </project>
-            
+
 ----
 system properties:::
   As a convenience, you can configure system properties by using the `<systemProperties>` element.
@@ -266,7 +266,7 @@ system properties:::
   </target>
 
 </project>
-            
+
 ----
 jetty XML file:::
   If you have a lot of configuration to apply to the Jetty container, it can be more convenient to put it into a standard Jetty XML configuration file and have the Ant plugin apply it before starting Jetty:
@@ -287,7 +287,7 @@ jetty XML file:::
   </target>
 
 </project>
-            
+
 ----
 scanning for changes:::
   The most useful mode in which to run the Ant plugin is for it to continue to execute Jetty and automatically restart your web application if any part of it changes (for example, your IDE
@@ -311,7 +311,7 @@ scanning for changes:::
   </target>
 
 </project>
-            
+
 ----
 stopping:::
   In normal mode (`daemon="false"`), the `<jetty.run>` task runs until you `cntrl-c` it. It may be useful to script both the stop AND the start of Jetty.
@@ -341,7 +341,7 @@ stopping:::
   </target>
 
 </project>
-            
+
 ----
 +
 To stop jetty via Ant, enter:
@@ -375,7 +375,7 @@ execution without pausing ant:::
   </target>
 
 </project>
-            
+
 ----
 
 ==== Deploying a Web Application
@@ -403,7 +403,7 @@ The following example deploys a web application that is expanded in the local di
   </target>
 
 </project>
-      
+
 ----
 
 deploying a WAR file:::
@@ -430,7 +430,7 @@ deploying a WAR file:::
   </target>
 
 </project>
-            
+
 ----
 
 deploying more than one web application:::
@@ -458,7 +458,7 @@ deploying more than one web application:::
   </target>
 
 </project>
-            
+
 ----
 
 ===== Configuring the Web Application
@@ -491,7 +491,7 @@ Here's an example that specifies the location of the `web.xml` file (equivalent 
   </target>
 
 </project>
-        
+
 ----
 
 Other extra configuration options for the AntWebAppContext include:
@@ -528,7 +528,7 @@ extra classes and Jars:::
   </target>
 
 </project>
-              
+
 ----
 context attributes:::
   Jetty allows you to set up ServletContext attributes on your web application.
@@ -560,7 +560,7 @@ context attributes:::
   </target>
 
 </project>
-              
+
 ----
 `jetty-env.xml` file:::
   If you are using features such as link:#configuring_jndi[JNDI] with your web application, you may need to configure a link:#using_jndi[`WEB-INF/jetty-env.xml`] file to define resources. If the structure of your web application project is such that the source of `jetty-env.xml` file resides somewhere other than `WEB-INF`, you can use the `jettyEnvXml` attribute to tell Ant where to find it:
@@ -587,7 +587,7 @@ context attributes:::
   </target>
 
 </project>
-              
+
 ----
 context XML file:::
   You may prefer or even require to do some advanced configuration of your web application outside of the Ant build file.
@@ -616,5 +616,5 @@ project name="Jetty-Ant integration test" basedir=".">
   </target>
 
 </project>
-              
+
 ----

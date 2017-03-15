@@ -1,7 +1,7 @@
 [description]
 Enables caching of SessionData in front of a SessionDataStore.
 
-[Tags]
+[tags]
 session
 
 
@@ -15,7 +15,7 @@ etc/sessions/session-data-cache/session-caching-store.xml
 
 
 [ini]
-session-data-cache=xmemcached
+session-data-cache?=xmemcached
 
 [ini-template]
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -41,6 +42,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -508,6 +510,63 @@ public class HttpClientTest extends AbstractTest
         sleep(1000);
 
         Assert.assertEquals(1, completes.get());
+    }
+
+    @Test
+    public void testHEADResponds200() throws Exception
+    {
+        testHEAD(servletPath, HttpStatus.OK_200);
+    }
+
+    @Test
+    public void testHEADResponds404() throws Exception
+    {
+        testHEAD("/notMapped", HttpStatus.NOT_FOUND_404);
+    }
+
+    private void testHEAD(String path, int status) throws Exception
+    {
+        byte[] data = new byte[1024];
+        new Random().nextBytes(data);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.getOutputStream().write(data);
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI())
+                .method(HttpMethod.HEAD)
+                .path(path)
+                .send();
+
+        Assert.assertEquals(status, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
+    }
+
+    @Test
+    public void testHEADWithAcceptHeaderAndSendError() throws Exception
+    {
+        int status = HttpStatus.BAD_REQUEST_400;
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.sendError(status);
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI())
+                .method(HttpMethod.HEAD)
+                .path(servletPath)
+                .header(HttpHeader.ACCEPT, "*/*")
+                .send();
+
+        Assert.assertEquals(status, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
     }
 
     private void sleep(long time) throws IOException

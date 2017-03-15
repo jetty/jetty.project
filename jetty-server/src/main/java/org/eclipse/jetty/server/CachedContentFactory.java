@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -68,9 +68,9 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     private final CompressedContentFormat[] _precompressedFormats;
     private final boolean  _useFileMappedBuffer;
     
-    private int _maxCachedFileSize =128*1024*1024;
-    private int _maxCachedFiles=2048;
-    private int _maxCacheSize =256*1024*1024;
+    private int _maxCachedFileSize = 128*1024*1024;
+    private int _maxCachedFiles= 2048;
+    private int _maxCacheSize = 256*1024*1024;
     
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -375,22 +375,34 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     }
 
     /* ------------------------------------------------------------ */
-    protected ByteBuffer getDirectBuffer(Resource resource)
+    protected ByteBuffer getMappedBuffer(Resource resource)
     {
         // Only use file mapped buffers for cached resources, otherwise too much virtual memory commitment for
         // a non shared resource.  Also ignore max buffer size
         try
         {
             if (_useFileMappedBuffer && resource.getFile()!=null && resource.length()<Integer.MAX_VALUE) 
-                return BufferUtil.toMappedBuffer(resource.getFile());
-            
+                return BufferUtil.toMappedBuffer(resource.getFile());            
+        }
+        catch(IOException|IllegalArgumentException e)
+        {
+            LOG.warn(e);
+        }
+        return null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected ByteBuffer getDirectBuffer(Resource resource)
+    {
+        try
+        {
             return BufferUtil.toBuffer(resource,true);
         }
         catch(IOException|IllegalArgumentException e)
         {
             LOG.warn(e);
-            return null;
         }
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -524,9 +536,10 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 _cachedSize.addAndGet(-BufferUtil.length(indirect));
             
             ByteBuffer direct=_directBuffer.get();
+           
             if (direct!=null && !BufferUtil.isMappedBuffer(direct) && _directBuffer.compareAndSet(direct,null))
                 _cachedSize.addAndGet(-BufferUtil.length(direct));
-
+            
             _cachedFiles.decrementAndGet();
             _resource.close();
         }
@@ -625,15 +638,15 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             ByteBuffer buffer = _directBuffer.get();
             if (buffer==null)
             {
-                ByteBuffer buffer2=CachedContentFactory.this.getDirectBuffer(_resource);
-
-                if (buffer2==null)
+                ByteBuffer mapped = CachedContentFactory.this.getMappedBuffer(_resource);
+                ByteBuffer direct = mapped==null?CachedContentFactory.this.getDirectBuffer(_resource):mapped;
+                    
+                if (direct==null)
                     LOG.warn("Could not load "+this);
-                else if (_directBuffer.compareAndSet(null,buffer2))
+                else if (_directBuffer.compareAndSet(null,direct))
                 {
-                    buffer=buffer2;
-
-                    if (!BufferUtil.isMappedBuffer(buffer) && _cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
+                    buffer=direct;
+                    if (mapped==null && _cachedSize.addAndGet(BufferUtil.length(buffer))>_maxCacheSize)
                         shrinkCache(); 
                 }
                 else

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,25 +31,15 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  ClientCrossContextSessionTest.class,
-  ForwardedSessionTest.class,
-  ImmediateSaveTest.class,
-  ImmortalSessionTest.class,
   InvalidationSessionTest.class,
-  LastAccessTimeTest.class,
-  LocalSessionScavengingTest.class,
-  NewSessionTest.class,
-  OrphanedSessionTest.class,
-  ReentrantRequestSessionTest.class,
-  RemoveSessionTest.class,
-  SameNodeLoadTest.class,
-  ServerCrossContextSessionTest.class,
+  ClusteredLastAccessTimeTest.class,
+  ClusteredSessionScavengingTest.class,
+  NonClusteredSessionScavengingTest.class,
+  ClusteredOrphanedSessionTest.class,
   SessionExpiryTest.class,
-  SessionInvalidateAndCreateTest.class,
-  SessionMigrationTest.class,
-  SessionRenewTest.class,
-  SessionValueSavingTest.class,
-  StopSessionManagerPreserveSessionTest.class
+  SessionInvalidateCreateScavengeTest.class,
+  ClusteredSessionMigrationTest.class,
+  ModifyMaxInactiveIntervalTest.class
 })
 
 

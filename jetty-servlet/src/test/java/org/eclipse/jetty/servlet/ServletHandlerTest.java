@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
+import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,6 +47,15 @@ public class ServletHandlerTest
     FilterHolder fh5 = new FilterHolder(Source.JAVAX_API);
     FilterMapping fm5 = new FilterMapping();
     
+    
+    ServletHolder sh1 = new ServletHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
+    ServletMapping sm1 = new ServletMapping();
+    
+    ServletHolder sh2 = new ServletHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
+    ServletMapping sm2 = new ServletMapping();
+    
+    ServletHolder sh3 = new ServletHolder(new Source (Source.Origin.DESCRIPTOR, "foo.xml"));
+    ServletMapping sm3 = new ServletMapping();
     
 
     @Before
@@ -70,6 +80,241 @@ public class ServletHandlerTest
         fh5.setName("fh5");
         fm5.setPathSpec("/*");
         fm5.setFilterHolder(fh5);
+        
+        sh1.setName("s1");
+        sm1.setDefault(false);
+        sm1.setPathSpec("/foo/*");
+        sm1.setServletName("s1");
+        
+        sh2.setName("s2");
+        sm2.setDefault(false);
+        sm2.setPathSpec("/foo/*");
+        sm2.setServletName("s2");
+        
+        sh3.setName("s3");
+        sm3.setDefault(true);
+        sm3.setPathSpec("/foo/*");
+        sm3.setServletName("s3");
+        
+        
+    }
+    
+    @Test
+    public void testAddFilterIgnoresDuplicates() throws Exception
+    {
+
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+        handler.addFilter(h);
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        handler.addFilter(h);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        handler.addFilter(h2);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    @Test
+    public void testAddFilterIgnoresDuplicates2() throws Exception
+    {
+
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+        FilterMapping m = new FilterMapping();
+        m.setPathSpec("/*");
+        m.setFilterHolder(h);
+        
+        
+        handler.addFilter(h,m);
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        
+        FilterMapping m2 = new FilterMapping();
+        m2.setPathSpec("/*");
+        m2.setFilterHolder(h);
+        handler.addFilter(h, m2);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        FilterMapping m3 = new FilterMapping();
+        m3.setPathSpec("/*");
+        m3.setFilterHolder(h);
+        
+        handler.addFilter(h2, m3);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    
+    @Test
+    public void testAddFilterWithMappingIgnoresDuplicateFilters() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+ 
+        
+        
+        handler.addFilterWithMapping(h,"/*", 0);
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        handler.addFilterWithMapping(h, "/*", 1);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        
+        handler.addFilterWithMapping(h2, "/*", 0);
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    
+    @Test
+    public void testAddFilterWithMappingIngoresDuplicateFilters2 () throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        FilterHolder h = new FilterHolder();
+        h.setName("x");
+ 
+        
+        
+        handler.addFilterWithMapping(h,"/*", EnumSet.allOf(DispatcherType.class));
+        FilterHolder[] holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders[0]==h);
+        
+        handler.addFilterWithMapping(h, "/x", EnumSet.allOf(DispatcherType.class));
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 1);
+        assertTrue(holders[0] == h);
+        
+        FilterHolder h2 = new FilterHolder();
+        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        
+        handler.addFilterWithMapping(h2, "/*", EnumSet.allOf(DispatcherType.class));
+        holders = handler.getFilters();
+        assertNotNull(holders);
+        assertTrue(holders.length == 2);
+        assertTrue(holders[1] == h2);
+    }
+    
+    
+    @Test
+    public void testDuplicateMappingsForbidden() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(false);
+        handler.addServlet(sh1);
+        handler.addServlet(sh2);
+        handler.updateNameMappings();
+        
+        handler.addServletMapping(sm1);
+        handler.addServletMapping(sm2);
+
+        try
+        {
+            handler.updateMappings();
+        }
+        catch (IllegalStateException e)
+        {
+            //expected error
+        }
+    }
+
+
+    @Test
+    public void testDuplicateMappingsWithDefaults() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(false);
+        handler.addServlet(sh1);
+        handler.addServlet(sh3);
+        handler.updateNameMappings();
+
+        handler.addServletMapping(sm3);
+        handler.addServletMapping(sm1);
+       
+
+        handler.updateMappings();
+
+        MappedResource<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+        assertNotNull(entry);
+        assertEquals("s1", entry.getResource().getName());
+    }
+    
+    
+    @Test
+    public void testDuplicateMappingsSameServlet() throws Exception
+    {
+        ServletHolder sh4 = new ServletHolder();
+       
+        sh4.setName("s1");
+        
+        ServletMapping sm4 = new ServletMapping();
+        sm4.setPathSpec("/foo/*");
+        sm4.setServletName("s1");
+        
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(true);
+        handler.addServlet(sh1);
+        handler.addServlet(sh4);
+        handler.updateNameMappings();
+
+        handler.addServletMapping(sm1);
+        handler.addServletMapping(sm4);
+       
+
+        handler.updateMappings();
+    }
+
+
+    
+    @Test
+    public void testDuplicateMappingsAllowed() throws Exception
+    {
+        ServletHandler handler = new ServletHandler();
+        handler.setAllowDuplicateMappings(true);
+        handler.addServlet(sh1);
+        handler.addServlet(sh2);
+        handler.updateNameMappings();
+        
+        handler.addServletMapping(sm1);
+        handler.addServletMapping(sm2);
+        handler.updateMappings();
+        
+       MappedResource<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+       assertNotNull(entry);
+       assertEquals("s2", entry.getResource().getName());
     }
 
     @Test

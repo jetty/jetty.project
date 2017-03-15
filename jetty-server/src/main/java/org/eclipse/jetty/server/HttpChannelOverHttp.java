@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -62,6 +62,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     private List<String> _complianceViolations;
+    private HttpFields _trailers;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
@@ -87,6 +88,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _connection = null;
         _fields.clear();
         _upgrade = null;
+        _trailers = null;
     }
 
     @Override
@@ -136,7 +138,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (_metadata.getVersion() == HttpVersion.HTTP_1_1)
+                    if (_metadata.getHttpVersion() == HttpVersion.HTTP_1_1)
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -187,6 +189,14 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _fields.add(field);
     }
 
+    @Override
+    public void parsedTrailer(HttpField field)
+    {
+        if (_trailers == null)
+            _trailers = new HttpFields();
+        _trailers.add(field);
+    }
+
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
@@ -219,11 +229,15 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public void earlyEOF()
     {
+        _httpConnection.getGenerator().setPersistent(false);
         // If we have no request yet, just close
         if (_metadata.getMethod() == null)
             _httpConnection.close();
-        else if (onEarlyEOF())
+        else if (onEarlyEOF() || _delayedForContent)
+        { 
+            _delayedForContent = false;
             handle();
+        }
     }
 
     @Override
@@ -261,12 +275,15 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
-        if (_complianceViolations != null)
+        if (_complianceViolations != null && !_complianceViolations.isEmpty())
+        {
             this.getRequest().setAttribute(ATTR_COMPLIANCE_VIOLATIONS, _complianceViolations);
+            _complianceViolations=null;
+        }
 
         boolean persistent;
 
-        switch (_metadata.getVersion())
+        switch (_metadata.getHttpVersion())
         {
             case HTTP_0_9:
             {
@@ -350,7 +367,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
             default:
             {
-                throw new IllegalStateException("unsupported version " + _metadata.getVersion());
+                throw new IllegalStateException("unsupported version " + _metadata.getHttpVersion());
             }
         }
 
@@ -454,11 +471,19 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public boolean messageComplete()
+    public boolean contentComplete()
     {
-        boolean handle = onRequestComplete() || _delayedForContent;
+        boolean handle = onContentComplete() || _delayedForContent;
         _delayedForContent = false;
         return handle;
+    }
+
+    @Override
+    public boolean messageComplete()
+    {
+        if (_trailers != null)
+            onTrailers(_trailers);
+        return onRequestComplete();
     }
 
     @Override

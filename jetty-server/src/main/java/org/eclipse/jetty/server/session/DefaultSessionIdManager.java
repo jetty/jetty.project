@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -48,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * @see HouseKeeper
  */
-public class DefaultSessionIdManager extends AbstractLifeCycle implements SessionIdManager
+public class DefaultSessionIdManager extends ContainerLifeCycle implements SessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
     
@@ -63,6 +64,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     protected long _reseed=100000L;
     protected Server _server;
     protected HouseKeeper _houseKeeper;
+    protected boolean _ownHouseKeeper;
     
 
     /* ------------------------------------------------------------ */
@@ -112,10 +114,19 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
      */
     public void setSessionHouseKeeper (HouseKeeper houseKeeper)
     {
+        updateBean(_houseKeeper, houseKeeper);
         _houseKeeper = houseKeeper;
-        _houseKeeper.setSessionIdManager(this);
+        _houseKeeper.setSessionIdManager(this);    
     }
    
+    
+    /**
+     * @return the housekeeper
+     */
+    public HouseKeeper getSessionHouseKeeper()
+    {
+        return _houseKeeper;
+    }
     
 
     /* ------------------------------------------------------------ */
@@ -141,15 +152,20 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
      * lookup the worker name that can be dynamically set by a request
      * Customizer.
      *
-     * @param workerName the name of the worker
+     * @param workerName the name of the worker, if null it is coerced to empty string
      */
     public void setWorkerName(String workerName)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
-        if (workerName.contains("."))
-            throw new IllegalArgumentException("Name cannot contain '.'");
-        _workerName=workerName;
+        if (workerName == null)
+            _workerName = "";
+        else
+        {
+            if (workerName.contains("."))
+                throw new IllegalArgumentException("Name cannot contain '.'");
+            _workerName=workerName;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -198,33 +214,32 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     @Override
     public String newSessionId(HttpServletRequest request, long created)
     {
-        synchronized (this)
+        if (request==null)
+            return newSessionId(created);
+
+        // A requested session ID can only be used if it is in use already.
+        String requested_id=request.getRequestedSessionId();
+        if (requested_id!=null)
         {
-            if (request==null)
-                return newSessionId(created);
-
-            // A requested session ID can only be used if it is in use already.
-            String requested_id=request.getRequestedSessionId();
-            if (requested_id!=null)
-            {
-                String cluster_id=getId(requested_id);
-                if (isIdInUse(cluster_id))
-                    return cluster_id;
-            }
-
- 
-            // Else reuse any new session ID already defined for this request.
-            String new_id=(String)request.getAttribute(__NEW_SESSION_ID);
-            if (new_id!=null&&isIdInUse(new_id))
-                return new_id;
-
-            // pick a new unique ID!
-            String id = newSessionId(request.hashCode());
-
-            request.setAttribute(__NEW_SESSION_ID,id);
-            return id;
+            String cluster_id=getId(requested_id);
+            if (isIdInUse(cluster_id))
+                return cluster_id;
         }
+
+
+        // Else reuse any new session ID already defined for this request.
+        String new_id=(String)request.getAttribute(__NEW_SESSION_ID);
+        if (new_id!=null&&isIdInUse(new_id))
+            return new_id;
+
+        // pick a new unique ID!
+        String id = newSessionId(request.hashCode());
+
+        request.setAttribute(__NEW_SESSION_ID,id);
+        return id;
     }
+    
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -235,45 +250,49 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     {
         // pick a new unique ID!
         String id=null;
-        while (id==null||id.length()==0)
-        {
-            long r0=_weakRandom
-                    ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^((seedTerm)<<32))
-                    :_random.nextLong();
-            if (r0<0)
-                r0=-r0;
-                    
-            // random chance to reseed
-            if (_reseed>0 && (r0%_reseed)== 1L)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Reseeding {}",this);
-                if (_random instanceof SecureRandom)
-                {
-                    SecureRandom secure = (SecureRandom)_random;
-                    secure.setSeed(secure.generateSeed(8));
-                }
-                else
-                {
-                    _random.setSeed(_random.nextLong()^System.currentTimeMillis()^seedTerm^Runtime.getRuntime().freeMemory());
-                }
-            }
-            
-            long r1=_weakRandom
-                ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^((seedTerm)<<32))
-                :_random.nextLong();
-            if (r1<0)
-                r1=-r1;
-            
-            id=Long.toString(r0,36)+Long.toString(r1,36);
 
-            //add in the id of the node to ensure unique id across cluster
-            //NOTE this is different to the node suffix which denotes which node the request was received on
-            if (_workerName!=null)
-                id=_workerName + id;
-            
-            id = id+Long.toString(COUNTER.getAndIncrement());
-    
+        synchronized (_random)
+        {
+            while (id==null||id.length()==0)
+            {
+                long r0=_weakRandom
+                        ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^((seedTerm)<<32))
+                        :_random.nextLong();
+                        if (r0<0)
+                            r0=-r0;
+
+                        // random chance to reseed
+                        if (_reseed>0 && (r0%_reseed)== 1L)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Reseeding {}",this);
+                            if (_random instanceof SecureRandom)
+                            {
+                                SecureRandom secure = (SecureRandom)_random;
+                                secure.setSeed(secure.generateSeed(8));
+                            }
+                            else
+                            {
+                                _random.setSeed(_random.nextLong()^System.currentTimeMillis()^seedTerm^Runtime.getRuntime().freeMemory());
+                            }
+                        }
+
+                        long r1=_weakRandom
+                                ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^((seedTerm)<<32))
+                                :_random.nextLong();
+                                if (r1<0)
+                                    r1=-r1;
+
+                                id=Long.toString(r0,36)+Long.toString(r1,36);
+
+                                //add in the id of the node to ensure unique id across cluster
+                                //NOTE this is different to the node suffix which denotes which node the request was received on
+                                if (!StringUtil.isBlank(_workerName))
+                                    id=_workerName + id;
+
+                                id = id+Long.toString(COUNTER.getAndIncrement());
+
+            }
         }
         return id;
     }
@@ -343,9 +362,11 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
 
         if (_houseKeeper == null)
         {
-            LOG.warn("No SessionScavenger set, using defaults");
+            LOG.info("No SessionScavenger set, using defaults");
+            _ownHouseKeeper = true;
             _houseKeeper = new HouseKeeper();
             _houseKeeper.setSessionIdManager(this);
+            addBean(_houseKeeper,true);
         }
 
         _houseKeeper.start();
@@ -359,6 +380,11 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     protected void doStop() throws Exception
     {
         _houseKeeper.stop();
+        if (_ownHouseKeeper)
+        {
+            _houseKeeper = null;
+        }
+        _random = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -397,7 +423,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
     @Override
     public String getExtendedId(String clusterId, HttpServletRequest request)
     {
-        if (_workerName!=null)
+        if (!StringUtil.isBlank(_workerName))
         {
             if (_workerAttr==null)
                 return clusterId+'.'+_workerName;
@@ -452,7 +478,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         for (SessionHandler manager:getSessionHandlers())
         {         
             manager.invalidate(id);
-        } 
+        }
     }
 
     
@@ -463,7 +489,7 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
      * @see org.eclipse.jetty.server.SessionIdManager#renewSessionId(java.lang.String, java.lang.String, javax.servlet.http.HttpServletRequest)
      */
     @Override
-    public void renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
+    public String renewSessionId (String oldClusterId, String oldNodeId, HttpServletRequest request)
     { 
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
@@ -475,6 +501,8 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         {
             manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
         }
+        
+        return newClusterId;
     }
     
     
@@ -499,4 +527,15 @@ public class DefaultSessionIdManager extends AbstractLifeCycle implements Sessio
         }
         return handlers;
     }
+
+    /** 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[worker=%s]", super.toString(),_workerName);
+    }
+    
+    
 }

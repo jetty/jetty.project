@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,12 +32,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -45,12 +47,13 @@ import static org.junit.Assert.assertThat;
 
 public class AsyncListenerTest
 {
+    private QueuedThreadPool threadPool;
     private Server server;
     private LocalConnector connector;
 
     public void startServer(ServletContextHandler context) throws Exception
     {
-        server = new Server();
+        server = threadPool == null ? new Server() : new Server(threadPool);
         connector = new LocalConnector(server);
         connector.setIdleTimeout(20 * 60 * 1000L);
         server.addConnector(connector);
@@ -407,6 +410,42 @@ public class AsyncListenerTest
         assertThat(httpResponse, containsString("DATA"));
     }
 
+    @Test
+    public void test_StartAsync_OnTimeout_CalledBy_PooledThread() throws Exception
+    {
+        String threadNamePrefix = "async_listener";
+        threadPool = new QueuedThreadPool();
+        threadPool.setName(threadNamePrefix);
+        ServletContextHandler context = new ServletContextHandler();
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(1000);
+                asyncContext.addListener(new AsyncListenerAdapter()
+                {
+                    @Override
+                    public void onTimeout(AsyncEvent event) throws IOException
+                    {
+                        if (Thread.currentThread().getName().startsWith(threadNamePrefix))
+                            response.setStatus(HttpStatus.OK_200);
+                        else
+                            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                        asyncContext.complete();
+                    }
+                });
+            }
+        }), "/*");
+        startServer(context);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n"));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
 
     // Unique named RuntimeException to help during debugging / assertions.
     public static class TestRuntimeException extends RuntimeException

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,8 +35,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -71,9 +71,9 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
         server.setHandler(new SetHandledWriteSomeDataHandler(false));
         server.start();
 
-        SimpleHttpResponse response = executeRequest();
+        HttpTester.Response response = executeRequest();
 
-        assertThat("response code is 500", response.getCode(), is("500"));
+        assertThat("response code is 500", response.getStatus(), is(500));
     }
 
     private class SetHandledWriteSomeDataHandler extends ThrowExceptionOnDemandHandler
@@ -84,7 +84,7 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             final CyclicBarrier resumeBarrier = new CyclicBarrier(1);
             

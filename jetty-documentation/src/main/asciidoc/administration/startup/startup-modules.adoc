@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,51 +17,11 @@
 [[startup-modules]]
 === Managing Startup Modules
 
-Jetty 9.1 a new Module system replacing the previous `start.config` + `OPTIONS` techniques from past Jetty Distributions.
-
 The standard Jetty Distribution ships with several modules defined in `${jetty.home}/modules/`.
-
-What a Jetty Startup Module Defines:
-
-A Module Name::
-  The name of the module is the keyword used by the `--module=<name>` command line argument to activate/enable modules, and also find dependent modules.
-  The filename of the module defines its name (eg: server.mod becomes the module named "server").
-List of Dependant Modules::
-  All modules can declare that they depend on other modules with the `[depend]` section.
-  The list of dependencies is used to transitively resolve other modules that are deemed to be required based on the modules that you activate.
-  The order of modules defined in the graph of active modules is used to determine various execution order for configuration, such as Jetty IoC XML configurations, and to resolve conflicting property declarations.
-  Of note: there is a special section `[optional]` used to describe structurally dependent modules that are not technically required, but might be of use to your specific configuration.
-List of Libraries::
-  Module can optionally declare that they have libraries that they need to function properly.
-  The `[lib]` section declares a set of pathnames that follow the link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
-List of Jetty IoC XML Configurations::
-  A Module can optionally declare a list of Jetty IoC XML configurations used to wire up the functionality that this module defines.
-  The `[xml]` section declares a set of pathnames that follow the link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
-  Ideally, all XML files are parameterized to accept properties to configure the various elements of the standard configuration.
-  Allowing for a simplified configuration of Jetty for the vast majority of deployments.
-  The execution order of the Jetty IoC XML configurations is determined by the graph of active module dependencies resolved via the `[depend]` sections.
-  If the default XML is not sufficient to satisfy your needs, you can override this XML by making your own in the `${jetty.base}/etc/` directory, with the same name.
-  The resolution steps for Jetty Base and Jetty Home will ensure that your copy from `${jetty.base}` will be picked up over the default one in `${jetty.home}`.
-Jetty INI Template::
-  Each module can optionally declare a startup ini template that is used to insert/append/inject sample configuration elements into the `start.ini` or `start.d/*.ini` files when using the `--add-to-start=<name>` command line argument in `start.jar`.
-  Commonly used to present some of the parameterized property options from the Jetty IoC XML configuration files also referenced in the same module.
-  The `[ini-template]` section declares this section of sample configuration.
-Required Files and Directories::
-  If the activation of a module requires some paths to exist, the `[files]` section defines them.
-  There are 2 modes of operation of the entries in this section.
-Ensure Directory Exists;;
-    If you add a pathname that ends in `"/"` (slash), such as `"webapps/"`, then that directory will be created if it does not yet exist in `${jetty.base}/<pathname>` (eg: `"webapps/"` will result in `${jetty.base}/webapps/` being created).
-Download File;;
-    There is a special syntax to allow you to download a file into a specific location if it doesn't exist yet: `<url>:<pathname>`.
-    Currently, the `<url>` must be a `http://` scheme URL (please link:#bugs[let us know] if you need more schemes supported).
-    The `<pathname>` portion follows the link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
-    Example: `http://repo.corp.com/maven/corp-security-policy-1.0.jar:lib/corp-security-policy.jar`
-    This will check for the existence of `lib/corp-security-policy.jar`, and if it doesn't exist, it will download the jar file from
-    `http://repo.corp.com/maven/corp-security-policy-1.0.jar`
+These modules allow flexibility for implementations and make configuration a much more plug-and-play set up.
 
 [[enabling-modules]]
 ==== Enabling Modules
-
 ____
 [TIP]
 The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}` where the directories for `${jetty.home}` and `${jetty.base}` point to the same location.
@@ -241,11 +201,26 @@ Deleting the ini file associated with module is another option, but may not be p
 
 To see which modules are __available__, use the `--list-modules` command line argument.
 This command will also show you which modules are __enabled__.
-Here's an example:
+Modules are sorted by the value in the `[tags]` section of the associated `.mod` file.
+If there are multiple entries in the `[tags]` section, it sorts by the first tag in the list.
+
+____
+[NOTE]
+By default, the `--list-modules` command line argument shows all modules that do not include `internal` in the `[tags]` section of the associated `.mod` file.
+If you would like to see *all* modules, use `--list-all-modules`
+____
+
+Here's an example of the `--list-modules` command:
 
 include::screen-list-modules.adoc[]
 
-Since being introduced in Jetty 9.1 the modules provided in the Jetty distribution has expanded greatly.
-Below is a graphical representation of the standard modules and their dependencies.
+===== Searching Modules
 
-image:images/modules-9.3-simplified.png[image,width=768]
+Since the introduction of the module system, many new modules have been added.
+As a result, looking at the module list as a whole can be somewhat overwhelming.
+To narrow down which modules you would like to choose from, you can search by values listed under the `[tags]` section.
+Note that when you search this way, all modules that include your criteria in it's `[tags]` section, including internal modules, will be shown.
+To filter out internal modules when searching a specific module tag, simply add `-internal` to the command line.
+For example, if you wanted to look at only the logging modules (excluding the internal implementation modules), you would use `--list-modules=logging,-internal`.
+
+include::screen-list-logging-modules.adoc[]

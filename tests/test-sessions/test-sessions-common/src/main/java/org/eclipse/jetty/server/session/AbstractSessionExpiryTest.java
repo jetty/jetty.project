@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,6 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.server.session.Session.SessionInactivityTimeout;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
@@ -47,7 +46,8 @@ import org.junit.Test;
 /**
  * AbstractSessionExpiryTest
  *
- *
+ * Ensure session is not removed when server stops, and that a
+ * non-expired session can be loaded in after restart.
  */
 public abstract class AbstractSessionExpiryTest extends AbstractTestBase
 {
@@ -68,18 +68,97 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
     {
         public List<String> createdSessions = new ArrayList<String>();
         public List<String> destroyedSessions = new ArrayList<String>();
+        public boolean accessAttribute = false;
+        public Exception ex = null;
+        
+        public TestHttpSessionListener(boolean access)
+        {
+            accessAttribute = access;
+        }
+        
+        public TestHttpSessionListener()
+        {
+            accessAttribute = false;
+        }
         
         public void sessionDestroyed(HttpSessionEvent se)
         {
             destroyedSessions.add(se.getSession().getId());
+            if (accessAttribute)
+            {
+                try
+                {
+                   
+                    se.getSession().getAttribute("anything");
+                }
+                catch (Exception e)
+                {
+                    ex = e;
+                }
+            }
         }
-        
+
         public void sessionCreated(HttpSessionEvent se)
         {
             createdSessions.add(se.getSession().getId());
         }
     };
     
+    @Test
+    public void testSessionExpiresWithListener() throws Exception
+    {
+        String contextPath = "";
+        String servletMapping = "/server";
+        int inactivePeriod = 3;
+        int scavengePeriod = 1;
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+                                                            cacheFactory, storeFactory);
+        TestServlet servlet = new TestServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        ServletContextHandler context = server1.addContext(contextPath);
+        context.addServlet(holder, servletMapping);
+        TestHttpSessionListener listener = new TestHttpSessionListener(true);
+        
+        context.getSessionHandler().addEventListener(listener);
+        
+        server1.start();
+        int port1 = server1.getPort();
+
+        try
+        {
+            HttpClient client = new HttpClient();
+            client.start();
+            String url = "http://localhost:" + port1 + contextPath + servletMapping;
+
+            //make a request to set up a session on the server
+            ContentResponse response1 = client.GET(url + "?action=init");
+            assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+            String sessionCookie = response1.getHeaders().get("Set-Cookie");
+            assertTrue(sessionCookie != null);
+            // Mangle the cookie, replacing Path with $Path, etc.
+            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+            
+            String sessionId = TestServer.extractSessionId(sessionCookie);     
+
+            verifySessionCreated(listener,sessionId);
+            
+            //and wait until the session should have expired
+            pause(inactivePeriod+(scavengePeriod*2));
+
+            verifySessionDestroyed (listener, sessionId);
+            assertNull(listener.ex);
+        }
+        finally
+        {
+            server1.stop();
+        }        
+    }
 
     /**
      * Check session is preserved over stop/start
@@ -92,7 +171,14 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         String servletMapping = "/server";
         int inactivePeriod = 20;
         int scavengePeriod = 10;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+        
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+                                                            cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         server1.addContext(contextPath).addServlet(holder, servletMapping);
@@ -152,7 +238,14 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         String servletMapping = "/server";
         int inactivePeriod = 4;
         int scavengePeriod = 1;
-        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+        
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        
+        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+                                                            cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -178,7 +271,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
-            String sessionId = AbstractTestServer.extractSessionId(sessionCookie);     
+            String sessionId = TestServer.extractSessionId(sessionCookie);     
 
             verifySessionCreated(listener,sessionId);
             
@@ -221,7 +314,14 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
       String servletMapping = "/server";
       int inactivePeriod = 5;
       int scavengePeriod = 1;
-      AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod, SessionCache.NEVER_EVICT);
+      
+      DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+      cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+      SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+      ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+      
+      TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+                                                          cacheFactory, storeFactory);
       ChangeTimeoutServlet servlet = new ChangeTimeoutServlet();
       ServletHolder holder = new ServletHolder(servlet);
       ServletContextHandler context = server1.addContext(contextPath);

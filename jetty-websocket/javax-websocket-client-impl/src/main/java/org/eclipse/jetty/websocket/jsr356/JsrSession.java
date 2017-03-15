@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
@@ -42,7 +42,6 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
@@ -275,13 +274,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     @Override
     public List<Extension> getNegotiatedExtensions()
     {
-        if (negotiatedExtensions == null)
+        if ((negotiatedExtensions == null) && getUpgradeResponse().getExtensions() != null)
         {
-            negotiatedExtensions = new ArrayList<Extension>();
-            for (ExtensionConfig cfg : getUpgradeResponse().getExtensions())
-            {
-                negotiatedExtensions.add(new JsrExtension(cfg));
-            }
+            negotiatedExtensions = getUpgradeResponse().getExtensions().stream().map(JsrExtension::new).collect(Collectors.toList());
         }
         return negotiatedExtensions;
     }

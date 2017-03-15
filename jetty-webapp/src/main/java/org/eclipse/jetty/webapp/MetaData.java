@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,7 @@ public class MetaData
 {
     private static final Logger LOG = Log.getLogger(MetaData.class);
 
+    public static final String VALIDATE_XML = "org.eclipse.jetty.webapp.validateXml";
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
     public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
@@ -59,7 +60,8 @@ public class MetaData
     protected final List<Resource> _orderedContainerResources = new ArrayList<Resource>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<Resource>();
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
-    protected boolean allowDuplicateFragmentNames = false;
+    protected boolean _allowDuplicateFragmentNames = false;
+    protected boolean _validateXml = false;
 
     public static class OriginInfo
     {
@@ -125,7 +127,7 @@ public class MetaData
             if (descriptor!=null)
                 return descriptor.toString();
             if (annotation!=null)
-                return "@"+annotation.annotationType().getSimpleName()+" on "+annotated.getName();
+                return "@"+annotation.annotationType().getSimpleName()+"("+annotated.getName()+")";
             return origin.toString();
         }
     }
@@ -154,13 +156,14 @@ public class MetaData
         _orderedWebInfResources.clear();
         _orderedContainerResources.clear();
         _ordering = null;
-        allowDuplicateFragmentNames = false;
+        _allowDuplicateFragmentNames = false;
     }
 
     public void setDefaults (Resource webDefaults)
     throws Exception
     {
         _webDefaultsRoot =  new DefaultsDescriptor(webDefaults);
+        _webDefaultsRoot.setValidating(isValidateXml());
         _webDefaultsRoot.parse();
         if (_webDefaultsRoot.isOrdered())
         {
@@ -186,6 +189,7 @@ public class MetaData
     throws Exception
     {
         _webXmlRoot = new WebDescriptor(webXml);
+        _webXmlRoot.setValidating(isValidateXml());
         _webXmlRoot.parse();
         _metaDataComplete=_webXmlRoot.getMetaDataComplete() == MetaDataComplete.True;
 
@@ -269,6 +273,7 @@ public class MetaData
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
 
+        descriptor.setValidating(isValidateXml());
         descriptor.parse();
 
         if (descriptor.getName() != null)
@@ -647,12 +652,28 @@ public class MetaData
     
     public boolean isAllowDuplicateFragmentNames()
     {
-        return allowDuplicateFragmentNames;
+        return _allowDuplicateFragmentNames;
     }
 
     public void setAllowDuplicateFragmentNames(boolean allowDuplicateFragmentNames)
     {
-        this.allowDuplicateFragmentNames = allowDuplicateFragmentNames;
+        this._allowDuplicateFragmentNames = allowDuplicateFragmentNames;
+    }
+
+    /**
+     * @return the validateXml
+     */
+    public boolean isValidateXml()
+    {
+        return _validateXml;
+    }
+
+    /**
+     * @param validateXml the validateXml to set
+     */
+    public void setValidateXml(boolean validateXml)
+    {
+        _validateXml = validateXml;
     }
 
     public Map<String,OriginInfo> getOrigins()

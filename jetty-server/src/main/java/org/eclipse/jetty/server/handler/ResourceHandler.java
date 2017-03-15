@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -394,6 +394,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL,cacheControl));
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param dirAllowed
      *            If true, directory listings are returned if no welcome file is found. Else 403 Forbidden.
@@ -486,6 +487,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     {
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param pathInfoOnly
      *            true, only the path info will be applied to the resourceBase
@@ -495,9 +497,12 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         _resourceService.setPathInfoOnly(pathInfoOnly);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param redirectWelcome
      *            If true, welcome files are redirected rather than forwarded to.
+     *            redirection is always used if the ResourceHandler is not scoped by
+     *            a ContextHandler
      */
     public void setRedirectWelcome(boolean redirectWelcome)
     {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -331,7 +331,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      * @param time Time to wait
      * @param unit Units for time to wait
      * @return The buffer of output
-     * @throws InterruptedException
+     * @throws InterruptedException if interrupted
      */
     public ByteBuffer waitForOutput(long time,TimeUnit unit) throws InterruptedException
     {

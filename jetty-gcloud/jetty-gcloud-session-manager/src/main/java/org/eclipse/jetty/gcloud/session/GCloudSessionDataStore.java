@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -73,6 +73,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected boolean _dsProvided = false;
     protected boolean _indexesPresent = false;
     protected EntityDataModel _model;
+    protected boolean _modelProvided;
 
 
     private String _namespace;
@@ -300,6 +301,18 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             checkNotNull(attributes);
             _attributes = attributes;
         }
+
+        /** 
+         * @see java.lang.Object#toString()
+         */
+        @Override
+        public String toString()
+        {
+            return String.format("%s==%s:%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",this.getClass().getName(),
+                                 _kind,_accessed,_attributes,_contextPath,_cookieSetTime,_createTime,_expiry,_id,_lastAccessed,_lastNode,_maxInactive,_vhost);
+        }
+        
+        
         
     }
     
@@ -356,7 +369,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     
     public void setEntityDataModel(EntityDataModel model)
     {
+        updateBean(_model, model);
         _model = model;
+        _modelProvided = true;
     }
     
     
@@ -407,15 +422,18 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         if (!_dsProvided)
         {
             if (!StringUtil.isBlank(getNamespace()))
-                _datastore = DatastoreOptions.builder().namespace(getNamespace()).build().service();
+                _datastore = DatastoreOptions.newBuilder().setNamespace(getNamespace()).build().getService();
             else
-                _datastore = DatastoreOptions.defaultInstance().service();
+                _datastore = DatastoreOptions.getDefaultInstance().getService();
         }
 
         if (_model == null)
+        {
             _model = new EntityDataModel();
+            addBean(_model,true);
+        }
 
-        _keyFactory = _datastore.newKeyFactory().kind(_model.getKind());   
+        _keyFactory = _datastore.newKeyFactory().setKind(_model.getKind());   
         
         _indexesPresent = checkIndexes();
         if (!_indexesPresent)
@@ -430,15 +448,17 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     @Override
     protected void doStop() throws Exception
     {
+        super.doStop();
         if (!_dsProvided)
             _datastore = null;
-        super.doStop();
+        if (!_modelProvided)
+            _model = null;
     }
     
     public void setDatastore (Datastore datastore)
     {
         _datastore = datastore;
-        _dsProvided  = true;
+        _dsProvided = true;
     }
     
     public int getMaxResults()
@@ -546,9 +566,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 {
                     try
                     {
-                        Query<Key> q = Query.keyQueryBuilder()
-                                .kind(_model.getKind())
-                                .filter(PropertyFilter.eq(_model.getId(), s))
+                        Query<Key> q = Query.newKeyQueryBuilder()
+                                .setKind(_model.getKind())
+                                .setFilter(PropertyFilter.eq(_model.getId(), s))
                                 .build();
                        QueryResults<Key> res = _datastore.run(q);
                         if (!res.hasNext())
@@ -584,10 +604,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         Set<ExpiryInfo> info = new HashSet<>();
 
         //get up to maxResult number of sessions that have expired
-        Query<Entity> query = Query.entityQueryBuilder()
-                .kind(_model.getKind())
-                .filter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
-                .limit(_maxResults)
+        Query<Entity> query = Query.newEntityQueryBuilder()
+                .setKind(_model.getKind())
+                .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
+                .setLimit(_maxResults)
                 .build();
 
         QueryResults<Entity> results;
@@ -617,11 +637,11 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected Set<ExpiryInfo>  queryExpiryByIndex () throws Exception
     {
         Set<ExpiryInfo> info = new HashSet<>();
-        Query<ProjectionEntity> query = Query.projectionEntityQueryBuilder()
-                .kind(_model.getKind())
-                .projection(_model.getId(), _model.getLastNode(), _model.getExpiry())
-                .filter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
-                .limit(_maxResults)
+        Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
+                .setKind(_model.getKind())
+                .setProjection(_model.getId(), _model.getLastNode(), _model.getExpiry())
+                .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
+                .setLimit(_maxResults)
                 .build();
 
         QueryResults<ProjectionEntity> presults;
@@ -654,10 +674,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         if (_indexesPresent)
         {
-            Query<ProjectionEntity> query = Query.projectionEntityQueryBuilder()
-                    .kind(_model.getKind())
-                    .projection(_model.getExpiry())
-                    .filter(PropertyFilter.eq(_model.getId(), id))
+            Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
+                    .setKind(_model.getKind())
+                    .setProjection(_model.getExpiry())
+                    .setFilter(PropertyFilter.eq(_model.getId(), id))
                     .build();
 
             QueryResults<ProjectionEntity> presults;
@@ -680,9 +700,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
         else
         {
-            Query<Entity> query = Query.entityQueryBuilder()
-                    .kind(_model.getKind())
-                    .filter(PropertyFilter.eq(_model.getId(), id))
+            Query<Entity> query = Query.newEntityQueryBuilder()
+                    .setKind(_model.getKind())
+                    .setFilter(PropertyFilter.eq(_model.getId(), id))
                     .build();
             
             QueryResults<Entity> results;
@@ -741,7 +761,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             }
             catch (DatastoreException e)
             {
-                if (e.retryable())
+                if (e.isRetryable())
                 {
                     if (LOG.isDebugEnabled()) LOG.debug("Datastore put retry {} waiting {}ms", attempts, backoff);
                         
@@ -794,12 +814,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     protected boolean checkIndexes ()
     {
+        long start =0;
+        
         try
         {
-            Query<ProjectionEntity> query = Query.projectionEntityQueryBuilder()
-                    .kind(_model.getKind())
-                    .projection(_model.getExpiry())
-                    .filter(PropertyFilter.eq(_model.getId(), "-"))
+            Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
+                    .setKind(_model.getKind())
+                    .setProjection(_model.getExpiry())
+                    .setFilter(PropertyFilter.eq(_model.getId(), "-"))
                     .build();
             _datastore.run(query);
             return true;
@@ -835,7 +857,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         oos.flush();
         
         //turn a session into an entity         
-        entity = Entity.builder(key)
+        entity = Entity.newBuilder(key)
                 .set(_model.getId(), session.getId())
                 .set(_model.getContextPath(), session.getContextPath())
                 .set(_model.getVhost(), session.getVhost())
@@ -846,7 +868,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .set(_model.getLastNode(),session.getLastNode())
                 .set(_model.getExpiry(), session.getExpiry())
                 .set(_model.getMaxInactive(), session.getMaxInactiveMs())
-                .set(_model.getAttributes(), BlobValue.builder(Blob.copyFrom(baos.toByteArray())).excludeFromIndexes(true).build()).build();
+                .set(_model.getAttributes(), BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build()).build();
 
                  
         return entity;
@@ -925,6 +947,16 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public boolean isPassivating()
     {
        return true;
+    }
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSessionDataStore#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return String.format("%s[namespace=%s,backoff=%d,maxRetries=%d,maxResults=%d,indexes=%b]",super.toString(), _namespace, _backoff, _maxRetries, _maxResults,_indexesPresent);
     }
     
     

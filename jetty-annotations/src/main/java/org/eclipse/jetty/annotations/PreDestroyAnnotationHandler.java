@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
     public void doHandle(Class clazz)
     {
         //Check that the PreDestroy is on a class that we're interested in
-        if (Util.supportsPostConstructPreDestroy(clazz))
+        if (supportsPreDestroy(clazz))
         {
             Method[] methods = clazz.getDeclaredMethods();
             for (int i=0; i<methods.length; i++)
@@ -51,7 +51,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                 Method m = (Method)methods[i];
                 if (m.isAnnotationPresent(PreDestroy.class))
                 {
-                    if (m.getParameterTypes().length != 0)
+                    if (m.getParameterCount() != 0)
                         throw new IllegalStateException(m+" has parameters");
                     if (m.getReturnType() != Void.TYPE)
                         throw new IllegalStateException(m+" is not void");
@@ -84,5 +84,28 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                 }
             }
         }
+    }
+    
+    /**
+     * Check if the spec permits the given class to use the PreDestroy annotation.
+     * @param c the class
+     * @return true if permitted, false otherwise
+     */
+    public boolean supportsPreDestroy (Class c)
+    {
+        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
+                javax.servlet.Filter.class.isAssignableFrom(c) || 
+                javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
+                javax.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
+                javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
+                javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+            return true;
+        
+        return false;
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@
 package org.eclipse.jetty.http2.hpack;
 
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -184,6 +186,69 @@ public class HpackEncoderTest
         
     }
     
+
+    @Test
+    public void testFieldLargerThanTable()
+    {
+        HttpFields fields = new HttpFields();
+
+        HpackEncoder encoder = new HpackEncoder(128);
+        ByteBuffer buffer0 = BufferUtil.allocate(4096);
+        int pos = BufferUtil.flipToFill(buffer0);
+        encoder.encode(buffer0,new MetaData(HttpVersion.HTTP_2,fields));
+        BufferUtil.flipToFlush(buffer0,pos);
+        
+        encoder = new HpackEncoder(128);
+        fields.add(new HttpField("user-agent","jetty/test")); 
+        ByteBuffer buffer1 = BufferUtil.allocate(4096);
+        pos = BufferUtil.flipToFill(buffer1);
+        encoder.encode(buffer1,new MetaData(HttpVersion.HTTP_2,fields));
+        BufferUtil.flipToFlush(buffer1,pos);
+        
+        encoder = new HpackEncoder(128);
+        fields.add(new HttpField(":path",
+            "This is a very large field, whose size is larger than the dynamic table so it should not be indexed as it will not fit in the table ever!"+
+            "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX "+
+            "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY "+
+            "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ "));
+        ByteBuffer buffer2 = BufferUtil.allocate(4096);
+        pos = BufferUtil.flipToFill(buffer2);
+        encoder.encode(buffer2,new MetaData(HttpVersion.HTTP_2,fields));
+        BufferUtil.flipToFlush(buffer2,pos);
+        
+        encoder = new HpackEncoder(128);
+        fields.add(new HttpField("host","somehost"));
+        ByteBuffer buffer = BufferUtil.allocate(4096);
+        pos = BufferUtil.flipToFill(buffer);
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
+        BufferUtil.flipToFlush(buffer,pos);
+
+        //System.err.println(BufferUtil.toHexString(buffer0));
+        //System.err.println(BufferUtil.toHexString(buffer1));
+        //System.err.println(BufferUtil.toHexString(buffer2));
+        //System.err.println(BufferUtil.toHexString(buffer));
+        
+        // something was encoded!
+        assertThat(buffer.remaining(),Matchers.greaterThan(0));
+        
+        // check first field is static index name and dynamic index body
+        assertThat((buffer.get(buffer0.remaining())&0xFF)>>6,equalTo(1));
+        
+        // check first field is static index name and literal body
+        assertThat((buffer.get(buffer1.remaining())&0xFF)>>4,equalTo(0));
+        
+        // check first field is static index name and dynamic index body
+        assertThat((buffer.get(buffer2.remaining())&0xFF)>>6,equalTo(1));        
+        
+        // Only first and third fields are put in the table
+        HpackContext context = encoder.getHpackContext();
+        assertThat(context.size(),equalTo(2));
+        assertThat(context.get(HpackContext.STATIC_SIZE+1).getHttpField().getName(),equalTo("host"));
+        assertThat(context.get(HpackContext.STATIC_SIZE+2).getHttpField().getName(),equalTo("user-agent"));
+        assertThat(context.getDynamicTableSize(),equalTo(
+        context.get(HpackContext.STATIC_SIZE+1).getSize()+context.get(HpackContext.STATIC_SIZE+2).getSize()));
+        
+    }
 
     
 

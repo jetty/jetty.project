@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -284,7 +284,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             int filled = fillRequestBuffer();
             handled = parseRequestBuffer();
-            if (handled || filled<=0 || _channel.getRequest().getHttpInput().hasContent())
+            if (handled || filled<=0 || _input.hasContent())
                 break;
         }
         return handled;
@@ -398,7 +398,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         else if (_parser.inContentState() && _generator.isPersistent())
         {
             // If we are async, then we have problems to complete neatly
-            if (_channel.getRequest().getHttpInput().isAsync())
+            if (_input.isAsync())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("unconsumed async input {}", this);
@@ -409,17 +409,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (LOG.isDebugEnabled())
                     LOG.debug("unconsumed input {}", this);
                 // Complete reading the request
-                if (!_channel.getRequest().getHttpInput().consumeAll())
+                if (!_input.consumeAll())
                     _channel.abort(new IOException("unconsumed input"));
             }
         }
 
         // Reset the channel, parsers and generator
         _channel.recycle();
-        if (_generator.isPersistent() && !_parser.isClosed())
-            _parser.reset();
-        else
-            _parser.close();
+        if (!_parser.isClosed())
+        {
+            if (_generator.isPersistent())
+                _parser.reset();
+            else
+                _parser.close();
+        }
 
         // Not in a race here with onFillable, because it has given up control before calling handle.
         // in a slight race with #completed, but not sure what to do with that anyway.
@@ -527,6 +530,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void abort(Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("abort {} {}",this,failure);
         // Do a direct close of the output, as this may indicate to a client that the
         // response is bad either with RST or by abnormal completion of chunked response.
         getEndPoint().close();
@@ -560,10 +565,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public String toString()
+    public String toConnectionString()
     {
-        return String.format("%s[p=%s,g=%s,c=%s]",
-                super.toString(),
+        return String.format("%s@%x[p=%s,g=%s]=>%s",
+                getClass().getSimpleName(),
+                hashCode(),
                 _parser,
                 _generator,
                 _channel);
@@ -621,7 +627,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (fillAndParseForContent())
                 _channel.handle();
-            else if (!_input.isFinished())
+            else if (!_input.isFinished() && !_input.hasContent())
                 asyncReadFillInterested();
         }
 
@@ -708,6 +714,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     case NEED_CHUNK:
                     {
                         chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, CHUNK_BUFFER_DIRECT);
+                        continue;
+                    }
+                    case NEED_CHUNK_TRAILER:
+                    {
+                        if (_chunk!=null)
+                            _bufferPool.release(_chunk);
+                        chunk = _chunk = _bufferPool.acquire(_config.getResponseHeaderSize(), CHUNK_BUFFER_DIRECT);
                         continue;
                     }
                     case FLUSH:

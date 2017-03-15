@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -93,7 +93,13 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         //copy(sourceFile, targetFile);
         IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
 
-        AbstractTestServer server1 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        
+        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE,  TestServer.DEFAULT_SCAVENGE_SEC,
+                                                            cacheFactory, storeFactory);
         server1.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
         try
@@ -101,7 +107,8 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
             server1.start();
             int port1 = server1.getPort();
             
-            AbstractTestServer server2 = createServer(0, AbstractTestServer.DEFAULT_MAX_INACTIVE,  AbstractTestServer.DEFAULT_SCAVENGE_SEC,  AbstractTestServer.DEFAULT_EVICTIONPOLICY);
+            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE,  TestServer.DEFAULT_SCAVENGE_SEC,
+                                                      cacheFactory, storeFactory);
             server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
             try

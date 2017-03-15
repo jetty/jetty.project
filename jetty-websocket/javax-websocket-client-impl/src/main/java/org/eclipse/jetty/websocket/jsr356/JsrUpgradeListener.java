@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.net.HttpCookie;
 import java.util.List;
 import java.util.Map;
 
@@ -49,21 +48,7 @@ public class JsrUpgradeListener implements UpgradeListener
         configurator.beforeRequest(headers);
 
         // Handle cookies
-        for (String name : headers.keySet())
-        {
-            if ("cookie".equalsIgnoreCase(name))
-            {
-                List<String> values = headers.get(name);
-                if (values != null)
-                {
-                    for (String cookie : values)
-                    {
-                        List<HttpCookie> cookies = HttpCookie.parse(cookie);
-                        request.getCookies().addAll(cookies);
-                    }
-                }
-            }
-        }
+        request.setHeaders(headers);
     }
 
     @Override

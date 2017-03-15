@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -676,7 +676,7 @@ public class ObjectMBean implements DynamicMBean
                 {
 
                     // look for a declared setter
-                    if (methods[m].getName().equals(declaredSetter) && methods[m].getParameterTypes().length == 1)
+                    if (methods[m].getName().equals(declaredSetter) && methods[m].getParameterCount() == 1)
                     {
                         if (setter != null)
                         {
@@ -695,7 +695,7 @@ public class ObjectMBean implements DynamicMBean
                 }
 
                 // look for a setter
-                if ( methods[m].getName().equals("set" + uName) && methods[m].getParameterTypes().length == 1)
+                if ( methods[m].getName().equals("set" + uName) && methods[m].getParameterCount() == 1)
                 {
                     if (setter != null)
                     {

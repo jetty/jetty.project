@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -158,7 +158,7 @@ public class GzipDefaultTest
 
             String content = tester.readResponse(response);
             assertThat("Response content size",content.length(),is(filesize));
-            String expectedContent = IO.readToString(testingdir.getFile("file.txt"));
+            String expectedContent = IO.readToString(testingdir.getPathFile("file.txt").toFile());
             assertThat("Response content",content,is(expectedContent));
         }
         finally
@@ -216,7 +216,7 @@ public class GzipDefaultTest
 
             String content = tester.readResponse(response);
             assertThat("Response content size",content.length(),is(0));
-            String expectedContent = IO.readToString(testingdir.getFile("empty.txt"));
+            String expectedContent = IO.readToString(testingdir.getPathFile("empty.txt").toFile());
             assertThat("Response content",content,is(expectedContent));
         }
         finally
@@ -737,7 +737,7 @@ public class GzipDefaultTest
                 assertThat("ETag",response.get("ETAG"),startsWith("W/"));
             }
 
-            File serverFile = testingdir.getFile(filename);
+            File serverFile = testingdir.getPathFile(filename).toFile();
             String expectedResponse = IO.readToString(serverFile);
 
             String actual = tester.readResponse(response);

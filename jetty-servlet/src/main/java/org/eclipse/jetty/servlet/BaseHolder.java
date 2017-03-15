@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -83,7 +83,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         //if no class already loaded and no classname, make permanently unavailable
         if (_class==null && (_className==null || _className.equals("")))
-            throw new UnavailableException("No class in holder");
+            throw new UnavailableException("No class in holder "+toString());
         
         //try to load class
         if (_class==null)
@@ -97,7 +97,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             catch (Exception e)
             {
                 LOG.warn(e);
-                throw new UnavailableException(e.getMessage());
+                throw new UnavailableException("Class loading error for holder "+toString());
             }
         }
     }

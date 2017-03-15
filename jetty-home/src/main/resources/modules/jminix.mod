@@ -1,7 +1,7 @@
 [description]
 Deploys the Jminix JMX Console within the server
 
-[Tags]
+[tags]
 3rdparty
 
 [depend]

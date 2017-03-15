@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,7 +56,7 @@ public class StartLog
     {
         if (INSTANCE.trace)
         {
-            out.printf("TRACE: " + format + "%n",args);
+            out.printf("TRACE " + format + "%n",args);
         }
     }
 
@@ -75,22 +75,27 @@ public class StartLog
     
     public static void log(String type, String msg)
     {
-        logStream.println(type + ": " + msg);
+        logStream.printf("%-6s: %s%n",type,msg);
     }
     
     public static void log(String type, String format, Object... args)
     {
-        logStream.printf(type + ": " + format + "%n",args);
+        log(type,String.format(format,args));
     }
 
     public static void info(String format, Object... args)
     {
-        log("INFO ",format,args);
+        log("INFO",format,args);
     }
 
     public static void warn(String format, Object... args)
     {
-        log("WARN ",format,args);
+        log("WARN",format,args);
+    }
+
+    public static void error(String format, Object... args)
+    {
+        log("ERROR",format,args);
     }
 
     public static void warn(Throwable t)

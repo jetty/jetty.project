@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -86,6 +86,11 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         client.setDaemon(true);
     }
     
+    /**
+     * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
+     *
+     * @param scope the scope of the ServerContainer
+     */
     public ClientContainer(WebSocketContainerScope scope)
     {
         boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");

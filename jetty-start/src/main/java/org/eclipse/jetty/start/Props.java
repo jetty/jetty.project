@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -181,7 +181,8 @@ public final class Props implements Iterable<Prop>
 
     public boolean containsKey(String key)
     {
-        return props.containsKey(key);
+        Prop prop = props.get(key);
+        return prop!=null && prop.value!=null;
     }
 
     public String expand(String str)
@@ -189,7 +190,7 @@ public final class Props implements Iterable<Prop>
         return expand(str,new Stack<String>());
     }
 
-    public String expand(String str, Stack<String> seenStack)
+    private String expand(String str, Stack<String> seenStack)
     {
         if (str == null)
         {
@@ -380,18 +381,5 @@ public final class Props implements Iterable<Prop>
     public String toString()
     {
         return props.toString();
-    }
-
-    public void remove(String key, String value, String source)
-    {
-        Prop prop = props.get(key);
-        
-        if (prop!=null && value.equals(prop.value) && source.equals(prop.origin))
-        {
-            if (prop.overrides==null)
-                props.remove(key);
-            else
-                props.put(key,prop.overrides);
-        }
     }
 }

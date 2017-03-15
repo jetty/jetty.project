@@ -12,7 +12,7 @@
       <Arg>
         <New class="org.eclipse.jetty.security.HashLoginService">
           <Set name="name">Test Realm</Set>
-          <Set name="config"><Property name="jetty.home" default="src/test/config"/>realm.properties</Set>
+          <Set name="config"><Property name="jetty.home" default="src/test/config"/>/realm.properties</Set>
         </New>
       </Arg>
     </Call>

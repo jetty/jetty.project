@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -77,7 +77,7 @@ public class IncludedGzipTest
     {
         testdir.ensureEmpty();
 
-        File testFile = testdir.getFile("file.txt");
+        File testFile = testdir.getPathFile("file.txt").toFile();
         try (OutputStream testOut = new BufferedOutputStream(new FileOutputStream(testFile)))
         {
             ByteArrayInputStream testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
@@ -85,7 +85,7 @@ public class IncludedGzipTest
         }
 
         tester=new ServletTester("/context");
-        tester.getContext().setResourceBase(testdir.getDir().getCanonicalPath());
+        tester.getContext().setResourceBase(testdir.getPath().toString());
         tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         
         GzipHandler gzipHandler = new GzipHandler();
@@ -97,7 +97,6 @@ public class IncludedGzipTest
     public void tearDown() throws Exception
     {
         tester.stop();
-        IO.delete(testdir.getDir());
     }
 
     @Test

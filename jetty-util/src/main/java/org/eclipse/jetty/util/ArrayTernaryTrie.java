@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -630,15 +630,16 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         public boolean put(String s, V v)
         {
             boolean added = _trie.put(s,v);
-            while (!added)
+            while (!added && _growby>0)
             {
                 ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie._key.length+_growby);
                 for (Map.Entry<String,V> entry : _trie.entrySet())
                     bigger.put(entry.getKey(),entry.getValue());
+                _trie = bigger;
                 added = _trie.put(s,v);
             }
             
-            return true;
+            return added;
         }
 
         public V get(String s, int offset, int len)

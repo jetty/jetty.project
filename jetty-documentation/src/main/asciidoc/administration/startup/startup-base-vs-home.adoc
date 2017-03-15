@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,8 @@
 [[startup-base-and-home]]
 === Managing Jetty Base and Jetty Home
 
-Starting with Jetty 9.1, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment (known as `${jetty.base}`).
+Instead of managing multiple Jetty implementations out of several different distribution locations, it is possible to maintain a separation between the binary installation of the standalone Jetty (known as `${jetty.home}`), and the customizations for your specific environment(s) (known as `${jetty.base}`).
+There should always only be *one* Jetty Home (per version of Jetty), but there can be multiple Jetty Base directories that reference it.
 
 Jetty Base::
   * Also known as the `${jetty.base}` property.
@@ -26,26 +27,30 @@ Jetty Home::
   * Also known as the `${jetty.home}` property.
   * This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
 
+____
+[IMPORTANT]
+Jetty Home should always be treated as a standard of truth.
+All configuration modifications, changes and additions should be made in the appropriate Jetty Base directory.
+____
+
+[[base-vs-home-resolution]]
+
 Potential configuration is resolved from these 2 directory locations.
+When Jetty starts up in processes configuration from them as follows:
 
-Check Jetty Base::
-  If the referenced configuration exists, relative to the defined Jetty base, use it.
-Check Jetty Home::
-  If the referenced configuration exists, relative to the defined Jetty home, use it.
+Check Jetty Base First::
+  If the referenced configuration exists, relative to the defined Jetty base, it is used.
+Check Jetty Home Second::
+  If the referenced configuration exists, relative to the defined Jetty home, it is used.
 Use java.io.File(String pathname) Logic::
-  Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor.
+  Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor. In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).
 
-+
-In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).
-
-For more details on how startup with start.jar works, see link:#execute-start-jar[Using start.jar: Executing]
+For more details on how startup with start.jar works, see link:#executing-startjar[Using start.jar: Executing]
 
 [[demo-base]]
 ==== Demo-Base in the Jetty Distribution
 
 The Jetty Distribution comes with an example `${jetty.base}` which enables the various demonstration webapps and server configurations.
-
-How to use the demo-base directory as a Jetty Base directory.
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -80,30 +85,38 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
 ...
 ....
 
-As you can see above, you are executing the demo-base configuration using the Jetty base concepts.
-
-If you want to see what the Jetty base looks like without executing Jetty, you can simply list the configuration
+If you want to see what the Jetty base looks like without executing Jetty, you can simply list the configuration by using the `--list-config` command.
 
 [source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar $JETTY_HOME/start.jar --list-config
+[demo-base]$ java -jar $JETTY_HOME/start.jar --list-config
 
 Java Environment:
 -----------------
  java.home=/usr/lib/jvm/jdk-7u21-x64/jre
- java.vm.vendor=Oracle Corporation
- java.vm.version=23.21-b01
- java.vm.name=Java HotSpot(TM) 64-Bit Server VM
- java.vm.info=mixed mode
- java.runtime.name=Java(TM) SE Runtime Environment
- java.runtime.version=1.7.0_21-b11
- java.io.tmpdir=/tmp
+ java.vm.vendor = Oracle Corporation
+ java.vm.version = 25.92-b14
+ java.vm.name = Java HotSpot(TM) 64-Bit Server VM
+ java.vm.info = mixed mode
+ java.runtime.name = Java(TM) SE Runtime Environment
+ java.runtime.version = 1.8.0_92-b14
+ java.io.tmpdir = /var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/
+ user.dir = /home/user/jetty-distribution-{VERSION}
+ user.language = en
+ user.country = US
 
 Jetty Environment:
 -----------------
  jetty.home=/home/user/jetty-distribution-{VERSION}
+ jetty.tag.version = master
  jetty.base=/home/user/jetty-distribution-{VERSION}/demo-base
  jetty.version={VERSION}
+
+ Config Search Order:
+ --------------------
+  <command-line>
+  ${jetty.base} -> /home/user/jetty-distribution-9.4.1.v20170120/demo-base
+  ${jetty.home} -> /home/user/Desktop/jetty-distribution-9.4.1.v20170120
 
 JVM Arguments:
 --------------
@@ -185,20 +198,22 @@ Note: order presented here is how they would appear on the classpath.
 Jetty Active XMLs:
 ------------------
  ${jetty.home}/etc/jetty.xml
- ${jetty.home}/etc/jetty-http.xml
- ${jetty.home}/etc/jetty-jaas.xml
- ${jetty.home}/etc/jetty-rewrite.xml
- ${jetty.home}/etc/jetty-ssl.xml
- ${jetty.home}/etc/jetty-https.xml
+ ${jetty.home}/etc/jetty-webapp.xml
  ${jetty.home}/etc/jetty-plus.xml
  ${jetty.home}/etc/jetty-annotations.xml
  ${jetty.home}/etc/jetty-deploy.xml
+ ${jetty.home}/etc/jetty-http.xml
+ ${jetty.home}/etc/jetty-ssl.xml
+ ${jetty.home}/etc/jetty-ssl-context.xml
+ ${jetty.home}/etc/jetty-https.xml
+ ${jetty.home}/etc/jetty-jaas.xml
+ ${jetty.home}/etc/jetty-rewrite.xml
  ${jetty.base}/etc/demo-rewrite-rules.xml
  ${jetty.base}/etc/test-realm.xml
 ....
 
-This demonstrates the powerful `--list-config` command line option and how you can use it to see what the configuration will look like when starting Jetty.
-From the Java environment, to the system properties, to the classpath, and finally the Active Jetty IoC XML used to build up the Jetty server configuration.
+The `--list-config` command line option displays what the configuration will look like when starting Jetty.
+This includes information on the Java environment to the system properties, the classpath and the Active Jetty IoC XML used to build up the Jetty server configuration.
 
 Of note, is that the output will make it known where the configuration elements came from, be it in either in `${jetty.home}` or `${jetty.base}`.
 
@@ -241,8 +256,8 @@ jetty.dump.stop=false
 --module=annotations
 ....
 
-The `${jetty.base}/start.ini` is the main startup configuration entry point for Jetty.
-In this example you will see that we are enabling a few modules for Jetty, specifying some properties, and also referencing some Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and `etc/test-realm.xml` files)
+In this example, `${jetty.base}/start.ini` is the main startup configuration entry point for Jetty.
+You will see that we are enabling a few modules for Jetty, specifying some properties, and also referencing some Jetty IoC XML files (namely the `etc/demo-rewrite-rules.xml` and `etc/test-realm.xml` files)
 
 When Jetty's `start.jar` resolves the entries in the `start.ini`, it will follow the link:#base-vs-home-resolution[resolution rules above].
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.http;
 
+
 /* ------------------------------------------------------------ */
 public class CompressedContentFormat
 {
     public static final CompressedContentFormat GZIP = new CompressedContentFormat("gzip", ".gz");
     public static final CompressedContentFormat BR = new CompressedContentFormat("br", ".br");
     public static final CompressedContentFormat[] NONE = new CompressedContentFormat[0];
-
 
     public final String _encoding;
     public final String _extension;
@@ -53,5 +53,16 @@ public class CompressedContentFormat
             return false;
         
         return  _encoding.equalsIgnoreCase(ccf._encoding) && _extension.equalsIgnoreCase(ccf._extension);
+    }
+
+    public static boolean tagEquals(String etag, String tag)
+    {
+        if (etag.equals(tag))
+            return true;
+
+        int dashdash = tag.indexOf("--");
+        if (dashdash>0)
+            return etag.regionMatches(0,tag,0,dashdash-2);
+        return false;
     }
 }

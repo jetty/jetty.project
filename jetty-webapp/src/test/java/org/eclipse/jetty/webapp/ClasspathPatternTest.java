@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -227,5 +227,22 @@ public class ClasspathPatternTest
         assertThat(pattern.match(Test.class),is(false));
         assertThat(pattern.match(JDK.class),is(true));
         assertThat(pattern.match(ClasspathPatternTest.class),is(false));
+    }
+    
+
+    
+    @Test
+    public void testLarge()
+    {
+        ClasspathPattern pattern = new ClasspathPattern();
+        for (int i=0; i<500; i++)
+        {
+            assertTrue(pattern.add("n"+i+"."+Integer.toHexString(100+i)+".Name"));
+        }
+        
+        for (int i=0; i<500; i++)
+        {
+            assertTrue(pattern.match("n"+i+"."+Integer.toHexString(100+i)+".Name"));
+        }
     }
 }

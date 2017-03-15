@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -88,7 +88,7 @@ public class HpackEncoder
     private int _remoteMaxDynamicTableSize;
     private int _localMaxDynamicTableSize;
     private int _maxHeaderListSize;
-    private int _size;
+    private int _headerListSize;
 
     public HpackEncoder()
     {
@@ -144,7 +144,7 @@ public class HpackEncoder
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] encoding",_context.hashCode()));
 
-        _size=0;
+        _headerListSize=0;
         int pos = buffer.position();
 
         // Check the dynamic table sizes!
@@ -179,9 +179,9 @@ public class HpackEncoder
             encode(buffer,field);
 
         // Check size
-        if (_maxHeaderListSize>0 && _size>_maxHeaderListSize)
+        if (_maxHeaderListSize>0 && _headerListSize>_maxHeaderListSize)
         {
-            LOG.warn("Header list size too large {} > {} for {}",_size,_maxHeaderListSize);
+            LOG.warn("Header list size too large {} > {} for {}",_headerListSize,_maxHeaderListSize);
             if (LOG.isDebugEnabled())
                 LOG.debug("metadata={}",metadata);
         }
@@ -205,7 +205,7 @@ public class HpackEncoder
             field = new HttpField(field.getHeader(),field.getName(),"");
         
         int field_size = field.getName().length() + field.getValue().length();
-        _size+=field_size+32;
+        _headerListSize+=field_size+32;
         
         final int p=_debug?buffer.position():-1;
 
@@ -307,9 +307,9 @@ public class HpackEncoder
                                 (huffman?"HuffV":"LitV")+
                                 (indexed?"Idx":(never_index?"!!Idx":"!Idx"));
                 }
-                else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
+                else if (field_size>=_context.getMaxDynamicTableSize() || header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>2)
                 {
-                    // Non indexed content length for 2 digits or more
+                    // Non indexed if field too large or a content length for 3 digits or more
                     indexed=false;
                     encodeName(buffer,(byte)0x00,4,header.asString(),name);
                     encodeValue(buffer,true,field.getValue());
@@ -332,7 +332,8 @@ public class HpackEncoder
             // If we want the field referenced, then we add it to our
             // table and reference set.
             if (indexed)
-                _context.add(field);
+                if (_context.add(field)==null)
+                    throw new IllegalStateException();
         }
 
         if (_debug)

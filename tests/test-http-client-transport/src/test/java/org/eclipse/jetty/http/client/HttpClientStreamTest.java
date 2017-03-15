@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -471,10 +472,10 @@ public class HttpClientStreamTest extends AbstractTest
     @Test(expected = ExecutionException.class)
     public void testInputStreamContentProviderThrowingWhileReading() throws Exception
     {
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doNonErrorHandle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
@@ -1162,5 +1163,33 @@ public class HttpClientStreamTest extends AbstractTest
 
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testInputStreamResponseListenerWithRedirect() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                if (target.startsWith("/303"))
+                    response.sendRedirect("/200");
+            }
+        });
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(getScheme())
+                .path("/303")
+                .followRedirects(true)
+                .send(listener);
+
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        Assert.assertTrue(result.isSucceeded());
     }
 }

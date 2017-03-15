@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -61,15 +61,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         normalizeRequest(exchange.getRequest());
 
         // One connection maps to N channels, so for each exchange we create a new channel.
-        HttpChannel channel = newHttpChannel();
+        HttpChannel channel = newHttpChannel(false);
         channels.add(channel);
 
         return send(channel, exchange);
     }
 
-    protected HttpChannelOverHTTP2 newHttpChannel()
+    protected HttpChannelOverHTTP2 newHttpChannel(boolean push)
     {
-        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
+        return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession(), push);
     }
 
     protected void release(HttpChannel channel)

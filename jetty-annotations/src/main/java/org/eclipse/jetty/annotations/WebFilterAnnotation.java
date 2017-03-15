@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import javax.servlet.Filter;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebInitParam;
 
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Source;
@@ -117,7 +118,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 ArrayList<String> paths = new ArrayList<String>();
                 for (String s:urlPatterns)
                 {
-                    paths.add(Util.normalizePattern(s));
+                    paths.add(ServletPathSpec.normalize(s));
                 }
                 mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
             }
@@ -188,7 +189,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                     ArrayList<String> paths = new ArrayList<String>();
                     for (String s:urlPatterns)
                     {
-                        paths.add(Util.normalizePattern(s));
+                        paths.add(ServletPathSpec.normalize(s));
                     }
                     mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
                 }

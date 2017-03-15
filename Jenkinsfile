@@ -1,3 +1,5 @@
+#!groovy
+
 node {
   // System Dependent Locations
   def mvntool = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
@@ -9,8 +11,9 @@ node {
 
   try
   {
-    stage 'Checkout'
-    checkout scm
+    stage('Checkout') {
+      checkout scm
+    }
   } catch (Exception e) {
     notifyBuild("Checkout Failure")
     throw e
@@ -18,10 +21,11 @@ node {
 
   try
   {
-    stage 'Compile'
-    withEnv(mvnEnv) {
-      timeout(15) {
-        sh "mvn -B clean install -Dtest=None"
+    stage('Compile') {
+      withEnv(mvnEnv) {
+        timeout(time: 15, unit: 'MINUTES') {
+          sh "mvn -B clean install -Dtest=None"
+        }
       }
     }
   } catch(Exception e) {
@@ -31,10 +35,11 @@ node {
 
   try
   {
-    stage 'Javadoc'
-    withEnv(mvnEnv) {
-      timeout(15) {
-        sh "mvn -B javadoc:javadoc"
+    stage('Javadoc') {
+      withEnv(mvnEnv) {
+        timeout(time: 15, unit: 'MINUTES') {
+          sh "mvn -B javadoc:javadoc"
+        }
       }
     }
   } catch(Exception e) {
@@ -44,17 +49,51 @@ node {
 
   try
   {
-    stage 'Test'
-    withEnv(mvnEnv) {
-      timeout(60) {
-        // Run test phase / ignore test failures
-        sh "mvn -B install -Dmaven.test.failure.ignore=true"
-        // Report failures in the jenkins UI
-        step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
-      }
-      if(isUnstable())
-      {
-        notifyBuild("Unstable / Test Errors")
+    stage('Test') {
+      withEnv(mvnEnv) {
+        timeout(time: 60, unit: 'MINUTES') {
+          // Run test phase / ignore test failures
+          sh "mvn -B install -Dmaven.test.failure.ignore=true"
+          // Report failures in the jenkins UI
+          step([$class: 'JUnitResultArchiver', 
+              testResults: '**/target/surefire-reports/TEST-*.xml'])
+          // Collect up the jacoco execution results
+          def jacocoExcludes = 
+              // build tools
+              "**/org/eclipse/jetty/ant/**" +
+              ",**/org/eclipse/jetty/maven/**" +
+              ",**/org/eclipse/jetty/jspc/**" +
+              // example code / documentation
+              ",**/org/eclipse/jetty/embedded/**" +
+              ",**/org/eclipse/jetty/asyncrest/**" +
+              ",**/org/eclipse/jetty/demo/**" +
+              // special environments / late integrations
+              ",**/org/eclipse/jetty/gcloud/**" +
+              ",**/org/eclipse/jetty/infinispan/**" +
+              ",**/org/eclipse/jetty/osgi/**" +
+              ",**/org/eclipse/jetty/spring/**" +
+              ",**/org/eclipse/jetty/http/spi/**" +
+              // test classes
+              ",**/org/eclipse/jetty/tests/**" +
+              ",**/org/eclipse/jetty/test/**";
+          step([$class: 'JacocoPublisher', 
+              inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+              exclusionPattern: jacocoExcludes,
+              execPattern: '**/target/jacoco.exec', 
+              classPattern: '**/target/classes', 
+              sourcePattern: '**/src/main/java'])
+          // Report on Maven and Javadoc warnings
+          step([$class: 'WarningsPublisher', 
+              consoleParsers: [
+                  [parserName: 'Maven'],
+                  [parserName: 'JavaDoc'],
+                  [parserName: 'JavaC']
+              ]])
+        }
+        if(isUnstable())
+        {
+          notifyBuild("Unstable / Test Errors")
+        }
       }
     }
   } catch(Exception e) {

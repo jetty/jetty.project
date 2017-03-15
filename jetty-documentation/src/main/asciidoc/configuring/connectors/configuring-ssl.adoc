@@ -1,5 +1,5 @@
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -396,18 +396,30 @@ jetty.sslContext.keyStorePassword::
 
 To enable two-way authentication, you first need to activate the ssl module as shown in the previous section.
 
+First you need load the `ssl` module and `https` module.
 [source%nowrap,ini,linenums]
-.start.d/ssl.ini
+.$JETTY_BASE/start.d/ssl.ini
 ----
+# Module: ssl
 --module=ssl
-jetty.secure.port=8443
-jetty.keystore=etc/keystore
-jetty.keystore.password=OBF:
-jetty.keymanager.password=OBF:
-jetty.truststore=etc/truststore
-jetty.truststore.password=OBF:
+
+jetty.ssl.host=0.0.0.0
+jetty.ssl.port=8583
+jetty.sslContext.keyStorePath=etc/keystore
+jetty.sslContext.trustStorePath=etc/keystore
+jetty.sslContext.keyStorePassword=OBF:
+jetty.sslContext.keyManagerPassword=OBF:
+jetty.sslContext.trustStorePassword=OBF:
+jetty.sslContext.trustStoreType=JKS
 # enable two way authentication
-jetty.ssl.needClientAuth=true
+jetty.sslContext.needClientAuth=true
+----
+
+[source%nowrap,ini,linenums]
+.$JETTY_BASE/start.d/https.ini
+----
+# Module: https
+--module=https
 ----
 
 [[layout-of-keystore-and-truststore]]
@@ -415,19 +427,47 @@ jetty.ssl.needClientAuth=true
 
 `keystore` only contains the server's private key and certificate.
 
+[[img-certificate-chain]]
+image::images/certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
+
+[literal]
+.The structure of KeyStore file
+....
+├── PrivateKeyEntry
+│   ├── PrivateKey
+│   ├── Certificate chain
+│   │   ├── Server certificate (end entity)
+│   │   ├── Intermediary CA certificate
+│   │   └── Root CA certificate
+├── TrustedCertEntry
+│   └── Intermediary CA certificate
+└── TrustedCertEntry
+    └── Root CA certificate
+....
+
+[TIP]
+====
+└── PrivateKeyEntry +
+    └── Certificate chain +
+        ├── Intermediary CA certificate +
+        └── Root CA certificate +
+are optional
+====
+
 [source%nowrap,plain,linenums]
 ----
-$ keytool -list -keystore keystore -storetype jks -storepass '' -v
+$ cd $JETTY_BASE
+$ keytool -list -keystore etc/keystore -storetype jks -storepass '' -v
 
 Keystore type: JKS
 Keystore provider: SUN
 
-Your keystore contains 1 entry
+Your keystore contains 3 entries
 
 Alias name: *.example.com
-Creation date: Sep 12, 2016
+Creation date: Sep 20, 2016
 Entry type: PrivateKeyEntry
-Certificate chain length: 1
+Certificate chain length: 3
 Certificate[1]:
 Owner: CN=*.example.com, OU=Web Servers, O="Example.com Co.,Ltd.", C=CN
 Issuer: CN="Example.com Co.,Ltd. ETP CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
@@ -477,26 +517,98 @@ KeyIdentifier [
 ]
 ]
 
+Certificate[2]:
+Owner: CN="Example.com Co.,Ltd. ETP CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Issuer: CN="Example.com Co.,Ltd. Root CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Serial number: f6e7b86f6fdb467f9498fb599310198f
+Valid from: Wed Nov 18 00:00:00 CST 2015 until: Sun Nov 18 00:00:00 CST 2035
+Certificate fingerprints:
+	 MD5:  ED:A3:91:57:D8:B8:6E:B1:01:58:55:5C:33:14:F5:99
+	 SHA1: D9:A4:93:9D:A6:F8:A3:F9:FD:85:51:E2:C5:2E:0B:EE:80:E7:D0:22
+	 SHA256: BF:54:7A:F6:CA:0C:FA:EF:93:B6:6B:6E:2E:D7:44:A8:40:00:EC:69:3A:2C:CC:9A:F7:FE:8E:6F:C0:FA:22:38
+	 Signature algorithm name: SHA256withRSA
+	 Version: 3
+
+Extensions:
+
+#1: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: A6 BD 5F B3 E8 7D 74 3D   20 44 66 1A 16 3B 1B DF  .._...t= Df..;..
+0010: E6 E6 04 46                                        ...F
+]
+]
+
+#2: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:true
+  PathLen:2147483647
+]
+
+#3: ObjectId: 2.5.29.15 Criticality=true
+KeyUsage [
+  Key_CertSign
+  Crl_Sign
+]
+
+#4: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: 44 9B AD 31 E7 FE CA D5   5A 8E 17 55 F9 F0 1D 6B  D..1....Z..U...k
+0010: F5 A5 8F C1                                        ....
+]
+]
+
+Certificate[3]:
+Owner: CN="Example.com Co.,Ltd. Root CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Issuer: CN="Example.com Co.,Ltd. Root CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
+Serial number: f0a45bc9972c458cbeae3f723055f1ac
+Valid from: Wed Nov 18 00:00:00 CST 2015 until: Sun Nov 18 00:00:00 CST 2114
+Certificate fingerprints:
+	 MD5:  50:61:62:22:71:60:F7:69:2E:27:42:6B:62:31:82:79
+	 SHA1: 7A:6D:A6:48:B1:43:03:3B:EA:A0:29:2F:19:65:9C:9B:0E:B1:03:1A
+	 SHA256: 05:3B:9C:5B:8E:18:61:61:D1:9C:AA:0E:8C:B1:EA:44:C2:6E:67:5D:96:30:EC:8C:F6:6F:E1:EC:AD:00:60:F1
+	 Signature algorithm name: SHA256withRSA
+	 Version: 3
+
+Extensions:
+
+#1: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: A6 BD 5F B3 E8 7D 74 3D   20 44 66 1A 16 3B 1B DF  .._...t= Df..;..
+0010: E6 E6 04 46                                        ...F
+]
+]
+
+#2: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:true
+  PathLen:2147483647
+]
+
+#3: ObjectId: 2.5.29.15 Criticality=true
+KeyUsage [
+  Key_CertSign
+  Crl_Sign
+]
+
+#4: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: A6 BD 5F B3 E8 7D 74 3D   20 44 66 1A 16 3B 1B DF  .._...t= Df..;..
+0010: E6 E6 04 46                                        ...F
+]
+]
+
 
 
 *******************************************
 *******************************************
 
-----
-
-`truststore` contains intermediary CA and root CA.
-
-[source%nowrap,plain,linenums]
-----
-$ keytool -list -keystore truststore -storetype jks -storepass '' -v
-
-Keystore type: JKS
-Keystore provider: SUN
-
-Your keystore contains 2 entries
 
 Alias name: example.com co.,ltd. etp ca
-Creation date: Sep 12, 2016
+Creation date: Sep 20, 2016
 Entry type: trustedCertEntry
 
 Owner: CN="Example.com Co.,Ltd. ETP CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
@@ -547,7 +659,7 @@ KeyIdentifier [
 
 
 Alias name: example.com co.,ltd. root ca
-Creation date: Sep 12, 2016
+Creation date: Sep 20, 2016
 Entry type: trustedCertEntry
 
 Owner: CN="Example.com Co.,Ltd. Root CA", OU=CA Center, O="Example.com Co.,Ltd.", C=CN
@@ -597,10 +709,27 @@ KeyIdentifier [
 *******************************************
 ----
 
-____
-[NOTE]
-If you use a keystore which contains only one `PrivateKeyEntry` item as the `keystore` and the `truststore`, you may get a `javax.net.ssl.SSLHandshakeException` with `null cert chain` message.
-____
+In addition, you can split `$JETTY/etc/keystore` as two files.
+One is `$JETTY/etc/keystore` which only contains the server’s private key and certificate,
+the other is `$JETTY/etc/truststore` which contains intermediary CA and root CA.
+
+[literal]
+.The structure of `$JETTY/etc/keystore`
+....
+└── PrivateKeyEntry
+    ├── PrivateKey
+    └── Certificate chain
+        └── Server certificate (end entity)
+....
+
+[literal]
+.The structure of `$JETTY/etc/truststore`
+....
+├── TrustedCertEntry
+│   └── Intermediary CA certificate
+└── TrustedCertEntry
+    └── Root CA certificate
+....
 
 [[configuring-sslcontextfactory]]
 ==== Configuring the Jetty SslContextFactory
@@ -668,7 +797,8 @@ When using the `ExtendedSSlContextFactory`, the correct certificate is automatic
 [[configuring-sslcontextfactory-cipherSuites]]
 ==== Disabling/Enabling Specific Cipher Suites
 
-As an example, to avoid the BEAST attack it is necessary to configure a specific set of cipher suites. This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
+To avoid specific attacks it is often necessary to configure a specific set of cipher suites to include or exclude.
+This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
 
 ____
 [NOTE]
@@ -686,7 +816,7 @@ ____
 
 Both `setIncludeCipherSuites` and `setExcludeCipherSuites` can be fed by the exact cipher suite name used in the JDK or by using regular expressions.
 
-If you have a need to adjust the Includes or Excludes, then this is best done with a custom blow-in XML that configures the `SslContextFactory` to suit your needs.
+If you have a need to adjust the Includes or Excludes, then this is best done with a custom XML that configures the `SslContextFactory` to suit your needs.
 
 To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can be any name, just avoid prefixing it with "jetty-").
 
@@ -801,3 +931,97 @@ ____
 ----
   <Set name="renegotiationAllowed">FALSE</Set>
 ----
+
+[[ssl-dump-ciphers]]
+
+You can view what cipher suites are enabled and disabled by performing a server dump.
+
+To perform a server dump upon server startup, add `jetty.server.dumpAfterStart=true` to the command line when starting the server.
+You can also dump the server when shutting down the server instance by adding `jetty.server.dumpBeforeStop`.
+
+Specifically, you will want to look for the `SslConnectionFactory` portion of the dump.
+
+[source, screen, subs="{sub-order}"]
+----
+[my-base]$ java -jar ${JETTY_HOME}/start.jar jetty.server.dumpAfterStart=true
+
+...
+|   += SslConnectionFactory@18be83e4{SSL->http/1.1} - STARTED
+|   |   += SslContextFactory@42530531(null,null) trustAll=false
+|   |       +- Protocol Selections
+|   |       |   +- Enabled (size=3)
+|   |       |   |   +- TLSv1
+|   |       |   |   +- TLSv1.1
+|   |       |   |   +- TLSv1.2
+|   |       |   +- Disabled (size=2)
+|   |       |       +- SSLv2Hello - ConfigExcluded:'SSLv2Hello'
+|   |       |       +- SSLv3 - JreDisabled:java.security, ConfigExcluded:'SSLv3'
+|   |       +- Cipher Suite Selections
+|   |           +- Enabled (size=15)
+|   |           |   +- TLS_DHE_DSS_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_DHE_DSS_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_DHE_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+|   |           |   +- TLS_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_RSA_WITH_AES_128_GCM_SHA256
+|   |           +- Disabled (size=42)
+|   |               +- SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_DSS_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_NULL_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DHE_DSS_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DHE_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DH_anon_WITH_AES_128_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DH_anon_WITH_AES_128_CBC_SHA256 - JreDisabled:java.security
+|   |               +- TLS_DH_anon_WITH_AES_128_GCM_SHA256 - JreDisabled:java.security
+|   |               +- TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_ECDSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_AES_128_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_3DES_EDE_CBC_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_DES_CBC_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_RSA_WITH_NULL_SHA256 - JreDisabled:java.security
+...
+----
+
+In the example above you can see both the enabled/disabled protocols and included/excluded ciper suites.
+For disabled or excluded protocols and ciphers, the reason they are disabled is given - either due to JVM restrictions, configuration or both.
+As a reminder, when configuring your includes/excludes, *excludes always win*.
+
+Dumps can be configured as part of the `jetty.xml` configuration for your server.
+Please see the documentation on the link:#jetty-dump-tool[Jetty Dump Tool] for more information.

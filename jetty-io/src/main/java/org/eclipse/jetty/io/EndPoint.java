@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -204,6 +204,14 @@ public interface EndPoint extends Closeable
      * @throws ReadPendingException if another read operation is concurrent.
      */
     void fillInterested(Callback callback) throws ReadPendingException;
+
+    /**
+     * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
+     *
+     * @param callback the callback to call when an error occurs or we are readable.
+     * @return true if set
+     */
+    boolean tryFillInterested(Callback callback);
 
     /**
      * @return whether {@link #fillInterested(Callback)} has been called, but {@link #fill(ByteBuffer)} has not yet
