@@ -44,8 +44,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SlowClientsTest
 {
     private Logger logger = Log.getLogger(getClass());
