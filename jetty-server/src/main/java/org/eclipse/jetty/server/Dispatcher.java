@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 
 public class Dispatcher implements RequestDispatcher
@@ -271,10 +270,9 @@ public class Dispatcher implements RequestDispatcher
                 }
                 catch(IllegalStateException e2)
                 {
-                    MultiException me = new MultiException();
-                    me.add(e1);
-                    me.add(e2);
-                    throw new ServletException("Unable to commit the response", me);
+                    ServletException servletException = new ServletException("Unable to commit the response", e2);
+                    servletException.addSuppressed(e1);
+                    throw servletException;
                 }
             }
         }
@@ -295,10 +293,9 @@ public class Dispatcher implements RequestDispatcher
                 }
                 catch(IllegalStateException e2)
                 {
-                    MultiException me = new MultiException();
-                    me.add(e1);
-                    me.add(e2);
-                    throw new ServletException("Unable to commit the response", me);
+                    ServletException servletException = new ServletException("Unable to commit the response", e2);
+                    servletException.addSuppressed(e1);
+                    throw servletException;
                 }
             }
         }
