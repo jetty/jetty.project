@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
@@ -57,7 +58,7 @@ import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
  * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
  * with the channel.</p>
  */
-public class ManagedSelector extends AbstractLifeCycle implements Dumpable
+public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
 
@@ -67,7 +68,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
-    private final ExecutionStrategy _lowPriorityStrategy;
     private Selector _selector;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
@@ -76,8 +76,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         _id = id;
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
-        _strategy = new ExecuteProduceConsume(producer, executor, Invocable.InvocationType.BLOCKING);
-        _lowPriorityStrategy = new LowPriorityProduceExecuteConsume(producer, executor);
+        _strategy = new EatWhatYouKill(producer, executor, Invocable.InvocationType.BLOCKING, Invocable.InvocationType.NON_BLOCKING);
+        addBean(_strategy);
         setStopTimeout(5000);
     }
 
@@ -94,29 +94,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         // The normal strategy obtains the produced task, schedules
         // a new thread to produce more, runs the task and then exits.
         _selectorManager.execute(_strategy::produce);
-
-        // The low priority strategy knows the producer will never
-        // be idle, that tasks are scheduled to run in different
-        // threads, therefore lowPriorityProduce() never exits.
-        _selectorManager.execute(this::lowPriorityProduce);
-    }
-
-    private void lowPriorityProduce()
-    {
-        Thread current = Thread.currentThread();
-        String name = current.getName();
-        int priority = current.getPriority();
-        current.setPriority(Thread.MIN_PRIORITY);
-        current.setName(name+"-lowPrioritySelector");
-        try
-        {
-            _lowPriorityStrategy.produce();
-        }
-        finally
-        {
-            current.setPriority(priority);
-            current.setName(name);
-        }
     }
 
     public int size()
@@ -135,11 +112,12 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         CloseEndPoints close_endps = new CloseEndPoints();
         submit(close_endps);
         close_endps.await(getStopTimeout());
-        super.doStop();
         CloseSelector close_selector = new CloseSelector();
         submit(close_selector);
         close_selector.await(getStopTimeout());
 
+        super.doStop();
+        
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}", this);
     }
@@ -185,42 +163,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Dumpable
         void updateKey();
     }
 
-    private static class LowPriorityProduceExecuteConsume extends ProduceExecuteConsume
-    {
-        private LowPriorityProduceExecuteConsume(SelectorProducer producer, Executor executor)
-        {
-            super(producer, executor, InvocationType.BLOCKING);
-        }
-
-        @Override
-        protected boolean execute(Runnable task)
-        {
-            try
-            {
-                InvocationType invocation=Invocable.getInvocationType(task);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Low Priority Selector executing {} {}",invocation,task);
-                switch (invocation)
-                {
-                    case NON_BLOCKING:
-                        task.run();
-                        return true;
-
-                    case EITHER:
-                        Invocable.invokeNonBlocking(task);
-                        return true;
-
-                    default:
-                        return super.execute(task);
-                }
-            }
-            finally
-            {
-                // Allow opportunity for main strategy to take over.
-                Thread.yield();
-            }
-        }
-    }
 
     private class SelectorProducer implements ExecutionStrategy.Producer
     {

@@ -23,7 +23,8 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.eclipse.jetty.util.thread.Invocable.InvocableExecutor;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 
@@ -31,23 +32,24 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  * <p>A strategy where the caller thread iterates over task production, submitting each
  * task to an {@link Executor} for execution.</p>
  */
-public class ProduceExecuteConsume extends ExecutingExecutionStrategy implements ExecutionStrategy
+public class ProduceExecuteConsume implements ExecutionStrategy
 {
     private static final Logger LOG = Log.getLogger(ProduceExecuteConsume.class);
 
     private final Locker _locker = new Locker();
     private final Producer _producer;
+    private final InvocableExecutor _executor;
     private State _state = State.IDLE;
 
     public ProduceExecuteConsume(Producer producer, Executor executor)
     {
-        this(producer,executor,Invocable.InvocationType.NON_BLOCKING);
+        this(producer,executor,InvocationType.NON_BLOCKING);
     }
     
-    public ProduceExecuteConsume(Producer producer, Executor executor, Invocable.InvocationType preferred)
+    public ProduceExecuteConsume(Producer producer, Executor executor, InvocationType preferred)
     {
-        super(executor,preferred);
-        this._producer = producer;
+        _producer = producer;
+        _executor = new InvocableExecutor(executor,preferred);
     }
 
     @Override
@@ -95,7 +97,7 @@ public class ProduceExecuteConsume extends ExecutingExecutionStrategy implements
             }
 
             // Execute the task.
-            execute(task);
+            _executor.execute(task);
         }        
     }
 
