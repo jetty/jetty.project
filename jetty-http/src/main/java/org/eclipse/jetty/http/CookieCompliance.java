@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.http;
 
 /**
  * The compliance for Cookie handling.

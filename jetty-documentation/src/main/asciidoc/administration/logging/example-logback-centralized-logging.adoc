@@ -81,7 +81,7 @@ INFO: resources       enabled in     ${jetty.base}/start.ini
 The replacement `logging.mod` performs a number of tasks.
 
 .  `mybase` is a `${jetty.base}` directory.
-.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/ `and becomes the `${jetty.home}` directory for this demonstration.
+.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
 .  The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by mybase only.
 .  The `start.jar --add-to-start=logging,webapp-logging` command performs a number of steps to make the logging module available to the `${jetty.base}` configuration.
 ..  Several entries are added to the `${jetty.base}/start.ini` configuration.

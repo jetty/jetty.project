@@ -117,6 +117,12 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
      */
     public final static String __VERSION = __METADATA + ".version";
     
+    
+    public final static String __LASTSAVED = __METADATA + ".lastSaved";
+    
+    
+    public final static String __LASTNODE = __METADATA + ".lastNode";
+    
     /**
      * Last access time of session
      */
@@ -202,14 +208,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                     if (valid == null || !valid)
                         return;
 
-
                     Object version = getNestedValue(sessionDocument, getContextSubfield(__VERSION));
+                    Long lastSaved = (Long)getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
+                    String lastNode = (String)getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
 
                     Long created = (Long)sessionDocument.get(__CREATED);
                     Long accessed = (Long)sessionDocument.get(__ACCESSED);
                     Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
-                    Long expiry = (Long)sessionDocument.get(__EXPIRY);
-
+                    Long expiry = (Long)sessionDocument.get(__EXPIRY);          
+                    
                     NoSqlSessionData data = null;
 
                     // get the session for the context
@@ -228,6 +235,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                         data.setExpiry(expiry);
                         data.setContextPath(_context.getCanonicalContextPath());
                         data.setVhost(_context.getVhost());
+                        data.setLastSaved(lastSaved);
+                        data.setLastNode(lastNode);
 
                         HashMap<String, Object> attributes = new HashMap<>();
                         for (String name : sessionSubDocumentForContext.keySet())
@@ -427,7 +436,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
      */
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
-    {        
+    {                
         NoSqlSessionData nsqd = (NoSqlSessionData)data;
         
         // Form query for upsert
@@ -449,12 +458,16 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             sets.put(__CREATED,nsqd.getCreated());
             sets.put(__VALID,true);
             sets.put(getContextSubfield(__VERSION),version);
+            sets.put(getContextSubfield(__LASTSAVED), data.getLastSaved());
+            sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             sets.put(__MAX_IDLE, nsqd.getMaxInactiveMs());
             sets.put(__EXPIRY, nsqd.getExpiry());
             nsqd.setVersion(version);
         }
         else
         {
+            sets.put(getContextSubfield(__LASTSAVED), data.getLastSaved());
+            sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             version = new Long(((Number)version).longValue() + 1);
             nsqd.setVersion(version);
             update.put("$inc",_version_1); 
