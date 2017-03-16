@@ -196,6 +196,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 try (FileInputStream in = new FileInputStream(file))
                 {
                     SessionData data = load(in);
+                    data.setLastSaved(file.lastModified());
                     //delete restored file
                     file.delete();
                     reference.set(data);

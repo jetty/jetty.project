@@ -98,6 +98,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         public  static final String EXPIRY = "expiry";
         public  static final  String MAXINACTIVE = "maxInactive";
         public  static final  String ATTRIBUTES = "attributes";
+        public  static final String LASTSAVED = "lastSaved";
 
         public static final String KIND = "GCloudSession";
         protected String _kind = KIND;
@@ -107,6 +108,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         protected String _accessed = ACCESSED;
         protected String _lastAccessed = LASTACCESSED;
         protected String _lastNode = LASTNODE;
+        protected String _lastSaved = LASTSAVED;
         protected String _createTime = CREATETIME;
         protected String _cookieSetTime = COOKIESETTIME;
         protected String _expiry = EXPIRY;
@@ -300,6 +302,23 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {
             checkNotNull(attributes);
             _attributes = attributes;
+        }
+
+        /**
+         * @return the lastSaved
+         */
+        public String getLastSaved()
+        {
+            return _lastSaved;
+        }
+
+        /**
+         * @param lastSaved the lastSaved to set
+         */
+        public void setLastSaved(String lastSaved)
+        {
+            checkNotNull(lastSaved);
+            _lastSaved = lastSaved;
         }
 
         /** 
@@ -868,6 +887,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .set(_model.getLastNode(),session.getLastNode())
                 .set(_model.getExpiry(), session.getExpiry())
                 .set(_model.getMaxInactive(), session.getMaxInactiveMs())
+                .set(_model.getLastSaved(), session.getLastSaved())
                 .set(_model.getAttributes(), BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build()).build();
 
                  
@@ -902,6 +922,17 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     long createTime = entity.getLong(_model.getCreateTime());
                     long cookieSet = entity.getLong(_model.getCookieSetTime());
                     String lastNode = entity.getString(_model.getLastNode());
+
+                    long lastSaved = 0;
+                    //for compatibility with previously saved sessions, lastSaved may not be present
+                    try
+                    {
+                        lastSaved = entity.getLong(_model.getLastSaved());
+                    }
+                    catch (DatastoreException e)
+                    {
+                        LOG.ignore(e);
+                    }
                     long expiry = entity.getLong(_model.getExpiry());
                     long maxInactive = entity.getLong(_model.getMaxInactive());
                     Blob blob = (Blob) entity.getBlob(_model.getAttributes());
@@ -912,6 +943,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     session.setVhost(vhost);
                     session.setCookieSet(cookieSet);
                     session.setLastNode(lastNode);
+                    session.setLastSaved(lastSaved);
                     session.setExpiry(expiry);
                     try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
                     {
