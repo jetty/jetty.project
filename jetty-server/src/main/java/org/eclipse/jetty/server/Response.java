@@ -173,6 +173,11 @@ public class Response implements HttpServletResponse
 
     public void addCookie(HttpCookie cookie)
     {
+        if (StringUtil.isBlank(cookie.getName()))
+        {
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+        }
+        
         if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
             addSetRFC2965Cookie(
                 cookie.getName(),
@@ -211,6 +216,11 @@ public class Response implements HttpServletResponse
                 if (comment.length() == 0)
                     comment = null;
             }
+        }
+    
+        if (StringUtil.isBlank(cookie.getName()))
+        {
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
         }
 
         if (getHttpChannel().getHttpConfiguration().isCookieCompliance(CookieCompliance.RFC2965))
