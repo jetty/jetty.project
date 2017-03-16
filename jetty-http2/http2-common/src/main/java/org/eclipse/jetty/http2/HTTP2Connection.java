@@ -31,12 +31,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
-import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 public class HTTP2Connection extends AbstractConnection
 {
@@ -49,8 +49,7 @@ public class HTTP2Connection extends AbstractConnection
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
-    private final ExecutionStrategy blockingStrategy;
-    private final ExecutionStrategy nonBlockingStrategy;
+    private final ExecutionStrategy strategy;
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
@@ -59,8 +58,17 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.blockingStrategy = new ExecuteProduceConsume(producer, executor);
-        this.nonBlockingStrategy = new ProduceExecuteConsume(producer, executor);
+        this.strategy = new EatWhatYouKill(producer, executor,InvocationType.BLOCKING, InvocationType.BLOCKING, 0);
+        
+        // TODO clean this up.
+        try
+        {
+            ((LifeCycle)this.strategy).start();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -96,7 +104,7 @@ public class HTTP2Connection extends AbstractConnection
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Open {} ", this);
         super.onOpen();
-        blockingStrategy.produce();
+        strategy.produce();
     }
 
     @Override
@@ -105,26 +113,24 @@ public class HTTP2Connection extends AbstractConnection
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Close {} ", this);
         super.onClose();
+        
+        // TODO clean this up.
+        try
+        {
+            ((LifeCycle)this.strategy).stop();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void onFillable()
     {
-        throw new UnsupportedOperationException();
-    }
-
-    private void onFillableBlocking()
-    {
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onFillableBlocking {} ", this);
-        blockingStrategy.produce();
-    }
-
-    private void onFillableNonBlocking()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onFillableNonBlocking {} ", this);
-        nonBlockingStrategy.produce();
+            LOG.debug("HTTP2 onFillable {} ", this);
+        strategy.produce();
     }
 
     private int fill(EndPoint endPoint, ByteBuffer buffer)
@@ -158,16 +164,7 @@ public class HTTP2Connection extends AbstractConnection
     protected void offerTask(Runnable task, boolean dispatch)
     {
         offerTask(task);
-
-        // Because producing calls parse and parse can call offerTask, we have to make sure
-        // we use the same strategy otherwise produce can be reentrant and that messes with 
-        // the release mechanism.  TODO is this test sufficient to protect from this?
-        ExecutionStrategy s = Invocable.isNonBlockingInvocation() ? nonBlockingStrategy : blockingStrategy;
-        if (dispatch)
-            // TODO Why again is this necessary?
-            s.dispatch();
-        else
-            s.produce();
+        strategy.produce();
     }
 
     @Override
@@ -271,10 +268,7 @@ public class HTTP2Connection extends AbstractConnection
         @Override
         public void succeeded()
         {
-            if (Invocable.isNonBlockingInvocation())
-                onFillableNonBlocking();
-            else
-                onFillableBlocking();
+            onFillable();
         }
 
         @Override

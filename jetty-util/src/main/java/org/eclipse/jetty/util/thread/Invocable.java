@@ -195,12 +195,19 @@ public interface Invocable
         private static final Logger LOG = Log.getLogger(InvocableExecutor.class);
 
         private final Executor _executor;
+        private final InvocationType _preferredExecutionType;
         private final InvocationType _preferredInvocationType;
 
         public InvocableExecutor(Executor executor,InvocationType preferred)
         {
+            this(executor,preferred,preferred);
+        }
+        
+        public InvocableExecutor(Executor executor,InvocationType preferredForExecution,InvocationType preferredForIvocation)
+        {
             _executor=executor;
-            _preferredInvocationType=preferred;
+            _preferredExecutionType=preferredForExecution;
+            _preferredInvocationType=preferredForIvocation;
         }
 
         public Invocable.InvocationType getPreferredInvocationType()
@@ -219,12 +226,17 @@ public interface Invocable
         
         public void execute(Runnable task)
         {
-            tryExecute(task,_preferredInvocationType);
+            tryExecute(task,_preferredExecutionType);
         }
 
         public void execute(Runnable task, InvocationType preferred)
         {
             tryExecute(task,preferred);
+        }
+        
+        public boolean tryExecute(Runnable task)
+        {
+            return tryExecute(task,_preferredExecutionType);
         }
         
         public boolean tryExecute(Runnable task, InvocationType preferred)

@@ -55,7 +55,6 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
     private final Runnable _runProduce = new RunProduce();
     private final Producer _producer;
     private final InvocableExecutor _executor;
-    private final InvocationType _executeType;
     private int _pendingProducersMax;
     private int _pendingProducers;
     private int _pendingProducersDispatched;
@@ -63,20 +62,19 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
 
     public EatWhatYouKill(Producer producer, Executor executor)
     {
-        this(producer,executor,InvocationType.BLOCKING,InvocationType.NON_BLOCKING);
+        this(producer,executor,InvocationType.NON_BLOCKING,InvocationType.BLOCKING);
     }
 
-    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredInvocation, InvocationType preferredExecution)
+    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredExecution, InvocationType preferredInvocation)
     {
-        this(producer,executor,preferredInvocation,preferredExecution,1);
+        this(producer,executor,preferredExecution,preferredInvocation,1);
     }
     
-    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredInvocation, InvocationType preferredExecution, int maxProducersPending )
+    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredExecution, InvocationType preferredInvocation, int maxProducersPending )
     {
         _producer = producer;
         _pendingProducersMax = maxProducersPending;
-        _executor = new InvocableExecutor(executor,preferredInvocation);
-        _executeType = preferredExecution;
+        _executor = new InvocableExecutor(executor,preferredExecution,preferredInvocation);
     }
 
     @Override
@@ -224,7 +222,7 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                     eat_it = true;
                     keep_producing = true;
                 }
-                else if (_pendingProducers==0)
+                else if (_pendingProducers==0 && _pendingProducersMax>0)
                 {
                     keep_producing = true;
                     eat_it = false;
@@ -254,7 +252,7 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                 if (eat_it)
                     _executor.invoke(task);
                 else
-                    _executor.execute(task,_executeType);
+                    _executor.execute(task);
             }
 
             // If we need more producers

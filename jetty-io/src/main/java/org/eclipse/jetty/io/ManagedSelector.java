@@ -76,7 +76,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _id = id;
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
-        _strategy = new EatWhatYouKill(producer, executor, Invocable.InvocationType.BLOCKING, Invocable.InvocationType.NON_BLOCKING);
+        _strategy = new EatWhatYouKill(producer, executor, Invocable.InvocationType.NON_BLOCKING, Invocable.InvocationType.BLOCKING);
         addBean(_strategy);
         setStopTimeout(5000);
     }
@@ -172,30 +172,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public Runnable produce()
         {
-            // This method is called from both the
-            // normal and low priority strategies.
-            // Only one can produce at a time, so it's synchronized
-            // to enforce that only one strategy actually produces.
-            // When idle in select(), this method blocks;
-            // the other strategy's thread will be blocked
-            // waiting for this lock to be released.
-            synchronized (this)
+            while (true)
             {
-                while (true)
-                {
-                    Runnable task = processSelected();
-                    if (task != null)
-                        return task;
+                Runnable task = processSelected();
+                if (task != null)
+                    return task;
 
-                    Runnable action = nextAction();
-                    if (action != null)
-                        return action;
+                Runnable action = nextAction();
+                if (action != null)
+                    return action;
 
-                    update();
+                update();
 
-                    if (!select())
-                        return null;
-                }
+                if (!select())
+                    return null;
             }
         }
 

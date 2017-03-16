@@ -192,7 +192,8 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 // Spawn a new thread to continue production by running the produce loop.
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} dispatch", this);
-                _executor.execute(task);
+                if (!_executor.tryExecute(this))
+                    task = null;
             }
 
             // Run the task.
