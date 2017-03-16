@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -141,8 +142,11 @@ public class ExecutionStrategyTest
         
         newExecutionStrategy(producer,threads);
         
-        for (int p=0; latch.getCount()>0 && p<TASKS; p++)
-            _strategy.produce();
+        Invocable.invokeNonBlocking(()->
+        {
+            for (int p=0; latch.getCount()>0 && p<TASKS; p++)
+                _strategy.produce();
+        }); 
         
         assertTrue(latch.await(10,TimeUnit.SECONDS));
     }
@@ -212,10 +216,11 @@ public class ExecutionStrategyTest
         });
 
 
-        for (int p=0; latch.getCount()>0 && p<TASKS; p++)
+        Invocable.invokeNonBlocking(()->
         {
-            _strategy.produce();
-        }
+            for (int p=0; latch.getCount()>0 && p<TASKS; p++)
+                _strategy.produce();
+        }); 
         
         assertTrue(latch.await(10,TimeUnit.SECONDS));
         

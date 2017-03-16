@@ -157,7 +157,7 @@ public interface Invocable
                 break;
 
             case EITHER:
-                if (getInvocationType(task) == InvocationType.EITHER && preferredInvocationType == InvocationType.NON_BLOCKING)
+                if (preferredInvocationType == InvocationType.NON_BLOCKING)
                     return () -> invokeNonBlocking(task);
                 break;
         }
