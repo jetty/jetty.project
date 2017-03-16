@@ -314,7 +314,9 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append(super.toString());
+        builder.append(getClass().getSimpleName());
+        builder.append('@');
+        builder.append(Integer.toHexString(hashCode()));
         builder.append('/');
         builder.append(_producer);
         builder.append('/');

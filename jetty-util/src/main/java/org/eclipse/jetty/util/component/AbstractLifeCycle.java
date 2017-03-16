@@ -225,12 +225,6 @@ public abstract class AbstractLifeCycle implements LifeCycle
     {
         this._stopTimeout = stopTimeout;
     }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x",getClass().getSimpleName(),hashCode());
-    }
     
     public static abstract class AbstractLifeCycleListener implements LifeCycle.Listener
     {
