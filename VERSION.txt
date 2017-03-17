@@ -1,3 +1,5 @@
+jetty-9.3.18-SNAPSHOT
+
 jetty-9.3.17.v20170317 - 17 March 2017
  + 329 Javadoc for HttpTester and ServletTester needs to reference limited HTTP
    version scope

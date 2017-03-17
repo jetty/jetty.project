@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.17.v20170317</version>
+    <version>9.3.18-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
