@@ -143,7 +143,9 @@ public class HttpTrailersTest
         {
             client.setSoTimeout(5000);
 
-            String request = "" +
+            try
+            {
+                String request = "" +
                     "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Transfer-Encoding: chunked\r\n" +
@@ -151,13 +153,18 @@ public class HttpTrailersTest
                     "0\r\n" +
                     "Trailer: " + new String(huge) + "\r\n" +
                     "\r\n";
-            OutputStream output = client.getOutputStream();
-            output.write(request.getBytes(StandardCharsets.UTF_8));
-            output.flush();
-
-            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client.getInputStream()));
-            Assert.assertNotNull(response);
-            Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+                OutputStream output = client.getOutputStream();
+                output.write(request.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+                
+                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client.getInputStream()));
+                Assert.assertNotNull(response);
+                Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+            catch(Exception e)
+            {
+                // May be thrown if write fails and error handling is aborted
+            }
         }
     }
 }
