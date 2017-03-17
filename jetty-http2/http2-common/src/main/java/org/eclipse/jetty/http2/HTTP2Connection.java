@@ -58,17 +58,9 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.strategy = new EatWhatYouKill(producer, executor,InvocationType.BLOCKING, InvocationType.BLOCKING, 0);
+        this.strategy = new EatWhatYouKill(producer, executor, 0);
         
-        // TODO clean this up.
-        try
-        {
-            ((LifeCycle)this.strategy).start();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        LifeCycle.start(strategy);
     }
 
     @Override
@@ -113,16 +105,8 @@ public class HTTP2Connection extends AbstractConnection
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Close {} ", this);
         super.onClose();
-        
-        // TODO clean this up.
-        try
-        {
-            ((LifeCycle)this.strategy).stop();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+
+        LifeCycle.stop(strategy);
     }
 
     @Override

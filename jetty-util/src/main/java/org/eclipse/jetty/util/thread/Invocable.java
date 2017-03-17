@@ -195,38 +195,38 @@ public interface Invocable
         private static final Logger LOG = Log.getLogger(InvocableExecutor.class);
 
         private final Executor _executor;
-        private final InvocationType _preferredExecutionType;
-        private final InvocationType _preferredInvocationType;
+        private final InvocationType _preferredInvocationForExecute;
+        private final InvocationType _preferredInvocationForInvoke;
 
         public InvocableExecutor(Executor executor,InvocationType preferred)
         {
             this(executor,preferred,preferred);
         }
         
-        public InvocableExecutor(Executor executor,InvocationType preferredForExecution,InvocationType preferredForIvocation)
+        public InvocableExecutor(Executor executor,InvocationType preferredInvocationForExecute,InvocationType preferredInvocationForIvoke)
         {
             _executor=executor;
-            _preferredExecutionType=preferredForExecution;
-            _preferredInvocationType=preferredForIvocation;
+            _preferredInvocationForExecute=preferredInvocationForExecute;
+            _preferredInvocationForInvoke=preferredInvocationForIvoke;
         }
 
         public Invocable.InvocationType getPreferredInvocationType()
         {
-            return _preferredInvocationType;
+            return _preferredInvocationForInvoke;
         }
 
         public void invoke(Runnable task)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} invoke  {}", this, task);
-            Invocable.invokePreferred(task,_preferredInvocationType);
+            Invocable.invokePreferred(task,_preferredInvocationForInvoke);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} invoked {}", this, task);
         }
         
         public void execute(Runnable task)
         {
-            tryExecute(task,_preferredExecutionType);
+            tryExecute(task,_preferredInvocationForExecute);
         }
 
         public void execute(Runnable task, InvocationType preferred)
@@ -236,7 +236,7 @@ public interface Invocable
         
         public boolean tryExecute(Runnable task)
         {
-            return tryExecute(task,_preferredExecutionType);
+            return tryExecute(task,_preferredInvocationForExecute);
         }
         
         public boolean tryExecute(Runnable task, InvocationType preferred)

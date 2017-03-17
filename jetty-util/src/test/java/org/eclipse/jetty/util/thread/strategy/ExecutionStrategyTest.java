@@ -67,8 +67,7 @@ public class ExecutionStrategyTest
     void newExecutionStrategy(Producer producer, Executor executor) throws Exception
     {
         _strategy = _strategyClass.getConstructor(Producer.class,Executor.class).newInstance(producer,executor);
-        if (_strategy instanceof LifeCycle)
-            ((LifeCycle)_strategy).start();
+        LifeCycle.start(_strategy);
     }
     
     @Before
@@ -80,8 +79,7 @@ public class ExecutionStrategyTest
     @After
     public void after() throws Exception
     {
-        if (_strategy instanceof LifeCycle)
-            ((LifeCycle)_strategy).stop();
+        LifeCycle.stop(_strategy);
         threads.stop();
     }
     

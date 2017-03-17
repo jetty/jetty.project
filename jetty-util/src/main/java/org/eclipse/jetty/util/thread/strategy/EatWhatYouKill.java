@@ -66,16 +66,21 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
         this(producer,executor,InvocationType.NON_BLOCKING,InvocationType.BLOCKING);
     }
 
-    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredExecution, InvocationType preferredInvocation)
+    public EatWhatYouKill(Producer producer, Executor executor, int maxProducersPending )
     {
-        this(producer,executor,preferredExecution,preferredInvocation,1);
+        this(producer,executor,InvocationType.NON_BLOCKING,InvocationType.BLOCKING);
     }
     
-    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredExecution, InvocationType preferredInvocation, int maxProducersPending )
+    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredInvocationPEC, InvocationType preferredInvocationEPC)
+    {
+        this(producer,executor,preferredInvocationPEC,preferredInvocationEPC,1);
+    }
+    
+    public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredInvocationPEC, InvocationType preferredInvocationEPC, int maxProducersPending )
     {
         _producer = producer;
         _pendingProducersMax = maxProducersPending;
-        _executor = new InvocableExecutor(executor,preferredExecution,preferredInvocation);
+        _executor = new InvocableExecutor(executor,preferredInvocationPEC,preferredInvocationEPC);
     }
 
     @Override
@@ -167,12 +172,15 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                     // spurious wakeup!
                     _pendingProducers--;
                 } 
-                else if (_state == State.IDLE)                    
+                else
                 {
                     _pendingProducersSignalled--;
-                    _state = State.PRODUCING;
-                    return true;
-                } 
+                    if (_state == State.IDLE)                    
+                    {
+                        _state = State.PRODUCING;
+                        return true;
+                    } 
+                }
             }
             catch (InterruptedException e)
             {
