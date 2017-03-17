@@ -1,4 +1,32 @@
-jetty-9.3.17-SNAPSHOT
+jetty-9.3.17.v20170317 - 17 March 2017
+ + 329 Javadoc for HttpTester and ServletTester needs to reference limited HTTP
+   version scope
+ + 609 websocket ClientCloseTest testServerNoCloseHandshake is failing
+ + 1015 Ensure jetty-distribution excludes git / temp files
+ + 1047 ReadPendingException and then thread death
+ + 1049 test-jetty-osgi test exits/crashes the surefire forked JVM
+ + 1282 ByteArrayEndPointTest.testIdle() failure
+ + 1296 Introduce HTTP parser "content complete" event
+ + 1326 Jetty shutdown command got NullPointerException (http2 module added to
+   start)
+ + 1328 Response.setBufferSize(int) ISE should be more clear on reason
+ + 1340 PushCacheFilter question
+ + 1342 Improve ByteBufferPool scalability
+ + 1351 StringIndexOutOfBoundsException thrown on incomplete Accept-Language
+   header
+ + 1357 RolloverFileOutputStream: No rollout performed at midnight
+ + 1374 When `Server.start` fails, beans ought to be stopped
+ + 1375 Support pushed resources in HTTP client
+ + 1378 Slow TLS clients may hang the server
+ + 1383 javadoc build on JDK 8u121 fails due to scripts
+ + 1384 Expose StatisticsServlet to webapp
+ + 1387 Windows and paxexam failure due to "renaming bundle"
+ + 1389 Update to gcloud datastore-0.9.4-beta
+ + 1390 HashLoginService and "this.web-inf.url" property are incompatible
+ + 1394 Default OS Locale/Encoding/Charset can cause test failures
+ + 1396 Set-Cookie produced by Jetty is invalid for RFC6265 and Chrome
+ + 1399 SlowClientTest is failing on CI
+ + 1401 HttpOutput.recycle() does not clear the write listener
 
 jetty-9.3.16.v20170120 - 20 January 2017
  + 486 JDK 9 ALPN implementation
