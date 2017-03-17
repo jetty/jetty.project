@@ -170,8 +170,8 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                 if (_pendingProducersSignalled==0)
                 {
                     // spurious wakeup!
-                    if (isRunning())
-                        System.err.println("SPURIOUS!!!!!!!!!!!!!!!!!");
+                    if (LOG.isDebugEnabled() && isRunning())
+                        LOG.debug("{} SPURIOUS WAKEUP",this);
                     _pendingProducers--;
                 } 
                 else
@@ -210,7 +210,7 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                 LOG.debug("{} produced {}", this, task);
 
             boolean may_block_caller = !Invocable.isNonBlockingInvocation();
-            boolean dispatch_new_producer;
+            boolean new_pending_producer;
             boolean run_task_ourselves;
             boolean keep_producing;
             
@@ -232,20 +232,20 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                     break producing;
                 }
                 
-                // Will we eat our own kill?
+                // Will we eat our own kill - ie consume the task we just produced?
                 if (Invocable.getInvocationType(task)==InvocationType.NON_BLOCKING)
                 {
                     // ProduceConsume
                     run_task_ourselves = true;
                     keep_producing = true;
-                    dispatch_new_producer = false;
+                    new_pending_producer = false;
                 }
                 else if (may_block_caller && (_pendingProducers>0 || _pendingProducersMax==0))
                 {
                     // ExecuteProduceConsume (eat what we kill!)
                     run_task_ourselves = true;
                     keep_producing = false;
-                    dispatch_new_producer = true;
+                    new_pending_producer = true;
                     _pendingProducersDispatched++;
                     _state = State.IDLE;
                     _pendingProducers--;
@@ -257,15 +257,15 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                     // ProduceExecuteConsume
                     keep_producing = true;
                     run_task_ourselves = false;
-                    dispatch_new_producer = (_pendingProducersDispatched + _pendingProducers)<_pendingProducersMax;
-                    if (dispatch_new_producer)
+                    new_pending_producer = (_pendingProducersDispatched + _pendingProducers)<_pendingProducersMax;
+                    if (new_pending_producer)
                         _pendingProducersDispatched++;
                 }
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("{} mbc={} dnp={} run={} kp={}", this,may_block_caller,dispatch_new_producer,run_task_ourselves,keep_producing);
+                LOG.debug("{} mbc={} dnp={} run={} kp={}", this,may_block_caller,new_pending_producer,run_task_ourselves,keep_producing);
 
-            if (dispatch_new_producer)
+            if (new_pending_producer)
                 // Spawn a new thread to continue production by running the produce loop.
                 _executor.execute(this);
             
