@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +54,7 @@ public class ExecutionStrategyTest
         });
     }
 
-    QueuedThreadPool threads = new QueuedThreadPool(20);
+    QueuedThreadPool _threads = new QueuedThreadPool(20);
     Class<? extends ExecutionStrategy> _strategyClass;
     ExecutionStrategy _strategy;
 
@@ -73,14 +72,14 @@ public class ExecutionStrategyTest
     @Before
     public void before() throws Exception
     {
-        threads.start();
+        _threads.start();
     }
     
     @After
     public void after() throws Exception
     {
         LifeCycle.stop(_strategy);
-        threads.stop();
+        _threads.stop();
     }
     
     public static abstract class TestProducer implements Producer
@@ -106,7 +105,7 @@ public class ExecutionStrategyTest
             }
         };
         
-        newExecutionStrategy(producer,threads);
+        newExecutionStrategy(producer,_threads);
         _strategy.produce();
         assertThat(count.get(),greaterThan(0));
     }
@@ -114,7 +113,7 @@ public class ExecutionStrategyTest
     @Test
     public void simpleTest() throws Exception
     {
-        final int TASKS = 3*threads.getMaxThreads();
+        final int TASKS = 3*_threads.getMaxThreads();
         final CountDownLatch latch = new CountDownLatch(TASKS);
         Producer producer = new TestProducer()
         {
@@ -138,14 +137,11 @@ public class ExecutionStrategyTest
             }
         };
         
-        newExecutionStrategy(producer,threads);
-        
-        Invocable.invokeNonBlocking(()->
-        {
-            for (int p=0; latch.getCount()>0 && p<TASKS; p++)
-                _strategy.produce();
-        }); 
-        
+        newExecutionStrategy(producer,_threads);
+
+        for (int p=0; latch.getCount()>0 && p<TASKS; p++)
+            _strategy.produce();
+
         assertTrue(latch.await(10,TimeUnit.SECONDS));
     }
     
@@ -153,7 +149,7 @@ public class ExecutionStrategyTest
     @Test
     public void blockingProducerTest() throws Exception
     {
-        final int TASKS = 3*threads.getMaxThreads();
+        final int TASKS = 3*_threads.getMaxThreads();
         final BlockingQueue<CountDownLatch> q = new ArrayBlockingQueue<>(500);
         
         Producer producer = new TestProducer()
@@ -190,10 +186,13 @@ public class ExecutionStrategyTest
             }
         };
         
-        newExecutionStrategy(producer,threads);
-
+        newExecutionStrategy(producer,_threads);
+        _threads.execute(()->_strategy.produce());
+        
+        
+        
         final CountDownLatch latch = new CountDownLatch(TASKS);
-        threads.execute(new Runnable()
+        _threads.execute(new Runnable()
         {
             @Override
             public void run()
@@ -204,6 +203,7 @@ public class ExecutionStrategyTest
                     {
                         Thread.sleep(20);
                         q.offer(latch);
+                        _strategy.produce();
                     }
                 }
                 catch(Exception e)
@@ -213,17 +213,6 @@ public class ExecutionStrategyTest
             }
         });
 
-
-        Invocable.invokeNonBlocking(()->
-        {
-            for (int p=0; latch.getCount()>0 && p<TASKS; p++)
-                _strategy.produce();
-        }); 
-        
         assertTrue(latch.await(10,TimeUnit.SECONDS));
-        
     }
-    
-    
-    
 }

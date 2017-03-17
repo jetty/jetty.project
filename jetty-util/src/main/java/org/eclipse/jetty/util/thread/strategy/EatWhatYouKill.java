@@ -86,9 +86,6 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
     @Override
     public void produce()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} execute", this);
-
         boolean produce;
         try (Lock locked = _locker.lock())
         {
@@ -109,6 +106,9 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
             }
         }
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} execute {}", this, produce);
+
         if (produce)
             produceConsume();
     }
@@ -116,8 +116,6 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
     @Override
     public void dispatch()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} spawning", this);
         boolean dispatch = false;
         try (Lock locked = _locker.lock())
         {
@@ -136,8 +134,10 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                     dispatch = false;   
             }
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} dispatch {}", this, dispatch);
         if (dispatch)
-            _executor.execute(_runProduce);
+            _executor.execute(_runProduce,InvocationType.BLOCKING);
     }
 
     @Override
@@ -170,6 +170,8 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                 if (_pendingProducersSignalled==0)
                 {
                     // spurious wakeup!
+                    if (isRunning())
+                        System.err.println("SPURIOUS!!!!!!!!!!!!!!!!!");
                     _pendingProducers--;
                 } 
                 else
@@ -261,7 +263,7 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
                 }
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("{} mbc={} dnp={} ei={} kp={}", this,may_block_caller,dispatch_new_producer,run_task_ourselves,keep_producing);
+                LOG.debug("{} mbc={} dnp={} run={} kp={}", this,may_block_caller,dispatch_new_producer,run_task_ourselves,keep_producing);
 
             if (dispatch_new_producer)
                 // Spawn a new thread to continue production by running the produce loop.
@@ -277,21 +279,12 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
             if (keep_producing)
                 continue producing;
 
-            if (may_block_caller)
+            try (Lock locked = _locker.lock())
             {
-                try (Lock locked = _locker.lock())
+                if (_state==State.IDLE)
                 {
-                    switch(_state)
-                    {
-                        case IDLE:
-                            _state = State.PRODUCING;
-                            continue producing;
-
-                        default: 
-                            // Perhaps we can be a pending Producer?
-                            if (pendingProducerWait())
-                                continue producing;
-                    }
+                    _state = State.PRODUCING;
+                    continue producing;
                 }
             }
 
@@ -314,6 +307,7 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
     {
         try (Lock locked = _locker.lock())
         {
+            _pendingProducersSignalled=_pendingProducers+_pendingProducersDispatched;
             _pendingProducers=0;
             _produce.signalAll();
         }

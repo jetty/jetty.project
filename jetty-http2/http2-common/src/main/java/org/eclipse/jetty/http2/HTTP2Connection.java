@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 public class HTTP2Connection extends AbstractConnection
@@ -148,7 +147,7 @@ public class HTTP2Connection extends AbstractConnection
     protected void offerTask(Runnable task, boolean dispatch)
     {
         offerTask(task);
-        strategy.produce();
+        strategy.dispatch();
     }
 
     @Override
