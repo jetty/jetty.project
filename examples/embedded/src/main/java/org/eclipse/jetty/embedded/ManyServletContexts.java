@@ -58,6 +58,7 @@ public class ManyServletContexts
         other.addServlet(new ServletHolder(new HelloServlet("YO!")), "*.yo");
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }
