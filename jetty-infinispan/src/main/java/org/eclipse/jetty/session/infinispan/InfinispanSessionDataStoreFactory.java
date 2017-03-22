@@ -61,6 +61,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
         store.setGracePeriodSec(getGracePeriodSec());
         store.setInfinispanIdleTimeoutSec(getInfinispanIdleTimeoutSec());
         store.setCache(getCache());
+        store.setSavePeriodSec(getSavePeriodSec());
         return store;
     }
     

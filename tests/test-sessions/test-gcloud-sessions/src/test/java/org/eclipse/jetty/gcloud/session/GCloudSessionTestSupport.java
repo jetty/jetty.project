@@ -66,7 +66,8 @@ public class GCloudSessionTestSupport
         @Override
         public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
         {
-            GCloudSessionDataStore ds = new GCloudSessionDataStore();
+            GCloudSessionDataStore ds = (GCloudSessionDataStore)super.getSessionDataStore(handler);
+            ds.setMaxRetries(GCloudSessionDataStore.DEFAULT_MAX_RETRIES);
             ds.setDatastore(_d);
             return ds;
         }

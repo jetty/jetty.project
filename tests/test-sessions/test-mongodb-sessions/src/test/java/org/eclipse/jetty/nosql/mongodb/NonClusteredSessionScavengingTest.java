@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+
 import org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.AfterClass;
@@ -42,6 +48,31 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
         MongoTestHelper.dropCollection();
     }
     
+    
+    
+    
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest#assertSession(java.lang.String, boolean)
+     */
+    @Override
+    public void assertSession(String id, boolean exists)
+    {
+       assertNotNull(_dataStore);
+       try
+       {
+           boolean inmap = _dataStore.exists(id);
+           if (exists)
+               assertTrue(inmap);
+           else
+               assertFalse(inmap);
+       }
+       catch (Exception e)
+       {
+           fail(e.getMessage());
+       }
+    }
+
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */

@@ -13,6 +13,7 @@
        <Set name="dbName"><Property name="jetty.session.mongo.dbName" default="HttpSessions" /></Set>
        <Set name="collectionName"><Property name="jetty.session.mongo.collectionName" default="jettySessions" /></Set>
        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+       <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
        <Set name="connectionString"><Property name="jetty.session.mongo.connectionString" default="mongodb://localhost"/></Set>
     </New>
    </Arg>

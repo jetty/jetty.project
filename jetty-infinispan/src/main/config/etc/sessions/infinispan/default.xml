@@ -22,6 +22,7 @@
        <Set name="cache"><Ref id="cache"/></Set>
        <Set name="infinispanIdleTimeoutSec"><Property name="jetty.session.infinispan.idleTimeout.seconds" default="0" /></Set>
        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+       <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
     </New>
    </Arg>
   </Call>

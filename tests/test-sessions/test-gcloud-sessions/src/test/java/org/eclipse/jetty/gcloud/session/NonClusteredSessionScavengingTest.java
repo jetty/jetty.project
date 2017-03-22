@@ -19,6 +19,12 @@
 
 package org.eclipse.jetty.gcloud.session;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.Set;
+
 import org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.After;
@@ -40,6 +46,29 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     }
     
     
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest#assertSession(java.lang.String, boolean)
+     */
+    @Override
+    public void assertSession(String id, boolean exists)
+    {
+        try
+        {
+            Set<String> ids = GCloudTestSuite.__testSupport.getSessionIds();
+            if (exists)
+                assertTrue(ids.contains(id));
+            else
+                assertFalse(ids.contains(id));
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage());
+        }
+
+    }
+
+
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
