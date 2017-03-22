@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -91,7 +92,18 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     @Override
     public Set<String> doGetExpired(Set<String> candidates)
     {
-        return Collections.emptySet();
+       HashSet<String> set = new HashSet<>();
+        long now = System.currentTimeMillis();
+        
+       
+        for (SessionData d:_map.values())
+        {
+            if (d.getExpiry() > 0 && d.getExpiry() <= now)
+                set.add(d.getId());
+        }
+        return set;
+        
+        //return Collections.emptySet();
     }
 
 }

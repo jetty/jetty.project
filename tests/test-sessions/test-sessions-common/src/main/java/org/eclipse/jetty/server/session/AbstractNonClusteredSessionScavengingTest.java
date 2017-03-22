@@ -46,6 +46,11 @@ import org.junit.Test;
  */
 public abstract class AbstractNonClusteredSessionScavengingTest extends AbstractTestBase
 {
+    
+    public SessionDataStore _dataStore;
+    
+    public abstract void assertSession (String id, boolean exists);
+    
 
     public void pause(int scavenge)
     {
@@ -74,6 +79,8 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
         TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod,
                                                            cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
+        _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
+        
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";
 
@@ -94,6 +101,8 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
 
                 // Let's wait for the scavenger to run
                 pause(maxInactivePeriod + scavengePeriod);
+                
+                assertSession (TestServer.extractSessionId(sessionCookie), false);
 
                 // The session should not be there anymore, but we present an old cookie
                 // The server should create a new session.
@@ -128,6 +137,7 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
         TestServer server = new TestServer(0, maxInactivePeriod, scavengePeriod,
                                                            cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
+        _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";
 
@@ -149,6 +159,8 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
 
                 // Let's wait for the scavenger to run
                 pause(2*scavengePeriod);
+                
+                assertSession(TestServer.extractSessionId(sessionCookie), true);
 
                 // Test that the session is still there
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=old-test");

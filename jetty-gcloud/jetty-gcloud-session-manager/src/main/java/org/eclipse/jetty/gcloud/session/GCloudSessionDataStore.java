@@ -548,11 +548,15 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             for (ExpiryInfo item:info)
             {
                 if (StringUtil.isBlank(item.getLastNode()))
+                {
                     expired.add(item.getId()); //nobody managing it
+                }
                 else
                 {
                     if (_context.getWorkerName().equals(item.getLastNode()))
+                    {
                         expired.add(item.getId()); //we're managing it, we can expire it
+                    }
                     else
                     {
                         if (_lastExpiryCheckTime <= 0)
@@ -560,8 +564,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                             //our first check, just look for sessions that we managed by another node that
                             //expired at least 3 graceperiods ago
                             if (item.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
-                                expired.add(item.getId());
-                        }
+                                expired.add(item.getId());                        }
                         else
                         {
                             //another node was last managing it, only expire it if it expired a graceperiod ago
@@ -655,11 +658,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     protected Set<ExpiryInfo>  queryExpiryByIndex () throws Exception
     {
+        long now = System.currentTimeMillis();
         Set<ExpiryInfo> info = new HashSet<>();
         Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
                 .setKind(_model.getKind())
                 .setProjection(_model.getId(), _model.getLastNode(), _model.getExpiry())
-                .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
+                .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), now)))
                 .setLimit(_maxResults)
                 .build();
 
@@ -765,7 +769,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         if (LOG.isDebugEnabled()) LOG.debug("Writing session {} to DataStore", data.getId());
-
         Entity entity = entityFromSession(data, makeKey(id, _context));
 
         //attempt the update with exponential back-off

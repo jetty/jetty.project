@@ -31,6 +31,7 @@ connection-type?=address
 #jetty.session.mongo.dbName=HttpSessions
 #jetty.session.mongo.collectionName=jettySessions
 #jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
 
 connection-type=address
 #jetty.session.mongo.host=localhost

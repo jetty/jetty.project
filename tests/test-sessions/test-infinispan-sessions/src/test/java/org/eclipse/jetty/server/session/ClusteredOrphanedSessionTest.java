@@ -16,40 +16,36 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
- * NonClusteredSessionScavengingTest
+ * ClusteredOrphanedSessionTest
+ *
+ *
  */
-public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessionScavengingTest
+public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-    @Before
-    public void before() throws Exception
+    public static InfinispanTestSupport __testSupport;
+    
+    
+    @BeforeClass
+    public static void setup () throws Exception
     {
-       FileTestHelper.setup();
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setup();
     }
     
-    @After 
-    public void after()
+    @AfterClass
+    public static void teardown () throws Exception
     {
-       FileTestHelper.teardown();
+        __testSupport.teardown();
     }
     
-   
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest#assertSession(java.lang.String, boolean)
-     */
-    @Override
-    public void assertSession(String id, boolean exists)
-    {
-        FileTestHelper.assertFileExists(id, exists);
-        
-    }
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
@@ -57,7 +53,11 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return FileTestHelper.newSessionDataStoreFactory();
+        InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
+        factory.setCache(__testSupport.getCache());
+        return factory;
     }
-    
+  
+ 
+
 }

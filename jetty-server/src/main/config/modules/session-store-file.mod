@@ -19,4 +19,4 @@ sessions/
 [ini-template]
 jetty.session.file.storeDir=${jetty.base}/sessions
 #jetty.session.file.deleteUnrestorableFiles=false
-
+#jetty.session.savePeriod.seconds=0

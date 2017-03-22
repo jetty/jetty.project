@@ -135,6 +135,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     {
         MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
+        store.setSavePeriodSec(getSavePeriodSec());
         Mongo mongo;
 
         if (!StringUtil.isBlank(getConnectionString()))

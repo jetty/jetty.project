@@ -29,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -54,10 +55,63 @@ public class FileSessionManagerTest
         _log.setHideStacks(_stacks);
     }
     
+    @After
+    public void after()
+    {
+        File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
+        if (testDir.exists())
+            FS.ensureEmpty(testDir);
+    }
     
     
     @Test
     public void testDangerousSessionIdRemoval() throws Exception
+    {  
+        String expectedFilename =  "_0.0.0.0_dangerFile";    
+        File targetFile = MavenTestingUtils.getTargetFile(expectedFilename);
+
+        try
+        {
+            Server server = new Server();
+            SessionHandler handler = new SessionHandler();
+            handler.setServer(server);
+            final DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
+            idmgr.setServer(server);
+            server.setSessionIdManager(idmgr);
+
+            FileSessionDataStore ds = new FileSessionDataStore();
+            ds.setDeleteUnrestorableFiles(true);
+            DefaultSessionCache ss = new DefaultSessionCache(handler);
+            handler.setSessionCache(ss);
+            ss.setSessionDataStore(ds);
+            File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
+            testDir.mkdirs();
+            ds.setStoreDir(testDir);
+            handler.setSessionIdManager(idmgr);
+            handler.start();
+
+            //Create a file that is in the parent dir of the session storeDir
+
+            targetFile.createNewFile();
+            Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
+
+            //Verify that passing in a relative filename outside of the storedir does not lead
+            //to deletion of file (needs deleteUnrecoverableFiles(true))
+            Session session = handler.getSession("../_0.0.0.0_dangerFile");
+            Assert.assertTrue(session == null);
+            Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
+        }
+        finally
+        {
+            if (targetFile.exists())
+                IO.delete(targetFile);
+        }
+    }
+    
+    
+    
+    @Test
+    public void testDeleteOfOlderFiles() throws Exception
     {
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
@@ -67,32 +121,51 @@ public class FileSessionManagerTest
         server.setSessionIdManager(idmgr);
         
         FileSessionDataStore ds = new FileSessionDataStore();
-        ds.setDeleteUnrestorableFiles(true);
+        ds.setDeleteUnrestorableFiles(false); //turn off deletion of unreadable session files
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionCache(ss);
         ss.setSessionDataStore(ds);
-        //manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
         ds.setStoreDir(testDir);
         handler.setSessionIdManager(idmgr);
         handler.start();
+
+        //create a bunch of older files for same session abc
+        String name1 =  "100__0.0.0.0_abc";    
+        File f1 = new File(testDir, name1);
+        if (f1.exists())
+            f1.delete();
+        f1.createNewFile();
+
+        Thread.currentThread().sleep(20);
         
-        //Create a file that is in the parent dir of the session storeDir
-        String expectedFilename =  "_0.0.0.0_dangerFile";    
-        MavenTestingUtils.getTargetFile(expectedFilename).createNewFile();
-        Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
+        String name2 = "101__0.0.0.0_abc"; 
+        File f2 = new File(testDir, name2);
+        if (f2.exists())
+            f2.delete();
+        f2.createNewFile();
+        
+        Thread.currentThread().sleep(20);
+        
+        String name3 = "102__0.0.0.0_abc";
+        File f3 = new File(testDir, name3);
+        if (f3.exists())
+            f3.delete();       
+        f3.createNewFile();
 
-        //Verify that passing in the relative filename of an unrecoverable session does not lead
-        //to deletion of file outside the session dir (needs deleteUnrecoverableFiles(true))
-        Session session = handler.getSession("../_0.0.0.0_dangerFile");
-        Assert.assertTrue(session == null);
-        Assert.assertTrue("File should exist!", MavenTestingUtils.getTargetFile(expectedFilename).exists());
-
+        Thread.currentThread().sleep(20);
+        
+        Session session = handler.getSession("abc");
+        Assert.assertTrue(!f1.exists()); 
+        Assert.assertTrue(!f2.exists());
+        Assert.assertTrue(f3.exists());
     }
 
+    
+    
     @Test
-    public void testValidSessionIdRemoval() throws Exception
+    public void testUnrestorableFileRemoval() throws Exception
     {      
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
@@ -105,7 +178,7 @@ public class FileSessionManagerTest
         FileSessionDataStore ds = new FileSessionDataStore();
         ss.setSessionDataStore(ds);
         handler.setSessionCache(ss);
-        ds.setDeleteUnrestorableFiles(true);
+        ds.setDeleteUnrestorableFiles(true); //invalid file will be removed
         handler.setSessionIdManager(idmgr);
       
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
@@ -114,7 +187,7 @@ public class FileSessionManagerTest
         ds.setStoreDir(testDir);
         handler.start();
 
-        String expectedFilename = "_0.0.0.0_validFile123";
+        String expectedFilename = (System.currentTimeMillis()+ 10000)+"__0.0.0.0_validFile123";
         
         Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
 
@@ -212,7 +285,6 @@ public class FileSessionManagerTest
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionCache(ss);
         ss.setSessionDataStore(ds);
-        //manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         testDir.mkdirs();
         ds.setStoreDir(testDir);

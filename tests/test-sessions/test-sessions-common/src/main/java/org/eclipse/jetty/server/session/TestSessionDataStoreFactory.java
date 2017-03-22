@@ -33,7 +33,9 @@ public class TestSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {
-       return new TestSessionDataStore();
+       TestSessionDataStore store = new TestSessionDataStore();
+       store.setSavePeriodSec(getSavePeriodSec());
+       return store;
     }
 
 }

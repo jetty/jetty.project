@@ -11,6 +11,7 @@
    <Arg>
     <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.JDBCSessionDataStoreFactory">   
       <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+      <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
       <Set name="databaseAdaptor">
         <Ref id="databaseAdaptor"/>
       </Set>

@@ -145,20 +145,17 @@ public class DefaultSessionCache extends AbstractSessionCache
         {
             for (Session session: _sessions.values())
             {
-                //if we have a backing store and the session is dirty make sure it is written out
+                //if we have a backing store so give the session to it to write out if necessary
                 if (_sessionDataStore != null)
                 {
-                    if (session.getSessionData().isDirty())
+                    session.willPassivate();
+                    try
                     {
-                        session.willPassivate();
-                        try
-                        {
-                            _sessionDataStore.store(session.getId(), session.getSessionData());
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.warn(e);
-                        }
+                        _sessionDataStore.store(session.getId(), session.getSessionData());
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn(e);
                     }
                     doDelete (session.getId()); //remove from memory
                 }

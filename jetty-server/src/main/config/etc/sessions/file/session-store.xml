@@ -12,6 +12,7 @@
     <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.FileSessionDataStoreFactory">
        <Set name="deleteUnrestorableFiles"><Property name="jetty.session.file.deleteUnrestorableFiles" default="false" /></Set>
        <Set name="storeDir"><Property name="jetty.session.file.storeDir"/></Set>
+       <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
     </New>
    </Arg>
   </Call>
