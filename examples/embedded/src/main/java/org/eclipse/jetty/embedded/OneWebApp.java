@@ -22,7 +22,6 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -63,6 +62,8 @@ public class OneWebApp
         // Start things up! 
         server.start();
 
+        server.dumpStdErr();
+        
         // The use of server.join() the will make the current thread join and
         // wait until the server is done executing.
         // See http://docs.oracle.com/javase/7/docs/api/java/lang/Thread.html#join()
