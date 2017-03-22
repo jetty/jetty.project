@@ -7,7 +7,7 @@
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
   <version>9.4.3-SNAPSHOT</version>
-  
+
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -565,7 +565,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.6</version> 
+          <version>3.6</version>
           <dependencies>
             <dependency><!-- add support for ssh/scp -->
               <groupId>org.apache.maven.wagon</groupId>
