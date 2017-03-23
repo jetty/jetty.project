@@ -157,6 +157,7 @@ public class FileSessionManagerTest
 
         Thread.currentThread().sleep(20);
         
+        
         Session session = handler.getSession("abc");
         Assert.assertTrue(!f1.exists()); 
         Assert.assertTrue(!f2.exists());

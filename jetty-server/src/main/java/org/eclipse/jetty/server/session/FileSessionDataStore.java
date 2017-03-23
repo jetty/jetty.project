@@ -575,24 +575,46 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
 
         //delete all but the most recent file
-        File file = null;
+        File newest = null;
+
         for (File f:files)
         {
             try
             {
-                if (file == null)
-                    file = f;
+                if (newest == null)
+                {
+                    //haven't looked at any files yet
+                    newest = f;
+                }
                 else
                 {
-                    //accept the newest file
-                    if (f.lastModified() > file.lastModified())
+                    if (f.lastModified() > newest.lastModified())
                     {
-                        Files.deleteIfExists(file.toPath());
-                        file = f;
+                        //this file is more recent
+                        Files.deleteIfExists(newest.toPath());
+                        newest = f;
+                    }
+                    else if (f.lastModified() < newest.lastModified())
+                    {
+                        //this file is older
+                        Files.deleteIfExists(f.toPath());
                     }
                     else
                     {
-                        Files.deleteIfExists(f.toPath());
+                        //files have same last modified times, decide based on latest expiry time
+                        long exp1 = getExpiryFromFile(newest);
+                        long exp2 = getExpiryFromFile(f);
+                        if (exp2 >= exp1)
+                        {
+                            //this file has a later expiry date
+                            Files.deleteIfExists(newest.toPath());
+                            newest = f;
+                        }
+                        else
+                        {
+                            //this file has an earlier expiry date
+                            Files.deleteIfExists(f.toPath());
+                        }
                     }
                 }
             }
@@ -602,7 +624,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             }
         }
 
-        return file;
+        return newest;
     }
 
 
