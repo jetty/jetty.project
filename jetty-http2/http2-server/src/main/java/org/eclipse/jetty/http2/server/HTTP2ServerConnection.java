@@ -213,12 +213,17 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, this);
             transport.setStream(stream);
-            channel = new ServerHttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport);
+            channel = newServerHttpChannelOverHTTP2(connector, httpConfig, transport);
             if (LOG.isDebugEnabled())
                 LOG.debug("Creating channel {} for {}", channel, this);
         }
         stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
         return channel;
+    }
+
+    protected ServerHttpChannelOverHTTP2 newServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration httpConfig, HttpTransportOverHTTP2 transport)
+    {
+        return new ServerHttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport);
     }
 
     private void offerChannel(HttpChannelOverHTTP2 channel)
@@ -271,7 +276,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return true;
     }
 
-    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements ExecutionStrategy.Rejectable
+    protected class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements ExecutionStrategy.Rejectable
     {
         public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
         {
