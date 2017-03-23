@@ -139,7 +139,7 @@ public class FileSessionManagerTest
             Assert.assertTrue(f1.delete());
         f1.createNewFile();
 
-        Thread.currentThread().sleep(20);
+        Thread.sleep(1100);
         
         String name2 = "101__0.0.0.0_abc"; 
         File f2 = new File(testDir, name2);
@@ -147,7 +147,7 @@ public class FileSessionManagerTest
             Assert.assertTrue(f2.delete());
         f2.createNewFile();
         
-        Thread.currentThread().sleep(20);
+        Thread.sleep(1100);
         
         String name3 = "102__0.0.0.0_abc";
         File f3 = new File(testDir, name3);
@@ -155,7 +155,7 @@ public class FileSessionManagerTest
             Assert.assertTrue(f3.delete());       
         f3.createNewFile();
 
-        Thread.currentThread().sleep(20);
+        Thread.sleep(1100);
         
         
         Session session = handler.getSession("abc");
