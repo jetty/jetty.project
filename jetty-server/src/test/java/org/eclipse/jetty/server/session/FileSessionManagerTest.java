@@ -85,7 +85,7 @@ public class FileSessionManagerTest
             handler.setSessionCache(ss);
             ss.setSessionDataStore(ds);
             File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-            testDir.mkdirs();
+            FS.ensureEmpty(testDir);
             ds.setStoreDir(testDir);
             handler.setSessionIdManager(idmgr);
             handler.start();
@@ -125,8 +125,9 @@ public class FileSessionManagerTest
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionCache(ss);
         ss.setSessionDataStore(ds);
+        
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-        testDir.mkdirs();
+        FS.ensureEmpty(testDir);
         ds.setStoreDir(testDir);
         handler.setSessionIdManager(idmgr);
         handler.start();
@@ -135,26 +136,27 @@ public class FileSessionManagerTest
         String name1 =  "100__0.0.0.0_abc";    
         File f1 = new File(testDir, name1);
         if (f1.exists())
-            f1.delete();
+            Assert.assertTrue(f1.delete());
         f1.createNewFile();
 
-        Thread.currentThread().sleep(20);
+        Thread.sleep(1100);
         
         String name2 = "101__0.0.0.0_abc"; 
         File f2 = new File(testDir, name2);
         if (f2.exists())
-            f2.delete();
+            Assert.assertTrue(f2.delete());
         f2.createNewFile();
         
-        Thread.currentThread().sleep(20);
+        Thread.sleep(1100);
         
         String name3 = "102__0.0.0.0_abc";
         File f3 = new File(testDir, name3);
         if (f3.exists())
-            f3.delete();       
+            Assert.assertTrue(f3.delete());       
         f3.createNewFile();
 
-        Thread.currentThread().sleep(20);
+        Thread.sleep(1100);
+        
         
         Session session = handler.getSession("abc");
         Assert.assertTrue(!f1.exists()); 
@@ -202,8 +204,7 @@ public class FileSessionManagerTest
     public void testHashSession() throws Exception
     {
         File testDir = MavenTestingUtils.getTargetTestingDir("saved");
-        IO.delete(testDir);
-        testDir.mkdirs();
+        FS.ensureEmpty(testDir);
 
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
@@ -286,7 +287,7 @@ public class FileSessionManagerTest
         handler.setSessionCache(ss);
         ss.setSessionDataStore(ds);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-        testDir.mkdirs();
+        FS.ensureEmpty(testDir);
         ds.setStoreDir(testDir);
         handler.setSessionIdManager(idmgr);
         handler.start();

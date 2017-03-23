@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -230,7 +231,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
                 try (FileInputStream in = new FileInputStream(file))
                 {
-                    SessionData data = load(in);
+                    SessionData data = load(in, id);
                     data.setLastSaved(file.lastModified());
                     reference.set(data);
                 }
@@ -498,6 +499,11 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
     
     
+    /**
+     * Remove all existing session files for the session in the context
+     * @param storeDir where the session files are stored
+     * @param idInContext the session id within a particular context
+     */
     private void deleteAllFiles(final File storeDir, final String idInContext)
     {
         File[] files = storeDir.listFiles (new FilenameFilter() {
@@ -522,7 +528,14 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         //delete all files
         for (File f:files)
         {
-           f.delete();
+           try
+           {
+               Files.deleteIfExists(f.toPath());
+           }
+           catch (Exception e)
+           {
+               LOG.warn("Unable to delete session file", e);
+           }
         }
     }
     
@@ -547,56 +560,86 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             {
                 if (dir != storeDir)
                     return false;
-                
+                 
                 if (!match(name))
                     return false;
-                
+
                 return (name.contains(idWithContext));
             }
-            
+
         });
-        
+
         //no file for that session
         if (files == null || files.length == 0)
             return null;
 
-        
+
         //delete all but the most recent file
-        File file = null;
+        File newest = null;
+
         for (File f:files)
         {
-            if (file == null)
-                file = f;
-            else
+            try
             {
-               //accept the newest file
-                if (f.lastModified() > file.lastModified())
+                if (newest == null)
                 {
-                    file.delete();
-                    file = f;
+                    //haven't looked at any files yet
+                    newest = f;
                 }
                 else
                 {
-                    f.delete();
+                    if (f.lastModified() > newest.lastModified())
+                    {
+                        //this file is more recent
+                        Files.deleteIfExists(newest.toPath());
+                        newest = f;
+                    }
+                    else if (f.lastModified() < newest.lastModified())
+                    {
+                        //this file is older
+                        Files.deleteIfExists(f.toPath());
+                    }
+                    else
+                    {
+                        //files have same last modified times, decide based on latest expiry time
+                        long exp1 = getExpiryFromFile(newest);
+                        long exp2 = getExpiryFromFile(f);
+                        if (exp2 >= exp1)
+                        {
+                            //this file has a later expiry date
+                            Files.deleteIfExists(newest.toPath());
+                            newest = f;
+                        }
+                        else
+                        {
+                            //this file has an earlier expiry date
+                            Files.deleteIfExists(f.toPath());
+                        }
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to delete old session file", e);
             }
         }
 
-        return file;
+        return newest;
     }
-    
-    
+
+
     
 
     /**
      * @param is inputstream containing session data
+     * @param expectedId the id we've been told to load
      * @return the session data
      * @throws Exception
      */
-    private SessionData load (InputStream is)
+    private SessionData load (InputStream is, String expectedId)
             throws Exception
     {
-        String id = null;
+        String id = null; //the actual id from inside the file
 
         try
         {
@@ -629,7 +672,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
         catch (Exception e)
         {
-            throw new UnreadableSessionDataException(id, _context, e);
+            throw new UnreadableSessionDataException(expectedId, _context, e);
         }
     }
 

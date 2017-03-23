@@ -381,6 +381,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         throw _state.getAsyncContextEvent().getThrowable();
                     }
 
+                    case READ_PRODUCE:
+                    {
+                        _request.getHttpInput().produceContent();
+                        break;
+                    }
+                    
                     case READ_CALLBACK:
                     {
                         ContextHandler handler=_state.getContextHandler();
