@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -498,6 +499,11 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
     
     
+    /**
+     * Remove all existing session files for the session in the context
+     * @param storeDir where the session files are stored
+     * @param idInContext the session id within a particular context
+     */
     private void deleteAllFiles(final File storeDir, final String idInContext)
     {
         File[] files = storeDir.listFiles (new FilenameFilter() {
@@ -522,7 +528,14 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         //delete all files
         for (File f:files)
         {
-           f.delete();
+           try
+           {
+               Files.deleteIfExists(f.toPath());
+           }
+           catch (Exception e)
+           {
+               LOG.warn("Unable to delete session file", e);
+           }
         }
     }
     
@@ -547,45 +560,52 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             {
                 if (dir != storeDir)
                     return false;
-                
+                 
                 if (!match(name))
                     return false;
-                
+
                 return (name.contains(idWithContext));
             }
-            
+
         });
-        
+
         //no file for that session
         if (files == null || files.length == 0)
             return null;
 
-        
+
         //delete all but the most recent file
         File file = null;
         for (File f:files)
         {
-            if (file == null)
-                file = f;
-            else
+            try
             {
-               //accept the newest file
-                if (f.lastModified() > file.lastModified())
-                {
-                    file.delete();
+                if (file == null)
                     file = f;
-                }
                 else
                 {
-                    f.delete();
+                    //accept the newest file
+                    if (f.lastModified() > file.lastModified())
+                    {
+                        Files.deleteIfExists(file.toPath());
+                        file = f;
+                    }
+                    else
+                    {
+                        Files.deleteIfExists(f.toPath());
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to delete old session file", e);
             }
         }
 
         return file;
     }
-    
-    
+
+
     
 
     /**
