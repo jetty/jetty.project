@@ -230,7 +230,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
                 try (FileInputStream in = new FileInputStream(file))
                 {
-                    SessionData data = load(in);
+                    SessionData data = load(in, id);
                     data.setLastSaved(file.lastModified());
                     reference.set(data);
                 }
@@ -590,13 +590,14 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
     /**
      * @param is inputstream containing session data
+     * @param expectedId the id we've been told to load
      * @return the session data
      * @throws Exception
      */
-    private SessionData load (InputStream is)
+    private SessionData load (InputStream is, String expectedId)
             throws Exception
     {
-        String id = null;
+        String id = null; //the actual id from inside the file
 
         try
         {
@@ -629,7 +630,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
         catch (Exception e)
         {
-            throw new UnreadableSessionDataException(id, _context, e);
+            throw new UnreadableSessionDataException(expectedId, _context, e);
         }
     }
 
