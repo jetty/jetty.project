@@ -24,6 +24,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnectorServer;
@@ -53,6 +55,7 @@ public class ConnectorServer extends AbstractLifeCycle
 
     JMXConnectorServer _connectorServer;
     Registry _registry;
+    private final ObjectName _mBeanObjectName;
 
     /* ------------------------------------------------------------ */
     /**
@@ -98,14 +101,17 @@ public class ConnectorServer extends AbstractLifeCycle
                 svcUrl = new JMXServiceURL(svcUrl.getProtocol(), svcUrl.getHost(), svcUrl.getPort(), urlPath);
             }
         }
-        _connectorServer = createConnectorServer(svcUrl, environment, name);
+        ObjectName mBeanObjectName = new ObjectName(name);
+        _connectorServer = createConnectorServer(svcUrl, environment, mBeanObjectName);
+        _mBeanObjectName = mBeanObjectName;
     }
 
-    private ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name, Registry registry)
+    private ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, ObjectName name, Registry registry)
             throws Exception
     {
         _registry = registry;
         _connectorServer = createConnectorServer(svcUrl, environment, name);
+        _mBeanObjectName = name;
     }
 
     /**
@@ -132,15 +138,15 @@ public class ConnectorServer extends AbstractLifeCycle
                 serverSocketFactory);
         System.setProperty("java.rmi.server.hostname", address.getHostAddress());
         Registry registry = LocateRegistry.createRegistry(serviceUrl.getPort(), /*csf*/null, serverSocketFactory);
-        return new ConnectorServer(serviceUrl, environment, name, registry);
+        return new ConnectorServer(serviceUrl, environment, new ObjectName(name), registry);
     }
 
-    private static JMXConnectorServer createConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name)
+    private static JMXConnectorServer createConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, ObjectName name)
             throws Exception
     {
         MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
         JMXConnectorServer connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(svcUrl, environment, beanServer);
-        beanServer.registerMBean(connectorServer, new ObjectName(name));
+        beanServer.registerMBean(connectorServer, name);
         return connectorServer;
     }
 
@@ -221,6 +227,13 @@ public class ConnectorServer extends AbstractLifeCycle
 
     private void stopRegistry()
     {
+        try
+        {
+            ManagementFactory.getPlatformMBeanServer().unregisterMBean(_mBeanObjectName);
+        } catch (InstanceNotFoundException | MBeanRegistrationException e)
+        {
+            LOG.warn(e);
+        }
         if (_registry != null)
         {
             try
