@@ -18,21 +18,31 @@
 
 package org.eclipse.jetty.jmx;
 
-import java.net.InetAddress;
-import java.rmi.registry.LocateRegistry;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import javax.management.remote.JMXServiceURL;
 import org.junit.After;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
-import static org.hamcrest.core.Is.is;
+import org.junit.rules.ExpectedException;
+
+import javax.management.remote.JMXServiceURL;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.rmi.registry.LocateRegistry;
+
 import static org.hamcrest.core.AnyOf.anyOf;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ConnectorServerTest
 {
 
     private ConnectorServer connectorServer;
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @After
     public void tearDown() throws Exception
@@ -108,5 +118,19 @@ public class ConnectorServerTest
 
         // then
         assertNull("As loopback address returns false...registry must be null",connectorServer._registry);
+    }
+
+    @Test
+    public void connector_server_from_createUsingLoopbackInterface_only_listens_to_loopback_interface()
+            throws Exception
+    {
+        int port = 1199;
+        connectorServer = ConnectorServer.createUsingLoopbackInterface(port, "org.eclipse.jetty:name=rmiconnectorserver");
+        connectorServer.start();
+
+        assertTrue(new Socket(InetAddress.getLoopbackAddress(), port).isConnected());
+        expectedException.expect(IOException.class);
+        expectedException.expectMessage("Connection refused (Connection refused)");
+        new Socket(InetAddress.getLocalHost(), port);
     }
 }
