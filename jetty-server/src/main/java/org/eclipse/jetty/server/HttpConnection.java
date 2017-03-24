@@ -49,9 +49,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclipse.jetty.server.HttpConnection.UPGRADE";
-    private static final boolean REQUEST_BUFFER_DIRECT=false;
-    private static final boolean HEADER_BUFFER_DIRECT=false;
-    private static final boolean CHUNK_BUFFER_DIRECT=false;
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
@@ -189,7 +186,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public ByteBuffer getRequestBuffer()
     {
         if (_requestBuffer == null)
-            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
+            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), _config.isUseDirectByteBuffers());
         return _requestBuffer;
     }
 
@@ -693,12 +690,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
+                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), _config.isUseDirectByteBuffers());
                         continue;
                     }
                     case NEED_CHUNK:
                     {
-                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, CHUNK_BUFFER_DIRECT);
+                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, _config.isUseDirectByteBuffers());
                         continue;
                     }
                     case FLUSH:
