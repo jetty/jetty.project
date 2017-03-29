@@ -31,6 +31,14 @@ public class HttpStatusCodeTest
         assertNull("Invalid code: 800", HttpStatus.getCode(800));
         assertNull("Invalid code: 190", HttpStatus.getCode(190));
     }
+    
+    
+    @Test
+    public void testImATeapot()
+    {
+        assertEquals("I'm a Teapot", HttpStatus.getMessage(418));
+        assertEquals("Expectation Failed", HttpStatus.getMessage(417));
+    }
 
     public void testHttpMethod()
     {
