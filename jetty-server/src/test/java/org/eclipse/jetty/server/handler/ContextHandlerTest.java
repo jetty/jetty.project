@@ -447,7 +447,11 @@ public class ContextHandlerTest
         Assert.assertTrue(handler.isProtectedTarget("/ABC/7777"));
     }
 
-
+    @Test
+    public void testIsShutdown() {
+        ContextHandler handler = new ContextHandler();
+        Assert.assertEquals(false, handler.isShutdown());
+    }
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException
     {
