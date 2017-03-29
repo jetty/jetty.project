@@ -59,31 +59,25 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
+    public static final String GZIP = "gzip";
+    public static final String DEFLATE = "deflate";
+    public static final int DEFAULT_MIN_GZIP_SIZE=16;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
 
-    public final static String GZIP = "gzip";
-    public final static String DEFLATE = "deflate";
-    public final static int DEFAULT_MIN_GZIP_SIZE=16;
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
-    
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<>();
-
     private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
-    
     private HttpField _vary;
 
-
-
-    /* ------------------------------------------------------------ */
     /**
      * Instantiates a new gzip handler.
      * The excluded Mime Types are initialized to common known 
@@ -110,12 +104,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _mimeTypes.exclude("application/brotli");
         _mimeTypes.exclude("application/x-xz");
         _mimeTypes.exclude("application/x-rar-compressed");
-        LOG.debug("{} mime types {}",this,_mimeTypes);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} mime types {}",this,_mimeTypes);
         
         _agentPatterns.exclude(".*MSIE 6.0.*");
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param patterns Regular expressions matching user agents to exclude
      */
@@ -124,7 +119,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _agentPatterns.exclude(patterns);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param methods The methods to exclude in compression
      */
@@ -134,28 +128,24 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _methods.exclude(m);
     }
 
-    
-    /* ------------------------------------------------------------ */
     public EnumSet<DispatcherType> getDispatcherTypes()
     {
         return _dispatchers;
     }
 
-    /* ------------------------------------------------------------ */
     public void setDispatcherTypes(EnumSet<DispatcherType> dispatchers)
     {
         _dispatchers = dispatchers;
     }
 
-    /* ------------------------------------------------------------ */
     public void setDispatcherTypes(DispatcherType... dispatchers)
     {
         _dispatchers = EnumSet.copyOf(Arrays.asList(dispatchers));
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Set the mime types.
+     * Adds mime types to the excluded list.
+     *
      * @param types The mime types to exclude (without charset or other parameters).
      * For backward compatibility the mimetypes may be comma separated strings, but this
      * will not be supported in future versions.
@@ -166,9 +156,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _mimeTypes.exclude(StringUtil.csvSplit(t));
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Add path to excluded paths list.
+     * Add paths to excluded paths list.
      * <p>
      * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
      * Regex based.  This means that the initial characters on the path spec
@@ -198,16 +187,14 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _paths.exclude(StringUtil.csvSplit(p));
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param patterns Regular expressions matching user agents to exclude
+     * @param patterns Regular expressions matching user agents to include
      */
     public void addIncludedAgentPatterns(String... patterns)
     {
         _agentPatterns.include(patterns);
     }
     
-    /* ------------------------------------------------------------ */
     /**
      * @param methods The methods to include in compression
      */
@@ -217,7 +204,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _methods.include(m);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
      */
@@ -226,7 +212,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return _syncFlush;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * <p>Set the {@link Deflater} flush mode to use.  {@link Deflater#SYNC_FLUSH}
      * should be used if the application wishes to stream the data, but this may
@@ -238,7 +223,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _syncFlush = syncFlush;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Add included mime types. Inclusion takes precedence over
      * exclusion.
@@ -252,9 +236,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _mimeTypes.include(StringUtil.csvSplit(t));
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Add path specs to include.
+     * Adds paths specs to the included list.
      * <p>
      * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
      * Regex based.  This means that the initial characters on the path spec
@@ -270,7 +253,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      *  <li>All other syntaxes are unsupported</li> 
      * </ul>
      * <p>
-     * Note: inclusion takes precedence over exclude.
+     * Note: inclusion takes precedence over exclusion.
      * 
      * @param pathspecs Path specs (as per servlet spec) to include. If a 
      * ServletContext is available, the paths are relative to the context path,
@@ -282,7 +265,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _paths.include(StringUtil.csvSplit(p));
     }
     
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -290,19 +272,16 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean getCheckGzExists()
     {
         return _checkGzExists;
     }
 
-    /* ------------------------------------------------------------ */
     public int getCompressionLevel()
     {
         return _compressionLevel;
     }
     
-    /* ------------------------------------------------------------ */
     @Override
     public Deflater getDeflater(Request request, long content_length)
     {
@@ -344,87 +323,73 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return df;
     }
     
-    /* ------------------------------------------------------------ */
     public String[] getExcludedAgentPatterns()
     {
         Set<String> excluded=_agentPatterns.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
-    /* ------------------------------------------------------------ */
     public String[] getExcludedMethods()
     {
         Set<String> excluded=_methods.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
-    /* ------------------------------------------------------------ */
     public String[] getExcludedMimeTypes()
     {
         Set<String> excluded=_mimeTypes.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
-    /* ------------------------------------------------------------ */
     public String[] getExcludedPaths()
     {
         Set<String> excluded=_paths.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
-    /* ------------------------------------------------------------ */
     public String[] getIncludedAgentPatterns()
     {
         Set<String> includes=_agentPatterns.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
     
-    /* ------------------------------------------------------------ */
     public String[] getIncludedMethods()
     {
         Set<String> includes=_methods.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
 
-    /* ------------------------------------------------------------ */
     public String[] getIncludedMimeTypes()
     {
         Set<String> includes=_mimeTypes.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
 
-    /* ------------------------------------------------------------ */
     public String[] getIncludedPaths()
     {
         Set<String> includes=_paths.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
 
-    /* ------------------------------------------------------------ */
     @Deprecated
     public String[] getMethods()
     {
         return getIncludedMethods();
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Get the minimum response size.
-     *
-     * @return minimum response size
+     * @return minimum response size that triggers compression
      */
     public int getMinGzipSize()
     {
         return _minGzipSize;
     }
 
-    /* ------------------------------------------------------------ */
     protected HttpField getVaryField()
     {
         return _vary;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return size in bytes of the buffer to inflate compressed request, or 0 for no inflation.
      */
@@ -433,7 +398,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return _inflateBufferSize;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param size size in bytes of the buffer to inflate compressed request, or 0 for no inflation.
      */
@@ -442,10 +406,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _inflateBufferSize = size;
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -568,12 +528,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Checks to see if the userAgent is excluded
-     *
      * @param ua the user agent
-     * @return boolean true if excluded
+     * @return whether compressing is allowed for the given user agent
      */
     protected boolean isAgentGzipable(String ua)
     {
@@ -583,20 +540,15 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return _agentPatterns.test(ua);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean isMimeTypeGzipable(String mimetype)
     {
         return _mimeTypes.test(mimetype);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Checks to see if the path is included or not excluded 
-     *
-     * @param requestURI
-     *            the request uri
-     * @return boolean true if gzipable
+     * @param requestURI the request uri
+     * @return whether compressing is allowed for the given the path
      */
     protected boolean isPathGzipable(String requestURI)
     {
@@ -606,7 +558,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return _paths.test(requestURI);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void recycle(Deflater deflater)
     {
@@ -615,9 +566,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _deflater.set(deflater);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param checkGzExists If true, check if a static gz file exists for
+     * @param checkGzExists whether to check if a static gz file exists for
      * the resource that the DefaultServlet may serve as precompressed.
      */
     public void setCheckGzExists(boolean checkGzExists)
@@ -625,7 +575,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _checkGzExists = checkGzExists;
     }
     
-    /* ------------------------------------------------------------ */
     /**
      * @param compressionLevel  The compression level to use to initialize {@link Deflater#setLevel(int)}
      */
@@ -634,7 +583,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _compressionLevel = compressionLevel;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param patterns Regular expressions matching user agents to exclude
      */
@@ -644,19 +592,16 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         addExcludedAgentPatterns(patterns);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param method to exclude
+     * @param methods the HTTP methods to exclude
      */
-    public void setExcludedMethods(String... method)
+    public void setExcludedMethods(String... methods)
     {
         _methods.getExcluded().clear();
-        _methods.exclude(method);
+        _methods.exclude(methods);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Set the mime types.
      * @param types The mime types to exclude (without charset or other parameters)
      */
     public void setExcludedMimeTypes(String... types)
@@ -665,7 +610,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _mimeTypes.exclude(types);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
      * ServletContext is available, the paths are relative to the context path,
@@ -677,7 +621,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _paths.exclude(pathspecs);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param patterns Regular expressions matching user agents to include
      */
@@ -687,7 +630,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         addIncludedAgentPatterns(patterns);
     }
     
-    /* ------------------------------------------------------------ */
     /**
      * @param methods The methods to include in compression
      */
@@ -697,10 +639,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _methods.include(methods);
     }
     
-    /* ------------------------------------------------------------ */
     /**
-     * Set included mime types. Inclusion takes precedence over
-     * exclusion.
+     * Sets included mime types. Inclusion takes precedence over exclusion.
+     *
      * @param types The mime types to include (without charset or other parameters)
      */
     public void setIncludedMimeTypes(String... types)
@@ -709,9 +650,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _mimeTypes.include(types);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the path specs to include. Inclusion takes precedence over exclusion.
+     *
      * @param pathspecs Path specs (as per servlet spec) to include. If a 
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute
@@ -722,9 +663,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _paths.include(pathspecs);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Set the minimum response size to trigger dynamic compresssion
+     * Set the minimum response size to trigger dynamic compression
      *
      * @param minGzipSize minimum response size in bytes
      */
