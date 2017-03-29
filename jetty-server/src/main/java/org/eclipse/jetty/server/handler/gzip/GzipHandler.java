@@ -672,4 +672,24 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _minGzipSize = minGzipSize;
     }
+
+    public void setIncludedMethodList(String csvMethods)
+    {
+        setIncludedMethods(StringUtil.csvSplit(csvMethods));
+    }
+
+    public String getIncludedMethodList()
+    {
+        return String.join(",", getIncludedMethods());
+    }
+
+    public void setExcludedMethodList(String csvMethods)
+    {
+        setExcludedMethods(StringUtil.csvSplit(csvMethods));
+    }
+
+    public String getExcludedMethodList()
+    {
+        return String.join(",", getExcludedMethods());
+    }
 }
