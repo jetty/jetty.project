@@ -260,9 +260,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l;
         synchronized (_inputQ)
         {
-            // Setup blocking only if not async
             if (!isAsync())
             {
+                // Setup blocking only if not async
                 if (_blockUntil == 0)
                 {
                     long blockingTimeout = getBlockingTimeout();
@@ -296,7 +296,9 @@ public class HttpInput extends ServletInputStream implements Runnable
 
                     // Consume any following poison pills
                     if (item.isEmpty())
-                        nextInterceptedContent();
+                        _channelState.onRead(nextInterceptedContent()!=null);
+                    else
+                        _channelState.onRead(true);
                     break;
                 }
 
@@ -305,9 +307,10 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     // Not blocking, so what should we return?
                     l = _state.noContent();
+                    _channelState.onRead(false);
                     
-                    // If EOF do we need to wake for allDataRead callback?
                     if (l<0)
+                        // If EOF do we need to wake for allDataRead callback?
                         wake = _channelState.onReadEof();
                     break;
                 }
@@ -577,7 +580,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (_listener == null)
                 _inputQ.notify();
             else
-                woken = _channelState.onDataAvailable();
+                woken = _channelState.onContentAdded();
         }
         return woken;
     }
@@ -612,7 +615,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (_listener == null)
                     _inputQ.notify();
                 else
-                    woken = _channelState.onDataAvailable();
+                    woken = _channelState.onContentAdded();
             }
         }
         return woken;
@@ -800,7 +803,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (_listener == null)
                 _inputQ.notify();
             else
-                woken = _channelState.onDataAvailable();
+                woken = _channelState.onContentAdded();
         }
 
         return woken;

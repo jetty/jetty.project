@@ -111,10 +111,10 @@ public class HttpInputTest
             }
 
             @Override
-            public boolean onDataAvailable()
+            public boolean onContentAdded()
             {
                 _history.add("s.onDataAvailable");
-                return super.onDataAvailable();
+                return super.onContentAdded();
             }
 
             @Override
