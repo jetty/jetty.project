@@ -51,7 +51,7 @@ node {
   {
     stage('Test') {
       withEnv(mvnEnv) {
-        timeout(time: 60, unit: 'MINUTES') {
+        timeout(time: 90, unit: 'MINUTES') {
           // Run test phase / ignore test failures
           sh "mvn -B install -Dmaven.test.failure.ignore=true"
           // Report failures in the jenkins UI
