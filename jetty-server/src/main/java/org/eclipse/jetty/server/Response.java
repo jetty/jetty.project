@@ -119,6 +119,7 @@ public class Response implements HttpServletResponse
 
     private enum EncodingFrom { NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING };
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET,EncodingFrom.INFERRED);
+    private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE,EncodingFrom.SET_CHARACTER_ENCODING);
     
 
     public Response(HttpChannel channel, HttpOutput out)
@@ -1425,10 +1426,19 @@ public class Response implements HttpServletResponse
         HttpField ct=content.getContentType();
         if (ct!=null)
         {
-            _fields.put(ct);
-            _contentType=ct.getValue();
-            _characterEncoding=content.getCharacterEncoding();
-            _mimeType=content.getMimeType();
+            if (_characterEncoding!=null && 
+                content.getCharacterEncoding()==null && 
+                __explicitCharset.contains(_encodingFrom))
+            {
+                setContentType(content.getMimeType().getBaseType().asString());
+            }
+            else
+            {
+                _fields.put(ct);
+                _contentType=ct.getValue();
+                _characterEncoding=content.getCharacterEncoding();
+                _mimeType=content.getMimeType();
+            }
         }
 
         HttpField ce=content.getContentEncoding();
