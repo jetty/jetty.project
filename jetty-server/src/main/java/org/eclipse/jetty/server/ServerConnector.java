@@ -71,7 +71,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * that these callbacks may do some non-blocking IO work, but will always dispatch to the
  * {@link Executor} service any blocking, long running or application tasks.
  * <p>
- * The default number of selectors is equal to the number of processors available to the JVM,
+ * The default number of selectors is equal to half of the number of processors available to the JVM,
  * which should allow optimal performance even if all the connections used are performing
  * significant non-blocking work in the callback tasks.
  */

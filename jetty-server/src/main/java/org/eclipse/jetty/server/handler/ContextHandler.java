@@ -206,7 +206,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
     public enum Availability { UNAVAILABLE,STARTING,AVAILABLE,SHUTDOWN,};
-    private volatile Availability _availability;
+    private volatile Availability _availability = Availability.UNAVAILABLE;
 
     /* ------------------------------------------------------------ */
     public ContextHandler()
@@ -684,18 +684,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @return true if this context is accepting new requests
+     * @return true if this context is shutting down
      */
     @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
     {
-        switch(_availability)
-        {
-            case SHUTDOWN:
-                return true;
-            default:
-                return false;
-        }
+        return _availability == Availability.SHUTDOWN;
     }
 
     /* ------------------------------------------------------------ */
