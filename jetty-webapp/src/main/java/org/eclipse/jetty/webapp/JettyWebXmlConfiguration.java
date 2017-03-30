@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -39,12 +41,6 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class JettyWebXmlConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(JettyWebXmlConfiguration.class);
-
-    /** The value of this property points to the WEB-INF directory of
-     * the web-app currently installed.
-     * it is passed as a property to the jetty-web.xml file */
-    public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
-
 
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
@@ -118,10 +114,15 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * @param jetty_config The configuration object.
      * @param web_inf the WEB-INF location
      */
-    private void setupXmlConfiguration(XmlConfiguration jetty_config, Resource web_inf)
+    private void setupXmlConfiguration(XmlConfiguration jetty_config, Resource web_inf) throws IOException
     {
         Map<String,String> props = jetty_config.getProperties();
-        // TODO - should this be an id rather than a property?
-        props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
+        props.put("this.web-inf.url", web_inf.getURI().toURL().toExternalForm());
+        String webInfPath = web_inf.getFile().getAbsolutePath();
+        if (!webInfPath.endsWith(File.separator))
+        {
+            webInfPath += File.separator;
+        }
+        props.put("this.web-inf.path", webInfPath);
     }
 }

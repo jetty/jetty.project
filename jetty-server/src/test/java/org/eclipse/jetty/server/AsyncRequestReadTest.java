@@ -359,7 +359,7 @@ public class AsyncRequestReadTest
                     break;
                 out.write(c);
             }
-            out.println();
+            out.write('\n');
         }
     }
 }

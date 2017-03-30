@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.3.17-SNAPSHOT</version>
+    <version>9.3.18-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -14,8 +14,8 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <exam.version>3.5.0</exam.version>
-    <url.version>1.5.2</url.version>
+    <exam.version>4.10.0</exam.version>
+    <url.version>2.5.2</url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
   </properties>
   <dependencies>
@@ -64,30 +64,16 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- OSGi R4 frameworks -->
-<!--
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.framework</artifactId>
-      <version>4.4.0</version>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+      <version>3.11.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.enterprise</artifactId>
-      <version>5.0.0</version>
-      <scope>test</scope>
-    </dependency>
--->
-    <dependency>
-      <groupId>org.eclipse</groupId>
-      <artifactId>osgi</artifactId>
-      <version>3.10.0-v20140606-1445</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.eclipse.osgi</groupId>
+        <groupId>org.eclipse.platform</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
+        <version>3.5.100</version>
         <scope>test</scope>
     </dependency>
 
@@ -385,11 +371,19 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${slf4j-version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
+        <!-- downgrading to version 2.18 here as there's a known JVM crash issue with the 2.19.x series -->
+        <version>2.18.1</version>
         <configuration>
           <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
           <!-- But we do pass the sys property of the alpn-boot jar so that it can be configured inside tests -->

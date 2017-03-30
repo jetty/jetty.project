@@ -24,6 +24,7 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -176,20 +177,43 @@ public class RolloverFileOutputStream extends FilterOutputStream
             
             _rollTask=new RollTask();
 
-            midnight = ZonedDateTime.now().toLocalDate().atStartOfDay(zone.toZoneId());
+            midnight = toMidnight(ZonedDateTime.now(), zone.toZoneId());
             
             scheduleNextRollover();
         }
     }
     
-    private void scheduleNextRollover()
+    /**
+     * Get the "start of day" for the provided DateTime at the zone specified.
+     *
+     * @param dateTime the date time to calculate from
+     * @param zone the zone to return the date in
+     * @return start of the day of the date provided
+     */
+    public static ZonedDateTime toMidnight(ZonedDateTime dateTime, ZoneId zone)
+    {
+        return dateTime.toLocalDate().atStartOfDay(zone);
+    }
+    
+    /**
+     * Get the next "start of day" for the provided date.
+     *
+     * @param dateTime the date to calculate from
+     * @return the start of the next day
+     */
+    public static ZonedDateTime nextMidnight(ZonedDateTime dateTime)
     {
         // Increment to next day.
         // Using Calendar.add(DAY, 1) takes in account Daylights Savings
         // differences, and still maintains the "midnight" settings for
         // Hour, Minute, Second, Milliseconds
-        midnight = midnight.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(midnight.getZone());
-        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli());
+        return dateTime.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(dateTime.getZone());
+    }
+    
+    private void scheduleNextRollover()
+    {
+        midnight = nextMidnight(midnight);
+        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - System.currentTimeMillis());
     }
 
     /* ------------------------------------------------------------ */
