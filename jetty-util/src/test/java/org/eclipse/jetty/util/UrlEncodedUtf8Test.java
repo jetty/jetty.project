@@ -80,45 +80,6 @@ public class UrlEncodedUtf8Test
         fromInputStream(test,bytes,name,value,false);
     }
 
-    @Test
-    public void testCorrectUnicode() throws Exception
-    {
-        String chars="a=%u0061";
-        byte[] bytes= chars.getBytes(StandardCharsets.UTF_8);
-        String test=new String(bytes,StandardCharsets.UTF_8);
-        String name = "a";
-        String value = "a";
-
-        fromString(test,test,name,value,false);
-        fromInputStream(test,bytes,name,value,false);
-    }
-    
-    @Test
-    public void testIncompleteUnicode() throws Exception
-    {
-        String chars="a=%u0";
-        byte[] bytes= chars.getBytes(StandardCharsets.UTF_8);
-        String test=new String(bytes,StandardCharsets.UTF_8);
-        String name = "a";
-        String value = ""+Utf8Appendable.REPLACEMENT;
-
-        fromString(test,test,name,value,false);
-        fromInputStream(test,bytes,name,value,false);
-    }
-    
-    @Test
-    public void testIncompletePercent() throws Exception
-    {
-        String chars="a=%A";
-        byte[] bytes= chars.getBytes(StandardCharsets.UTF_8);
-        String test=new String(bytes,StandardCharsets.UTF_8);
-        String name = "a";
-        String value = ""+Utf8Appendable.REPLACEMENT;
-
-        fromString(test,test,name,value,false);
-        fromInputStream(test,bytes,name,value,false);
-    }
-
     static void fromString(String test,String s,String field,String expected,boolean thrown) throws Exception
     {
         MultiMap<String> values=new MultiMap<>();
