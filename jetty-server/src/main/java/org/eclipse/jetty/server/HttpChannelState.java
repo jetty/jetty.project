@@ -439,6 +439,7 @@ public class HttpChannelState
 
                         case POSSIBLE:
                             _state=State.ASYNC_IO;
+                            _asyncRead=AsyncRead.PRODUCING;
                             action=Action.READ_PRODUCE;
                             break async;
                             
@@ -1269,7 +1270,7 @@ public class HttpChannelState
         try(Locker.Lock lock= _locker.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadReady {}",toStringLocked());
+                LOG.debug("onReadPossible {}",toStringLocked());
 
             switch(_asyncRead)
             {
