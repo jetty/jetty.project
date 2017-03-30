@@ -1506,7 +1506,7 @@ public class Request implements HttpServletRequest
             s.renewId(this);
             if (getRemoteUser() != null)
                 s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-            if (s.isIdChanged())
+            if (s.isIdChanged() && _sessionHandler.isUsingCookies())
                 _channel.getResponse().addCookie(_sessionHandler.getSessionCookie(s, getContextPath(), isSecure()));
         }
 
