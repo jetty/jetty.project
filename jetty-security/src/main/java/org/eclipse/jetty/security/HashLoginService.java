@@ -18,18 +18,15 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.security.PropertyUserStore.UserListener;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.Credential;
 
 /* ------------------------------------------------------------ */
 /**
@@ -52,10 +49,10 @@ public class HashLoginService extends AbstractLoginService
 {
     private static final Logger LOG = Log.getLogger(HashLoginService.class);
 
-    protected PropertyUserStore _propertyUserStore;
-    protected String _config;
-    protected Resource _configResource;
-    protected boolean hotReload = false; // default is not to reload
+    private PropertyUserStore _propertyUserStore;
+    private File _configFile;
+    private Resource _configResource;
+    private boolean hotReload = false; // default is not to reload
     
 
     /* ------------------------------------------------------------ */
@@ -79,13 +76,22 @@ public class HashLoginService extends AbstractLoginService
     /* ------------------------------------------------------------ */
     public String getConfig()
     {
-        return _config;
+        if(_configFile == null)
+        {
+            return null;
+        }
+        return _configFile.getAbsolutePath();
     }
 
     /* ------------------------------------------------------------ */
+    
+    /**
+     * @deprecated use {@link #setConfig(String)} instead
+     */
+    @Deprecated
     public void getConfig(String config)
     {
-        _config = config;
+        setConfig(config);
     }
 
     /* ------------------------------------------------------------ */
@@ -96,14 +102,17 @@ public class HashLoginService extends AbstractLoginService
 
     /* ------------------------------------------------------------ */
     /**
-     * Load realm users from properties file. The property file maps usernames to password specs followed by an optional comma separated list of role names.
+     * Load realm users from properties file.
+     * <p>
+     * The property file maps usernames to password specs followed by an optional comma separated list of role names.
+     * </p>
      * 
-     * @param config
-     *            Filename or url of user properties file.
+     * @param configFile
+     *            Filename of user properties file.
      */
-    public void setConfig(String config)
+    public void setConfig(String configFile)
     {
-        _config = config;
+        _configFile = new File(configFile);
     }
     
     /**
@@ -182,11 +191,11 @@ public class HashLoginService extends AbstractLoginService
         if (_propertyUserStore == null)
         {
             if(LOG.isDebugEnabled())
-                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " hotReload: " + hotReload);
+                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _configFile + " hotReload: " + hotReload);
             
             _propertyUserStore = new PropertyUserStore();
             _propertyUserStore.setHotReload(hotReload);
-            _propertyUserStore.setConfigPath(_config);
+            _propertyUserStore.setConfigPath(_configFile);
             _propertyUserStore.start();
         }
     }

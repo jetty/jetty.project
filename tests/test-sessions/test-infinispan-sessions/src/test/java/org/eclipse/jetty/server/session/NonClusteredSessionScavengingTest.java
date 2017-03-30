@@ -19,6 +19,13 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+
+
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,6 +55,28 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     }
     
 
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest#assertSession(java.lang.String, boolean)
+     */
+    @Override
+    public void assertSession(String id, boolean exists)
+    {
+        assertNotNull(_dataStore);
+        
+        try
+        {
+            boolean inmap = _dataStore.exists(id);
+            if (exists)
+                assertTrue(inmap);
+            else
+                assertFalse(inmap);
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage());
+        }
+    }
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()

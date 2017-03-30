@@ -98,6 +98,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         public  static final String EXPIRY = "expiry";
         public  static final  String MAXINACTIVE = "maxInactive";
         public  static final  String ATTRIBUTES = "attributes";
+        public  static final String LASTSAVED = "lastSaved";
 
         public static final String KIND = "GCloudSession";
         protected String _kind = KIND;
@@ -107,6 +108,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         protected String _accessed = ACCESSED;
         protected String _lastAccessed = LASTACCESSED;
         protected String _lastNode = LASTNODE;
+        protected String _lastSaved = LASTSAVED;
         protected String _createTime = CREATETIME;
         protected String _cookieSetTime = COOKIESETTIME;
         protected String _expiry = EXPIRY;
@@ -300,6 +302,23 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {
             checkNotNull(attributes);
             _attributes = attributes;
+        }
+
+        /**
+         * @return the lastSaved
+         */
+        public String getLastSaved()
+        {
+            return _lastSaved;
+        }
+
+        /**
+         * @param lastSaved the lastSaved to set
+         */
+        public void setLastSaved(String lastSaved)
+        {
+            checkNotNull(lastSaved);
+            _lastSaved = lastSaved;
         }
 
         /** 
@@ -529,11 +548,15 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             for (ExpiryInfo item:info)
             {
                 if (StringUtil.isBlank(item.getLastNode()))
+                {
                     expired.add(item.getId()); //nobody managing it
+                }
                 else
                 {
                     if (_context.getWorkerName().equals(item.getLastNode()))
+                    {
                         expired.add(item.getId()); //we're managing it, we can expire it
+                    }
                     else
                     {
                         if (_lastExpiryCheckTime <= 0)
@@ -541,8 +564,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                             //our first check, just look for sessions that we managed by another node that
                             //expired at least 3 graceperiods ago
                             if (item.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
-                                expired.add(item.getId());
-                        }
+                                expired.add(item.getId());                        }
                         else
                         {
                             //another node was last managing it, only expire it if it expired a graceperiod ago
@@ -636,11 +658,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     protected Set<ExpiryInfo>  queryExpiryByIndex () throws Exception
     {
+        long now = System.currentTimeMillis();
         Set<ExpiryInfo> info = new HashSet<>();
         Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
                 .setKind(_model.getKind())
                 .setProjection(_model.getId(), _model.getLastNode(), _model.getExpiry())
-                .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
+                .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), now)))
                 .setLimit(_maxResults)
                 .build();
 
@@ -746,7 +769,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         if (LOG.isDebugEnabled()) LOG.debug("Writing session {} to DataStore", data.getId());
-
         Entity entity = entityFromSession(data, makeKey(id, _context));
 
         //attempt the update with exponential back-off
@@ -868,6 +890,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                 .set(_model.getLastNode(),session.getLastNode())
                 .set(_model.getExpiry(), session.getExpiry())
                 .set(_model.getMaxInactive(), session.getMaxInactiveMs())
+                .set(_model.getLastSaved(), session.getLastSaved())
                 .set(_model.getAttributes(), BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build()).build();
 
                  
@@ -902,6 +925,17 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     long createTime = entity.getLong(_model.getCreateTime());
                     long cookieSet = entity.getLong(_model.getCookieSetTime());
                     String lastNode = entity.getString(_model.getLastNode());
+
+                    long lastSaved = 0;
+                    //for compatibility with previously saved sessions, lastSaved may not be present
+                    try
+                    {
+                        lastSaved = entity.getLong(_model.getLastSaved());
+                    }
+                    catch (DatastoreException e)
+                    {
+                        LOG.ignore(e);
+                    }
                     long expiry = entity.getLong(_model.getExpiry());
                     long maxInactive = entity.getLong(_model.getMaxInactive());
                     Blob blob = (Blob) entity.getBlob(_model.getAttributes());
@@ -912,6 +946,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     session.setVhost(vhost);
                     session.setCookieSet(cookieSet);
                     session.setLastNode(lastNode);
+                    session.setLastSaved(lastSaved);
                     session.setExpiry(expiry);
                     try (ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(blob.asInputStream()))
                     {

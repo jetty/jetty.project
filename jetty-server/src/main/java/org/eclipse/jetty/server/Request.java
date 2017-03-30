@@ -332,13 +332,31 @@ public class Request implements HttpServletRequest
             // once extracted and may have already been extracted by getParts() or
             // by a processing happening after a form-based authentication.
             if (_contentParameters == null)
-                extractContentParameters();
+            {
+                try
+                {
+                    extractContentParameters();
+                }
+                catch(IllegalStateException | IllegalArgumentException e)
+                {
+                    throw new BadMessageException("Unable to parse form content", e);
+                }
+            }
         }
         
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().
         if (_queryParameters == null)
-            extractQueryParameters();
+        {
+            try
+            {
+                extractQueryParameters();
+            }
+            catch(IllegalStateException | IllegalArgumentException e)
+            {
+                throw new BadMessageException("Unable to parse URI query", e);
+            }
+        }
 
         // Do parameters need to be combined?
         if (_queryParameters==NO_PARAMS || _queryParameters.size()==0)
@@ -1432,7 +1450,7 @@ public class Request implements HttpServletRequest
             s.renewId(this);
             if (getRemoteUser() != null)
                 s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-            if (s.isIdChanged())
+            if (s.isIdChanged() && _sessionHandler.isUsingCookies())
                 _channel.getResponse().addCookie(_sessionHandler.getSessionCookie(s, getContextPath(), isSecure()));
         }
 

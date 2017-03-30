@@ -42,19 +42,19 @@ public class HttpInputTest
         @Override
         public void onError(Throwable t)
         {
-            _history.add("onError:" + t);
+            _history.add("l.onError:" + t);
         }
 
         @Override
         public void onDataAvailable() throws IOException
         {
-            _history.add("onDataAvailable");
+            _history.add("l.onDataAvailable");
         }
 
         @Override
         public void onAllDataRead() throws IOException
         {
-            _history.add("onAllDataRead");
+            _history.add("l.onAllDataRead");
         }
     };
     private HttpInput _in;
@@ -99,21 +99,28 @@ public class HttpInputTest
             @Override
             public void onReadUnready()
             {
-                _history.add("unready");
+                _history.add("s.onReadUnready");
                 super.onReadUnready();
             }
 
             @Override
             public boolean onReadPossible()
             {
-                _history.add("onReadPossible");
+                _history.add("s.onReadPossible");
                 return super.onReadPossible();
+            }
+
+            @Override
+            public boolean onDataAvailable()
+            {
+                _history.add("s.onDataAvailable");
+                return super.onDataAvailable();
             }
 
             @Override
             public boolean onReadReady()
             {
-                _history.add("ready");
+                _history.add("s.onReadReady");
                 return super.onReadReady();
             }
         })
@@ -387,17 +394,17 @@ public class HttpInputTest
     {
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
     }
 
@@ -406,21 +413,21 @@ public class HttpInputTest
     {
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.addContent(new TContent("AB"));
         _fillAndParseSimulate.add("CD");
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onReadPossible"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
         _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onDataAvailable"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("l.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
@@ -434,7 +441,7 @@ public class HttpInputTest
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 1"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onReadPossible"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.read(), Matchers.equalTo((int)'C'));
@@ -446,7 +453,7 @@ public class HttpInputTest
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
     }
 
@@ -455,13 +462,13 @@ public class HttpInputTest
     {
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.eof();
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onReadPossible"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.read(), Matchers.equalTo(-1));
@@ -474,22 +481,22 @@ public class HttpInputTest
     {
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.addContent(new TContent("AB"));
         _fillAndParseSimulate.add("_EOF_");
 
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onReadPossible"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.run();
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onDataAvailable"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("l.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
@@ -504,7 +511,7 @@ public class HttpInputTest
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 1"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onReadPossible"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
@@ -521,21 +528,21 @@ public class HttpInputTest
     {
         _in.setReadListener(_listener);
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
         Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("unready"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.failed(new TimeoutException());
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onReadPossible"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onDataAvailable"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.run();
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(true));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("onError:java.util.concurrent.TimeoutException"));
+        Assert.assertThat(_history.poll(), Matchers.equalTo("l.onError:java.util.concurrent.TimeoutException"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(true));

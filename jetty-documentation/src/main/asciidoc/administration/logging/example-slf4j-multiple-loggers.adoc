@@ -70,7 +70,7 @@ Logging API::
 Slf4j Binding JAR::
   * Special JARs, created and maintained by the Slf4j project, that pretend to be the various Logging API implementation classes, but instead just route that Logging API's events to Slf4j to handle.
   * There MAY be multiple Slf4j binding JARs present on the classpath at the same time.
-  
+
   * For a single logging API, if you choose to use the Slf4j binding JAR, then you MUST NOT include the SLf4j adapter JAR or underlying logging  framework in the classpath as well.
 Slf4j Adapter Jar::
   * These JARs are created and maintained by the Slf4j project and route Slf4j logging events to a specific underlying logging framework.
@@ -118,7 +118,7 @@ INFO: resources       enabled in     ${jetty.base}/start.ini
 The replacement `logging.mod` performs a number of tasks.
 
 .  `mybase` is a `${jetty.base}` directory.
-.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/ `and becomes the `${jetty.home}` directory for this demonstration.
+.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
 .  The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by `mybase` only.
 .  The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}` configuration.
 ..  The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.

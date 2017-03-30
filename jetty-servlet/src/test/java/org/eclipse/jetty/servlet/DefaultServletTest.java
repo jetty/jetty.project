@@ -729,6 +729,8 @@ public class DefaultServletTest
         String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseNotContains("Extra Info", response);
+        assertResponseContains("Content-Type: text/plain", response);
+        assertResponseNotContains("Content-Type: text/plain;charset=utf-8", response);
 
         server.stop();
         context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
@@ -738,6 +740,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
+        assertResponseContains("Content-Type: text/plain;charset=utf-8", response);
 
         server.stop();
         context.getServletHandler().setFilterMappings(new FilterMapping[]{});
@@ -1226,6 +1229,7 @@ public class DefaultServletTest
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             response.getOutputStream().println("Extra Info");
+            response.setCharacterEncoding("utf-8");
             chain.doFilter(request, response);
         }
 

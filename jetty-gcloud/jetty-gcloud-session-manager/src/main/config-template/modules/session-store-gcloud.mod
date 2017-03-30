@@ -26,6 +26,8 @@ etc/sessions/gcloud/session-store.xml
 [ini-template]
 
 ## GCloudDatastore Session config
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
 #jetty.session.gcloud.maxRetries=5
 #jetty.session.gcloud.backoffMs=1000
 #jetty.session.gcloud.namespace=

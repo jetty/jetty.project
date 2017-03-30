@@ -28,6 +28,7 @@ public abstract class AbstractSessionDataStoreFactory implements SessionDataStor
 {
 
     int _gracePeriodSec;
+    int _savePeriodSec;
     
     
     
@@ -46,6 +47,24 @@ public abstract class AbstractSessionDataStoreFactory implements SessionDataStor
     public void setGracePeriodSec(int gracePeriodSec)
     {
         _gracePeriodSec = gracePeriodSec;
+    }
+
+
+    /**
+     * @return the savePeriodSec
+     */
+    public int getSavePeriodSec()
+    {
+        return _savePeriodSec;
+    }
+
+
+    /**
+     * @param savePeriodSec the savePeriodSec to set
+     */
+    public void setSavePeriodSec(int savePeriodSec)
+    {
+        _savePeriodSec = savePeriodSec;
     }
    
 

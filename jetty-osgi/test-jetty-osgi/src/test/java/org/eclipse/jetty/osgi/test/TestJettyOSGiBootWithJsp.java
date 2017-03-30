@@ -18,16 +18,22 @@
 
 package org.eclipse.jetty.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,12 +42,6 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
@@ -68,41 +68,40 @@ public class TestJettyOSGiBootWithJsp
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
      
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
-        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.osgi.LEVEL").value(LOG_LEVEL))));
+        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
+        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
+        options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[options.size()]);
     }
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
     {
-        File etcFolder = new File("src/test/config/etc");
-        String etc = "file://" + etcFolder.getAbsolutePath();
+        File etc = new File(OS.separators("src/test/config/etc"));
+        
         List<Option> options = new ArrayList<Option>();
-        String xmlConfigs = etc     + "/jetty.xml";
+        StringBuffer xmlConfigs = new StringBuffer();
+        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
+        xmlConfigs.append(";");
         if (ssl)
-            xmlConfigs += ";" 
-                    + etc
-                    + "/jetty-ssl.xml;"
-                    + etc
-                    + "/jetty-https.xml;";
-        xmlConfigs+= ";"
-                + etc
-                + "/"
-                + jettySelectorFileName
-                + ";"
-                + etc
-                + "/jetty-deployer.xml;"
-                + etc
-                + "/jetty-testrealm.xml";
+        {
+            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
+            xmlConfigs.append(";");
+            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
+            xmlConfigs.append(";");
 
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs));
+        }
+        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
+        xmlConfigs.append(";");
+        xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
+        xmlConfigs.append(";");
+        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
         options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
         options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
-        options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
-        options.add(systemProperty("jetty.base").value(etcFolder.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }
 

@@ -120,9 +120,9 @@ public class HttpInputAsyncStateTest
             }
 
             @Override
-            public boolean onReadPossible()
+            public boolean onDataAvailable()
             {
-                boolean wake = super.onReadPossible();
+                boolean wake = super.onDataAvailable();
                 __history.add("onReadPossible "+wake);
                 return wake;
             }

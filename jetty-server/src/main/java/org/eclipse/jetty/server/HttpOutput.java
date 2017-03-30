@@ -918,6 +918,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = _bufferSize;
         releaseBuffer();
         _written = 0;
+        _writeListener = null;
+        _onError = null;
         reopen();
     }
 

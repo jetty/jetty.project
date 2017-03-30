@@ -9,9 +9,10 @@ session-store
 
 [depend]
 sessions
+sessions/mongo/${connection-type}
 
 [files]
-maven://org.mongodb/mongo-java-driver/2.6.1|lib/nosql/mongo-java-driver-2.6.1.jar
+maven://org.mongodb/mongo-java-driver/2.13.2|lib/nosql/mongo-java-driver-2.13.2.jar
 
 [lib]
 lib/jetty-nosql-${jetty.version}.jar
@@ -22,13 +23,20 @@ The java driver for the MongoDB document-based database system is hosted on GitH
 http://www.mongodb.org/
 http://www.apache.org/licenses/LICENSE-2.0.html
 
-[xml]
-etc/sessions/mongo/session-store.xml
+
+[ini]
+connection-type?=address
 
 [ini-template]
 #jetty.session.mongo.dbName=HttpSessions
 #jetty.session.mongo.collectionName=jettySessions
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
+
+connection-type=address
 #jetty.session.mongo.host=localhost
 #jetty.session.mongo.port=27017
-#jetty.session.gracePeriod.seconds=3600
+
+#connection-type=uri
+#jetty.session.mongo.connectionString=mongodb://localhost
 

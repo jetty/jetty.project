@@ -128,6 +128,12 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
      */
     public void setConfigPath(File configFile)
     {
+        if(configFile == null)
+        {
+            _configPath = null;
+            return;
+        }
+        
         _configPath = configFile.toPath();
     }
 

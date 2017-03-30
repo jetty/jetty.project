@@ -577,7 +577,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (_listener == null)
                 _inputQ.notify();
             else
-                woken = _channelState.onReadPossible();
+                woken = _channelState.onDataAvailable();
         }
         return woken;
     }
@@ -612,7 +612,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (_listener == null)
                     _inputQ.notify();
                 else
-                    woken = _channelState.onReadPossible();
+                    woken = _channelState.onDataAvailable();
             }
         }
         return woken;
@@ -800,7 +800,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (_listener == null)
                 _inputQ.notify();
             else
-                woken = _channelState.onReadPossible();
+                woken = _channelState.onDataAvailable();
         }
 
         return woken;

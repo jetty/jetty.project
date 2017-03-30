@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.Jetty;
@@ -67,6 +68,7 @@ public class HttpConfiguration
     private int _maxErrorDispatches = 10;
     private boolean _useDirectByteBuffers = false;
     private long _minRequestDataRate;
+    private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -126,6 +128,7 @@ public class HttpConfiguration
         _maxErrorDispatches=config._maxErrorDispatches;
         _useDirectByteBuffers=config._useDirectByteBuffers;
         _minRequestDataRate=config._minRequestDataRate;
+        _cookieCompliance=config._cookieCompliance;
     }
     
     /* ------------------------------------------------------------ */
@@ -544,5 +547,23 @@ public class HttpConfiguration
     public void setMinRequestDataRate(long bytesPerSecond)
     {
         _minRequestDataRate=bytesPerSecond;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public CookieCompliance getCookieCompliance()
+    {
+        return _cookieCompliance;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _cookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isCookieCompliance(CookieCompliance compliance)
+    {
+        return _cookieCompliance.equals(compliance);
     }
 }

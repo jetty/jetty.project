@@ -44,13 +44,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SlowClientsTest
 {
     private Logger logger = Log.getLogger(getClass());
-
-    @Test
+    
+    @Test(timeout = 10000)
     public void testSlowClientsWithSmallThreadPool() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
@@ -59,8 +61,8 @@ public class SlowClientsTest
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
 
-        int maxThreads = 8;
-        int contentLength = 32 * 1024 * 1024;
+        int maxThreads = 6;
+        int contentLength = 8 * 1024 * 1024;
         QueuedThreadPool serverThreads = new QueuedThreadPool(maxThreads);
         serverThreads.setDetailedDump(true);
         Server server = new Server(serverThreads);

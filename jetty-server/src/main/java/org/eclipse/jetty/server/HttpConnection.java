@@ -622,10 +622,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void succeeded()
         {
-            if (fillAndParseForContent())
+            if (_channel.getState().onReadPossible())
                 _channel.handle();
-            else if (!_input.isFinished() && !_input.hasContent())
-                asyncReadFillInterested();
         }
 
         @Override

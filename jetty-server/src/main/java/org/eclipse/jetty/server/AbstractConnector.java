@@ -129,7 +129,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
  * method to create a new Connection instance.</li>
  * </ol>
- * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce
+ * The default number of acceptor tasks is the minimum of 1 and the number of available CPUs divided by 8. Having more acceptors may reduce
  * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is
  * sufficient for modern persistent protocols (HTTP/1.1, HTTP/2 etc.)
  */
