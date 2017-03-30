@@ -604,7 +604,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
-    <module>jetty-dependencies</module>
+    <module>jetty-bom</module>
     <module>jetty-documentation</module>
     <!-- modules that need fixed and added back, or simply dropped and not maintained -->
     <!--<module>jetty-rhttp</module>-->

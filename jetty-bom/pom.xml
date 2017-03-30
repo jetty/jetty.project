@@ -5,9 +5,9 @@
     <version>9.3.18-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-dependencies</artifactId>
-  <name>Jetty :: Dependencies</name>
-  <description>Jetty Dependencies (BOM artifact</description>
+  <artifactId>jetty-bom</artifactId>
+  <name>Jetty :: Bom</name>
+  <description>Jetty BOM artifact</description>
   <packaging>pom</packaging>
 
   <dependencyManagement>
