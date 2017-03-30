@@ -1147,6 +1147,7 @@ public class HttpChannelState
             switch(_asyncRead)
             {
                 case IDLE:
+                case READY:
                     if (_state==State.ASYNC_WAIT)
                     {
                         interested=true;
@@ -1165,7 +1166,6 @@ public class HttpChannelState
                     break;
                     
                 case AVAILABLE:
-                case READY:
                     throw new IllegalStateException(toStringLocked()); 
             }
         }
@@ -1283,21 +1283,6 @@ public class HttpChannelState
             }
         }
         return woken;
-    }
-    
-    /**
-     * Called to signal that application has called read.
-     * @return true if woken
-     */
-    public void onRead(boolean available)
-    {
-        try(Locker.Lock lock= _locker.lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onRead {} {}",available,toStringLocked());
-
-            _asyncRead=available?AsyncRead.AVAILABLE:AsyncRead.IDLE;
-        }
     }
 
     /**

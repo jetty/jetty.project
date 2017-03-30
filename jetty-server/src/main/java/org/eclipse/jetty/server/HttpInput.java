@@ -296,9 +296,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
                     // Consume any following poison pills
                     if (item.isEmpty())
-                        _channelState.onRead(nextInterceptedContent()!=null);
-                    else
-                        _channelState.onRead(true);
+                        nextInterceptedContent();
                     break;
                 }
 
@@ -307,7 +305,6 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     // Not blocking, so what should we return?
                     l = _state.noContent();
-                    _channelState.onRead(false);
                     
                     if (l<0)
                         // If EOF do we need to wake for allDataRead callback?
