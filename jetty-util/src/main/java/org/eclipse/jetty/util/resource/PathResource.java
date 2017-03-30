@@ -73,7 +73,7 @@ public class PathResource extends Resource
 
         if(!URIUtil.equalsIgnoreEncodings(uri,path.toUri()))
         {
-            return new File(uri).toPath().toAbsolutePath();
+            return Paths.get(uri).toAbsolutePath();
         }
 
         if (!abs.isAbsolute())
