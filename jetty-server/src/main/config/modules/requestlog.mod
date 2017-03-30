@@ -27,7 +27,7 @@ logs/
 # jetty.requestlog.retainDays=90
 
 ## Whether to append to existing file
-# jetty.requestlog.append=true
+# jetty.requestlog.append=false
 
 ## Whether to use the extended log output
 # jetty.requestlog.extended=true
