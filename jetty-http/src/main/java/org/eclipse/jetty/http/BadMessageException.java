@@ -45,6 +45,11 @@ public class BadMessageException extends RuntimeException
         this(400,reason);
     }
     
+    public BadMessageException(String reason, Throwable cause)
+    {
+        this(400, reason, cause);
+    }
+    
     public BadMessageException(int code, String reason)
     {
         super(code+": "+reason);
