@@ -32,17 +32,30 @@ import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 
 /**
- * <p>A strategy where the thread that produces will always run the resulting task.</p>
- * <p>The strategy may then dispatch another thread to continue production.</p>
- * <p>The strategy is also known by the nickname 'eat what you kill', which comes from
- * the hunting ethic that says a person should not kill anything he or she does not
- * plan on eating. In this case, the phrase is used to mean that a thread should
- * not produce a task that it does not intend to run. By making producers run the
- * task that they have just produced avoids execution delays and avoids parallel slow
- * down by running the task in the same core, with good chances of having a hot CPU
- * cache. It also avoids the creation of a queue of produced tasks that the system
- * does not yet have capacity to consume, which can save memory and exert back
- * pressure on producers.</p>
+ * <p>A strategy where the thread that produces will run the resulting task if it 
+ * is possible to do so without thread starvation.</p>
+ * 
+ * <p>This strategy preemptively dispatches a thread as a pending producer, so that
+ * when a thread produces a task it can immediately run the task and let the pending
+ * producer thread take over producing.  If necessary another thread will be dispatched
+ * to replace the pending producing thread.   When operating in this pattern, the 
+ * sub-strategy is called Execute Produce Consume (EPC)
+ * </p>
+ * <p>However, if the task produced uses the {@link Invocable} API to indicate that 
+ * it will not block, then the strategy will run it directly, regardless of the 
+ * presence of a pending producing thread and then resume producing after the 
+ * task has completed. This sub-strategy is also used if the strategy has been
+ * configured with a maximum of 0 pending threads and the thread currently producing
+ * does not use the {@link Invocable} API to indicate that it will not block.
+ * When operating in this pattern, the sub-strategy is called
+ * ProduceConsume (PC).
+ * </p>
+ * <p>If there is no pending producer thread available and if the task has not 
+ * indicated it is non-blocking, then this strategy will dispatch the execution of
+ * the task and immediately continue producing.  When operating in this pattern, the
+ * sub-strategy is called ProduceExecuteConsume (PEC).
+ * </p>
+ * 
  */
 public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrategy, Runnable
 {
@@ -73,7 +86,7 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
     
     public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredInvocationPEC, InvocationType preferredInvocationEPC)
     {
-        this(producer,executor,preferredInvocationPEC,preferredInvocationEPC,1);
+        this(producer,executor,preferredInvocationPEC,preferredInvocationEPC,Integer.getInteger("org.eclipse.jetty.util.thread.strategy.EatWhatYouKill.maxProducersPending",1));
     }
     
     public EatWhatYouKill(Producer producer, Executor executor, InvocationType preferredInvocationPEC, InvocationType preferredInvocationEPC, int maxProducersPending )
@@ -110,7 +123,7 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
             LOG.debug("{} execute {}", this, produce);
 
         if (produce)
-            produceConsume();
+            doProduce();
     }
 
     @Override
@@ -183,10 +196,10 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
         }
 
         if (producing)
-            produceConsume();
+            doProduce();
     }
 
-    private void produceConsume()
+    private void doProduce()
     {
         boolean may_block_caller = !Invocable.isNonBlockingInvocation();
         if (LOG.isDebugEnabled())
@@ -356,15 +369,6 @@ public class EatWhatYouKill extends AbstractLifeCycle implements ExecutionStrate
         public void run()
         {
             produce();
-        }
-    }
-
-    public static class Factory implements ExecutionStrategy.Factory
-    {
-        @Override
-        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
-        {
-            return new EatWhatYouKill(producer, executor);
         }
     }
 }

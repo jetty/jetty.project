@@ -249,13 +249,4 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
             produce();
         }
     }
-
-    public static class Factory implements ExecutionStrategy.Factory
-    {
-        @Override
-        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
-        {
-            return new ExecuteProduceConsume(producer, executor);
-        }
-    }
 }
