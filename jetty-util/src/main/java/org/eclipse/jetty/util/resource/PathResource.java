@@ -73,7 +73,17 @@ public class PathResource extends Resource
 
         if(!URIUtil.equalsIgnoreEncodings(uri,path.toUri()))
         {
-            return Paths.get(uri).toAbsolutePath();
+            try
+            {
+                return Paths.get(uri).toRealPath(FOLLOW_LINKS);
+            }
+            catch (IOException ignored)
+            {
+                // If the toRealPath() call fails, then let
+                // the alias checking routines continue on
+                // to other techniques.
+                LOG.ignore(ignored);
+            }
         }
 
         if (!abs.isAbsolute())
