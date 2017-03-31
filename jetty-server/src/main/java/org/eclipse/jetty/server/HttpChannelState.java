@@ -103,7 +103,6 @@ public class HttpChannelState
     private enum AsyncRead
     {
         IDLE,           // No isReady; No data
-        AVAILABLE,      // No isReady; onContentAdded has been called
         REGISTER,       // isReady()==false handling; No data
         REGISTERED,     // isReady()==false !handling; No data
         POSSIBLE,       // isReady()==false async read callback called (http/1 only)
@@ -243,7 +242,6 @@ public class HttpChannelState
                         case PRODUCING:
                             throw new IllegalStateException(toStringLocked());
                         case IDLE:
-                        case AVAILABLE:
                         case REGISTERED:
                             break;
                     }
@@ -450,7 +448,6 @@ public class HttpChannelState
                             break;
                         
                         case IDLE:
-                        case AVAILABLE:
                         case REGISTERED:
                             break;
                     }
@@ -1164,9 +1161,6 @@ public class HttpChannelState
                 case POSSIBLE:
                 case PRODUCING:
                     break;
-                    
-                case AVAILABLE:
-                    throw new IllegalStateException(toStringLocked()); 
             }
         }
 
@@ -1192,10 +1186,6 @@ public class HttpChannelState
             switch(_asyncRead)
             {
                 case IDLE:
-                    _asyncRead=AsyncRead.AVAILABLE;
-                    break;
-                    
-                case AVAILABLE:
                 case READY:
                     break;
                     
@@ -1238,7 +1228,6 @@ public class HttpChannelState
             switch(_asyncRead)
             {
                 case IDLE:
-                case AVAILABLE:
                     _asyncRead=AsyncRead.READY;
                     if (_state==State.ASYNC_WAIT)
                     {
