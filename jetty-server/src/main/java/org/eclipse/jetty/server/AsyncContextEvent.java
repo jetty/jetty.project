@@ -106,6 +106,11 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         _timeoutTask = task;
     }
 
+    public boolean hasTimeoutTask()
+    {
+        return _timeoutTask!=null;
+    }
+    
     public void cancelTimeoutTask()
     {
         Scheduler.Task task=_timeoutTask;
