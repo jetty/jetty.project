@@ -225,7 +225,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     {
         this._stopTimeout = stopTimeout;
     }
-
+    
     public static abstract class AbstractLifeCycleListener implements LifeCycle.Listener
     {
         @Override public void lifeCycleFailure(LifeCycle event, Throwable cause) {}

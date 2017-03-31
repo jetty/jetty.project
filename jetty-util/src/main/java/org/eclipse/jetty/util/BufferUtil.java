@@ -420,11 +420,11 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /**
      * Like append, but does not throw {@link BufferOverflowException}
-     * @param to Buffer is flush mode
-     * @param b bytes to fill
-     * @param off offset into byte
+     * @param to Buffer The buffer to fill to. The buffer will be flipped to fill mode and then flipped back to flush mode.
+     * @param b bytes The bytes to fill
+     * @param off offset into bytes
      * @param len length to fill
-     * @return The position of the valid data before the flipped position.
+     * @return the number of bytes taken from the buffer.
      */
     public static int fill(ByteBuffer to, byte[] b, int off, int len)
     {

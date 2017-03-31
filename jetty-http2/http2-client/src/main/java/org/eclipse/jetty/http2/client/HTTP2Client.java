@@ -129,7 +129,6 @@ public class HTTP2Client extends ContainerLifeCycle
     private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int initialStreamRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
-    private ExecutionStrategy.Factory executionStrategyFactory = new ProduceConsume.Factory();
 
     @Override
     protected void doStart() throws Exception

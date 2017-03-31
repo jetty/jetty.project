@@ -561,9 +561,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public void recycle(Deflater deflater)
     {
-        deflater.reset();
         if (_deflater.get()==null)
+        {
+            deflater.reset();
             _deflater.set(deflater);
+        }
+        else
+            deflater.end();
     }
 
     /**

@@ -122,4 +122,47 @@ public interface LifeCycle
         public void lifeCycleStopping(LifeCycle event);
         public void lifeCycleStopped(LifeCycle event);
     }
+    
+    
+    /**
+     * Utility to start an object if it is a LifeCycle and to convert
+     * any exception thrown to a {@link RuntimeException}
+     * @param object The instance to start.
+     * @throws RuntimeException if the call to start throws an exception.
+     */
+    public static void start(Object object)
+    {
+        if (object instanceof LifeCycle)
+        {
+            try
+            {
+                ((LifeCycle)object).start();
+            }
+            catch(Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+    
+    /**
+     * Utility to stop an object if it is a LifeCycle and to convert
+     * any exception thrown to a {@link RuntimeException}
+     * @param object The instance to stop.
+     * @throws RuntimeException if the call to stop throws an exception.
+     */
+    public static void stop(Object object)
+    {
+        if (object instanceof LifeCycle)
+        {
+            try
+            {
+                ((LifeCycle)object).stop();
+            }
+            catch(Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 }
