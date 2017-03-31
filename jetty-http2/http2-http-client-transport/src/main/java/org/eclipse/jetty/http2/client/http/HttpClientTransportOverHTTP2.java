@@ -58,6 +58,10 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         this.client = client;
     }
 
+    protected HttpClient getHttpClient() {
+        return this.httpClient;
+    }
+
     @ManagedAttribute(value = "The number of selectors", readonly = true)
     public int getSelectors()
     {
