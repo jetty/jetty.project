@@ -1,20 +1,15 @@
-//
 //  ========================================================================
 //  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
 //  and Apache License v2.0 which accompanies this distribution.
-//
 //      The Eclipse Public License is available at
 //      http://www.eclipse.org/legal/epl-v10.html
-//
 //      The Apache License v2.0 is available at
 //      http://www.opensource.org/licenses/apache2.0.php
-//
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
 
 package org.eclipse.jetty.fcgi.server;
 
@@ -74,8 +69,9 @@ public class ServerFCGIConnection extends AbstractConnection
             while (true)
             {
                 int read = endPoint.fill(buffer);
-                if (LOG.isDebugEnabled()) // Avoid boxing of variable 'read'
-                    LOG.debug("Read {} bytes from {}", read, endPoint);
+                if (LOG.isDebugEnabled()) {
+					LOG.debug("Read {} bytes from {}", read, endPoint);
+				}
                 if (read > 0)
                 {
                     parse(buffer);
@@ -96,8 +92,9 @@ public class ServerFCGIConnection extends AbstractConnection
         }
         catch (Exception x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug(x);
+            if (LOG.isDebugEnabled()) {
+				LOG.debug(x);
+			}
             bufferPool.release(buffer);
             // TODO: fail and close ?
         }
@@ -105,8 +102,9 @@ public class ServerFCGIConnection extends AbstractConnection
 
     private void parse(ByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
-            parser.parse(buffer);
+        while (buffer.hasRemaining()) {
+			parser.parse(buffer);
+		}
     }
 
     private void shutdown()
@@ -123,28 +121,33 @@ public class ServerFCGIConnection extends AbstractConnection
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
                     new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
-            if (existing != null)
-                throw new IllegalStateException();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request {} start on {}", request, channel);
+            if (existing != null) {
+				throw new IllegalStateException();
+			}
+            if (LOG.isDebugEnabled()) {
+				LOG.debug("Request {} start on {}", request, channel);
+			}
         }
 
         @Override
         public void onHeader(int request, HttpField field)
         {
             HttpChannelOverFCGI channel = channels.get(request);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request {} header {} on {}", request, field, channel);
-            if (channel != null)
-                channel.header(field);
+            if (LOG.isDebugEnabled()) {
+				LOG.debug("Request {} header {} on {}", request, field, channel);
+			}
+            if (channel != null) {
+				channel.header(field);
+			}
         }
 
         @Override
         public void onHeaders(int request)
         {
             HttpChannelOverFCGI channel = channels.get(request);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request {} headers on {}", request, channel);
+            if (LOG.isDebugEnabled()) {
+				LOG.debug("Request {} headers on {}", request, channel);
+			}
             if (channel != null)
             {
                 channel.onRequest();
@@ -156,8 +159,9 @@ public class ServerFCGIConnection extends AbstractConnection
         public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
             HttpChannelOverFCGI channel = channels.get(request);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
+            if (LOG.isDebugEnabled()) {
+				LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
+			}
             if (channel != null)
             {
                 ByteBuffer copy = ByteBuffer.allocate(buffer.remaining());
@@ -171,8 +175,9 @@ public class ServerFCGIConnection extends AbstractConnection
         public void onEnd(int request)
         {
             HttpChannelOverFCGI channel = channels.remove(request);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request {} end on {}", request, channel);
+            if (LOG.isDebugEnabled()) {
+				LOG.debug("Request {} end on {}", request, channel);
+			}
             if (channel != null)
             {
                 channel.onContentComplete();
@@ -184,8 +189,9 @@ public class ServerFCGIConnection extends AbstractConnection
         public void onFailure(int request, Throwable failure)
         {
             HttpChannelOverFCGI channel = channels.remove(request);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request {} failure on {}: {}", request, channel, failure);
+            if (LOG.isDebugEnabled()) {
+				LOG.debug("Request {} failure on {}: {}", request, channel, failure);
+			}
             if (channel != null)
             {
                 channel.onBadMessage(400, failure.toString());

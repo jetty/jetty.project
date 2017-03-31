@@ -1,20 +1,15 @@
-//
 //  ========================================================================
 //  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
 //  and Apache License v2.0 which accompanies this distribution.
-//
 //      The Eclipse Public License is available at
 //      http://www.eclipse.org/legal/epl-v10.html
-//
 //      The Apache License v2.0 is available at
 //      http://www.opensource.org/licenses/apache2.0.php
-//
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
@@ -94,8 +89,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         super.init();
 
         String value = getInitParameter(SCRIPT_PATTERN_INIT_PARAM);
-        if (value == null)
-            value = "(.+?\\.php)";
+        if (value == null) {
+			value = "(.+?\\.php)";
+		}
         scriptPattern = Pattern.compile(value);
 
         originalURIAttribute = getInitParameter(ORIGINAL_URI_ATTRIBUTE_INIT_PARAM);
@@ -109,8 +105,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     {
         ServletConfig config = getServletConfig();
         String scriptRoot = config.getInitParameter(SCRIPT_ROOT_INIT_PARAM);
-        if (scriptRoot == null)
-            throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
+        if (scriptRoot == null) {
+			throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
+		}
         return new HttpClient(new ProxyHttpClientTransportOverFCGI(scriptRoot), null);
     }
 
@@ -127,13 +124,15 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         // Has the original URI been rewritten ?
         String originalURI = null;
         String originalQuery = null;
-        if (originalURIAttribute != null)
-            originalURI = (String)request.getAttribute(originalURIAttribute);
+        if (originalURIAttribute != null) {
+			originalURI = (String)request.getAttribute(originalURIAttribute);
+		}
         if (originalURI != null && originalQueryAttribute != null)
         {
             originalQuery = (String)request.getAttribute(originalQueryAttribute);
-            if (originalQuery != null)
-                originalURI += "?" + originalQuery;
+            if (originalQuery != null) {
+				originalURI += "?" + originalQuery;
+			}
         }
 
         if (originalURI == null)
@@ -149,23 +148,27 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             if (originalPath != null)
             {
                 originalURI = originalPath;
-                if (originalQuery != null)
-                    originalURI += "?" + originalQuery;
+                if (originalQuery != null) {
+					originalURI += "?" + originalQuery;
+				}
             }
         }
 
-        if (originalURI != null)
-            proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, originalURI);
-        if (originalQuery != null)
-            proxyRequest.attribute(REQUEST_QUERY_ATTRIBUTE, originalQuery);
+        if (originalURI != null) {
+			proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, originalURI);
+		}
+        if (originalQuery != null) {
+			proxyRequest.attribute(REQUEST_QUERY_ATTRIBUTE, originalQuery);
+		}
 
         // If the Host header is missing, add it.
         if (!proxyRequest.getHeaders().containsKey(HttpHeader.HOST.asString()))
         {
             String host = request.getServerName();
             int port = request.getServerPort();
-            if (!getHttpClient().isDefaultPort(request.getScheme(), port))
-                host += ":" + port;
+            if (!getHttpClient().isDefaultPort(request.getScheme(), port)) {
+				host += ":" + port;
+			}
             proxyRequest.header(HttpHeader.HOST, host);
             proxyRequest.header(HttpHeader.X_FORWARDED_HOST, host);
         }
@@ -177,8 +180,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < cookies.size(); ++i)
             {
-                if (i > 0)
-                    builder.append("; ");
+                if (i > 0) {
+					builder.append("; ");
+				}
                 String cookie = cookies.get(i);
                 builder.append(cookie);
             }
@@ -199,8 +203,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         fastCGIHeaders.put(FCGI.Headers.SERVER_ADDR, (String)proxyRequest.getAttributes().get(SERVER_ADDR_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_PORT, (String)proxyRequest.getAttributes().get(SERVER_PORT_ATTRIBUTE));
 
-        if (fcgiHTTPS || HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
-            fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
+        if (fcgiHTTPS || HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE))) {
+			fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
+		}
 
         URI proxyRequestURI = proxyRequest.getURI();
         String rawPath = proxyRequestURI == null ? proxyRequest.getPath() : proxyRequestURI.getRawPath();
@@ -210,14 +215,16 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         if (requestURI == null)
         {
             requestURI = rawPath;
-            if (rawQuery != null)
-                requestURI += "?" + rawQuery;
+            if (rawQuery != null) {
+				requestURI += "?" + rawQuery;
+			}
         }
         fastCGIHeaders.put(FCGI.Headers.REQUEST_URI, requestURI);
 
         String requestQuery = (String)proxyRequest.getAttributes().get(REQUEST_QUERY_ATTRIBUTE);
-        if (requestQuery != null)
-            fastCGIHeaders.put(FCGI.Headers.QUERY_STRING, requestQuery);
+        if (requestQuery != null) {
+			fastCGIHeaders.put(FCGI.Headers.QUERY_STRING, requestQuery);
+		}
 
         String scriptName = rawPath;
         Matcher matcher = scriptPattern.matcher(rawPath);
@@ -227,8 +234,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             scriptName = matcher.group(1);
 
             // If there is a second group, map it to PATH_INFO.
-            if (matcher.groupCount() > 1)
-                fastCGIHeaders.put(FCGI.Headers.PATH_INFO, matcher.group(2));
+            if (matcher.groupCount() > 1) {
+				fastCGIHeaders.put(FCGI.Headers.PATH_INFO, matcher.group(2));
+			}
         }
         fastCGIHeaders.put(FCGI.Headers.SCRIPT_NAME, scriptName);
 
@@ -251,8 +259,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             if (_log.isDebugEnabled())
             {
                 TreeMap<String, String> fcgi = new TreeMap<>();
-                for (HttpField field : fastCGIHeaders)
-                    fcgi.put(field.getName(), field.getValue());
+                for (HttpField field : fastCGIHeaders) {
+					fcgi.put(field.getName(), field.getValue());
+				}
                 String eol = System.lineSeparator();
                 _log.debug("FastCGI variables{}{}", eol, fcgi.entrySet().stream()
                         .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))

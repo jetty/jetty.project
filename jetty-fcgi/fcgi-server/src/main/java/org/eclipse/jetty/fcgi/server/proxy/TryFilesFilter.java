@@ -1,20 +1,15 @@
-//
 //  ========================================================================
 //  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
 //  and Apache License v2.0 which accompanies this distribution.
-//
 //      The Eclipse Public License is available at
 //      http://www.eclipse.org/legal/epl-v10.html
-//
 //      The Apache License v2.0 is available at
 //      http://www.opensource.org/licenses/apache2.0.php
-//
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
@@ -75,8 +70,9 @@ public class TryFilesFilter implements Filter
     public void init(FilterConfig config) throws ServletException
     {
         String param = config.getInitParameter(FILES_INIT_PARAM);
-        if (param == null)
-            throw new ServletException(String.format("Missing mandatory parameter '%s'", FILES_INIT_PARAM));
+        if (param == null) {
+			throw new ServletException(String.format("Missing mandatory parameter '%s'", FILES_INIT_PARAM));
+		}
         files = param.split(" ");
     }
 
@@ -92,8 +88,9 @@ public class TryFilesFilter implements Filter
             String resolved = resolve(httpRequest, file);
 
             URL url = request.getServletContext().getResource(resolved);
-            if (url == null)
-                continue;
+            if (url == null) {
+				continue;
+			}
 
             if (Files.isReadable(toPath(url)))
             {
@@ -128,10 +125,12 @@ public class TryFilesFilter implements Filter
     {
         String path = request.getServletPath();
         String info = request.getPathInfo();
-        if (info != null)
-            path += info;
-        if (!path.startsWith("/"))
-            path = "/" + path;
+        if (info != null) {
+			path += info;
+		}
+        if (!path.startsWith("/")) {
+			path = "/" + path;
+		}
         return value.replaceAll("\\$path", path);
     }
 

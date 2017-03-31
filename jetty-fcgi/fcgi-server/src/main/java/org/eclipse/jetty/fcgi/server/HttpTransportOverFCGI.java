@@ -1,20 +1,15 @@
-//
 //  ========================================================================
 //  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
 //  and Apache License v2.0 which accompanies this distribution.
-//
 //      The Eclipse Public License is available at
 //      http://www.eclipse.org/legal/epl-v10.html
-//
 //      The Apache License v2.0 is available at
 //      http://www.opensource.org/licenses/apache2.0.php
-//
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
 
 package org.eclipse.jetty.fcgi.server;
 
@@ -58,9 +53,9 @@ public class HttpTransportOverFCGI implements HttpTransport
     @Override
     public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        if (info!=null)
-            commit(info,head,content,lastContent,callback);
-        else
+        if (info!=null) {
+			commit(info,head,content,lastContent,callback);
+		} else
         {
             if (head)
             {
@@ -81,8 +76,9 @@ public class HttpTransportOverFCGI implements HttpTransport
                 flusher.flush(result);
             }
 
-            if (lastContent && shutdown)
-                flusher.shutdown();
+            if (lastContent && shutdown) {
+				flusher.shutdown();
+			}
         }
     }
 
@@ -125,8 +121,9 @@ public class HttpTransportOverFCGI implements HttpTransport
             flusher.flush(headersResult, contentResult);
         }
 
-        if (lastContent && shutdown)
-            flusher.shutdown();
+        if (lastContent && shutdown) {
+			flusher.shutdown();
+		}
     }
 
     protected Generator.Result generateResponseHeaders(MetaData.Response info, Callback callback)

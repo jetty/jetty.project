@@ -1,20 +1,15 @@
-//
 //  ========================================================================
 //  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
 //  and Apache License v2.0 which accompanies this distribution.
-//
 //      The Eclipse Public License is available at
 //      http://www.eclipse.org/legal/epl-v10.html
-//
 //      The Apache License v2.0 is available at
 //      http://www.opensource.org/licenses/apache2.0.php
-//
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
 
 package org.eclipse.jetty.fcgi.server;
 
@@ -170,8 +165,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
                 String[] paramValues1 = request.getParameterValues(paramName1);
-                for (String paramValue : paramValues1)
-                    output.write(paramValue.getBytes("UTF-8"));
+                for (String paramValue : paramValues1) {
+					output.write(paramValue.getBytes("UTF-8"));
+				}
                 String paramValue2 = request.getParameter(paramName2);
                 output.write(paramValue2.getBytes("UTF-8"));
                 baseRequest.setHandled(true);
@@ -338,8 +334,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     {
                         byte[] bytes = new byte[buffer.remaining()];
                         buffer.get(bytes);
-                        if (!Arrays.equals(content, bytes))
-                            request.abort(new Exception());
+                        if (!Arrays.equals(content, bytes)) {
+							request.abort(new Exception());
+						}
                     }
                 })
                 .content(new BytesContentProvider(content))
@@ -575,8 +572,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     @Override
                     public void onComplete(Result result)
                     {
-                        if (result.isFailed())
-                            completeLatch.countDown();
+                        if (result.isFailed()) {
+							completeLatch.countDown();
+						}
                     }
                 });
 
