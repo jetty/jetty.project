@@ -36,7 +36,8 @@ public class ClientGenerator extends Generator
     // To keep the algorithm simple, and given that the max length of a
     // frame is 0xFF_FF we allow the max length of a name (or value) to be
     // 0x7F_FF - 4 (the 4 is to make room for the name (or value) length).
-    public static final int MAX_PARAM_LENGTH = 0x7F_FF - 4;
+	public static final int MAKE_ROOM_VALUE= 4;
+    public static final int MAX_PARAM_LENGTH = 0x7F_FF - MAKE_ROOM_VALUE;
 
     public ClientGenerator(ByteBufferPool byteBufferPool)
     {

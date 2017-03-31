@@ -39,6 +39,7 @@ public class ServerGenerator extends Generator
     private static final byte[] EOL = new byte[]{'\r', '\n'};
 
     private final boolean sendStatus200;
+    private static final int OK_STATUS_CODE= 200;
 
     public ServerGenerator(ByteBufferPool byteBufferPool)
     {
@@ -59,7 +60,7 @@ public class ServerGenerator extends Generator
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int length = 0;
 
-        if (code != 200 || sendStatus200)
+        if (code != OK_STATUS_CODE || sendStatus200)
         {
             // Special 'Status' header
             bytes.add(STATUS);

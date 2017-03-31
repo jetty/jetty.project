@@ -109,10 +109,9 @@ public class BaseBuilder
                 {
                     if (!module.hasFiles(baseHome,startArgs.getProperties()))
                     {
-                        licensing.addModule(module);
+                        module.addModule(module, licensing.licenseMap);
                     }
                 }
-
                 if (licensing.hasLicenses())
                 {
                     StartLog.debug("Requesting License Acknowledgement");
