@@ -19,7 +19,7 @@ resources/
 # jetty.console-capture.dir=logs
 
 ## Whether to append to existing file
-# jetty.console-capture.append=false
+# jetty.console-capture.append=true
 
 ## How many days to retain old log files
 # jetty.console-capture.retainDays=90
