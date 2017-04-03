@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
@@ -107,6 +108,7 @@ public class Response implements HttpServletResponse
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
     private long _contentLength = -1;
+    private Supplier<HttpFields> trailers;
 
     private enum EncodingFrom { NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING }
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET,EncodingFrom.INFERRED);
@@ -1308,10 +1310,20 @@ public class Response implements HttpServletResponse
         _out.resetBuffer();
     }
 
+    public void setTrailers(Supplier<HttpFields> trailers)
+    {
+        this.trailers = trailers;
+    }
+
+    public Supplier<HttpFields> getTrailers()
+    {
+        return trailers;
+    }
+
     protected MetaData.Response newResponseMetaData()
     {
         MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
-        // TODO info.setTrailerSupplier(trailers);
+        info.setTrailerSupplier(getTrailers());
         return info;
     }
 

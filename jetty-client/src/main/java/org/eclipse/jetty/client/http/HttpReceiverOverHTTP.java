@@ -276,7 +276,17 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         return false;
     }
-    
+
+    @Override
+    public void parsedTrailer(HttpField trailer)
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
+
+        exchange.getResponse().trailer(trailer);
+    }
+
     @Override
     public boolean messageComplete()
     {

@@ -173,7 +173,11 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             LOG.debug("Processing trailers {} on {}", frame, stream);
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
         if (channel != null)
-            channel.onRequestTrailers(frame);
+        {
+            Runnable task = channel.onRequestTrailers(frame);
+            if (task != null)
+                offerTask(task, false);
+        }
     }
 
     public boolean onStreamTimeout(IStream stream, Throwable failure)

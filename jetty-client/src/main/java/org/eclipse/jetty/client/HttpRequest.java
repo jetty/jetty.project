@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -83,6 +84,7 @@ public class HttpRequest implements Request
     private Map<String, Object> attributes;
     private List<RequestListener> requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushListener;
+    private Supplier<HttpFields> trailers;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -589,6 +591,12 @@ public class HttpRequest implements Request
         return this;
     }
 
+    public HttpRequest trailers(Supplier<HttpFields> trailers)
+    {
+        this.trailers = trailers;
+        return this;
+    }
+
     @Override
     public ContentProvider getContent()
     {
@@ -723,6 +731,11 @@ public class HttpRequest implements Request
     public BiFunction<Request, Request, Response.CompleteListener> getPushListener()
     {
         return pushListener;
+    }
+
+    public Supplier<HttpFields> getTrailers()
+    {
+        return trailers;
     }
 
     @Override

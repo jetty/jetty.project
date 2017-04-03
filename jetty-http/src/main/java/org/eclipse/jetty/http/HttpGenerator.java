@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
-
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
 /**
  * HttpGenerator. Builds HTTP Messages.
@@ -764,7 +764,7 @@ public class HttpGenerator
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent
         // or it is a request with content (which cannot EOF) or the app has requested chunking
-        else if (http11 && content_length<0 && (_persistent || assumed_content_request || chunked_hint))
+        else if (http11 && (chunked_hint || content_length<0 && (_persistent || assumed_content_request)))
         {
             // we use chunking
             _endOfContent = EndOfContent.CHUNKED_CONTENT;
