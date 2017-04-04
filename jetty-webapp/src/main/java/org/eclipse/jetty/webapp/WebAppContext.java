@@ -61,7 +61,6 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -130,23 +129,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
     } ;
 
-    // Find the location of the JVM lib directory
-    public final static String __jvmlib;
-    static
-    {
-        String lib=null;
-        try
-        { 
-            lib=TypeUtil.getLoadedFrom(System.class).getFile().getParentFile().toURI().toString();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-            lib=null;
-        }
-        __jvmlib=lib;
-    }
-    
     // Server classes are classes that are hidden from being
     // loaded by the web application using system classloader,
     // so if web application needs to load any of such classes,
