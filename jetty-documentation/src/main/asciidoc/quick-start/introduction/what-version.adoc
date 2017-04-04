@@ -21,6 +21,12 @@ Jetty 9 is the most recent version of Jetty and has a great many improvements ov
 This documentation which focuses on Jetty 9.
 While many people continue to use older versions of Jetty, we generally recommend using Jetty 9 as it represents the version of Jetty that we will actively maintain and improve over the next few years.
 
+_____
+[IMPORTANT]
+It is important that only stable releases are used in production environments.
+Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets. 
+_____
+
 .Jetty Versions
 [width="100%",cols="12%,9%,15%,6%,21%,10%,6%,21%",options="header",]
 |=======================================================================
