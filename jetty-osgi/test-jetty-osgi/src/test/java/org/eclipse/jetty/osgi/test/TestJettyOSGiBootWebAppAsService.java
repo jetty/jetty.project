@@ -34,7 +34,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Ignore;
 import org.junit.Test;
