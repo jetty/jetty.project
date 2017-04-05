@@ -25,7 +25,9 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 
+@Ignore("Not suitable for testing on CI (as URL object is modified)")
 public class WebAppClassLoaderUrlStreamTest extends WebAppClassLoaderTest
 {
     public static class URLHandlers implements URLStreamHandlerFactory

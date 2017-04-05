@@ -41,7 +41,9 @@ package org.eclipse.jetty.continuation;
  * to be uncaught (or rethrown) by a Filter/Servlet.  A ContinuationThrowable
  * does not represent and error condition.
  * </p>
+ * @deprecated use Servlet 3.0 {@link javax.servlet.AsyncContext} instead
  */
+@Deprecated
 public class ContinuationThrowable extends Error
 {
     public ContinuationThrowable()

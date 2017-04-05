@@ -44,7 +44,7 @@ public final class URLStreamHandlerUtil
         }
         catch(Throwable ignore)
         {
-            ignore.printStackTrace(System.err);
+            // ignore.printStackTrace(System.err);
         }
     }
     

@@ -29,7 +29,9 @@ import javax.servlet.ServletResponse;
  *
  * Factory class for accessing Continuation instances, which with either be
  * a servlet 3.0 or a faux continuation.
+ * @deprecated use Servlet 3.0 {@link javax.servlet.AsyncContext} instead
  */
+@Deprecated
 public class ContinuationSupport
 {
     static final boolean __servlet3;

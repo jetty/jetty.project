@@ -48,7 +48,9 @@ import javax.servlet.ServletResponse;
  * {@link Continuation#complete()} is called.</p>
  * <p>Faux continuations are not threadless continuations (they are "faux" - fake - for this reason)
  * and as such they will scale less than proper continuations.</p>
+ * @deprecated use Servlet 3.0 {@link javax.servlet.AsyncContext} instead
  */
+@Deprecated
 public class ContinuationFilter implements Filter
 {
     static boolean _initialized;
@@ -60,6 +62,7 @@ public class ContinuationFilter implements Filter
 
     public void init(FilterConfig filterConfig) throws ServletException
     {
+        filterConfig.getServletContext().log("WARNING: " + this.getClass().getName() + " is now DEPRECATED, use Servlet 3.0 AsyncContext instead.");
         boolean jetty_7_or_greater="org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
         _context = filterConfig.getServletContext();
 
