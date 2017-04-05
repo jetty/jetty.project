@@ -17,6 +17,12 @@
 [[quickstart-jetty-coordinates]]
 === Finding Jetty in Maven
 
+_____
+[IMPORTANT]
+It is important that only stable releases are used in production environments.
+Versions that have been deprecated or are released as Milestones (M) or Release Candidates (RC) are not suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+_____
+
 ==== Maven Coordinates
 
 Jetty has existed in Maven Central almost since its inception, though the coordinates have changed over the years.
@@ -34,7 +40,7 @@ The top level Project Object Model (POM) for the Jetty project is located under 
 </dependency>
 ----
 
-==== Changelogs in Central
+==== Changelogs in Maven Central
 
 The changes between versions of Jetty are tracked in a file called VERSIONS.txt, which is under source control and is generated on release.
 Those generated files are also uploaded into Maven Central during the release of the top level POM. You can find them as a classifier marked artifact.
