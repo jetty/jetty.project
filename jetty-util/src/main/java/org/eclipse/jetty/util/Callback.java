@@ -119,6 +119,11 @@ public interface Callback extends Invocable
             this.callback = nested.callback;
         }
 
+        public Callback getCallback()
+        {
+            return callback;
+        }
+
         @Override
         public void succeeded()
         {

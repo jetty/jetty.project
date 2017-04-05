@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
@@ -69,20 +70,11 @@ public class Response implements HttpServletResponse
 {
     private static final Logger LOG = Log.getLogger(Response.class);
     private static final String __COOKIE_DELIM="\",;\\ \t";
-    private final static String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
-    private final static int __MIN_BUFFER_SIZE = 1;
-    private final static HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES,DateGenerator.__01Jan1970);
-
-
+    private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
+    private static final int __MIN_BUFFER_SIZE = 1;
+    private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES,DateGenerator.__01Jan1970);
     // Cookie building buffer. Reduce garbage for cookie using applications
-    private static final ThreadLocal<StringBuilder> __cookieBuilder = new ThreadLocal<StringBuilder>()
-    {
-       @Override
-       protected StringBuilder initialValue()
-       {
-          return new StringBuilder(128);
-       }
-    };
+    private static final ThreadLocal<StringBuilder> __cookieBuilder = ThreadLocal.withInitial(() -> new StringBuilder(128));
 
     public enum OutputType
     {
@@ -116,11 +108,11 @@ public class Response implements HttpServletResponse
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
     private long _contentLength = -1;
+    private Supplier<HttpFields> trailers;
 
-    private enum EncodingFrom { NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING };
+    private enum EncodingFrom { NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING }
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET,EncodingFrom.INFERRED);
     private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE,EncodingFrom.SET_CHARACTER_ENCODING);
-    
 
     public Response(HttpChannel channel, HttpOutput out)
     {
@@ -686,7 +678,7 @@ public class Response implements HttpServletResponse
     /**
      * Sends a response with one of the 300 series redirection codes.
      * @param code the redirect status code
-     * @param location the location to send in <code>Location</code> headers
+     * @param location the location to send in {@code Location} headers
      * @throws IOException if unable to send the redirect
      */
     public void sendRedirect(int code, String location) throws IOException
@@ -765,7 +757,7 @@ public class Response implements HttpServletResponse
             if (HttpHeader.CONTENT_LENGTH == name)
             {
                 if (value == null)
-                    _contentLength = -1l;
+                    _contentLength = -1L;
                 else
                     _contentLength = Long.parseLong(value);
             }
@@ -790,7 +782,7 @@ public class Response implements HttpServletResponse
             if (HttpHeader.CONTENT_LENGTH.is(name))
             {
                 if (value == null)
-                    _contentLength = -1l;
+                    _contentLength = -1L;
                 else
                     _contentLength = Long.parseLong(value);
             }
@@ -800,8 +792,7 @@ public class Response implements HttpServletResponse
     @Override
     public Collection<String> getHeaderNames()
     {
-        final HttpFields fields = _fields;
-        return fields.getFieldNamesCollection();
+        return _fields.getFieldNamesCollection();
     }
 
     @Override
@@ -813,8 +804,7 @@ public class Response implements HttpServletResponse
     @Override
     public Collection<String> getHeaders(String name)
     {
-        final HttpFields fields = _fields;
-        Collection<String> i = fields.getValuesList(name);
+        Collection<String> i = _fields.getValuesList(name);
         if (i == null)
             return Collections.emptyList();
         return i;
@@ -1290,7 +1280,7 @@ public class Response implements HttpServletResponse
         }
 
         if (preserveCookies)
-            cookies.forEach(f->_fields.add(f));
+            cookies.forEach(_fields::add);
         else
         {
             Request request = getHttpChannel().getRequest();
@@ -1320,10 +1310,20 @@ public class Response implements HttpServletResponse
         _out.resetBuffer();
     }
 
+    public void setTrailers(Supplier<HttpFields> trailers)
+    {
+        this.trailers = trailers;
+    }
+
+    public Supplier<HttpFields> getTrailers()
+    {
+        return trailers;
+    }
+
     protected MetaData.Response newResponseMetaData()
     {
         MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
-        // TODO info.setTrailerSupplier(trailers);
+        info.setTrailerSupplier(getTrailers());
         return info;
     }
 

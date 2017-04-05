@@ -71,26 +71,36 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         if (exchange == null)
             return;
 
-        HttpResponse response = exchange.getResponse();
-        MetaData.Response metaData = (MetaData.Response)frame.getMetaData();
-        response.version(metaData.getHttpVersion()).status(metaData.getStatus()).reason(metaData.getReason());
-
-        if (responseBegin(exchange))
+        HttpResponse httpResponse = exchange.getResponse();
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isResponse())
         {
-            HttpFields headers = metaData.getFields();
-            for (HttpField header : headers)
-            {
-                if (!responseHeader(exchange, header))
-                    return;
-            }
+            MetaData.Response response = (MetaData.Response)frame.getMetaData();
+            httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
-            if (responseHeaders(exchange))
+            if (responseBegin(exchange))
             {
-                int status = metaData.getStatus();
-                boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
-                if (frame.isEndStream() || informational)
-                    responseSuccess(exchange);
+                HttpFields headers = response.getFields();
+                for (HttpField header : headers)
+                {
+                    if (!responseHeader(exchange, header))
+                        return;
+                }
+
+                if (responseHeaders(exchange))
+                {
+                    int status = response.getStatus();
+                    boolean informational = HttpStatus.isInformational(status) && status != HttpStatus.SWITCHING_PROTOCOLS_101;
+                    if (frame.isEndStream() || informational)
+                        responseSuccess(exchange);
+                }
             }
+        }
+        else
+        {
+            HttpFields trailers = metaData.getFields();
+            trailers.forEach(httpResponse::trailer);
+            responseSuccess(exchange);
         }
     }
 

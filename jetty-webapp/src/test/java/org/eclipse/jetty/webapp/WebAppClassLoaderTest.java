@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -51,7 +52,7 @@ public class WebAppClassLoaderTest
 
     private Path testWebappDir;
     private WebAppContext _context;
-    private WebAppClassLoader _loader;
+    protected WebAppClassLoader _loader;
 
     @Before
     public void init() throws Exception
@@ -278,6 +279,9 @@ public class WebAppClassLoaderTest
     @Test
     public void testResources() throws Exception
     {
+        // The existence of a URLStreamHandler changes the behavior
+        assumeThat("No URLStreamHandler in place", URLStreamHandlerUtil.getFactory(), nullValue());
+        
         List<URL> expected = new ArrayList<>();
         List<URL> resources;
         

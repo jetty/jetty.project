@@ -84,8 +84,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link org.eclipse.jetty.webapp.WebXmlConfiguration} and
  * {@link org.eclipse.jetty.webapp.JettyWebXmlConfiguration}.
- * 
- * 
+ *
+ *
  * <p>
  * The Start/Configuration of a WebAppContext is rather complex so as to allow
  * pluggable behaviour to be added in almost arbitrary ordering.  The
@@ -102,7 +102,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  *         <li>Add all Server class exclusions from this webapps {@link Configurations}</li>
  *         <li>Add all System classes inclusions and exclusions for this webapps {@link Configurations}</li>
  *         <li>Instantiate the WebAppClassLoader (if one not already explicitly set)</li>
- *         <li>{@link Configuration#preConfigure(WebAppContext)} which calls  
+ *         <li>{@link Configuration#preConfigure(WebAppContext)} which calls
  *         {@link Configuration#preConfigure(WebAppContext)} for this webapps {@link Configurations}</li>
  *       </ul>
  *     </li>
@@ -150,7 +150,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  *     </li>
  *     <li>{@link #postConfigure()}</li>
  *   </ul>
- *   
+ *
  * </blockquote>
  *
  */
@@ -179,23 +179,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.w3c."                          // javax.xml
     ) ;
 
-    // Find the location of the JVM lib directory
-    public final static String __jvmlib;
-    static
-    {
-        String lib=null;
-        try
-        { 
-            lib=TypeUtil.getLoadedFrom(System.class).getFile().getParentFile().toURI().toString();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-            lib=null;
-        }
-        __jvmlib=lib;
-    }
-    
     // Server classes are classes that are hidden from being
     // loaded by the web application using system classloader,
     // so if web application needs to load any of such classes,
@@ -309,7 +292,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public WebAppContext(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options) 
     {
-        // always pass parent as null and then set below, so that any resulting setServer call 
+        // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
         super(null,contextPath,sessionHandler, securityHandler, servletHandler, errorHandler,options);
         _scontext = new Context();
@@ -492,7 +475,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @throws Exception if unable to pre configure
      */
     public void preConfigure() throws Exception
-    {        
+    {
         // Add the known server class inclusions for all known configurations
         for (Configuration configuration : Configurations.getKnown())
             _serverClasses.include(configuration.getServerClasses().getInclusions());
@@ -597,7 +580,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             catch(Exception e)
             {
                 mx.add(e);
-            }   
+            }
         }
         _configurations.clear();
         super.destroy();
@@ -708,7 +691,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * from the context.  If the context needs to load these classes, it must have its
      * own copy of them in WEB-INF/lib or WEB-INF/classes.
      * @param serverClasses the server classes pattern
-     * 
+     *
      */
     public void setServerClasspathPattern(ClasspathPattern serverClasses)
     {
@@ -1396,7 +1379,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         super.stopContext();
         try
-        {                
+        {
             for (int i=_configurations.size();i-->0;)
                 _configurations.get(i).deconfigure(this);
 

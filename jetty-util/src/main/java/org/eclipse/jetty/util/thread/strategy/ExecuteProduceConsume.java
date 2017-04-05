@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.InvocableExecutor;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
@@ -41,13 +42,14 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  * does not yet have capacity to consume, which can save memory and exert back
  * pressure on producers.</p>
  */
-public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements ExecutionStrategy, Runnable
+public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
 
     private final Locker _locker = new Locker();
     private final Runnable _runProduce = new RunProduce();
     private final Producer _producer;
+    private final InvocableExecutor _executor;
     private boolean _idle = true;
     private boolean _execute;
     private boolean _producing;
@@ -61,10 +63,10 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
     
     public ExecuteProduceConsume(Producer producer, Executor executor, InvocationType preferred )
     {
-        super(executor,preferred);
         this._producer = producer;
+        _executor = new InvocableExecutor(executor,preferred);
     }
-
+    
     @Override
     public void produce()
     {
@@ -111,7 +113,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 _execute = true;
         }
         if (dispatch)
-            execute(_runProduce);
+            _executor.execute(_runProduce);
     }
 
     @Override
@@ -190,7 +192,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
                 // Spawn a new thread to continue production by running the produce loop.
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} dispatch", this);
-                if (!execute(this))
+                if (!_executor.tryExecute(this))
                     task = null;
             }
 
@@ -198,7 +200,7 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
             if (LOG.isDebugEnabled())
                 LOG.debug("{} run {}", this, task);
             if (task != null)
-                invoke(task);
+                _executor.invoke(task);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} ran {}", this, task);
 
@@ -245,15 +247,6 @@ public class ExecuteProduceConsume extends ExecutingExecutionStrategy implements
         public void run()
         {
             produce();
-        }
-    }
-
-    public static class Factory implements ExecutionStrategy.Factory
-    {
-        @Override
-        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
-        {
-            return new ExecuteProduceConsume(producer, executor);
         }
     }
 }

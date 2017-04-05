@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.servlet.ServletContainerInitializer;
-
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -723,7 +721,7 @@ public class TypeUtil
         {
             try
             {
-                return Resource.newResource(URIUtil.getJarSource(url.toString()));
+                return Resource.newResource(URIUtil.getJarSource(url.toURI()));
             }
             catch(Exception e)
             {

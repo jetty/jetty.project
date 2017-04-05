@@ -23,26 +23,29 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 
 public class HttpSenderOverHTTP extends HttpSender
 {
     private final HttpGenerator generator = new HttpGenerator();
+    private final HttpClient httpClient;
     private boolean shutdown;
 
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
+        httpClient = channel.getHttpDestination().getHttpClient();
     }
 
     @Override
@@ -71,8 +74,7 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
-            HttpClient client = getHttpChannel().getHttpDestination().getHttpClient();
-            ByteBufferPool bufferPool = client.getByteBufferPool();
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             ByteBuffer chunk = null;
             while (true)
             {
@@ -89,6 +91,11 @@ public class HttpSenderOverHTTP extends HttpSender
                     {
                         chunk = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
                         break;
+                    }
+                    case NEED_CHUNK_TRAILER:
+                    {
+                        callback.succeeded();
+                        return;
                     }
                     case FLUSH:
                     {
@@ -122,6 +129,21 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                 }
             }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            callback.failed(x);
+        }
+    }
+
+    @Override
+    protected void sendTrailers(HttpExchange exchange, Callback callback)
+    {
+        try
+        {
+            new TrailersCallback(callback).iterate();
         }
         catch (Throwable x)
         {
@@ -181,7 +203,7 @@ public class HttpSenderOverHTTP extends HttpSender
             this.exchange = exchange;
             this.callback = callback;
 
-            Request request = exchange.getRequest();
+            HttpRequest request = exchange.getRequest();
             ContentProvider requestContent = request.getContent();
             long contentLength = requestContent == null ? -1 : requestContent.getLength();
             String path = request.getPath();
@@ -189,6 +211,7 @@ public class HttpSenderOverHTTP extends HttpSender
             if (query != null)
                 path += "?" + query;
             metaData = new MetaData.Request(request.getMethod(), new HttpURI(path), request.getVersion(), request.getHeaders(), contentLength);
+            metaData.setTrailerSupplier(request.getTrailers());
 
             if (!expects100Continue(request))
             {
@@ -201,9 +224,6 @@ public class HttpSenderOverHTTP extends HttpSender
         @Override
         protected Action process() throws Exception
         {
-            HttpClient client = getHttpChannel().getHttpDestination().getHttpClient();
-            ByteBufferPool bufferPool = client.getByteBufferPool();
-
             while (true)
             {
                 HttpGenerator.Result result = generator.generateRequest(metaData, headerBuffer, chunkBuffer, contentBuffer, lastContent);
@@ -217,31 +237,28 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_HEADER:
                     {
-                        headerBuffer = bufferPool.acquire(client.getRequestBufferSize(), false);
+                        headerBuffer = httpClient.getByteBufferPool().acquire(httpClient.getRequestBufferSize(), false);
                         break;
                     }
                     case NEED_CHUNK:
                     {
-                        chunkBuffer = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                        chunkBuffer = httpClient.getByteBufferPool().acquire(HttpGenerator.CHUNK_SIZE, false);
                         break;
+                    }
+                    case NEED_CHUNK_TRAILER:
+                    {
+                        return Action.SUCCEEDED;
                     }
                     case FLUSH:
                     {
                         EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
+                        if (headerBuffer == null)
+                            headerBuffer = BufferUtil.EMPTY_BUFFER;
                         if (chunkBuffer == null)
-                        {
-                            if (contentBuffer == null)
-                                endPoint.write(this, headerBuffer);
-                            else
-                                endPoint.write(this, headerBuffer, contentBuffer);
-                        }
-                        else
-                        {
-                            if (contentBuffer == null)
-                                endPoint.write(this, headerBuffer, chunkBuffer);
-                            else
-                                endPoint.write(this, headerBuffer, chunkBuffer, contentBuffer);
-                        }
+                            chunkBuffer = BufferUtil.EMPTY_BUFFER;
+                        if (contentBuffer == null)
+                            contentBuffer = BufferUtil.EMPTY_BUFFER;
+                        endPoint.write(this, headerBuffer, chunkBuffer, contentBuffer);
                         generated = true;
                         return Action.SCHEDULED;
                     }
@@ -296,12 +313,90 @@ public class HttpSenderOverHTTP extends HttpSender
 
         private void release()
         {
-            HttpClient client = getHttpChannel().getHttpDestination().getHttpClient();
-            ByteBufferPool bufferPool = client.getByteBufferPool();
-            bufferPool.release(headerBuffer);
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            if (headerBuffer != BufferUtil.EMPTY_BUFFER)
+                bufferPool.release(headerBuffer);
             headerBuffer = null;
-            if (chunkBuffer != null)
+            if (chunkBuffer != BufferUtil.EMPTY_BUFFER)
                 bufferPool.release(chunkBuffer);
+            chunkBuffer = null;
+            contentBuffer = null;
+        }
+    }
+
+    private class TrailersCallback extends IteratingCallback
+    {
+        private final Callback callback;
+        private ByteBuffer chunkBuffer;
+
+        public TrailersCallback(Callback callback)
+        {
+            this.callback = callback;
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            while (true)
+            {
+                HttpGenerator.Result result = generator.generateRequest(null, null, chunkBuffer, null, true);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Generated trailers {}/{}", result, generator);
+                switch (result)
+                {
+                    case NEED_CHUNK_TRAILER:
+                    {
+                        chunkBuffer = httpClient.getByteBufferPool().acquire(httpClient.getRequestBufferSize(), false);
+                        break;
+                    }
+                    case FLUSH:
+                    {
+                        EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
+                        endPoint.write(this, chunkBuffer);
+                        return Action.SCHEDULED;
+                    }
+                    case SHUTDOWN_OUT:
+                    {
+                        shutdownOutput();
+                        return Action.SUCCEEDED;
+                    }
+                    case DONE:
+                    {
+                        return Action.SUCCEEDED;
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException(result.toString());
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            release();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            release();
+            callback.failed(x);
+            super.failed(x);
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            super.onCompleteSuccess();
+            callback.succeeded();
+        }
+
+        private void release()
+        {
+            httpClient.getByteBufferPool().release(chunkBuffer);
             chunkBuffer = null;
         }
     }
