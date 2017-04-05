@@ -17,11 +17,11 @@
   <p>To enable JAAS in a base jetty instance do:
     <pre>
     $ cd $JETTY_BASE
-    $ java -jar $JETTY_HOME/start.jar --add-to-startd=jaas
+    $ java -jar $JETTY_HOME/start.jar --add-to-start=jaas
     </pre>
   </p>
-  <p>This will create a $JETTY_BASE/start.d/jaas.ini file to enable and parameterise JAAS.  If the --add-to-start option instead, then the same initialisation will be appended to the
-  $JETTY_BASE/start.ini file instead. The jetty demo-base already has JAAS enabled in the start.ini file.  </p>
+  <p>This will create a $JETTY_BASE/start.d/jaas.ini file to enable and parameterize JAAS.  If no start.d directory exists, then the same initialisation will be appended to the
+  $JETTY_BASE/start.ini file. The Jetty demo-base already has JAAS enabled in its start.ini file.  </p>
 
 <p>The full source of this demonstration is available <a
 href="https://github.com/eclipse/jetty.project/blob/master/tests/test-webapps/test-jaas-webapp">here</a>.</p>
