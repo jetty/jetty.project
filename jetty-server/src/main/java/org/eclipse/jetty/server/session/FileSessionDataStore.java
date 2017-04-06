@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -49,6 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * A file-based store of session data.
  */
+@ManagedObject
 public class FileSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -70,6 +73,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         super.doStop();
     }
 
+    @ManagedAttribute(value="dir where sessions are stored", readonly=true)
     public File getStoreDir()
     {
         return _storeDir;
@@ -307,6 +311,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
     @Override
+    @ManagedAttribute(value="are sessions serialized by this store", readonly=true)
     public boolean isPassivating()
     {
         return true;

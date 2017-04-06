@@ -33,7 +33,9 @@ import org.eclipse.jetty.continuation.ContinuationFilter.FilteredContinuation;
  * A blocking implementation of Continuation.
  * This implementation of Continuation is used by the {@link ContinuationFilter}
  * when there are is no native or asynchronous continuation type available.
+ * @deprecated use Servlet 3.0 {@link javax.servlet.AsyncContext} instead
  */
+@Deprecated
 class FauxContinuation implements FilteredContinuation
 {
     // common exception used for all continuations.

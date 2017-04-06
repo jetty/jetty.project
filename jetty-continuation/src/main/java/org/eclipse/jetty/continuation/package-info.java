@@ -17,7 +17,8 @@
 //
 
 /**
- * Jetty Continuation : Generic Async Servlet Method
+ * Jetty Continuation : <em>DEPRECATED: use Servlet 3.0 {@link javax.servlet.AsyncContext} instead</em>
  */
+@Deprecated
 package org.eclipse.jetty.continuation;
 

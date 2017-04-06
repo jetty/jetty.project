@@ -36,7 +36,9 @@ import javax.servlet.ServletResponseWrapper;
  * This implementation of Continuation is used by {@link ContinuationSupport}
  * when it detects that the application has been deployed in a Servlet 3
  * server.
+ * @deprecated use Servlet 3.0 {@link javax.servlet.AsyncContext} instead
  */
+@Deprecated
 public class Servlet3Continuation implements Continuation, AsyncListener
 {
     // Exception reused for all continuations

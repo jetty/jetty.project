@@ -23,6 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -32,6 +35,7 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
  *
  * A session store that keeps its sessions in memory in a hashmap
  */
+@ManagedObject
 public class DefaultSessionCache extends AbstractSessionCache
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -58,6 +62,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * @return the number of sessions in the cache
      */
+    @ManagedAttribute(value="current sessions in cache", readonly=true)
     public long getSessionsCurrent ()
     {
         return _stats.getCurrent();
@@ -67,6 +72,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * @return the max number of sessions in the cache
      */
+    @ManagedAttribute(value="max sessions in cache", readonly=true)
     public long getSessionsMax()
     {
         return _stats.getMax();
@@ -76,6 +82,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * @return a running total of sessions in the cache
      */
+    @ManagedAttribute(value="total sessions in cache", readonly=true)
     public long getSessionsTotal()
     {
         return _stats.getTotal();
@@ -84,6 +91,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * 
      */
+    @ManagedOperation(value="reset statistics", impact="ACTION")
     public void resetStats()
     {
         _stats.reset();

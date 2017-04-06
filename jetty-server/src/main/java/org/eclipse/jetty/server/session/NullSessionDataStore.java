@@ -21,11 +21,15 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Set;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+
 /**
  * NullSessionDataStore
  *
  * Does not actually store anything, useful for testing.
  */
+@ManagedObject
 public class NullSessionDataStore extends AbstractSessionDataStore
 {
     
@@ -81,6 +85,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
+    @ManagedAttribute(value="does this store serialize sessions", readonly=true)
     @Override
     public boolean isPassivating()
     {

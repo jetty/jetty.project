@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -96,6 +98,7 @@ import org.eclipse.jetty.util.log.Logger;
  *  
  * 
  */
+@ManagedObject
 public class MongoSessionDataStore extends NoSqlSessionDataStore
 {
     
@@ -171,7 +174,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         _dbSessions = collection;
     }
     
-    
+    @ManagedAttribute(value="DBCollection", readonly=true)
     public DBCollection getDBCollection ()
     {
         return _dbSessions;
@@ -695,6 +698,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
+    @ManagedAttribute(value="does store serialize sessions", readonly=true)
     @Override
     public boolean isPassivating()
     {

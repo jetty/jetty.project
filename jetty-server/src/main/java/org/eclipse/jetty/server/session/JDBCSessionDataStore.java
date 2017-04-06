@@ -38,6 +38,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,6 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * Session data stored in database
  */
+@ManagedObject
 public class JDBCSessionDataStore extends AbstractSessionDataStore
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -1020,6 +1023,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
     */
    @Override
+   @ManagedAttribute(value="does this store serialize sessions", readonly=true)
    public boolean isPassivating()
    {
        return true;

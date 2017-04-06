@@ -57,6 +57,7 @@ import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -70,6 +71,7 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
 /**
  * SessionHandler.
  */
+@ManagedObject
 public class SessionHandler extends ScopedHandler
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
