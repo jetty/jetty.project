@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -63,8 +62,6 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
  */
 public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable, Parser.Handler
 {
-    private final AtomicBoolean closed = new AtomicBoolean();
-    
     private class Flusher extends FrameFlusher
     {
         private Flusher(ByteBufferPool bufferPool, int bufferSize, Generator generator, EndPoint endpoint)
@@ -174,35 +171,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    public static class Stats
-    {
-        private AtomicLong countFillInterestedEvents = new AtomicLong(0);
-        private AtomicLong countOnFillableEvents = new AtomicLong(0);
-        private AtomicLong countFillableErrors = new AtomicLong(0);
-
-        public long getFillableErrorCount()
-        {
-            return countFillableErrors.get();
-        }
-
-        public long getFillInterestedCount()
-        {
-            return countFillInterestedEvents.get();
-        }
-
-        public long getOnFillableCount()
-        {
-            return countOnFillableEvents.get();
-        }
-    }
-
-    private enum ReadMode
-    {
-        PARSE,
-        DISCARD,
-        EOF
-    }
-
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
     private static final Logger LOG_OPEN = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_OPEN");
     private static final Logger LOG_CLOSE = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_CLOSE");
@@ -211,7 +179,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
      */
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
-
+    
     private final ByteBufferPool bufferPool;
     private final Scheduler scheduler;
     private final Generator generator;
@@ -219,15 +187,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final WebSocketPolicy policy;
     private final WebSocketBehavior behavior;
     private final AtomicBoolean suspendToken;
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final FrameFlusher flusher;
     private final String id;
     private final ExtensionStack extensionStack;
     private List<ExtensionConfig> extensions;
-    private boolean isFilling;
+    private ByteBuffer networkBuffer;
     private ByteBuffer prefillBuffer;
-    private ReadMode readMode = ReadMode.PARSE;
     private IOState ioState;
-    private Stats stats = new Stats();
     
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {
@@ -343,13 +310,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public void fillInterested()
-    {
-        stats.countFillInterestedEvents.incrementAndGet();
-        super.fillInterested();
-    }
-
-    @Override
     public ByteBufferPool getBufferPool()
     {
         return bufferPool;
@@ -417,21 +377,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return scheduler;
     }
 
-    public Stats getStats()
-    {
-        return stats;
-    }
-
     @Override
     public boolean isOpen()
     {
         return !closed.get();
-    }
-
-    @Override
-    public boolean isReading()
-    {
-        return isFilling;
     }
 
     /**
@@ -505,69 +454,109 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
     
     @Override
-    public void onFrame(Frame frame)
+    public boolean onFrame(Frame frame)
     {
+        AtomicBoolean result = new AtomicBoolean(false);
+        
         extensionStack.incomingFrame(frame, new FrameCallback()
         {
             @Override
-            public void fail(Throwable cause)
-            {
-                // TODO: suspend
-            }
-    
-            @Override
             public void succeed()
             {
-                // TODO: resume
+                parser.release(frame);
+                if(!result.compareAndSet(false,true))
+                {
+                    // callback has been notified asynchronously
+                    fillAndParse();
+                }
+            }
+            
+            @Override
+            public void fail(Throwable cause)
+            {
+                parser.release(frame);
+                
+                // notify session & endpoint
+                notifyError(cause);
             }
         });
+        
+        if(result.compareAndSet(false, true))
+        {
+            // callback hasn't been notified yet
+            return false;
+        }
+        
+        return true;
+    }
+    
+    public void shutdown()
+    {
+        
     }
     
     @Override
     public void onFillable()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable()",behavior);
-        stats.countOnFillableEvents.incrementAndGet();
-
-        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
-
+        networkBuffer = bufferPool.acquire(getInputBufferSize(),true);
+    
+        fillAndParse();
+    }
+    
+    private void fillAndParse()
+    {
         try
         {
-            isFilling = true;
-
-            if(readMode == ReadMode.PARSE)
+            while (true)
             {
-                readMode = readParse(buffer);
+                if (suspendToken.get())
+                {
+                    return;
+                }
+                
+                if (networkBuffer.hasRemaining())
+                {
+                    if (!parser.parse(networkBuffer)) return;
+                }
+                
+                // TODO: flip/fill?
+                
+                int filled = getEndPoint().fill(networkBuffer);
+                
+                if (filled < 0)
+                {
+                    bufferPool.release(networkBuffer);
+                    shutdown();
+                    return;
+                }
+                
+                if (filled == 0)
+                {
+                    bufferPool.release(networkBuffer);
+                    fillInterested();
+                    return;
+                }
+                
+                if (!parser.parse(networkBuffer)) return;
             }
-            else
-            {
-                readMode = readDiscard(buffer);
-            }
         }
-        finally
+        catch (IOException e)
         {
-            bufferPool.release(buffer);
+            LOG.warn(e);
+            close(StatusCode.PROTOCOL,e.getMessage());
         }
-
-        if ((readMode != ReadMode.EOF) && (suspendToken.get() == false))
+        catch (CloseException e)
         {
-            fillInterested();
+            LOG.debug(e);
+            close(e.getStatusCode(),e.getMessage());
         }
-        else
+        catch (Throwable t)
         {
-            isFilling = false;
+            LOG.warn(t);
+            close(StatusCode.ABNORMAL,t.getMessage());
         }
     }
-
-    @Override
-    protected void onFillInterestedFailed(Throwable cause)
-    {
-        LOG.ignore(cause);
-        stats.countFillInterestedEvents.incrementAndGet();
-        super.onFillInterestedFailed(cause);
-    }
-
+    
     /**
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
@@ -583,9 +572,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         prefillBuffer = prefilled;
     }
 
-    private void notifyError(Throwable t)
+    private void notifyError(Throwable cause)
     {
-        extensionStack.incomingError(t);
+        extensionStack.incomingError(cause);
     }
 
     @Override
@@ -643,45 +632,15 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         flusher.enqueue(frame,callback,batchMode);
     }
-
-    private ReadMode readDiscard(ByteBuffer buffer)
-    {
-        EndPoint endPoint = getEndPoint();
-        try
-        {
-            while (true)
-            {
-                int filled = endPoint.fill(buffer);
-                if (filled == 0)
-                {
-                    return ReadMode.DISCARD;
-                }
-                else if (filled < 0)
-                {
-                    if (LOG_CLOSE.isDebugEnabled())
-                        LOG_CLOSE.debug("read - EOF Reached (remote: {})",getRemoteAddress());
-                    return ReadMode.EOF;
-                }
-                else
-                {
-                    if (LOG_CLOSE.isDebugEnabled())
-                        LOG_CLOSE.debug("Discarded {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-            return ReadMode.EOF;
-        }
-        catch (Throwable t)
-        {
-            LOG.ignore(t);
-            return ReadMode.DISCARD;
-        }
-    }
-
-    private ReadMode readParse(ByteBuffer buffer)
+    
+    /**
+     * Read from Endpoint and parse bytes.
+     *
+     * @param buffer
+     * @return
+     */
+    @Deprecated
+    private int readParse(ByteBuffer buffer)
     {
         EndPoint endPoint = getEndPoint();
         try
@@ -694,12 +653,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
                     ioState.onReadFailure(new EOFException("Remote Read EOF"));
-                    return ReadMode.EOF;
+                    return filled;
                 }
                 else if (filled == 0)
                 {
                     // Done reading, wait for next onFillable
-                    return ReadMode.PARSE;
+                    return filled;
                 }
 
                 if (LOG.isDebugEnabled())
@@ -714,33 +673,27 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG.warn(e);
             close(StatusCode.PROTOCOL,e.getMessage());
-            return ReadMode.DISCARD;
+            return -1;
         }
         catch (CloseException e)
         {
             LOG.debug(e);
             close(e.getStatusCode(),e.getMessage());
-            return ReadMode.DISCARD;
+            return -1;
         }
         catch (Throwable t)
         {
             LOG.warn(t);
             close(StatusCode.ABNORMAL,t.getMessage());
-            // TODO: should ws only switch to discard if a non-ws-endpoint error?
-            return ReadMode.DISCARD;
+            return -1;
         }
     }
 
     @Override
     public void resume()
     {
-        if (suspendToken.getAndSet(false))
-        {
-            if (!isReading())
-            {
-                fillInterested();
-            }
-        }
+        suspendToken.set(false);
+        fillAndParse();
     }
 
     /**

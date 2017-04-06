@@ -60,7 +60,11 @@ public class ExtensionTool
             Assert.assertThat("extClass", extClass, notNullValue());
     
             this.capture = new IncomingFramesCapture();
-            this.parser = new UnitParser(policy,frame -> ext.incomingFrame(frame, new FrameCallbackAdapter()));
+            this.parser = new UnitParser(policy, frame ->
+            {
+                ext.incomingFrame(frame, new FrameCallbackAdapter());
+                return true;
+            });
         }
 
         public String getRequestedExtParams()

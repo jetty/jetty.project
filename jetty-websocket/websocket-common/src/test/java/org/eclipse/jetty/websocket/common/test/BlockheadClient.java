@@ -626,9 +626,10 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     }
     
     @Override
-    public void onFrame(Frame frame)
+    public boolean onFrame(Frame frame)
     {
-        // TODO
+        // TODO: do something with frame?
+        return true;
     }
     
     public EventQueue<WebSocketFrame> readFrames(int expectedFrameCount, int timeoutDuration, TimeUnit timeoutUnit) throws Exception
