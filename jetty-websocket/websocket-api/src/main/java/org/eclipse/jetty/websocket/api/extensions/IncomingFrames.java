@@ -25,20 +25,9 @@ import org.eclipse.jetty.websocket.api.FrameCallback;
  */
 public interface IncomingFrames
 {
+    @Deprecated
     void incomingError(Throwable t);
 
-    /**
-     * Process the incoming frame.
-     * <p>
-     * Note: if you need to hang onto any information from the frame, be sure
-     * to copy it, as the information contained in the Frame will be released
-     * and/or reused by the implementation.
-     * 
-     * @param frame the frame to process
-     */
-//    @Deprecated
-//    void incomingFrame(Frame frame);
-    
     /**
      * Process the incoming frame.
      * <p>
@@ -49,16 +38,5 @@ public interface IncomingFrames
      * @param frame the frame to process
      * @param callback the read completion
      */
-    default void incomingFrame(Frame frame, FrameCallback callback)
-    {
-        try
-        {
-            //xincomingFrame(frame);
-            callback.succeed();
-        }
-        catch (Throwable e)
-        {
-            callback.fail(e);
-        }
-    }
+    void incomingFrame(Frame frame, FrameCallback callback);
 }
