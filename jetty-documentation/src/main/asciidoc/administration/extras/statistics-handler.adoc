@@ -34,9 +34,9 @@ Jetty currently has two levels of request statistic collection:
 * Subclasses of `AbstractConnector` class optionally can collect statistics about connections as well as number of requests.
 * The `StatisticsHandler` class may be used to collect request statistics.
 
-In addition to these, subclasses of the `AbstractSessionHandler` class optionally can collect session statistics.
+In addition to these, subclasses of the `SessionHandler` and `DefaultSessionCache` classes optionally can collect session statistics.
 
-`AbstractConnector` and `AbstractSessionHandler` statistics are turned off by default and must either be configured manually for each instance or turned on via JMX interface.
+`AbstractConnector`, `SessionHandler` and `DefaultSessionCache` statistics are turned off by default and must either be configured manually for each instance or turned on via JMX interface.
 The `StatisticsHandler` is not included in default Jetty configuration, and needs to be configured manually.
 
 _____
