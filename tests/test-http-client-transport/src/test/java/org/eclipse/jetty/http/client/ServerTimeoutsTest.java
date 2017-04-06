@@ -69,10 +69,10 @@ public class ServerTimeoutsTest extends AbstractTest
     {
         httpConfig.setDelayDispatchUntilContent(true);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 handlerLatch.countDown();
@@ -311,10 +311,10 @@ public class ServerTimeoutsTest extends AbstractTest
         long blockingTimeout = 2 * idleTimeout;
         httpConfig.setBlockingTimeout(blockingTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
                 {
@@ -370,10 +370,10 @@ public class ServerTimeoutsTest extends AbstractTest
     public void testAsyncReadIdleTimeoutFires() throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -430,10 +430,10 @@ public class ServerTimeoutsTest extends AbstractTest
     public void testAsyncWriteIdleTimeoutFires() throws Exception
     {
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -548,10 +548,10 @@ public class ServerTimeoutsTest extends AbstractTest
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 ServletInputStream input = request.getInputStream();
@@ -623,10 +623,10 @@ public class ServerTimeoutsTest extends AbstractTest
         long idleTimeout = 3 * httpIdleTimeout;
         httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -678,7 +678,7 @@ public class ServerTimeoutsTest extends AbstractTest
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static class BlockingReadHandler extends AbstractHandler
+    private static class BlockingReadHandler extends AbstractHandler.ErrorDispatchHandler
     {
         private final CountDownLatch handlerLatch;
 
@@ -688,7 +688,7 @@ public class ServerTimeoutsTest extends AbstractTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             ServletInputStream input = request.getInputStream();

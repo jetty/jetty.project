@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.server;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +63,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setResumeAfter(25);
-        assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("RESUMED"));
+        Assert.assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("RESUMED"));
     }
 
     @Test(timeout=60000)
@@ -81,7 +77,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         _server.start();
 
         _handler.setSuspendFor(50);
-        assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("TIMEOUT"));
+        Assert.assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("TIMEOUT"));
     }
 
     @Test(timeout=60000)
@@ -96,10 +92,10 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setCompleteAfter(25);
-        assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("COMPLETED"));
+        Assert.assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("COMPLETED"));
     }
 
-    private synchronized String process(String content) throws UnsupportedEncodingException, IOException, InterruptedException
+    private synchronized String process(String content) throws IOException, InterruptedException
     {
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
 
@@ -110,19 +106,17 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         return getResponse(request);
     }
 
-    private String getResponse(String request) throws UnsupportedEncodingException, IOException, InterruptedException
+    private String getResponse(String request) throws IOException, InterruptedException
     {
-        ServerConnector connector = (ServerConnector)_connector;
-
-        try (Socket socket = new Socket((String)null,connector.getLocalPort()))
+        try (Socket socket = new Socket((String)null, _connector.getLocalPort()))
         {
             socket.setSoTimeout(10 * MAX_IDLE_TIME);
-            socket.getOutputStream().write(request.getBytes(UTF_8));
+            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
             InputStream inputStream = socket.getInputStream();
             long start = System.currentTimeMillis();
             String response = IO.toString(inputStream);
             long timeElapsed = System.currentTimeMillis() - start;
-            assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
+            Assert.assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
             return response;
         }
     }
@@ -131,10 +125,10 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     public void testHttpWriteIdleTimeout() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(500);
-        configureServer(new AbstractHandler()
+        configureServer(new AbstractHandler.ErrorDispatchHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
@@ -151,7 +145,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     
         CompletableFuture<Void> responseFuture = CompletableFuture.runAsync(() ->
         {
-            try (InputStreamReader reader = new InputStreamReader(is, UTF_8))
+            try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8))
             {
                 int c;
                 while ((c = reader.read()) != -1)
@@ -196,8 +190,8 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
             requestFuture.get(2, TimeUnit.SECONDS);
             responseFuture.get(3, TimeUnit.SECONDS);
         
-            Assert.assertThat(response.toString(), containsString(" 500 "));
-            Assert.assertThat(response.toString(), Matchers.not(containsString("=========")));
+            Assert.assertThat(response.toString(), Matchers.containsString(" 500 "));
+            Assert.assertThat(response.toString(), Matchers.not(Matchers.containsString("=========")));
         }
     }
 }
