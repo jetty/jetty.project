@@ -44,11 +44,4 @@ public class MessageReader extends InputStreamReader implements MessageSink
     {
         this.stream.accept(frame, callback);
     }
-    
-    // TODO: remove await!
-    @Deprecated
-    public void awaitClose()
-    {
-        stream.awaitClose();
-    }
 }

@@ -49,7 +49,13 @@ public class Parser
 {
     public interface Handler
     {
-        void onFrame(Frame frame);
+        /**
+         * Notification of completely parsed frame.
+         *
+         * @param frame the frame
+         * @return true to continue parsing, false to stop parsing
+         */
+        boolean onFrame(Frame frame);
     }
     
     private enum State
@@ -182,64 +188,42 @@ public class Parser
     {
         return (flagsInUse & 0x10) != 0;
     }
-
-    protected void notifyFrame(final Frame f)
+    
+    public boolean parse(ByteBuffer buffer) throws WebSocketException
     {
-
-        if (policy.getBehavior() == WebSocketBehavior.SERVER)
+        // TODO quick fail, nothing to parse
+        if (!buffer.hasRemaining())
         {
-            /* Parsing on server.
-             * 
-             * Then you MUST make sure all incoming frames are masked!
-             * 
-             * Technically, this test is in violation of RFC-6455, Section 5.1
-             * http://tools.ietf.org/html/rfc6455#section-5.1
-             * 
-             * But we can't trust the client at this point, so Jetty opts to close
-             * the connection as a Protocol error.
-             */
-            if (!f.isMasked())
-            {
-                throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
-            }
+            return true;
         }
-        else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
-        {
-            // Required by RFC-6455 / Section 5.1
-            if (f.isMasked())
-            {
-                throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
-            }
-        }
-
-        this.parserHandler.onFrame(f);
-    }
-
-    public void parse(ByteBuffer buffer) throws WebSocketException
-    {
-        if (buffer.remaining() <= 0)
-        {
-            return;
-        }
+        
         try
         {
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
-                notifyFrame(frame);
+                    LOG.debug("{} Parsed Frame: {}", policy.getBehavior(), frame);
+    
+                assertBehavior();
+    
                 if (frame.isDataFrame())
                 {
                     priorDataFrame = !frame.isFin();
                 }
-                reset();
+    
+                if(!this.parserHandler.onFrame(frame))
+                {
+                    return false;
+                }
             }
+            
+            // completely consumed buffer
+            return true;
         }
         catch (Throwable t)
         {
             buffer.position(buffer.limit()); // consume remaining
-            reset();
             
             // let session know
             WebSocketException wse;
@@ -251,16 +235,42 @@ public class Parser
             throw wse;
         }
     }
-
-    private void reset()
+    
+    private void assertBehavior()
     {
-        if (frame != null)
-            frame.reset();
-        frame = null;
-        bufferPool.release(payload);
-        payload = null;
+        if (policy.getBehavior() == WebSocketBehavior.SERVER)
+        {
+            /* Parsing on server.
+             *
+             * Then you MUST make sure all incoming frames are masked!
+             *
+             * Technically, this test is in violation of RFC-6455, Section 5.1
+             * http://tools.ietf.org/html/rfc6455#section-5.1
+             *
+             * But we can't trust the client at this point, so Jetty opts to close
+             * the connection as a Protocol error.
+             */
+            if (!frame.isMasked())
+            {
+                throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
+            }
+        }
+        else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            // Required by RFC-6455 / Section 5.1
+            if (frame.isMasked())
+            {
+                throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
+            }
+        }
     }
-
+    
+    public void release(Frame frame)
+    {
+        if (frame.hasPayload())
+            bufferPool.release(frame.getPayload());
+    }
+    
     /**
      * Parse the base framing protocol buffer.
      *
@@ -602,17 +612,21 @@ public class Parser
                     payload = bufferPool.acquire(payloadLength,false);
                     BufferUtil.clearToFill(payload);
                 }
+                
                 // Copy the payload.
                 payload.put(window);
 
+                // if the payload is complete
                 if (payload.position() == payloadLength)
                 {
                     BufferUtil.flipToFlush(payload, 0);
                     frame.setPayload(payload);
+                    // notify that frame is complete
                     return true;
                 }
             }
         }
+        // frame not (yet) complete
         return false;
     }
 

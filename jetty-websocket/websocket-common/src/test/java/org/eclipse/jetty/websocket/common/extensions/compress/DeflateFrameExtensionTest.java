@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
@@ -87,7 +86,11 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         // Wire up stack
         ext.setNextIncomingFrames(capture);
 
-        Parser parser = new UnitParser(policy, frame -> ext.incomingFrame(frame, new FrameCallbackAdapter()));
+        Parser parser = new UnitParser(policy, (frame) ->
+        {
+            ext.incomingFrame(frame, new FrameCallback.Adapter());
+            return true;
+        });
         parser.configureFromExtensions(Collections.singletonList(ext));
         parser.parse(ByteBuffer.wrap(raw));
 

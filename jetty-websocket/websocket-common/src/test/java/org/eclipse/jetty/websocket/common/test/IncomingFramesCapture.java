@@ -25,8 +25,6 @@ import java.util.Queue;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -38,7 +36,6 @@ import org.junit.Assert;
 
 public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
 {
-    private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
     private EventQueue<WebSocketFrame> frames = new EventQueue<>();
     private EventQueue<Throwable> errors = new EventQueue<>();
 
@@ -161,10 +158,11 @@ public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
     }
     
     @Override
-    public void onFrame(Frame frame)
+    public boolean onFrame(Frame frame)
     {
         WebSocketFrame copy = WebSocketFrame.copy(frame);
         frames.add(copy);
+        return true;
     }
     
     public int size()

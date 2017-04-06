@@ -127,12 +127,6 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
-    public boolean isReading()
-    {
-        return false;
-    }
-
-    @Override
     public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         callback.succeed();

@@ -90,6 +90,7 @@ public class InputStreamMessageSink implements MessageSink
                     LOG.debug("dispatch complete await() - {}", stream);
                 try
                 {
+                    // TODO: remove
                     dispatchCompleted.await();
                 }
                 catch (InterruptedException e)

@@ -101,7 +101,11 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         this.policy.setMaxTextMessageSize(100000);
         // This is a blockhead server connection, no point tracking leaks on this object.
         this.bufferPool = new MappedByteBufferPool(BUFFER_SIZE);
-        this.parser = new Parser(policy,bufferPool,frame -> extensionStack.incomingFrame(frame, new FrameCallbackAdapter()));
+        this.parser = new Parser(policy,bufferPool, frame ->
+        {
+            extensionStack.incomingFrame(frame, new FrameCallbackAdapter());
+            return true;
+        });
         this.parseCount = new AtomicInteger(0);
         this.generator = new Generator(policy,bufferPool,false);
         this.extensionRegistry = new WebSocketExtensionFactory(new SimpleContainerScope(policy,bufferPool));

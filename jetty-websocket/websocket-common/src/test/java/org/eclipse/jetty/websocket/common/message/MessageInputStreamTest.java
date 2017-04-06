@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
@@ -46,7 +47,7 @@ public class MessageInputStreamTest
     @Rule
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
-    @Test(timeout=10000)
+    @Test(timeout=5000)
     public void testBasicAppendRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -58,9 +59,8 @@ public class MessageInputStreamTest
             stream.accept(frame, new FrameCallback.Adapter());
 
             // Read entire message it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+            byte data[] = IO.readBytes(stream);
+            String message = new String(data,0,data.length,StandardCharsets.UTF_8);
 
             // Test it
             Assert.assertThat("Message",message,is("Hello World"));
@@ -104,9 +104,8 @@ public class MessageInputStreamTest
             startLatch.await();
             
             // Read it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+            byte data[] = IO.readBytes(stream);
+            String message = new String(data,0,data.length,StandardCharsets.UTF_8);
 
             // Test it
             Assert.assertThat("Error when appending",hadError.get(),is(false));
@@ -114,7 +113,7 @@ public class MessageInputStreamTest
         }
     }
 
-    @Test(timeout=10000)
+    @Test(timeout=5000)
     public void testBlockOnReadInitial() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -150,7 +149,7 @@ public class MessageInputStreamTest
         }
     }
 
-    @Test(timeout=10000)
+    @Test(timeout=5000)
     public void testReadByteNoBuffersClosed() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -164,14 +163,10 @@ public class MessageInputStreamTest
                     TimeUnit.MILLISECONDS.sleep(400);
                     stream.close();
                 }
-                catch (InterruptedException e)
+                catch (Throwable t)
                 {
                     hadError.set(true);
-                    e.printStackTrace(System.err);
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace(System.err);
+                    t.printStackTrace(System.err);
                 }
             }).start();
 
@@ -180,12 +175,12 @@ public class MessageInputStreamTest
             // Should be a -1, indicating the end of the stream.
 
             // Test it
-            Assert.assertThat("Error when appending",hadError.get(),is(false));
+            Assert.assertThat("Error when closing",hadError.get(),is(false));
             Assert.assertThat("Initial byte (Should be EOF)",b,is(-1));
         }
     }
     
-    @Test(timeout=10000)
+    @Test(timeout=5000)
     public void testAppendEmptyPayloadRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -201,16 +196,15 @@ public class MessageInputStreamTest
             stream.accept(msg3, new FrameCallback.Adapter());
 
             // Read entire message it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+            byte data[] = IO.readBytes(stream);
+            String message = new String(data,0,data.length,StandardCharsets.UTF_8);
 
             // Test it
             Assert.assertThat("Message",message,is("Hello World"));
         }
     }
     
-    @Test(timeout=10000)
+    @Test(timeout=5000)
     public void testAppendNullPayloadRead() throws IOException
     {
         try (MessageInputStream stream = new MessageInputStream())
@@ -227,9 +221,8 @@ public class MessageInputStreamTest
             stream.accept(msg3, new FrameCallback.Adapter());
 
             // Read entire message it from the stream.
-            byte buf[] = new byte[32];
-            int len = stream.read(buf);
-            String message = new String(buf,0,len,StandardCharsets.UTF_8);
+            byte data[] = IO.readBytes(stream);
+            String message = new String(data,0,data.length,StandardCharsets.UTF_8);
 
             // Test it
             Assert.assertThat("Message",message,is("Hello World"));

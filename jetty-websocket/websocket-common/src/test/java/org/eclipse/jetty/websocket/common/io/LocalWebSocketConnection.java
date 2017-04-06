@@ -162,12 +162,6 @@ public class LocalWebSocketConnection implements LogicalConnection, ConnectionSt
     }
 
     @Override
-    public boolean isReading()
-    {
-        return false;
-    }
-
-    @Override
     public void onConnectionStateChange(ConnectionState state)
     {
         if (LOG.isDebugEnabled())

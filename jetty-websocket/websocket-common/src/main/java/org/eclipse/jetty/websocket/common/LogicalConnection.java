@@ -122,13 +122,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     boolean isOpen();
 
     /**
-     * Tests if the connection is actively reading.
-     * 
-     * @return true if connection is actively attempting to read.
-     */
-    boolean isReading();
-
-    /**
      * Set the maximum number of milliseconds of idleness before the connection is closed/disconnected, (ie no frames are either sent or received)
      * <p>
      * This idle timeout cannot be garunteed to take immediate effect for any active read/write actions.
