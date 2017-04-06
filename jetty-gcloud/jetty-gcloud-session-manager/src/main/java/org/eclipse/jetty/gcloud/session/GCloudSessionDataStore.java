@@ -33,6 +33,8 @@ import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.server.session.UnwriteableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -55,6 +57,7 @@ import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
  *
  *
  */
+@ManagedObject
 public class GCloudSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -410,11 +413,13 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         _namespace = namespace;
     }
     
+    @ManagedAttribute(value="gclound namespace", readonly=true)
     public String getNamespace ()
     {
         return _namespace;
     }
     
+    @ManagedAttribute(value="unit in ms of exponential backoff")
     public int getBackoffMs ()
     {
         return _backoff;
@@ -426,7 +431,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         _maxRetries = retries;
     }
     
-    
+    @ManagedAttribute(value="max number of retries for failed writes")
     public int getMaxRetries ()
     {
         return _maxRetries;
@@ -480,6 +485,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         _dsProvided = true;
     }
     
+    @ManagedAttribute(value="max number of results to return from gcloud searches")
     public int getMaxResults()
     {
         return _maxResults;
@@ -978,6 +984,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
+    @ManagedAttribute(value="does gcloud serialize session data", readonly=true)
     @Override
     public boolean isPassivating()
     {

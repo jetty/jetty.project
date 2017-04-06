@@ -23,6 +23,8 @@ package org.eclipse.jetty.server.session;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
+@ManagedObject
 public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -153,7 +156,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         
         super.doStart();
     }
-
+    
+    
+    @ManagedAttribute(value="interval in secs to prevent too eager session scavenging", readonly=true)
     public int getGracePeriodSec()
     {
         return _gracePeriodSec;
@@ -168,6 +173,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     /**
      * @return the savePeriodSec
      */
+    @ManagedAttribute(value="min secs between saves", readonly=true)
     public int getSavePeriodSec()
     {
         return _savePeriodSec;

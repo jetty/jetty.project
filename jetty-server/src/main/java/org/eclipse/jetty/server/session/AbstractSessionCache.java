@@ -27,6 +27,8 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
@@ -53,6 +55,7 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  * passivated before it is evicted from the cache.
  * 
  */
+@ManagedObject
 public abstract class AbstractSessionCache extends ContainerLifeCycle implements SessionCache
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -257,6 +260,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /** 
      * @see org.eclipse.jetty.server.session.SessionCache#getEvictionPolicy()
      */
+    @ManagedAttribute(value="session eviction policy", readonly=true)
     public int getEvictionPolicy()
     {
         return _evictionPolicy;
@@ -275,7 +279,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         _evictionPolicy = evictionTimeout;
     }
 
-
+    @ManagedAttribute(value="immediately save new sessions", readonly=true)
     @Override
     public boolean isSaveOnCreate()
     {
@@ -293,6 +297,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /**
      * @return true if sessions that can't be loaded are deleted from the store
      */
+    @ManagedAttribute(value="delete unreadable stored sessions", readonly=true)
     @Override
     public boolean isRemoveUnloadableSessions()
     {
@@ -779,6 +784,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @return true if an inactive session will be saved before being evicted
      */
+    @ManagedAttribute(value="save sessions before evicting from cache", readonly=true)
     @Override
     public boolean isSaveOnInactiveEviction ()
     {

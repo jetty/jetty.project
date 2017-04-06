@@ -31,6 +31,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -49,6 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * @see HouseKeeper
  */
+@ManagedObject
 public class DefaultSessionIdManager extends ContainerLifeCycle implements SessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -137,6 +140,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * @return name or null
      */
     @Override
+    @ManagedAttribute(value="unique name for this node", readonly=true)   
     public String getWorkerName()
     {
         return _workerName;

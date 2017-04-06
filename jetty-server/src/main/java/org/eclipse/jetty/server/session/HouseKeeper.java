@@ -22,6 +22,8 @@ package org.eclipse.jetty.server.session;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.SessionIdManager;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * There is 1 session HouseKeeper per SessionIdManager instance.
  *
  */
+@ManagedObject
 public class HouseKeeper extends AbstractLifeCycle
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -238,6 +241,7 @@ public class HouseKeeper extends AbstractLifeCycle
      * 
      * @return the interval (in seconds)
      */
+    @ManagedAttribute(value="secs between scavenge cycles", readonly=true)   
     public long getIntervalSec ()
     {
         return _intervalMs/1000;

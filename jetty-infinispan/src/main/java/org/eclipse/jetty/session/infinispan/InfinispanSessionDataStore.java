@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.infinispan.commons.api.BasicCache;
@@ -36,6 +38,7 @@ import org.infinispan.commons.api.BasicCache;
  *
  *
  */
+@ManagedObject
 public class InfinispanSessionDataStore extends AbstractSessionDataStore
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
@@ -231,6 +234,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     /** 
      * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
      */
+    @ManagedAttribute(value="does store serialize sessions", readonly=true)
     @Override
     public boolean isPassivating()
     {
@@ -307,6 +311,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         _infinispanIdleTimeoutSec = sec;
     }
     
+    
+    @ManagedAttribute(value="infinispan idle timeout sec", readonly=true)
     public int getInfinispanIdleTimeoutSec ()
     {
         return _infinispanIdleTimeoutSec;
