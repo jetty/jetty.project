@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -52,13 +52,13 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
-        nextIncomingFrame(frame);
+        nextIncomingFrame(frame, callback);
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         ByteBuffer payload = frame.getPayload();
         int length = payload != null ? payload.remaining() : 0;
@@ -101,10 +101,10 @@ public class FragmentExtension extends AbstractExtension
     private static class FrameEntry
     {
         private final Frame frame;
-        private final WriteCallback callback;
+        private final FrameCallback callback;
         private final BatchMode batchMode;
 
-        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
+        private FrameEntry(Frame frame, FrameCallback callback, BatchMode batchMode)
         {
             this.frame = frame;
             this.callback = callback;
@@ -118,7 +118,7 @@ public class FragmentExtension extends AbstractExtension
         }
     }
 
-    private class Flusher extends IteratingCallback implements WriteCallback
+    private class Flusher extends IteratingCallback implements FrameCallback
     {
         private FrameEntry current;
         private boolean finished = true;
@@ -180,34 +180,34 @@ public class FragmentExtension extends AbstractExtension
             // The callback are those provided by WriteCallback (implemented
             // below) and even in case of writeFailed() we call succeeded().
         }
-        
+    
         @Override
-        public void writeSuccess()
+        public void succeed()
         {
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
             notifyCallbackSuccess(current.callback);
             succeeded();
         }
-
+    
         @Override
-        public void writeFailed(Throwable x)
+        public void fail(Throwable cause)
         {
             // Notify first, the call succeeded() to drain the queue.
             // We don't want to call failed(x) because that will put
             // this flusher into a final state that cannot be exited,
             // and the failure of a frame may not mean that the whole
             // connection is now invalid.
-            notifyCallbackFailure(current.callback, x);
+            notifyCallbackFailure(current.callback, cause);
             succeeded();
         }
 
-        private void notifyCallbackSuccess(WriteCallback callback)
+        private void notifyCallbackSuccess(FrameCallback callback)
         {
             try
             {
                 if (callback != null)
-                    callback.writeSuccess();
+                    callback.succeed();
             }
             catch (Throwable x)
             {
@@ -216,12 +216,12 @@ public class FragmentExtension extends AbstractExtension
             }
         }
 
-        private void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+        private void notifyCallbackFailure(FrameCallback callback, Throwable failure)
         {
             try
             {
                 if (callback != null)
-                    callback.writeFailed(failure);
+                    callback.fail(failure);
             }
             catch (Throwable x)
             {

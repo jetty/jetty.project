@@ -564,20 +564,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash",response);
         }
-
-        // We can upgrade
-        EndPoint endp = oldConn.getEndPoint();
-
-        WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getScheduler(),localEndpoint.getPolicy(),
-                wsClient.getBufferPool());
-
-        URI requestURI = this.getURI();
-
-        WebSocketSession session = getSessionFactory().createSession(requestURI,localEndpoint,connection);
-        session.setUpgradeRequest(new ClientUpgradeRequest(this));
-        session.setUpgradeResponse(new ClientUpgradeResponse(response));
-        connection.addListener(session);
-
+    
         ExtensionStack extensionStack = new ExtensionStack(getExtensionFactory());
         List<ExtensionConfig> extensions = new ArrayList<>();
         HttpField extField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
@@ -597,12 +584,21 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             }
         }
         extensionStack.negotiate(extensions);
+    
+        // We can upgrade
+        EndPoint endp = oldConn.getEndPoint();
 
-        extensionStack.configure(connection.getParser());
-        extensionStack.configure(connection.getGenerator());
+        WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getScheduler(),wsClient.getPolicy(),
+                wsClient.getBufferPool(), extensionStack);
+
+        URI requestURI = this.getURI();
+
+        WebSocketSession session = getSessionFactory().createSession(requestURI,localEndpoint,connection);
+        session.setUpgradeRequest(new ClientUpgradeRequest(this));
+        session.setUpgradeResponse(new ClientUpgradeResponse(response));
+        connection.addListener(session);
 
         // Setup Incoming Routing
-        connection.setNextIncomingFrames(extensionStack);
         extensionStack.setNextIncoming(session);
 
         // Setup Outgoing Routing

@@ -49,9 +49,11 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.message.MessageSink;
@@ -105,11 +107,11 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             this.messageHandler = messageHandler;
             this.delegateSink = messageSink;
         }
-        
+    
         @Override
-        public void accept(ByteBuffer payload, Boolean fin)
+        public void accept(Frame frame, FrameCallback callback)
         {
-            this.delegateSink.accept(payload, fin);
+            this.delegateSink.accept(frame, callback);
         }
         
         @Override

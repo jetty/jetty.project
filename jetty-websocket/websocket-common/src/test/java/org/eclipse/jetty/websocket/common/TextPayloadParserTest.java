@@ -35,10 +35,15 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TextPayloadParserTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
     @Test
     public void testFrameTooLargeDueToPolicy() throws Exception
     {
@@ -59,13 +64,13 @@ public class TextPayloadParserTest
         MaskedByteBuffer.putMask(buf);
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
-
-        UnitParser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
-        parser.parseQuietly(buf);
+        UnitParser parser = new UnitParser(policy,capture);
+        
+        expectedException.expect(MessageTooLargeException.class);
+        parser.parse(buf);
 
-        capture.assertHasErrors(MessageTooLargeException.class,1);
         capture.assertHasNoFrames();
 
         MessageTooLargeException err = (MessageTooLargeException)capture.getErrors().poll();
@@ -75,7 +80,7 @@ public class TextPayloadParserTest
     @Test
     public void testLongMaskedText() throws Exception
     {
-        StringBuffer sb = new StringBuffer(); ;
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 3500; i++)
         {
             sb.append("Hell\uFF4f Big W\uFF4Frld ");
@@ -97,12 +102,10 @@ public class TextPayloadParserTest
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         policy.setMaxTextMessageSize(100000);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
@@ -111,7 +114,7 @@ public class TextPayloadParserTest
     @Test
     public void testMediumMaskedText() throws Exception
     {
-        StringBuffer sb = new StringBuffer(); ;
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 14; i++)
         {
             sb.append("Hell\uFF4f Medium W\uFF4Frld ");
@@ -132,12 +135,10 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
@@ -169,12 +170,10 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
         WebSocketFrame txt = capture.getFrames().poll();
@@ -197,12 +196,10 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
@@ -223,12 +220,10 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         WebSocketFrame txt = capture.getFrames().poll();
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));

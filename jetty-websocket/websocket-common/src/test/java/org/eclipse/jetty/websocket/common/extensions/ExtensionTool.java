@@ -31,6 +31,7 @@ import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -57,8 +58,9 @@ public class ExtensionTool
             this.extConfig = ExtensionConfig.parse(parameterizedExtension);
             Class<?> extClass = factory.getExtension(extConfig.getName());
             Assert.assertThat("extClass", extClass, notNullValue());
-
-            this.parser = new UnitParser(policy);
+    
+            this.capture = new IncomingFramesCapture();
+            this.parser = new UnitParser(policy,frame -> ext.incomingFrame(frame, new FrameCallbackAdapter()));
         }
 
         public String getRequestedExtParams()
@@ -68,15 +70,12 @@ public class ExtensionTool
 
         public void assertNegotiated(String expectedNegotiation)
         {
-            this.ext = (Extension)factory.newInstance(extConfig);
-
-            this.capture = new IncomingFramesCapture();
+            this.ext = factory.newInstance(extConfig);
             this.ext.setNextIncomingFrames(capture);
 
             this.parser.configureFromExtensions(Collections.singletonList(ext));
-            this.parser.setIncomingFramesHandler(ext);
         }
-
+    
         public void parseIncomingHex(String... rawhex)
         {
             int parts = rawhex.length;

@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,15 +47,16 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
@@ -88,7 +90,8 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
 
     private Map<String, String> extraResponseHeaders = new HashMap<>();
     private OutgoingFrames outgoing = this;
-
+    private ExtensionStack extensionStack;
+    
     public BlockheadServerConnection(Socket socket)
     {
         this.socket = socket;
@@ -98,7 +101,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         this.policy.setMaxTextMessageSize(100000);
         // This is a blockhead server connection, no point tracking leaks on this object.
         this.bufferPool = new MappedByteBufferPool(BUFFER_SIZE);
-        this.parser = new Parser(policy,bufferPool);
+        this.parser = new Parser(policy,bufferPool,frame -> extensionStack.incomingFrame(frame, new FrameCallbackAdapter()));
         this.parseCount = new AtomicInteger(0);
         this.generator = new Generator(policy,bufferPool,false);
         this.extensionRegistry = new WebSocketExtensionFactory(new SimpleContainerScope(policy,bufferPool));
@@ -214,7 +217,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
         LOG.debug("incoming({})",frame);
         int count = parseCount.incrementAndGet();
@@ -222,7 +225,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         {
             LOG.info("Server parsed {} frames",count);
         }
-        incomingFrames.incomingFrame(WebSocketFrame.copy(frame));
+        incomingFrames.incomingFrame(WebSocketFrame.copy(frame), callback);
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
@@ -245,7 +248,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         ByteBuffer headerBuf = generator.generateHeaderBytes(frame);
         if (LOG.isDebugEnabled())
@@ -261,7 +264,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
             out.flush();
             if (callback != null)
             {
-                callback.writeSuccess();
+                callback.succeed();
             }
 
             if (frame.getOpCode() == OpCode.CLOSE)
@@ -273,7 +276,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         {
             if (callback != null)
             {
-                callback.writeFailed(t);
+                callback.fail(t);
             }
         }
     }
@@ -514,7 +517,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         Assert.assertThat("Request: Sec-WebSocket-Key",key,notNullValue());
 
         // collect extensions configured in response header
-        ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
+        extensionStack = new ExtensionStack(extensionRegistry);
         extensionStack.negotiate(extensionConfigs);
 
         // Start with default routing
@@ -534,9 +537,6 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         {
             throw new IOException("Unable to start Extension Stack");
         }
-
-        // Configure Parser
-        parser.setIncomingFramesHandler(extensionStack);
 
         // Setup Response
         StringBuilder resp = new StringBuilder();

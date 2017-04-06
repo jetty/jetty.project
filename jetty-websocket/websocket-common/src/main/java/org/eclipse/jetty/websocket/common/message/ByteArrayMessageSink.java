@@ -19,12 +19,13 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public class ByteArrayMessageSink implements MessageSink
 {
@@ -42,12 +43,13 @@ public class ByteArrayMessageSink implements MessageSink
     }
 
     @Override
-    public void accept(ByteBuffer payload, Boolean fin)
+    public void accept(Frame frame, FrameCallback callback)
     {
         try
         {
-            if (payload != null)
+            if (frame.hasPayload())
             {
+                ByteBuffer payload = frame.getPayload();
                 policy.assertValidBinaryMessageSize(size + payload.remaining());
                 size += payload.remaining();
 
@@ -56,19 +58,25 @@ public class ByteArrayMessageSink implements MessageSink
 
                 BufferUtil.writeTo(payload, out);
             }
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException("Unable to append Binary Message", e);
-        }
-        finally
-        {
-            if (fin)
+    
+            if (frame.isFin())
             {
                 if (out != null)
                     notifyOnMessage(out.toByteArray());
                 else
                     notifyOnMessage(EMPTY_BUFFER);
+            }
+    
+            callback.succeed();
+        }
+        catch (Throwable t)
+        {
+            callback.fail(t);
+        }
+        finally
+        {
+            if (frame.isFin())
+            {
                 // reset
                 out = null;
                 size = 0;
@@ -76,7 +84,7 @@ public class ByteArrayMessageSink implements MessageSink
         }
     }
 
-    protected Object notifyOnMessage(byte buf[])
+    private Object notifyOnMessage(byte buf[])
     {
         return onMessageFunction.apply(buf);
     }

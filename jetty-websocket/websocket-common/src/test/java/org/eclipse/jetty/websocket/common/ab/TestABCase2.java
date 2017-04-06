@@ -39,11 +39,16 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TestABCase2
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
+    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testGenerate125OctetPingCase2_4()
@@ -184,13 +189,11 @@ public class TestABCase2
         expected.put(bytes);
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -214,13 +217,11 @@ public class TestABCase2
         expected.put(bytes);
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -237,13 +238,11 @@ public class TestABCase2
                 { (byte)0x89, (byte)0x00 });
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -268,13 +267,11 @@ public class TestABCase2
         expected.put(messageBytes);
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -311,13 +308,12 @@ public class TestABCase2
         expected.put(bytes);
 
         expected.flip();
-
-        UnitParser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
-        parser.parseQuietly(expected);
+        UnitParser parser = new UnitParser(policy,capture);
 
-        Assert.assertEquals("error should be returned for too large of ping payload",1,capture.getErrorCount(ProtocolException.class));
+        expectedException.expect(ProtocolException.class);
+        parser.parse(expected);
     }
 
 }

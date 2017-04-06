@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+import java.net.URI;
 import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.TestTracker;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
-import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
+import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
@@ -57,7 +58,7 @@ public class MessageOutputStreamTest
 
     private WebSocketPolicy policy;
     private TrackingSocket remoteSocket;
-    private LocalWebSocketSession session;
+    private WebSocketSession session;
     private WebSocketSession remoteSession;
     
     @After
@@ -81,14 +82,18 @@ public class MessageOutputStreamTest
 
         // remote socket
         remoteSocket = new TrackingSocket("remote");
-        remoteSession = new LocalWebSocketSession(containerScope,testname,remoteSocket);
+        URI remoteURI = new URI("ws://localhost/remote");
+        LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(bufferPool);
+        remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
         OutgoingFrames socketPipe = FramePipes.to(remoteSession);
         remoteSession.start();
         remoteSession.open();
 
         // Local Session
         TrackingSocket localSocket = new TrackingSocket("local");
-        session = new LocalWebSocketSession(containerScope,testname,localSocket);
+        URI localURI = new URI("ws://localhost/local");
+        LocalWebSocketConnection localConnection = new LocalWebSocketConnection(bufferPool);
+        session = new WebSocketSession(containerScope,localURI,localSocket,localConnection);
 
         // talk to our remote socket
         session.setOutgoingHandler(socketPipe);
@@ -98,7 +103,7 @@ public class MessageOutputStreamTest
         session.open();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void testMultipleWrites() throws Exception
     {
         try (MessageOutputStream stream = new MessageOutputStream(session))
@@ -112,8 +117,8 @@ public class MessageOutputStreamTest
         String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,allOf(containsString("byte[11]"),containsString("Hello World")));
     }
-
-    @Test
+    
+    @Test(timeout = 2000)
     public void testSingleWrite() throws Exception
     {
         try (MessageOutputStream stream = new MessageOutputStream(session))
@@ -125,8 +130,8 @@ public class MessageOutputStreamTest
         String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,allOf(containsString("byte[11]"),containsString("Hello World")));
     }
-
-    @Test
+    
+    @Test(timeout = 2000)
     public void testWriteMultipleBuffers() throws Exception
     {
         int bufsize = (int)(policy.getMaxBinaryMessageBufferSize() * 2.5);

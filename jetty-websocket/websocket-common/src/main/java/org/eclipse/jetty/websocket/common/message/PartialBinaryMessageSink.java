@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.nio.ByteBuffer;
 import java.util.function.Function;
+
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public class PartialBinaryMessageSink implements MessageSink
 {
@@ -31,8 +33,16 @@ public class PartialBinaryMessageSink implements MessageSink
     }
     
     @Override
-    public void accept(ByteBuffer payload, Boolean fin)
+    public void accept(Frame frame, FrameCallback callback)
     {
-        onBinaryFunction.apply(new PartialBinaryMessage(payload,fin));
+        try
+        {
+            onBinaryFunction.apply(new PartialBinaryMessage(frame.getPayload(), frame.isFin()));
+            callback.succeed();
+        }
+        catch(Throwable t)
+        {
+            callback.fail(t);
+        }
     }
 }

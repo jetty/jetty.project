@@ -54,8 +54,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -88,7 +88,7 @@ import org.junit.Assert;
  * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
  * scope.
  */
-public class BlockheadClient implements OutgoingFrames, ConnectionStateListener, AutoCloseable, IBlockheadClient
+public class BlockheadClient implements OutgoingFrames, ConnectionStateListener, AutoCloseable, IBlockheadClient, Parser.Handler
 {
     private class FrameReadingThread extends Thread implements Runnable, IncomingFrames
     {
@@ -167,7 +167,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
 
         @Override
-        public synchronized void incomingFrame(Frame frame)
+        public synchronized void incomingFrame(Frame frame, FrameCallback callback)
         {
             this.frames.add(WebSocketFrame.copy(frame));
         }
@@ -231,7 +231,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         // This is a blockhead client, no point tracking leaks on this object.
         this.bufferPool = new MappedByteBufferPool(8192);
         this.generator = new Generator(policy,bufferPool);
-        this.parser = new Parser(policy,bufferPool);
+        this.parser = new Parser(policy,bufferPool,this);
 
         this.extensionFactory = new WebSocketExtensionFactory(new SimpleContainerScope(policy,bufferPool));
         this.ioState = new IOState();
@@ -435,7 +435,6 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
 
         // configure parser
-        parser.setIncomingFramesHandler(extensionStack);
         ioState.onOpened();
 
         LOG.debug("outgoing = {}",outgoing);
@@ -591,7 +590,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         ByteBuffer headerBuf = generator.generateHeaderBytes(frame);
         if (LOG.isDebugEnabled())
@@ -605,14 +604,14 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
             out.flush();
             if (callback != null)
             {
-                callback.writeSuccess();
+                callback.succeed();
             }
         }
         catch (IOException e)
         {
             if (callback != null)
             {
-                callback.writeFailed(e);
+                callback.fail(e);
             }
         }
         finally
@@ -625,7 +624,13 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
             disconnect();
         }
     }
-
+    
+    @Override
+    public void onFrame(Frame frame)
+    {
+        // TODO
+    }
+    
     public EventQueue<WebSocketFrame> readFrames(int expectedFrameCount, int timeoutDuration, TimeUnit timeoutUnit) throws Exception
     {
         frameReader.frames.awaitEventCount(expectedFrameCount,timeoutDuration,timeoutUnit);

@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -383,12 +384,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         // Forward Errors to User WebSocket Object
         endpointFunctions.onError(t);
     }
-
+    
     /**
-     * Incoming Raw Frames from Parser
+     * Incoming Raw Frames from Parser (after ExtensionStack)
      */
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
@@ -396,6 +397,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             Thread.currentThread().setContextClassLoader(classLoader);
             if (connection.getIOState().isInputAvailable())
             {
+                // For endpoints that want to see raw frames.
+                // These are immutable.
                 endpointFunctions.onFrame(frame);
 
                 byte opcode = frame.getOpCode();
@@ -409,6 +412,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
                         // process handshake
                         getConnection().getIOState().onCloseRemote(close);
+                        callback.succeed();
 
                         return;
                     }
@@ -430,6 +434,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                         }
 
                         endpointFunctions.onPing(frame.getPayload());
+                        callback.succeed();
 
                         getRemote().sendPong(pongBuf);
                         break;
@@ -440,23 +445,24 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                             LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
 
                         endpointFunctions.onPong(frame.getPayload());
+                        callback.succeed();
                         break;
                     }
                     case OpCode.BINARY:
                     {
-                        endpointFunctions.onBinary(frame.getPayload(), frame.isFin());
+                        endpointFunctions.onBinary(frame, callback);
                         return;
                     }
                     case OpCode.TEXT:
                     {
-                        endpointFunctions.onText(frame.getPayload(), frame.isFin());
+                        endpointFunctions.onText(frame, callback);
                         return;
                     }
                     case OpCode.CONTINUATION:
                     {
-                        endpointFunctions.onContinuation(frame.getPayload(), frame.isFin());
+                        endpointFunctions.onContinuation(frame, callback);
                         if (activeMessageSink != null)
-                            activeMessageSink.accept(frame.getPayload(), frame.isFin());
+                            activeMessageSink.accept(frame, callback);
 
                         return;
                     }
@@ -475,6 +481,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
         catch (NotUtf8Exception e)
         {
+            callback.fail(e);
             notifyError(e);
             close(StatusCode.BAD_PAYLOAD, e.getMessage());
         }
@@ -487,9 +494,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             Throwable cause = getInvokedCause(t);
 
             LOG.warn("Unhandled Error (closing connection)", cause);
-
+    
+            callback.fail(cause);
+            
             notifyError(cause);
-
+            
             // Unhandled Error, close the connection.
             switch (getPolicy().getBehavior())
             {

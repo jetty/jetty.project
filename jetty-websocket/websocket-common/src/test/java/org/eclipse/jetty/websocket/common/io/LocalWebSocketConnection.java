@@ -26,12 +26,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
@@ -39,14 +38,13 @@ import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection implements LogicalConnection, IncomingFrames, ConnectionStateListener
+public class LocalWebSocketConnection implements LogicalConnection, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(LocalWebSocketConnection.class);
     private final String id;
     private final ByteBufferPool bufferPool;
     private final Executor executor;
     private WebSocketPolicy policy;
-    private IncomingFrames incoming;
     private IOState ioState = new IOState();
 
     public LocalWebSocketConnection(ByteBufferPool bufferPool)
@@ -127,11 +125,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
         return 0;
     }
 
-    public IncomingFrames getIncoming()
-    {
-        return incoming;
-    }
-
     @Override
     public IOState getIOState()
     {
@@ -160,18 +153,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     public InetSocketAddress getRemoteAddress()
     {
         return null;
-    }
-
-    @Override
-    public void incomingError(Throwable e)
-    {
-        incoming.incomingError(e);
-    }
-
-    @Override
-    public void incomingFrame(Frame frame)
-    {
-        incoming.incomingFrame(frame);
     }
 
     @Override
@@ -217,7 +198,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
     }
 
@@ -229,12 +210,6 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public void setMaxIdleTimeout(long ms)
     {
-    }
-
-    @Override
-    public void setNextIncomingFrames(IncomingFrames incoming)
-    {
-        this.incoming = incoming;
     }
 
     public void setPolicy(WebSocketPolicy policy)

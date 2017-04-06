@@ -33,8 +33,10 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
@@ -101,7 +103,7 @@ public class JsrEndpointFunctions_OnMessage_TextTest
         endpointFunctions.onOpen(newSession(socket));
         
         ByteBuffer payload = BufferUtil.toBuffer(msg, StandardCharsets.UTF_8);
-        endpointFunctions.onText(payload, true);
+        endpointFunctions.onText(new TextFrame().setPayload(payload).setFin(true), new FrameCallback.Adapter());
     }
 
     private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception

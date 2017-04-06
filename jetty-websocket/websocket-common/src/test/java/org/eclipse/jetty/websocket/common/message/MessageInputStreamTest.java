@@ -27,7 +27,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -48,9 +52,10 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append a single message (simple, short)
-            ByteBuffer payload = BufferUtil.toBuffer("Hello World",StandardCharsets.UTF_8);
-            boolean fin = true;
-            stream.accept(payload,fin);
+            TextFrame frame = new TextFrame();
+            frame.setPayload("Hello World");
+            frame.setFin(true);
+            stream.accept(frame, new FrameCallback.Adapter());
 
             // Read entire message it from the stream.
             byte buf[] = new byte[32];
@@ -80,14 +85,12 @@ public class MessageInputStreamTest
                     try
                     {
                         startLatch.countDown();
-                        boolean fin = false;
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(BufferUtil.toBuffer("Saved",StandardCharsets.UTF_8),fin);
+                        stream.accept(new BinaryFrame().setPayload("Saved").setFin(false), new FrameCallback.Adapter());
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(BufferUtil.toBuffer(" by ",StandardCharsets.UTF_8),fin);
-                        fin = true;
+                        stream.accept(new ContinuationFrame().setPayload(" by ").setFin(false), new FrameCallback.Adapter());
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(BufferUtil.toBuffer("Zero",StandardCharsets.UTF_8),fin);
+                        stream.accept(new ContinuationFrame().setPayload("Zero").setFin(true), new FrameCallback.Adapter());
                     }
                     catch (InterruptedException e)
                     {
@@ -125,10 +128,9 @@ public class MessageInputStreamTest
                 {
                     try
                     {
-                        boolean fin = true;
                         // wait for a little bit before populating buffers
                         TimeUnit.MILLISECONDS.sleep(400);
-                        stream.accept(BufferUtil.toBuffer("I will conquer",StandardCharsets.UTF_8),fin);
+                        stream.accept(new BinaryFrame().setPayload("I will conquer").setFin(true), new FrameCallback.Adapter());
                     }
                     catch (InterruptedException e)
                     {
@@ -189,13 +191,14 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append parts of message
-            ByteBuffer msg1 = BufferUtil.toBuffer("Hello ",StandardCharsets.UTF_8);
-            ByteBuffer msg2 = ByteBuffer.allocate(0); // what is being tested
-            ByteBuffer msg3 = BufferUtil.toBuffer("World",StandardCharsets.UTF_8);
+            WebSocketFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
+            // what is being tested (an empty payload)
+            WebSocketFrame msg2 = new ContinuationFrame().setPayload(new byte[0]).setFin(false);
+            WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
             
-            stream.accept(msg1,false);
-            stream.accept(msg2,false);
-            stream.accept(msg3,true);
+            stream.accept(msg1, new FrameCallback.Adapter());
+            stream.accept(msg2, new FrameCallback.Adapter());
+            stream.accept(msg3, new FrameCallback.Adapter());
 
             // Read entire message it from the stream.
             byte buf[] = new byte[32];
@@ -213,13 +216,15 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append parts of message
-            ByteBuffer msg1 = BufferUtil.toBuffer("Hello ",StandardCharsets.UTF_8);
-            ByteBuffer msg2 = null; // what is being tested
-            ByteBuffer msg3 = BufferUtil.toBuffer("World",StandardCharsets.UTF_8);
+            WebSocketFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
+            // what is being tested (a null payload)
+            ByteBuffer nilPayload = null;
+            WebSocketFrame msg2 = new ContinuationFrame().setPayload(nilPayload).setFin(false);
+            WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
             
-            stream.accept(msg1,false);
-            stream.accept(msg2,false);
-            stream.accept(msg3,true);
+            stream.accept(msg1, new FrameCallback.Adapter());
+            stream.accept(msg2, new FrameCallback.Adapter());
+            stream.accept(msg3, new FrameCallback.Adapter());
 
             // Read entire message it from the stream.
             byte buf[] = new byte[32];

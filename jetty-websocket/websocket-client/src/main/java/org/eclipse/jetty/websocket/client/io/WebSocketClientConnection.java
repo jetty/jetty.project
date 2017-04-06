@@ -25,13 +25,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 /**
@@ -41,9 +41,9 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
     private final Masker masker;
 
-    public WebSocketClientConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy websocketPolicy, ByteBufferPool bufferPool)
+    public WebSocketClientConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy websocketPolicy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {
-        super(endp,executor,scheduler,websocketPolicy,bufferPool);
+        super(endp,executor,scheduler,websocketPolicy,bufferPool, extensionStack);
         this.masker = new RandomMasker();
     }
 
@@ -63,18 +63,12 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
      * Override to set the masker.
      */
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         if (frame instanceof WebSocketFrame)
         {
             masker.setMask((WebSocketFrame)frame);
         }
         super.outgoingFrame(frame,callback, batchMode);
-    }
-
-    @Override
-    public void setNextIncomingFrames(IncomingFrames incoming)
-    {
-        getParser().setIncomingFramesHandler(incoming);
     }
 }

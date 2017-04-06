@@ -59,6 +59,9 @@ public class WebSocketPolicy
      * Default: 32768 (32 K)
      */
     private int maxTextMessageBufferSize = 32 * KB;
+    
+    private int maxTextFramePayloadSize; // TODO
+    private int maxBinaryFramePayloadSize; // TODO
 
     /**
      * The maximum size of a binary message during parsing/generating.

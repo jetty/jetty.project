@@ -40,9 +40,8 @@ public class RFC6455ExamplesParserTest
     public void testFragmentedUnmaskedTextMessage()
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
 
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
@@ -88,9 +87,8 @@ public class RFC6455ExamplesParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -112,9 +110,8 @@ public class RFC6455ExamplesParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -143,9 +140,8 @@ public class RFC6455ExamplesParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -182,9 +178,8 @@ public class RFC6455ExamplesParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -213,9 +208,8 @@ public class RFC6455ExamplesParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
         capture.assertNoErrors();
@@ -237,9 +231,8 @@ public class RFC6455ExamplesParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
         capture.assertNoErrors();

@@ -28,14 +28,9 @@ import org.eclipse.jetty.websocket.common.Parser;
 
 public class UnitParser extends Parser
 {
-    public UnitParser()
+    public UnitParser(WebSocketPolicy policy, Parser.Handler handler)
     {
-        this(WebSocketPolicy.newServerPolicy());
-    }
-
-    public UnitParser(WebSocketPolicy policy)
-    {
-        super(policy,new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+        super(policy,new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()),handler);
     }
 
     private void parsePartial(ByteBuffer buf, int numBytes)
@@ -52,6 +47,7 @@ public class UnitParser extends Parser
      * Use if you know the parse will cause an exception and just don't wnat to make the test console all noisy.
      * @param buf the buffer to parse
      */
+    @Deprecated
     public void parseQuietly(ByteBuffer buf)
     {
         try (StacklessLogging suppress = new StacklessLogging(Parser.class))

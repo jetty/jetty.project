@@ -100,8 +100,8 @@ public class MessageWriterTest
         // open connection
         session.open();
     }
-
-    @Test
+    
+    @Test(timeout = 2000)
     public void testMultipleWrites() throws Exception
     {
         try (MessageWriter stream = new MessageWriter(session))
@@ -115,8 +115,8 @@ public class MessageWriterTest
         String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,is("Hello World"));
     }
-
-    @Test
+    
+    @Test(timeout = 20000)
     public void testSingleWrite() throws Exception
     {
         try (MessageWriter stream = new MessageWriter(session))
@@ -128,8 +128,8 @@ public class MessageWriterTest
         String msg = remoteSocket.messageQueue.poll();
         Assert.assertThat("Message",msg,is("Hello World"));
     }
-
-    @Test
+    
+    @Test(timeout = 2000)
     public void testWriteMultipleBuffers() throws Exception
     {
         int bufsize = (int)(policy.getMaxTextMessageBufferSize() * 2.5);
