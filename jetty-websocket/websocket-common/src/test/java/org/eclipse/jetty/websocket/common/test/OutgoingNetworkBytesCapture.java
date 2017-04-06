@@ -29,7 +29,7 @@ import java.util.Locale;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -63,7 +63,7 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         ByteBuffer buf = ByteBuffer.allocate(Generator.MAX_HEADER_LENGTH + frame.getPayloadLength());
         generator.generateWholeFrame(frame,buf);
@@ -71,7 +71,7 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
         captured.add(buf);
         if (callback != null)
         {
-            callback.writeSuccess();
+            callback.succeed();
         }
     }
 }

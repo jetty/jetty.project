@@ -27,19 +27,22 @@ import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
 
-public class IncomingFramesCapture implements IncomingFrames
+public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
 {
     private static final Logger LOG = Log.getLogger(IncomingFramesCapture.class);
     private EventQueue<WebSocketFrame> frames = new EventQueue<>();
     private EventQueue<Throwable> errors = new EventQueue<>();
 
+    @Deprecated
     public void assertErrorCount(int expectedCount)
     {
         Assert.assertThat("Captured error count",errors.size(),is(expectedCount));
@@ -63,6 +66,7 @@ public class IncomingFramesCapture implements IncomingFrames
         Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
     }
 
+    @Deprecated
     public void assertHasErrors(Class<? extends WebSocketException> errorType, int expectedCount)
     {
         Assert.assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
@@ -84,6 +88,7 @@ public class IncomingFramesCapture implements IncomingFrames
         Assert.assertThat("Frame count",frames.size(),is(0));
     }
 
+    @Deprecated
     public void assertNoErrors()
     {
         Assert.assertThat("Error count",errors.size(),is(0));
@@ -105,6 +110,7 @@ public class IncomingFramesCapture implements IncomingFrames
         }
     }
 
+    @Deprecated
     public int getErrorCount(Class<? extends Throwable> errorType)
     {
         int count = 0;
@@ -118,6 +124,7 @@ public class IncomingFramesCapture implements IncomingFrames
         return count;
     }
 
+    @Deprecated
     public Queue<Throwable> getErrors()
     {
         return errors;
@@ -140,23 +147,26 @@ public class IncomingFramesCapture implements IncomingFrames
     {
         return frames;
     }
-
+    
     @Override
-    public void incomingError(Throwable e)
+    public void incomingError(Throwable t)
     {
-        LOG.debug(e);
-        errors.add(e);
+        errors.add(t);
     }
-
+    
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
+    {
+        onFrame(frame);
+    }
+    
+    @Override
+    public void onFrame(Frame frame)
     {
         WebSocketFrame copy = WebSocketFrame.copy(frame);
-        // TODO: might need to make this optional (depending on use by client vs server tests)
-        // Assert.assertThat("frame.masking must be set",frame.isMasked(),is(true));
         frames.add(copy);
     }
-
+    
     public int size()
     {
         return frames.size();

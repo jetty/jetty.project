@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.api.extensions;
 
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 
 /**
  * Interface for dealing with frames outgoing to (eventually) the network layer.
@@ -39,6 +39,5 @@ public interface OutgoingFrames
      * @param callback  the callback to notify when the frame is written.
      * @param batchMode the batch mode requested by the sender.
      */
-    void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode);
-
+    void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode);
 }

@@ -18,23 +18,22 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.nio.ByteBuffer;
-import java.util.function.BiConsumer;
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Sink consumer for messages (used for multiple frames with continuations, 
  * and also to allow for streaming APIs)
  */
-public interface MessageSink extends BiConsumer<ByteBuffer, Boolean>
+public interface MessageSink
 {
     /**
      * Consume the frame payload to the message.
      * 
-     * @param payload
-     *            the frame payload to append.
-     * @param fin
-     *            flag indicating if this is the final part of the message or not.
+     * @param frame
+     *            the frame, its payload (and fin state) to append
+     * @param callback
+     *            the callback for how the frame was consumed
      */
-    @Override
-    void accept(ByteBuffer payload, Boolean fin);
+    void accept(Frame frame, FrameCallback callback);
 }

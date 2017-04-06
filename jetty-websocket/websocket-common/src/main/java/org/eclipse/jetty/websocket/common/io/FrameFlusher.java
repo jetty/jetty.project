@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -249,11 +249,11 @@ public class FrameFlusher
     private class FrameEntry
     {
         private final Frame frame;
-        private final WriteCallback callback;
+        private final FrameCallback callback;
         private final BatchMode batchMode;
         private ByteBuffer headerBuffer;
 
-        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
+        private FrameEntry(Frame frame, FrameCallback callback, BatchMode batchMode)
         {
             this.frame = Objects.requireNonNull(frame);
             this.callback = callback;
@@ -332,7 +332,7 @@ public class FrameFlusher
         }
     }
 
-    public void enqueue(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void enqueue(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         if (closed.get())
         {
@@ -382,13 +382,13 @@ public class FrameFlusher
         flusher.iterate();
     }
 
-    protected void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+    protected void notifyCallbackFailure(FrameCallback callback, Throwable failure)
     {
         try
         {
             if (callback != null)
             {
-                callback.writeFailed(failure);
+                callback.fail(failure);
             }
         }
         catch (Throwable x)
@@ -398,13 +398,13 @@ public class FrameFlusher
         }
     }
 
-    protected void notifyCallbackSuccess(WriteCallback callback)
+    protected void notifyCallbackSuccess(FrameCallback callback)
     {
         try
         {
             if (callback != null)
             {
-                callback.writeSuccess();
+                callback.succeed();
             }
         }
         catch (Throwable x)

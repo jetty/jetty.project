@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.extensions;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 
@@ -43,7 +44,7 @@ public class DummyIncomingFrames implements IncomingFrames
     }
 
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
         LOG.debug("incomingFrame({})",frame);
     }

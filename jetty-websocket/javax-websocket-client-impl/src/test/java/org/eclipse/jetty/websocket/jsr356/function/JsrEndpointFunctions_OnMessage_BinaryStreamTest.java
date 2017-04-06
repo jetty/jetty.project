@@ -31,9 +31,10 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
@@ -130,7 +131,7 @@ public class JsrEndpointFunctions_OnMessage_BinaryStreamTest
     {
         TrackingSocket socket = performOnMessageInvocation(new MessageStreamSocket(), (endpoint) ->
         {
-            endpoint.onBinary(BufferUtil.toBuffer("Hello World", StandardCharsets.UTF_8), true);
+            endpoint.onBinary(new BinaryFrame().setPayload("Hello World").setFin(true), new FrameCallback.Adapter());
             return null;
         });
         socket.assertEvent("onMessage(MessageInputStream) = \"Hello World\"");

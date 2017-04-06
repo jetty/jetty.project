@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -39,12 +38,18 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TestABCase7_3
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
+    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testCase7_3_1GenerateEmptyClose()
@@ -73,19 +78,15 @@ public class TestABCase7_3
 
         expected.flip();
 
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
-
     }
-
 
     @Test(expected = ProtocolException.class)
     public void testCase7_3_2Generate1BytePayloadClose()
@@ -100,17 +101,13 @@ public class TestABCase7_3
     public void testCase7_3_2Parse1BytePayloadClose()
     {
         ByteBuffer expected = Hex.asByteBuffer("880100");
-
-        UnitParser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
-        parser.parseQuietly(expected);
-
-        Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
-
-        ProtocolException known = (ProtocolException)capture.getErrors().poll();
-
-        Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid close frame payload length"));
+        UnitParser parser = new UnitParser(policy,capture);
+    
+        expectedException.expect(ProtocolException.class);
+        expectedException.expectMessage(CoreMatchers.containsString("Invalid close frame payload length"));
+        parser.parse(expected);
     }
 
     @Test
@@ -139,20 +136,16 @@ public class TestABCase7_3
                 { (byte)0x88, (byte)0x02, 0x03, (byte)0xe8  });
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(2));
-
     }
-
 
     @Test
     public void testCase7_3_4GenerateCloseWithStatusReason()
@@ -196,18 +189,15 @@ public class TestABCase7_3
         expected.putShort((short)1000);
         expected.put(messageBytes);
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(messageBytes.length + 2));
-
     }
 
 
@@ -265,18 +255,15 @@ public class TestABCase7_3
 
         expected.put(messageBytes);
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(125));
-
     }
 
     @Test(expected = ProtocolException.class)
@@ -334,16 +321,12 @@ public class TestABCase7_3
         expected.put(messageBytes); // reason
 
         expected.flip();
-
-        UnitParser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
-        parser.parseQuietly(expected);
-
-        Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
-
-        ProtocolException known = (ProtocolException)capture.getErrors().poll();
-
-        Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid control frame payload length"));
+        UnitParser parser = new UnitParser(policy,capture);
+    
+        expectedException.expect(ProtocolException.class);
+        expectedException.expectMessage(CoreMatchers.containsString("Invalid control frame payload length"));
+        parser.parse(expected);
     }
 }

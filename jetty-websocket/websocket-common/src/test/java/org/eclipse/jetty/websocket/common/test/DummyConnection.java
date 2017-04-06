@@ -25,11 +25,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.io.IOState;
 
@@ -134,9 +133,9 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
-        callback.writeSuccess();
+        callback.succeed();
     }
 
     @Override
@@ -147,13 +146,6 @@ public class DummyConnection implements LogicalConnection
     @Override
     public void setMaxIdleTimeout(long ms)
     {
-    }
-
-    @Override
-    public void setNextIncomingFrames(IncomingFrames incoming)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("setNextIncomingFrames({})", incoming);
     }
 
     @Override

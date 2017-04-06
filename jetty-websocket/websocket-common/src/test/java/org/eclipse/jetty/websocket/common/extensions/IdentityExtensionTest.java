@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
@@ -52,7 +53,7 @@ public class IdentityExtensionTest
         ext.setNextIncomingFrames(capture);
 
         Frame frame = new TextFrame().setPayload("hello");
-        ext.incomingFrame(frame);
+        ext.incomingFrame(frame, new FrameCallbackAdapter());
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.TEXT, 1);

@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -65,12 +66,12 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
         saveFrame(frame,false);
         try
         {
-            nextIncomingFrame(frame);
+            nextIncomingFrame(frame, callback);
         }
         catch (Throwable t)
         {
@@ -81,7 +82,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         saveFrame(frame,true);
         try

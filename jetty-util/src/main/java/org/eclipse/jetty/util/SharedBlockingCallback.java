@@ -29,7 +29,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * Provides a reusable {@link Callback} that can block the thread
@@ -168,6 +167,7 @@ public class SharedBlockingCallback
                 }
                 else
                 {
+                    cause.printStackTrace(System.err);
                     throw new IllegalStateException(_state);
                 }
             }

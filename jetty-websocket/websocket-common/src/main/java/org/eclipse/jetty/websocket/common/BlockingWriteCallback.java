@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
@@ -39,7 +39,7 @@ public class BlockingWriteCallback extends SharedBlockingCallback
         return new WriteBlocker(acquire());
     }
     
-    public static class WriteBlocker implements WriteCallback, Callback, AutoCloseable
+    public static class WriteBlocker implements FrameCallback, Callback, AutoCloseable
     {
         private final Blocker blocker;
         
@@ -54,15 +54,15 @@ public class BlockingWriteCallback extends SharedBlockingCallback
             // The callback does not block, only the writer blocks
             return InvocationType.NON_BLOCKING;
         }
-        
+    
         @Override
-        public void writeFailed(Throwable x)
+        public void fail(Throwable cause)
         {
-            blocker.failed(x);
+            blocker.failed(cause);
         }
-
+    
         @Override
-        public void writeSuccess()
+        public void succeed()
         {
             blocker.succeeded();
         }

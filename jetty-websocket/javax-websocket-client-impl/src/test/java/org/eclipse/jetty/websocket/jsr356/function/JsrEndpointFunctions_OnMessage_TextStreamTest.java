@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.function;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -31,9 +30,10 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
@@ -130,7 +130,7 @@ public class JsrEndpointFunctions_OnMessage_TextStreamTest
     {
         TrackingSocket socket = performOnMessageInvocation(new MessageStreamSocket(), (endpoint) ->
         {
-            endpoint.onText(BufferUtil.toBuffer("Hello World", StandardCharsets.UTF_8), true);
+            endpoint.onText(new TextFrame().setPayload("Hello World").setFin(true), new FrameCallback.Adapter());
             return null;
         });
         socket.assertEvent("onMessage(MessageReader) = \"Hello World\"");

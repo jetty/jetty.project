@@ -31,7 +31,9 @@ import javax.websocket.DeploymentException;
 import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -125,9 +127,11 @@ public class JsrSessionTest
         session.addMessageHandler(String.class, (msg) -> received.add(msg));
         
         session.open();
+    
+        FrameCallback callback = new FrameCallbackAdapter();
         
-        session.incomingFrame(new TextFrame().setPayload("G'day").setFin(true));
-        session.incomingFrame(new TextFrame().setPayload("Hello World").setFin(true));
+        session.incomingFrame(new TextFrame().setPayload("G'day").setFin(true), callback);
+        session.incomingFrame(new TextFrame().setPayload("Hello World").setFin(true), callback);
         
         assertThat("Received msgs", received.size(), is(2));
         assertThat("Received Message[0]", received.get(0), is("G'day"));
@@ -155,8 +159,10 @@ public class JsrSessionTest
         
         session.open();
         
-        session.incomingFrame(new BinaryFrame().setPayload("G'day").setFin(false));
-        session.incomingFrame(new ContinuationFrame().setPayload(" World").setFin(true));
+        FrameCallback callback = new FrameCallbackAdapter();
+        
+        session.incomingFrame(new BinaryFrame().setPayload("G'day").setFin(false), callback);
+        session.incomingFrame(new ContinuationFrame().setPayload(" World").setFin(true), callback);
         
         assertThat("Received partial", received.size(), is(2));
         assertThat("Received Message[0].buffer", BufferUtil.toUTF8String((ByteBuffer) received.get(0)[0]), is("G'day"));

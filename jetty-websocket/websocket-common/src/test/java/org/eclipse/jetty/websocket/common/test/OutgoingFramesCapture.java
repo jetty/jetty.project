@@ -18,20 +18,20 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
@@ -87,7 +87,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         frames.add(WebSocketFrame.copy(frame));
         // Consume bytes
@@ -96,7 +96,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
         // notify callback
         if (callback != null)
         {
-            callback.writeSuccess();
+            callback.succeed();
         }
     }
 }

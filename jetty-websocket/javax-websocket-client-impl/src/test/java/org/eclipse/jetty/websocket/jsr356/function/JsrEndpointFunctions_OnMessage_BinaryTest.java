@@ -34,8 +34,10 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.test.DummyConnection;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
@@ -107,7 +109,7 @@ public class JsrEndpointFunctions_OnMessage_BinaryTest
         // This invocation is the same for all tests
         ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));
         expectedBuffer = BufferUtil.toDetailString(byteBuffer);
-        endpointFunctions.onBinary(byteBuffer, true);
+        endpointFunctions.onBinary(new BinaryFrame().setPayload(byteBuffer).setFin(true), new FrameCallback.Adapter());
         socket.assertEvent(String.format(expectedEventFormat, args));
     }
     

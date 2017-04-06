@@ -39,12 +39,13 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
+import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
@@ -86,10 +87,8 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         // Wire up stack
         ext.setNextIncomingFrames(capture);
 
-        Parser parser = new UnitParser(policy);
+        Parser parser = new UnitParser(policy, frame -> ext.incomingFrame(frame, new FrameCallbackAdapter()));
         parser.configureFromExtensions(Collections.singletonList(ext));
-        parser.setIncomingFramesHandler(ext);
-
         parser.parse(ByteBuffer.wrap(raw));
 
         int len = expectedTextDatas.length;
@@ -410,11 +409,11 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         clientExtension.setNextOutgoingFrames(new OutgoingFrames()
         {
             @Override
-            public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+            public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
             {
                 LOG.debug("outgoingFrame({})", frame);
-                serverExtension.incomingFrame(frame);
-                callback.writeSuccess();
+                serverExtension.incomingFrame(frame, callback);
+                callback.succeed();
             }
         });
 
@@ -422,7 +421,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         serverExtension.setNextIncomingFrames(new IncomingFrames()
         {
             @Override
-            public void incomingFrame(Frame frame)
+            public void incomingFrame(Frame frame, FrameCallback callback)
             {
                 LOG.debug("incomingFrame({})", frame);
                 try

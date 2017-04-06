@@ -53,9 +53,8 @@ public class ClosePayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
         capture.assertNoErrors();

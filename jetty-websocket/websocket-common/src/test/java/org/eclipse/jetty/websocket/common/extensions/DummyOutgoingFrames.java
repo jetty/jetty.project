@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.common.extensions;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.junit.rules.TestName;
@@ -45,12 +45,12 @@ public class DummyOutgoingFrames implements OutgoingFrames
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         LOG.debug("outgoingFrame({},{})",frame,callback);
         if (callback != null)
         {
-            callback.writeSuccess();
+            callback.succeed();
         }
     }
 

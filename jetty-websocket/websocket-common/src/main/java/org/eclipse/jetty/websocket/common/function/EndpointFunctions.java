@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.function;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 
@@ -39,11 +40,11 @@ public interface EndpointFunctions<T> extends LifeCycle
 
     void onError(Throwable cause);
 
-    void onText(ByteBuffer payload, boolean fin);
+    void onText(Frame frame, FrameCallback callback);
 
-    void onBinary(ByteBuffer payload, boolean fin);
+    void onBinary(Frame frame, FrameCallback callback);
     
-    void onContinuation(ByteBuffer payload, boolean fin);
+    void onContinuation(Frame frame, FrameCallback callback);
     
     void onPing(ByteBuffer payload);
 

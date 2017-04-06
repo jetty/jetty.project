@@ -19,8 +19,10 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Support class for reading a (single) WebSocket TEXT message via a Reader.
@@ -38,11 +40,13 @@ public class MessageReader extends InputStreamReader implements MessageSink
     }
     
     @Override
-    public void accept(ByteBuffer payload, Boolean fin)
+    public void accept(Frame frame, FrameCallback callback)
     {
-        this.stream.accept(payload, fin);
+        this.stream.accept(frame, callback);
     }
-
+    
+    // TODO: remove await!
+    @Deprecated
     public void awaitClose()
     {
         stream.awaitClose();

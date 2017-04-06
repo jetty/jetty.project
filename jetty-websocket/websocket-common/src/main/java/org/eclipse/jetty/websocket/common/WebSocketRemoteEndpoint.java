@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -299,7 +300,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     }
 
-    public void uncheckedSendFrame(WebSocketFrame frame, WriteCallback callback)
+    public void uncheckedSendFrame(WebSocketFrame frame, FrameCallback callback)
     {
         try
         {
@@ -311,7 +312,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
         catch (IOException e)
         {
-            callback.writeFailed(e);
+            callback.fail(e);
         }
     }
 

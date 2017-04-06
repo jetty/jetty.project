@@ -26,14 +26,14 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 public class WebSocketServerConnection extends AbstractWebSocketConnection implements Connection.UpgradeTo
 {
-    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {
-        super(endp,executor,scheduler,policy,bufferPool);
+        super(endp,executor,scheduler,policy,bufferPool,extensionStack);
     }
     
     @Override
@@ -46,11 +46,5 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection imple
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
-    }
-    
-    @Override
-    public void setNextIncomingFrames(IncomingFrames incoming)
-    {
-        getParser().setIncomingFramesHandler(incoming);
     }
 }

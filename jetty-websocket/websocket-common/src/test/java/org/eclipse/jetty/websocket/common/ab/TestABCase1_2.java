@@ -323,10 +323,9 @@ public class TestABCase1_2
         }
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -357,10 +356,9 @@ public class TestABCase1_2
         }
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -391,10 +389,9 @@ public class TestABCase1_2
         }
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -425,10 +422,9 @@ public class TestABCase1_2
         }
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -461,9 +457,8 @@ public class TestABCase1_2
         expected.flip();
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         policy.setMaxBinaryMessageSize(length);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -498,9 +493,8 @@ public class TestABCase1_2
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         policy.setMaxBinaryMessageSize(length);
-        Parser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
         capture.assertNoErrors();
@@ -521,10 +515,9 @@ public class TestABCase1_2
                 { (byte)0x82, (byte)0x00 });
 
         expected.flip();
-
-        Parser parser = new UnitParser(policy);
+    
         IncomingFramesCapture capture = new IncomingFramesCapture();
-        parser.setIncomingFramesHandler(capture);
+        Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
         capture.assertNoErrors();

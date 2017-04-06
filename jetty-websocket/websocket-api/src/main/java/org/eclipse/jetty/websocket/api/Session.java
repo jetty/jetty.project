@@ -107,7 +107,7 @@ public interface Session extends Closeable
      * 
      * @return the local side address
      */
-    public InetSocketAddress getLocalAddress();
+    InetSocketAddress getLocalAddress();
 
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
@@ -136,7 +136,7 @@ public interface Session extends Closeable
      * 
      * @return the remote side address
      */
-    public InetSocketAddress getRemoteAddress();
+    InetSocketAddress getRemoteAddress();
 
     /**
      * Get the UpgradeRequest used to create this session
@@ -157,7 +157,7 @@ public interface Session extends Closeable
      * 
      * @return whether the session is open
      */
-    abstract boolean isOpen();
+    boolean isOpen();
 
     /**
      * Return true if and only if the underlying socket is using a secure transport.

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.Reader;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -27,6 +26,8 @@ import java.util.function.Function;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public class ReaderMessageSink implements MessageSink
 {
@@ -43,7 +44,7 @@ public class ReaderMessageSink implements MessageSink
     }
     
     @Override
-    public void accept(ByteBuffer payload, Boolean fin)
+    public void accept(Frame frame, FrameCallback callback)
     {
         try
         {
@@ -55,7 +56,7 @@ public class ReaderMessageSink implements MessageSink
                 first = true;
             }
             
-            stream.accept(payload, fin);
+            stream.accept(frame, callback);
             if (first)
             {
                 dispatchCompleted = new CountDownLatch(1);
@@ -84,7 +85,7 @@ public class ReaderMessageSink implements MessageSink
         finally
         {
             //noinspection Duplicates
-            if (fin)
+            if (frame.isFin())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("dispatch complete await() - {}", stream);

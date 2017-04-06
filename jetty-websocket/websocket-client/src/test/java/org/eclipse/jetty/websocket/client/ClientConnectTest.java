@@ -450,15 +450,16 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-                if(OS.IS_WINDOWS) 
-                {
-                        // On windows, this is a SocketTimeoutException
-                        assertExpectedError(e, wsocket, SocketTimeoutException.class);
-                } else
-                {
-                    // Expected path - java.net.ConnectException
-                    assertExpectedError(e,wsocket,ConnectException.class);
-                }
+            if (OS.IS_WINDOWS)
+            {
+                // On windows, this is a SocketTimeoutException
+                assertExpectedError(e, wsocket, SocketTimeoutException.class);
+            }
+            else
+            {
+                // Expected path - java.net.ConnectException
+                assertExpectedError(e, wsocket, ConnectException.class);
+            }
         }
     }
 

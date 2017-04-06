@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -54,15 +55,16 @@ import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
  * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link org.eclipse.jetty.io.Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable, Parser.Handler
 {
     private final AtomicBoolean closed = new AtomicBoolean();
-
+    
     private class Flusher extends FrameFlusher
     {
         private Flusher(ByteBufferPool bufferPool, int bufferSize, Generator generator, EndPoint endpoint)
@@ -219,14 +221,15 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final AtomicBoolean suspendToken;
     private final FrameFlusher flusher;
     private final String id;
+    private final ExtensionStack extensionStack;
     private List<ExtensionConfig> extensions;
     private boolean isFilling;
     private ByteBuffer prefillBuffer;
     private ReadMode readMode = ReadMode.PARSE;
     private IOState ioState;
     private Stats stats = new Stats();
-
-    public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    
+    public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {
         super(endp,executor);
         this.id = String.format("%s:%d->%s:%d",
@@ -237,8 +240,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.policy = policy;
         this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
+        this.extensionStack = extensionStack;
+    
         this.generator = new Generator(policy,bufferPool);
-        this.parser = new Parser(policy,bufferPool);
+        this.parser = new Parser(policy,bufferPool,this);
         this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
         this.suspendToken = new AtomicBoolean(false);
@@ -247,6 +252,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.flusher = new Flusher(bufferPool,policy.getMaxBinaryMessageBufferSize(),generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
+        
+        this.extensionStack.setPolicy(this.policy);
+        this.extensionStack.configure(this.parser);
+        this.extensionStack.configure(this.generator);
     }
     
     @Override
@@ -494,7 +503,26 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 break;
         }
     }
-
+    
+    @Override
+    public void onFrame(Frame frame)
+    {
+        extensionStack.incomingFrame(frame, new FrameCallback()
+        {
+            @Override
+            public void fail(Throwable cause)
+            {
+                // TODO: suspend
+            }
+    
+            @Override
+            public void succeed()
+            {
+                // TODO: resume
+            }
+        });
+    }
+    
     @Override
     public void onFillable()
     {
@@ -557,7 +585,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     private void notifyError(Throwable t)
     {
-        getParser().getIncomingFramesHandler().incomingError(t);
+        extensionStack.incomingError(t);
     }
 
     @Override
@@ -606,7 +634,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Frame from API, User, or Internal implementation destined for network.
      */
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         if (LOG.isDebugEnabled())
         {
@@ -678,6 +706,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
                 }
+                
                 parser.parse(buffer);
             }
         }
@@ -697,7 +726,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG.warn(t);
             close(StatusCode.ABNORMAL,t.getMessage());
-            // TODO: should probably only switch to discard if a non-ws-endpoint error
+            // TODO: should ws only switch to discard if a non-ws-endpoint error?
             return ReadMode.DISCARD;
         }
     }
@@ -745,7 +774,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             getEndPoint().setIdleTimeout(ms);
         }
     }
-
+    
     @Override
     public SuspendToken suspend()
     {

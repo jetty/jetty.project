@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.api;
 /**
  * Callback for Write events.
  */
-public interface WriteCallback
+public interface WriteCallback extends FrameCallback
 {
     /*
      * NOTE: We don't expose org.eclipse.jetty.util.Callback here as that would complicate matters with the WebAppContext's classloader isolation.
@@ -35,7 +35,7 @@ public interface WriteCallback
      * @param x
      *            the reason for the write failure
      */
-    public void writeFailed(Throwable x);
+    void writeFailed(Throwable x);
 
     /**
      * <p>
@@ -44,5 +44,17 @@ public interface WriteCallback
      * 
      * @see #writeFailed(Throwable)
      */
-    public abstract void writeSuccess();
+    void writeSuccess();
+    
+    @Override
+    default void fail(Throwable cause)
+    {
+        writeFailed(cause);
+    }
+    
+    @Override
+    default void succeed()
+    {
+        writeSuccess();
+    }
 }

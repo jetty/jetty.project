@@ -32,7 +32,6 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
@@ -48,6 +47,11 @@ import org.eclipse.jetty.websocket.common.io.payload.PayloadProcessor;
  */
 public class Parser
 {
+    public interface Handler
+    {
+        void onFrame(Frame frame);
+    }
+    
     private enum State
     {
         START,
@@ -61,6 +65,7 @@ public class Parser
     private static final Logger LOG = Log.getLogger(Parser.class);
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
+    private final Parser.Handler parserHandler;
 
     // State specific
     private State state = State.START;
@@ -86,14 +91,13 @@ public class Parser
      */
     private byte flagsInUse=0x00;
     
-    private IncomingFrames incomingFramesHandler;
-
-    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
+    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool, Parser.Handler parserHandler)
     {
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
+        this.parserHandler = parserHandler;
     }
-
+    
     private void assertSanePayloadLength(long len)
     {
         if (LOG.isDebugEnabled()) {
@@ -124,9 +128,13 @@ public class Parser
                 }
                 break;
             case OpCode.TEXT:
+                // Quick failure for frames that already exceed messages size limits
+                // TODO:  based on buffer limits
                 policy.assertValidTextMessageSize((int)len);
                 break;
             case OpCode.BINARY:
+                // Quick failure for frames that already exceed messages size limits
+                // TODO:  based on buffer limits
                 policy.assertValidBinaryMessageSize((int)len);
                 break;
         }
@@ -155,11 +163,6 @@ public class Parser
         }
     }
 
-    public IncomingFrames getIncomingFramesHandler()
-    {
-        return incomingFramesHandler;
-    }
-
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -182,8 +185,6 @@ public class Parser
 
     protected void notifyFrame(final Frame f)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} Notify {}",policy.getBehavior(),getIncomingFramesHandler());
 
         if (policy.getBehavior() == WebSocketBehavior.SERVER)
         {
@@ -211,33 +212,7 @@ public class Parser
             }
         }
 
-        if (incomingFramesHandler == null)
-        {
-            return;
-        }
-        try
-        {
-            incomingFramesHandler.incomingFrame(f);
-        }
-        catch (WebSocketException e)
-        {
-            notifyWebSocketException(e);
-        }
-        catch (Throwable t)
-        {
-            LOG.warn(t);
-            notifyWebSocketException(new WebSocketException(t));
-        }
-    }
-
-    protected void notifyWebSocketException(WebSocketException e)
-    {
-        LOG.warn(e);
-        if (incomingFramesHandler == null)
-        {
-            return;
-        }
-        incomingFramesHandler.incomingError(e);
+        this.parserHandler.onFrame(f);
     }
 
     public void parse(ByteBuffer buffer) throws WebSocketException
@@ -261,24 +236,19 @@ public class Parser
                 reset();
             }
         }
-        catch (WebSocketException e)
-        {
-            buffer.position(buffer.limit()); // consume remaining
-            reset();
-            // let session know
-            notifyWebSocketException(e);
-            // need to throw for proper close behavior in connection
-            throw e;
-        }
         catch (Throwable t)
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
+            
             // let session know
-            WebSocketException e = new WebSocketException(t);
-            notifyWebSocketException(e);
-            // need to throw for proper close behavior in connection
-            throw e;
+            WebSocketException wse;
+            if(t instanceof WebSocketException)
+                wse = (WebSocketException) t;
+            else
+                wse = new WebSocketException(t);
+                
+            throw wse;
         }
     }
 
@@ -293,14 +263,10 @@ public class Parser
 
     /**
      * Parse the base framing protocol buffer.
-     * <p>
-     * Note the first byte (fin,rsv1,rsv2,rsv3,opcode) are parsed by the {@link Parser#parse(ByteBuffer)} method
-     * <p>
-     * Not overridable
-     * 
+     *
      * @param buffer
      *            the buffer to parse from.
-     * @return true if done parsing base framing protocol and ready for parsing of the payload. false if incomplete parsing of base framing protocol.
+     * @return true if done parsing a whole frame. false if incomplete/partial parsing of frame.
      */
     private boolean parseFrame(ByteBuffer buffer)
     {
@@ -650,30 +616,16 @@ public class Parser
         return false;
     }
 
-    public void setIncomingFramesHandler(IncomingFrames incoming)
-    {
-        this.incomingFramesHandler = incoming;
-    }
-
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
         builder.append("Parser@").append(Integer.toHexString(hashCode()));
-        builder.append("[");
-        if (incomingFramesHandler == null)
-        {
-            builder.append("NO_HANDLER");
-        }
-        else
-        {
-            builder.append(incomingFramesHandler.getClass().getSimpleName());
-        }
+        builder.append("[").append(policy.getBehavior());
         builder.append(",s=").append(state);
         builder.append(",c=").append(cursor);
         builder.append(",len=").append(payloadLength);
         builder.append(",f=").append(frame);
-        // builder.append(",p=").append(policy);
         builder.append("]");
         return builder.toString();
     }

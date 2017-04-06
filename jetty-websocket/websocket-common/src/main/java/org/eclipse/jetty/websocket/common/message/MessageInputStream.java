@@ -27,12 +27,13 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
- * Support class for reading a (single) WebSocket BINARY message via a InputStream.
+ * Support class for reading a WebSocket BINARY message via a InputStream.
  * <p>
  * An InputStream that can access a queue of ByteBuffer payloads, along with expected InputStream blocking behavior.
  * </p>
@@ -40,15 +41,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class MessageInputStream extends InputStream implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(MessageInputStream.class);
-    private static final ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
+    private static final FrameCallbackBuffer EOF = new FrameCallbackBuffer(new FrameCallback.Adapter(), ByteBuffer.allocate(0).asReadOnlyBuffer());
 
-    private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
+    private final BlockingDeque<FrameCallbackBuffer> buffers = new LinkedBlockingDeque<>();
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final long timeoutMs;
     private final CountDownLatch closedLatch = new CountDownLatch(1);
 
-    private ByteBuffer activeBuffer = null;
+    private FrameCallbackBuffer activeBuffer = null;
 
     public MessageInputStream()
     {
@@ -61,16 +62,17 @@ public class MessageInputStream extends InputStream implements MessageSink
     }
     
     @Override
-    public void accept(ByteBuffer payload, Boolean fin)
+    public void accept(Frame frame, FrameCallback callback)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(payload));
+            LOG.debug("Appending {}", frame);
         }
 
         // If closed, we should just toss incoming payloads into the bit bucket.
         if (closed.get())
         {
+            callback.fail(new IOException("Already Closed"));
             return;
         }
 
@@ -79,22 +81,29 @@ public class MessageInputStream extends InputStream implements MessageSink
         // be processed after this method returns.
         try
         {
-            if (payload == null)
+            if (!frame.hasPayload())
             {
                 // skip if no payload
+                callback.succeed();
                 return;
             }
+            
+            ByteBuffer payload = frame.getPayload();
 
             int capacity = payload.remaining();
             if (capacity <= 0)
             {
                 // skip if no payload data to copy
+                callback.succeed();
                 return;
             }
+            
             // TODO: the copy buffer should be pooled too, but no buffer pool available from here.
             ByteBuffer copy = payload.isDirect() ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
             copy.put(payload).flip();
-            buffers.put(copy);
+            buffers.put(new FrameCallbackBuffer(callback,copy));
+            
+            // TODO: backpressure
         }
         catch (InterruptedException e)
         {
@@ -102,7 +111,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         }
         finally
         {
-            if (fin)
+            if (frame.isFin())
             {
                 buffers.offer(EOF);
             }
@@ -145,13 +154,14 @@ public class MessageInputStream extends InputStream implements MessageSink
             }
 
             // grab a fresh buffer
-            while (activeBuffer == null || !activeBuffer.hasRemaining())
+            while (activeBuffer == null || !activeBuffer.buffer.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Waiting {} ms to read", timeoutMs);
                 if (timeoutMs < 0)
                 {
                     // Wait forever until a buffer is available.
+                    // TODO: notify connection to resume (if paused)
                     activeBuffer = buffers.take();
                 }
                 else
@@ -177,7 +187,7 @@ public class MessageInputStream extends InputStream implements MessageSink
                 }
             }
 
-            return activeBuffer.get() & 0xFF;
+            return activeBuffer.buffer.get() & 0xFF;
         }
         catch (InterruptedException x)
         {
@@ -195,6 +205,8 @@ public class MessageInputStream extends InputStream implements MessageSink
         throw new IOException("reset() not supported");
     }
 
+    // TODO: remove await!
+    @Deprecated
     public void awaitClose()
     {
         try

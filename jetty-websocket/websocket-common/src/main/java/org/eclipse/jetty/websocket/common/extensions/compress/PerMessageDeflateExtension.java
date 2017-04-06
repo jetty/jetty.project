@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -52,7 +52,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
         // Incoming frames are always non concurrent because
         // they are read and parsed with a single thread, and
@@ -67,7 +67,7 @@ public class PerMessageDeflateExtension extends CompressExtension
 
         if (OpCode.isControlFrame(frame.getOpCode()) || !incomingCompressed)
         {
-            nextIncomingFrame(frame);
+            nextIncomingFrame(frame, callback);
             return;
         }
         
@@ -82,7 +82,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 decompress(accumulator, TAIL_BYTES_BUF.slice());
             }
             
-            forwardIncoming(frame, accumulator);
+            forwardIncoming(frame, callback, accumulator);
         }
         catch (DataFormatException e)
         {
@@ -94,7 +94,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    protected void nextIncomingFrame(Frame frame)
+    protected void nextIncomingFrame(Frame frame, FrameCallback callback)
     {
         if (frame.isFin() && !incomingContextTakeover)
         {
@@ -102,11 +102,11 @@ public class PerMessageDeflateExtension extends CompressExtension
             decompressCount.set(0);
             getInflater().reset();
         }
-        super.nextIncomingFrame(frame);
+        super.nextIncomingFrame(frame, callback);
     }
 
     @Override
-    protected void nextOutgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    protected void nextOutgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         if (frame.isFin() && !outgoingContextTakeover)
         {

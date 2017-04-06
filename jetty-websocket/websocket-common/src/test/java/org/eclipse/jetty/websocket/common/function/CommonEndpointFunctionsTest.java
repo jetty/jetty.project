@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
@@ -41,6 +42,8 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -108,7 +111,7 @@ public class CommonEndpointFunctionsTest
         {
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hello?", UTF8), true);
+            endpointFunctions.onText(new TextFrame().setPayload("Hello?").setFin(true), new FrameCallback.Adapter());
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
@@ -143,7 +146,7 @@ public class CommonEndpointFunctionsTest
         {
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hello Text", UTF8), true);
+            endpointFunctions.onText(new TextFrame().setPayload("Hello Text").setFin(true), new FrameCallback.Adapter());
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
@@ -188,7 +191,7 @@ public class CommonEndpointFunctionsTest
         {
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hello Text Stream", UTF8), true);
+            endpointFunctions.onText(new TextFrame().setPayload("Hello Text Stream").setFin(true), new FrameCallback.Adapter());
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
@@ -209,10 +212,10 @@ public class CommonEndpointFunctionsTest
         {
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hel"), false);
-            endpointFunctions.onText(BufferUtil.toBuffer("lo "), false);
-            endpointFunctions.onText(BufferUtil.toBuffer("Wor"), false);
-            endpointFunctions.onText(BufferUtil.toBuffer("ld"), true);
+            endpointFunctions.onText(new TextFrame().setPayload("Hel").setFin(false), new FrameCallback.Adapter());
+            endpointFunctions.onText(new ContinuationFrame().setPayload("lo ").setFin(false), new FrameCallback.Adapter());
+            endpointFunctions.onText(new ContinuationFrame().setPayload("Wor").setFin(false), new FrameCallback.Adapter());
+            endpointFunctions.onText(new ContinuationFrame().setPayload("ld").setFin(true), new FrameCallback.Adapter());
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 
@@ -248,9 +251,9 @@ public class CommonEndpointFunctionsTest
         {
             // Trigger Events
             endpointFunctions.onOpen(session);
-            endpointFunctions.onText(BufferUtil.toBuffer("Hello"), false);
-            endpointFunctions.onText(BufferUtil.toBuffer(" "), false);
-            endpointFunctions.onText(BufferUtil.toBuffer("World"), true);
+            endpointFunctions.onText(new TextFrame().setPayload("Hello").setFin(false), new FrameCallback.Adapter());
+            endpointFunctions.onText(new ContinuationFrame().setPayload(" ").setFin(false), new FrameCallback.Adapter());
+            endpointFunctions.onText(new ContinuationFrame().setPayload("World").setFin(true), new FrameCallback.Adapter());
             endpointFunctions.onClose(new CloseInfo(StatusCode.NORMAL, "Normal"));
         }
 

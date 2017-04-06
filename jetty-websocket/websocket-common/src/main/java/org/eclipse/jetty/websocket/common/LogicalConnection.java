@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.io.IOState;
 
@@ -38,7 +37,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @see org.eclipse.jetty.websocket.api.StatusCode
      * @see #close(int, String)
      */
-    public void close();
+    void close();
 
     /**
      * Send a websocket Close frame, with status code.
@@ -51,7 +50,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      *            the (optional) reason. (can be null for no reason)
      * @see org.eclipse.jetty.websocket.api.StatusCode
      */
-    public void close(int statusCode, String reason);
+    void close(int statusCode, String reason);
 
     /**
      * Terminate the connection (no close frame sent)
@@ -75,7 +74,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * 
      * @return the idle timeout in milliseconds
      */
-    public long getIdleTimeout();
+    long getIdleTimeout();
 
     /**
      * Get the IOState of the connection.
@@ -120,7 +119,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * 
      *  @return true if connection is open
      */
-    public boolean isOpen();
+    boolean isOpen();
 
     /**
      * Tests if the connection is actively reading.
@@ -141,16 +140,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     void setMaxIdleTimeout(long ms);
 
     /**
-     * Set where the connection should send the incoming frames to.
-     * <p>
-     * Often this is from the Parser to the start of the extension stack, and eventually on to the session.
-     * 
-     * @param incoming
-     *            the incoming frames handler
-     */
-    void setNextIncomingFrames(IncomingFrames incoming);
-
-    /**
      * Suspend a the incoming read events on the connection.
      * @return the suspend token
      */
@@ -160,5 +149,5 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Get Unique ID for the Connection
      * @return the unique ID for the connection
      */
-    public String getId();
+    String getId();
 }

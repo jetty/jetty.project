@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 
 public class PartialTextMessageSink implements MessageSink
@@ -35,16 +36,21 @@ public class PartialTextMessageSink implements MessageSink
     }
 
     @Override
-    public void accept(ByteBuffer payload, Boolean fin)
+    public void accept(Frame frame, FrameCallback callback)
     {
-        String partialText = utf8Partial.toPartialString(payload);
+        String partialText = utf8Partial.toPartialString(frame.getPayload());
         try
         {
-            onTextFunction.apply(new PartialTextMessage(partialText,fin));
+            onTextFunction.apply(new PartialTextMessage(partialText,frame.isFin()));
+            callback.succeed();
+        }
+        catch(Throwable t)
+        {
+            callback.fail(t);
         }
         finally
         {
-            if (fin)
+            if (frame.isFin())
                 utf8Partial.reset();
         }
     }

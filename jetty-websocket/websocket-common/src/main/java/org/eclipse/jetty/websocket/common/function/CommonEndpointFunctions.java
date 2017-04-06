@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
@@ -702,42 +703,42 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     }
     
     @Override
-    public void onText(ByteBuffer payload, boolean fin)
+    public void onText(Frame frame, FrameCallback callback)
     {
         assertIsStarted();
         
         if (activeMessageSink == null)
             activeMessageSink = onTextSink;
         
-        acceptMessage(payload, fin);
+        acceptMessage(frame, callback);
     }
     
     @Override
-    public void onBinary(ByteBuffer payload, boolean fin)
+    public void onBinary(Frame frame, FrameCallback callback)
     {
         assertIsStarted();
         
         if (activeMessageSink == null)
             activeMessageSink = onBinarySink;
         
-        acceptMessage(payload, fin);
+        acceptMessage(frame, callback);
     }
     
     @Override
-    public void onContinuation(ByteBuffer payload, boolean fin)
+    public void onContinuation(Frame frame, FrameCallback callback)
     {
-        acceptMessage(payload, fin);
+        acceptMessage(frame, callback);
     }
     
-    private void acceptMessage(ByteBuffer payload, boolean fin)
+    private void acceptMessage(Frame frame, FrameCallback callback)
     {
         // No message sink is active
         if (activeMessageSink == null)
             return;
         
         // Accept the payload into the message sink
-        activeMessageSink.accept(payload, fin);
-        if (fin)
+        activeMessageSink.accept(frame, callback);
+        if (frame.isFin())
             activeMessageSink = null;
     }
     

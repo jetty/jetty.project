@@ -25,7 +25,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 public class StringMessageSink implements MessageSink
 {
@@ -42,13 +44,14 @@ public class StringMessageSink implements MessageSink
         this.onMessageFunction = onMessageFunction;
         this.size = 0;
     }
-
+    
     @SuppressWarnings("Duplicates")
     @Override
-    public void accept(ByteBuffer payload, Boolean fin)
+    public void accept(Frame frame, FrameCallback callback)
     {
-        if (payload != null)
+        if (frame.hasPayload())
         {
+            ByteBuffer payload = frame.getPayload();
             policy.assertValidTextMessageSize(size + payload.remaining());
             size += payload.remaining();
 
@@ -62,13 +65,15 @@ public class StringMessageSink implements MessageSink
             utf.append(payload);
         }
 
-        if (fin)
+        if (frame.isFin())
         {
             // notify event
             if (utf != null)
                 onMessageFunction.apply(utf.toString());
             else
                 onMessageFunction.apply("");
+            
+            callback.succeed();
             // reset
             size = 0;
             utf = null;
