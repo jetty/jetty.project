@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -30,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.RequestDispatcher;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -53,7 +51,6 @@ import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
-
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
@@ -345,21 +342,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ERROR_DISPATCH:
                     {
-                        if (_response.isCommitted())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform Error Dispatch because the response is already committed, aborting");
-                            _transport.abort((Throwable)_request.getAttribute(ERROR_EXCEPTION));
-                        }
-                        else
+                        try
                         {
                             _response.reset();
-                            Integer icode = (Integer)_request.getAttribute(ERROR_STATUS_CODE);
+                            Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
-                            _request.setAttribute(ERROR_STATUS_CODE,code);
+                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,code);
                             if (icode==null)
-                                _request.setAttribute(ERROR_STATUS_CODE,code);
+                                _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,code);
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
 
@@ -372,6 +363,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             {
                                 _request.setDispatcherType(null);
                             }
+                        }
+                        catch (Throwable x)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Could not perform ERROR dispatch, aborting", x);
+                            _transport.abort((Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION));
                         }
                         break;
                     }
@@ -515,34 +512,25 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         try
         {
+            _state.onError(failure);
+        }
+        catch (Throwable e)
+        {
             try
             {
-                _state.onError(failure);
+                failure.addSuppressed(e);
+                LOG.warn("ERROR dispatch failed", failure);
+                // Try to send a minimal response.
+                Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                _response.reset();
+                _response.setStatus(code == null ? 500 : code);
+                _response.flushBuffer();
             }
-            catch (Exception e)
+            catch (Throwable x)
             {
-                LOG.warn(e);
-                // Error could not be handled, probably due to error thrown from error dispatch
-                if (_response.isCommitted())
-                {
-                    LOG.warn("ERROR Dispatch failed: ",failure);
-                    _transport.abort(failure);
-                }
-                else
-                {
-                    // Minimal response
-                    Integer code=(Integer)_request.getAttribute(ERROR_STATUS_CODE);
-                    _response.reset();
-                    _response.setStatus(code == null ? 500 : code);
-                    _response.flushBuffer();
-                }
+                failure.addSuppressed(x);
+                _transport.abort(failure);
             }
-        }
-        catch(Exception e)
-        {
-            failure.addSuppressed(e);
-            LOG.warn("ERROR Dispatch failed: ",failure);
-            _transport.abort(failure);
         }
     }
 
