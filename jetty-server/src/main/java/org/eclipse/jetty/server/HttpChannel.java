@@ -349,8 +349,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
                             _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,code);
-                            if (icode==null)
-                                _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,code);
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
 
@@ -368,7 +366,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            _transport.abort((Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION));
+                            Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                            failure.addSuppressed(x);
+                            minimalErrorResponse(failure);
                         }
                         break;
                     }
@@ -516,21 +516,26 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable e)
         {
-            try
-            {
-                failure.addSuppressed(e);
-                LOG.warn("ERROR dispatch failed", failure);
-                // Try to send a minimal response.
-                Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                _response.reset();
-                _response.setStatus(code == null ? 500 : code);
-                _response.flushBuffer();
-            }
-            catch (Throwable x)
-            {
-                failure.addSuppressed(x);
-                _transport.abort(failure);
-            }
+            failure.addSuppressed(e);
+            LOG.warn("ERROR dispatch failed", failure);
+            // Try to send a minimal response.
+            minimalErrorResponse(failure);
+        }
+    }
+
+    private void minimalErrorResponse(Throwable failure)
+    {
+        try
+        {
+            Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+            _response.reset();
+            _response.setStatus(code == null ? 500 : code);
+            _response.flushBuffer();
+        }
+        catch (Throwable x)
+        {
+            failure.addSuppressed(x);
+            _transport.abort(failure);
         }
     }
 
