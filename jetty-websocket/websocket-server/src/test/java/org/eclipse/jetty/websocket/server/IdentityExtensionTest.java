@@ -51,7 +51,7 @@ public class IdentityExtensionTest
         server.stop();
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void testIdentityExtension() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());

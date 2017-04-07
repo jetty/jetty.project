@@ -56,7 +56,6 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
@@ -103,7 +102,7 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
         this.bufferPool = new MappedByteBufferPool(BUFFER_SIZE);
         this.parser = new Parser(policy,bufferPool, frame ->
         {
-            extensionStack.incomingFrame(frame, new FrameCallbackAdapter());
+            extensionStack.incomingFrame(frame, new FrameCallback.Adapter());
             return true;
         });
         this.parseCount = new AtomicInteger(0);
@@ -458,7 +457,10 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
                     readBytes += len;
                     LOG.debug("Read {} bytes",len);
                     BufferUtil.flipToFlush(buf,0);
-                    parser.parse(buf);
+                    while(buf.hasRemaining())
+                    {
+                        parser.parse(buf);
+                    }
                 }
 
                 try

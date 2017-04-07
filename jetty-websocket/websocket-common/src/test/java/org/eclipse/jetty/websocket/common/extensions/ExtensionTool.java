@@ -26,12 +26,12 @@ import java.util.Collections;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -62,7 +62,7 @@ public class ExtensionTool
             this.capture = new IncomingFramesCapture();
             this.parser = new UnitParser(policy, frame ->
             {
-                ext.incomingFrame(frame, new FrameCallbackAdapter());
+                ext.incomingFrame(frame, new FrameCallback.Adapter());
                 return true;
             });
         }

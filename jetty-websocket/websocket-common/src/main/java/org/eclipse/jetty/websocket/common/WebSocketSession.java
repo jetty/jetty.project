@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -99,7 +102,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
     private CompletableFuture<Session> openFuture;
-
+    private AtomicReference<Throwable> pendingError = new AtomicReference<>();
+    
     public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
     {
         Objects.requireNonNull(containerScope, "Container Scope cannot be null");
@@ -181,6 +185,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         super.doStart();
         
         connection.setMaxIdleTimeout(this.policy.getIdleTimeout());
+        
+        Throwable fastFail;
+        synchronized (pendingError)
+        {
+            fastFail = pendingError.get();
+        }
+        if(fastFail != null)
+            onError(fastFail);
     }
 
     @Override
@@ -519,6 +531,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public void onError(Throwable t)
     {
+        synchronized (pendingError)
+        {
+            if (!endpointFunctions.isStarted())
+            {
+                // this is a *really* fast fail, before the Session has even started.
+                pendingError.compareAndSet(null, t);
+                return;
+            }
+        }
+        
         Throwable cause = getInvokedCause(t);
         
         if (openFuture != null && !openFuture.isDone())
@@ -531,9 +553,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             close(StatusCode.BAD_PAYLOAD, cause.getMessage());
         }
+        else if (cause instanceof SocketTimeoutException)
+        {
+            close(StatusCode.SHUTDOWN, cause.getMessage());
+        }
         else if (cause instanceof IOException)
         {
             close(StatusCode.PROTOCOL, cause.getMessage());
+        }
+        else if (cause instanceof SocketException)
+        {
+            close(StatusCode.SHUTDOWN, cause.getMessage());
         }
         else if (cause instanceof CloseException)
         {

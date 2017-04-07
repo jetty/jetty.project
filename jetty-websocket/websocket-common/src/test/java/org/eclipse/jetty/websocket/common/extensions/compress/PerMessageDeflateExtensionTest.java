@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,10 +30,10 @@ import java.util.List;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtensionTest;
@@ -246,7 +246,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         String payload = "Are you there?";
         Frame ping = new PingFrame().setPayload(payload);
-        ext.incomingFrame(ping, new FrameCallbackAdapter());
+        ext.incomingFrame(ping, new FrameCallback.Adapter());
 
         capture.assertFrameCount(1);
         capture.assertHasFrame(OpCode.PING, 1);
@@ -292,7 +292,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         {
             TextFrame frame = new TextFrame().setPayload(q);
             frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
-            ext.incomingFrame(frame, new FrameCallbackAdapter());
+            ext.incomingFrame(frame, new FrameCallback.Adapter());
         }
 
         int len = quote.size();

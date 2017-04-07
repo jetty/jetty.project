@@ -619,7 +619,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     @Override
     public boolean onFrame(Frame frame)
     {
-        // TODO: do something with frame?
+        extensionStack.incomingFrame(frame, new FrameCallback.Adapter());
         return true;
     }
     
