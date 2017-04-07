@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -60,7 +61,7 @@ public class RFCSocket
     public void onText(String message) throws IOException
     {
         LOG.debug("onText({})",message);
-        // Test the RFC 6455 close code 1011 that should close
+        // Test the RFC 6455 close code 1011 that should close.
         // trigger a WebSocket server terminated close.
         if (message.equals("CRASH"))
         {
@@ -72,5 +73,11 @@ public class RFCSocket
         remote.sendString(message, null);
         if (remote.getBatchMode() == BatchMode.ON)
             remote.flush();
+    }
+    
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        LOG.warn("onError()", cause);
     }
 }

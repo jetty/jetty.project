@@ -594,15 +594,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return true;
         }
 
-        try
-        {
-            notifyError(new SocketTimeoutException("Timeout on Read"));
-        }
-        finally
-        {
-            // This is an Abnormal Close condition
-            close(StatusCode.SHUTDOWN,"Idle Timeout");
-        }
+        notifyError(new SocketTimeoutException("Timeout on Read"));
 
         return false;
     }

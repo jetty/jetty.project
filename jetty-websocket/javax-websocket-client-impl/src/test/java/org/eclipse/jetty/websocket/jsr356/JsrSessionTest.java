@@ -33,7 +33,6 @@ import javax.websocket.MessageHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.FrameCallbackAdapter;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -128,7 +127,7 @@ public class JsrSessionTest
         
         session.open();
     
-        FrameCallback callback = new FrameCallbackAdapter();
+        FrameCallback callback = new FrameCallback.Adapter();
         
         session.incomingFrame(new TextFrame().setPayload("G'day").setFin(true), callback);
         session.incomingFrame(new TextFrame().setPayload("Hello World").setFin(true), callback);
@@ -159,7 +158,7 @@ public class JsrSessionTest
         
         session.open();
         
-        FrameCallback callback = new FrameCallbackAdapter();
+        FrameCallback callback = new FrameCallback.Adapter();
         
         session.incomingFrame(new BinaryFrame().setPayload("G'day").setFin(false), callback);
         session.incomingFrame(new ContinuationFrame().setPayload(" World").setFin(true), callback);

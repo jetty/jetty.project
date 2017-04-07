@@ -566,6 +566,7 @@ public class Parser
             int bytesAvailable = buffer.remaining();
             int windowBytes = Math.min(bytesAvailable, bytesExpected);
             int limit = buffer.limit();
+            assert(buffer.position() + windowBytes < buffer.capacity());
             buffer.limit(buffer.position() + windowBytes);
             ByteBuffer window = buffer.slice();
             buffer.limit(limit);
