@@ -36,12 +36,6 @@ public class FramePipes
         }
 
         @Override
-        public void incomingError(Throwable t)
-        {
-            /* cannot send exception on */
-        }
-
-        @Override
         public void incomingFrame(Frame frame, FrameCallback callback)
         {
             this.outgoing.outgoingFrame(frame, callback, BatchMode.OFF);
