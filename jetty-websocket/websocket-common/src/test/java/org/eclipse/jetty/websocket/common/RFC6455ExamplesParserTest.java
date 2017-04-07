@@ -64,7 +64,6 @@ public class RFC6455ExamplesParserTest
         BufferUtil.flipToFlush(buf,0);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
 
@@ -91,7 +90,6 @@ public class RFC6455ExamplesParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PONG,1);
 
         WebSocketFrame pong = capture.getFrames().poll();
@@ -114,7 +112,6 @@ public class RFC6455ExamplesParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         WebSocketFrame txt = capture.getFrames().poll();
@@ -144,7 +141,6 @@ public class RFC6455ExamplesParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame bin = capture.getFrames().poll();
@@ -182,7 +178,6 @@ public class RFC6455ExamplesParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame bin = capture.getFrames().poll();
@@ -212,7 +207,6 @@ public class RFC6455ExamplesParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
 
         WebSocketFrame ping = capture.getFrames().poll();
@@ -235,7 +229,6 @@ public class RFC6455ExamplesParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         WebSocketFrame txt = capture.getFrames().poll();

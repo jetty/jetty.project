@@ -47,7 +47,6 @@ public class PingPayloadParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.PING,1);
         PingFrame ping = (PingFrame)capture.getFrames().poll();
 

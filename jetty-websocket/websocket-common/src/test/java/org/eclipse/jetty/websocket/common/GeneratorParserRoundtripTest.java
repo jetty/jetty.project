@@ -68,7 +68,6 @@ public class GeneratorParserRoundtripTest
         }
 
         // Validate
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         TextFrame txt = (TextFrame)capture.getFrames().poll();
@@ -112,7 +111,6 @@ public class GeneratorParserRoundtripTest
         }
 
         // Validate
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         TextFrame txt = (TextFrame)capture.getFrames().poll();

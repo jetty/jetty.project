@@ -57,7 +57,6 @@ public class ClosePayloadParserTest
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.CLOSE,1);
         CloseInfo close = new CloseInfo(capture.getFrames().poll());
         Assert.assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));

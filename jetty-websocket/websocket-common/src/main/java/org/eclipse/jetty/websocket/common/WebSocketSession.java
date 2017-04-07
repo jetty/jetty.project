@@ -71,7 +71,7 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
 @ManagedObject("A Jetty WebSocket Session")
 public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory,
-        WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
+        WebSocketSessionScope, IncomingFrames, LogicalConnection.ErrorListener, Connection.Listener, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private static final Logger LOG_OPEN = Log.getLogger(WebSocketSession.class.getName() + "_OPEN");
@@ -374,16 +374,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         result = (prime * result) + ((connection == null) ? 0 : connection.hashCode());
         return result;
     }
-
-    /**
-     * Incoming Errors
-     */
-    @Override
-    public void incomingError(Throwable t)
-    {
-        // Forward Errors to User WebSocket Object
-        endpointFunctions.onError(t);
-    }
     
     /**
      * Incoming Raw Frames from Parser (after ExtensionStack)
@@ -479,36 +469,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     LOG.debug("Discarding post EOF frame - {}", frame);
             }
         }
-        catch (NotUtf8Exception e)
+        catch (Throwable cause)
         {
-            callback.fail(e);
-            notifyError(e);
-            close(StatusCode.BAD_PAYLOAD, e.getMessage());
-        }
-        catch (CloseException e)
-        {
-            close(e.getStatusCode(), e.getMessage());
-        }
-        catch (Throwable t)
-        {
-            Throwable cause = getInvokedCause(t);
-
-            LOG.warn("Unhandled Error (closing connection)", cause);
-    
             callback.fail(cause);
-            
-            notifyError(cause);
-            
-            // Unhandled Error, close the connection.
-            switch (getPolicy().getBehavior())
-            {
-                case SERVER:
-                    close(StatusCode.SERVER_ERROR, cause.getClass().getSimpleName());
-                    break;
-                case CLIENT:
-                    close(StatusCode.POLICY_VIOLATION, cause.getClass().getSimpleName());
-                    break;
-            }
+            onError(cause);
         }
         finally
         {
@@ -552,11 +516,43 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         endpointFunctions.onClose(new CloseInfo(statusCode, reason));
     }
 
-    public void notifyError(Throwable cause)
+    @Override
+    public void onError(Throwable t)
     {
+        Throwable cause = getInvokedCause(t);
+        
         if (openFuture != null && !openFuture.isDone())
             openFuture.completeExceptionally(cause);
-        incomingError(cause);
+    
+        // Forward Errors to User WebSocket Object
+        endpointFunctions.onError(cause);
+    
+        if (cause instanceof NotUtf8Exception)
+        {
+            close(StatusCode.BAD_PAYLOAD, cause.getMessage());
+        }
+        else if (cause instanceof IOException)
+        {
+            close(StatusCode.PROTOCOL, cause.getMessage());
+        }
+        else if (cause instanceof CloseException)
+        {
+            CloseException ce = (CloseException) cause;
+            close(ce.getStatusCode(), ce.getMessage());
+        }
+        else
+        {
+            LOG.warn("Unhandled Error (closing connection)", cause);
+        
+            // Exception on end-user WS-Endpoint.
+            // Fast-fail & close connection with reason.
+            int statusCode = StatusCode.SERVER_ERROR;
+            if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+            {
+                statusCode = StatusCode.POLICY_VIOLATION;
+            }
+            close(statusCode, cause.getMessage());
+        }
     }
 
     @Override
@@ -655,26 +651,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                 openFuture.complete(this);
             }
         }
-        catch (CloseException ce)
-        {
-            LOG.warn(ce);
-            notifyError(ce.getCause());
-            close(ce.getStatusCode(), ce.getMessage());
-        }
         catch (Throwable t)
         {
-            Throwable cause = getInvokedCause(t);
-
-            LOG.warn(cause);
-            notifyError(cause);
-            // Exception on end-user WS-Endpoint.
-            // Fast-fail & close connection with reason.
-            int statusCode = StatusCode.SERVER_ERROR;
-            if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
-            {
-                statusCode = StatusCode.POLICY_VIOLATION;
-            }
-            close(statusCode, cause.getMessage());
+            LOG.warn(t);
+            onError(t);
         }
     }
 
@@ -774,7 +754,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         return sb.toString();
     }
 
-    public static interface Listener
+    public interface Listener
     {
         void onOpened(WebSocketSession session);
 

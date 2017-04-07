@@ -83,7 +83,7 @@ public class ClientCloseTest
     
     private static class CloseTrackingSocket extends WebSocketAdapter
     {
-        private static final Logger LOG =  ClientCloseTest.LOG.getLogger("CloseTrackingSocket");
+        private static final Logger LOG =  Log.getLogger(CloseTrackingSocket.class);
 
         public int closeCode = -1;
         public String closeReason = null;
@@ -118,7 +118,16 @@ public class ClientCloseTest
                 assertThat("Client Close Event Reason",closeReason,reasonMatcher);
             }
         }
-
+    
+        public void assertReceivedErrorEvent(int clientTimeoutMs, Class<? extends Throwable> expectedCause, Matcher<String> messageMatcher) throws InterruptedException
+        {
+            long maxTimeout = clientTimeoutMs * 4;
+    
+            assertThat("Client Error Event Occurred",errorLatch.await(maxTimeout,TimeUnit.MILLISECONDS),is(true));
+            assertThat("Client Error Type", error.get(), instanceOf(expectedCause));
+            assertThat("Client Error Message", error.get().getMessage(), messageMatcher);
+        }
+    
         public void clearQueues()
         {
             messageQueue.clear();
@@ -201,7 +210,6 @@ public class ClientCloseTest
 
             // Read Frame on server side
             IncomingFramesCapture serverCapture = serverConns.readFrames(1,30,TimeUnit.SECONDS);
-            serverCapture.assertNoErrors();
             serverCapture.assertFrameCount(1);
             WebSocketFrame frame = serverCapture.getFrames().poll();
             assertThat("Server received frame",frame.getOpCode(),is(OpCode.TEXT));
@@ -230,7 +238,6 @@ public class ClientCloseTest
             TimeoutException
     {
         IncomingFramesCapture serverCapture = serverConn.readFrames(1,30,TimeUnit.SECONDS);
-        serverCapture.assertNoErrors();
         serverCapture.assertFrameCount(1);
         serverCapture.assertHasFrame(OpCode.CLOSE,1);
         WebSocketFrame frame = serverCapture.getFrames().poll();
@@ -472,23 +479,27 @@ public class ClientCloseTest
 
         // client confirms connection via echo
         confirmConnection(clientSocket,clientConnectFuture,serverConn);
-
-        // client sends close frame
-        final String origCloseReason = "Normal Close";
-        clientSocket.getSession().close(StatusCode.NORMAL,origCloseReason);
-
-        // server receives close frame
-        confirmServerReceivedCloseFrame(serverConn,StatusCode.NORMAL,is(origCloseReason));
-
-        // client should not have received close message (yet)
-        clientSocket.assertNoCloseEvent();
-
-        // server shuts down connection (no frame reply)
-        serverConn.disconnect();
-
-        // client reads -1 (EOF)
-        // client triggers close event on client ws-endpoint
-        clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.ABNORMAL),containsString("EOF"));
+    
+        try(StacklessLogging scope = new StacklessLogging(CloseTrackingSocket.class))
+        {
+            // client sends close frame
+            final String origCloseReason = "Normal Close";
+            clientSocket.getSession().close(StatusCode.NORMAL,origCloseReason);
+    
+            // server receives close frame
+            confirmServerReceivedCloseFrame(serverConn,StatusCode.NORMAL,is(origCloseReason));
+    
+            // client should not have received close message (yet)
+            clientSocket.assertNoCloseEvent();
+        
+            // server shuts down connection (no frame reply)
+            serverConn.disconnect();
+    
+            // client reads -1 (EOF)
+            clientSocket.assertReceivedErrorEvent(timeout, IOException.class, containsString("EOF"));
+            // client triggers close event on client ws-endpoint
+            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.ABNORMAL), containsString("Disconnected"));
+        }
     }
 
     @Test

@@ -309,7 +309,6 @@ public class TestABCase1_1
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -342,7 +341,6 @@ public class TestABCase1_1
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -375,7 +373,6 @@ public class TestABCase1_1
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -408,7 +405,6 @@ public class TestABCase1_1
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -443,7 +439,6 @@ public class TestABCase1_1
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -479,12 +474,10 @@ public class TestABCase1_1
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("TextFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("TextFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -502,7 +495,6 @@ public class TestABCase1_1
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.TEXT,1);
 
         Frame pActual = capture.getFrames().poll();
