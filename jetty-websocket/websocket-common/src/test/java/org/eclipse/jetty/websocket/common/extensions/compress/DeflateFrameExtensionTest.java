@@ -434,11 +434,6 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
                     throw new RuntimeIOException(x);
                 }
             }
-
-            @Override
-            public void incomingError(Throwable t)
-            {
-            }
         });
 
         BinaryFrame frame = new BinaryFrame();

@@ -97,7 +97,6 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         public long totalParseOps = 0;
 
         public EventQueue<WebSocketFrame> frames = new EventQueue<>();
-        public EventQueue<Throwable> errors = new EventQueue<>();
 
         @Override
         public void run()
@@ -152,18 +151,11 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
             StringBuilder str = new StringBuilder();
             str.append("FrameReadingThread[");
             str.append(",frames=" + frames.size());
-            str.append(",errors=" + errors.size());
             str.append(String.format(",totalBytes=%,d",totalBytes));
             str.append(String.format(",totalReadOps=%,d",totalReadOps));
             str.append(String.format(",totalParseOps=%,d",totalParseOps));
             str.append("]");
             return str.toString();
-        }
-
-        @Override
-        public synchronized void incomingError(Throwable t)
-        {
-            this.errors.add(t);
         }
 
         @Override
@@ -175,7 +167,6 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         public synchronized void clear()
         {
             this.frames.clear();
-            this.errors.clear();
         }
     }
 

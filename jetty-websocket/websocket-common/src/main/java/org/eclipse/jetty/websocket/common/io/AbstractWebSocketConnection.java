@@ -574,7 +574,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     private void notifyError(Throwable cause)
     {
-        extensionStack.incomingError(cause);
+        // FIXME need to forward error to Session (or those interested)
     }
 
     @Override

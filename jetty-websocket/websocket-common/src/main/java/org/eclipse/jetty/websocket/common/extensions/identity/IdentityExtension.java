@@ -43,13 +43,6 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingError(Throwable e)
-    {
-        // pass through
-        nextIncomingError(e);
-    }
-
-    @Override
     public void incomingFrame(Frame frame, FrameCallback callback)
     {
         // pass through

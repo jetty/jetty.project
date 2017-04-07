@@ -38,12 +38,6 @@ public class DummyIncomingFrames implements IncomingFrames
     }
 
     @Override
-    public void incomingError(Throwable e)
-    {
-        LOG.debug("incomingError()",e);
-    }
-
-    @Override
     public void incomingFrame(Frame frame, FrameCallback callback)
     {
         LOG.debug("incomingFrame({})",frame);

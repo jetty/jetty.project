@@ -126,12 +126,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         return policy;
     }
 
-    @Override
-    public void incomingError(Throwable e)
-    {
-        nextIncomingError(e);
-    }
-
     /**
      * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
      * <p>
@@ -169,11 +163,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
     public boolean isRsv3User()
     {
         return false;
-    }
-
-    protected void nextIncomingError(Throwable e)
-    {
-        this.nextIncoming.incomingError(e);
     }
 
     protected void nextIncomingFrame(Frame frame, FrameCallback callback)
