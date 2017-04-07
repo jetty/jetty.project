@@ -27,7 +27,6 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
@@ -73,31 +72,25 @@ public class MessageWriterTest
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
-        policy.setMaxTextMessageBufferSize(1024);
-
-        // Container
-        WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
-
+        policy.setOutputBufferSize(1024);
+    
         // remote socket
+        WebSocketContainerScope remoteContainerScope = new SimpleContainerScope(policy, bufferPool);
         remoteSocket = new TrackingSocket("remote");
         URI remoteURI = new URI("ws://localhost/remote");
-        LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(bufferPool);
-        remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
-        OutgoingFrames socketPipe = FramePipes.to(remoteSession);
+        LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(remoteURI, bufferPool);
+        remoteSession = new WebSocketSession(remoteContainerScope, remoteURI, remoteSocket, remoteConnection);
         remoteSession.start();
         remoteSession.open();
-
+    
         // Local Session
+        WebSocketContainerScope localContainerScope = new SimpleContainerScope(policy, bufferPool);
         TrackingSocket localSocket = new TrackingSocket("local");
         URI localURI = new URI("ws://localhost/local");
-        LocalWebSocketConnection localConnection = new LocalWebSocketConnection(bufferPool);
-        session = new WebSocketSession(containerScope,localURI,localSocket,localConnection);
-
-        // talk to our remote socket
-        session.setOutgoingHandler(socketPipe);
-        // start session
+        LocalWebSocketConnection localConnection = new LocalWebSocketConnection(localURI, bufferPool);
+        session = new WebSocketSession(localContainerScope, localURI, localSocket, localConnection);
+        session.setOutgoingHandler(FramePipes.to(remoteSession));
         session.start();
-        // open connection
         session.open();
     }
     
@@ -129,15 +122,15 @@ public class MessageWriterTest
         Assert.assertThat("Message",msg,is("Hello World"));
     }
     
-    @Test(timeout = 2000)
+    @Test(timeout = 20000)
     public void testWriteMultipleBuffers() throws Exception
     {
-        int bufsize = (int)(policy.getMaxTextMessageBufferSize() * 2.5);
-        char buf[] = new char[bufsize];
+        int size = (int)(policy.getOutputBufferSize() * 2.5);
+        char buf[] = new char[size];
         if (LOG.isDebugEnabled())
-            LOG.debug("Buffer size: {}",bufsize);
+            LOG.debug("Buffer size: {}",size);
         Arrays.fill(buf,'x');
-        buf[bufsize - 1] = 'o'; // mark last entry for debugging
+        buf[size - 1] = 'o'; // mark last entry for debugging
 
         try (MessageWriter stream = new MessageWriter(session))
         {

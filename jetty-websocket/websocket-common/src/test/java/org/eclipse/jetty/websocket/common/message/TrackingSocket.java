@@ -174,4 +174,10 @@ public class TrackingSocket extends WebSocketAdapter
         LOG.debug("{} Waiting for message",id);
         Assert.assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("TrackingSocket[%s]", id);
+    }
 }

@@ -25,22 +25,29 @@ import java.util.List;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 
+/**
+ * Collect up 1 or more byte arrays for later transfer to a single {@link ByteBuffer}.
+ * <p>
+ * Used by decompression routines to fail if there is excessive inflation of the
+ * decompressed data. (either maliciously or accidentally)
+ * </p>
+ */
 public class ByteAccumulator
 {
     private final List<byte[]> chunks = new ArrayList<>();
     private final int maxSize;
     private int length = 0;
 
-    public ByteAccumulator(int maxOverallBufferSize)
+    public ByteAccumulator(int maxOverallMessageSize)
     {
-        this.maxSize = maxOverallBufferSize;
+        this.maxSize = maxOverallMessageSize;
     }
 
     public void copyChunk(byte buf[], int offset, int length)
     {
         if (this.length + length > maxSize)
         {
-            throw new MessageTooLargeException("Frame is too large");
+            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]",this.length + length, maxSize));
         }
 
         byte copy[] = new byte[length - offset];

@@ -56,7 +56,7 @@ public class MessageWriter extends Writer
 
     public MessageWriter(WebSocketSession session)
     {
-        this(session.getOutgoingHandler(), session.getPolicy().getMaxTextMessageBufferSize(), session.getBufferPool());
+        this(session.getOutgoingHandler(), session.getPolicy().getOutputBufferSize(), session.getBufferPool());
     }
 
     public MessageWriter(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)

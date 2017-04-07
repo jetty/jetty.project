@@ -106,43 +106,20 @@ public class Parser
     
     private void assertSanePayloadLength(long len)
     {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{} Payload Length: {} - {}",policy.getBehavior(),len,this);
-        }
-
-        // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
-        if (len > Integer.MAX_VALUE)
+        if (len > this.policy.getMaxAllowedFrameSize())
         {
-            // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
-            throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + this.policy.getMaxAllowedFrameSize());
         }
-
-        switch (frame.getOpCode())
+    
+        if (frame.getOpCode() == OpCode.CLOSE && (len == 1))
         {
-            case OpCode.CLOSE:
-                if (len == 1)
-                {
-                    throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
-                }
-                // fall thru
-            case OpCode.PING:
-            case OpCode.PONG:
-                if (len > ControlFrame.MAX_CONTROL_PAYLOAD)
-                {
-                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                            + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
-                }
-                break;
-            case OpCode.TEXT:
-                // Quick failure for frames that already exceed messages size limits
-                // TODO:  based on buffer limits
-                policy.assertValidTextMessageSize((int)len);
-                break;
-            case OpCode.BINARY:
-                // Quick failure for frames that already exceed messages size limits
-                // TODO:  based on buffer limits
-                policy.assertValidBinaryMessageSize((int)len);
-                break;
+            throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
+        }
+    
+        if (frame.isControlFrame() && len > ControlFrame.MAX_CONTROL_PAYLOAD)
+        {
+            throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
+                    + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
         }
     }
 
@@ -191,7 +168,7 @@ public class Parser
     
     public boolean parse(ByteBuffer buffer) throws WebSocketException
     {
-        // TODO quick fail, nothing to parse
+        // quick fail, nothing left to parse
         if (!buffer.hasRemaining())
         {
             return true;
@@ -268,7 +245,9 @@ public class Parser
     public void release(Frame frame)
     {
         if (frame.hasPayload())
+        {
             bufferPool.release(frame.getPayload());
+        }
     }
     
     /**

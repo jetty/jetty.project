@@ -41,7 +41,7 @@ public class WebSocketPolicy
      * org.eclipse.jetty.websocket.api.annotations.WebSocket 
      * annotation defaults
      */
-
+    
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
@@ -53,16 +53,11 @@ public class WebSocketPolicy
 
     /**
      * The maximum size of a text message buffer.
-     * <p>
-     * Used ONLY for stream based message writing.
-     * <p>
-     * Default: 32768 (32 K)
+     * @deprecated see {@link #inputBufferSize}, {@link #outputBufferSize}, and {@link #maxAllowedFrameSize}
      */
-    private int maxTextMessageBufferSize = 32 * KB;
+    @Deprecated
+    private int maxTextMessageBufferSize;
     
-    private int maxTextFramePayloadSize; // TODO
-    private int maxBinaryFramePayloadSize; // TODO
-
     /**
      * The maximum size of a binary message during parsing/generating.
      * <p>
@@ -75,11 +70,10 @@ public class WebSocketPolicy
     /**
      * The maximum size of a binary message buffer
      * <p>
-     * Used ONLY for for stream based message writing
-     * <p>
-     * Default: 32768 (32 K)
+     * @deprecated see {@link #inputBufferSize}, {@link #outputBufferSize}, and {@link #maxAllowedFrameSize}
      */
-    private int maxBinaryMessageBufferSize = 32 * KB;
+    @Deprecated
+    private int maxBinaryMessageBufferSize;
 
     /**
      * The timeout in ms (milliseconds) for async write operations.
@@ -96,11 +90,28 @@ public class WebSocketPolicy
     private long idleTimeout = 300_000;
 
     /**
-     * The size of the input (read from network layer) buffer size.
+     * The input (read from network layer) buffer size.
      * <p>
      * Default: 4096 (4 K)
      */
     private int inputBufferSize = 4 * KB;
+    
+    /**
+     * The maximum size of an individual Frame payload.
+     * <p>
+     *     This is for raw memory management on parse.
+     * </p>
+     */
+    // TODO: when ws-over-http2 exists, this needs to be set appropriately
+    private int maxAllowedFrameSize = (int) Math.min(Integer.MAX_VALUE, Runtime.getRuntime().maxMemory());
+    
+    /**
+     * The output (writes to network layer) buffer size.
+     * <p>
+     *     Default: 4096 (4 K)
+     * </p>
+     */
+    private int outputBufferSize = 4 * KB;
 
     /**
      * Behavior of the websockets
@@ -157,12 +168,11 @@ public class WebSocketPolicy
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
-        clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
         clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
-        clone.maxBinaryMessageBufferSize = this.maxBinaryMessageBufferSize;
         clone.inputBufferSize = this.inputBufferSize;
+        clone.outputBufferSize = this.outputBufferSize;
+        clone.maxAllowedFrameSize = this.maxAllowedFrameSize;
         clone.asyncWriteTimeout = this.asyncWriteTimeout;
-        // clone.listeners.addAll(this.listeners);
         return clone;
     }
     
@@ -194,25 +204,56 @@ public class WebSocketPolicy
     }
 
     /**
-     * The size of the input (read from network layer) buffer size.
+     * The input (read from network layer) buffer size.
      * <p>
      * This is the raw read operation buffer size, before the parsing of the websocket frames.
+     * </p>
      * 
-     * @return the raw network bytes read operation buffer size.
+     * @return the raw network buffer input size.
      */
     public int getInputBufferSize()
     {
         return inputBufferSize;
     }
-
+    
     /**
-     * Get the maximum size of a binary message buffer (for streaming writing)
-     * 
-     * @return the maximum size of a binary message buffer
+     * The output (write to network layer) buffer size.
+     * <p>
+     *   This is the raw write operation buffer size and has no relationship to the websocket frame.
+     * </p>
+     *
+     * @return the raw network buffer output size.
      */
+    public int getOutputBufferSize()
+    {
+        return outputBufferSize;
+    }
+    
+    /**
+     * The maximum allowed frame size.
+     * <p>
+     *     This is used to manage frame payload memory allocation concerns.
+     *     If an excessively large frame payload size is received, then this
+     *     will short circuit the parsing step and trigger a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     for that endpoint before the allocation of the memory for that payload is even made.
+     * </p>
+     *
+     * @return the maximum allowed frame size that this implementation can handle
+     */
+    public int getMaxAllowedFrameSize()
+    {
+        return maxAllowedFrameSize;
+    }
+    
+    /**
+     * Get the maximum size of a binary message buffer.
+     * @return the maximum size of a binary message buffer
+     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
+     */
+    @Deprecated
     public int getMaxBinaryMessageBufferSize()
     {
-        return maxBinaryMessageBufferSize;
+        return maxBinaryMessageSize;
     }
 
     /**
@@ -228,13 +269,14 @@ public class WebSocketPolicy
     }
 
     /**
-     * Get the maximum size of a text message buffer (for streaming writing)
-     * 
+     * Get the maximum size of a text message buffer.
      * @return the maximum size of a text message buffer
+     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
      */
+    @Deprecated
     public int getMaxTextMessageBufferSize()
     {
-        return maxTextMessageBufferSize;
+        return maxTextMessageSize;
     }
 
     /**
@@ -278,7 +320,7 @@ public class WebSocketPolicy
     }
 
     /**
-     * The size of the input (read from network layer) buffer size.
+     * The input (read from network layer) buffer size.
      * 
      * @param size
      *            the size in bytes
@@ -286,26 +328,67 @@ public class WebSocketPolicy
     public void setInputBufferSize(int size)
     {
         if(size < 0) return; // no change (likely came from annotation)
-
         assertGreaterThan("InputBufferSize",size,1);
+
         this.inputBufferSize = size;
     }
-
+    
     /**
-     * The maximum size of a binary message buffer.
-     * <p>
-     * Used ONLY for stream based message writing.
-     * 
+     * The output (write to network layer) buffer size.
+     *
      * @param size
-     *            the maximum size of the binary message buffer
+     *            the size in bytes
      */
-    public void setMaxBinaryMessageBufferSize(int size)
+    public void setOutputBufferSize(int size)
     {
-        assertGreaterThan("MaxBinaryMessageBufferSize",size,1);
-
-        this.maxBinaryMessageBufferSize = size;
+        if(size < 0) return; // no change (likely came from annotation)
+        assertGreaterThan("OutputBufferSize",size,1);
+        
+        this.outputBufferSize = size;
     }
     
+    /**
+     * The maximum supported size of an individual frame.
+     * <p>
+     *     This is used to manage frame payload memory allocation concerns.
+     *     If an excessively large frame payload size is received, then this
+     *     will short circuit the parsing step and trigger a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     for that endpoint before the allocation of the memory for that payload is even made.
+     * </p>
+     *
+     * @param size
+     *            the size in bytes
+     */
+    public void setMaxAllowedFrameSize(int size)
+    {
+        if(size < 0) return; // no change (likely came from annotation)
+        assertGreaterThan("MaxAllowedFrameSize",size,1);
+        
+        this.maxAllowedFrameSize = size;
+    }
+    
+    /**
+     * The maximum size of a binary message buffer.
+     *
+     * @param size
+     *            the maximum size of the binary message buffer
+     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
+     */
+    @Deprecated
+    public void setMaxBinaryMessageBufferSize(int size)
+    {
+        /* does nothing */
+    }
+    
+    /**
+     * The maximum size of a binary message during parsing/generating.
+     * <p>
+     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
+     *
+     * @param size
+     *            the maximum allowed size of a binary message.
+     */
     public void setMaxBinaryMessageSize(long size)
     {
         if (size > Integer.MAX_VALUE)
@@ -334,19 +417,25 @@ public class WebSocketPolicy
 
     /**
      * The maximum size of a text message buffer.
-     * <p>
-     * Used ONLY for stream based message writing.
-     * 
+     *
      * @param size
      *            the maximum size of the text message buffer
+     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
      */
+    @Deprecated
     public void setMaxTextMessageBufferSize(int size)
     {
-        assertGreaterThan("MaxTextMessageBufferSize",size,1);
-
-        this.maxTextMessageBufferSize = size;
+        /* does nothing */
     }
     
+    /**
+     * The maximum size of a text message during parsing/generating.
+     * <p>
+     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *
+     * @param size
+     *            the maximum allowed size of a text message.
+     */
     public void setMaxTextMessageSize(long size)
     {
         if (size > Integer.MAX_VALUE)
@@ -373,6 +462,7 @@ public class WebSocketPolicy
         this.maxTextMessageSize = size;
     }
 
+    @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String toString()
     {

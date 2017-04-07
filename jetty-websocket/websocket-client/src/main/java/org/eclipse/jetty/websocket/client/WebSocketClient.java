@@ -533,10 +533,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Get the maximum size for buffering of a binary message.
      *
      * @return the maximum size of a binary message buffer.
+     * @deprecated see {@link WebSocketPolicy#getMaxBinaryMessageBufferSize()}
      */
+    @Deprecated
     public int getMaxBinaryMessageBufferSize()
     {
-        return this.containerPolicy.getMaxBinaryMessageBufferSize();
+        return getPolicy().getMaxBinaryMessageSize();
     }
 
     /**
@@ -563,10 +565,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * Get the maximum size for buffering of a text message.
      *
      * @return the maximum size of a text message buffer.
+     *
+     * @deprecated see {@link WebSocketPolicy#getMaxTextMessageBufferSize()}
      */
+    @Deprecated
     public int getMaxTextMessageBufferSize()
     {
-        return this.containerPolicy.getMaxTextMessageBufferSize();
+        return getPolicy().getMaxTextMessageSize();
     }
 
     /**
@@ -721,9 +726,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         /* do nothing */
     }
 
+    /**
+     * @deprecated see {@link WebSocketPolicy#setMaxBinaryMessageBufferSize(int)}
+     */
+    @Deprecated
     public void setMaxBinaryMessageBufferSize(int max)
     {
-        this.containerPolicy.setMaxBinaryMessageBufferSize(max);
+        /* do nothing */
     }
 
     /**
@@ -738,10 +747,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this.containerPolicy.setIdleTimeout(ms);
     }
-
+    
+    /**
+     * @deprecated see {@link WebSocketPolicy#setMaxTextMessageBufferSize(int)}
+     */
     public void setMaxTextMessageBufferSize(int max)
     {
-        this.containerPolicy.setMaxTextMessageBufferSize(max);
+        /* do nothing */
     }
 
     public void setSessionFactory(SessionFactory sessionFactory)

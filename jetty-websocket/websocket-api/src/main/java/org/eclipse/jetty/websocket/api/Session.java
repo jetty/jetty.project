@@ -90,7 +90,6 @@ public interface Session extends Closeable
      * @see #close()
      * @see #close(CloseStatus)
      * @see #close(int, String)
-     * @see #disconnect()
      */
     void disconnect() throws IOException;
 

@@ -28,9 +28,9 @@ import java.util.Objects;
 public final class WSURI
 {
     /**
-     * Convert to HTTP {@code http} or <code>https</code> scheme URIs.
+     * Convert to HTTP {@code http} or {@code https} scheme URIs.
      * <p>
-     * Converting {@code ws} and <code>wss</code> URIs to their HTTP equivalent
+     * Converting {@code ws} and {@code wss} URIs to their HTTP equivalent
      * 
      * @param inputUri
      *            the input URI
@@ -42,6 +42,7 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri,"Input URI must not be null");
         String wsScheme = inputUri.getScheme();
+        String httpScheme;
         if ("http".equalsIgnoreCase(wsScheme) || "https".equalsIgnoreCase(wsScheme))
         {
             // leave alone
@@ -64,9 +65,9 @@ public final class WSURI
     }
 
     /**
-     * Convert to WebSocket {@code ws} or <code>wss</code> scheme URIs
+     * Convert to WebSocket {@code ws} or {@code wss} scheme URIs
      * <p>
-     * Converting {@code http} and <code>https</code> URIs to their WebSocket equivalent
+     * Converting {@code http} and {@code https} URIs to their WebSocket equivalent
      * 
      * @param inputUrl
      *            the input URI
@@ -80,9 +81,9 @@ public final class WSURI
     }
 
     /**
-     * Convert to WebSocket {@code ws} or <code>wss</code> scheme URIs
+     * Convert to WebSocket {@code ws} or {@code wss} scheme URIs
      * <p>
-     * Converting {@code http} and <code>https</code> URIs to their WebSocket equivalent
+     * Converting {@code http} and {@code https} URIs to their WebSocket equivalent
      * 
      * @param inputUrl
      *            the input URI
@@ -102,10 +103,10 @@ public final class WSURI
     }
 
     /**
-     * Convert to WebSocket {@code ws} or <code>wss</code> scheme URIs
+     * Convert to WebSocket {@code ws} or {@code wss} scheme URIs
      * 
      * <p>
-     * Converting {@code http} and <code>https</code> URIs to their WebSocket equivalent
+     * Converting {@code http} and {@code https} URIs to their WebSocket equivalent
      * 
      * @param inputUri
      *            the input URI
@@ -117,6 +118,7 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri,"Input URI must not be null");
         String httpScheme = inputUri.getScheme();
+        String wsScheme;
         if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
         {
             // keep as-is

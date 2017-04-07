@@ -216,7 +216,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.suspendToken = new AtomicBoolean(false);
         this.ioState = new IOState();
         this.ioState.addListener(this);
-        this.flusher = new Flusher(bufferPool,policy.getMaxBinaryMessageBufferSize(),generator,endp);
+        this.flusher = new Flusher(bufferPool,policy.getOutputBufferSize(),generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
         

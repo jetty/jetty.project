@@ -49,34 +49,42 @@ public class StringMessageSink implements MessageSink
     @Override
     public void accept(Frame frame, FrameCallback callback)
     {
-        if (frame.hasPayload())
+        try
         {
-            ByteBuffer payload = frame.getPayload();
-            policy.assertValidTextMessageSize(size + payload.remaining());
-            size += payload.remaining();
-
-            if (utf == null)
-                utf = new Utf8StringBuilder(1024);
-
-            if(LOG.isDebugEnabled())
-                LOG.debug("Raw Payload {}", BufferUtil.toDetailString(payload));
-
-            // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)
-            utf.append(payload);
-        }
-
-        if (frame.isFin())
-        {
-            // notify event
-            if (utf != null)
-                onMessageFunction.apply(utf.toString());
-            else
-                onMessageFunction.apply("");
-            
+            if (frame.hasPayload())
+            {
+                ByteBuffer payload = frame.getPayload();
+                policy.assertValidTextMessageSize(size + payload.remaining());
+                size += payload.remaining();
+        
+                if (utf == null)
+                    utf = new Utf8StringBuilder(1024);
+        
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Raw Payload {}", BufferUtil.toDetailString(payload));
+        
+                // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)
+                utf.append(payload);
+            }
+    
+            if (frame.isFin())
+            {
+                // notify event
+                if (utf != null)
+                    onMessageFunction.apply(utf.toString());
+                else
+                    onMessageFunction.apply("");
+        
+                // reset
+                size = 0;
+                utf = null;
+            }
+    
             callback.succeed();
-            // reset
-            size = 0;
-            utf = null;
+        }
+        catch(Throwable t)
+        {
+            callback.fail(t);
         }
     }
 }

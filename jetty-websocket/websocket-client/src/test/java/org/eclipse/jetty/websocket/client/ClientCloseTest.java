@@ -74,7 +74,6 @@ import org.eclipse.jetty.websocket.common.test.RawFrameBuilder;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -360,7 +359,6 @@ public class ClientCloseTest
         clientSocket.assertReceivedCloseEvent(timeout,is(StatusCode.NORMAL),containsString("From Server"));
     }
 
-    @Ignore("Need sbordet's help here")
     @Test
     public void testNetworkCongestion() throws Exception
     {

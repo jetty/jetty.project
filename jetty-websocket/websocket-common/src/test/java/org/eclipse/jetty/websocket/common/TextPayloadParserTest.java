@@ -50,7 +50,7 @@ public class TextPayloadParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         // Artificially small buffer/payload
         policy.setInputBufferSize(1024); // read buffer
-        policy.setMaxTextMessageBufferSize(1024); // streaming buffer (not used in this test)
+        policy.setMaxAllowedFrameSize(1024); // streaming buffer (not used in this test)
         policy.setMaxTextMessageSize(1024); // actual maximum text message size policy
         byte utf[] = new byte[2048];
         Arrays.fill(utf,(byte)'a');

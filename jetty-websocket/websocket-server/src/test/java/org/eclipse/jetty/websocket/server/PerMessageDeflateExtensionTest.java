@@ -125,12 +125,10 @@ public class PerMessageDeflateExtensionTest
         binBufferSize = Math.max(binBufferSize,this.inputBufferSize);
 
         serverPolicy.setMaxBinaryMessageSize(binBufferSize);
-        serverPolicy.setMaxBinaryMessageBufferSize(binBufferSize);
 
         WebSocketClient client = new WebSocketClient(server.getSslContextFactory());
         WebSocketPolicy clientPolicy = client.getPolicy();
         clientPolicy.setMaxBinaryMessageSize(binBufferSize);
-        clientPolicy.setMaxBinaryMessageBufferSize(binBufferSize);
         if (inputBufferSize > 0)
         {
             clientPolicy.setInputBufferSize(inputBufferSize);
