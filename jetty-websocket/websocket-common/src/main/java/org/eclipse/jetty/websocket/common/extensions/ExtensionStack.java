@@ -209,12 +209,6 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     }
 
     @Override
-    public void incomingError(Throwable e)
-    {
-        nextIncoming.incomingError(e);
-    }
-
-    @Override
     public void incomingFrame(Frame frame, FrameCallback callback)
     {
         nextIncoming.incomingFrame(frame, callback);

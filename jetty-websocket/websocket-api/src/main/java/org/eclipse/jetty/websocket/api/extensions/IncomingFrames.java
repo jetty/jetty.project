@@ -25,9 +25,6 @@ import org.eclipse.jetty.websocket.api.FrameCallback;
  */
 public interface IncomingFrames
 {
-    @Deprecated
-    void incomingError(Throwable t);
-
     /**
      * Process the incoming frame.
      * <p>

@@ -146,12 +146,6 @@ public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
     }
     
     @Override
-    public void incomingError(Throwable t)
-    {
-        errors.add(t);
-    }
-    
-    @Override
     public void incomingFrame(Frame frame, FrameCallback callback)
     {
         onFrame(frame);

@@ -215,12 +215,6 @@ public class BlockheadServerConnection implements IncomingFrames, OutgoingFrames
     }
 
     @Override
-    public void incomingError(Throwable e)
-    {
-        incomingFrames.incomingError(e);
-    }
-
-    @Override
     public void incomingFrame(Frame frame, FrameCallback callback)
     {
         LOG.debug("incoming({})",frame);
