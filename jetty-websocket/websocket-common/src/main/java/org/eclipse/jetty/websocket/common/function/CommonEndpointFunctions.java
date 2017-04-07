@@ -765,4 +765,10 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         if (!isStarted())
             throw new IllegalStateException(this.getClass().getName() + " not started");
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", this.getClass().getSimpleName(), getState());
+    }
 }

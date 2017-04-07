@@ -398,14 +398,12 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         clientExtension.setBufferPool(bufferPool);
         clientExtension.setPolicy(WebSocketPolicy.newClientPolicy());
         clientExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
-        clientExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);
         clientExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         serverExtension.setBufferPool(bufferPool);
         serverExtension.setPolicy(WebSocketPolicy.newServerPolicy());
         serverExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
-        serverExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);
         serverExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         // Chain the next element to decompress.

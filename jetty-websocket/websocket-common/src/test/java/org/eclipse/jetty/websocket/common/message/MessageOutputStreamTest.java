@@ -29,7 +29,6 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
@@ -75,7 +74,6 @@ public class MessageOutputStreamTest
     {
         policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
-        policy.setMaxBinaryMessageBufferSize(1024);
 
         // Container
         WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
@@ -83,20 +81,19 @@ public class MessageOutputStreamTest
         // remote socket
         remoteSocket = new TrackingSocket("remote");
         URI remoteURI = new URI("ws://localhost/remote");
-        LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(bufferPool);
+        LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(remoteURI, bufferPool);
         remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
-        OutgoingFrames socketPipe = FramePipes.to(remoteSession);
         remoteSession.start();
         remoteSession.open();
 
         // Local Session
         TrackingSocket localSocket = new TrackingSocket("local");
         URI localURI = new URI("ws://localhost/local");
-        LocalWebSocketConnection localConnection = new LocalWebSocketConnection(bufferPool);
+        LocalWebSocketConnection localConnection = new LocalWebSocketConnection(localURI, bufferPool);
         session = new WebSocketSession(containerScope,localURI,localSocket,localConnection);
 
         // talk to our remote socket
-        session.setOutgoingHandler(socketPipe);
+        session.setOutgoingHandler(FramePipes.to(remoteSession));
         // start session
         session.start();
         // open connection
@@ -134,9 +131,9 @@ public class MessageOutputStreamTest
     @Test(timeout = 2000)
     public void testWriteMultipleBuffers() throws Exception
     {
-        int bufsize = (int)(policy.getMaxBinaryMessageBufferSize() * 2.5);
+        int bufsize = (int)(policy.getOutputBufferSize() * 2.5);
         byte buf[] = new byte[bufsize];
-        LOG.debug("Buffer sizes: max:{}, test:{}",policy.getMaxBinaryMessageBufferSize(),bufsize);
+        LOG.debug("Buffer sizes: max:{}, test:{}",policy.getOutputBufferSize(),bufsize);
         Arrays.fill(buf,(byte)'x');
         buf[bufsize - 1] = (byte)'o'; // mark last entry for debugging
 

@@ -147,12 +147,6 @@ public abstract class CompressExtension extends AbstractExtension
         }
     }
 
-    protected ByteAccumulator newByteAccumulator()
-    {
-        int maxSize = Math.max(getPolicy().getMaxTextMessageSize(),getPolicy().getMaxBinaryMessageBufferSize());
-        return new ByteAccumulator(maxSize);
-    }
-
     protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
     {
         if ((buf == null) || (!buf.hasRemaining()))

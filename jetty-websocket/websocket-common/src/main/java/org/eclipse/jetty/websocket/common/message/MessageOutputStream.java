@@ -52,7 +52,7 @@ public class MessageOutputStream extends OutputStream
 
     public MessageOutputStream(WebSocketSession session)
     {
-        this(session.getOutgoingHandler(), session.getPolicy().getMaxBinaryMessageBufferSize(), session.getBufferPool());
+        this(session.getOutgoingHandler(), session.getPolicy().getOutputBufferSize(), session.getBufferPool());
     }
 
     public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)

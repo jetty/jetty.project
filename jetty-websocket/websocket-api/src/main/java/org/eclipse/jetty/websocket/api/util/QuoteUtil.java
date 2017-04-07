@@ -322,7 +322,7 @@ public class QuoteUtil
     /**
      * Append into buf the provided string, adding quotes if needed.
      * <p>
-     * Quoting is determined if any of the characters in the {@code delim} are found in the input <code>str</code>.
+     * Quoting is determined if any of the characters in the {@code delim} are found in the input {@code str}.
      * 
      * @param buf
      *            the buffer to append to

@@ -342,7 +342,6 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public void setMaxBinaryMessageBufferSize(int length)
     {
         getPolicy().setMaxBinaryMessageSize(length);
-        getPolicy().setMaxBinaryMessageBufferSize(length);
     }
     
     @Override
@@ -356,7 +355,6 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     public void setMaxTextMessageBufferSize(int length)
     {
         getPolicy().setMaxTextMessageSize(length);
-        getPolicy().setMaxTextMessageBufferSize(length);
     }
     
     public void setPathParameters(Map<String, String> pathParams)

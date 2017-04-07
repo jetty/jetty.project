@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.net.URI;
 import java.util.Collection;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SessionTest
@@ -56,7 +56,6 @@ public class SessionTest
     }
     
     @Test
-    @Ignore // TODO fix frequent failure
     public void testBasicEcho_FromClient() throws Exception
     {
         WebSocketClient client = new WebSocketClient();

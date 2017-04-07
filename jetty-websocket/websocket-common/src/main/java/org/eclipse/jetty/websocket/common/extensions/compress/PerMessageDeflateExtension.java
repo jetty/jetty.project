@@ -71,7 +71,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             return;
         }
         
-        ByteAccumulator accumulator = newByteAccumulator();
+        ByteAccumulator accumulator = new ByteAccumulator(getPolicy().getMaxAllowedFrameSize());
         
         try 
         {

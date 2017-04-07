@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.io;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -50,6 +51,11 @@ public class LocalWebSocketConnection implements LogicalConnection, ConnectionSt
     public LocalWebSocketConnection(ByteBufferPool bufferPool)
     {
         this("anon",bufferPool);
+    }
+    
+    public LocalWebSocketConnection(URI uri, ByteBufferPool bufferPool)
+    {
+        this(uri.toASCIIString(), bufferPool);
     }
 
     public LocalWebSocketConnection(String id, ByteBufferPool bufferPool)
