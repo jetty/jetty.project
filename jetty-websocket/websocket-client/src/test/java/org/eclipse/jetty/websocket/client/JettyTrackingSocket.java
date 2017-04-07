@@ -31,10 +31,11 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.hamcrest.Matcher;
 import org.junit.Assert;
 
 /**
@@ -55,21 +56,15 @@ public class JettyTrackingSocket extends WebSocketAdapter
     public EventQueue<String> messageQueue = new EventQueue<>();
     public EventQueue<Throwable> errorQueue = new EventQueue<>();
 
-    public void assertClose(int expectedStatusCode, String expectedReason) throws InterruptedException
+    public void assertClose(int expectedStatusCode, Matcher<String> reasonMatcher) throws InterruptedException
     {
-        assertCloseCode(expectedStatusCode);
-        assertCloseReason(expectedReason);
+        assertThat("Close Code / Received [" + closeCode + "]", closeCode, is(expectedStatusCode));
+        assertThat("Close Reason", closeMessage.toString(), reasonMatcher);
     }
 
     public void assertCloseCode(int expectedCode) throws InterruptedException
     {
-        Assert.assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
         Assert.assertThat("Close Code / Received [" + closeMessage + "]",closeCode,is(expectedCode));
-    }
-
-    private void assertCloseReason(String expectedReason)
-    {
-        Assert.assertThat("Close Reason",closeMessage.toString(),is(expectedReason));
     }
 
     public void assertIsOpen() throws InterruptedException
@@ -122,7 +117,7 @@ public class JettyTrackingSocket extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        LOG.debug("onWebSocketClose({},{})",statusCode,reason);
+        LOG.warn("onWebSocketClose({},{})",statusCode,reason);
         super.onWebSocketClose(statusCode,reason);
         closeCode = statusCode;
         closeMessage.append(reason);

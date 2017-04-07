@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -191,6 +190,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final FrameFlusher flusher;
     private final String id;
     private final ExtensionStack extensionStack;
+    private LogicalConnection.ErrorListener errorListener;
     private List<ExtensionConfig> extensions;
     private ByteBuffer networkBuffer;
     private ByteBuffer prefillBuffer;
@@ -419,8 +419,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     LOG.debug("OPEN: normal fillInterested");
                 }
-                // TODO: investigate what happens if a failure occurs during prefill, and an attempt to write close fails,
-                // should a fill interested occur? or just a quick disconnect?
                 fillInterested();
                 break;
             case CLOSED:
@@ -490,16 +488,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return true;
     }
     
-    public void shutdown()
-    {
-        
-    }
-    
     @Override
     public void onFillable()
     {
         networkBuffer = bufferPool.acquire(getInputBufferSize(),true);
-    
         fillAndParse();
     }
     
@@ -526,7 +518,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 if (filled < 0)
                 {
                     bufferPool.release(networkBuffer);
-                    shutdown();
+                    notifyError(new EOFException("Read EOF"));
                     return;
                 }
                 
@@ -540,20 +532,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 if (!parser.parse(networkBuffer)) return;
             }
         }
-        catch (IOException e)
-        {
-            LOG.warn(e);
-            close(StatusCode.PROTOCOL,e.getMessage());
-        }
-        catch (CloseException e)
-        {
-            LOG.debug(e);
-            close(e.getStatusCode(),e.getMessage());
-        }
         catch (Throwable t)
         {
-            LOG.warn(t);
-            close(StatusCode.ABNORMAL,t.getMessage());
+            notifyError(t);
         }
     }
     
@@ -574,7 +555,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     private void notifyError(Throwable cause)
     {
-        // FIXME need to forward error to Session (or those interested)
+        if(errorListener != null)
+        {
+            errorListener.onError(cause);
+        }
+        else
+        {
+            LOG.warn("notifyError() undefined", cause);
+        }
     }
 
     @Override
@@ -633,69 +621,18 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         flusher.enqueue(frame,callback,batchMode);
     }
     
-    /**
-     * Read from Endpoint and parse bytes.
-     *
-     * @param buffer
-     * @return
-     */
-    @Deprecated
-    private int readParse(ByteBuffer buffer)
-    {
-        EndPoint endPoint = getEndPoint();
-        try
-        {
-            // Process the content from the Endpoint next
-            while(true)  // TODO: should this honor the LogicalConnection.suspend() ?
-            {
-                int filled = endPoint.fill(buffer);
-                if (filled < 0)
-                {
-                    LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
-                    ioState.onReadFailure(new EOFException("Remote Read EOF"));
-                    return filled;
-                }
-                else if (filled == 0)
-                {
-                    // Done reading, wait for next onFillable
-                    return filled;
-                }
-
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
-                }
-                
-                parser.parse(buffer);
-            }
-        }
-        catch (IOException e)
-        {
-            LOG.warn(e);
-            close(StatusCode.PROTOCOL,e.getMessage());
-            return -1;
-        }
-        catch (CloseException e)
-        {
-            LOG.debug(e);
-            close(e.getStatusCode(),e.getMessage());
-            return -1;
-        }
-        catch (Throwable t)
-        {
-            LOG.warn(t);
-            close(StatusCode.ABNORMAL,t.getMessage());
-            return -1;
-        }
-    }
-
     @Override
     public void resume()
     {
         suspendToken.set(false);
         fillAndParse();
     }
-
+    
+    public void setErrorListener(ErrorListener errorListener)
+    {
+        this.errorListener = errorListener;
+    }
+    
     /**
      * Get the list of extensions in use.
      * <p>

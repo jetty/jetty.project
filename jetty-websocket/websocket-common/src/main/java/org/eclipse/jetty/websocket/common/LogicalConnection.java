@@ -29,6 +29,16 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 
 public interface LogicalConnection extends OutgoingFrames, SuspendToken
 {
+    interface ErrorListener
+    {
+        /**
+         * Notification of an error condition at the Connection level
+         *
+         * @param cause the cause
+         */
+        void onError(Throwable cause);
+    }
+    
     /**
      * Send a websocket Close frame, without a status code or reason.
      * <p>

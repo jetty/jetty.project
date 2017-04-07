@@ -203,7 +203,6 @@ public class ParserTest
     
         parser.parse(buf);
 
-        capture.assertNoErrors();
         Assert.assertThat("Frame Count",capture.getFrames().size(),is(0));
     }
 
@@ -238,7 +237,6 @@ public class ParserTest
             networkBytes.position(networkBytes.position() + windowSize);
         }
 
-        capture.assertNoErrors();
         Assert.assertThat("Frame Count",capture.getFrames().size(),is(2));
         WebSocketFrame frame = capture.getFrames().poll();
         Assert.assertThat("Frame[0].opcode",frame.getOpCode(),is(OpCode.TEXT));

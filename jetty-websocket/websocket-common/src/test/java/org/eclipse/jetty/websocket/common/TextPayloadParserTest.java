@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
@@ -72,9 +71,6 @@ public class TextPayloadParserTest
         parser.parse(buf);
 
         capture.assertHasNoFrames();
-
-        MessageTooLargeException err = (MessageTooLargeException)capture.getErrors().poll();
-        Assert.assertThat("Error.closeCode",err.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
     }
 
     @Test

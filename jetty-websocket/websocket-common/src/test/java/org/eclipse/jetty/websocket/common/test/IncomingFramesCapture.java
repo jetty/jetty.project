@@ -26,7 +26,6 @@ import java.util.Queue;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
@@ -37,13 +36,6 @@ import org.junit.Assert;
 public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
 {
     private EventQueue<WebSocketFrame> frames = new EventQueue<>();
-    private EventQueue<Throwable> errors = new EventQueue<>();
-
-    @Deprecated
-    public void assertErrorCount(int expectedCount)
-    {
-        Assert.assertThat("Captured error count",errors.size(),is(expectedCount));
-    }
 
     public void assertFrameCount(int expectedCount)
     {
@@ -63,12 +55,6 @@ public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
         Assert.assertThat("Captured frame count",frames.size(),is(expectedCount));
     }
 
-    @Deprecated
-    public void assertHasErrors(Class<? extends WebSocketException> errorType, int expectedCount)
-    {
-        Assert.assertThat(errorType.getSimpleName(),getErrorCount(errorType),is(expectedCount));
-    }
-
     public void assertHasFrame(byte op)
     {
         Assert.assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
@@ -85,12 +71,6 @@ public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
         Assert.assertThat("Frame count",frames.size(),is(0));
     }
 
-    @Deprecated
-    public void assertNoErrors()
-    {
-        Assert.assertThat("Error count",errors.size(),is(0));
-    }
-
     public void clear()
     {
         frames.clear();
@@ -105,26 +85,6 @@ public class IncomingFramesCapture implements Parser.Handler, IncomingFrames
             System.err.printf("[%3d] %s%n",i++,frame);
             System.err.printf("          payload: %s%n",BufferUtil.toDetailString(frame.getPayload()));
         }
-    }
-
-    @Deprecated
-    public int getErrorCount(Class<? extends Throwable> errorType)
-    {
-        int count = 0;
-        for (Throwable error : errors)
-        {
-            if (errorType.isInstance(error))
-            {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    @Deprecated
-    public Queue<Throwable> getErrors()
-    {
-        return errors;
     }
 
     public int getFrameCount(byte op)

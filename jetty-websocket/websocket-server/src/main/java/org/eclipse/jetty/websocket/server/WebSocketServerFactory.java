@@ -83,7 +83,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
-    // TODO: obtain shared (per server scheduler, somehow)
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
     private final String supportedVersions;
@@ -570,6 +569,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         response.setExtensions(extensionStack.getNegotiatedExtensions());
         session.setUpgradeResponse(response);
         wsConnection.addListener(session);
+        wsConnection.setErrorListener(session);
         
         // Setup Incoming Routing
         extensionStack.setNextIncoming(session);

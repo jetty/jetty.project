@@ -501,7 +501,9 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             }
 
             Throwable failure = result.getFailure();
-            if ((failure instanceof java.net.ConnectException) || (failure instanceof UpgradeException))
+            if ( (failure instanceof java.net.SocketException) ||
+                 (failure instanceof java.io.InterruptedIOException) ||
+                 (failure instanceof UpgradeException) )
             {
                 // handle as-is
                 handleException(failure);
@@ -595,6 +597,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         session.setUpgradeRequest(new ClientUpgradeRequest(this));
         session.setUpgradeResponse(new ClientUpgradeResponse(response));
         connection.addListener(session);
+        connection.setErrorListener(session);
 
         // Setup Incoming Routing
         extensionStack.setNextIncoming(session);

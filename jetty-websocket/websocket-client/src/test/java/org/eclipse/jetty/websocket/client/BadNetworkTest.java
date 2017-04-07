@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -99,7 +101,7 @@ public class BadNetworkTest
         // Client Socket should see a close event, with status NO_CLOSE
         // This event is automatically supplied by the underlying WebSocketClientConnection
         // in the situation of a bad network connection.
-        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
+        wsocket.assertClose(StatusCode.NO_CLOSE, containsString("disconnect"));
     }
 
     @Test
@@ -126,6 +128,6 @@ public class BadNetworkTest
         // Client Socket should see a close event, with status NO_CLOSE
         // This event is automatically supplied by the underlying WebSocketClientConnection
         // in the situation of a bad network connection.
-        wsocket.assertCloseCode(StatusCode.NO_CLOSE);
+        wsocket.assertClose(StatusCode.PROTOCOL, containsString("EOF"));
     }
 }

@@ -328,7 +328,6 @@ public class TestABCase1_2
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -361,7 +360,6 @@ public class TestABCase1_2
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -394,7 +392,6 @@ public class TestABCase1_2
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
@@ -427,12 +424,10 @@ public class TestABCase1_2
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -461,14 +456,11 @@ public class TestABCase1_2
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
-
 
     @Test
     public void testParse65536ByteBinaryCase1_2_7()
@@ -497,12 +489,10 @@ public class TestABCase1_2
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(length));
-        // Assert.assertEquals("BinaryFrame.payload",length,pActual.getPayloadData().length);
     }
 
     @Test
@@ -520,11 +510,9 @@ public class TestABCase1_2
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
-        capture.assertNoErrors();
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("BinaryFrame.payloadLength",pActual.getPayloadLength(),is(0));
-        // Assert.assertNull("BinaryFrame.payload",pActual.getPayloadData());
     }
 }
