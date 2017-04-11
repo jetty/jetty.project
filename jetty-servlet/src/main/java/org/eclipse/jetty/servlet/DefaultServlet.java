@@ -129,6 +129,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  */
 public class DefaultServlet extends HttpServlet implements ResourceFactory, WelcomeFactory
 {
+    public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
+    
     private static final Logger LOG = Log.getLogger(DefaultServlet.class);
 
     private static final long serialVersionUID = 4930458713846881193L;    
@@ -371,7 +373,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     @Override
     public String getInitParameter(String name)
     {
-        String value=getServletContext().getInitParameter("org.eclipse.jetty.servlet.Default."+name);
+        String value=getServletContext().getInitParameter(CONTEXT_INIT+name);
         if (value==null)
             value=super.getInitParameter(name);
         return value;

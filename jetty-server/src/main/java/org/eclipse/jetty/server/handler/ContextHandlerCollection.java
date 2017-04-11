@@ -68,6 +68,12 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         super(true);
     }
+    
+    /* ------------------------------------------------------------ */
+    public ContextHandlerCollection(ContextHandler... contexts)
+    {
+        super(true,contexts);
+    }
 
 
     /* ------------------------------------------------------------ */

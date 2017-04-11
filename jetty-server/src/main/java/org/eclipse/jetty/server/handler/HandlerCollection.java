@@ -52,15 +52,23 @@ public class HandlerCollection extends AbstractHandlerContainer
     /* ------------------------------------------------------------ */
     public HandlerCollection()
     {
-        _mutableWhenRunning=false;
+        this(false);
     }
 
     /* ------------------------------------------------------------ */
-    public HandlerCollection(boolean mutableWhenRunning)
+    public HandlerCollection(Handler... handlers)
+    {
+        this(false,handlers);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public HandlerCollection(boolean mutableWhenRunning, Handler... handlers)
     {
         _mutableWhenRunning=mutableWhenRunning;
+        if (handlers.length>0)
+            setHandlers(handlers);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the handlers.
@@ -151,6 +159,16 @@ public class HandlerCollection extends AbstractHandlerContainer
     public void addHandler(Handler handler)
     {
         setHandlers(ArrayUtil.addToArray(getHandlers(), handler, Handler.class));
+    }
+
+    /* ------------------------------------------------------------ */
+    /* Prepend a handler.
+     * This implementation adds the passed handler to the start of the existing collection of handlers.
+     * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)
+     */
+    public void prependHandler(Handler handler)
+    {
+        setHandlers(ArrayUtil.prependToArray(handler, getHandlers(), Handler.class));
     }
 
     /* ------------------------------------------------------------ */
