@@ -28,8 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.EchoSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -109,7 +108,7 @@ public class RequestHeadersTest
     @Test
     public void testAccessRequestCookies() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         client.setTimeout(1,TimeUnit.SECONDS);
 
         try

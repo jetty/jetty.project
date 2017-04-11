@@ -41,9 +41,9 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -63,7 +63,7 @@ public class ClientConnectTest
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private final int timeout = 500;
-    private BlockheadServer server;
+    private XBlockheadServer server;
     private WebSocketClient client;
 
     @SuppressWarnings("unchecked")
@@ -109,7 +109,7 @@ public class ClientConnectTest
     @Before
     public void startServer() throws Exception
     {
-        server = new BlockheadServer();
+        server = new XBlockheadServer();
         server.start();
     }
 

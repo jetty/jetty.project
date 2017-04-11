@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
@@ -54,7 +54,7 @@ public class IdentityExtensionTest
     @Test(timeout = 10000)
     public void testIdentityExtension() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         client.clearExtensions();
         client.addExtensions("identity;param=0");
         client.addExtensions("identity;param=1, identity ; param = '2' ; other = ' some = value '");

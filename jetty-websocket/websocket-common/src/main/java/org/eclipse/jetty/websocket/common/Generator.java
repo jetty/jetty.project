@@ -212,15 +212,15 @@ public class Generator
 
     public ByteBuffer generateHeaderBytes(Frame frame)
     {
-        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,true);
+        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,false);
+        int p = BufferUtil.flipToFill(buffer);
         generateHeaderBytes(frame,buffer);
+        BufferUtil.flipToFlush(buffer,p);
         return buffer;
     }
 
     public void generateHeaderBytes(Frame frame, ByteBuffer buffer)
     {
-        int p = BufferUtil.flipToFill(buffer);
-
         // we need a framing header
         assertFrameValid(frame);
 
@@ -337,8 +337,6 @@ public class Generator
                 }
             }
         }
-
-        BufferUtil.flipToFlush(buffer,p);
     }
 
     /**

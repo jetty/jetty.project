@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.server.examples.echo.BigEchoSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
@@ -92,7 +92,7 @@ public class AnnotatedMaxMessageSizeTest
     @Test
     public void testEchoGood() throws IOException, Exception
     {
-        BlockheadClient client = new BlockheadClient(serverUri);
+        XBlockheadClient client = new XBlockheadClient(serverUri);
         try
         {
             client.setProtocols("echo");
@@ -118,8 +118,8 @@ public class AnnotatedMaxMessageSizeTest
     @Test(timeout=8000)
     public void testEchoTooBig() throws IOException, Exception
     {
-        BlockheadClient client = new BlockheadClient(serverUri);
-        try(StacklessLogging logging = new StacklessLogging(Parser.class))
+        XBlockheadClient client = new XBlockheadClient(serverUri);
+        try(StacklessLogging ignored = new StacklessLogging(Parser.class))
         {
             client.setProtocols("echo");
             client.connect();

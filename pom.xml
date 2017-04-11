@@ -940,7 +940,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>4.0</version>
+        <version>4.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -1535,6 +1535,17 @@
     <name>Webtide</name>
     <url>https://webtide.com</url>
   </organization>
+
+  <repositories>
+    <repository>
+      <id>jetty-snapshots</id>
+      <name>jetty-snapshots</name>
+      <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <distributionManagement>
     <repository>

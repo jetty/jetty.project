@@ -269,6 +269,8 @@ public class Parser
             {
                 case START:
                 {
+                    payload = null;
+                    
                     // peek at byte
                     byte b = buffer.get();
                     boolean fin = ((b & 0x80) != 0);
@@ -579,31 +581,22 @@ public class Parser
 
             maskProcessor.process(window);
 
-            if (window.remaining() == payloadLength)
+            if (payload == null)
             {
-                // We have the whole content, no need to copy.
-                frame.setPayload(window);
-                return true;
+                payload = bufferPool.acquire(payloadLength,false);
+                BufferUtil.clearToFill(payload);
             }
-            else
-            {
-                if (payload == null)
-                {
-                    payload = bufferPool.acquire(payloadLength,false);
-                    BufferUtil.clearToFill(payload);
-                }
-                
-                // Copy the payload.
-                payload.put(window);
+            
+            // Copy the payload.
+            payload.put(window);
 
-                // if the payload is complete
-                if (payload.position() == payloadLength)
-                {
-                    BufferUtil.flipToFlush(payload, 0);
-                    frame.setPayload(payload);
-                    // notify that frame is complete
-                    return true;
-                }
+            // if the payload is complete
+            if (payload.position() == payloadLength)
+            {
+                BufferUtil.flipToFlush(payload, 0);
+                frame.setPayload(payload);
+                // notify that frame is complete
+                return true;
             }
         }
         // frame not (yet) complete

@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
@@ -69,7 +69,7 @@ public class TooFastClientTest
     @Ignore("RELEASE")
     public void testUpgradeWithSmallFrames() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         try
         {
             client.connect();
@@ -132,7 +132,7 @@ public class TooFastClientTest
     @Ignore("RELEASE")
     public void testUpgradeWithLargeFrame() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         try
         {
             client.connect();

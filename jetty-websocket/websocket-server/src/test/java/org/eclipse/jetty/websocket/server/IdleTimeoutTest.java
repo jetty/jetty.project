@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -78,7 +78,7 @@ public class IdleTimeoutTest
     @Test
     public void testIdleTimeout() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         client.setProtocols("onConnect");
         client.setTimeout(2500,TimeUnit.MILLISECONDS);
         try

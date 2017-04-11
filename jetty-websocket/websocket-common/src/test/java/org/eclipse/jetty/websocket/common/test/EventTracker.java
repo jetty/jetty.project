@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.eclipse.jetty.websocket.common.test.RegexMatcher.matchesPattern;
+import static org.eclipse.jetty.toolchain.test.matchers.RegexMatcher.matchesPattern;
 import static org.junit.Assert.assertThat;
 
 import java.util.Iterator;

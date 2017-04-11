@@ -97,7 +97,7 @@ public class MisbehavingClassTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging logging = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
         {
             // expecting IOException during onOpen
             expectedException.expect(IOException.class);
@@ -119,7 +119,7 @@ public class MisbehavingClassTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging logging = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
         {
             // expecting IOException during onOpen
             expectedException.expect(IOException.class);

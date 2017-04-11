@@ -41,7 +41,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
@@ -112,11 +112,11 @@ public class DecoderReaderManySmallTest
 
     private static class EventIdServer implements Runnable
     {
-        private BlockheadServer server;
+        private XBlockheadServer server;
         private IBlockheadServerConnection sconnection;
         private CountDownLatch connectLatch = new CountDownLatch(1);
 
-        public EventIdServer(BlockheadServer server)
+        public EventIdServer(XBlockheadServer server)
         {
             this.server = server;
         }
@@ -166,7 +166,7 @@ public class DecoderReaderManySmallTest
     @Rule
     public TestTracker tt = new TestTracker();
 
-    private BlockheadServer server;
+    private XBlockheadServer server;
     private WebSocketContainer client;
 
     @Before
@@ -178,7 +178,7 @@ public class DecoderReaderManySmallTest
     @Before
     public void startServer() throws Exception
     {
-        server = new BlockheadServer();
+        server = new XBlockheadServer();
         server.start();
     }
 

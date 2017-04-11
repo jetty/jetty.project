@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
 import org.eclipse.jetty.websocket.server.helper.EchoServlet;
 import org.junit.AfterClass;
@@ -70,7 +70,7 @@ public class FragmentExtensionTest
     {
         int fragSize = 4;
 
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         client.clearExtensions();
         client.addExtensions("fragment;maxLength=" + fragSize);
         client.setProtocols("onConnect");

@@ -31,8 +31,8 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,12 +40,12 @@ import org.junit.Test;
 
 public class SessionTest
 {
-    private BlockheadServer server;
+    private XBlockheadServer server;
 
     @Before
     public void startServer() throws Exception
     {
-        server = new BlockheadServer();
+        server = new XBlockheadServer();
         server.start();
     }
 

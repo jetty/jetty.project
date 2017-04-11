@@ -41,7 +41,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -304,7 +304,7 @@ public class WebSocketUpgradeFilterTest
     {
         URI destUri = serverUri.resolve("/info/");
         
-        try (BlockheadClient client = new BlockheadClient(destUri))
+        try (XBlockheadClient client = new XBlockheadClient(destUri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -326,7 +326,7 @@ public class WebSocketUpgradeFilterTest
     {
         URI destUri = serverUri.resolve("/info/");
         
-        try (BlockheadClient client = new BlockheadClient(destUri))
+        try (XBlockheadClient client = new XBlockheadClient(destUri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -345,7 +345,7 @@ public class WebSocketUpgradeFilterTest
         server.getHandler().stop();
         server.getHandler().start();
         
-        try (BlockheadClient client = new BlockheadClient(destUri))
+        try (XBlockheadClient client = new XBlockheadClient(destUri))
         {
             client.connect();
             client.sendStandardRequest();

@@ -44,7 +44,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
@@ -57,11 +57,11 @@ public class EncoderTest
     private static class EchoServer implements Runnable
     {
         private Thread thread;
-        private BlockheadServer server;
+        private XBlockheadServer server;
         private IBlockheadServerConnection sconnection;
         private CountDownLatch connectLatch = new CountDownLatch(1);
 
-        public EchoServer(BlockheadServer server)
+        public EchoServer(XBlockheadServer server)
         {
             this.server = server;
         }
@@ -192,7 +192,7 @@ public class EncoderTest
 
     @Rule
     public TestTracker tt = new TestTracker();
-    private BlockheadServer server;
+    private XBlockheadServer server;
 
     private WebSocketContainer client;
 
@@ -241,7 +241,7 @@ public class EncoderTest
     @Before
     public void startServer() throws Exception
     {
-        server = new BlockheadServer();
+        server = new XBlockheadServer();
         server.start();
     }
 

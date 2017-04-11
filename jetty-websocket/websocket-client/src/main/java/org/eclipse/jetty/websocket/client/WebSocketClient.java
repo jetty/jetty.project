@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.client.io.ConnectionManager;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
@@ -400,12 +399,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getByteBufferPool();
     }
 
-    @Deprecated
-    public ConnectionManager getConnectionManager()
-    {
-        throw new UnsupportedOperationException("ConnectionManager is no longer supported");
-    }
-
     public long getConnectTimeout()
     {
         return httpClient.getConnectTimeout();
@@ -526,18 +519,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         {
             ShutdownThread.register(this);
         }
-    }
-
-    /**
-     * Factory method for new ConnectionManager
-     *
-     * @return the ConnectionManager instance to use
-     * @deprecated use HttpClient instead
-     */
-    @Deprecated
-    protected ConnectionManager newConnectionManager()
-    {
-        throw new UnsupportedOperationException("ConnectionManager is no longer supported");
     }
 
     @Override
