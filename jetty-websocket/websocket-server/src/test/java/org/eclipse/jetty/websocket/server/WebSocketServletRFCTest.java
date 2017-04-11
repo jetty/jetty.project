@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
@@ -93,7 +93,7 @@ public class WebSocketServletRFCTest
     @Test
     public void testBinaryAggregate() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         try
         {
             client.connect();
@@ -179,7 +179,7 @@ public class WebSocketServletRFCTest
     @Test
     public void testEcho() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         try
         {
             client.connect();
@@ -209,7 +209,7 @@ public class WebSocketServletRFCTest
     @Test
     public void testInternalError() throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri());
+        try (XBlockheadClient client = new XBlockheadClient(server.getServerUri());
              StacklessLogging stackless=new StacklessLogging(RFCSocket.class))
         {
             client.connect();
@@ -236,7 +236,7 @@ public class WebSocketServletRFCTest
     @Test
     public void testLowercaseUpgrade() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         try
         {
             client.connect();
@@ -274,7 +274,7 @@ public class WebSocketServletRFCTest
     public void testTextNotUTF8() throws Exception
     {
         try (StacklessLogging stackless=new StacklessLogging(Parser.class);
-             BlockheadClient client = new BlockheadClient(server.getServerUri()))
+             XBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setProtocols("other");
             client.connect();
@@ -307,7 +307,7 @@ public class WebSocketServletRFCTest
     @Test
     public void testUppercaseUpgrade() throws Exception
     {
-        BlockheadClient client = new BlockheadClient(server.getServerUri());
+        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
         try
         {
             client.connect();

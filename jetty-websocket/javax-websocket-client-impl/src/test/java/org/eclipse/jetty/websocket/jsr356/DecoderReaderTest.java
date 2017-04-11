@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer;
+import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.junit.After;
 import org.junit.Assert;
@@ -155,11 +155,11 @@ public class DecoderReaderTest
 
     private static class QuoteServer implements Runnable
     {
-        private BlockheadServer server;
+        private XBlockheadServer server;
         private IBlockheadServerConnection sconnection;
         private CountDownLatch connectLatch = new CountDownLatch(1);
 
-        public QuoteServer(BlockheadServer server)
+        public QuoteServer(XBlockheadServer server)
         {
             this.server = server;
         }
@@ -231,7 +231,7 @@ public class DecoderReaderTest
     @Rule
     public TestTracker tt = new TestTracker();
 
-    private BlockheadServer server;
+    private XBlockheadServer server;
     private WebSocketContainer client;
 
     @Before
@@ -249,7 +249,7 @@ public class DecoderReaderTest
     @Before
     public void startServer() throws Exception
     {
-        server = new BlockheadServer();
+        server = new XBlockheadServer();
         server.start();
     }
 

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
@@ -171,8 +170,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
-    private static final Logger LOG_OPEN = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_OPEN");
-    private static final Logger LOG_CLOSE = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_CLOSE");
+    private static final Logger LOG_OPEN = Log.getLogger(AbstractWebSocketConnection.class.getName() + ".OPEN");
+    private static final Logger LOG_CLOSE = Log.getLogger(AbstractWebSocketConnection.class.getName() + ".CLOSE");
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
@@ -518,7 +517,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 if (filled < 0)
                 {
                     bufferPool.release(networkBuffer);
-                    notifyError(new EOFException("Read EOF"));
+//                    notifyError(new EOFException("Read EOF"));
                     return;
                 }
                 

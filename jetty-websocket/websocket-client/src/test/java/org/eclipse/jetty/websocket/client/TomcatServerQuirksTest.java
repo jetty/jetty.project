@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
+import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -71,7 +71,7 @@ public class TomcatServerQuirksTest
     @Test
     public void testTomcat7_0_32_WithTransferEncoding() throws Exception
     {
-        BlockheadServer server = new BlockheadServer();
+        XBlockheadServer server = new XBlockheadServer();
         WebSocketClient client = new WebSocketClient();
 
         try

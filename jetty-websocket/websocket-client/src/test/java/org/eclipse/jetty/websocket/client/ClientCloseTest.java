@@ -67,10 +67,10 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.RawFrameBuilder;
+import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
@@ -188,7 +188,7 @@ public class ClientCloseTest
     @Rule
     public TestTracker tt = new TestTracker();
 
-    private BlockheadServer server;
+    private XBlockheadServer server;
     private WebSocketClient client;
 
     private void confirmConnection(CloseTrackingSocket clientSocket, Future<Session> clientFuture, IBlockheadServerConnection serverConns) throws Exception
@@ -301,7 +301,7 @@ public class ClientCloseTest
     @Before
     public void startServer() throws Exception
     {
-        server = new BlockheadServer();
+        server = new XBlockheadServer();
         server.start();
     }
 
@@ -442,7 +442,7 @@ public class ClientCloseTest
         bad.putShort((short)StatusCode.NORMAL);
         bad.put(msg);
         BufferUtil.flipToFlush(bad,0);
-        try (StacklessLogging quiet = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignored = new StacklessLogging(Parser.class))
         {
             serverConn.write(bad);
 
@@ -480,7 +480,7 @@ public class ClientCloseTest
         // client confirms connection via echo
         confirmConnection(clientSocket,clientConnectFuture,serverConn);
     
-        try(StacklessLogging scope = new StacklessLogging(CloseTrackingSocket.class))
+        try(StacklessLogging ignored = new StacklessLogging(CloseTrackingSocket.class))
         {
             // client sends close frame
             final String origCloseReason = "Normal Close";

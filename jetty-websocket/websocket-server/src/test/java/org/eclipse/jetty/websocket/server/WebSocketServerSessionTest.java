@@ -27,7 +27,7 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.SessionServlet;
 import org.junit.AfterClass;
@@ -61,7 +61,7 @@ public class WebSocketServerSessionTest
     public void testDisconnect() throws Exception
     {
         URI uri = server.getServerUri().resolve("/test/disconnect");
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -77,7 +77,7 @@ public class WebSocketServerSessionTest
     public void testUpgradeRequestResponse() throws Exception
     {
         URI uri = server.getServerUri().resolve("/test?snack=cashews&amount=handful&brand=off");
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.connect();
             client.sendStandardRequest();

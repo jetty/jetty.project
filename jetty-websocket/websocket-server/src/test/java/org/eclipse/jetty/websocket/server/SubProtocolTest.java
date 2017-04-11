@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -119,7 +119,7 @@ public class SubProtocolTest
     
     private void testSubProtocol(String requestProtocols, String acceptedSubProtocols) throws Exception
     {
-        try (BlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (XBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setTimeout(1, TimeUnit.SECONDS);
             

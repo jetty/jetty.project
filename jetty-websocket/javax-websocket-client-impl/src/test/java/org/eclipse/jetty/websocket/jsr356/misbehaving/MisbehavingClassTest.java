@@ -98,7 +98,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging logging = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
         {
             // expecting IOException during onOpen
             expectedException.expect(IOException.class);
@@ -121,7 +121,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging logging = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
         {
             // expecting IOException during onOpen
             expectedException.expect(IOException.class);

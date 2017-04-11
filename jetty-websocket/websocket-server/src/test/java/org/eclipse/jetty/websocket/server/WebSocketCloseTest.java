@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.RFCSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -222,7 +222,7 @@ public class WebSocketCloseTest
     @Test
     public void testFastClose() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastclose");
             client.setTimeout(5,TimeUnit.SECONDS);
@@ -255,11 +255,11 @@ public class WebSocketCloseTest
     @Test
     public void testFastFail() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
             client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(CloseServlet.class))
+            try (StacklessLogging ignored = new StacklessLogging(CloseServlet.class))
             {
                 client.connect();
                 client.sendStandardRequest();
@@ -294,7 +294,7 @@ public class WebSocketCloseTest
         fastClose();
         dropConnection();
 
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setProtocols("container");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -329,11 +329,11 @@ public class WebSocketCloseTest
     @SuppressWarnings("Duplicates")
     private void fastClose() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastclose");
             client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(WebSocketSession.class))
+            try (StacklessLogging ignored = new StacklessLogging(WebSocketSession.class))
             {
                 client.connect();
                 client.sendStandardRequest();
@@ -356,11 +356,11 @@ public class WebSocketCloseTest
 
     private void fastFail() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setProtocols("fastfail");
             client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(WebSocketSession.class))
+            try (StacklessLogging ignored = new StacklessLogging(WebSocketSession.class))
             {
                 client.connect();
                 client.sendStandardRequest();
@@ -382,11 +382,11 @@ public class WebSocketCloseTest
     @SuppressWarnings("Duplicates")
     private void dropConnection() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             client.setProtocols("container");
             client.setTimeout(1,TimeUnit.SECONDS);
-            try (StacklessLogging scope = new StacklessLogging(WebSocketSession.class))
+            try (StacklessLogging ignored = new StacklessLogging(WebSocketSession.class))
             {
                 client.connect();
                 client.sendStandardRequest();

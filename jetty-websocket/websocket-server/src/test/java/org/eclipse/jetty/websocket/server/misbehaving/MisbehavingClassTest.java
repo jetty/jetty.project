@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.AfterClass;
@@ -63,8 +63,8 @@ public class MisbehavingClassTest
     @Test
     public void testListenerRuntimeOnConnect() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri());
-             StacklessLogging scope = new StacklessLogging(ListenerRuntimeOnConnectSocket.class))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri());
+             StacklessLogging ignored = new StacklessLogging(ListenerRuntimeOnConnectSocket.class))
         {
             client.setProtocols("listener-runtime-connect");
             client.setTimeout(1,TimeUnit.SECONDS);
@@ -97,8 +97,8 @@ public class MisbehavingClassTest
     @Test
     public void testAnnotatedRuntimeOnConnect() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri());
-             StacklessLogging scope = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri());
+             StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class))
         {
             client.setProtocols("annotated-runtime-connect");
             client.setTimeout(1,TimeUnit.SECONDS);

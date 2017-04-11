@@ -50,7 +50,7 @@ public class UnitParser extends Parser
     @Deprecated
     public void parseQuietly(ByteBuffer buf)
     {
-        try (StacklessLogging suppress = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignored = new StacklessLogging(Parser.class))
         {
             parse(buf);
         }

@@ -30,18 +30,18 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 public class WebSocketSessionFactory implements SessionFactory
 {
     private final WebSocketContainerScope containerScope;
-
+    
     public WebSocketSessionFactory(WebSocketContainerScope containerScope)
     {
         this.containerScope = containerScope;
-   }
-
+    }
+    
     @Override
     public boolean supports(Object websocket)
     {
         return (websocket instanceof WebSocketConnectionListener) || (websocket.getClass().getAnnotation(WebSocket.class) != null);
     }
-
+    
     @Override
     public WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection)
     {

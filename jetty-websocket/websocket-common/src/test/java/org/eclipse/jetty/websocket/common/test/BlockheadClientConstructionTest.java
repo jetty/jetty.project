@@ -64,7 +64,7 @@ public class BlockheadClientConstructionTest
     public void testURIs() throws URISyntaxException
     {
         @SuppressWarnings("resource")
-        BlockheadClient client = new BlockheadClient(expectedWsUri);
+        XBlockheadClient client = new XBlockheadClient(expectedWsUri);
         Assert.assertThat("Websocket URI",client.getWebsocketURI(),is(expectedWsUri));
         Assert.assertThat("Websocket URI",client.getHttpURI(),is(expectedHttpUri));
     }

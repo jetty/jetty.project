@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.HttpResponse;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
@@ -413,7 +413,7 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/empty");
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addExtensions("identity");
             client.connect();
@@ -428,7 +428,7 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/no-extensions");
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addExtensions("identity");
             client.connect();
@@ -448,7 +448,7 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/capture-request-headers");
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addHeader("X-Dummy: Bogus\r\n");
             client.connect();
@@ -468,7 +468,7 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/unique-user-props");
 
         // First request
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -481,7 +481,7 @@ public class ConfiguratorTest
         }
         
         // Second request
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -505,7 +505,7 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/addr");
 
         // First request
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.connect();
             client.sendStandardRequest();
@@ -540,7 +540,7 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addHeader("Sec-WebSocket-Protocol: echo\r\n");
             client.connect();
@@ -564,7 +564,7 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addHeader("Sec-WebSocket-Protocol: echo, chat, status\r\n");
             client.connect();
@@ -588,7 +588,7 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addHeader("sec-websocket-protocol: echo, chat, status\r\n");
             client.connect();
@@ -612,7 +612,7 @@ public class ConfiguratorTest
         URI uri = baseServerUri.resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
 
-        try (IBlockheadClient client = new BlockheadClient(uri))
+        try (IBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addHeader("Sec-Websocket-Protocol: echo, chat, status\r\n");
             client.connect();
@@ -634,7 +634,7 @@ public class ConfiguratorTest
     {
         URI uri = baseServerUri.resolve("/timedecoder");
 
-        try (BlockheadClient client = new BlockheadClient(uri))
+        try (XBlockheadClient client = new XBlockheadClient(uri))
         {
             client.addHeader("Sec-Websocket-Protocol: gmt\r\n");
             client.connect();

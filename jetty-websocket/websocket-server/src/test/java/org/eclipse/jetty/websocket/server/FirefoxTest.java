@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.BlockheadClient;
+import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
 import org.eclipse.jetty.websocket.common.test.IBlockheadClient;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
@@ -53,7 +53,7 @@ public class FirefoxTest
     @Test
     public void testConnectionKeepAlive() throws Exception
     {
-        try (IBlockheadClient client = new BlockheadClient(server.getServerUri()))
+        try (IBlockheadClient client = new XBlockheadClient(server.getServerUri()))
         {
             // Odd Connection Header value seen in Firefox
             client.setConnectionValue("keep-alive, Upgrade");
