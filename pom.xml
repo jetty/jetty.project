@@ -7,7 +7,6 @@
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
   <version>9.4.4-SNAPSHOT</version>
-  
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>

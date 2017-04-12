@@ -1,5 +1,7 @@
 jetty-9.4.4-SNAPSHOT
 
+jetty-9.3.19-SNAPSHOT
+
 jetty-9.4.3.v20170317 - 17 March 2017
  + 329 Javadoc for HttpTester and ServletTester needs to reference limited HTTP
    version scope
@@ -31,6 +33,13 @@ jetty-9.4.3.v20170317 - 17 March 2017
  + 1402 Move RFC syntax validation to jetty-http Syntax class
  + 1403 Move new CookieCompliance class to jetty-http
  + 1405 Cookie name cannot be blank or null
+
+jetty-9.3.18.v20170406 - 06 April 2017
+ + 877 Programmatic servlet mappings cannot override mappings from
+   webdefault.xml using quickstart
+ + 1201 X-Forwarded-For incorrectly set in jetty-http-forwarded.xml
+ + 1417 Improve classloader dumping
+ + 1439 Allow UNC paths to function as Resource bases
 
 jetty-9.3.17.v20170317 - 17 March 2017
  + 329 Javadoc for HttpTester and ServletTester needs to reference limited HTTP
