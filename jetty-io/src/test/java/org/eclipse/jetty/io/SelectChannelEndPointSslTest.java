@@ -77,6 +77,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         engine.setUseClientMode(false);
         SslConnection sslConnection = new SslConnection(__byteBufferPool, _threadPool, endpoint, engine);
         sslConnection.setRenegotiationAllowed(__sslCtxFactory.isRenegotiationAllowed());
+        sslConnection.setRenegotiationLimit(__sslCtxFactory.getRenegotiationLimit());
         Connection appConnection = super.newConnection(channel,sslConnection.getDecryptedEndPoint());
         sslConnection.getDecryptedEndPoint().setConnection(appConnection);
         return sslConnection;
