@@ -165,6 +165,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private String _endpointIdentificationAlgorithm = null;
     private boolean _trustAll;
     private boolean _renegotiationAllowed = true;
+    private int _renegotiationLimit = 5;
     private Factory _factory;
 
     /**
@@ -911,6 +912,25 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         _renegotiationAllowed = renegotiationAllowed;
     }
 
+    /**
+     * @return The number of renegotions allowed for this connection.  When the limit
+     * is 0 renegotiation will be denied. If the limit is <0 then no limit is applied. 
+     */
+    public int getRenegotiationLimit()
+    {
+        return _renegotiationLimit;
+    }
+
+    /**
+     * @param renegotiationLimit The number of renegotions allowed for this connection.  
+     * When the limit is 0 renegotiation will be denied. If the limit is <0 then no limit is applied.
+     * Default 5.
+     */
+    public void setRenegotiationLimit(int renegotiationLimit)
+    {
+        _renegotiationLimit = renegotiationLimit;
+    }
+    
     /**
      * @return Path to file that contains Certificate Revocation List
      */
