@@ -914,7 +914,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
     /**
      * @return The number of renegotions allowed for this connection.  When the limit
-     * is 0 renegotiation will be denied. If the limit is <0 then no limit is applied. 
+     * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied. 
      */
     public int getRenegotiationLimit()
     {
@@ -923,7 +923,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
     /**
      * @param renegotiationLimit The number of renegotions allowed for this connection.  
-     * When the limit is 0 renegotiation will be denied. If the limit is <0 then no limit is applied.
+     * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      * Default 5.
      */
     public void setRenegotiationLimit(int renegotiationLimit)
