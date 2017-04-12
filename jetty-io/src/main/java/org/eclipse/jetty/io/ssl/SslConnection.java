@@ -176,7 +176,7 @@ public class SslConnection extends AbstractConnection
 
     /**
      * @return The number of renegotions allowed for this connection.  When the limit
-     * is 0 renegotiation will be denied. If the limit is <0 then no limit is applied. 
+     * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied. 
      */
     public int getRenegotiationLimit()
     {
@@ -185,7 +185,7 @@ public class SslConnection extends AbstractConnection
 
     /**
      * @param renegotiationLimit The number of renegotions allowed for this connection.  
-     * When the limit is 0 renegotiation will be denied. If the limit is <0 then no limit is applied.
+     * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      * Default -1.
      */
     public void setRenegotiationLimit(int renegotiationLimit)
