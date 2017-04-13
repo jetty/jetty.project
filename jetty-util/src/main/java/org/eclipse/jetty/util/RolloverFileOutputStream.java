@@ -185,8 +185,6 @@ public class RolloverFileOutputStream extends FilterOutputStream
             if (__rollover==null)
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
             
-            _rollTask=new RollTask();
-
             midnight = toMidnight(ZonedDateTime.now(), zone.toZoneId());
             
             scheduleNextRollover();
@@ -214,14 +212,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
     public static ZonedDateTime nextMidnight(ZonedDateTime dateTime)
     {
         // Increment to next day.
-        // Using Calendar.add(DAY, 1) takes in account Daylights Savings
-        // differences, and still maintains the "midnight" settings for
-        // Hour, Minute, Second, Milliseconds
         return dateTime.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(dateTime.getZone());
     }
     
     private void scheduleNextRollover()
     {
+        _rollTask = new RollTask();
         midnight = nextMidnight(midnight);
         __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - System.currentTimeMillis());
     }
