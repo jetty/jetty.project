@@ -344,8 +344,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
-       //Even if metadata is complete, we still need to scan for ServletContainerInitializers - if there are any
-      
        if (!context.getMetaData().isMetaDataComplete())
        {
            //If metadata isn't complete, if this is a servlet 3 webapp or isConfigDiscovered is true, we need to search for annotations

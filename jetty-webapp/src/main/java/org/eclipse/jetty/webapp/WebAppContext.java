@@ -185,7 +185,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private Map<String, String> _resourceAliases;
     private boolean _ownClassLoader=false;
-    private boolean _configurationDiscovered=true;
+    private boolean _configurationDiscovered=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
     
