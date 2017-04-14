@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -39,7 +40,6 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -203,7 +203,7 @@ public class ParserTest
     
         parser.parse(buf);
 
-        Assert.assertThat("Frame Count",capture.getFrames().size(),is(0));
+        assertThat("Frame Count",capture.getFrames().size(),is(0));
     }
 
     @Test
@@ -233,19 +233,19 @@ public class ParserTest
             ByteBuffer window = networkBytes.slice();
             int windowSize = Math.min(window.remaining(),4096);
             window.limit(windowSize);
-            parser.parse(window);
+            assertThat(parser.parse(window), is(true));
             networkBytes.position(networkBytes.position() + windowSize);
         }
 
-        Assert.assertThat("Frame Count",capture.getFrames().size(),is(2));
+        assertThat("Frame Count",capture.getFrames().size(),is(2));
         WebSocketFrame frame = capture.getFrames().poll();
-        Assert.assertThat("Frame[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
+        assertThat("Frame[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
         ByteBuffer actualPayload = frame.getPayload();
-        Assert.assertThat("Frame[0].payload.length",actualPayload.remaining(),is(payload.length));
+        assertThat("Frame[0].payload.length",actualPayload.remaining(),is(payload.length));
         // Should be all '*' characters (if masking is correct)
         for (int i = actualPayload.position(); i < actualPayload.remaining(); i++)
         {
-            Assert.assertThat("Frame[0].payload[i]",actualPayload.get(i),is((byte)'*'));
+            assertThat("Frame[0].payload[i]",actualPayload.get(i),is((byte)'*'));
         }
     }
 }

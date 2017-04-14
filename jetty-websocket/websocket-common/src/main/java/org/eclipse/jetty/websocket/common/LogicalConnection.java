@@ -22,14 +22,14 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.io.IOState;
 
 public interface LogicalConnection extends OutgoingFrames, SuspendToken
 {
-    interface ErrorListener
+    interface Listener extends Connection.Listener
     {
         /**
          * Notification of an error condition at the Connection level
@@ -39,29 +39,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
         void onError(Throwable cause);
     }
     
-    /**
-     * Send a websocket Close frame, without a status code or reason.
-     * <p>
-     * Basic usage: results in an non-blocking async write, then connection close.
-     * 
-     * @see org.eclipse.jetty.websocket.api.StatusCode
-     * @see #close(int, String)
-     */
-    void close();
-
-    /**
-     * Send a websocket Close frame, with status code.
-     * <p>
-     * Advanced usage: results in an non-blocking async write, then connection close.
-     * 
-     * @param statusCode
-     *            the status code
-     * @param reason
-     *            the (optional) reason. (can be null for no reason)
-     * @see org.eclipse.jetty.websocket.api.StatusCode
-     */
-    void close(int statusCode, String reason);
-
     /**
      * Terminate the connection (no close frame sent)
      */
@@ -85,13 +62,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return the idle timeout in milliseconds
      */
     long getIdleTimeout();
-
-    /**
-     * Get the IOState of the connection.
-     * 
-     * @return the IOState of the connection.
-     */
-    IOState getIOState();
 
     /**
      * Get the local {@link InetSocketAddress} in use for this connection.

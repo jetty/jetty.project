@@ -20,12 +20,15 @@ package org.eclipse.jetty.websocket.common;
 
 import static org.hamcrest.Matchers.containsString;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.test.DummySocket;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
+import org.eclipse.jetty.websocket.common.util.LifeCycleScope;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,52 +43,59 @@ public class WebSocketRemoteEndpointTest
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("WebSocketRemoteEndpoint");
 
     @Test
-    public void testTextBinaryText() throws IOException
+    public void testTextBinaryText() throws Exception
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
+        SimpleContainerScope container = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
+        WebSocketSession session = new LocalWebSocketSession(container, testname, new DummySocket());
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
-        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
-        conn.connect();
-        conn.open();
-
-        // Start text message
-        remote.sendPartialString("Hello ",false);
-
-        try
+        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(session,outgoing);
+        try(LifeCycleScope sessionScope = new LifeCycleScope(session))
         {
-            // Attempt to start Binary Message
-            ByteBuffer bytes = ByteBuffer.wrap(new byte[]
-                    { 0, 1, 2 });
-            remote.sendPartialBytes(bytes,false);
-            Assert.fail("Expected " + IllegalStateException.class.getName());
+            session.connect();
+            session.open();
+    
+            // Start text message
+            remote.sendPartialString("Hello ", false);
+    
+            try
+            {
+                // Attempt to start Binary Message
+                ByteBuffer bytes = ByteBuffer.wrap(new byte[] {0, 1, 2});
+                remote.sendPartialBytes(bytes, false);
+                Assert.fail("Expected " + IllegalStateException.class.getName());
+            }
+            catch (IllegalStateException e)
+            {
+                // Expected path
+                Assert.assertThat("Exception", e.getMessage(), containsString("Cannot send"));
+            }
+    
+            // End text message
+            remote.sendPartialString("World!", true);
         }
-        catch (IllegalStateException e)
-        {
-            // Expected path
-            Assert.assertThat("Exception",e.getMessage(),containsString("Cannot send"));
-        }
-
-        // End text message
-        remote.sendPartialString("World!",true);
     }
 
     @Test
-    public void testTextPingText() throws IOException
+    public void testTextPingText() throws Exception
     {
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(testname,bufferPool);
+        SimpleContainerScope container = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
+        WebSocketSession session = new LocalWebSocketSession(container, testname, new DummySocket());
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
-        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
-        conn.connect();
-        conn.open();
-
-        // Start text message
-        remote.sendPartialString("Hello ",false);
-
-        // Attempt to send Ping Message
-        remote.sendPing(ByteBuffer.wrap(new byte[]
-                { 0 }));
-
-        // End text message
-        remote.sendPartialString("World!",true);
+        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(session,outgoing);
+        try(LifeCycleScope sessionScope = new LifeCycleScope(session))
+        {
+            session.connect();
+            session.open();
+    
+            // Start text message
+            remote.sendPartialString("Hello ", false);
+    
+            // Attempt to send Ping Message
+            remote.sendPing(ByteBuffer.wrap(new byte[]
+                    {0}));
+    
+            // End text message
+            remote.sendPartialString("World!", true);
+        }
     }
 }

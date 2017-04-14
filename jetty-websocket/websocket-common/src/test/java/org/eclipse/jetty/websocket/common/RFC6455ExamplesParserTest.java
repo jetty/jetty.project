@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 
@@ -28,7 +29,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -69,10 +69,10 @@ public class RFC6455ExamplesParserTest
 
         WebSocketFrame txt = capture.getFrames().poll();
         String actual = BufferUtil.toUTF8String(txt.getPayload());
-        Assert.assertThat("TextFrame[0].data",actual,is("Hel"));
+        assertThat("TextFrame[0].data",actual,is("Hel"));
         txt = capture.getFrames().poll();
         actual = BufferUtil.toUTF8String(txt.getPayload());
-        Assert.assertThat("TextFrame[1].data",actual,is("lo"));
+        assertThat("TextFrame[1].data",actual,is("lo"));
     }
 
     @Test
@@ -94,7 +94,7 @@ public class RFC6455ExamplesParserTest
 
         WebSocketFrame pong = capture.getFrames().poll();
         String actual = BufferUtil.toUTF8String(pong.getPayload());
-        Assert.assertThat("PongFrame.payload",actual,is("Hello"));
+        assertThat("PongFrame.payload",actual,is("Hello"));
     }
 
     @Test
@@ -116,7 +116,7 @@ public class RFC6455ExamplesParserTest
 
         WebSocketFrame txt = capture.getFrames().poll();
         String actual = BufferUtil.toUTF8String(txt.getPayload());
-        Assert.assertThat("TextFrame.payload",actual,is("Hello"));
+        assertThat("TextFrame.payload",actual,is("Hello"));
     }
 
     @Test
@@ -145,14 +145,14 @@ public class RFC6455ExamplesParserTest
 
         Frame bin = capture.getFrames().poll();
 
-        Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
+        assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
 
         ByteBuffer data = bin.getPayload();
-        Assert.assertThat("BinaryFrame.payload.length",data.remaining(),is(dataSize));
+        assertThat("BinaryFrame.payload.length",data.remaining(),is(dataSize));
 
         for (int i = 0; i < dataSize; i++)
         {
-            Assert.assertThat("BinaryFrame.payload[" + i + "]",data.get(i),is((byte)0x44));
+            assertThat("BinaryFrame.payload[" + i + "]",data.get(i),is((byte)0x44));
         }
     }
 
@@ -176,19 +176,19 @@ public class RFC6455ExamplesParserTest
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         UnitParser parser = new UnitParser(policy,capture);
-        parser.parse(buf);
+        assertThat(parser.parse(buf), is(true));
 
         capture.assertHasFrame(OpCode.BINARY,1);
 
         Frame bin = capture.getFrames().poll();
 
-        Assert.assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
+        assertThat("BinaryFrame.payloadLength",bin.getPayloadLength(),is(dataSize));
         ByteBuffer data = bin.getPayload();
-        Assert.assertThat("BinaryFrame.payload.length",data.remaining(),is(dataSize));
+        assertThat("BinaryFrame.payload.length",data.remaining(),is(dataSize));
 
         for (int i = 0; i < dataSize; i++)
         {
-            Assert.assertThat("BinaryFrame.payload[" + i + "]",data.get(i),is((byte)0x77));
+            assertThat("BinaryFrame.payload[" + i + "]",data.get(i),is((byte)0x77));
         }
     }
 
@@ -211,7 +211,7 @@ public class RFC6455ExamplesParserTest
 
         WebSocketFrame ping = capture.getFrames().poll();
         String actual = BufferUtil.toUTF8String(ping.getPayload());
-        Assert.assertThat("PingFrame.payload",actual,is("Hello"));
+        assertThat("PingFrame.payload",actual,is("Hello"));
     }
 
     @Test
@@ -233,6 +233,6 @@ public class RFC6455ExamplesParserTest
 
         WebSocketFrame txt = capture.getFrames().poll();
         String actual = BufferUtil.toUTF8String(txt.getPayload());
-        Assert.assertThat("TextFrame.payload",actual,is("Hello"));
+        assertThat("TextFrame.payload",actual,is("Hello"));
     }
 }

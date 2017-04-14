@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +41,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -52,6 +55,28 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
  */
 public class Fuzzer extends ContainerLifeCycle
 {
+    public static class BlockerCallback implements FrameCallback
+    {
+        private CompletableFuture<Void> future = new CompletableFuture<>();
+        
+        @Override
+        public void fail(Throwable cause)
+        {
+            future.completeExceptionally(cause);
+        }
+    
+        @Override
+        public void succeed()
+        {
+            future.complete(null);
+        }
+        
+        public void block() throws Exception
+        {
+            future.get(1, TimeUnit.MINUTES);
+        }
+    }
+    
     public static class Session implements AutoCloseable
     {
         // Client side framing mask
@@ -102,10 +127,11 @@ public class Fuzzer extends ContainerLifeCycle
             return this;
         }
         
-        private void assertIsOpen()
+        private void assertIsOpen() throws Exception
         {
             assertThat("Session exists", session, notNullValue());
             assertThat("Session is open", session.isOpen(), is(true));
+            assertThat("Endpoint is open", session.getUntrustedEndpoint().openLatch.await(5, TimeUnit.SECONDS), is(true));
         }
         
         public ByteBuffer asNetworkBuffer(List<WebSocketFrame> send)
@@ -187,13 +213,13 @@ public class Fuzzer extends ContainerLifeCycle
             expect(Collections.singletonList(expect));
         }
         
-        public Session send(WebSocketFrame send) throws IOException
+        public Session send(WebSocketFrame send) throws Exception
         {
             send(Collections.singletonList(send));
             return this;
         }
         
-        public Session send(ByteBuffer buf) throws IOException
+        public Session send(ByteBuffer buf) throws Exception
         {
             assertIsOpen();
             LOG.debug("Sending bytes {}", BufferUtil.toDetailString(buf));
@@ -214,78 +240,18 @@ public class Fuzzer extends ContainerLifeCycle
             return this;
         }
         
-        public Session send(List<WebSocketFrame> send) throws IOException
+        public Session send(List<WebSocketFrame> send) throws Exception
         {
             assertIsOpen();
             LOG.debug("[{}] Sending {} frames (mode {})", testcase.getTestMethodName(), send.size(), sendMode);
             
             try
             {
-                if ((sendMode == SendMode.BULK) || (sendMode == SLOW))
+                for (WebSocketFrame f : send)
                 {
-                    int bufferLen = 0;
-                    for (Frame f : send)
-                    {
-                        bufferLen += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
-                    }
-                    
-                    ByteBuffer buffer = null;
-                    try
-                    {
-                        buffer = session.getBufferPool().acquire(bufferLen, false);
-                        BufferUtil.clearToFill(buffer);
-                        
-                        // Generate frames
-                        for (WebSocketFrame f : send)
-                        {
-                            setClientMask(f);
-                            generator.generateHeaderBytes(f, buffer);
-                            if (f.hasPayload())
-                            {
-                                buffer.put(f.getPayload());
-                            }
-                        }
-                        BufferUtil.flipToFlush(buffer, 0);
-                        
-                        // Write Data Frame
-                        switch (sendMode)
-                        {
-                            case BULK:
-                                session.getUntrustedConnection().writeRaw(buffer);
-                                break;
-                            case SLOW:
-                                session.getUntrustedConnection().writeRawSlowly(buffer, slowSendSegmentSize);
-                                break;
-                            default:
-                                throw new RuntimeException("Whoops, unsupported sendMode: " + sendMode);
-                        }
-                    }
-                    finally
-                    {
-                        session.getBufferPool().release(buffer);
-                    }
-                }
-                else if (sendMode == SendMode.PER_FRAME)
-                {
-                    for (WebSocketFrame f : send)
-                    {
-                        f.setMask(MASK); // make sure we have mask set
-                        // Using lax generator, generate and send
-                        
-                        ByteBuffer buffer = null;
-                        try
-                        {
-                            buffer = session.getBufferPool().acquire(f.getPayloadLength() + Generator.MAX_HEADER_LENGTH, false);
-                            BufferUtil.clearToFill(buffer);
-                            generator.generateWholeFrame(f, buffer);
-                            BufferUtil.flipToFlush(buffer, 0);
-                            session.getUntrustedConnection().writeRaw(buffer);
-                        }
-                        finally
-                        {
-                            session.getBufferPool().release(buffer);
-                        }
-                    }
+                    BlockerCallback blocker = new BlockerCallback();
+                    session.getOutgoingHandler().outgoingFrame(f, blocker, BatchMode.OFF);
+                    blocker.block();
                 }
             }
             catch (SocketException e)
@@ -360,6 +326,11 @@ public class Fuzzer extends ContainerLifeCycle
     
     public Fuzzer.Session connect(Fuzzed testcase) throws Exception
     {
+        // TODO: handle EndPoint behavior here. (BULK/SLOW/FRAME)
+        //   BULK = AggregatingEndpoint write (aggregate until .flush() call)
+        //   SLOW = FixedBufferEndpoint write (send fixed buffer size)
+        //   PERFRAME = No change to Endpoint
+        
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setHeader("X-TestCase", testcase.getTestMethodName());
         UntrustedWSSession session = client.connect(testcase.getServerURI(), upgradeRequest).get(connectTimeout, connectTimeoutUnit);

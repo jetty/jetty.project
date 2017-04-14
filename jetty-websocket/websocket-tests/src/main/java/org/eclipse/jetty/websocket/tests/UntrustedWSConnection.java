@@ -61,6 +61,11 @@ public class UntrustedWSConnection
      */
     public void writeRaw(ByteBuffer buf) throws IOException
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("{} writeRaw({})", this.internalConnection.getPolicy().getBehavior(), BufferUtil.toDetailString(buf));
+        }
+        
         try(Blocker blocker = writeBlocker.acquire())
         {
             internalConnection.getEndPoint().write(blocker, buf);
@@ -77,6 +82,11 @@ public class UntrustedWSConnection
      */
     public void writeRaw(ByteBuffer buf, int numBytes) throws IOException
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("{} writeRaw({}, numBytes={})", this.internalConnection.getPolicy().getBehavior(), BufferUtil.toDetailString(buf), numBytes);
+        }
+        
         try(Blocker blocker = writeBlocker.acquire())
         {
             ByteBuffer slice = buf.slice();

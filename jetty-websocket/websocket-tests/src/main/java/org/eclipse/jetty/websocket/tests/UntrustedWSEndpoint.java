@@ -28,9 +28,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -40,6 +41,8 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class UntrustedWSEndpoint implements WebSocketListener, WebSocketFrameListener
 {
+    private static final Logger LOG = Log.getLogger(UntrustedWSEndpoint.class);
+    
     @SuppressWarnings("unused")
     private Session session;
     public CountDownLatch openLatch = new CountDownLatch(1);
@@ -47,25 +50,29 @@ public class UntrustedWSEndpoint implements WebSocketListener, WebSocketFrameLis
     public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
     
-    private CompletableFuture<List<String>> expectedMessagesFuture;
-    private AtomicInteger expectedMessageCount;
+    private CompletableFuture<List<String>> expectedMessagesFuture = new CompletableFuture<>();
+    private AtomicReference<Integer> expectedMessageCount = new AtomicReference<>();
     private List<String> messages = new ArrayList<>();
     
-    private CompletableFuture<List<WebSocketFrame>> expectedFramesFuture;
-    private AtomicInteger expectedFramesCount;
+    private CompletableFuture<List<WebSocketFrame>> expectedFramesFuture = new CompletableFuture<>();
+    private AtomicReference<Integer> expectedFramesCount = new AtomicReference<>();
     private List<WebSocketFrame> frames = new ArrayList<>();
     
     public Future<List<WebSocketFrame>> expectedFrames(int expectedCount)
     {
-        expectedFramesFuture = new CompletableFuture<>();
-        expectedFramesCount = new AtomicInteger(expectedCount);
+        if (!expectedFramesCount.compareAndSet(null, expectedCount))
+        {
+            throw new IllegalStateException("Can only have 1 registered frame count future");
+        }
         return expectedFramesFuture;
     }
     
-    public Future<List<String>> expectedMessages(int expected)
+    public Future<List<String>> expectedMessages(int expectedCount)
     {
-        expectedMessagesFuture = new CompletableFuture<>();
-        expectedMessageCount = new AtomicInteger(expected);
+        if (!expectedMessageCount.compareAndSet(null, expectedCount))
+        {
+            throw new IllegalStateException("Can only have 1 registered message count future");
+        }
         return expectedMessagesFuture;
     }
     
@@ -90,29 +97,21 @@ public class UntrustedWSEndpoint implements WebSocketListener, WebSocketFrameLis
         assertThat("Error must have value", cause, notNullValue());
         if (error.compareAndSet(null, cause) == false)
         {
-            System.err.println("Original Cause");
-            error.get().printStackTrace(System.err);
-            System.err.println("Extra/Excess Cause");
-            cause.printStackTrace(System.err);
+            LOG.warn("Original Cause", error.get());
+            LOG.warn("Extra/Excess Cause", cause);
             fail("onError should only happen once!");
         }
         
-        if(expectedMessagesFuture != null)
+        synchronized (expectedMessagesFuture)
         {
-            synchronized (expectedMessagesFuture)
-            {
-                if (expectedMessagesFuture != null)
-                    expectedMessagesFuture.completeExceptionally(cause);
-            }
+            if (expectedMessagesFuture != null)
+                expectedMessagesFuture.completeExceptionally(cause);
         }
         
-        if(expectedFramesFuture != null)
+        synchronized (expectedFramesFuture)
         {
-            synchronized (expectedFramesFuture)
-            {
-                if (expectedFramesFuture != null)
-                    expectedFramesFuture.completeExceptionally(cause);
-            }
+            if (expectedFramesFuture != null)
+                expectedFramesFuture.completeExceptionally(cause);
         }
     }
     
@@ -125,13 +124,12 @@ public class UntrustedWSEndpoint implements WebSocketListener, WebSocketFrameLis
     @Override
     public void onWebSocketText(String text)
     {
-        if(expectedMessagesFuture == null)
-            return;
-        
         messages.add(text);
         synchronized (expectedMessagesFuture)
         {
-            if (expectedMessageCount.decrementAndGet() <= 0)
+            Integer expected = expectedMessageCount.get();
+            
+            if (expected != null && messages.size() >= expected.intValue())
             {
                 expectedMessagesFuture.complete(messages);
             }
@@ -141,14 +139,12 @@ public class UntrustedWSEndpoint implements WebSocketListener, WebSocketFrameLis
     @Override
     public void onWebSocketFrame(Frame frame)
     {
-        if (expectedFramesFuture == null)
-            return;
-        
         frames.add(WebSocketFrame.copy(frame));
-        
         synchronized (expectedFramesFuture)
         {
-            if (expectedFramesCount.decrementAndGet() <= 0)
+            Integer expected = expectedFramesCount.get();
+            
+            if (expected != null && frames.size() >= expected.intValue())
             {
                 expectedFramesFuture.complete(frames);
             }

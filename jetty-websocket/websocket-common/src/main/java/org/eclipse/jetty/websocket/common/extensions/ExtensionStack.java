@@ -474,5 +474,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 LOG.debug("Exception while notifying failure of callback " + callback,x);
             }
         }
+    
+        @Override
+        public String toString()
+        {
+            return "ExtensionStack$Flusher[" + getState() + "]";
+        }
     }
 }

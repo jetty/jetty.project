@@ -213,9 +213,9 @@ public class Generator
     public ByteBuffer generateHeaderBytes(Frame frame)
     {
         ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,false);
-        int p = BufferUtil.flipToFill(buffer);
+        BufferUtil.clearToFill(buffer);
         generateHeaderBytes(frame,buffer);
-        BufferUtil.flipToFlush(buffer,p);
+        BufferUtil.flipToFlush(buffer,0);
         return buffer;
     }
 

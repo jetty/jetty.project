@@ -22,22 +22,16 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.io.IOState;
 
 public class DummyConnection implements LogicalConnection
 {
-    private static final Logger LOG = Log.getLogger(DummyConnection.class);
-    private IOState iostate;
     private WebSocketPolicy policy;
-    
 
     @Deprecated
     public DummyConnection()
@@ -48,17 +42,6 @@ public class DummyConnection implements LogicalConnection
     public DummyConnection(WebSocketPolicy policy)
     {
         this.policy = policy;
-        this.iostate = new IOState();
-    }
-
-    @Override
-    public void close()
-    {
-    }
-
-    @Override
-    public void close(int statusCode, String reason)
-    {
     }
 
     @Override
@@ -88,12 +71,6 @@ public class DummyConnection implements LogicalConnection
     public long getIdleTimeout()
     {
         return 0;
-    }
-
-    @Override
-    public IOState getIOState()
-    {
-        return this.iostate;
     }
 
     @Override

@@ -350,7 +350,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         init();
 
         WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this,httpClient,request);
-
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
     }

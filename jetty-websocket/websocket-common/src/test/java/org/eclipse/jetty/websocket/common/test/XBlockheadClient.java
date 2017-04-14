@@ -63,15 +63,12 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.common.io.IOState;
-import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.junit.Assert;
@@ -88,7 +85,7 @@ import org.junit.Assert;
  * with regards to basic IO behavior, a write should work as expected, a read should work as expected, but <u>what</u> byte it sends or reads is not within its
  * scope.
  */
-public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener, AutoCloseable, IBlockheadClient, Parser.Handler
+public class XBlockheadClient implements OutgoingFrames, AutoCloseable, IBlockheadClient, Parser.Handler
 {
     private class FrameReadingThread extends Thread implements Runnable, IncomingFrames
     {
@@ -195,7 +192,6 @@ public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener
     private OutgoingFrames outgoing = this;
     private boolean eof = false;
     private ExtensionStack extensionStack;
-    private IOState ioState;
     private CountDownLatch disconnectedLatch = new CountDownLatch(1);
     private ByteBuffer remainingBuffer;
 
@@ -225,8 +221,6 @@ public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener
         this.parser = new Parser(policy,bufferPool,this);
 
         this.extensionFactory = new WebSocketExtensionFactory(new SimpleContainerScope(policy,bufferPool));
-        this.ioState = new IOState();
-        this.ioState.addListener(this);
     }
 
     /* (non-Javadoc)
@@ -285,14 +279,14 @@ public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener
         LOG.debug("close({},{})",statusCode,message);
         CloseInfo close = new CloseInfo(statusCode,message);
 
-        if (!ioState.isClosed())
-        {
-            ioState.onCloseLocal(close);
-        }
-        else
-        {
-            LOG.debug("Not issuing close. ioState = {}",ioState);
-        }
+//        if (!ioState.isClosed())
+//        {
+//            ioState.onCloseLocal(close);
+//        }
+//        else
+//        {
+//            LOG.debug("Not issuing close. ioState = {}",ioState);
+//        }
     }
 
     /* (non-Javadoc)
@@ -426,7 +420,7 @@ public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener
         }
 
         // configure parser
-        ioState.onOpened();
+//        ioState.onOpened();
 
         LOG.debug("outgoing = {}",outgoing);
         LOG.debug("incoming = {}",extensionStack);
@@ -480,11 +474,6 @@ public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener
     public InetSocketAddress getLocalSocketAddress()
     {
         return (InetSocketAddress)socket.getLocalSocketAddress();
-    }
-
-    public IOState getIOState()
-    {
-        return ioState;
     }
 
     /* (non-Javadoc)
@@ -550,35 +539,35 @@ public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener
         return (socket != null) && (socket.isConnected());
     }
 
-    @Override
-    public void onConnectionStateChange(ConnectionState state)
-    {
-        LOG.debug("CLIENT onConnectionStateChange() - {}",state);
-        switch (state)
-        {
-            case CLOSED:
-                // Per Spec, client should not initiate disconnect on its own
-                // this.disconnect();
-                break;
-            case CLOSING:
-                CloseInfo close = ioState.getCloseInfo();
-
-                WebSocketFrame frame = close.asFrame();
-                LOG.debug("Issuing: {}",frame);
-                try
-                {
-                    write(frame);
-                }
-                catch (IOException e)
-                {
-                    LOG.debug(e);
-                }
-                break;
-            default:
-                /* do nothing */
-                break;
-        }
-    }
+//    @Override
+//    public void onConnectionStateChange(ConnectionState state)
+//    {
+//        LOG.debug("CLIENT onConnectionStateChange() - {}",state);
+//        switch (state)
+//        {
+//            case CLOSED:
+//                // Per Spec, client should not initiate disconnect on its own
+//                // this.disconnect();
+//                break;
+//            case CLOSING:
+//                CloseInfo close = ioState.getCloseInfo();
+//
+//                WebSocketFrame frame = close.asFrame();
+//                LOG.debug("Issuing: {}",frame);
+//                try
+//                {
+//                    write(frame);
+//                }
+//                catch (IOException e)
+//                {
+//                    LOG.debug(e);
+//                }
+//                break;
+//            default:
+//                /* do nothing */
+//                break;
+//        }
+//    }
 
     @Override
     public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
@@ -779,11 +768,6 @@ public class XBlockheadClient implements OutgoingFrames, ConnectionStateListener
     @Override
     public void write(WebSocketFrame frame) throws IOException
     {
-        if (!ioState.isOpen())
-        {
-            LOG.debug("IO Not Open / Not Writing: {}",frame);
-            return;
-        }
         LOG.debug("write(Frame->{}) to {}",frame,outgoing);
         if (LOG.isDebugEnabled())
         {

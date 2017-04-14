@@ -28,18 +28,18 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.AtomicConnectionState;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.ConnectionState;
 
 /**
- * Simple state tracker for Input / Output and {@link ConnectionState}.
+ * Simple state tracker for Input / Output and {@link AtomicConnectionState.State}.
  * <p>
  * Use the various known .on*() methods to trigger a state change.
  * <ul>
  * <li>{@link #onOpened()} - connection has been opened</li>
  * </ul>
  */
-public class IOState
+public class XIOState
 {
     /**
      * The source of a close handshake. (ie: who initiated it).
@@ -58,11 +58,11 @@ public class IOState
 
     public static interface ConnectionStateListener
     {
-        public void onConnectionStateChange(ConnectionState state);
+        public void onConnectionStateChange(AtomicConnectionState.State state);
     }
 
-    private static final Logger LOG = Log.getLogger(IOState.class);
-    private ConnectionState state;
+    private static final Logger LOG = Log.getLogger(XIOState.class);
+    private AtomicConnectionState.State state;
     private final List<ConnectionStateListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
@@ -100,11 +100,11 @@ public class IOState
     private boolean cleanClose;
 
     /**
-     * Create a new IOState, initialized to {@link ConnectionState#CONNECTING}
+     * Create a new IOState, initialized to {@link AtomicConnectionState.State#CONNECTING}
      */
-    public IOState()
+    public XIOState()
     {
-        this.state = ConnectionState.CONNECTING;
+        this.state = AtomicConnectionState.State.CONNECTING;
         this.inputAvailable = false;
         this.outputAvailable = false;
         this.closeHandshakeSource = CloseHandshakeSource.NONE;
@@ -143,7 +143,7 @@ public class IOState
         return closeInfo;
     }
 
-    public ConnectionState getConnectionState()
+    public AtomicConnectionState.State getConnectionState()
     {
         return state;
     }
@@ -152,7 +152,7 @@ public class IOState
     {
         synchronized (this)
         {
-            return (state == ConnectionState.CLOSED);
+            return (state == AtomicConnectionState.State.CLOSED);
         }
     }
 
@@ -171,7 +171,7 @@ public class IOState
         return outputAvailable;
     }
 
-    private void notifyStateListeners(ConnectionState state)
+    private void notifyStateListeners(AtomicConnectionState.State state)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Notify State Listeners: {}",state);
@@ -195,21 +195,21 @@ public class IOState
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onAbnormalClose({})",close);
-        ConnectionState event = null;
+        AtomicConnectionState.State event = null;
         synchronized (this)
         {
-            if (this.state == ConnectionState.CLOSED)
+            if (this.state == AtomicConnectionState.State.CLOSED)
             {
                 // already closed
                 return;
             }
 
-            if (this.state == ConnectionState.OPEN)
+            if (this.state == AtomicConnectionState.State.OPEN)
             {
                 this.cleanClose = false;
             }
 
-            this.state = ConnectionState.CLOSED;
+            this.state = AtomicConnectionState.State.CLOSED;
             finalClose.compareAndSet(null,close);
             this.inputAvailable = false;
             this.outputAvailable = false;
@@ -228,10 +228,10 @@ public class IOState
         boolean open = false;
         synchronized (this)
         {
-            ConnectionState initialState = this.state;
+            AtomicConnectionState.State initialState = this.state;
             if (LOG.isDebugEnabled())
                 LOG.debug("onCloseLocal({}) : {}", closeInfo, initialState);
-            if (initialState == ConnectionState.CLOSED)
+            if (initialState == AtomicConnectionState.State.CLOSED)
             {
                 // already closed
                 if (LOG.isDebugEnabled())
@@ -239,7 +239,7 @@ public class IOState
                 return;
             }
 
-            if (initialState == ConnectionState.CONNECTED)
+            if (initialState == AtomicConnectionState.State.CONNECTED)
             {
                 // fast close. a local close request from end-user onConnect/onOpen method
                 if (LOG.isDebugEnabled())
@@ -265,8 +265,8 @@ public class IOState
 
     private void closeLocal(CloseInfo closeInfo)
     {
-        ConnectionState event = null;
-        ConnectionState abnormalEvent = null;
+        AtomicConnectionState.State event = null;
+        AtomicConnectionState.State abnormalEvent = null;
         synchronized (this)
         {
             if (LOG.isDebugEnabled())
@@ -287,20 +287,20 @@ public class IOState
                 if (LOG.isDebugEnabled())
                     LOG.debug("Close Handshake satisfied, disconnecting");
                 cleanClose = true;
-                this.state = ConnectionState.CLOSED;
+                this.state = AtomicConnectionState.State.CLOSED;
                 finalClose.compareAndSet(null,closeInfo);
                 event = this.state;
             }
-            else if (this.state == ConnectionState.OPEN)
+            else if (this.state == AtomicConnectionState.State.OPEN)
             {
                 // We are now entering CLOSING (or half-closed).
-                this.state = ConnectionState.CLOSING;
+                this.state = AtomicConnectionState.State.CLOSING;
                 event = this.state;
 
                 // If abnormal, we don't expect an answer.
                 if (closeInfo.isAbnormal())
                 {
-                    abnormalEvent = ConnectionState.CLOSED;
+                    abnormalEvent = AtomicConnectionState.State.CLOSED;
                     finalClose.compareAndSet(null,closeInfo);
                     cleanClose = false;
                     outputAvailable = false;
@@ -329,10 +329,10 @@ public class IOState
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onCloseRemote({})", closeInfo);
-        ConnectionState event = null;
+        AtomicConnectionState.State event = null;
         synchronized (this)
         {
-            if (this.state == ConnectionState.CLOSED)
+            if (this.state == AtomicConnectionState.State.CLOSED)
             {
                 // already closed
                 return;
@@ -355,14 +355,14 @@ public class IOState
             {
                 LOG.debug("Close Handshake satisfied, disconnecting");
                 cleanClose = true;
-                state = ConnectionState.CLOSED;
+                state = AtomicConnectionState.State.CLOSED;
                 finalClose.compareAndSet(null,closeInfo);
                 event = this.state;
             }
-            else if (this.state == ConnectionState.OPEN)
+            else if (this.state == AtomicConnectionState.State.OPEN)
             {
                 // We are now entering CLOSING (or half-closed)
-                this.state = ConnectionState.CLOSING;
+                this.state = AtomicConnectionState.State.CLOSING;
                 event = this.state;
             }
         }
@@ -377,20 +377,20 @@ public class IOState
     /**
      * WebSocket has successfully upgraded, but the end-user onOpen call hasn't run yet.
      * <p>
-     * This is an intermediate state between the RFC's {@link ConnectionState#CONNECTING} and {@link ConnectionState#OPEN}
+     * This is an intermediate state between the RFC's {@link AtomicConnectionState.State#CONNECTING} and {@link AtomicConnectionState.State#OPEN}
      */
     public void onConnected()
     {
-        ConnectionState event = null;
+        AtomicConnectionState.State event = null;
         synchronized (this)
         {
-            if (this.state != ConnectionState.CONNECTING)
+            if (this.state != AtomicConnectionState.State.CONNECTING)
             {
                 LOG.debug("Unable to set to connected, not in CONNECTING state: {}",this.state);
                 return;
             }
 
-            this.state = ConnectionState.CONNECTED;
+            this.state = AtomicConnectionState.State.CONNECTED;
             inputAvailable = false; // cannot read (yet)
             outputAvailable = true; // write allowed
             event = this.state;
@@ -403,11 +403,11 @@ public class IOState
      */
     public void onFailedUpgrade()
     {
-        assert (this.state == ConnectionState.CONNECTING);
-        ConnectionState event = null;
+        assert (this.state == AtomicConnectionState.State.CONNECTING);
+        AtomicConnectionState.State event = null;
         synchronized (this)
         {
-            this.state = ConnectionState.CLOSED;
+            this.state = AtomicConnectionState.State.CLOSED;
             cleanClose = false;
             inputAvailable = false;
             outputAvailable = false;
@@ -423,23 +423,23 @@ public class IOState
     {
         if(LOG.isDebugEnabled())
             LOG.debug("onOpened()");
-
-        ConnectionState event = null;
+    
+        AtomicConnectionState.State event = null;
         synchronized (this)
         {
-            if (this.state == ConnectionState.OPEN)
+            if (this.state == AtomicConnectionState.State.OPEN)
             {
                 // already opened
                 return;
             }
 
-            if (this.state != ConnectionState.CONNECTED)
+            if (this.state != AtomicConnectionState.State.CONNECTED)
             {
                 LOG.debug("Unable to open, not in CONNECTED state: {}",this.state);
                 return;
             }
 
-            this.state = ConnectionState.OPEN;
+            this.state = AtomicConnectionState.State.OPEN;
             this.inputAvailable = true;
             this.outputAvailable = true;
             event = this.state;
@@ -455,10 +455,10 @@ public class IOState
      */
     public void onWriteFailure(Throwable t)
     {
-        ConnectionState event = null;
+        AtomicConnectionState.State event = null;
         synchronized (this)
         {
-            if (this.state == ConnectionState.CLOSED)
+            if (this.state == AtomicConnectionState.State.CLOSED)
             {
                 // already closed
                 return;
@@ -488,7 +488,7 @@ public class IOState
             finalClose.compareAndSet(null,close);
 
             this.cleanClose = false;
-            this.state = ConnectionState.CLOSED;
+            this.state = AtomicConnectionState.State.CLOSED;
             this.inputAvailable = false;
             this.outputAvailable = false;
             this.closeHandshakeSource = CloseHandshakeSource.ABNORMAL;
@@ -499,10 +499,10 @@ public class IOState
 
     public void onDisconnected()
     {
-        ConnectionState event = null;
+        AtomicConnectionState.State event = null;
         synchronized (this)
         {
-            if (this.state == ConnectionState.CLOSED)
+            if (this.state == AtomicConnectionState.State.CLOSED)
             {
                 // already closed
                 return;
@@ -511,7 +511,7 @@ public class IOState
             CloseInfo close = new CloseInfo(StatusCode.ABNORMAL,"Disconnected");
 
             this.cleanClose = false;
-            this.state = ConnectionState.CLOSED;
+            this.state = AtomicConnectionState.State.CLOSED;
             this.closeInfo = close;
             this.inputAvailable = false;
             this.outputAvailable = false;
@@ -539,7 +539,7 @@ public class IOState
             str.append('!');
         }
         str.append("out");
-        if ((state == ConnectionState.CLOSED) || (state == ConnectionState.CLOSING))
+        if ((state == AtomicConnectionState.State.CLOSED) || (state == AtomicConnectionState.State.CLOSING))
         {
             CloseInfo ci = finalClose.get();
             if (ci != null)

@@ -166,6 +166,13 @@ public class Parser
         return (flagsInUse & 0x10) != 0;
     }
     
+    /**
+     * Parse the buffer.
+     *
+     * @param buffer the buffer to consume.
+     * @return true if buffer is fully consumed, false if still has remaining bytes
+     * @throws WebSocketException if unable to parse properly
+     */
     public boolean parse(ByteBuffer buffer) throws WebSocketException
     {
         // quick fail, nothing left to parse
@@ -263,6 +270,7 @@ public class Parser
         {
             LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
         }
+        
         while (buffer.hasRemaining())
         {
             switch (state)
@@ -568,7 +576,6 @@ public class Parser
             int bytesAvailable = buffer.remaining();
             int windowBytes = Math.min(bytesAvailable, bytesExpected);
             int limit = buffer.limit();
-            assert(buffer.position() + windowBytes < buffer.capacity());
             buffer.limit(buffer.position() + windowBytes);
             ByteBuffer window = buffer.slice();
             buffer.limit(limit);

@@ -81,6 +81,7 @@ public class MessageWriterTest
         LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(remoteURI, bufferPool);
         remoteSession = new WebSocketSession(remoteContainerScope, remoteURI, remoteSocket, remoteConnection);
         remoteSession.start();
+        remoteSession.connect();
         remoteSession.open();
     
         // Local Session
@@ -91,6 +92,7 @@ public class MessageWriterTest
         session = new WebSocketSession(localContainerScope, localURI, localSocket, localConnection);
         session.setOutgoingHandler(FramePipes.to(remoteSession));
         session.start();
+        session.connect();
         session.open();
     }
     

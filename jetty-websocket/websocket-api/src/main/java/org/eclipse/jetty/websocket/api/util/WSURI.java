@@ -49,25 +49,21 @@ public final class WSURI
         {
             // leave alone
             httpScheme = wsScheme;
-            port = 80;
         }
         else if ("https".equalsIgnoreCase(wsScheme))
         {
             // leave alone
             httpScheme = wsScheme;
-            port = 443;
         }
         else if ("ws".equalsIgnoreCase(wsScheme))
         {
             // convert to http
             httpScheme = "http";
-            port = 80;
         }
         else if ("wss".equalsIgnoreCase(wsScheme))
         {
             // convert to https
             httpScheme = "https";
-            port = 443;
         }
         else
         {

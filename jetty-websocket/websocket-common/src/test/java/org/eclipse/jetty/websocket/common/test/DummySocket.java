@@ -16,29 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.websocket.common.test;
 
-import org.eclipse.jetty.websocket.common.io.IOState;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-public enum CloseState
+@WebSocket
+public class DummySocket
 {
-    OPEN,
-    REMOTE_INITIATED,
-    LOCAL_INITIATED;
-    
-    public static CloseState from(IOState ios)
-    {
-        if (ios.wasLocalCloseInitiated())
-        {
-            return CloseState.LOCAL_INITIATED;
-        }
-        else if (ios.wasRemoteCloseInitiated())
-        {
-            return CloseState.REMOTE_INITIATED;
-        }
-        else
-        {
-            return CloseState.OPEN;
-        }
-    }
+    /* does nothing */
 }
