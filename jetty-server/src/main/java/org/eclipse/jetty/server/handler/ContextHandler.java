@@ -816,10 +816,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             }
             
-            if (StringUtil.isNotBlank(log_name))
+            if (StringUtil.isBlank(log_name))
             {
-                // try hex of hashcode
-                log_name = Integer.toHexString(hashCode());
+                // an empty context path is the ROOT context
+                log_name = "ROOT";
             }
         }
         
