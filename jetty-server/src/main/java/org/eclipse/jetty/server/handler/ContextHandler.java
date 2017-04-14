@@ -756,7 +756,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     
         if (_logger == null)
         {
-            _logger = Log.getLogger(ContextHandler.class.getName() + getLogName());
+            _logger = Log.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
         }
         
         ClassLoader old_classloader = null;
@@ -799,7 +799,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
     
-    private String getLogName()
+    private String getLogNameSuffix()
     {
         // Use display name first
         String log_name = getDisplayName();
@@ -821,12 +821,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 // an empty context path is the ROOT context
                 log_name = "ROOT";
             }
-        }
-        
-        if (StringUtil.isBlank(log_name))
-        {
-            // still blank?
-            return "";
         }
         
         // Replace bad characters.
