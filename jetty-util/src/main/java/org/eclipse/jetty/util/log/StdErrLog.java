@@ -21,7 +21,6 @@ package org.eclipse.jetty.util.log;
 import java.io.PrintStream;
 import java.security.AccessControlException;
 import java.util.Properties;
-import java.util.logging.Level;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -143,7 +142,7 @@ public class StdErrLog extends AbstractLogger
     // The full log name, as provided by the system.
     private final String _name;
     // The abbreviated log name (used by default, unless _long is specified)
-    private final String _abbrevname;
+    protected final String _abbrevname;
     private boolean _hideStacks = false;
 
     

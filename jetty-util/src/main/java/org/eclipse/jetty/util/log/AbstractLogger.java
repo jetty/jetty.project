@@ -200,11 +200,24 @@ public abstract class AbstractLogger implements Logger
      */
     protected static String condensePackageString(String classname)
     {
-        String parts[] = classname.split("\\.");
+        if(classname == null || classname.isEmpty())
+        {
+            return "";
+        }
+        // strip non-allowed character
+        String allowed = classname.replaceAll("[^\\w.]", "");
+        int len = allowed.length();
+        // find end of classname (strip empty sections. eg: "org.Foo.")
+        while(allowed.charAt(--len) == '.');
+        String parts[] = allowed.substring(0,len+1).split("\\.");
         StringBuilder dense = new StringBuilder();
         for (int i = 0; i < (parts.length - 1); i++)
         {
-            dense.append(parts[i].charAt(0));
+            String part = parts[i].trim();
+            if(!part.isEmpty())
+            {
+                dense.append(part.charAt(0));
+            }
         }
         if (dense.length() > 0)
         {

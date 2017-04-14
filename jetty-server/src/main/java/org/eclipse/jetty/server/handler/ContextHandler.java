@@ -753,20 +753,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
-
-        if (_logger==null)
+    
+        if (_logger == null)
         {
-            String log_name = getDisplayName();
-            if (log_name == null || log_name.isEmpty())
-            {
-                log_name = getContextPath();
-                if (log_name!=null || log_name.startsWith("/"))
-                    log_name = log_name.substring(1);
-                if (log_name==null || log_name.isEmpty())
-                    log_name = Integer.toHexString(hashCode());
-            }
-            _logger = Log.getLogger("org.eclipse.jetty.ContextHandler."+log_name);
+            _logger = Log.getLogger(ContextHandler.class.getName() + getLogName());
         }
+        
         ClassLoader old_classloader = null;
         Thread current_thread = null;
         Context old_context = null;
@@ -805,6 +797,40 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (_classLoader != null && current_thread!=null)
                 current_thread.setContextClassLoader(old_classloader);
         }
+    }
+    
+    private String getLogName()
+    {
+        // Use display name first
+        String log_name = getDisplayName();
+        if (StringUtil.isBlank(log_name))
+        {
+            // try context path
+            log_name = getContextPath();
+            if (log_name != null)
+            {
+                // Strip prefix slash
+                if (log_name.startsWith("/"))
+                {
+                    log_name = log_name.substring(1);
+                }
+            }
+            
+            if (StringUtil.isNotBlank(log_name))
+            {
+                // try hex of hashcode
+                log_name = Integer.toHexString(hashCode());
+            }
+        }
+        
+        if (StringUtil.isBlank(log_name))
+        {
+            // still blank?
+            return "";
+        }
+        
+        // Replace bad characters.
+        return '.' + log_name.replaceAll("\\W", "_");
     }
 
     /* ------------------------------------------------------------ */

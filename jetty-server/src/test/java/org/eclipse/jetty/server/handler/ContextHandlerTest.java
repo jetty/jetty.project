@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -448,9 +451,27 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testIsShutdown() {
+    public void testIsShutdown()
+    {
         ContextHandler handler = new ContextHandler();
         Assert.assertEquals(false, handler.isShutdown());
+    }
+    
+    @Test
+    public void testLogName() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setDisplayName(".");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName()));
+        }
+        finally
+        {
+            handler.stop();
+        }
     }
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException
