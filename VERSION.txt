@@ -1,4 +1,35 @@
-jetty-9.4.4-SNAPSHOT
+jetty-9.4.4.v20170414 - 14 April 2017
+ + 612 Support HTTP Trailer
+ + 877 Programmatic servlet mappings cannot override mappings from
+   webdefault.xml using quickstart
+ + 1201 X-Forwarded-For incorrectly set in jetty-http-forwarded.xml
+ + 1334 Dispatcher.commitResponse() failure is unreported
+ + 1386 Optimise session writes
+ + 1411 Use short-circuit operator in websocket Frame
+ + 1417 Improve classloader dumping
+ + 1418 setWriteListener causes race
+ + 1423 Update to gcloud datastore 0.10.0-beta
+ + 1433 Wrong status message for code 417
+ + 1434 Improve properties in jetty-gzip.xml
+ + 1435 Apply setCharacterEncoding to static content without an assumed encoding
+ + 1436 NullPointerException when calling changeSessionId
+ + 1439 Allow UNC paths to function as Resource bases
+ + 1440 Improve lock contention for low resources scheduling strategy
+ + 1444 Deprecate Continuations
+ + 1448 StackOverflowError when using URLStreamHandlerFactory in
+   WebAppClassloader
+ + 1449 Unable to find the JVM Lib directory in WebAppContext
+ + 1450 JMX does not export session statistics
+ + 1452 Add tests for [want|need]ClientAuth
+ + 1454 CachedContentFactory locks filesystem after first read of file
+ + 1456 Error dispatch race with async write
+ + 1463 SSL Renegotiate limit
+ + 1466 Only use ServletContainerInitializers from server path for web.xml <
+   3.0
+ + 1467 Change default for WebAppContext.isConfiguredDiscovered to false
+ + 1469 IllegalStateException in RolloverFileOutputStream
+ + 1472 Broken *.gz symlinks cause NPE in DefaultServlet.
+ + 1475 SIOOBE in ContextHandler startup
 
 jetty-9.4.3.v20170317 - 17 March 2017
  + 329 Javadoc for HttpTester and ServletTester needs to reference limited HTTP
@@ -149,19 +180,19 @@ jetty-9.4.1.v20170120 - 20 January 2017
    with WEB-INF/lib/jetty-http.jar present
  + 1234 onBadMessage called from with handled message
  + 1239 Charset=unknown produces Exception during testing
- + 1242
+ + 1242 
    org.eclipse.jetty.client.HttpRequestAbortTest.testAbortOnCommitWithContent[1]()
    results in EofException
- + 1243
+ + 1243 
    org.eclipse.jetty.proxy.ProxyServletFailureTest.testServerException[0]()
    results in ServletException
- + 1244
+ + 1244 
    ProxyServletFailureTest.testProxyRequestStallsContentServerIdlesTimeout()
    has TimeoutException visible
- + 1248
+ + 1248 
    org.eclipse.jetty.http2.client.StreamResetTest.testServerExceptionConsumesQueuedData
    results in visible Stacktrace
- + 1252
+ + 1252 
    HttpClientStreamTest.testInputStreamContentProviderThrowingWhileReading[transport:
    HTTPS]() results in Early EOF
  + 1254 9.4.x Server resource handler welcome files forwarding not working
