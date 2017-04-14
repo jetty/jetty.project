@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,6 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback.WriteBlocker;
@@ -78,24 +80,21 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private final static int PARTIAL_TEXT_MASK = 0x00040000;
     private final static int PARTIAL_BINARY_MASK = 0x00080000;
 
-    private final LogicalConnection connection;
+    private final WebSocketSession session;
     private final OutgoingFrames outgoing;
     private final AtomicInteger msgState = new AtomicInteger();
     private final BlockingWriteCallback blocker = new BlockingWriteCallback();
     private volatile BatchMode batchMode;
 
-    public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
+    public WebSocketRemoteEndpoint(WebSocketSession session, OutgoingFrames outgoing)
     {
-        this(connection, outgoing, BatchMode.AUTO);
+        this(session, outgoing, BatchMode.AUTO);
     }
 
-    public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing, BatchMode batchMode)
+    public WebSocketRemoteEndpoint(WebSocketSession session, OutgoingFrames outgoing, BatchMode batchMode)
     {
-        if (connection == null)
-        {
-            throw new IllegalArgumentException("LogicalConnection cannot be null");
-        }
-        this.connection = connection;
+        Objects.requireNonNull(session, "Session cannot be null");
+        this.session = session;
         this.outgoing = outgoing;
         this.batchMode = batchMode;
     }
@@ -224,9 +223,18 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
      */
     public InetSocketAddress getInetSocketAddress()
     {
-        if(connection == null)
-            return null;
-        return connection.getRemoteAddress();
+        if(session.isOpen())
+            return session.getRemoteAddress();
+        return null;
+    }
+    
+    private void assertIsOpen()
+    {
+        AtomicConnectionState.State state = session.getConnectionState().get();
+        if(state != AtomicConnectionState.State.OPEN && state != AtomicConnectionState.State.CONNECTED)
+        {
+            throw new WebSocketException("RemoteEndpoint unavailable, current state [" + state + "], expecting [OPEN or CONNECTED]");
+        }
     }
 
     /**
@@ -237,6 +245,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
      */
     private Future<Void> sendAsyncFrame(WebSocketFrame frame)
     {
+        assertIsOpen();
         FutureWriteCallback future = new FutureWriteCallback();
         uncheckedSendFrame(frame, future);
         return future;
@@ -248,10 +257,10 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
+        assertIsOpen();
         lockMsg(MsgType.BLOCKING);
         try
         {
-            connection.getIOState().assertOutputOpen();
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("sendBytes with {}", BufferUtil.toDetailString(data));
@@ -267,6 +276,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public Future<Void> sendBytesByFuture(ByteBuffer data)
     {
+        assertIsOpen();
         lockMsg(MsgType.ASYNC);
         try
         {
@@ -285,6 +295,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
+        assertIsOpen();
         lockMsg(MsgType.ASYNC);
         try
         {
@@ -302,23 +313,24 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
 
     public void uncheckedSendFrame(WebSocketFrame frame, FrameCallback callback)
     {
+        assertIsOpen();
         try
         {
             BatchMode batchMode = BatchMode.OFF;
             if (frame.isDataFrame())
                 batchMode = getBatchMode();
-            connection.getIOState().assertOutputOpen();
             outgoing.outgoingFrame(frame, callback, batchMode);
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            callback.fail(e);
+            callback.fail(t);
         }
     }
 
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
+        assertIsOpen();
         boolean first = lockMsg(MsgType.PARTIAL_BINARY);
         try
         {
@@ -341,6 +353,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
+        assertIsOpen();
         boolean first = lockMsg(MsgType.PARTIAL_TEXT);
         try
         {
@@ -363,6 +376,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendPing(ByteBuffer applicationData) throws IOException
     {
+        assertIsOpen();
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendPing with {}", BufferUtil.toDetailString(applicationData));
@@ -373,6 +387,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
+        assertIsOpen();
         if (LOG.isDebugEnabled())
         {
             LOG.debug("sendPong with {}", BufferUtil.toDetailString(applicationData));
@@ -383,6 +398,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendString(String text) throws IOException
     {
+        assertIsOpen();
         lockMsg(MsgType.BLOCKING);
         try
         {
@@ -402,6 +418,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public Future<Void> sendStringByFuture(String text)
     {
+        assertIsOpen();
         lockMsg(MsgType.ASYNC);
         try
         {
@@ -421,6 +438,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void sendString(String text, WriteCallback callback)
     {
+        assertIsOpen();
         lockMsg(MsgType.ASYNC);
         try
         {
@@ -452,6 +470,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     @Override
     public void flush() throws IOException
     {
+        assertIsOpen();
         lockMsg(MsgType.ASYNC);
         try (WriteBlocker b = blocker.acquireWriteBlocker())
         {

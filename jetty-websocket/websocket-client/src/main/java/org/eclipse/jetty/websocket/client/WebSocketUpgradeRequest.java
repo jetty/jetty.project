@@ -589,6 +589,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
     
         // We can upgrade
         EndPoint endp = oldConn.getEndPoint();
+        
+        endp = configure(endp);
 
         WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getScheduler(),wsClient.getPolicy(),
                 wsClient.getBufferPool(), extensionStack);
@@ -599,7 +601,6 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         session.setUpgradeRequest(new ClientUpgradeRequest(this));
         session.setUpgradeResponse(new ClientUpgradeResponse(response));
         connection.addListener(session);
-        connection.setErrorListener(session);
 
         // Setup Incoming Routing
         extensionStack.setNextIncoming(session);
@@ -619,6 +620,11 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         // Now swap out the connection
         endp.upgrade(connection);
+    }
+    
+    public EndPoint configure(EndPoint endp)
+    {
+        return endp;
     }
 
     public void setUpgradeListener(UpgradeListener upgradeListener)

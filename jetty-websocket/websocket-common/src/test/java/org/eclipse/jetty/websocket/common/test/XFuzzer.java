@@ -39,7 +39,6 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.io.IOState;
 import org.junit.Assert;
 
 /**
@@ -188,24 +187,6 @@ public class XFuzzer implements AutoCloseable
     public void expectNoMoreFrames()
     {
         // TODO Should test for no more frames. success if connection closed.
-    }
-
-    public CloseState getCloseState()
-    {
-        IOState ios = client.getIOState();
-
-        if (ios.wasLocalCloseInitiated())
-        {
-            return CloseState.LOCAL_INITIATED;
-        }
-        else if (ios.wasRemoteCloseInitiated())
-        {
-            return CloseState.REMOTE_INITIATED;
-        }
-        else
-        {
-            return CloseState.OPEN;
-        }
     }
 
     public SendMode getSendMode()

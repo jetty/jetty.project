@@ -84,6 +84,7 @@ public class MessageOutputStreamTest
         LocalWebSocketConnection remoteConnection = new LocalWebSocketConnection(remoteURI, bufferPool);
         remoteSession = new WebSocketSession(containerScope,remoteURI,remoteSocket,remoteConnection);
         remoteSession.start();
+        remoteSession.connect();
         remoteSession.open();
 
         // Local Session
@@ -94,6 +95,7 @@ public class MessageOutputStreamTest
 
         // talk to our remote socket
         session.setOutgoingHandler(FramePipes.to(remoteSession));
+        session.connect();
         // start session
         session.start();
         // open connection

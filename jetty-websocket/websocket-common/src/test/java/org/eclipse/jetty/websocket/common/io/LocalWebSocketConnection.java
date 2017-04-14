@@ -28,25 +28,20 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection implements LogicalConnection, ConnectionStateListener
+public class LocalWebSocketConnection implements LogicalConnection
 {
     private static final Logger LOG = Log.getLogger(LocalWebSocketConnection.class);
     private final String id;
     private final ByteBufferPool bufferPool;
     private final Executor executor;
     private WebSocketPolicy policy;
-    private IOState ioState = new IOState();
 
     public LocalWebSocketConnection(ByteBufferPool bufferPool)
     {
@@ -63,15 +58,9 @@ public class LocalWebSocketConnection implements LogicalConnection, ConnectionSt
         this.id = id;
         this.bufferPool = bufferPool;
         this.executor = new ExecutorThreadPool();
-        this.ioState.addListener(this);
         this.policy = WebSocketPolicy.newServerPolicy();
     }
 
-    public LocalWebSocketConnection(TestName testname, ByteBufferPool bufferPool)
-    {
-        this(testname.getMethodName(),bufferPool);
-    }
-    
     public LocalWebSocketConnection(TestName testname, WebSocketContainerScope containerScope)
     {
         this(testname.getMethodName(), containerScope.getBufferPool());
@@ -82,28 +71,6 @@ public class LocalWebSocketConnection implements LogicalConnection, ConnectionSt
     public Executor getExecutor()
     {
         return executor;
-    }
-
-    @Override
-    public void close()
-    {
-        close(StatusCode.NORMAL,null);
-    }
-
-    @Override
-    public void close(int statusCode, String reason)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("close({}, {})",statusCode,reason);
-        CloseInfo close = new CloseInfo(statusCode,reason);
-        ioState.onCloseLocal(close);
-    }
-
-    public void connect()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("connect()");
-        ioState.onConnected();
     }
 
     @Override
@@ -132,12 +99,6 @@ public class LocalWebSocketConnection implements LogicalConnection, ConnectionSt
     }
 
     @Override
-    public IOState getIOState()
-    {
-        return ioState;
-    }
-
-    @Override
     public InetSocketAddress getLocalAddress()
     {
         return null;
@@ -160,43 +121,13 @@ public class LocalWebSocketConnection implements LogicalConnection, ConnectionSt
     {
         return null;
     }
-
+    
     @Override
     public boolean isOpen()
     {
-        return getIOState().isOpen();
+        return false;
     }
-
-    @Override
-    public void onConnectionStateChange(ConnectionState state)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Connection State Change: {}",state);
-        switch (state)
-        {
-            case CLOSED:
-                this.disconnect();
-                break;
-            case CLOSING:
-                if (ioState.wasRemoteCloseInitiated())
-                {
-                    // send response close frame
-                    CloseInfo close = ioState.getCloseInfo();
-                    LOG.debug("write close frame: {}",close);
-                    ioState.onCloseLocal(close);
-                }
-            default:
-                break;
-        }
-    }
-
-    public void open()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("open()");
-        ioState.onOpened();
-    }
-
+    
     @Override
     public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {

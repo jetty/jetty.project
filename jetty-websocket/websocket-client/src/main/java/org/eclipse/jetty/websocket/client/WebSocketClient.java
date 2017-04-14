@@ -391,62 +391,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         init();
 
-        // Create the appropriate (physical vs virtual) connection task
-        ConnectPromise promise = manager.connect(this,request,websocket);
-
-        if (upgradeListener != null)
-        {
-            promise.setUpgradeListener(upgradeListener);
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Connect Promise: {}",promise);
-
-        // Execute the connection on the executor thread
-        executor.execute(promise);
-
-        // Return the future
-        return promise;
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Starting {}",this);
-
-        String name = WebSocketClient.class.getSimpleName() + "@" + hashCode();
-
-        if (bufferPool == null)
-        {
-            setBufferPool(new MappedByteBufferPool());
-        }
-
-        if (scheduler == null)
-        {
-            scheduler = new ScheduledExecutorScheduler(name + "-scheduler",daemon);
-            addBean(scheduler);
-        }
-
-        if (cookieStore == null)
-        {
-            setCookieStore(new HttpCookieStore.Empty());
-        }
-
-        if(this.sessionFactory == null)
-        {
-            setSessionFactory(new WebSocketSessionFactory(this));
-        }
-        
-        if(this.objectFactory == null)
-        {
-            this.objectFactory = new DecoratedObjectFactory();
-        }
-
-        super.doStart();
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug("Started {}",this);
+        WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this,httpClient,request);
+        wsReq.setUpgradeListener(upgradeListener);
+        return wsReq.sendAsync();
     }
 
     @Override

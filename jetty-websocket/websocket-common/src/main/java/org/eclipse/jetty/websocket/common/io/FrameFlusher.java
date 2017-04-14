@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -62,7 +61,8 @@ public class FrameFlusher
         {
             if (aggregate == null)
             {
-                aggregate = bufferPool.acquire(bufferSize,true);
+                aggregate = generator.getBufferPool().acquire(bufferSize,true);
+                BufferUtil.clearToFill(aggregate);
                 if (LOG.isDebugEnabled())
                 {
                     LOG.debug("{} acquired aggregate buffer {}",FrameFlusher.this,aggregate);
@@ -221,7 +221,7 @@ public class FrameFlusher
         {
             if ((aggregate != null) && BufferUtil.isEmpty(aggregate))
             {
-                bufferPool.release(aggregate);
+                generator.getBufferPool().release(aggregate);
                 aggregate = null;
             }
         }
@@ -288,7 +288,6 @@ public class FrameFlusher
 
     public static final BinaryFrame FLUSH_FRAME = new BinaryFrame();
     private static final Logger LOG = Log.getLogger(FrameFlusher.class);
-    private final ByteBufferPool bufferPool;
     private final EndPoint endpoint;
     private final int bufferSize;
     private final Generator generator;
@@ -299,9 +298,8 @@ public class FrameFlusher
     private final AtomicBoolean closed = new AtomicBoolean();
     private volatile Throwable failure;
 
-    public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endpoint, int bufferSize, int maxGather)
+    public FrameFlusher(Generator generator, EndPoint endpoint, int bufferSize, int maxGather)
     {
-        this.bufferPool = bufferPool;
         this.endpoint = endpoint;
         this.bufferSize = bufferSize;
         this.generator = Objects.requireNonNull(generator);
@@ -336,16 +334,29 @@ public class FrameFlusher
     {
         if (closed.get())
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} discarding/closed {}",this,frame);
+            }
             notifyCallbackFailure(callback,new EOFException("Connection has been closed locally"));
             return;
         }
         if (flusher.isFailed())
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} discarding/failed {}",this,frame);
+            }
             notifyCallbackFailure(callback,failure);
             return;
         }
 
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
+        
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{} queued {}",this,entry);
+        }
 
         synchronized (lock)
         {
@@ -372,11 +383,6 @@ public class FrameFlusher
                     break;
                 }
             }
-        }
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("{} queued {}",this,entry);
         }
 
         flusher.iterate();
