@@ -641,6 +641,8 @@ public class URIUtil
                         dots++;
                     else if (slash)
                         dots = 1;
+                    else
+                        canonical.append('.');
                     slash = false;
                     break;
                     
