@@ -587,7 +587,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             else
             {
                 // Forward to the index
-                RequestDispatcher dispatcher=request.getRequestDispatcher(welcome);
+                RequestDispatcher dispatcher=_servletContext.getRequestDispatcher(welcome);
                 if (dispatcher!=null)
                 {
                     if (included)
@@ -673,7 +673,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             String welcome_in_context=URIUtil.addPaths(pathInContext,_welcomes[i]);
             Resource welcome=getResource(welcome_in_context);
             if (welcome!=null && welcome.exists())
-                return _welcomes[i];
+                return welcome_in_context;
 
             if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet==null)
             {
