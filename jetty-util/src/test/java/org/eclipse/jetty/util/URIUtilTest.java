@@ -239,13 +239,15 @@ public class URIUtilTest
             {"/aaa///bbb/","/aaa///bbb/"},
             {"/aaa/./bbb/","/aaa/bbb/"},
             {"/aaa/../bbb/","/bbb/"},
+            {"/aaa..bbb/","/aaa..bbb/"},
+            {"/aaa/..bbb/","/aaa/..bbb/"},
             {"/aaa/./../bbb/","/bbb/"},
             {"/aaa/bbb/ccc/../../ddd/","/aaa/ddd/"},
             {"./bbb/","bbb/"},
             {"./aaa/../bbb/","bbb/"},
             {"./",""},
-            {".//",".//"},
-            {".///",".///"},
+            {".//","/"},
+            {".///","//"},
             {"/.","/"},
             {"//.","//"},
             {"///.","///"},
@@ -280,13 +282,20 @@ public class URIUtilTest
             {"a/../..",null},
             {"/foo/../../bar",null},
             {"/foo/../bar//","/bar//"},
+            {"/....","/...."},
         };
 
         for (int t=0;t<canonical.length;t++)
+        {
             assertEquals( "canonical "+canonical[t][0],
-                          canonical[t][1],
-                          URIUtil.canonicalPath(canonical[t][0])
-                          );
+                canonical[t][1],
+                URIUtil.canonicalPath(canonical[t][0])
+                );
+            assertEquals( "canonical "+canonical[t][0]+"?a=1",
+                canonical[t][1]==null?null:(canonical[t][1]+"?a=1"),
+                URIUtil.canonicalPath(canonical[t][0]+"?a=1")
+                );
+        }
 
     }
 

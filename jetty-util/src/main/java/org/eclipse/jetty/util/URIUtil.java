@@ -22,8 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
@@ -47,7 +45,6 @@ public class URIUtil
     public static final String SLASH="/";
     public static final String HTTP="http";
     public static final String HTTPS="https";
-    private static final Pattern __PATH_SPLIT = Pattern.compile("(?<=\\/)");
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
     public static final Charset __CHARSET=StandardCharsets.UTF_8 ;
@@ -554,40 +551,105 @@ public class URIUtil
      */
     public static String canonicalPath(String path)
     {
-        if (path == null || path.isEmpty() || !path.contains("."))
+        if (path == null || path.isEmpty())
             return path;
 
-        if(path.startsWith("/.."))
-            return null;
-
-        List<String> directories = new ArrayList<>();
-        Collections.addAll(directories, __PATH_SPLIT.split(path));
+        boolean slash = true;
+        int end = path.length();
+        int i = 0;
         
-        for(ListIterator<String> iterator = directories.listIterator(); iterator.hasNext();)
+        loop:
+        while (i<end)
         {
-            switch (iterator.next()) {
-                case "./":
-                case ".":
-                    if (iterator.hasNext() && directories.get(iterator.nextIndex()).equals("/"))
-                        break;
-
-                    iterator.remove();
+            char c = path.charAt(i);
+            switch(c)
+            {
+                case '/':
+                    slash = true;
                     break;
-                case "../":
-                case "..":
-                    if(iterator.previousIndex() == 0)
-                        return null;
-
-                    iterator.remove();
-                    if(iterator.previous().equals("/") && iterator.nextIndex() == 0)
-                        return null;
-
-                    iterator.remove();
+                    
+                case '.':
+                    if (slash)
+                        break loop;
+                    slash = false;
                     break;
+                    
+                case '?':
+                    return path;
+                    
+                default:
+                    slash = false;
             }
+        
+            i++;
         }
-
-        return String.join("", directories);
+        
+        if(i==end)
+            return path;
+        
+        StringBuilder canonical = new StringBuilder(path.length());
+        canonical.append(path,0,i);
+        
+        int dots = 1;
+        i++;
+        while (i<=end)
+        {
+            char c = i<end?path.charAt(i):'\0';
+            switch(c)
+            {
+                case '\0':
+                case '/':
+                case '?':
+                    switch(dots)
+                    {
+                        case 0:
+                            if (c!='\0')
+                                canonical.append(c);
+                            break;
+                            
+                        case 1:
+                            if (c=='?')
+                                canonical.append(c);
+                            break;
+                            
+                        case 2:
+                            if (canonical.length()<2)
+                                return null;
+                            canonical.setLength(canonical.length()-1);
+                            canonical.setLength(canonical.lastIndexOf("/")+1);
+                            if (c=='?')
+                                canonical.append(c);
+                            break;
+                        default:
+                            while (dots-->0)
+                                canonical.append('.');
+                            if (c!='\0')
+                                canonical.append(c);
+                    }
+                    
+                    slash = true;
+                    dots = 0;
+                    break;
+                    
+                case '.':
+                    if (dots>0)
+                        dots++;
+                    else if (slash)
+                        dots = 1;
+                    slash = false;
+                    break;
+                    
+                default:
+                    while (dots-->0)
+                        canonical.append('.');
+                    canonical.append(c);
+                    dots = 0;
+                    slash = false;
+            }
+        
+            i++;
+        }
+        return canonical.toString();
     }
 
     /* ------------------------------------------------------------ */
