@@ -11,7 +11,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
   <properties>
-    <weld.version>2.2.9.Final</weld.version>
+    <weld.version>2.4.3.Final</weld.version>
   </properties>
 
   <modules>
