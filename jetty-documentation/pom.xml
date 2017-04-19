@@ -58,7 +58,7 @@
                 <allow-uri-read>true</allow-uri-read>
                 <toc>true</toc>
                 <revnumber>${project.version}</revnumber>
-                <JDURL>http://download.eclipse.org/jetty/stable-9/apidocs</JDURL>
+                <JDURL>http://www.eclipse.org/jetty/javadoc/${project.version}</JDURL>
                 <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
                 <SRCDIR>${basedir}/..</SRCDIR>
                 <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
