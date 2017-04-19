@@ -104,7 +104,9 @@ public class URIUtilCanonicalPathTest
                         // Known windows shell quirks
                         {"file.txt  ", "file.txt  "}, // with spaces
                         {"file.txt...", "file.txt..."}, // extra dots ignored by windows
-                        {"file.txt\u0000", "file.txt\u0000"}, // null terminated is ignored by windows
+                        // BREAKS Jenkins: {"file.txt\u0000", "file.txt\u0000"}, // null terminated is ignored by windows
+                        {"file.txt\r", "file.txt\r"}, // CR terminated is ignored by windows
+                        {"file.txt\n", "file.txt\n"}, // LF terminated is ignored by windows
                         {"file.txt\"\"\"\"", "file.txt\"\"\"\""}, // extra quotes ignored by windows
                         {"file.txt<<<>>><", "file.txt<<<>>><"}, // angle brackets at end of path ignored by windows
                         {"././././././file.txt", "file.txt"},
