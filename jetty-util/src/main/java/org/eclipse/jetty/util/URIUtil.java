@@ -543,11 +543,16 @@ public class URIUtil
     }
     
     /* ------------------------------------------------------------ */
-    /** Convert a path to a cananonical form.
-     * All instances of "." and ".." are factored out.  Null is returned
-     * if the path tries to .. above its root.
-     * @param path the path to convert
-     * @return path or null.
+    /**
+     * Convert a path to a cananonical form.
+     * <p>
+     * All instances of "." and ".." are factored out.
+     * </p>
+     * <p>
+     * Null is returned if the path tries to .. above its root.
+     * </p>
+     * @param path the path to convert (expects URI/URL form, decoded, and with path separators '/')
+     * @return the canonical path, or null if path traversal above root.
      */
     public static String canonicalPath(String path)
     {
