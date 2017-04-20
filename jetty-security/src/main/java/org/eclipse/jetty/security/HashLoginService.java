@@ -54,7 +54,7 @@ public class HashLoginService extends AbstractLoginService
     private Resource _configResource;
     private boolean hotReload = false; // default is not to reload
     private UserStore _userStore;
-
+    private boolean _userStoreAutoCreate = false;
 
 
     /* ------------------------------------------------------------ */
@@ -206,7 +206,8 @@ public class HashLoginService extends AbstractLoginService
             propertyUserStore.setHotReload(hotReload);
             propertyUserStore.setConfigPath(_configFile);
             propertyUserStore.start();
-            this._userStore = propertyUserStore;
+            _userStore = propertyUserStore;
+            _userStoreAutoCreate = true;
         }
     }
 
@@ -218,7 +219,7 @@ public class HashLoginService extends AbstractLoginService
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_userStore != null)
+        if (_userStore != null && _userStoreAutoCreate)
             _userStore.stop();
         _userStore = null;
     }
