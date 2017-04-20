@@ -169,7 +169,7 @@ public class FileResource extends Resource
             if (base.isDirectory())
             {
                 // treat all paths being added as relative
-                uri=new URI(URIUtil.addPaths(base.toURI().toASCIIString(),encoded));
+                uri=new URI(URIUtil.addEncodedPaths(base.toURI().toASCIIString(),encoded));
             }
             else
             {

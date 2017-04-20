@@ -509,7 +509,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             String welcome_in_context=URIUtil.addPaths(pathInContext,_welcomes[i]);
             Resource welcome=getResource(welcome_in_context);
             if (welcome!=null && welcome.exists())
-                return _welcomes[i];
+                return welcome_in_context;
 
             if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet==null)
             {

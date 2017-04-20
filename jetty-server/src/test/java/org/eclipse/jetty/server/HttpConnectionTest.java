@@ -372,6 +372,7 @@ public class HttpConnectionTest
     @Test
     public void testChunkNoTrailer() throws Exception
     {
+        // Expect TimeoutException logged
         String response=connector.getResponse("GET /R1 HTTP/1.1\r\n"+
                 "Host: localhost\r\n"+
                 "Transfer-Encoding: chunked\r\n"+

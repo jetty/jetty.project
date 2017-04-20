@@ -19,9 +19,7 @@
 package org.eclipse.jetty.util;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,88 +35,88 @@ public class URIUtilCanonicalPathTest
     public static List<String[]> data()
     {
         String[][] canonical =
-                {
-                        // Basic examples (no changes expected)
-                        {"/hello.html", "/hello.html"},
-                        {"/css/main.css", "/css/main.css"},
-                        {"/", "/"},
-                        {"", ""},
-                        {"/aaa/bbb/", "/aaa/bbb/"},
-                        {"/aaa/bbb", "/aaa/bbb"},
-                        {"aaa/bbb", "aaa/bbb"},
-                        {"aaa/", "aaa/"},
-                        {"aaa", "aaa"},
-                        {"a", "a"},
-                        {"a/", "a/"},
-                        
-                        // Extra slashes
-                        {"/aaa//bbb/", "/aaa//bbb/"},
-                        {"/aaa//bbb", "/aaa//bbb"},
-                        {"/aaa///bbb/", "/aaa///bbb/"},
-                        
-                        // Path traversal with current references "./"
-                        {"/aaa/./bbb/", "/aaa/bbb/"},
-                        {"/aaa/./bbb", "/aaa/bbb"},
-                        {"./bbb/", "bbb/"},
-                        {"./aaa/../bbb/", "bbb/"},
-                        {"/foo/.", "/foo/"},
-                        {"./", ""},
-                        {".", ""},
-                        {".//", "/"},
-                        {".///", "//"},
-                        {"/.", "/"},
-                        {"//.", "//"},
-                        {"///.", "///"},
-                        
-                        // Path traversal directory (but not past root)
-                        {"/aaa/../bbb/", "/bbb/"},
-                        {"/aaa/../bbb", "/bbb"},
-                        {"/aaa..bbb/", "/aaa..bbb/"},
-                        {"/aaa..bbb", "/aaa..bbb"},
-                        {"/aaa/..bbb/", "/aaa/..bbb/"},
-                        {"/aaa/..bbb", "/aaa/..bbb"},
-                        {"/aaa/./../bbb/", "/bbb/"},
-                        {"/aaa/./../bbb", "/bbb"},
-                        {"/aaa/bbb/ccc/../../ddd/", "/aaa/ddd/"},
-                        {"/aaa/bbb/ccc/../../ddd", "/aaa/ddd"},
-                        {"/foo/../bar//", "/bar//"},
-                        {"/ctx/../bar/../ctx/all/index.txt", "/ctx/all/index.txt"},
-                        {"/down/.././index.html", "/index.html"},
-                        
-                        // Path traversal up past root
-                        {"..", null},
-                        {"./..", null},
-                        {"aaa/../..", null},
-                        {"/foo/bar/../../..", null},
-                        {"/../foo", null},
-                        {"a/.", "a/"},
-                        {"a/..", ""},
-                        {"a/../..", null},
-                        {"/foo/../../bar", null},
-                        
-                        // Query parameter specifics
-                        {"/ctx/dir?/../index.html", "/ctx/dir?/../index.html"},
-                        {"/get-files?file=/etc/passwd", "/get-files?file=/etc/passwd"},
-                        {"/get-files?file=../../../../../passwd", "/get-files?file=../../../../../passwd"},
-                        
-                        // Known windows shell quirks
-                        {"file.txt  ", "file.txt  "}, // with spaces
-                        {"file.txt...", "file.txt..."}, // extra dots ignored by windows
-                        // BREAKS Jenkins: {"file.txt\u0000", "file.txt\u0000"}, // null terminated is ignored by windows
-                        {"file.txt\r", "file.txt\r"}, // CR terminated is ignored by windows
-                        {"file.txt\n", "file.txt\n"}, // LF terminated is ignored by windows
-                        {"file.txt\"\"\"\"", "file.txt\"\"\"\""}, // extra quotes ignored by windows
-                        {"file.txt<<<>>><", "file.txt<<<>>><"}, // angle brackets at end of path ignored by windows
-                        {"././././././file.txt", "file.txt"},
-                        
-                        // Oddball requests that look like path traversal, but are not
-                        {"/....", "/...."},
-                        {"/..../ctx/..../blah/logo.jpg", "/..../ctx/..../blah/logo.jpg"},
-                        
-                        // paths with encoded segments should remain encoded
-                        // canonicalPath() is not responsible for decoding characters
-                        {"%2e%2e/", "%2e%2e/"},
-                };
+        {
+            // Basic examples (no changes expected)
+            {"/hello.html", "/hello.html"},
+            {"/css/main.css", "/css/main.css"},
+            {"/", "/"},
+            {"", ""},
+            {"/aaa/bbb/", "/aaa/bbb/"},
+            {"/aaa/bbb", "/aaa/bbb"},
+            {"aaa/bbb", "aaa/bbb"},
+            {"aaa/", "aaa/"},
+            {"aaa", "aaa"},
+            {"a", "a"},
+            {"a/", "a/"},
+
+            // Extra slashes
+            {"/aaa//bbb/", "/aaa//bbb/"},
+            {"/aaa//bbb", "/aaa//bbb"},
+            {"/aaa///bbb/", "/aaa///bbb/"},
+
+            // Path traversal with current references "./"
+            {"/aaa/./bbb/", "/aaa/bbb/"},
+            {"/aaa/./bbb", "/aaa/bbb"},
+            {"./bbb/", "bbb/"},
+            {"./aaa/../bbb/", "bbb/"},
+            {"/foo/.", "/foo/"},
+            {"./", ""},
+            {".", ""},
+            {".//", "/"},
+            {".///", "//"},
+            {"/.", "/"},
+            {"//.", "//"},
+            {"///.", "///"},
+
+            // Path traversal directory (but not past root)
+            {"/aaa/../bbb/", "/bbb/"},
+            {"/aaa/../bbb", "/bbb"},
+            {"/aaa..bbb/", "/aaa..bbb/"},
+            {"/aaa..bbb", "/aaa..bbb"},
+            {"/aaa/..bbb/", "/aaa/..bbb/"},
+            {"/aaa/..bbb", "/aaa/..bbb"},
+            {"/aaa/./../bbb/", "/bbb/"},
+            {"/aaa/./../bbb", "/bbb"},
+            {"/aaa/bbb/ccc/../../ddd/", "/aaa/ddd/"},
+            {"/aaa/bbb/ccc/../../ddd", "/aaa/ddd"},
+            {"/foo/../bar//", "/bar//"},
+            {"/ctx/../bar/../ctx/all/index.txt", "/ctx/all/index.txt"},
+            {"/down/.././index.html", "/index.html"},
+
+            // Path traversal up past root
+            {"..", null},
+            {"./..", null},
+            {"aaa/../..", null},
+            {"/foo/bar/../../..", null},
+            {"/../foo", null},
+            {"a/.", "a/"},
+            {"a/..", ""},
+            {"a/../..", null},
+            {"/foo/../../bar", null},
+
+            // Query parameter specifics
+            {"/ctx/dir?/../index.html", "/ctx/index.html"},
+            {"/get-files?file=/etc/passwd", "/get-files?file=/etc/passwd"},
+            {"/get-files?file=../../../../../passwd", null},
+
+            // Known windows shell quirks
+            {"file.txt  ", "file.txt  "}, // with spaces
+            {"file.txt...", "file.txt..."}, // extra dots ignored by windows
+            // BREAKS Jenkins: {"file.txt\u0000", "file.txt\u0000"}, // null terminated is ignored by windows
+            {"file.txt\r", "file.txt\r"}, // CR terminated is ignored by windows
+            {"file.txt\n", "file.txt\n"}, // LF terminated is ignored by windows
+            {"file.txt\"\"\"\"", "file.txt\"\"\"\""}, // extra quotes ignored by windows
+            {"file.txt<<<>>><", "file.txt<<<>>><"}, // angle brackets at end of path ignored by windows
+            {"././././././file.txt", "file.txt"},
+
+            // Oddball requests that look like path traversal, but are not
+            {"/....", "/...."},
+            {"/..../ctx/..../blah/logo.jpg", "/..../ctx/..../blah/logo.jpg"},
+
+            // paths with encoded segments should remain encoded
+            // canonicalPath() is not responsible for decoding characters
+            {"%2e%2e/", "%2e%2e/"},
+        };
         return Arrays.asList(canonical);
     }
     
@@ -134,19 +132,4 @@ public class URIUtilCanonicalPathTest
         assertThat("Canonical", URIUtil.canonicalPath(input), is(expectedResult));
     }
     
-    @Test
-    public void testCanonicalPathWithQuery()
-    {
-        // Skip this variation if the actual test contains a query already
-        assumeFalse(input.contains("?"));
-        
-        if (expectedResult == null)
-        {
-            assertThat("Canonical with Query", URIUtil.canonicalPath(input + "?a=1"), nullValue());
-        }
-        else
-        {
-            assertThat("Canonical", URIUtil.canonicalPath(input + "?a=1"), is(expectedResult + "?a=1"));
-        }
-    }
 }

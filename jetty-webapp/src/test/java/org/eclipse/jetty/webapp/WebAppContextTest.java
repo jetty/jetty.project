@@ -217,7 +217,7 @@ public class WebAppContextTest
         server.start();
         try
         {
-            String response = connector.getResponses("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
+            String response = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
             Assert.assertTrue(response.indexOf("200 OK")>=0);
         }
         finally

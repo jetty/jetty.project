@@ -111,8 +111,7 @@ public class FastFileServer
             {
                 if (!request.getPathInfo().endsWith(URIUtil.SLASH))
                 {
-                    response.sendRedirect(response.encodeRedirectURL(URIUtil
-                            .addPaths(request.getRequestURI(), URIUtil.SLASH)));
+                    response.sendRedirect(response.encodeRedirectURL(request.getRequestURI()+URIUtil.SLASH));
                     return;
                 }
                 String listing = Resource.newResource(file).getListHTML(
