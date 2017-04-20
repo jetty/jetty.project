@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
@@ -163,9 +164,9 @@ public class HashLoginService extends AbstractLoginService
         if (roles == null)
             return null;
 
-        List<String> list = new ArrayList<>();
-        for (RolePrincipal r:roles)
-            list.add(r.getName());
+        List<String> list = roles.stream()
+            .map( rolePrincipal -> rolePrincipal.getName() )
+            .collect(  Collectors.toList() );
 
         return list.toArray(new String[roles.size()]);
     }
