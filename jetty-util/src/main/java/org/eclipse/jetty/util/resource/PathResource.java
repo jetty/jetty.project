@@ -213,7 +213,7 @@ public class PathResource extends Resource
         this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
         if (isDirectory() &&!childPath.endsWith("/"))
             childPath+="/";
-        this.uri = URIUtil.addDecodedPath(parent.uri,childPath);
+        this.uri = URIUtil.addPath(parent.uri,childPath);
         this.alias = checkAliasPath();
     }
 

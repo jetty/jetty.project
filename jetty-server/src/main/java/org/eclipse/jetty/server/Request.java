@@ -1283,7 +1283,7 @@ public class Request implements HttpServletRequest
                 relTo = relTo.substring(0,slash + 1);
             else
                 relTo = "/";
-            path = URIUtil.addPaths(URIUtil.encodePath(relTo),path);
+            path = URIUtil.addPaths(relTo,path);
         }
 
         return _context.getRequestDispatcher(path);
@@ -1754,47 +1754,37 @@ public class Request implements HttpServletRequest
      */
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
-        _metaData=request;
+        _metaData = request;
         
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
-        _originalURI=uri.isAbsolute()&&request.getHttpVersion()!=HttpVersion.HTTP_2?uri.toString():uri.getPathQuery();
+        _originalURI = uri.isAbsolute()&&request.getHttpVersion()!=HttpVersion.HTTP_2?uri.toString():uri.getPathQuery();
 
-        String path = uri.getDecodedPath();
-        String info;
-        if (path==null || path.length()==0)
+        String encoded = uri.getPath();
+        String path;
+        if (encoded==null)
         {
-            if (uri.isAbsolute())
-            {
-                path="/";
-                uri.setPath(path);
-            }
-            else
-            {
-                setPathInfo("");
-                throw new BadMessageException(400,"Bad URI");
-            }
-            info=path;
+            path = uri.isAbsolute()?"/":null;
         }
-        else if (!path.startsWith("/"))
+        else if (encoded.startsWith("/"))
         {
-            if (!"*".equals(path) && !HttpMethod.CONNECT.is(getMethod()))
-            {
-                setPathInfo(path);
-                throw new BadMessageException(400,"Bad URI");
-            }
-            info=path;
+            path = (encoded.length()==1)?"/":URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+        }
+        else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
+        {
+            path = encoded;
         }
         else
-            info = URIUtil.canonicalPath(path);// TODO should this be done prior to decoding???
-
-        if (info == null)
         {
-            setPathInfo(path);
-            throw new BadMessageException(400,"Bad URI");
+            path = null;
         }
 
-        setPathInfo(info);
+        if (path==null || path.isEmpty())
+        {
+            setPathInfo(encoded==null?"":encoded);
+            throw new BadMessageException(400,"Bad URI");
+        }
+        setPathInfo(path);
     }
 
     /* ------------------------------------------------------------ */
