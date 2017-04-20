@@ -566,7 +566,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (parent)
         {
             buf.append("<TR><TD><A HREF=\"");
-            buf.append(URIUtil.addPaths(base,"../"));
+            buf.append(URIUtil.addEncodedPaths(base,"../"));
             buf.append("\">Parent Directory</A></TD><TD></TD><TD></TD></TR>\n");
         }
         
@@ -579,7 +579,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             Resource item = addPath(ls[i]);
             
             buf.append("\n<TR><TD><A HREF=\"");
-            String path=URIUtil.addPaths(encodedBase,URIUtil.encodePath(ls[i]));
+            String path=URIUtil.addEncodedPaths(encodedBase,URIUtil.encodePath(ls[i]));
             
             buf.append(path);
             

@@ -1279,7 +1279,7 @@ public class Request implements HttpServletRequest
                 relTo = relTo.substring(0,slash + 1);
             else
                 relTo = "/";
-            path = URIUtil.addPaths(URIUtil.encodePath(relTo),path);
+            path = URIUtil.addPaths(relTo,path);
         }
 
         return _context.getRequestDispatcher(path);

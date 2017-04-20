@@ -490,9 +490,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 String q=request.getQueryString();
                 pathInContext=pathInContext.substring(0,pathInContext.length()-1);
+                String uri = URIUtil.addPaths(_servletContext.getContextPath(),pathInContext);
                 if (q!=null&&q.length()!=0)
-                    pathInContext+="?"+q;
-                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(_servletContext.getContextPath(),pathInContext)));
+                    uri+="?"+q;
+                response.sendRedirect(response.encodeRedirectURL(uri));
                 return;
             }
             
@@ -578,11 +579,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 // Redirect to the index
                 response.setContentLength(0);
+                String uri=URIUtil.encodePath(URIUtil.addPaths( _servletContext.getContextPath(),welcome));
                 String q=request.getQueryString();
-                if (q!=null&&q.length()!=0)
-                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)+"?"+q));
-                else
-                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)));
+                if (q!=null&&!q.isEmpty())
+                    uri+="?"+q;
+                response.sendRedirect(response.encodeRedirectURL(uri));
             }
             else
             {

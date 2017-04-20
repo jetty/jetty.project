@@ -453,7 +453,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory
             boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
             if (!endsWithSlash)
             {
-                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)));
+                response.sendRedirect(response.encodeRedirectURL(request.getRequestURI()+URIUtil.SLASH));
                 return;
             }
 
