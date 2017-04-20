@@ -232,40 +232,31 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             }
         }
 
-        final List<String> _knownUsers = new ArrayList<String>();
-        synchronized (_knownUsers)
+        final List<String> currentlyKnownUsers = new ArrayList<String>(getKnownUserIdentities().keySet());
+        /*
+         * 
+         * if its not the initial load then we want to process removed users
+         */
+        if (!_firstLoad)
         {
-            /*
-             * if its not the initial load then we want to process removed users
-             */
-            if (!_firstLoad)
+            Iterator<String> users = currentlyKnownUsers.iterator();
+            while (users.hasNext())
             {
-                Iterator<String> users = _knownUsers.iterator();
-                while (users.hasNext())
+                String user = users.next();
+                if (!known.contains(user))
                 {
-                    String user = users.next();
-                    if (!known.contains(user))
-                    {
-                        removeUser( user );
-                        notifyRemove(user);
-                    }
+                    removeUser( user );
+                    notifyRemove(user);
                 }
             }
-
-            /*
-             * reset the tracked _users list to the known users we just processed
-             */
-
-            _knownUsers.clear();
-            _knownUsers.addAll(known);
-
         }
+
 
         /*
          * set initial load to false as there should be no more initial loads
          */
         _firstLoad = false;
-        
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Loaded " + this + " from " + _configPath);
@@ -301,6 +292,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         try
         {
+            System.err.println("PATH WATCH EVENT: "+event.getType());
             loadUsers();
         }
         catch (IOException e)
