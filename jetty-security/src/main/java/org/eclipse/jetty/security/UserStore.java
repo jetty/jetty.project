@@ -35,7 +35,7 @@ public class UserStore extends AbstractLifeCycle
     private IdentityService _identityService = new DefaultIdentityService();
     private final Map<String, UserIdentity> _knownUserIdentities = new ConcurrentHashMap<>();
 
-    protected void addUser( String username, Credential credential, String[] roles)
+    public void addUser( String username, Credential credential, String[] roles)
     {
         Principal userPrincipal = new AbstractLoginService.UserPrincipal( username, credential);
         Subject subject = new Subject();
@@ -54,7 +54,7 @@ public class UserStore extends AbstractLifeCycle
         _knownUserIdentities.put(username,_identityService.newUserIdentity(subject,userPrincipal,roles));
     }
 
-    protected void removeUser(String username)
+    public void removeUser(String username)
     {
         _knownUserIdentities.remove(username);
     }
@@ -69,7 +69,7 @@ public class UserStore extends AbstractLifeCycle
         return _identityService;
     }
 
-    protected Map<String, UserIdentity> getKnownUserIdentities()
+    public Map<String, UserIdentity> getKnownUserIdentities()
     {
         return _knownUserIdentities;
     }
