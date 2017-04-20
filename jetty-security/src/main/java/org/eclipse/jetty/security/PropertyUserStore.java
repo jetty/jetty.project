@@ -18,32 +18,25 @@
 
 package org.eclipse.jetty.security;
 
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Credential;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.security.Principal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.security.auth.Subject;
-
-
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.Credential;
 
 /**
  * PropertyUserStore
@@ -59,7 +52,7 @@ import org.eclipse.jetty.util.security.Credential;
  *
  * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
-public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.Listener
+public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 {
     private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
 
@@ -69,10 +62,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
     protected PathWatcher pathWatcher;
     protected boolean hotReload = false; // default is not to reload
 
-    protected IdentityService _identityService = new DefaultIdentityService();
     protected boolean _firstLoad = true; // true if first load, false from that point on
-    protected final List<String> _knownUsers = new ArrayList<String>();
-    protected final Map<String, UserIdentity> _knownUserIdentities = new HashMap<String, UserIdentity>();
     protected List<UserListener> _listeners;
 
     /**
@@ -145,12 +135,6 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
     {
         _configPath = configPath;
     }
-    
-    /* ------------------------------------------------------------ */
-    public UserIdentity getUserIdentity(String userName)
-    {
-        return _knownUserIdentities.get(userName);
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -199,8 +183,8 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
         StringBuilder s = new StringBuilder();
         s.append(this.getClass().getName());
         s.append("[");
-        s.append("users.count=").append(this._knownUsers.size());
-        s.append("identityService=").append(this._identityService);
+        s.append("users.count=").append(this.getKnownUserIdentities().size());
+        s.append("identityService=").append(this.getIdentityService());
         s.append("]");
         return s.toString();
     }
@@ -220,7 +204,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
         if (getConfigResource().exists())
             properties.load(getConfigResource().getInputStream());
         
-        Set<String> known = new HashSet<String>();
+        Set<String> known = new HashSet<>();
 
         for (Map.Entry<Object, Object> entry : properties.entrySet())
         {
@@ -243,27 +227,12 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
                 }
                 known.add(username);
                 Credential credential = Credential.getCredential(credentials);
-
-                Principal userPrincipal = new AbstractLoginService.UserPrincipal(username,credential);
-                Subject subject = new Subject();
-                subject.getPrincipals().add(userPrincipal);
-                subject.getPrivateCredentials().add(credential);
-
-                if (roles != null)
-                {
-                    for (String role : roleArray)
-                    {
-                        subject.getPrincipals().add(new AbstractLoginService.RolePrincipal(role));
-                    }
-                }
-
-                subject.setReadOnly();
-
-                _knownUserIdentities.put(username,_identityService.newUserIdentity(subject,userPrincipal,roleArray));
+                addUser( username, credential, roleArray );
                 notifyUpdate(username,credential,roleArray);
             }
         }
 
+        final List<String> _knownUsers = new ArrayList<String>();
         synchronized (_knownUsers)
         {
             /*
@@ -277,7 +246,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
                     String user = users.next();
                     if (!known.contains(user))
                     {
-                        _knownUserIdentities.remove(user);
+                        removeUser( user );
                         notifyRemove(user);
                     }
                 }
