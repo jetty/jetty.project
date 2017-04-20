@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 
 public class Dispatcher implements RequestDispatcher
@@ -250,28 +251,55 @@ public class Dispatcher implements RequestDispatcher
         return String.format("Dispatcher@0x%x{%s,%s}",hashCode(),_named,_uri);
     }
 
-    private void commitResponse(ServletResponse response, Request baseRequest) throws IOException
+    @SuppressWarnings("Duplicates")
+    private void commitResponse(ServletResponse response, Request baseRequest) throws IOException, ServletException
     {
         if (baseRequest.getResponse().isWriting())
         {
             try
             {
+                // Try closing Writer first (based on knowledge in Response obj)
                 response.getWriter().close();
             }
-            catch (IllegalStateException e)
+            catch (IllegalStateException e1)
             {
-                response.getOutputStream().close();
+                try
+                {
+                    // Try closing OutputStream as alternate route
+                    // This path is possible due to badly behaving Response wrappers
+                    response.getOutputStream().close();
+                }
+                catch(IllegalStateException e2)
+                {
+                    MultiException me = new MultiException();
+                    me.add(e1);
+                    me.add(e2);
+                    throw new ServletException("Unable to commit the response", me);
+                }
             }
         }
         else
         {
             try
             {
+                // Try closing OutputStream first (based on knowledge in Response obj)
                 response.getOutputStream().close();
             }
-            catch (IllegalStateException e)
+            catch (IllegalStateException e1)
             {
-                response.getWriter().close();
+                try
+                {
+                    // Try closing Writer as alternate route
+                    // This path is possible due to badly behaving Response wrappers
+                    response.getWriter().close();
+                }
+                catch(IllegalStateException e2)
+                {
+                    MultiException me = new MultiException();
+                    me.add(e1);
+                    me.add(e2);
+                    throw new ServletException("Unable to commit the response", me);
+                }
             }
         }
     }
