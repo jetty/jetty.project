@@ -49,11 +49,12 @@ public class HashLoginService extends AbstractLoginService
 {
     private static final Logger LOG = Log.getLogger(HashLoginService.class);
 
-    private PropertyUserStore _propertyUserStore;
     private File _configFile;
     private Resource _configResource;
     private boolean hotReload = false; // default is not to reload
-    
+    private UserStore _userStore;
+
+
 
     /* ------------------------------------------------------------ */
     public HashLoginService()
@@ -139,13 +140,21 @@ public class HashLoginService extends AbstractLoginService
         this.hotReload = enable;
     }
 
-  
+    /**
+     * Configure the {@link UserStore} implementation to use.
+     * If none, for backward compat if none the {@link PropertyUserStore} will be used
+     * @param userStore the {@link UserStore} implementation to use
+     */
+    public void setUserStore(UserStore userStore)
+    {
+        this._userStore = userStore;
+    }
 
     /* ------------------------------------------------------------ */
     @Override
     protected String[] loadRoleInfo(UserPrincipal user)
     {
-        UserIdentity id = _propertyUserStore.getUserIdentity(user.getName());
+        UserIdentity id = _userStore.getUserIdentity(user.getName());
         if (id == null)
             return null;
 
@@ -162,13 +171,11 @@ public class HashLoginService extends AbstractLoginService
     }
 
     
-    
-    
     /* ------------------------------------------------------------ */
     @Override
     protected UserPrincipal loadUserInfo(String userName)
     {
-        UserIdentity id = _propertyUserStore.getUserIdentity(userName);
+        UserIdentity id = _userStore.getUserIdentity(userName);
         if (id != null)
         {
             return (UserPrincipal)id.getUserPrincipal();
@@ -187,16 +194,18 @@ public class HashLoginService extends AbstractLoginService
     protected void doStart() throws Exception
     {
         super.doStart();
-        
-        if (_propertyUserStore == null)
+
+        // can be null so we switch to previous behaviour using PropertyUserStore
+        if (_userStore == null)
         {
             if(LOG.isDebugEnabled())
                 LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _configFile + " hotReload: " + hotReload);
-            
-            _propertyUserStore = new PropertyUserStore();
-            _propertyUserStore.setHotReload(hotReload);
-            _propertyUserStore.setConfigPath(_configFile);
-            _propertyUserStore.start();
+
+            PropertyUserStore propertyUserStore = new PropertyUserStore();
+            propertyUserStore.setHotReload(hotReload);
+            propertyUserStore.setConfigPath(_configFile);
+            propertyUserStore.start();
+            this._userStore = propertyUserStore;
         }
     }
 
@@ -208,8 +217,8 @@ public class HashLoginService extends AbstractLoginService
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_propertyUserStore != null)
-            _propertyUserStore.stop();
-        _propertyUserStore = null;
+        if (_userStore != null)
+            _userStore.stop();
+        _userStore = null;
     }
 }
