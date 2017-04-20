@@ -1765,6 +1765,7 @@ public class Request implements HttpServletRequest
         if (encoded==null)
         {
             path = uri.isAbsolute()?"/":null;
+            uri.setPath(path);
         }
         else if (encoded.startsWith("/"))
         {
