@@ -292,7 +292,10 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     {
         try
         {
-            System.err.println("PATH WATCH EVENT: "+event.getType());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug( "PATH WATCH EVENT: {}", event.getType() );
+            }
             loadUsers();
         }
         catch (IOException e)
