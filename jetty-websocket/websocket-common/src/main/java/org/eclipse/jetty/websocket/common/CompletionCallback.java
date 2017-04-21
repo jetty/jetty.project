@@ -18,44 +18,29 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.util.concurrent.atomic.AtomicReference;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 
 /**
- * Atomic Close State
+ * A callback which will trigger complete regardless of success/failure.
  */
-public class AtomicClose
+public abstract class CompletionCallback implements FrameCallback
 {
-    enum State
+    private static final Logger LOG = Log.getLogger(CompletionCallback.class);
+    
+    @Override
+    public void fail(Throwable cause)
     {
-        /** No close handshake initiated (yet) */
-        NONE,
-        /** Local side initiated the close handshake */
-        LOCAL,
-        /** Remote side initiated the close handshake */
-        REMOTE,
-        /** An abnormal close situation (disconnect, timeout, etc...) */
-        ABNORMAL
+        LOG.ignore(cause);
+        complete();
     }
     
-    private final AtomicReference<State> state = new AtomicReference<>(State.NONE);
-    
-    public State get()
+    @Override
+    public void succeed()
     {
-        return state.get();
+        complete();
     }
     
-    public boolean onAbnormal()
-    {
-        return state.compareAndSet(State.NONE, State.ABNORMAL);
-    }
-    
-    public boolean onLocal()
-    {
-        return state.compareAndSet(State.NONE, State.LOCAL);
-    }
-    
-    public boolean onRemote()
-    {
-        return state.compareAndSet(State.NONE, State.REMOTE);
-    }
+    public abstract void complete();
 }

@@ -74,10 +74,10 @@ public class LocalWebSocketConnection implements LogicalConnection
     }
 
     @Override
-    public void disconnect(boolean outputOnly)
+    public void disconnect()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnect({})", outputOnly);
+            LOG.debug("disconnect()");
     }
     
     @Override

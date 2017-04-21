@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.ProtocolException;
@@ -33,8 +33,8 @@ import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 
 public class CloseInfo
 {
-    private int statusCode = 0;
-    private byte[] reasonBytes;
+    private int statusCode;
+    private String reason;
 
     public CloseInfo()
     {
@@ -78,7 +78,7 @@ public class CloseInfo
             {
                 // Reason (trimmed to max reason size)
                 int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
-                reasonBytes = new byte[len];
+                byte reasonBytes[] = new byte[len];
                 data.get(reasonBytes,0,len);
                 
                 // Spec Requirement : throw BadPayloadException on invalid UTF8
@@ -89,6 +89,7 @@ public class CloseInfo
                         Utf8StringBuilder utf = new Utf8StringBuilder();
                         // if this throws, we know we have bad UTF8
                         utf.append(reasonBytes,0,reasonBytes.length);
+                        this.reason = utf.toString();
                     }
                     catch (NotUtf8Exception e)
                     {
@@ -123,69 +124,61 @@ public class CloseInfo
     public CloseInfo(int statusCode, String reason)
     {
         this.statusCode = statusCode;
-        if (reason != null)
-        {
-            byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
-            if (utf8Bytes.length > CloseStatus.MAX_REASON_PHRASE)
-            {
-                this.reasonBytes = new byte[CloseStatus.MAX_REASON_PHRASE];
-                System.arraycopy(utf8Bytes,0,this.reasonBytes,0,CloseStatus.MAX_REASON_PHRASE);
-            }
-            else
-            {
-                this.reasonBytes = utf8Bytes;
-            }
-        }
+        this.reason = reason;
     }
-
-    private void assertValidStatusCode(int statusCode)
-    {
-        // Status Codes outside of RFC6455 defined scope
-        if ((statusCode <= 999) || (statusCode >= 5000))
-        {
-            throw new ProtocolException("Out of range close status code: " + statusCode);
-        }
-
-        // Status Codes not allowed to exist in a Close frame (per RFC6455)
-        if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == StatusCode.FAILED_TLS_HANDSHAKE))
-        {
-            throw new ProtocolException("Frame forbidden close status code: " + statusCode);
-        }
-
-        // Status Code is in defined "reserved space" and is declared (all others are invalid)
-        if ((statusCode >= 1000) && (statusCode <= 2999) && !StatusCode.isTransmittable(statusCode))
-        {
-            throw new ProtocolException("RFC6455 and IANA Undefined close status code: " + statusCode);
-        }
-    }
-
-    private ByteBuffer asByteBuffer()
+    
+    /**
+     * Convert a raw status code and reason into a WebSocket Close frame payload buffer.
+     *
+     * @param statusCode the status code
+     * @param reason the optional reason string
+     * @return the payload buffer if valid. null if invalid status code for payload buffer.
+     */
+    public static ByteBuffer asPayloadBuffer(int statusCode, String reason)
     {
         if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == (-1)))
         {
             // codes that are not allowed to be used in endpoint.
             return null;
         }
-
+        
         int len = 2; // status code
-        boolean hasReason = (this.reasonBytes != null) && (this.reasonBytes.length > 0);
+        byte reasonBytes[];
+    
+        byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
+        if (utf8Bytes.length > CloseStatus.MAX_REASON_PHRASE)
+        {
+            reasonBytes = new byte[CloseStatus.MAX_REASON_PHRASE];
+            System.arraycopy(utf8Bytes, 0, reasonBytes, 0, CloseStatus.MAX_REASON_PHRASE);
+        }
+        else
+        {
+            reasonBytes = utf8Bytes;
+        }
+    
+        boolean hasReason = (reasonBytes != null) && (reasonBytes.length > 0);
         if (hasReason)
         {
-            len += this.reasonBytes.length;
+            len += reasonBytes.length;
         }
-
+    
         ByteBuffer buf = BufferUtil.allocate(len);
         BufferUtil.flipToFill(buf);
-        buf.put((byte)((statusCode >>> 8) & 0xFF));
-        buf.put((byte)((statusCode >>> 0) & 0xFF));
-
+        buf.put((byte) ((statusCode >>> 8) & 0xFF));
+        buf.put((byte) ((statusCode >>> 0) & 0xFF));
+    
         if (hasReason)
         {
-            buf.put(this.reasonBytes,0,this.reasonBytes.length);
+            buf.put(reasonBytes, 0, reasonBytes.length);
         }
-        BufferUtil.flipToFlush(buf,0);
-
+        BufferUtil.flipToFlush(buf, 0);
+    
         return buf;
+    }
+
+    private ByteBuffer asByteBuffer()
+    {
+        return asPayloadBuffer(statusCode, reason);
     }
 
     public CloseFrame asFrame()
@@ -200,24 +193,15 @@ public class CloseInfo
         }
         return frame;
     }
-
+    
     public String getReason()
     {
-        if (this.reasonBytes == null)
-        {
-            return null;
-        }
-        return new String(this.reasonBytes,StandardCharsets.UTF_8);
+        return this.reason;
     }
 
     public int getStatusCode()
     {
         return statusCode;
-    }
-
-    public boolean isHarsh()
-    {
-        return !((statusCode == StatusCode.NORMAL) || (statusCode == StatusCode.NO_CODE));
     }
 
     public boolean isAbnormal()

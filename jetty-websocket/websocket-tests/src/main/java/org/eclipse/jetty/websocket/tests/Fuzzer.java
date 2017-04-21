@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
@@ -154,15 +153,13 @@ public class Fuzzer extends ContainerLifeCycle
             LOG.debug("expect() {} frame(s)", expect.size());
             
             // Read frames
-            Future<List<WebSocketFrame>> futFrames = session.getUntrustedEndpoint().expectedFrames(expectedCount);
-            
-            List<WebSocketFrame> frames = futFrames.get(duration, unit);
+            UntrustedWSEndpoint endpoint = session.getUntrustedEndpoint();
             
             String prefix = "";
             for (int i = 0; i < expectedCount; i++)
             {
                 WebSocketFrame expected = expect.get(i);
-                WebSocketFrame actual = frames.get(i);
+                WebSocketFrame actual = endpoint.framesQueue.poll(5, TimeUnit.SECONDS);
                 
                 prefix = "Frame[" + i + "]";
                 

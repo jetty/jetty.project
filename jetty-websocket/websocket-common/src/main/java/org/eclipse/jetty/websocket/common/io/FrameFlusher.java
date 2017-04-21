@@ -238,6 +238,9 @@ public class FrameFlusher
 
         private void succeedEntries()
         {
+            if(LOG.isDebugEnabled())
+                LOG.debug("succeedEntries()");
+            
             // Do not allocate the iterator here.
             for (int i = 0; i < entries.size(); ++i)
             {
@@ -290,7 +293,7 @@ public class FrameFlusher
     }
 
     public static final BinaryFrame FLUSH_FRAME = new BinaryFrame();
-    private static final Logger LOG = Log.getLogger(FrameFlusher.class);
+    private final Logger LOG;
     private final EndPoint endpoint;
     private final int bufferSize;
     private final Generator generator;
@@ -303,6 +306,7 @@ public class FrameFlusher
 
     public FrameFlusher(Generator generator, EndPoint endpoint, int bufferSize, int maxGather)
     {
+        this.LOG = Log.getLogger(FrameFlusher.class.getName() + "." + generator.getBehavior().name());
         this.endpoint = endpoint;
         this.bufferSize = bufferSize;
         this.generator = Objects.requireNonNull(generator);
@@ -319,7 +323,7 @@ public class FrameFlusher
             if (!closed)
             {
                 closed = true;
-                LOG.debug("{} closing {}",this);
+                LOG.debug("{} closing",this);
 
                 entries = new ArrayList<>();
                 entries.addAll(queue);
@@ -441,7 +445,7 @@ public class FrameFlusher
     public String toString()
     {
         ByteBuffer aggregate = flusher.aggregate;
-        return String.format("%s[%s,queueSize=%d,aggregateSize=%d,failure=%s]",getClass().getSimpleName(),generator.getBehavior(),queue.size(),aggregate == null?0:aggregate.position(),
+        return String.format("%s[queueSize=%d,aggregateSize=%d,failure=%s]",getClass().getSimpleName(),queue.size(),aggregate == null?0:aggregate.position(),
                 failure);
     }
 }

@@ -677,6 +677,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         this.session = session;
         
         // Call (optional) on open method
+        // TODO: catch end user throwables
         if (onOpenFunction != null)
             onOpenFunction.apply(this.session);
     }
@@ -686,6 +687,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     {
         assertIsStarted();
         
+        // TODO: catch end user throwables
         if (onCloseFunction != null)
             onCloseFunction.apply(close);
     }
@@ -694,7 +696,8 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     public void onFrame(Frame frame)
     {
         assertIsStarted();
-        
+    
+        // TODO: catch end user throwables
         if (onFrameFunction != null)
             onFrameFunction.apply(frame);
     }
@@ -703,7 +706,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     public void onError(Throwable cause)
     {
         assertIsStarted();
-        
+    
         if (onErrorFunction != null)
             onErrorFunction.apply(cause);
         else
@@ -717,7 +720,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         
         if (activeMessageSink == null)
             activeMessageSink = onTextSink;
-        
+    
         acceptMessage(frame, callback);
     }
     
@@ -728,13 +731,14 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
         
         if (activeMessageSink == null)
             activeMessageSink = onBinarySink;
-        
+    
         acceptMessage(frame, callback);
     }
     
     @Override
     public void onContinuation(Frame frame, FrameCallback callback)
     {
+        // TODO: catch end user throwables
         acceptMessage(frame, callback);
     }
     
@@ -745,6 +749,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
             return;
         
         // Accept the payload into the message sink
+        // TODO: catch end user throwables
         activeMessageSink.accept(frame, callback);
         if (frame.isFin())
             activeMessageSink = null;
@@ -754,7 +759,8 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     public void onPing(ByteBuffer payload)
     {
         assertIsStarted();
-        
+    
+        // TODO: catch end user throwables
         if (onPingFunction != null)
             onPingFunction.apply(payload);
     }
@@ -763,7 +769,8 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     public void onPong(ByteBuffer payload)
     {
         assertIsStarted();
-        
+    
+        // TODO: catch end user throwables
         if (onPongFunction != null)
             onPongFunction.apply(payload);
     }
