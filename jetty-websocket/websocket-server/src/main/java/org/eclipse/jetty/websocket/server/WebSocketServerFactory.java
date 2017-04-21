@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -230,6 +231,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             return;
         }
         this.sessionFactories.add(sessionFactory);
+    }
+    
+    public void setSessionFactories(SessionFactory... factories)
+    {
+        if (factories == null || factories.length < 1)
+        {
+            throw new IllegalStateException("Must declare SessionFactory implementations");
+        }
+        this.sessionFactories.clear();
+        this.sessionFactories.addAll(Arrays.asList(factories));
     }
 
     @Override
@@ -574,6 +585,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Setup Session
         WebSocketSession session = createSession(request.getRequestURI(), websocket, wsConnection);
         session.setUpgradeRequest(request);
+        
         // set true negotiated extension list back to response
         response.setExtensions(extensionStack.getNegotiatedExtensions());
         session.setUpgradeResponse(response);
@@ -598,9 +610,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Tell jetty about the new upgraded connection
         request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, wsConnection);
         
-        if (LOG.isDebugEnabled())
-            LOG.debug("Handshake Response: {}", handshaker);
-        
         if (getSendServerVersion(connector))
             response.setHeader("Server", HttpConfiguration.SERVER_VERSION);
         
@@ -608,7 +617,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         handshaker.doHandshakeResponse(request, response);
         
         if (LOG.isDebugEnabled())
-            LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
+            LOG.debug("Websocket upgrade {} v={} subprotocol={} connection={}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
         
         return true;
     }

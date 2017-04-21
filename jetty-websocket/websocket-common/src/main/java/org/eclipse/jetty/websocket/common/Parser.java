@@ -68,7 +68,7 @@ public class Parser
         PAYLOAD
     }
 
-    private static final Logger LOG = Log.getLogger(Parser.class);
+    private final Logger LOG;
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private final Parser.Handler parserHandler;
@@ -102,6 +102,8 @@ public class Parser
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
         this.parserHandler = parserHandler;
+    
+        LOG = Log.getLogger(Parser.class.getName() + "_" + wspolicy.getBehavior());
     }
     
     private void assertSanePayloadLength(long len)
@@ -187,7 +189,7 @@ public class Parser
             while (parseFrame(buffer))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} Parsed Frame: {}", policy.getBehavior(), frame);
+                    LOG.debug("Parsed Frame: {}", frame);
     
                 assertBehavior();
     
@@ -268,7 +270,7 @@ public class Parser
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
+            LOG.debug("Parsing {} bytes",buffer.remaining());
         }
         
         while (buffer.hasRemaining())
@@ -291,8 +293,7 @@ public class Parser
                     }
                     
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
-                                policy.getBehavior(),
+                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",
                                 OpCode.name(opcode),
                                 fin,
                                 (((b & 0x40) != 0)?'1':'.'),
@@ -583,7 +584,7 @@ public class Parser
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("{} Raw Payload: {}",policy.getBehavior(),BufferUtil.toDetailString(window));
+                LOG.debug("Raw Payload: {}",BufferUtil.toDetailString(window));
             }
 
             maskProcessor.process(window);

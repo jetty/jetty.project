@@ -80,12 +80,12 @@ public class FrameFlusher
                 ByteBuffer payload = entry.frame.getPayload();
                 if (BufferUtil.hasContent(payload))
                 {
-                    BufferUtil.append(aggregate,payload);
+                    BufferUtil.put(payload, aggregate);
                 }
             }
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("{} aggregated {} frames: {}",FrameFlusher.this,entries.size(),entries);
+                LOG.debug("{} aggregated {} frames in {}: {}", FrameFlusher.this, entries.size(), aggregate, entries);
             }
             succeeded();
             return Action.SCHEDULED;
@@ -114,6 +114,7 @@ public class FrameFlusher
         {
             if (!BufferUtil.isEmpty(aggregate))
             {
+                aggregate.flip();
                 buffers.add(aggregate);
                 if (LOG.isDebugEnabled())
                 {

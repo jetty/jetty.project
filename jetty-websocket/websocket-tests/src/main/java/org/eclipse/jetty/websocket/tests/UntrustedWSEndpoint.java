@@ -18,136 +18,121 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
-public class UntrustedWSEndpoint implements WebSocketListener, WebSocketFrameListener
+public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketListener, WebSocketFrameListener
 {
     private static final Logger LOG = Log.getLogger(UntrustedWSEndpoint.class);
     
-    @SuppressWarnings("unused")
-    private Session session;
-    public CountDownLatch openLatch = new CountDownLatch(1);
-    public CountDownLatch closeLatch = new CountDownLatch(1);
-    public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
-    public AtomicReference<Throwable> error = new AtomicReference<>();
+    private UntrustedWSSession untrustedSession;
+    private CompletableFuture<UntrustedWSSession> connectFuture;
     
-    private CompletableFuture<List<String>> expectedMessagesFuture = new CompletableFuture<>();
-    private AtomicReference<Integer> expectedMessageCount = new AtomicReference<>();
-    private List<String> messages = new ArrayList<>();
+    private BiFunction<UntrustedWSSession, String, String> onTextFunction;
+    private BiFunction<UntrustedWSSession, ByteBuffer, ByteBuffer> onBinaryFunction;
     
-    private CompletableFuture<List<WebSocketFrame>> expectedFramesFuture = new CompletableFuture<>();
-    private AtomicReference<Integer> expectedFramesCount = new AtomicReference<>();
-    private List<WebSocketFrame> frames = new ArrayList<>();
-    
-    public Future<List<WebSocketFrame>> expectedFrames(int expectedCount)
+    public CompletableFuture<UntrustedWSSession> getConnectFuture()
     {
-        if (!expectedFramesCount.compareAndSet(null, expectedCount))
-        {
-            throw new IllegalStateException("Can only have 1 registered frame count future");
-        }
-        return expectedFramesFuture;
+        return connectFuture;
     }
     
-    public Future<List<String>> expectedMessages(int expectedCount)
+    public UntrustedWSEndpoint(String id)
     {
-        if (!expectedMessageCount.compareAndSet(null, expectedCount))
-        {
-            throw new IllegalStateException("Can only have 1 registered message count future");
-        }
-        return expectedMessagesFuture;
+        super(id);
     }
     
     @Override
     public void onWebSocketConnect(Session session)
     {
-        this.session = session;
-        this.openLatch.countDown();
-    }
-    
-    @Override
-    public void onWebSocketClose(int statusCode, String reason)
-    {
-        this.closeLatch.countDown();
-        CloseInfo close = new CloseInfo(statusCode, reason);
-        assertThat("Close only happened once", closeInfo.compareAndSet(null, close), is(true));
+        assertThat("Session type", session, instanceOf(UntrustedWSSession.class));
+        this.untrustedSession = (UntrustedWSSession) session;
+        if (this.connectFuture != null)
+        {
+            this.connectFuture.complete(this.untrustedSession);
+        }
+        
+        super.onWebSocketConnect(session);
     }
     
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        assertThat("Error must have value", cause, notNullValue());
-        if (error.compareAndSet(null, cause) == false)
+        if (this.connectFuture != null)
         {
-            LOG.warn("Original Cause", error.get());
-            LOG.warn("Extra/Excess Cause", cause);
-            fail("onError should only happen once!");
+            // Always trip this, doesn't matter if if completed normally first.
+            this.connectFuture.completeExceptionally(cause);
         }
         
-        synchronized (expectedMessagesFuture)
-        {
-            if (expectedMessagesFuture != null)
-                expectedMessagesFuture.completeExceptionally(cause);
-        }
-        
-        synchronized (expectedFramesFuture)
-        {
-            if (expectedFramesFuture != null)
-                expectedFramesFuture.completeExceptionally(cause);
-        }
+        super.onWebSocketError(cause);
     }
     
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        // TODO
+        super.onWebSocketBinary(payload, offset, len);
+    
+        if (onBinaryFunction != null)
+        {
+            try
+            {
+                ByteBuffer msg = ByteBuffer.wrap(payload, offset, len);
+                ByteBuffer responseBuffer = onBinaryFunction.apply(this.untrustedSession, msg);
+                if (responseBuffer != null)
+                {
+                    this.getRemote().sendBytes(responseBuffer);
+                }
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Unable to send binary", t);
+            }
+        }
     }
     
     @Override
     public void onWebSocketText(String text)
     {
-        messages.add(text);
-        synchronized (expectedMessagesFuture)
+        super.onWebSocketText(text);
+        
+        if (onTextFunction != null)
         {
-            Integer expected = expectedMessageCount.get();
-            
-            if (expected != null && messages.size() >= expected.intValue())
+            try
             {
-                expectedMessagesFuture.complete(messages);
+                String responseText = onTextFunction.apply(this.untrustedSession, text);
+                if (responseText != null)
+                {
+                    this.getRemote().sendString(responseText);
+                }
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Unable to send text", t);
             }
         }
     }
     
-    @Override
-    public void onWebSocketFrame(Frame frame)
+    public void setConnectFuture(CompletableFuture<UntrustedWSSession> future)
     {
-        frames.add(WebSocketFrame.copy(frame));
-        synchronized (expectedFramesFuture)
-        {
-            Integer expected = expectedFramesCount.get();
-            
-            if (expected != null && frames.size() >= expected.intValue())
-            {
-                expectedFramesFuture.complete(frames);
-            }
-        }
+        this.connectFuture = future;
+    }
+    
+    public void setOnBinaryFunction(BiFunction<UntrustedWSSession, ByteBuffer, ByteBuffer> onBinaryFunction)
+    {
+        this.onBinaryFunction = onBinaryFunction;
+    }
+    
+    public void setOnTextFunction(BiFunction<UntrustedWSSession, String, String> onTextFunction)
+    {
+        this.onTextFunction = onTextFunction;
     }
 }

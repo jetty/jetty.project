@@ -1,0 +1,74 @@
+Documenting the States of a WebSocket.
+
+
+NEW:
+
+  A new WebSocket session.
+  It has had no connection attempted yet.
+
+CONNECTING:
+
+  The connection is being attempted, along with the Upgrade handshake.
+
+CONNECTED:
+
+  The connection is established.
+  The User WebSocket Endpoint has not been notified yet.
+
+OPEN:
+
+  User WebSocket Endpoint has been Opened (the onOpen method has called)
+
+CLOSING:
+
+  The close handshake has begun.
+  Either the local initiated the close, waiting for the remote to reply.
+  Or the remote initiated the close, and the local hasn't replied yet.
+  This can be considered a logical half-closed state.
+
+CLOSED:
+
+  The connection and session is closed.
+  This means either the close handshake completed, or the connection was
+  disconnected for other reasons.
+
+----
+
+Normal Client Initiated Close State Transition
+
+  WSEndpoint created
+  Http GET w/Upgrade initiated
+  State: CONNECTING
+  Upgrade Handshake negotiated (HTTP 101 response)
+  State: CONNECTED
+  WSEndpoint.onOpen() called
+  State: OPEN
+  WSEndpoint.onMessage()
+  Session.close(local close details)
+  Connection disconnect output
+  State: CLOSING
+  Remote: Received CLOSE Frame
+  Connection disconnect completely
+  WSEndpoint.onClose(remote close details)
+  State: CLOSED
+
+----
+
+Normal Remote Initiated Close State Transition
+
+  WSEndpoint created
+  Http GET w/Upgrade initiated
+  State: CONNECTING
+  Upgrade Handshake negotiated (HTTP 101 response)
+  State: CONNECTED
+  WSEndpoint.onOpen() called
+  State: OPEN
+  WSEndpoint.onMessage()
+  Remote: Receive CLOSE frame
+  State: CLOSING
+  Session.close(remote close details)
+  Connection disconnect completely
+  WSEndpoint.onClose(local close details)
+  State: CLOSED
+
+

@@ -410,9 +410,9 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             throw new IllegalStateException("Unable to start WebSocketClient", e);
         }
-        this.localEndpoint = this.wsClient.getEventDriverFactory().wrap(localEndpoint);
-
-        this.fut = new CompletableFuture<Session>();
+        
+        this.localEndpoint = localEndpoint;
+        this.fut = new CompletableFuture<>();
     }
 
     private final String genRandomKey()

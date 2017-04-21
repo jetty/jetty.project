@@ -27,6 +27,8 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
 /**
@@ -51,6 +53,17 @@ public class UntrustedWSConnection
     public void flush() throws IOException
     {
         internalConnection.getEndPoint().flush();
+    }
+    
+    /**
+     * Forward a frame to the {@Link OutgoingFrames} handler
+     * @param frame
+     */
+    public void write(Frame frame) throws Exception
+    {
+        BlockerFrameCallback blocker = new BlockerFrameCallback();
+        this.internalConnection.outgoingFrame(frame, blocker, BatchMode.OFF);
+        blocker.block();
     }
     
     /**

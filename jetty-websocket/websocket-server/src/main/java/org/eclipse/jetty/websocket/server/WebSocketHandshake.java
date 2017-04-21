@@ -32,5 +32,5 @@ public interface WebSocketHandshake
      * @param response the response
      * @throws IOException if unable to handshake
      */
-    public void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
+    void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
 }

@@ -16,46 +16,40 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.tests.client;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Atomic Close State
- */
-public class AtomicClose
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.hamcrest.Matcher;
+
+@WebSocket
+public class TrackingSocket
 {
-    enum State
+    private Session session;
+    
+    public void assertClose(int expectedStatusCode, Matcher<String> reasonMatcher)
     {
-        /** No close handshake initiated (yet) */
-        NONE,
-        /** Local side initiated the close handshake */
-        LOCAL,
-        /** Remote side initiated the close handshake */
-        REMOTE,
-        /** An abnormal close situation (disconnect, timeout, etc...) */
-        ABNORMAL
     }
     
-    private final AtomicReference<State> state = new AtomicReference<>(State.NONE);
-    
-    public State get()
+    public Session getSession()
     {
-        return state.get();
+        return session;
     }
     
-    public boolean onAbnormal()
+    @OnWebSocketConnect
+    public void onOpen(Session session)
     {
-        return state.compareAndSet(State.NONE, State.ABNORMAL);
+        this.session = session;
     }
     
-    public boolean onLocal()
+    public void waitForClose(int timeout, TimeUnit unit)
     {
-        return state.compareAndSet(State.NONE, State.LOCAL);
     }
     
-    public boolean onRemote()
+    public void waitForConnected(int timeout, TimeUnit unit)
     {
-        return state.compareAndSet(State.NONE, State.REMOTE);
     }
 }
