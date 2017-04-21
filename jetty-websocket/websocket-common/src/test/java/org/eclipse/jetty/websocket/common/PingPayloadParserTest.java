@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,7 +43,7 @@ public class PingPayloadParserTest
         BufferUtil.flipToFlush(buf,0);
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 

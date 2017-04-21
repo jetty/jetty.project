@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
-public class IncomingFramesCapture extends AbstractFrameCapture implements IncomingFrames
+public class ParserCapture extends AbstractFrameCapture implements Parser.Handler
 {
     @Override
-    public void incomingFrame(Frame frame, FrameCallback callback)
+    public boolean onFrame(Frame frame)
     {
         WebSocketFrame copy = WebSocketFrame.copy(frame);
         frames.add(copy);
-        callback.succeed();
+        return true;
     }
 }

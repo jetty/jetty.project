@@ -30,7 +30,7 @@ import java.util.Arrays;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.junit.Assert;
@@ -64,7 +64,7 @@ public class TextPayloadParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
         
         expectedException.expect(MessageTooLargeException.class);
@@ -98,7 +98,7 @@ public class TextPayloadParserTest
 
         WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
         policy.setMaxTextMessageSize(100000);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
@@ -131,7 +131,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
@@ -166,7 +166,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
@@ -192,7 +192,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 
@@ -216,7 +216,7 @@ public class TextPayloadParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 

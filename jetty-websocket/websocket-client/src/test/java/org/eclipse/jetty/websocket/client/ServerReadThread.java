@@ -89,7 +89,7 @@ public class ServerReadThread extends Thread
                     conn.getParser().parse(buf);
                 }
 
-                Queue<WebSocketFrame> frames = conn.getIncomingFrames().getFrames();
+                Queue<WebSocketFrame> frames = conn.getParserCapture().getFrames();
                 WebSocketFrame frame;
                 while ((frame = frames.poll()) != null)
                 {

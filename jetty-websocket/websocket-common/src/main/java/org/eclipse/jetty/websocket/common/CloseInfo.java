@@ -82,19 +82,17 @@ public class CloseInfo
                 data.get(reasonBytes,0,len);
                 
                 // Spec Requirement : throw BadPayloadException on invalid UTF8
-                if(validate)
+                try
                 {
-                    try
-                    {
-                        Utf8StringBuilder utf = new Utf8StringBuilder();
-                        // if this throws, we know we have bad UTF8
-                        utf.append(reasonBytes,0,reasonBytes.length);
-                        this.reason = utf.toString();
-                    }
-                    catch (NotUtf8Exception e)
-                    {
+                    Utf8StringBuilder utf = new Utf8StringBuilder();
+                    // if this throws, we know we have bad UTF8
+                    utf.append(reasonBytes,0,reasonBytes.length);
+                    this.reason = utf.toString();
+                }
+                catch (NotUtf8Exception e)
+                {
+                    if(validate)
                         throw new BadPayloadException("Invalid Close Reason",e);
-                    }
                 }
             }
         }
@@ -141,25 +139,28 @@ public class CloseInfo
             // codes that are not allowed to be used in endpoint.
             return null;
         }
-        
+    
         int len = 2; // status code
-        byte reasonBytes[];
     
-        byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
-        if (utf8Bytes.length > CloseStatus.MAX_REASON_PHRASE)
-        {
-            reasonBytes = new byte[CloseStatus.MAX_REASON_PHRASE];
-            System.arraycopy(utf8Bytes, 0, reasonBytes, 0, CloseStatus.MAX_REASON_PHRASE);
-        }
-        else
-        {
-            reasonBytes = utf8Bytes;
-        }
+        byte reasonBytes[] = null;
     
-        boolean hasReason = (reasonBytes != null) && (reasonBytes.length > 0);
-        if (hasReason)
+        if (reason != null)
         {
-            len += reasonBytes.length;
+            byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
+            if (utf8Bytes.length > CloseStatus.MAX_REASON_PHRASE)
+            {
+                reasonBytes = new byte[CloseStatus.MAX_REASON_PHRASE];
+                System.arraycopy(utf8Bytes, 0, reasonBytes, 0, CloseStatus.MAX_REASON_PHRASE);
+            }
+            else
+            {
+                reasonBytes = utf8Bytes;
+            }
+        
+            if ((reasonBytes != null) && (reasonBytes.length > 0))
+            {
+                len += reasonBytes.length;
+            }
         }
     
         ByteBuffer buf = BufferUtil.allocate(len);
@@ -167,7 +168,7 @@ public class CloseInfo
         buf.put((byte) ((statusCode >>> 8) & 0xFF));
         buf.put((byte) ((statusCode >>> 0) & 0xFF));
     
-        if (hasReason)
+        if ((reasonBytes != null) && (reasonBytes.length > 0))
         {
             buf.put(reasonBytes, 0, reasonBytes.length);
         }

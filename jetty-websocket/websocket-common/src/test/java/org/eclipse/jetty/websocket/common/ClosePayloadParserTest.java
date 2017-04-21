@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.junit.Assert;
@@ -43,17 +43,17 @@ public class ClosePayloadParserTest
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
         payload.putChar((char)StatusCode.NORMAL);
         payload.put(utf,0,utf.length);
-        payload.flip();
+        payload.flip(); // to read
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)(0x80 | OpCode.CLOSE)); // fin + close
         buf.put((byte)(0x80 | payload.remaining()));
         MaskedByteBuffer.putMask(buf);
         MaskedByteBuffer.putPayload(buf,payload);
-        buf.flip();
+        buf.flip(); // to read
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
         parser.parse(buf);
 

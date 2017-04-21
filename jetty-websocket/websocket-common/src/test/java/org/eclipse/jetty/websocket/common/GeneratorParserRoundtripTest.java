@@ -26,7 +26,7 @@ import java.util.Arrays;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -42,7 +42,7 @@ public class GeneratorParserRoundtripTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         Generator gen = new Generator(policy,bufferPool);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new Parser(policy,bufferPool,capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
@@ -78,7 +78,7 @@ public class GeneratorParserRoundtripTest
     public void testParserAndGeneratorMasked() throws Exception
     {
         Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new Parser(WebSocketPolicy.newServerPolicy(),bufferPool,capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";

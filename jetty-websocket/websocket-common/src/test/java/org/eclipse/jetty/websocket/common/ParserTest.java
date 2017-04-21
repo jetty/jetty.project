@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
@@ -63,7 +63,7 @@ public class ParserTest
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(WebSocketPolicy.newServerPolicy(),capture);
 
         expectedException.expect(ProtocolException.class);
@@ -85,7 +85,7 @@ public class ParserTest
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(WebSocketPolicy.newServerPolicy(),capture);
         
         expectedException.expect(ProtocolException.class);
@@ -111,7 +111,7 @@ public class ParserTest
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(WebSocketPolicy.newServerPolicy(),capture);
         parser.parse(completeBuf);
 
@@ -133,7 +133,7 @@ public class ParserTest
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(WebSocketPolicy.newServerPolicy(),capture);
         parser.parse(completeBuf);
 
@@ -181,7 +181,7 @@ public class ParserTest
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         ByteBuffer completeBuf = UnitGenerator.generate(send);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(WebSocketPolicy.newServerPolicy(),capture);
         parser.parse(completeBuf);
 
@@ -198,7 +198,7 @@ public class ParserTest
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
     
         parser.parse(buf);
@@ -225,7 +225,7 @@ public class ParserTest
 
         // Parse, in 4096 sized windows
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
 
         while (networkBytes.remaining() > 0)

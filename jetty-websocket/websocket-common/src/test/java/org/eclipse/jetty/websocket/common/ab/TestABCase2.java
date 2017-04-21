@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
@@ -190,7 +190,7 @@ public class TestABCase2
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -218,7 +218,7 @@ public class TestABCase2
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -239,7 +239,7 @@ public class TestABCase2
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -268,7 +268,7 @@ public class TestABCase2
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -309,7 +309,7 @@ public class TestABCase2
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
 
         expectedException.expect(ProtocolException.class);
