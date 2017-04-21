@@ -43,7 +43,6 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -70,29 +69,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
-    public class OnDisconnectCallback implements WriteCallback
-    {
-        private final boolean outputOnly;
-
-        public OnDisconnectCallback(boolean outputOnly)
-        {
-            this.outputOnly = outputOnly;
-        }
-
-        @Override
-        public void writeFailed(Throwable x)
-        {
-            disconnect(outputOnly);
-        }
-
-        @Override
-        public void writeSuccess()
-        {
-            disconnect(outputOnly);
-        }
-    }
-
-    
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
      */
@@ -118,7 +94,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         super(endp,executor);
     
-        LOG = Log.getLogger(AbstractWebSocketConnection.class.getName() + "_" + policy.getBehavior());
+        LOG = Log.getLogger(AbstractWebSocketConnection.class.getName() + "." + policy.getBehavior());
         
         this.id = String.format("%s:%d->%s:%d",
                 endp.getLocalAddress().getAddress().getHostAddress(),
@@ -150,10 +126,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
-    public void disconnect(boolean onlyOutput)
+    public void disconnect()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnect({})", onlyOutput ? "OUTPUT_ONLY" : "BOTH");
+            LOG.debug("disconnect()");
         
         // close FrameFlusher, we cannot write anymore at this point.
         flusher.close();
@@ -164,18 +140,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (LOG.isDebugEnabled())
             LOG.debug("Shutting down output {}",endPoint);
         
-        endPoint.shutdownOutput();
-        
-        if (!onlyOutput)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Closing {}",endPoint);
-            endPoint.close();
-        }
-        else
-        {
-            closed.set(true);
-        }
+        endPoint.close();
+        closed.set(true);
     }
     
     protected void execute(Runnable task)

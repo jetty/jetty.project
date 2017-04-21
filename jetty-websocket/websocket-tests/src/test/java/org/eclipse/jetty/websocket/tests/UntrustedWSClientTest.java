@@ -23,7 +23,6 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -109,13 +108,11 @@ public class UntrustedWSClientTest
             {
                 UntrustedWSEndpoint endpoint = session.getUntrustedEndpoint();
                 
-                Future<List<String>> futMessages = endpoint.expectedMessages(1);
-                
                 session.getRemote().sendString("hello");
                 
-                List<String> messages = futMessages.get();
-                assertThat("Messages.size", messages.size(), is(1));
-                assertThat("Messages[0]", messages.get(0), is("hello"));
+                String message = endpoint.messageQueue.poll(5, TimeUnit.SECONDS);
+                assertThat("message", message, is("hello"));
+                // TODO: test close
             }
         }
         finally

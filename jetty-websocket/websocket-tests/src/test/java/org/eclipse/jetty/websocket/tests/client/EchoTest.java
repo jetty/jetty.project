@@ -24,7 +24,6 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.junit.After;
@@ -99,30 +99,33 @@ public class EchoTest
         server.registerConnectFuture(wsURI, serverSessionFut);
     
         // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(WebSocketBehavior.CLIENT.name());
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsURI);
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(WebSocketBehavior.CLIENT.name());
+        Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsURI);
     
         // Server accepts connect
         UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
+        UntrustedWSEndpoint serverEndpoint = serverSession.getUntrustedEndpoint();
     
         // client confirms connection via echo
-        assertThat("Client Opened", clientSocket.openLatch.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("Client onOpen event", clientEndpoint.openLatch.await(5, TimeUnit.SECONDS), is(true));
     
-        Future<List<String>> futMessages = clientSocket.expectedMessages(1);
-        
         // client sends message
-        clientSocket.getRemote().sendString("Hello Echo");
-        List<String> messages = futMessages.get(10, TimeUnit.SECONDS);
-        assertThat("Messages[0]", messages.get(0), is("Hello Echo"));
+        clientEndpoint.getRemote().sendString("Hello Echo");
+        
+        // Wait for response to echo
+        String message = clientEndpoint.messageQueue.poll(5, TimeUnit.SECONDS);
+        assertThat("message", message, is("Hello Echo"));
         
         // client closes
-        clientSocket.close(StatusCode.NORMAL, "Normal Close");
+        clientEndpoint.close(StatusCode.NORMAL, "Normal Close");
     
-        // client triggers close event on client ws-endpoint
-        clientSocket.assertClose("Client", StatusCode.NORMAL, containsString("Normal Close"));
-        
         // Server close event
-        serverSession.getUntrustedEndpoint().assertClose("Server", StatusCode.NORMAL, containsString("Normal Close"));
+        assertThat("Server onClose event", serverSession.getUntrustedEndpoint().closeLatch.await(5, TimeUnit.SECONDS), is(true));
+        serverEndpoint.assertCloseInfo("Server", StatusCode.NORMAL, containsString("Normal Close"));
+
+        // client triggers close event on client ws-endpoint
+        assertThat("Client onClose event", clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS), is(true));
+        clientEndpoint.assertCloseInfo("Client", StatusCode.NORMAL, containsString("Normal Close"));
     }
     
 }

@@ -35,7 +35,6 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -207,7 +206,7 @@ public class ClientCloseTest
         assertThat("Client WebSocket is Open", clientSocket.openLatch.await(30, TimeUnit.SECONDS), is(true));
     
         UntrustedWSEndpoint serverEndpoint = serverSession.getUntrustedEndpoint();
-        Future<List<WebSocketFrame>> futFrames = serverEndpoint.expectedFrames(1);
+        // Future<List<WebSocketFrame>> futFrames = serverEndpoint.expectedFrames(1);
         
         try
         {
@@ -219,8 +218,7 @@ public class ClientCloseTest
             testFut.get(30, TimeUnit.SECONDS);
             
             // Read Frame on server side
-            List<WebSocketFrame> frames = futFrames.get(30, TimeUnit.SECONDS);
-            WebSocketFrame frame = frames.get(0);
+            WebSocketFrame frame = serverEndpoint.framesQueue.poll(10, TimeUnit.SECONDS);
             assertThat("Server received frame", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Server received frame payload", frame.getPayloadAsUTF8(), is(echoMsg));
             
@@ -333,7 +331,7 @@ public class ClientCloseTest
         clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
         
         // server receives close frame
-        serverSession.getUntrustedEndpoint().assertClose("Server", StatusCode.NORMAL, is(origCloseReason));
+        serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
     
         // server sends 2 messages
         RemoteEndpoint remote = serverSession.getRemote();
@@ -451,7 +449,7 @@ public class ClientCloseTest
             assertThat("OnError", clientSocket.error.get().getMessage(), containsString("Invalid control frame"));
             
             // client parse invalid frame, notifies server of close (protocol error)
-            serverSession.getUntrustedEndpoint().assertClose("Server", StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
+            serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
         }
         
         // server disconnects
@@ -489,7 +487,7 @@ public class ClientCloseTest
             clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
             
             // server receives close frame
-            serverSession.getUntrustedEndpoint().assertClose("Server", StatusCode.NORMAL, is(origCloseReason));
+            serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
     
             // client should not have received close message (yet)
             clientSocket.assertNoCloseEvent();
@@ -531,7 +529,7 @@ public class ClientCloseTest
         clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
         
         // server receives close frame
-        serverSession.getUntrustedEndpoint().assertClose("Server", StatusCode.NORMAL, is(origCloseReason));
+        serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
     
         // client should not have received close message (yet)
         clientSocket.assertNoCloseEvent();
@@ -581,7 +579,7 @@ public class ClientCloseTest
         for (int i = 0; i < clientCount; i++)
         {
             // server receives close frame
-            serverSessions[i].getUntrustedEndpoint().assertClose("Server", StatusCode.SHUTDOWN, containsString("Shutdown"));
+            serverSessions[i].getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.SHUTDOWN, containsString("Shutdown"));
         }
         
         // clients disconnect

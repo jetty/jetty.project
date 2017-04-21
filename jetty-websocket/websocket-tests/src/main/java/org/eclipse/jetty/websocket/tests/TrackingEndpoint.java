@@ -25,12 +25,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,23 +53,19 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
     public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
     
-    private CompletableFuture<List<String>> expectedMessagesFuture = new CompletableFuture<>();
-    private AtomicReference<Integer> expectedMessageCount = new AtomicReference<>();
-    private List<String> messages = new ArrayList<>();
+    public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
+    public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
+    public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     
-    private CompletableFuture<List<WebSocketFrame>> expectedFramesFuture = new CompletableFuture<>();
-    private AtomicReference<Integer> expectedFramesCount = new AtomicReference<>();
-    private List<WebSocketFrame> frames = new ArrayList<>();
     private WebSocketSession session;
     
     public TrackingEndpoint(String id)
     {
-        LOG = Log.getLogger(this.getClass().getName() + "_" + id);
+        LOG = Log.getLogger(this.getClass().getName() + "." + id);
     }
     
-    public void assertClose(String prefix, int expectedCloseStatusCode, Matcher<String> reasonMatcher) throws InterruptedException
+    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<String> reasonMatcher) throws InterruptedException
     {
-        assertThat(prefix + " endpoint close event received", closeLatch.await(10, TimeUnit.SECONDS), Matchers.is(true));
         CloseInfo close = closeInfo.get();
         assertThat(prefix + " close info", close, Matchers.notNullValue());
         assertThat(prefix + " received close code", close.getStatusCode(), Matchers.is(expectedCloseStatusCode));
@@ -82,38 +75,6 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
     public void close(int statusCode, String reason)
     {
         this.session.close(statusCode, reason);
-    }
-    
-    public Future<List<WebSocketFrame>> expectedFrames(int expectedCount)
-    {
-        synchronized (expectedFramesCount)
-        {
-            if (!expectedFramesCount.compareAndSet(null, expectedCount))
-            {
-                throw new IllegalStateException("Can only have 1 registered frame count future");
-            }
-            else
-            {
-                checkFrameCount();
-            }
-        }
-        return expectedFramesFuture;
-    }
-    
-    public Future<List<String>> expectedMessages(int expectedCount)
-    {
-        synchronized (expectedMessagesFuture)
-        {
-            if (!expectedMessageCount.compareAndSet(null, expectedCount))
-            {
-                throw new IllegalStateException("Can only have 1 registered message count future");
-            }
-            else
-            {
-                checkMessageCount();
-            }
-        }
-        return expectedMessagesFuture;
     }
     
     public RemoteEndpoint getRemote()
@@ -128,6 +89,8 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
         {
             LOG.info("onWSBinary({})", BufferUtil.toDetailString(ByteBuffer.wrap(payload, offset, len)));
         }
+        
+        bufferQueue.offer(ByteBuffer.wrap(payload, offset, len));
     }
     
     @Override
@@ -156,13 +119,10 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
         assertThat("Error must have value", cause, notNullValue());
         if (error.compareAndSet(null, cause) == false)
         {
-            LOG.warn("Original Cause", error.get());
-            LOG.warn("Extra/Excess Cause", cause);
+            LOG.warn("onError should only happen once - Original Cause", error.get());
+            LOG.warn("onError should only happen once - Extra/Excess Cause", cause);
             fail("onError should only happen once!");
         }
-        
-        this.expectedMessagesFuture.completeExceptionally(cause);
-        this.expectedFramesFuture.completeExceptionally(cause);
     }
     
     @Override
@@ -173,11 +133,7 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
             LOG.debug("onWSFrame({})", frame);
         }
         
-        synchronized (expectedFramesFuture)
-        {
-            frames.add(WebSocketFrame.copy(frame));
-            checkFrameCount();
-        }
+        framesQueue.offer(WebSocketFrame.copy(frame));
     }
     
     @Override
@@ -187,31 +143,7 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
         {
             LOG.debug("onWSText(\"{}\")", text);
         }
-    
-        synchronized (expectedMessagesFuture)
-        {
-            messages.add(text);
-            checkMessageCount();
-        }
-    }
-    
-    private void checkMessageCount()
-    {
-        Integer expected = expectedMessageCount.get();
-        
-        if (expected != null && messages.size() >= expected.intValue())
-        {
-            expectedMessagesFuture.complete(messages);
-        }
-    }
-    
-    private void checkFrameCount()
-    {
-        Integer expected = expectedFramesCount.get();
-        
-        if (expected != null && frames.size() >= expected.intValue())
-        {
-            expectedFramesFuture.complete(frames);
-        }
+ 
+        messageQueue.offer(text);
     }
 }
