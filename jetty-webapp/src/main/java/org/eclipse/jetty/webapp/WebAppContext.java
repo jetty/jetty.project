@@ -61,7 +61,6 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -124,30 +123,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
         "org.eclipse.jetty.websocket.",     // webapp cannot change / replace websocket classes
         "org.eclipse.jetty.util.log.",      // webapp should use server log
-        "org.eclipse.jetty.servlet.StatisticsServlet", // webapp cannot change stats servlet
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
         "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
         "org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
         "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath
     } ;
 
-    // Find the location of the JVM lib directory
-    public final static String __jvmlib;
-    static
-    {
-        String lib=null;
-        try
-        { 
-            lib=TypeUtil.getLoadedFrom(System.class).getFile().getParentFile().toURI().toString();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-            lib=null;
-        }
-        __jvmlib=lib;
-    }
-    
     // Server classes are classes that are hidden from being
     // loaded by the web application using system classloader,
     // so if web application needs to load any of such classes,
@@ -164,7 +145,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.jndi.",         // don't hide naming classes
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
-        "-org.eclipse.jetty.servlet.StatisticsServlet", // don't hide stats servlet
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
         "-org.eclipse.jetty.servlet.NoJspServlet", // don't hide noJspServlet servlet
         "-org.eclipse.jetty.jsp.",          //don't hide jsp servlet
@@ -205,7 +185,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private Map<String, String> _resourceAliases;
     private boolean _ownClassLoader=false;
-    private boolean _configurationDiscovered=true;
+    private boolean _configurationDiscovered=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
     
@@ -244,6 +224,17 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
+     * @param contextPath The context path
+     * @param webApp The URL or filename of the webapp directory or war file.
+     */
+    public WebAppContext(Resource webApp, String contextPath)
+    {
+        this(null,contextPath,null,null,null,new ErrorPageErrorHandler(),SESSIONS|SECURITY);
+        setWarResource(webApp);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @param parent The parent HandlerContainer.
      * @param contextPath The context path
      * @param webApp The URL or filename of the webapp directory or war file.
@@ -252,6 +243,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         this(parent,contextPath,null,null,null,new ErrorPageErrorHandler(),SESSIONS|SECURITY);
         setWar(webApp);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param parent The parent HandlerContainer.
+     * @param contextPath The context path
+     * @param webApp The webapp directory or war file.
+     */
+    public WebAppContext(HandlerContainer parent, Resource webApp, String contextPath)
+    {
+        this(parent,contextPath,null,null,null,new ErrorPageErrorHandler(),SESSIONS|SECURITY);
+        setWarResource(webApp);
     }
 
     /* ------------------------------------------------------------ */
@@ -905,7 +908,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the war as a file or URL string (Resource)
+     * @return Returns the war as a file or URL string (Resource).
+     * The war may be different to the @link {@link #getResourceBase()}
+     * if the war has been expanded and/or copied.
      */
     @ManagedAttribute(value="war file location", readonly=true)
     public String getWar()
@@ -1354,11 +1359,25 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     
     /* ------------------------------------------------------------ */
     /**
-     * @param war The war to set as a file name or URL
+     * Set the war of the webapp. From this value a {@link #setResourceBase(String)}
+     * value is computed by {@link WebInfConfiguration}, which may be changed from
+     * the war URI by unpacking and/or copying.
+     * @param war The war to set as a file name or URL.
      */
     public void setWar(String war)
     {
         _war = war;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the war of the webapp as a {@link Resource}. 
+     * @see #setWar(String)
+     * @param war The war to set as a Resource.
+     */
+    public void setWarResource(Resource war)
+    {
+        setWar(war==null?null:war.toString());
     }
 
     /* ------------------------------------------------------------ */

@@ -206,7 +206,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
     public enum Availability { UNAVAILABLE,STARTING,AVAILABLE,SHUTDOWN,};
-    private volatile Availability _availability;
+    private volatile Availability _availability = Availability.UNAVAILABLE;
 
     /* ------------------------------------------------------------ */
     public ContextHandler()
@@ -684,18 +684,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @return true if this context is accepting new requests
+     * @return true if this context is shutting down
      */
     @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
     {
-        switch(_availability)
-        {
-            case SHUTDOWN:
-                return true;
-            default:
-                return false;
-        }
+        return _availability == Availability.SHUTDOWN;
     }
 
     /* ------------------------------------------------------------ */
@@ -759,20 +753,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
-
-        if (_logger==null)
+    
+        if (_logger == null)
         {
-            String log_name = getDisplayName();
-            if (log_name == null || log_name.isEmpty())
-            {
-                log_name = getContextPath();
-                if (log_name!=null || log_name.startsWith("/"))
-                    log_name = log_name.substring(1);
-                if (log_name==null || log_name.isEmpty())
-                    log_name = Integer.toHexString(hashCode());
-            }
-            _logger = Log.getLogger("org.eclipse.jetty.ContextHandler."+log_name);
+            _logger = Log.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
         }
+        
         ClassLoader old_classloader = null;
         Thread current_thread = null;
         Context old_context = null;
@@ -811,6 +797,34 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (_classLoader != null && current_thread!=null)
                 current_thread.setContextClassLoader(old_classloader);
         }
+    }
+    
+    private String getLogNameSuffix()
+    {
+        // Use display name first
+        String log_name = getDisplayName();
+        if (StringUtil.isBlank(log_name))
+        {
+            // try context path
+            log_name = getContextPath();
+            if (log_name != null)
+            {
+                // Strip prefix slash
+                if (log_name.startsWith("/"))
+                {
+                    log_name = log_name.substring(1);
+                }
+            }
+            
+            if (StringUtil.isBlank(log_name))
+            {
+                // an empty context path is the ROOT context
+                log_name = "ROOT";
+            }
+        }
+        
+        // Replace bad characters.
+        return '.' + log_name.replaceAll("\\W", "_");
     }
 
     /* ------------------------------------------------------------ */
@@ -1029,9 +1043,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             // context request must end with /
             baseRequest.setHandled(true);
             if (baseRequest.getQueryString() != null)
-                response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH) + "?" + baseRequest.getQueryString());
+                response.sendRedirect(baseRequest.getRequestURI() + "/?" + baseRequest.getQueryString());
             else
-                response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
+                response.sendRedirect(baseRequest.getRequestURI() + "/");
             return false;
         }
 

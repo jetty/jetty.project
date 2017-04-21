@@ -28,6 +28,16 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
 
  
 
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest#assertSession(java.lang.String, boolean)
+     */
+    @Override
+    public void assertSession(String id, boolean exists)
+    {
+        //noop, as we do not have a session store
+        
+    }
+
     @Test
     public void testNewSession() throws Exception
     {

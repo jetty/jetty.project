@@ -73,7 +73,7 @@ public class HttpStatus
     public final static int REQUESTED_RANGE_NOT_SATISFIABLE_416 = 416;
     public final static int RANGE_NOT_SATISFIABLE_416 = 416;
     public final static int EXPECTATION_FAILED_417 = 417;
-    public final static int IM_A_TEAPOT_418 = 417;
+    public final static int IM_A_TEAPOT_418 = 418;
     public final static int ENHANCE_YOUR_CALM_420 = 420;
     public final static int MISDIRECTED_REQUEST_421 = 421;
     public final static int UNPROCESSABLE_ENTITY_422 = 422;
@@ -153,7 +153,7 @@ public class HttpStatus
         UNSUPPORTED_MEDIA_TYPE(UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Media Type"),
         RANGE_NOT_SATISFIABLE(RANGE_NOT_SATISFIABLE_416, "Range Not Satisfiable"),
         EXPECTATION_FAILED(EXPECTATION_FAILED_417, "Expectation Failed"),
-        IM_A_TEAPOT(IM_A_TEAPOT_418, "Im a Teapot"),
+        IM_A_TEAPOT(IM_A_TEAPOT_418, "I'm a Teapot"),
         ENHANCE_YOUR_CALM(ENHANCE_YOUR_CALM_420, "Enhance your Calm"),
         MISDIRECTED_REQUEST(MISDIRECTED_REQUEST_421, "Misdirected Request"),
         UNPROCESSABLE_ENTITY(UNPROCESSABLE_ENTITY_422, "Unprocessable Entity"),

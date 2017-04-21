@@ -30,7 +30,6 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     @Before
     public void before() throws Exception
     {
-        System.setProperty("org.eclipse.jetty.server.session.LEVEL", "DEBUG");
        FileTestHelper.setup();
     }
     
@@ -41,6 +40,16 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     }
     
    
+
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest#assertSession(java.lang.String, boolean)
+     */
+    @Override
+    public void assertSession(String id, boolean exists)
+    {
+        FileTestHelper.assertFileExists(id, exists);
+        
+    }
 
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()

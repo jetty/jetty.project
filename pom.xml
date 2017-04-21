@@ -6,8 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.3-SNAPSHOT</version>
-  
+  <version>9.4.5-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -90,6 +89,7 @@
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
     <module>jetty-home</module>
+    <module>jetty-bom</module>
     <module>jetty-documentation</module>
     <!-- modules that need fixed and added back, or simply dropped and not maintained -->
     <!-- <module>jetty-rhttp</module> -->
@@ -436,6 +436,9 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>2.10.4</version>
           <configuration>
+            <charset>UTF-8</charset>
+            <docencoding>UTF-8</docencoding>
+            <encoding>UTF-8</encoding>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>true</detectLinks>
             <detectJavaApiLink>true</detectJavaApiLink>
@@ -562,7 +565,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.6</version> 
+          <version>3.6</version>
           <dependencies>
             <dependency><!-- add support for ssh/scp -->
               <groupId>org.apache.maven.wagon</groupId>
@@ -579,7 +582,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.19.1</version>
+          <version>2.20</version>
           <configuration>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
@@ -1446,6 +1449,18 @@
       <properties>
         <alpn.version>8.1.11.v20170118</alpn.version>
       </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <!-- Required for Java 8u121 or later -->
+              <additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 

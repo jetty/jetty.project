@@ -35,6 +35,15 @@ import org.eclipse.jetty.server.Request;
  */
 public class HandlerList extends HandlerCollection
 {
+    public HandlerList()
+    {
+    }
+
+    public HandlerList(Handler... handlers)
+    {
+        super(handlers);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)

@@ -22,8 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
@@ -47,7 +45,6 @@ public class URIUtil
     public static final String SLASH="/";
     public static final String HTTP="http";
     public static final String HTTPS="https";
-    private static final Pattern __PATH_SPLIT = Pattern.compile("(?<=\\/)");
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
     public static final Charset __CHARSET=StandardCharsets.UTF_8 ;
@@ -476,14 +473,14 @@ public class URIUtil
 
     
     /* ------------------------------------------------------------ */
-    /** Add two URI path segments.
-     * Handles null and empty paths, path and query params (eg ?a=b or
-     * ;JSESSIONID=xxx) and avoids duplicate '/'
+    /** Add two encoded URI path segments.
+     * Handles null and empty paths, path and query params 
+     * (eg ?a=b or ;JSESSIONID=xxx) and avoids duplicate '/'
      * @param p1 URI path segment (should be encoded)
      * @param p2 URI path segment (should be encoded)
      * @return Legally combined path segments.
      */
-    public static String addPaths(String p1, String p2)
+    public static String addEncodedPaths(String p1, String p2)
     {
         if (p1==null || p1.length()==0)
         {
@@ -528,6 +525,54 @@ public class URIUtil
 
         return buf.toString();
     }
+
+    /* ------------------------------------------------------------ */
+    /** Add two Decoded URI path segments.
+     * Handles null and empty paths.  Path and query params (eg ?a=b or
+     * ;JSESSIONID=xxx) are not handled
+     * @param p1 URI path segment (should be decoded)
+     * @param p2 URI path segment (should be decoded)
+     * @return Legally combined path segments.
+     */
+    public static String addPaths(String p1, String p2)
+    {
+        if (p1==null || p1.length()==0)
+        {
+            if (p1!=null && p2==null)
+                return p1;
+            return p2;
+        }
+        if (p2==null || p2.length()==0)
+            return p1;
+        
+        boolean p1EndsWithSlash = p1.endsWith(SLASH);
+        boolean p2StartsWithSlash = p2.startsWith(SLASH);
+        
+        if (p1EndsWithSlash && p2StartsWithSlash)
+        {
+            if (p2.length()==1)
+                return p1;
+            if (p1.length()==1)
+                return p2;
+        }
+        
+        StringBuilder buf = new StringBuilder(p1.length()+p2.length()+2);
+        buf.append(p1);
+        
+        if (p1.endsWith(SLASH))
+        {
+            if (p2.startsWith(SLASH))
+                buf.setLength(buf.length()-1);
+        }
+        else
+        {
+            if (!p2.startsWith(SLASH))
+                buf.append(SLASH);
+        }
+        buf.append(p2);
+
+        return buf.toString();
+    }
     
     /* ------------------------------------------------------------ */
     /** Return the parent Path.
@@ -546,50 +591,235 @@ public class URIUtil
     }
     
     /* ------------------------------------------------------------ */
-    /** Convert a path to a cananonical form.
-     * All instances of "." and ".." are factored out.  Null is returned
-     * if the path tries to .. above its root.
-     * @param path the path to convert
-     * @return path or null.
+    /**
+     * Convert a decoded path to a canonical form.
+     * <p>
+     * All instances of "." and ".." are factored out.
+     * </p>
+     * <p>
+     * Null is returned if the path tries to .. above its root.
+     * </p>
+     * @param path the path to convert, decoded, with path separators '/' and no queries.
+     * @return the canonical path, or null if path traversal above root.
      */
     public static String canonicalPath(String path)
     {
-        if (path == null || path.isEmpty() || !path.contains("."))
+        if (path == null || path.isEmpty())
             return path;
 
-        if(path.startsWith("/.."))
-            return null;
-
-        List<String> directories = new ArrayList<>();
-        Collections.addAll(directories, __PATH_SPLIT.split(path));
+        boolean slash = true;
+        int end = path.length();
+        int i = 0;
         
-        for(ListIterator<String> iterator = directories.listIterator(); iterator.hasNext();)
+        loop:
+        while (i<end)
         {
-            switch (iterator.next()) {
-                case "./":
-                case ".":
-                    if (iterator.hasNext() && directories.get(iterator.nextIndex()).equals("/"))
-                        break;
-
-                    iterator.remove();
+            char c = path.charAt(i);
+            switch(c)
+            {
+                case '/':
+                    slash = true;
                     break;
-                case "../":
-                case "..":
-                    if(iterator.previousIndex() == 0)
-                        return null;
-
-                    iterator.remove();
-                    if(iterator.previous().equals("/") && iterator.nextIndex() == 0)
-                        return null;
-
-                    iterator.remove();
+                    
+                case '.':
+                    if (slash)
+                        break loop;
+                    slash = false;
                     break;
+                    
+                default:
+                    slash = false;
             }
+        
+            i++;
         }
-
-        return String.join("", directories);
+        
+        if(i==end)
+            return path;
+        
+        StringBuilder canonical = new StringBuilder(path.length());
+        canonical.append(path,0,i);
+        
+        int dots = 1;
+        i++;
+        while (i<=end)
+        {
+            char c = i<end?path.charAt(i):'\0';
+            switch(c)
+            {
+                case '\0':
+                case '/':
+                    switch(dots)
+                    {
+                        case 0:
+                            if (c!='\0')
+                                canonical.append(c);
+                            break;
+                            
+                        case 1:
+                            break;
+                            
+                        case 2:
+                            if (canonical.length()<2)
+                                return null;
+                            canonical.setLength(canonical.length()-1);
+                            canonical.setLength(canonical.lastIndexOf("/")+1);
+                            break;
+                            
+                        default:
+                            while (dots-->0)
+                                canonical.append('.');
+                            if (c!='\0')
+                                canonical.append(c);
+                    }
+                    
+                    slash = true;
+                    dots = 0;
+                    break;
+                    
+                case '.':
+                    if (dots>0)
+                        dots++;
+                    else if (slash)
+                        dots = 1;
+                    else
+                        canonical.append('.');
+                    slash = false;
+                    break;
+                    
+                default:
+                    while (dots-->0)
+                        canonical.append('.');
+                    canonical.append(c);
+                    dots = 0;
+                    slash = false;
+            }
+        
+            i++;
+        }
+        return canonical.toString();
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Convert a path to a cananonical form.
+     * <p>
+     * All instances of "." and ".." are factored out.
+     * </p>
+     * <p>
+     * Null is returned if the path tries to .. above its root.
+     * </p>
+     * @param path the path to convert (expects URI/URL form, encoded, and with path separators '/')
+     * @return the canonical path, or null if path traversal above root.
+     */
+    public static String canonicalEncodedPath(String path)
+    {
+        if (path == null || path.isEmpty())
+            return path;
+
+        boolean slash = true;
+        int end = path.length();
+        int i = 0;
+        
+        loop:
+        while (i<end)
+        {
+            char c = path.charAt(i);
+            switch(c)
+            {
+                case '/':
+                    slash = true;
+                    break;
+                    
+                case '.':
+                    if (slash)
+                        break loop;
+                    slash = false;
+                    break;
+                    
+                case '?':
+                    return path;
+                    
+                default:
+                    slash = false;
+            }
+        
+            i++;
+        }
+        
+        if(i==end)
+            return path;
+        
+        StringBuilder canonical = new StringBuilder(path.length());
+        canonical.append(path,0,i);
+        
+        int dots = 1;
+        i++;
+        while (i<=end)
+        {
+            char c = i<end?path.charAt(i):'\0';
+            switch(c)
+            {
+                case '\0':
+                case '/':
+                case '?':
+                    switch(dots)
+                    {
+                        case 0:
+                            if (c!='\0')
+                                canonical.append(c);
+                            break;
+                            
+                        case 1:
+                            if (c=='?')
+                                canonical.append(c);
+                            break;
+                            
+                        case 2:
+                            if (canonical.length()<2)
+                                return null;
+                            canonical.setLength(canonical.length()-1);
+                            canonical.setLength(canonical.lastIndexOf("/")+1);
+                            if (c=='?')
+                                canonical.append(c);
+                            break;
+                        default:
+                            while (dots-->0)
+                                canonical.append('.');
+                            if (c!='\0')
+                                canonical.append(c);
+                    }
+                    
+                    slash = true;
+                    dots = 0;
+                    break;
+                    
+                case '.':
+                    if (dots>0)
+                        dots++;
+                    else if (slash)
+                        dots = 1;
+                    else
+                        canonical.append('.');
+                    slash = false;
+                    break;
+                    
+                default:
+                    while (dots-->0)
+                        canonical.append('.');
+                    canonical.append(c);
+                    dots = 0;
+                    slash = false;
+            }
+        
+            i++;
+        }
+        return canonical.toString();
+    }
+
+    
+    
     /* ------------------------------------------------------------ */
     /** Convert a path to a compact form.
      * All instances of "//" and "///" etc. are factored out to single "/" 
@@ -830,7 +1060,12 @@ public class URIUtil
         return equalsIgnoreEncodings(uriA.getPath(),uriB.getPath());
     }
 
-    public static URI addDecodedPath(URI uri, String path)
+    /**
+     * @param uri A URI to add the path to
+     * @param path A decoded path element
+     * @return URI with path added.
+     */
+    public static URI addPath(URI uri, String path)
     {
         String base = uri.toASCIIString();
         StringBuilder buf = new StringBuilder(base.length()+path.length()*3);
@@ -838,7 +1073,6 @@ public class URIUtil
         if (buf.charAt(base.length()-1)!='/')
             buf.append('/');
 
-        byte[] bytes=null;
         int offset=path.charAt(0)=='/'?1:0;
         encodePath(buf,path,offset);
 
@@ -851,7 +1085,8 @@ public class URIUtil
         {
             if (!"jar".equals(uri.getScheme()))
                 return uri;
-            String s = uri.getSchemeSpecificPart();
+            // Get SSP (retaining encoded form)
+            String s = uri.getRawSchemeSpecificPart();
             int bang_slash = s.indexOf("!/");
             if (bang_slash>=0)
                 s=s.substring(0,bang_slash);

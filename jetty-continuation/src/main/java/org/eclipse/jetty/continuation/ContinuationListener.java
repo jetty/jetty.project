@@ -27,7 +27,9 @@ import javax.servlet.ServletRequestListener;
  * <p>
  * A ContinuationListener may be registered with a call to
  * {@link Continuation#addContinuationListener(ContinuationListener)}.
+ * @deprecated use Servlet 3.0 {@link javax.servlet.AsyncContext} instead
  */
+@Deprecated
 public interface ContinuationListener extends EventListener
 {
     /* ------------------------------------------------------------ */

@@ -20,8 +20,6 @@ package org.eclipse.jetty.server;
 
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
-import static org.eclipse.jetty.http.CompressedContentFormat.BR;
-import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 import java.io.FileNotFoundException;
@@ -416,11 +414,13 @@ public class ResourceService
             {
                 // Redirect to the index
                 response.setContentLength(0);
+                
+                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContextPath(),welcome));
                 String q=request.getQueryString();
-                if (q!=null&&q.length()!=0)
-                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),welcome)+"?"+q));
-                else
-                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),welcome)));
+                if (q!=null&&!q.isEmpty())
+                    uri+="?"+q;
+                
+                response.sendRedirect(response.encodeRedirectURL(uri));
             }
             return;
         }
@@ -614,7 +614,7 @@ public class ResourceService
         }
 
         byte[] data=null;
-        String base = URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH);
+        String base = URIUtil.addEncodedPaths(request.getRequestURI(),URIUtil.SLASH);
         String dir = resource.getListHTML(base,pathInContext.length()>1);
         if (dir==null)
         {

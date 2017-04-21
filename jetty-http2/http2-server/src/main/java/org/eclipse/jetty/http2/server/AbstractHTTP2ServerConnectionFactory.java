@@ -54,7 +54,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this(httpConfiguration,"h2");
     }
 
-    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, String... protocols)
+    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(protocols);
         for (String p:protocols)

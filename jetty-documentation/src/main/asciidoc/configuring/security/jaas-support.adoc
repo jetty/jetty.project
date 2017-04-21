@@ -226,10 +226,10 @@ As `LoginModules` are free to use their own implementation of the JAAS Principal
 
 ===== Sample LoginModules
 
-* link:{JXURL}/org/eclipse/jetty/jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.jaas.spi.JDBCLoginModule`]
-* link:{JXURL}/org/eclipse/jetty/jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.jaas.spi.PropertyFileLoginModule`]
-* link:{JXURL}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
-* link:{JXURL}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
+* link:{JDURL}/org/eclipse/jetty/jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.jaas.spi.JDBCLoginModule`]
+* link:{JDURL}/org/eclipse/jetty/jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.jaas.spi.PropertyFileLoginModule`]
+* link:{JDURL}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
+* link:{JDURL}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
 
 ____
 [NOTE]

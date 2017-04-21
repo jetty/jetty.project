@@ -25,6 +25,8 @@ import java.util.List;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataMap;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 import net.rubyeye.xmemcached.MemcachedClient;
@@ -37,6 +39,7 @@ import net.rubyeye.xmemcached.XMemcachedClientBuilder;
  *
  * Uses memcached as a cache for SessionData.
  */
+@ManagedObject
 public class MemcachedSessionDataMap extends AbstractLifeCycle implements SessionDataMap
 {
     public static final String DEFAULT_HOST = "localhost";
@@ -91,8 +94,17 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         _expirySec = sec;
     }
     
+    /**
+     * Expiry time for memached entries.
+     * @return memcached expiry time in sec
+     */
+    @ManagedAttribute(value="memcached expiry time in sec", readonly=true)
+    public int getExpirySec ()
+    {
+        return _expirySec;
+    }
 
-
+    @ManagedAttribute(value="enable memcached heartbeats", readonly=true)
     public boolean isHeartbeats()
     {
         return _heartbeats;

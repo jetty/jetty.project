@@ -55,10 +55,5 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     public void testOrphanedSession() throws Exception
     {
         super.testOrphanedSession();
-        GCloudTestSuite.__testSupport.assertSessions(0);
     }
-    
-    
-    
-
 }

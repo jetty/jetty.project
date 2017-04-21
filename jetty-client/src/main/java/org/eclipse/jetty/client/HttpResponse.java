@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 
@@ -34,6 +35,7 @@ public class HttpResponse implements Response
     private HttpVersion version;
     private int status;
     private String reason;
+    private HttpFields trailers;
 
     public HttpResponse(Request request, List<ResponseListener> listeners)
     {
@@ -95,6 +97,19 @@ public class HttpResponse implements Response
             if (type == null || type.isInstance(listener))
                 result.add((T)listener);
         return result;
+    }
+
+    public HttpFields getTrailers()
+    {
+        return trailers;
+    }
+
+    public HttpResponse trailer(HttpField trailer)
+    {
+        if (trailers == null)
+            trailers = new HttpFields();
+        trailers.add(trailer);
+        return this;
     }
 
     @Override

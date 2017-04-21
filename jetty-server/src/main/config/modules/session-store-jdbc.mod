@@ -23,6 +23,7 @@ db-connection-type?=datasource
 ##
 
 #jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
 
 ## Connection type:Datasource
 db-connection-type=datasource

@@ -20,10 +20,12 @@ package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -31,7 +33,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * {@link HttpSender} abstracts the algorithm to send HTTP requests, so that subclasses only implement
@@ -42,9 +43,9 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  * {@link HttpSender} governs two state machines.
  * <p>
  * The request state machine is updated by {@link HttpSender} as the various steps of sending a request
- * are executed, see <code>RequestState</code>.
+ * are executed, see {@code RequestState}.
  * At any point in time, a user thread may abort the request, which may (if the request has not been
- * completely sent yet) move the request state machine to <code>RequestState#FAILURE</code>.
+ * completely sent yet) move the request state machine to {@code RequestState#FAILURE}.
  * The request state machine guarantees that the request steps are executed (by I/O threads) only if
  * the request has not been failed already.
  * <p>
@@ -64,7 +65,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private final AtomicReference<SenderState> senderState = new AtomicReference<>(SenderState.IDLE);
     private final Callback commitCallback = new CommitCallback();
     private final IteratingCallback contentCallback = new ContentCallback();
-    private final Callback lastCallback = new LastContentCallback();
+    private final Callback trailersCallback = new TrailersCallback();
+    private final Callback lastCallback = new LastCallback();
     private final HttpChannel channel;
     private HttpContent content;
     private Throwable failure;
@@ -407,7 +409,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     /**
      * Implementations should send the content at the {@link HttpContent} cursor position over the wire.
      * <p>
-     * The {@link HttpContent} cursor is advanced by {@link HttpSender} at the right time, and if more
+     * The {@link HttpContent} cursor is advanced by HttpSender at the right time, and if more
      * content needs to be sent, this method is invoked again; subclasses need only to send the content
      * at the {@link HttpContent} cursor position.
      * <p>
@@ -421,6 +423,15 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
      * @param callback the callback to notify
      */
     protected abstract void sendContent(HttpExchange exchange, HttpContent content, Callback callback);
+
+    /**
+     * Implementations should send the HTTP trailers and notify the given {@code callback} of the
+     * result of this operation.
+     *
+     * @param exchange the exchange to send
+     * @param callback the callback to notify
+     */
+    protected abstract void sendTrailers(HttpExchange exchange, Callback callback);
 
     protected void reset()
     {
@@ -674,13 +685,6 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     private class CommitCallback implements Callback
     {
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return content.getInvocationType();
-        }
-
         @Override
         public void succeeded()
         {
@@ -721,10 +725,20 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (content == null)
                 return;
 
-            if (!content.hasContent())
+            HttpRequest request = exchange.getRequest();
+            Supplier<HttpFields> trailers = request.getTrailers();
+            boolean hasContent = content.hasContent();
+            if (!hasContent)
             {
-                // No content to send, we are done.
-                someToSuccess(exchange);
+                if (trailers == null)
+                {
+                    // No trailers or content to send, we are done.
+                    someToSuccess(exchange);
+                }
+                else
+                {
+                    sendTrailers(exchange, lastCallback);
+                }
             }
             else
             {
@@ -825,7 +839,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
                 if (lastContent)
                 {
-                    sendContent(exchange, content, lastCallback);
+                    HttpRequest request = exchange.getRequest();
+                    Supplier<HttpFields> trailers = request.getTrailers();
+                    sendContent(exchange, content, trailers == null ? lastCallback : trailersCallback);
                     return Action.IDLE;
                 }
 
@@ -884,19 +900,35 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         protected void onCompleteSuccess()
         {
-            // Nothing to do, since we always return false from process().
-            // Termination is obtained via LastContentCallback.
+            // Nothing to do, since we always return IDLE from process().
+            // Termination is obtained via LastCallback.
         }
     }
 
-    private class LastContentCallback implements Callback
+    private class TrailersCallback implements Callback
     {
         @Override
-        public InvocationType getInvocationType()
+        public void succeeded()
         {
-            return content.getInvocationType();
+            HttpExchange exchange = getHttpExchange();
+            if (exchange == null)
+                return;
+            sendTrailers(exchange, lastCallback);
         }
 
+        @Override
+        public void failed(Throwable x)
+        {
+            HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return;
+            content.failed(x);
+            anyToFailure(x);
+        }
+    }
+
+    private class LastCallback implements Callback
+    {
         @Override
         public void succeeded()
         {

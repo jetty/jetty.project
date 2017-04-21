@@ -225,28 +225,53 @@ public class Dispatcher implements RequestDispatcher
         return String.format("Dispatcher@0x%x{%s,%s}",hashCode(),_named,_uri);
     }
 
-    private void commitResponse(ServletResponse response, Request baseRequest) throws IOException
+    @SuppressWarnings("Duplicates")
+    private void commitResponse(ServletResponse response, Request baseRequest) throws IOException, ServletException
     {
         if (baseRequest.getResponse().isWriting())
         {
             try
             {
+                // Try closing Writer first (based on knowledge in Response obj)
                 response.getWriter().close();
             }
-            catch (IllegalStateException e)
+            catch (IllegalStateException e1)
             {
-                response.getOutputStream().close();
+                try
+                {
+                    // Try closing OutputStream as alternate route
+                    // This path is possible due to badly behaving Response wrappers
+                    response.getOutputStream().close();
+                }
+                catch(IllegalStateException e2)
+                {
+                    ServletException servletException = new ServletException("Unable to commit the response", e2);
+                    servletException.addSuppressed(e1);
+                    throw servletException;
+                }
             }
         }
         else
         {
             try
             {
+                // Try closing OutputStream first (based on knowledge in Response obj)
                 response.getOutputStream().close();
             }
-            catch (IllegalStateException e)
+            catch (IllegalStateException e1)
             {
-                response.getWriter().close();
+                try
+                {
+                    // Try closing Writer as alternate route
+                    // This path is possible due to badly behaving Response wrappers
+                    response.getWriter().close();
+                }
+                catch(IllegalStateException e2)
+                {
+                    ServletException servletException = new ServletException("Unable to commit the response", e2);
+                    servletException.addSuppressed(e1);
+                    throw servletException;
+                }
             }
         }
     }

@@ -94,6 +94,7 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
         ds.setMaxRetries(getMaxRetries());
         ds.setGracePeriodSec(getGracePeriodSec());
         ds.setNamespace(_namespace);
+        ds.setSavePeriodSec(getSavePeriodSec());
         return ds;
     }
 

@@ -58,6 +58,12 @@ INFO: Base directory was modified
 
 The above command will add a new `requestlog.ini` file to your link:#start-vs-startd[`{$jetty.base}/start.d` directory].
 
+____
+[NOTE]
+By default, request logs are not set to be appended, meaning a the log file is wiped clean upon sever restart.
+You can change this setting by editing the `requestlog.ini` and un-commenting the line that reads `jetty.requestlog.append=true`.
+____
+
 The equivalent code for embedded usages of Jetty is:
 
 [source, java, subs="{sub-order}"]

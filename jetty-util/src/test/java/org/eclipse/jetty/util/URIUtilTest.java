@@ -27,8 +27,6 @@ import static org.junit.Assert.assertTrue;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -92,7 +90,96 @@ public class URIUtilTest
 
     /* ------------------------------------------------------------ */
     @Test
-    public void testAddPaths()
+    public void testAddEncodedPaths()
+    {
+        assertEquals("null+null", URIUtil.addEncodedPaths(null,null),null);
+        assertEquals("null+", URIUtil.addEncodedPaths(null,""),"");
+        assertEquals("null+bbb", URIUtil.addEncodedPaths(null,"bbb"),"bbb");
+        assertEquals("null+/", URIUtil.addEncodedPaths(null,"/"),"/");
+        assertEquals("null+/bbb", URIUtil.addEncodedPaths(null,"/bbb"),"/bbb");
+
+        assertEquals("+null", URIUtil.addEncodedPaths("",null),"");
+        assertEquals("+", URIUtil.addEncodedPaths("",""),"");
+        assertEquals("+bbb", URIUtil.addEncodedPaths("","bbb"),"bbb");
+        assertEquals("+/", URIUtil.addEncodedPaths("","/"),"/");
+        assertEquals("+/bbb", URIUtil.addEncodedPaths("","/bbb"),"/bbb");
+
+        assertEquals("aaa+null", URIUtil.addEncodedPaths("aaa",null),"aaa");
+        assertEquals("aaa+", URIUtil.addEncodedPaths("aaa",""),"aaa");
+        assertEquals("aaa+bbb", URIUtil.addEncodedPaths("aaa","bbb"),"aaa/bbb");
+        assertEquals("aaa+/", URIUtil.addEncodedPaths("aaa","/"),"aaa/");
+        assertEquals("aaa+/bbb", URIUtil.addEncodedPaths("aaa","/bbb"),"aaa/bbb");
+
+        assertEquals("/+null", URIUtil.addEncodedPaths("/",null),"/");
+        assertEquals("/+", URIUtil.addEncodedPaths("/",""),"/");
+        assertEquals("/+bbb", URIUtil.addEncodedPaths("/","bbb"),"/bbb");
+        assertEquals("/+/", URIUtil.addEncodedPaths("/","/"),"/");
+        assertEquals("/+/bbb", URIUtil.addEncodedPaths("/","/bbb"),"/bbb");
+
+        assertEquals("aaa/+null", URIUtil.addEncodedPaths("aaa/",null),"aaa/");
+        assertEquals("aaa/+", URIUtil.addEncodedPaths("aaa/",""),"aaa/");
+        assertEquals("aaa/+bbb", URIUtil.addEncodedPaths("aaa/","bbb"),"aaa/bbb");
+        assertEquals("aaa/+/", URIUtil.addEncodedPaths("aaa/","/"),"aaa/");
+        assertEquals("aaa/+/bbb", URIUtil.addEncodedPaths("aaa/","/bbb"),"aaa/bbb");
+
+        assertEquals(";JS+null", URIUtil.addEncodedPaths(";JS",null),";JS");
+        assertEquals(";JS+", URIUtil.addEncodedPaths(";JS",""),";JS");
+        assertEquals(";JS+bbb", URIUtil.addEncodedPaths(";JS","bbb"),"bbb;JS");
+        assertEquals(";JS+/", URIUtil.addEncodedPaths(";JS","/"),"/;JS");
+        assertEquals(";JS+/bbb", URIUtil.addEncodedPaths(";JS","/bbb"),"/bbb;JS");
+
+        assertEquals("aaa;JS+null", URIUtil.addEncodedPaths("aaa;JS",null),"aaa;JS");
+        assertEquals("aaa;JS+", URIUtil.addEncodedPaths("aaa;JS",""),"aaa;JS");
+        assertEquals("aaa;JS+bbb", URIUtil.addEncodedPaths("aaa;JS","bbb"),"aaa/bbb;JS");
+        assertEquals("aaa;JS+/", URIUtil.addEncodedPaths("aaa;JS","/"),"aaa/;JS");
+        assertEquals("aaa;JS+/bbb", URIUtil.addEncodedPaths("aaa;JS","/bbb"),"aaa/bbb;JS");
+
+        assertEquals("aaa;JS+null", URIUtil.addEncodedPaths("aaa/;JS",null),"aaa/;JS");
+        assertEquals("aaa;JS+", URIUtil.addEncodedPaths("aaa/;JS",""),"aaa/;JS");
+        assertEquals("aaa;JS+bbb", URIUtil.addEncodedPaths("aaa/;JS","bbb"),"aaa/bbb;JS");
+        assertEquals("aaa;JS+/", URIUtil.addEncodedPaths("aaa/;JS","/"),"aaa/;JS");
+        assertEquals("aaa;JS+/bbb", URIUtil.addEncodedPaths("aaa/;JS","/bbb"),"aaa/bbb;JS");
+
+        assertEquals("?A=1+null", URIUtil.addEncodedPaths("?A=1",null),"?A=1");
+        assertEquals("?A=1+", URIUtil.addEncodedPaths("?A=1",""),"?A=1");
+        assertEquals("?A=1+bbb", URIUtil.addEncodedPaths("?A=1","bbb"),"bbb?A=1");
+        assertEquals("?A=1+/", URIUtil.addEncodedPaths("?A=1","/"),"/?A=1");
+        assertEquals("?A=1+/bbb", URIUtil.addEncodedPaths("?A=1","/bbb"),"/bbb?A=1");
+
+        assertEquals("aaa?A=1+null", URIUtil.addEncodedPaths("aaa?A=1",null),"aaa?A=1");
+        assertEquals("aaa?A=1+", URIUtil.addEncodedPaths("aaa?A=1",""),"aaa?A=1");
+        assertEquals("aaa?A=1+bbb", URIUtil.addEncodedPaths("aaa?A=1","bbb"),"aaa/bbb?A=1");
+        assertEquals("aaa?A=1+/", URIUtil.addEncodedPaths("aaa?A=1","/"),"aaa/?A=1");
+        assertEquals("aaa?A=1+/bbb", URIUtil.addEncodedPaths("aaa?A=1","/bbb"),"aaa/bbb?A=1");
+
+        assertEquals("aaa?A=1+null", URIUtil.addEncodedPaths("aaa/?A=1",null),"aaa/?A=1");
+        assertEquals("aaa?A=1+", URIUtil.addEncodedPaths("aaa/?A=1",""),"aaa/?A=1");
+        assertEquals("aaa?A=1+bbb", URIUtil.addEncodedPaths("aaa/?A=1","bbb"),"aaa/bbb?A=1");
+        assertEquals("aaa?A=1+/", URIUtil.addEncodedPaths("aaa/?A=1","/"),"aaa/?A=1");
+        assertEquals("aaa?A=1+/bbb", URIUtil.addEncodedPaths("aaa/?A=1","/bbb"),"aaa/bbb?A=1");
+
+        assertEquals(";JS?A=1+null", URIUtil.addEncodedPaths(";JS?A=1",null),";JS?A=1");
+        assertEquals(";JS?A=1+", URIUtil.addEncodedPaths(";JS?A=1",""),";JS?A=1");
+        assertEquals(";JS?A=1+bbb", URIUtil.addEncodedPaths(";JS?A=1","bbb"),"bbb;JS?A=1");
+        assertEquals(";JS?A=1+/", URIUtil.addEncodedPaths(";JS?A=1","/"),"/;JS?A=1");
+        assertEquals(";JS?A=1+/bbb", URIUtil.addEncodedPaths(";JS?A=1","/bbb"),"/bbb;JS?A=1");
+
+        assertEquals("aaa;JS?A=1+null", URIUtil.addEncodedPaths("aaa;JS?A=1",null),"aaa;JS?A=1");
+        assertEquals("aaa;JS?A=1+", URIUtil.addEncodedPaths("aaa;JS?A=1",""),"aaa;JS?A=1");
+        assertEquals("aaa;JS?A=1+bbb", URIUtil.addEncodedPaths("aaa;JS?A=1","bbb"),"aaa/bbb;JS?A=1");
+        assertEquals("aaa;JS?A=1+/", URIUtil.addEncodedPaths("aaa;JS?A=1","/"),"aaa/;JS?A=1");
+        assertEquals("aaa;JS?A=1+/bbb", URIUtil.addEncodedPaths("aaa;JS?A=1","/bbb"),"aaa/bbb;JS?A=1");
+
+        assertEquals("aaa;JS?A=1+null", URIUtil.addEncodedPaths("aaa/;JS?A=1",null),"aaa/;JS?A=1");
+        assertEquals("aaa;JS?A=1+", URIUtil.addEncodedPaths("aaa/;JS?A=1",""),"aaa/;JS?A=1");
+        assertEquals("aaa;JS?A=1+bbb", URIUtil.addEncodedPaths("aaa/;JS?A=1","bbb"),"aaa/bbb;JS?A=1");
+        assertEquals("aaa;JS?A=1+/", URIUtil.addEncodedPaths("aaa/;JS?A=1","/"),"aaa/;JS?A=1");
+        assertEquals("aaa;JS?A=1+/bbb", URIUtil.addEncodedPaths("aaa/;JS?A=1","/bbb"),"aaa/bbb;JS?A=1");
+
+    }
+    /* ------------------------------------------------------------ */
+    @Test
+    public void testAddDecodedPaths()
     {
         assertEquals("null+null", URIUtil.addPaths(null,null),null);
         assertEquals("null+", URIUtil.addPaths(null,""),"");
@@ -126,57 +213,39 @@ public class URIUtilTest
 
         assertEquals(";JS+null", URIUtil.addPaths(";JS",null),";JS");
         assertEquals(";JS+", URIUtil.addPaths(";JS",""),";JS");
-        assertEquals(";JS+bbb", URIUtil.addPaths(";JS","bbb"),"bbb;JS");
-        assertEquals(";JS+/", URIUtil.addPaths(";JS","/"),"/;JS");
-        assertEquals(";JS+/bbb", URIUtil.addPaths(";JS","/bbb"),"/bbb;JS");
+        assertEquals(";JS+bbb", URIUtil.addPaths(";JS","bbb"),";JS/bbb");
+        assertEquals(";JS+/", URIUtil.addPaths(";JS","/"),";JS/");
+        assertEquals(";JS+/bbb", URIUtil.addPaths(";JS","/bbb"),";JS/bbb");
 
         assertEquals("aaa;JS+null", URIUtil.addPaths("aaa;JS",null),"aaa;JS");
         assertEquals("aaa;JS+", URIUtil.addPaths("aaa;JS",""),"aaa;JS");
-        assertEquals("aaa;JS+bbb", URIUtil.addPaths("aaa;JS","bbb"),"aaa/bbb;JS");
-        assertEquals("aaa;JS+/", URIUtil.addPaths("aaa;JS","/"),"aaa/;JS");
-        assertEquals("aaa;JS+/bbb", URIUtil.addPaths("aaa;JS","/bbb"),"aaa/bbb;JS");
+        assertEquals("aaa;JS+bbb", URIUtil.addPaths("aaa;JS","bbb"),"aaa;JS/bbb");
+        assertEquals("aaa;JS+/", URIUtil.addPaths("aaa;JS","/"),"aaa;JS/");
+        assertEquals("aaa;JS+/bbb", URIUtil.addPaths("aaa;JS","/bbb"),"aaa;JS/bbb");
 
         assertEquals("aaa;JS+null", URIUtil.addPaths("aaa/;JS",null),"aaa/;JS");
         assertEquals("aaa;JS+", URIUtil.addPaths("aaa/;JS",""),"aaa/;JS");
-        assertEquals("aaa;JS+bbb", URIUtil.addPaths("aaa/;JS","bbb"),"aaa/bbb;JS");
-        assertEquals("aaa;JS+/", URIUtil.addPaths("aaa/;JS","/"),"aaa/;JS");
-        assertEquals("aaa;JS+/bbb", URIUtil.addPaths("aaa/;JS","/bbb"),"aaa/bbb;JS");
+        assertEquals("aaa;JS+bbb", URIUtil.addPaths("aaa/;JS","bbb"),"aaa/;JS/bbb");
+        assertEquals("aaa;JS+/", URIUtil.addPaths("aaa/;JS","/"),"aaa/;JS/");
+        assertEquals("aaa;JS+/bbb", URIUtil.addPaths("aaa/;JS","/bbb"),"aaa/;JS/bbb");
 
         assertEquals("?A=1+null", URIUtil.addPaths("?A=1",null),"?A=1");
         assertEquals("?A=1+", URIUtil.addPaths("?A=1",""),"?A=1");
-        assertEquals("?A=1+bbb", URIUtil.addPaths("?A=1","bbb"),"bbb?A=1");
-        assertEquals("?A=1+/", URIUtil.addPaths("?A=1","/"),"/?A=1");
-        assertEquals("?A=1+/bbb", URIUtil.addPaths("?A=1","/bbb"),"/bbb?A=1");
+        assertEquals("?A=1+bbb", URIUtil.addPaths("?A=1","bbb"),"?A=1/bbb");
+        assertEquals("?A=1+/", URIUtil.addPaths("?A=1","/"),"?A=1/");
+        assertEquals("?A=1+/bbb", URIUtil.addPaths("?A=1","/bbb"),"?A=1/bbb");
 
         assertEquals("aaa?A=1+null", URIUtil.addPaths("aaa?A=1",null),"aaa?A=1");
         assertEquals("aaa?A=1+", URIUtil.addPaths("aaa?A=1",""),"aaa?A=1");
-        assertEquals("aaa?A=1+bbb", URIUtil.addPaths("aaa?A=1","bbb"),"aaa/bbb?A=1");
-        assertEquals("aaa?A=1+/", URIUtil.addPaths("aaa?A=1","/"),"aaa/?A=1");
-        assertEquals("aaa?A=1+/bbb", URIUtil.addPaths("aaa?A=1","/bbb"),"aaa/bbb?A=1");
+        assertEquals("aaa?A=1+bbb", URIUtil.addPaths("aaa?A=1","bbb"),"aaa?A=1/bbb");
+        assertEquals("aaa?A=1+/", URIUtil.addPaths("aaa?A=1","/"),"aaa?A=1/");
+        assertEquals("aaa?A=1+/bbb", URIUtil.addPaths("aaa?A=1","/bbb"),"aaa?A=1/bbb");
 
         assertEquals("aaa?A=1+null", URIUtil.addPaths("aaa/?A=1",null),"aaa/?A=1");
         assertEquals("aaa?A=1+", URIUtil.addPaths("aaa/?A=1",""),"aaa/?A=1");
-        assertEquals("aaa?A=1+bbb", URIUtil.addPaths("aaa/?A=1","bbb"),"aaa/bbb?A=1");
-        assertEquals("aaa?A=1+/", URIUtil.addPaths("aaa/?A=1","/"),"aaa/?A=1");
-        assertEquals("aaa?A=1+/bbb", URIUtil.addPaths("aaa/?A=1","/bbb"),"aaa/bbb?A=1");
-
-        assertEquals(";JS?A=1+null", URIUtil.addPaths(";JS?A=1",null),";JS?A=1");
-        assertEquals(";JS?A=1+", URIUtil.addPaths(";JS?A=1",""),";JS?A=1");
-        assertEquals(";JS?A=1+bbb", URIUtil.addPaths(";JS?A=1","bbb"),"bbb;JS?A=1");
-        assertEquals(";JS?A=1+/", URIUtil.addPaths(";JS?A=1","/"),"/;JS?A=1");
-        assertEquals(";JS?A=1+/bbb", URIUtil.addPaths(";JS?A=1","/bbb"),"/bbb;JS?A=1");
-
-        assertEquals("aaa;JS?A=1+null", URIUtil.addPaths("aaa;JS?A=1",null),"aaa;JS?A=1");
-        assertEquals("aaa;JS?A=1+", URIUtil.addPaths("aaa;JS?A=1",""),"aaa;JS?A=1");
-        assertEquals("aaa;JS?A=1+bbb", URIUtil.addPaths("aaa;JS?A=1","bbb"),"aaa/bbb;JS?A=1");
-        assertEquals("aaa;JS?A=1+/", URIUtil.addPaths("aaa;JS?A=1","/"),"aaa/;JS?A=1");
-        assertEquals("aaa;JS?A=1+/bbb", URIUtil.addPaths("aaa;JS?A=1","/bbb"),"aaa/bbb;JS?A=1");
-
-        assertEquals("aaa;JS?A=1+null", URIUtil.addPaths("aaa/;JS?A=1",null),"aaa/;JS?A=1");
-        assertEquals("aaa;JS?A=1+", URIUtil.addPaths("aaa/;JS?A=1",""),"aaa/;JS?A=1");
-        assertEquals("aaa;JS?A=1+bbb", URIUtil.addPaths("aaa/;JS?A=1","bbb"),"aaa/bbb;JS?A=1");
-        assertEquals("aaa;JS?A=1+/", URIUtil.addPaths("aaa/;JS?A=1","/"),"aaa/;JS?A=1");
-        assertEquals("aaa;JS?A=1+/bbb", URIUtil.addPaths("aaa/;JS?A=1","/bbb"),"aaa/bbb;JS?A=1");
+        assertEquals("aaa?A=1+bbb", URIUtil.addPaths("aaa/?A=1","bbb"),"aaa/?A=1/bbb");
+        assertEquals("aaa?A=1+/", URIUtil.addPaths("aaa/?A=1","/"),"aaa/?A=1/");
+        assertEquals("aaa?A=1+/bbb", URIUtil.addPaths("aaa/?A=1","/bbb"),"aaa/?A=1/bbb");
 
     }
 
@@ -227,69 +296,6 @@ public class URIUtilTest
         assertFalse(URIUtil.equalsIgnoreEncodings("/foo/bar","/foo%2fbar"));
         assertFalse(URIUtil.equalsIgnoreEncodings("/foo2fbar","/foo/bar"));
     }
-
-    /* ------------------------------------------------------------ */
-    @Test
-    public void testCanonicalPath()
-    {
-        String[][] canonical =
-        {
-            {"/aaa/bbb/","/aaa/bbb/"},
-            {"/aaa//bbb/","/aaa//bbb/"},
-            {"/aaa///bbb/","/aaa///bbb/"},
-            {"/aaa/./bbb/","/aaa/bbb/"},
-            {"/aaa/../bbb/","/bbb/"},
-            {"/aaa/./../bbb/","/bbb/"},
-            {"/aaa/bbb/ccc/../../ddd/","/aaa/ddd/"},
-            {"./bbb/","bbb/"},
-            {"./aaa/../bbb/","bbb/"},
-            {"./",""},
-            {".//",".//"},
-            {".///",".///"},
-            {"/.","/"},
-            {"//.","//"},
-            {"///.","///"},
-            {"/","/"},
-            {"aaa/bbb","aaa/bbb"},
-            {"aaa/","aaa/"},
-            {"aaa","aaa"},
-            {"/aaa/bbb","/aaa/bbb"},
-            {"/aaa//bbb","/aaa//bbb"},
-            {"/aaa/./bbb","/aaa/bbb"},
-            {"/aaa/../bbb","/bbb"},
-            {"/aaa/./../bbb","/bbb"},
-            {"./bbb","bbb"},
-            {"./aaa/../bbb","bbb"},
-            {"aaa/bbb/..","aaa/"},
-            {"aaa/bbb/../","aaa/"},
-            {"/aaa//../bbb","/aaa/bbb"},
-            {"/aaa/./../bbb","/bbb"},
-            {"./",""},
-            {".",""},
-            {"",""},
-            {"..",null},
-            {"./..",null},
-            {"aaa/../..",null},
-            {"/foo/bar/../../..",null},
-            {"/../foo",null},
-            {"/foo/.","/foo/"},
-            {"a","a"},
-            {"a/","a/"},
-            {"a/.","a/"},
-            {"a/..",""},
-            {"a/../..",null},
-            {"/foo/../../bar",null},
-            {"/foo/../bar//","/bar//"},
-        };
-
-        for (int t=0;t<canonical.length;t++)
-            assertEquals( "canonical "+canonical[t][0],
-                          canonical[t][1],
-                          URIUtil.canonicalPath(canonical[t][0])
-                          );
-
-    }
-
 
     /* ------------------------------------------------------------ */
     @Test

@@ -73,7 +73,17 @@ public class PathResource extends Resource
 
         if(!URIUtil.equalsIgnoreEncodings(uri,path.toUri()))
         {
-            return new File(uri).toPath().toAbsolutePath();
+            try
+            {
+                return Paths.get(uri).toRealPath(FOLLOW_LINKS);
+            }
+            catch (IOException ignored)
+            {
+                // If the toRealPath() call fails, then let
+                // the alias checking routines continue on
+                // to other techniques.
+                LOG.ignore(ignored);
+            }
         }
 
         if (!abs.isAbsolute())
@@ -203,7 +213,7 @@ public class PathResource extends Resource
         this.path = parent.path.getFileSystem().getPath(parent.path.toString(), childPath);
         if (isDirectory() &&!childPath.endsWith("/"))
             childPath+="/";
-        this.uri = URIUtil.addDecodedPath(parent.uri,childPath);
+        this.uri = URIUtil.addPath(parent.uri,childPath);
         this.alias = checkAliasPath();
     }
 

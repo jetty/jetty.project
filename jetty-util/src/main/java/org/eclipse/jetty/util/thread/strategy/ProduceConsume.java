@@ -106,15 +106,6 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
         produce();
     }
 
-    public static class Factory implements ExecutionStrategy.Factory
-    {
-        @Override
-        public ExecutionStrategy newExecutionStrategy(Producer producer, Executor executor)
-        {
-            return new ProduceConsume(producer, executor);
-        }
-    }
-
     private enum State
     {
         IDLE, PRODUCE, EXECUTE

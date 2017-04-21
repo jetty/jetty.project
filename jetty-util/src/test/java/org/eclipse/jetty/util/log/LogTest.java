@@ -19,6 +19,9 @@
 package org.eclipse.jetty.util.log;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,8 +57,8 @@ public class LogTest
         Logger log = Log.getLogger(LogTest.class);
         log.info("Test default logging");
     }
-
-    // @Test
+    
+    @Test
     public void testNamedLogNamed_StdErrLog()
     {
         Log.setLog(new StdErrLog());
@@ -89,5 +92,26 @@ public class LogTest
     {
         Logger lc = Log.getLogger(clazz);
         Assert.assertEquals("Named logging (impl=" + Log.getLog().getClass().getName() + ")",lc.getName(),clazz.getName());
+    }
+    
+    @Test
+    public void testCondensePackage()
+    {
+        String cases[][] = new String[][]{
+                {null, ""},
+                {"org.eclipse.Foo.\u0000", "oe.Foo"},
+                {".foo", "foo"},
+                {".bar.Foo", "b.Foo"},
+                {"org...bar..Foo", "ob.Foo"}
+        };
+    
+        StdErrLog log = new StdErrLog();
+        
+        for (int i = 0; i < cases.length; i++)
+        {
+            // System.err.printf("newLogger(%s)%n", cases[i][0]);
+            StdErrLog logger = (StdErrLog) log.newLogger(cases[i][0]);
+            assertThat("log[" + cases[i][0] + "] condenses to name", logger._abbrevname, is(cases[i][1]));
+        }
     }
 }

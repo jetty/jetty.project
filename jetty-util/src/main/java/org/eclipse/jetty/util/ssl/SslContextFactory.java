@@ -165,6 +165,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private String _endpointIdentificationAlgorithm = null;
     private boolean _trustAll;
     private boolean _renegotiationAllowed = true;
+    private int _renegotiationLimit = 5;
     private Factory _factory;
 
     /**
@@ -912,6 +913,25 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     /**
+     * @return The number of renegotions allowed for this connection.  When the limit
+     * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied. 
+     */
+    public int getRenegotiationLimit()
+    {
+        return _renegotiationLimit;
+    }
+
+    /**
+     * @param renegotiationLimit The number of renegotions allowed for this connection.  
+     * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
+     * Default 5.
+     */
+    public void setRenegotiationLimit(int renegotiationLimit)
+    {
+        _renegotiationLimit = renegotiationLimit;
+    }
+    
+    /**
      * @return Path to file that contains Certificate Revocation List
      */
     public String getCrlPath()
@@ -1540,13 +1560,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      * If the given {@code address} is null, it is equivalent to {@link #newSSLEngine()}, otherwise
      * {@link #newSSLEngine(String, int)} is called.
      * <p>
-     * If {@link #getNeedClientAuth()} is {@code true}, then the host name is passed to
-     * {@link #newSSLEngine(String, int)}, possibly incurring in a reverse DNS lookup, which takes time
-     * and may hang the selector (since this method is usually called by the selector thread).
-     * <p>
-     * Otherwise, the host address is passed to {@link #newSSLEngine(String, int)} without DNS lookup
-     * penalties.
-     * <p>
      * Clients that wish to create {@link SSLEngine} instances must use {@link #newSSLEngine(String, int)}.
      *
      * @param address the remote peer address
@@ -1556,10 +1569,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         if (address == null)
             return newSSLEngine();
-
-        boolean useHostName = getNeedClientAuth();
-        String hostName = useHostName ? address.getHostName() : address.getAddress().getHostAddress();
-        return newSSLEngine(hostName, address.getPort());
+        return newSSLEngine(address.getHostString(), address.getPort());
     }
 
     /**

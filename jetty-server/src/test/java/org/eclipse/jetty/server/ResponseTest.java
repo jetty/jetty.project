@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -29,19 +31,18 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
+import java.net.HttpCookie;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.HttpCookie;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,7 +57,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -69,8 +70,8 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.NullSessionDataStore;
 import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionData;
@@ -178,6 +179,7 @@ public class ResponseTest
         _server.join();
     }
 
+    @SuppressWarnings("InjectedReferences") // to allow for invalid encoding strings in this testcase
     @Test
     public void testContentType() throws Exception
     {
@@ -1185,26 +1187,97 @@ public class ResponseTest
         assertEquals("everything=value;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
 
-        fields.clear();
-        try
+        String badNameExamples[] = {
+                "\"name\"",
+                "name\t",
+                "na me",
+                "name\u0082",
+                "na\tme",
+                "na;me",
+                "{name}",
+                "[name]",
+                "\""
+        };
+    
+        for (String badNameExample : badNameExamples)
         {
-            response.addSetRFC6265Cookie("ev erything","va lue","do main","pa th",1,true,true);
+            fields.clear();
+            try
+            {
+                response.addSetRFC6265Cookie(badNameExample, "value", null, "/", 1, true, true);
+            }
+            catch (IllegalArgumentException ex)
+            {
+                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
+                assertThat("Testing bad name: [" + badNameExample + "]", ex.getMessage(),
+                        allOf(containsString("RFC6265"), containsString("RFC2616")));
+            }
         }
-        catch(IllegalArgumentException ex)
+    
+        String badValueExamples[] = {
+                "va\tlue",
+                "\t",
+                "value\u0000",
+                "val\u0082ue",
+                "va lue",
+                "va;lue",
+                "\"value",
+                "value\"",
+                "val\\ue",
+                "val\"ue",
+                "\""
+        };
+    
+        for (String badValueExample : badValueExamples)
         {
-            assertThat(ex.getMessage(),Matchers.containsString("RFC6265"));
+            fields.clear();
+            try
+            {
+                response.addSetRFC6265Cookie("name", badValueExample, null, "/", 1, true, true);
+            }
+            catch (IllegalArgumentException ex)
+            {
+                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
+                assertThat("Testing bad value [" + badValueExample + "]", ex.getMessage(), Matchers.containsString("RFC6265"));
+            }
         }
-        fields.clear();
-        try
+        
+        String goodNameExamples[] = {
+                "name",
+                "n.a.m.e",
+                "na-me",
+                "+name",
+                "na*me",
+                "na$me",
+                "#name"
+        };
+    
+        for (String goodNameExample : goodNameExamples)
         {
-            response.addSetRFC6265Cookie("everything","va lue","do main","pa th",1,true,true);
+            fields.clear();
+            response.addSetRFC6265Cookie(goodNameExample, "value", null, "/", 1, true, true);
+            // should not throw an exception
         }
-        catch(IllegalArgumentException ex)
+    
+        String goodValueExamples[] = {
+                "value",
+                "",
+                null,
+                "val=ue",
+                "val-ue",
+                "val/ue",
+                "v.a.l.u.e"
+        };
+    
+        for (String goodValueExample : goodValueExamples)
         {
-            assertThat(ex.getMessage(),Matchers.containsString("RFC6265"));
+            fields.clear();
+            response.addSetRFC6265Cookie("name", goodValueExample, null, "/", 1, true, true);
+            // should not throw an exception
         }
         
         fields.clear();
+        
         response.addSetRFC6265Cookie("name","value","domain",null,-1,false,false);
         response.addSetRFC6265Cookie("name","other","domain",null,-1,false,false);
         response.addSetRFC6265Cookie("name","more","domain",null,-1,false,false);
@@ -1218,7 +1291,7 @@ public class ResponseTest
         response.addSetRFC6265Cookie("foo","bob","domain",null,-1,false,false);
         assertThat(fields.get("Set-Cookie"), Matchers.startsWith("name=value"));
     }
-
+    
     private Response getResponse()
     {
         _channel.recycle();

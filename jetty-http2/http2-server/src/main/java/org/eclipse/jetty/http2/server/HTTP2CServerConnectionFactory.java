@@ -54,7 +54,7 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
         this(httpConfiguration,"h2c");
     }
     
-    public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, String... protocols)
+    public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(httpConfiguration,protocols);
         for (String p:protocols)

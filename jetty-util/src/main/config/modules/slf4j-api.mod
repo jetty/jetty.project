@@ -14,7 +14,7 @@ maven://org.slf4j/slf4j-api/${slf4j.version}|lib/slf4j/slf4j-api-${slf4j.version
 lib/slf4j/slf4j-api-${slf4j.version}.jar
 
 [ini]
-slf4j.version=1.7.21
+slf4j.version?=1.7.21
 
 [license]
 SLF4J is distributed under the MIT License.

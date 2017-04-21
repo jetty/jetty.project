@@ -18,15 +18,18 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.eclipse.jetty.toolchain.test.ExtraMatchers.*; 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -48,7 +51,7 @@ public class WebAppClassLoaderTest
 
     private Path testWebappDir;
     private WebAppContext _context;
-    private WebAppClassLoader _loader;
+    protected WebAppClassLoader _loader;
 
     @Before
     public void init() throws Exception
@@ -241,6 +244,9 @@ public class WebAppClassLoaderTest
     @Test
     public void testResources() throws Exception
     {
+        // The existence of a URLStreamHandler changes the behavior
+        assumeThat("URLStreamHandler changes behavior, skip test", URLStreamHandlerUtil.getFactory(), nullValue());
+        
         List<URL> expected = new ArrayList<>();
         List<URL> resources;
         

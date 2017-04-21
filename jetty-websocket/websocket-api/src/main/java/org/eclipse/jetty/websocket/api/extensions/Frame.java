@@ -65,7 +65,7 @@ public interface Frame
 
         public boolean isData()
         {
-            return (opcode == TEXT.getOpCode()) | (opcode == BINARY.getOpCode());
+            return (opcode == TEXT.getOpCode()) || (opcode == BINARY.getOpCode());
         }
 
         public boolean isContinuation()

@@ -58,6 +58,10 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+        if (storeFactory instanceof AbstractSessionDataStoreFactory)
+        {
+            ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(0);
+        }
         
         TestServer server1 = new TestServer(0, inactivePeriod, -1, cacheFactory, storeFactory);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
@@ -68,7 +72,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
             int scavengePeriod = 2;
             
             DefaultSessionCacheFactory evictCacheFactory = new DefaultSessionCacheFactory();
-            cacheFactory.setEvictionPolicy(2);//evict after idle for 2 sec
+          //  cacheFactory.setEvictionPolicy(2);//evict after idle for 2 sec
             
             TestServer server2 = new TestServer(0, inactivePeriod, scavengePeriod, evictCacheFactory, storeFactory);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);         

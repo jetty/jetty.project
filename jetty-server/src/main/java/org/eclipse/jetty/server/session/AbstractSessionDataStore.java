@@ -21,21 +21,29 @@ package org.eclipse.jetty.server.session;
 
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * AbstractSessionDataStore
  *
  *
  */
+@ManagedObject
 public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
+    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
     protected SessionContext _context; //context associated with this session data store
     protected int _gracePeriodSec = 60 * 60; //default of 1hr 
     protected long _lastExpiryCheckTime = 0; //last time in ms that getExpired was called
-
+    protected int _savePeriodSec = 0; //time in sec between saves
 
     /**
      * Store the session data persistently.
@@ -74,21 +82,33 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public void store(String id, SessionData data) throws Exception
     {
+        if (data == null)
+            return;
+
+
         long lastSave = data.getLastSaved();
+        long savePeriodMs = (_savePeriodSec <=0? 0: TimeUnit.SECONDS.toMillis(_savePeriodSec));
         
-        //set the last saved time to now
-        data.setLastSaved(System.currentTimeMillis());
-        try
+        if (LOG.isDebugEnabled())
+            LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id,data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis()-lastSave));
+
+        //save session if attribute changed or never been saved or time between saves exceeds threshold
+        if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis()-lastSave) > savePeriodMs))
         {
-            //call the specific store method, passing in previous save time
-            doStore(id, data, lastSave);
-            data.setDirty(false); //only undo the dirty setting if we saved it
-        }
-        catch (Exception e)
-        {
-            //reset last save time if save failed
-            data.setLastSaved(lastSave);
-            throw e;
+            //set the last saved time to now
+            data.setLastSaved(System.currentTimeMillis());
+            try
+            {
+                //call the specific store method, passing in previous save time
+                doStore(id, data, lastSave);
+                data.setDirty(false); //only undo the dirty setting if we saved it
+            }
+            catch (Exception e)
+            {
+                //reset last save time if save failed
+                data.setLastSaved(lastSave);
+                throw e;
+            }
         }
     }
     
@@ -136,7 +156,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         
         super.doStart();
     }
-
+    
+    
+    @ManagedAttribute(value="interval in secs to prevent too eager session scavenging", readonly=true)
     public int getGracePeriodSec()
     {
         return _gracePeriodSec;
@@ -145,6 +167,38 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     public void setGracePeriodSec(int sec)
     {
         _gracePeriodSec = sec;
+    }
+
+
+    /**
+     * @return the savePeriodSec
+     */
+    @ManagedAttribute(value="min secs between saves", readonly=true)
+    public int getSavePeriodSec()
+    {
+        return _savePeriodSec;
+    }
+
+
+    /** 
+     * The minimum time in seconds between save operations.
+     * Saves normally occur every time the last request 
+     * exits as session. If nothing changes on the session
+     * except for the access time and the persistence technology
+     * is slow, this can cause delays.
+     * <p>
+     * By default the value is 0, which means we save 
+     * after the last request exists. A non zero value
+     * means that we will skip doing the save if the
+     * session isn't dirty if the elapsed time since
+     * the session was last saved does not exceed this
+     * value.
+     * 
+     * @param savePeriodSec the savePeriodSec to set
+     */
+    public void setSavePeriodSec(int savePeriodSec)
+    {
+        _savePeriodSec = savePeriodSec;
     }
 
 

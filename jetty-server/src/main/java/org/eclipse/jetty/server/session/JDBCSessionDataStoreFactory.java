@@ -48,6 +48,7 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         ds.setDatabaseAdaptor(_adaptor);
         ds.setSessionTableSchema(_schema);
         ds.setGracePeriodSec(getGracePeriodSec());
+        ds.setSavePeriodSec(getSavePeriodSec());
         return ds;
     }
 

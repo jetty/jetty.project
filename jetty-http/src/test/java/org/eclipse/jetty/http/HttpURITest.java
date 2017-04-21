@@ -21,16 +21,15 @@ package org.eclipse.jetty.http;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.Utf8Appendable;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpURITest
@@ -99,33 +98,6 @@ public class HttpURITest
         uri.parseRequestTarget("GET","http://foo/bar");
         assertThat(uri.getHost(),is("foo"));
         assertThat(uri.getPath(),is("/bar"));
-    }
-    
-    
-    
-    @Test
-    public void testUnicodeErrors() throws UnsupportedEncodingException
-    {
-        String uri="http://server/path?invalid=data%uXXXXhere%u000";
-        try
-        {
-            URLDecoder.decode(uri,"UTF-8");
-            Assert.assertTrue(false);
-        }
-        catch (IllegalArgumentException e)
-        {
-        }
-
-        HttpURI huri=new HttpURI(uri);
-        MultiMap<String> params = new MultiMap<>();
-        huri.decodeQueryTo(params);
-        assertEquals("data"+Utf8Appendable.REPLACEMENT+"here"+Utf8Appendable.REPLACEMENT,params.getValue("invalid",0));
-
-        huri=new HttpURI(uri);
-        params = new MultiMap<>();
-        huri.decodeQueryTo(params,StandardCharsets.UTF_8);
-        assertEquals("data"+Utf8Appendable.REPLACEMENT+"here"+Utf8Appendable.REPLACEMENT,params.getValue("invalid",0));
-
     }
 
     @Test

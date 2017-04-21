@@ -83,6 +83,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         {
             SslConnection sslConnection = (SslConnection)connection;
             sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
+            sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
             ContainerLifeCycle connector = (ContainerLifeCycle)context.get(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY);
             connector.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }

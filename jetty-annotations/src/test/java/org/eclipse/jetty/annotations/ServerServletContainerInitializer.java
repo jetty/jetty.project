@@ -16,10 +16,39 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server;
+
+package org.eclipse.jetty.annotations;
+
+import java.util.Set;
+
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
 /**
- * The compliance for Cookie handling.
+ * ServerServletContainerInitializer
+ *
  *
  */
-public enum CookieCompliance { RFC6265, RFC2965 }
+public class ServerServletContainerInitializer implements ServletContainerInitializer
+{
+
+    /**
+     * 
+     */
+    public ServerServletContainerInitializer()
+    {
+        // TODO Auto-generated constructor stub
+    }
+
+    /** 
+     * @see javax.servlet.ServletContainerInitializer#onStartup(java.util.Set, javax.servlet.ServletContext)
+     */
+    @Override
+    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+}

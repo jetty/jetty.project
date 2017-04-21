@@ -18,8 +18,15 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+
+
 import org.junit.After;
 import org.junit.Test;
+
 
 /**
  * NonClusteredSessionScavengingTest
@@ -37,6 +44,27 @@ public class NonClusteredSessionScavengingTest extends AbstractNonClusteredSessi
     }
 
     
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractNonClusteredSessionScavengingTest#assertSession(java.lang.String, boolean)
+     */
+    @Override
+    public void assertSession(String id, boolean exists)
+    {
+        try
+        {
+            boolean inDb = JdbcTestHelper.existsInSessionTable(id, false);
+            if (exists)
+                assertTrue(inDb);
+            else
+                assertFalse(inDb);
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage());
+        }
+    }
+
+
     @After
     public void tearDown() throws Exception 
     {

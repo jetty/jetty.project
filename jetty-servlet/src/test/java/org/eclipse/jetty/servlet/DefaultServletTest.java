@@ -259,7 +259,7 @@ public class DefaultServletTest
         defholder.setInitParameter("resourceBase", resBasePath);
 
         String response;
-
+        
         response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
@@ -326,11 +326,13 @@ public class DefaultServletTest
         testdir.ensureEmpty();
         File resBase = testdir.getPathFile("docroot").toFile();
         FS.ensureDirExists(resBase);
-        File inde = new File(resBase, "index.htm");
-        File index = new File(resBase, "index.html");
+
+        File dir = new File(resBase, "dir");
+        assertTrue(dir.mkdirs());
+        File inde = new File(dir, "index.htm");
+        File index = new File(dir, "index.html");
 
         String resBasePath = resBase.getAbsolutePath();
-
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
@@ -344,25 +346,98 @@ public class DefaultServletTest
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
 
-        String response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
 
         createFile(index, "<h1>Hello Index</h1>");
-        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
         assertTrue(index.delete());
-        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Inde</h1>", response);
 
         assertTrue(inde.delete());
-        response = connector.getResponse("GET /context/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
     }
+    
+    @Test
+    public void testWelcomeRedirect() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getPathFile("docroot").toFile();
+        FS.ensureDirExists(resBase);
+
+        File dir = new File(resBase, "dir");
+        assertTrue(dir.mkdirs());
+        File inde = new File(dir, "index.htm");
+        File index = new File(dir, "index.html");
+
+        String resBasePath = resBase.getAbsolutePath();
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("maxCacheSize", "1024000");
+        defholder.setInitParameter("maxCachedFileSize", "512000");
+        defholder.setInitParameter("maxCachedFiles", "100");
+
+        @SuppressWarnings("unused")
+        ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
+
+        String response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("403", response);
+
+        createFile(index, "<h1>Hello Index</h1>");
+        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("Location: http://0.0.0.0/context/dir/index.html", response);
+
+        createFile(inde, "<h1>Hello Inde</h1>");
+        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("Location: http://0.0.0.0/context/dir/index.html", response);
+
+        assertTrue(index.delete());
+        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("Location: http://0.0.0.0/context/dir/index.htm", response);
+        
+        assertTrue(inde.delete());
+        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("403", response);
+    }
+
+    @Test
+    public void testWelcomeDirWithQuestion() throws Exception
+    {
+        testdir.ensureEmpty();
+        File resBase = testdir.getPathFile("docroot").toFile();
+        FS.ensureDirExists(resBase);
+        context.setBaseResource(Resource.newResource(resBase));
+
+        File dir = new File(resBase, "dir?");
+        assertTrue(dir.mkdirs());
+        File index = new File(dir, "index.html");
+        createFile(index, "<h1>Hello Index</h1>");
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        String response = connector.getResponse("GET /context/dir%3F HTTP/1.0\r\n\r\n");
+        assertResponseContains("Location: http://0.0.0.0/context/dir%3F/", response);
+
+        response = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("Location: http://0.0.0.0/context/dir%3F/index.html", response);
+    }
+    
 
     @Test
     public void testWelcomeServlet() throws Exception
@@ -729,6 +804,8 @@ public class DefaultServletTest
         String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
         assertResponseNotContains("Extra Info", response);
+        assertResponseContains("Content-Type: text/plain", response);
+        assertResponseNotContains("Content-Type: text/plain;charset=utf-8", response);
 
         server.stop();
         context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
@@ -738,6 +815,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
+        assertResponseContains("Content-Type: text/plain;charset=utf-8", response);
 
         server.stop();
         context.getServletHandler().setFilterMappings(new FilterMapping[]{});
@@ -1226,6 +1304,7 @@ public class DefaultServletTest
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             response.getOutputStream().println("Extra Info");
+            response.setCharacterEncoding("utf-8");
             chain.doFilter(request, response);
         }
 

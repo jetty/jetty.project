@@ -87,6 +87,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
         SslConnection sslConnection = newSslConnection(connector, endPoint, engine);
         sslConnection.setRenegotiationAllowed(_sslContextFactory.isRenegotiationAllowed());
+        sslConnection.setRenegotiationLimit(_sslContextFactory.getRenegotiationLimit());
         configure(sslConnection, connector, endPoint);
 
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);

@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -282,11 +283,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return handle || wasDelayed ? this : null;
     }
 
-    public void onRequestTrailers(HeadersFrame frame)
+    public Runnable onRequestTrailers(HeadersFrame frame)
     {
         HttpFields trailers = frame.getMetaData().getFields();
-        onTrailers(trailers);
-        onRequestComplete();
+        if (trailers.size() > 0)
+            onTrailers(trailers);
+
         if (LOG.isDebugEnabled())
         {
             Stream stream = getStream();
@@ -294,6 +296,14 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                     System.lineSeparator(), trailers);
         }
+
+        boolean handle = onRequestComplete();
+
+        boolean wasDelayed = _delayedUntilContent;
+        _delayedUntilContent = false;
+        if (wasDelayed)
+            _handled = true;
+        return handle || wasDelayed ? this : null;
     }
 
     public boolean isRequestHandled()
@@ -320,9 +330,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     {
         getHttpTransport().onStreamFailure(failure);
         if (onEarlyEOF())
-            handle();
+        {
+            ContextHandler handler = getState().getContextHandler();
+            if (handler != null)
+                handler.handle(getRequest(), this);
+            else
+                handle();
+        }
         else
+        {
             getState().asyncError(failure);
+        }
     }
 
     protected void consumeInput()

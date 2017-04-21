@@ -91,6 +91,7 @@ public class SslConnection extends AbstractConnection
     private final boolean _encryptedDirectBuffers = true;
     private final boolean _decryptedDirectBuffers = false;
     private boolean _renegotiationAllowed;
+    private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
 
     private abstract class RunnableTask  implements Runnable, Invocable
@@ -208,7 +209,26 @@ public class SslConnection extends AbstractConnection
 
     public void setRenegotiationAllowed(boolean renegotiationAllowed)
     {
-        this._renegotiationAllowed = renegotiationAllowed;
+        _renegotiationAllowed = renegotiationAllowed;
+    }
+
+    /**
+     * @return The number of renegotions allowed for this connection.  When the limit
+     * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied. 
+     */
+    public int getRenegotiationLimit()
+    {
+        return _renegotiationLimit;
+    }
+
+    /**
+     * @param renegotiationLimit The number of renegotions allowed for this connection.  
+     * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
+     * Default -1.
+     */
+    public void setRenegotiationLimit(int renegotiationLimit)
+    {
+        _renegotiationLimit = renegotiationLimit;
     }
 
     @Override
@@ -307,12 +327,13 @@ public class SslConnection extends AbstractConnection
         b = _decryptedInput;
         int di=b==null?-1:b.remaining();
 
+        Connection connection = _decryptedEndPoint.getConnection();
         return String.format("%s@%x{%s,eio=%d/%d,di=%d}=>%s",
                 getClass().getSimpleName(),
                 hashCode(),
                 _sslEngine.getHandshakeStatus(),
                 ei,eo,di,
-                ((AbstractConnection)_decryptedEndPoint.getConnection()).toConnectionString());
+                connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
     }
 
     public class DecryptedEndPoint extends AbstractEndPoint
@@ -356,7 +377,7 @@ public class SslConnection extends AbstractConnection
                 synchronized (DecryptedEndPoint.this)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} write failed", SslConnection.this, x);
+                        LOG.debug("write failed {}", SslConnection.this, x);
 
                     BufferUtil.clear(_encryptedOutput);
                     releaseEncryptedOutputBuffer();
@@ -626,8 +647,8 @@ public class SslConnection extends AbstractConnection
                                 }
                                 if (LOG.isDebugEnabled())
                                 {
-                                    LOG.debug("{} net={} unwrap {}", SslConnection.this, net_filled, unwrapResult.toString().replace('\n',' '));
-                                    LOG.debug("{} filled {}",SslConnection.this,BufferUtil.toHexSummary(buffer));
+                                    LOG.debug("net={} unwrap {} {}", net_filled, unwrapResult.toString().replace('\n',' '), SslConnection.this);
+                                    LOG.debug("filled {} {}",BufferUtil.toHexSummary(buffer), SslConnection.this);
                                 }
 
                                 HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
@@ -685,25 +706,13 @@ public class SslConnection extends AbstractConnection
                                     case BUFFER_UNDERFLOW:
                                     case OK:
                                     {
-                                        if (unwrapHandshakeStatus == HandshakeStatus.FINISHED && !_handshaken)
-                                        {
-                                            _handshaken = true;
-                                            if (LOG.isDebugEnabled())
-                                                LOG.debug("{} {} handshake succeeded {}/{}", SslConnection.this,
-                                                        _sslEngine.getUseClientMode() ? "client" : "resumed server",
-                                                        _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
-                                            notifyHandshakeSucceeded(_sslEngine);
-                                        }
+                                        if (unwrapHandshakeStatus == HandshakeStatus.FINISHED)
+                                            handshakeFinished();
 
-                                        // Check whether renegotiation is allowed
-                                        if (_handshaken && handshakeStatus != HandshakeStatus.NOT_HANDSHAKING && !isRenegotiationAllowed())
-                                        {
-                                            if (LOG.isDebugEnabled())
-                                                LOG.debug("{} renegotiation denied", SslConnection.this);
-                                            closeInbound();
+                                        // Check whether re-negotiation is allowed
+                                        if (!allowRenegotiate(handshakeStatus))
                                             return -1;
-                                        }
-
+                                        
                                         // If bytes were produced, don't bother with the handshake status;
                                         // pass the decrypted data to the application, which will perform
                                         // another call to fill() or flush().
@@ -821,6 +830,51 @@ public class SslConnection extends AbstractConnection
             }
         }
 
+        private void handshakeFinished()
+        {
+            if (_handshaken)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Renegotiated {}", SslConnection.this);
+                if (_renegotiationLimit>0)
+                    _renegotiationLimit--;
+            }
+            else
+            {
+                _handshaken = true;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} handshake succeeded {}/{} {}",
+                        _sslEngine.getUseClientMode() ? "client" : "resumed server",
+                            _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite(),
+                            SslConnection.this);
+                notifyHandshakeSucceeded(_sslEngine);
+            }
+        }
+
+        private boolean allowRenegotiate(HandshakeStatus handshakeStatus)
+        {   
+            if (!_handshaken || handshakeStatus == HandshakeStatus.NOT_HANDSHAKING)
+                return true;
+
+            if (!isRenegotiationAllowed())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Renegotiation denied {}", SslConnection.this);
+                closeInbound();
+                return false;
+            }
+            
+            if (_renegotiationLimit==0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Renegotiation limit exceeded {}", SslConnection.this);
+                closeInbound();
+                return false;
+            }
+            
+            return true;
+        }
+
         private void closeInbound()
         {
             try
@@ -846,7 +900,7 @@ public class SslConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
             {
                 for (ByteBuffer b : appOuts)
-                    LOG.debug("{} flush {}", SslConnection.this, BufferUtil.toHexSummary(b));
+                    LOG.debug("flush {} {}", BufferUtil.toHexSummary(b), SslConnection.this);
             }
 
             try
@@ -881,7 +935,7 @@ public class SslConnection extends AbstractConnection
                                 BufferUtil.flipToFlush(_encryptedOutput, pos);
                             }
                             if (LOG.isDebugEnabled())
-                                LOG.debug("{} wrap {}", SslConnection.this, wrapResult.toString().replace('\n',' '));
+                                LOG.debug("wrap {} {}", wrapResult.toString().replace('\n',' '), SslConnection.this);
 
                             Status wrapResultStatus = wrapResult.getStatus();
 
@@ -922,29 +976,20 @@ public class SslConnection extends AbstractConnection
                                 default:
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("{} wrap {} {}", SslConnection.this, wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput));
+                                        LOG.debug("wrap {} {} {}", wrapResultStatus, BufferUtil.toHexSummary(_encryptedOutput), SslConnection.this);
 
-                                    if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED && !_handshaken)
-                                    {
-                                        _handshaken = true;
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("{} {} handshake succeeded {}/{}", SslConnection.this,
-                                                    _sslEngine.getUseClientMode() ? "resumed client" : "server",
-                                                    _sslEngine.getSession().getProtocol(),_sslEngine.getSession().getCipherSuite());
-                                        notifyHandshakeSucceeded(_sslEngine);
-                                    }
+                                    if (wrapResult.getHandshakeStatus() == HandshakeStatus.FINISHED)
+                                        handshakeFinished();
 
                                     HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
 
-                                    // Check whether renegotiation is allowed
-                                    if (_handshaken && handshakeStatus != HandshakeStatus.NOT_HANDSHAKING && !isRenegotiationAllowed())
+                                    // Check whether re-negotiation is allowed
+                                    if (!allowRenegotiate(handshakeStatus))
                                     {
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("{} renegotiation denied", SslConnection.this);
                                         getEndPoint().shutdownOutput();
                                         return allConsumed;
                                     }
-
+                                    
                                     // if we have net bytes, let's try to flush them
                                     if (BufferUtil.hasContent(_encryptedOutput))
                                         if (!getEndPoint().flush(_encryptedOutput))
@@ -1034,7 +1079,7 @@ public class SslConnection extends AbstractConnection
                     boolean ishut = isInputShutdown();
                     boolean oshut = isOutputShutdown();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} shutdownOutput: oshut={}, ishut={}", SslConnection.this, oshut, ishut);
+                        LOG.debug("shutdownOutput: oshut={}, ishut={} {}", oshut, ishut, SslConnection.this);
 
                     if (oshut)
                         return;

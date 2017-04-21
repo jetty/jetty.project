@@ -27,9 +27,9 @@ Authorization::
 
 ==== Configuring an Authentication mechanism
 
-The jetty server supports several standard authentication mechanisms: http://en.wikipedia.org/wiki/Basic_access_authentication[BASIC]; http://en.wikipedia.org/wiki/Digest_authentication[DIGEST]; http://en.wikipedia.org/wiki/Form-based_authentication[FORM]; CLIENT-CERT; and other mechanisms can be plugged in using the extensible http://docs.oracle.com/cd/E19462-01/819-6717/gcszc/index.html[JASPI] or http://en.wikipedia.org/wiki/SPNEGO[SPNEGO] mechanisms.
+Jetty server supports several standard authentication mechanisms: http://en.wikipedia.org/wiki/Basic_access_authentication[BASIC]; http://en.wikipedia.org/wiki/Digest_authentication[DIGEST]; http://en.wikipedia.org/wiki/Form-based_authentication[FORM]; CLIENT-CERT; and other mechanisms can be plugged in using the extensible http://docs.oracle.com/cd/E19462-01/819-6717/gcszc/index.html[JASPI] or http://en.wikipedia.org/wiki/SPNEGO[SPNEGO] mechanisms.
 
-Internally, configuring an authentication mechanism is done by setting an instance of a the link:{JDURL}/org/eclipse/jetty/security/Authenticator.html[Authenticator] interface onto the link:{JDURL}/org/eclipse/jetty/security/SecurityHandler.html[SecurityHandler] of the context, but in most cases it is done by declaring a `<    login-config>` element in the standard web.xml descriptor or via annotations.
+Internally, configuring an authentication mechanism is done by setting an instance of a the link:{JDURL}/org/eclipse/jetty/security/Authenticator.html[Authenticator] interface onto the link:{JDURL}/org/eclipse/jetty/security/SecurityHandler.html[SecurityHandler] of the context, but in most cases it is done by declaring a `<login-config>` element in the standard web.xml descriptor or via annotations.
 
 Below is an example taken from the link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/webapp/WEB-INF/web.xml?h=release-9[jetty-test-webapp web.xml] that configures BASIC authentication:
 
@@ -103,7 +103,7 @@ When a request is received for a protected resource, the web container checks if
 The Servlet Specification does not address how the static security information in the `WEB-INF/web.xml` file is mapped to the runtime environment of the container.
 For Jetty, the link:{JDURL}/org/eclipse/jetty/security/LoginService.html[LoginService] performs this function.
 
-A LoginService has a unique name, and gives access to information about a set of users.
+A `LoginService` has a unique name, and gives access to information about a set of users.
 Each user has authentication information (e.g. a password) and a set of roles associated with him/herself.
 
 You may configure one or many different LoginServices depending on your needs.
@@ -114,7 +114,8 @@ When a request to a web application requires authentication or authorization, Je
 
 ==== Scoping Security Realms
 
-A LoginService has a unique name, and is composed of a set of users. Each user has authentication information (for example, a password) and a set of roles associated with him/herself.
+A `LoginService` has a unique name, and is composed of a set of users.
+Each user has authentication information (for example, a password) and a set of roles associated with him/herself.
 You can configure one or many different realms depending on your needs.
 
 * Configure a single LoginService to share common security information across all of your web applications.
@@ -144,8 +145,8 @@ Here's an example of an xml file that defines an in-memory type of LoginService 
 
 ----
 
-If you define more than one LoginService on a Server, you will need to specify which one you want used for each context.
-You can do that by telling the context the name of the LoginService, or passing it the LoginService instance.
+If you define more than one `LoginService` on a Server, you will need to specify which one you want used for each context.
+You can do that by telling the context the name of the `LoginService`, or passing it the `LoginService` instance.
 Here's an example of doing both of these, using a link:#deployable-descriptor-file[context xml file]:
 
 [source, xml, subs="{sub-order}"]
@@ -170,7 +171,7 @@ Here's an example of doing both of these, using a link:#deployable-descriptor-fi
 
 ===== Per-Webapp Scoped
 
-Alternatively, you can define a LoginService for just a single web application.
+Alternatively, you can define a `LoginService` for just a single web application.
 Here's how to define the same HashLoginService, but inside a link:#deployable-descriptor-file[context xml file]:
 
 [source, xml, subs="{sub-order}"]
@@ -192,12 +193,12 @@ Here's how to define the same HashLoginService, but inside a link:#deployable-de
 
 ----
 
-Jetty provides a number of different LoginService types which can be seen in the next section.
+Jetty provides a number of different `LoginService` types which can be seen in the next section.
 
 [[configuring-login-service]]
 ==== Configuring a LoginService
 
-A link:{JDURL}/org/eclipse/jetty/security/LoginService.html[LoginService] instance is required by each context/webapp that has a authentication mechanism, which is used to check the validity of the username and credentials collected by the authentication mechanism. Jetty provides the following implementations of LoginService:
+A link:{JDURL}/org/eclipse/jetty/security/LoginService.html[`LoginService`] instance is required by each context/webapp that has a authentication mechanism, which is used to check the validity of the username and credentials collected by the authentication mechanism. Jetty provides the following implementations of `LoginService`:
 
 link:{JDURL}/org/eclipse/jetty/security/HashLoginService.html[HashLoginService]::
   A user realm that is backed by a hash map that is filled either programatically or from a Java properties file.
@@ -211,16 +212,16 @@ link:{JDURL}/org/eclipse/jetty/jaas/JAASLoginService.html[JAASLoginService]::
 link:{JDURL}/org/eclipse/jetty/security/SpnegoLoginService.html[SpnegoLoginService]::
   http://en.wikipedia.org/wiki/SPNEGO[SPNEGO] Authentication; see the section on link:#spnego-support[SPNEGO support] for more information.
 
-An instance of a LoginService can be matched to a context/webapp by:
+An instance of a `LoginService` can be matched to a context/webapp by:
 
-* A LoginService instance may be set directly on the SecurityHandler instance via embedded code or IoC XML
-* Matching the realm-name defined in web.xml with the name of a LoginService instance that has been added to the Server instance as a dependent bean
-* If only a single LoginService instance has been set on the Server then it is used as the login service for the context
+* A `LoginService` instance may be set directly on the `SecurityHandler` instance via embedded code or IoC XML
+* Matching the realm-name defined in web.xml with the name of a `LoginService` instance that has been added to the Server instance as a dependent bean
+* If only a single `LoginService` instance has been set on the Server then it is used as the login service for the context
 
 [[hash-login-service]]
 ===== HashLoginService
 
-The HashLoginService is a simple and efficient login service that loads usernames, credentials and roles from a Java properties file in the format:
+The `HashLoginService` is a simple and efficient login service that loads usernames, credentials and roles from a Java properties file in the format:
 
 [source,properties]
 ----
@@ -249,7 +250,7 @@ guest: guest,read-only
 
 ----
 
-You configure the HashLoginService with a name and a reference to the location of the properties file:
+You configure the `HashLoginService` with a name and a reference to the location of the properties file:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -378,12 +379,12 @@ When a user requests a resource that is access protected, the LoginService will 
 
 Until Servlet 3.1, role-based authorization could define:
 
-* access granted to a set of named roles
-* access totally forbidden, regardless of role
-* access granted to a user in any of the roles defined in the effective web.xml.
-This is indicated by the special value of "*" for the `<role-name>` of a `<auth-constraint> `in the `<security-constraint>`
+* Access granted to a set of named roles
+* Access totally forbidden, regardless of role
+* Access granted to a user in any of the roles defined in the effective web.xml.
+This is indicated by the special value of `*` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`
 
 With the advent of Servlet 3.1, there is now another authorization:
 
-* access granted to any user who is authenticated, regardless of roles.
-This is indicated by the special value of "**" for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`
+* Access granted to any user who is authenticated, regardless of roles.
+This is indicated by the special value of `**` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`
