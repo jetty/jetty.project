@@ -116,7 +116,7 @@ public class Module implements Comparable<Module>
     private final List<String> _license=new ArrayList<>();
     
     /** Dependencies */
-    private final Set<String> _depends=new HashSet<>();
+    private final List<String> _depends=new ArrayList<>();
     
     /** Optional */
     private final Set<String> _optional=new HashSet<>();
@@ -183,10 +183,10 @@ public class Module implements Comparable<Module>
     {
         Function<String,String> expander = d->{return props.expand(d);};
         
-        Set<String> tmp=_depends.stream().map(expander).collect(Collectors.toSet());
+        List<String> tmp=_depends.stream().map(expander).collect(Collectors.toList());
         _depends.clear();
         _depends.addAll(tmp);
-        tmp=_optional.stream().map(expander).collect(Collectors.toSet());
+        tmp=_optional.stream().map(expander).collect(Collectors.toList());
         _optional.clear();
         _optional.addAll(tmp);
     }
@@ -329,7 +329,8 @@ public class Module implements Comparable<Module>
                                 break;
                             case "DEPEND":  
                             case "DEPENDS":
-                                _depends.add(line);
+                                if (!_depends.contains(line))
+                                    _depends.add(line);
                                 break;
                             case "FILE":
                             case "FILES":
@@ -437,9 +438,9 @@ public class Module implements Comparable<Module>
         return str.toString();
     }
 
-    public Set<String> getDepends()
+    public List<String> getDepends()
     {
-        return new HashSet<>(_depends);
+        return new ArrayList<>(_depends);
     }
 
     public Set<String>  getProvides()
