@@ -49,12 +49,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-gcloud-memcached-session-manager</artifactId>
+        <artifactId>jetty-gcloud-session-manager</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-gcloud-session-manager</artifactId>
+        <artifactId>jetty-home</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -95,6 +95,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jndi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-memcached-sessions</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -165,6 +170,16 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-spring</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-start</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-unixsocket</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
