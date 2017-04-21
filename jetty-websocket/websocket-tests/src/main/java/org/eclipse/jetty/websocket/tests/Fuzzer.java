@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +41,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -55,28 +53,6 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
  */
 public class Fuzzer extends ContainerLifeCycle
 {
-    public static class BlockerCallback implements FrameCallback
-    {
-        private CompletableFuture<Void> future = new CompletableFuture<>();
-        
-        @Override
-        public void fail(Throwable cause)
-        {
-            future.completeExceptionally(cause);
-        }
-    
-        @Override
-        public void succeed()
-        {
-            future.complete(null);
-        }
-        
-        public void block() throws Exception
-        {
-            future.get(1, TimeUnit.MINUTES);
-        }
-    }
-    
     public static class Session implements AutoCloseable
     {
         // Client side framing mask
@@ -249,7 +225,7 @@ public class Fuzzer extends ContainerLifeCycle
             {
                 for (WebSocketFrame f : send)
                 {
-                    BlockerCallback blocker = new BlockerCallback();
+                    BlockerFrameCallback blocker = new BlockerFrameCallback();
                     session.getOutgoingHandler().outgoingFrame(f, blocker, BatchMode.OFF);
                     blocker.block();
                 }

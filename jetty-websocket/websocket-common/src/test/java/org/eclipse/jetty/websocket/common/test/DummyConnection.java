@@ -45,10 +45,15 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
-    public void disconnect()
+    public void disconnect(boolean outputOnly)
     {
     }
-
+    
+    @Override
+    public void fillInterested()
+    {
+    }
+    
     @Override
     public ByteBufferPool getBufferPool()
     {

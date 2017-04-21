@@ -411,7 +411,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         }
         
         this.localEndpoint = localEndpoint;
-        this.fut = new CompletableFuture<Session>();
+        this.fut = new CompletableFuture<>();
     }
 
     private final String genRandomKey()

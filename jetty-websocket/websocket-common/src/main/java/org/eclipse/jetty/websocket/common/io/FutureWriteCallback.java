@@ -35,16 +35,12 @@ public class FutureWriteCallback extends FutureCallback implements WriteCallback
     @Override
     public void writeFailed(Throwable cause)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug(".writeFailed",cause);
         failed(cause);
     }
 
     @Override
     public void writeSuccess()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug(".writeSuccess");
         succeeded();
     }
 }

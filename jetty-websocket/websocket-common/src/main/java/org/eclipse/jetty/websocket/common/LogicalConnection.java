@@ -41,9 +41,15 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     
     /**
      * Terminate the connection (no close frame sent)
+     * @param onlyOutput true to only close the output (half-close), false to close fully.
      */
-    void disconnect();
-
+    void disconnect(boolean onlyOutput);
+    
+    /**
+     * Register Read Interest in Connection.
+     */
+    void fillInterested();
+    
     /**
      * Get the ByteBufferPool in use by the connection
      * @return the buffer pool

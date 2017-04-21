@@ -20,6 +20,9 @@ package org.eclipse.jetty.websocket.common;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Atomic Connection State
+ */
 public class AtomicConnectionState
 {
     /**
@@ -59,7 +62,7 @@ public class AtomicConnectionState
          * Connection should be disconnected and no further reads or writes should occur.
          * </p>
          */
-        CLOSED;
+        CLOSED
     }
     
     private AtomicReference<State> state = new AtomicReference<>();

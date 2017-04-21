@@ -116,12 +116,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param executor
      *            the executor to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
-    @Deprecated
     public WebSocketClient(Executor executor)
     {
-        this(null,executor);
+        this(new HttpClient());
+        this.httpClient.setExecutor(executor);
+    
     }
 
     /**
@@ -129,12 +129,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param bufferPool
      *            byte buffer pool to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
-    @Deprecated
     public WebSocketClient(ByteBufferPool bufferPool)
     {
-        this(null,null,bufferPool);
+        this(new HttpClient());
+        this.httpClient.setByteBufferPool(bufferPool);
     }
 
     /**
@@ -142,12 +141,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param sslContextFactory
      *            ssl context factory to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} with its own {@link SslContextFactory}
      */
-    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory,null);
+        this(new HttpClient(sslContextFactory));
     }
 
     /**
@@ -157,12 +154,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *            ssl context factory to use
      * @param executor
      *            the executor to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
-    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
-        this(sslContextFactory,executor,new MappedByteBufferPool());
+        this(new HttpClient(sslContextFactory));
+        this.httpClient.setExecutor(executor);
     }
 
     /**
