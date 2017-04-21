@@ -53,7 +53,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         super(httpConfiguration);
     }
 
-    public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration,String... protocols)
+    public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(httpConfiguration,protocols);
     }
