@@ -74,7 +74,7 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
     private final Socket socket;
     private final ByteBufferPool bufferPool;
     private final WebSocketPolicy policy;
-    private final IncomingFramesCapture incomingFrames;
+    private final ParserCapture parserCapture;
     private final Parser parser;
     private final Generator generator;
     private final AtomicInteger parseCount;
@@ -94,7 +94,7 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
     public XBlockheadServerConnection(Socket socket)
     {
         this.socket = socket;
-        this.incomingFrames = new IncomingFramesCapture();
+        this.parserCapture = new ParserCapture();
         this.policy = WebSocketPolicy.newServerPolicy();
         this.policy.setMaxBinaryMessageSize(100000);
         this.policy.setMaxTextMessageSize(100000);
@@ -162,7 +162,7 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
     public void echoMessage(int expectedFrames, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
     {
         LOG.debug("Echo Frames [expecting {}]",expectedFrames);
-        IncomingFramesCapture cap = readFrames(expectedFrames,timeoutDuration,timeoutUnit);
+        ParserCapture cap = readFrames(expectedFrames,timeoutDuration,timeoutUnit);
         // now echo them back.
         for (Frame frame : cap.getFrames())
         {
@@ -180,9 +180,9 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
         return bufferPool;
     }
 
-    public IncomingFramesCapture getIncomingFrames()
+    public ParserCapture getParserCapture()
     {
-        return incomingFrames;
+        return parserCapture;
     }
 
     public InputStream getInputStream() throws IOException
@@ -222,7 +222,9 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
         {
             LOG.info("Server parsed {} frames",count);
         }
-        incomingFrames.incomingFrame(WebSocketFrame.copy(frame), callback);
+        
+        parserCapture.onFrame(frame);
+        callback.succeed();
 
         if (frame.getOpCode() == OpCode.CLOSE)
         {
@@ -319,10 +321,10 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
         return len;
     }
 
-    public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
+    public ParserCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException
     {
         LOG.debug("Read: waiting for {} frame(s) from client",expectedCount);
-        int startCount = incomingFrames.size();
+        int startCount = parserCapture.size();
 
         ByteBuffer buf = bufferPool.acquire(BUFFER_SIZE,false);
         BufferUtil.clearToFill(buf);
@@ -334,7 +336,7 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
             LOG.debug("Now: {} - expireOn: {} ({} ms)",now,expireOn,msDur);
 
             int len = 0;
-            while (incomingFrames.size() < (startCount + expectedCount))
+            while (parserCapture.size() < (startCount + expectedCount))
             {
                 BufferUtil.clearToFill(buf);
                 len = read(buf);
@@ -354,9 +356,9 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
                 }
                 if (!debug && (System.currentTimeMillis() > expireOn))
                 {
-                    incomingFrames.dump();
+                    parserCapture.dump();
                     throw new TimeoutException(String.format("Timeout reading all %d expected frames. (managed to only read %d frame(s))",expectedCount,
-                            incomingFrames.size()));
+                            parserCapture.size()));
                 }
             }
         }
@@ -365,7 +367,7 @@ public class XBlockheadServerConnection implements IncomingFrames, OutgoingFrame
             bufferPool.release(buf);
         }
 
-        return incomingFrames;
+        return parserCapture;
     }
 
     public String readRequest() throws IOException

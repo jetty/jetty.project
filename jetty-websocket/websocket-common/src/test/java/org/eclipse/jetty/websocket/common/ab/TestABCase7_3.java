@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
@@ -78,7 +78,7 @@ public class TestABCase7_3
 
         expected.flip();
 
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -102,7 +102,7 @@ public class TestABCase7_3
     {
         ByteBuffer expected = Hex.asByteBuffer("880100");
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
     
         expectedException.expect(ProtocolException.class);
@@ -137,7 +137,7 @@ public class TestABCase7_3
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -190,7 +190,7 @@ public class TestABCase7_3
         expected.put(messageBytes);
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -256,7 +256,7 @@ public class TestABCase7_3
         expected.put(messageBytes);
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -322,7 +322,7 @@ public class TestABCase7_3
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         UnitParser parser = new UnitParser(policy,capture);
     
         expectedException.expect(ProtocolException.class);

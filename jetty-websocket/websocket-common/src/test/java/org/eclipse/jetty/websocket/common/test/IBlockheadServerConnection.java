@@ -41,7 +41,7 @@ public interface IBlockheadServerConnection
 
     public void disconnect();
 
-    public IncomingFramesCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException;
+    public ParserCapture readFrames(int expectedCount, int timeoutDuration, TimeUnit timeoutUnit) throws IOException, TimeoutException;
     public void write(ByteBuffer buf) throws IOException;
     public List<String> readRequestLines() throws IOException;
     public String parseWebSocketKey(List<String> requestLines);
@@ -53,7 +53,7 @@ public interface IBlockheadServerConnection
     public ByteBufferPool getBufferPool();
     public int read(ByteBuffer buf) throws IOException;
     public Parser getParser();
-    public IncomingFramesCapture getIncomingFrames();
+    public ParserCapture getParserCapture();
     public void flush() throws IOException;
     public void write(int b) throws IOException;
     public void startEcho();

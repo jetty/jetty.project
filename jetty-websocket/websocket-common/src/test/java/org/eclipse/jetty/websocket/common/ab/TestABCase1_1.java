@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
-import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
+import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
@@ -305,7 +305,7 @@ public class TestABCase1_1
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -337,7 +337,7 @@ public class TestABCase1_1
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -369,7 +369,7 @@ public class TestABCase1_1
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -401,7 +401,7 @@ public class TestABCase1_1
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -435,7 +435,7 @@ public class TestABCase1_1
         expected.flip();
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         policy.setMaxTextMessageSize(length);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -470,7 +470,7 @@ public class TestABCase1_1
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         policy.setMaxTextMessageSize(length);
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
@@ -491,7 +491,7 @@ public class TestABCase1_1
 
         expected.flip();
     
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        ParserCapture capture = new ParserCapture();
         Parser parser = new UnitParser(policy,capture);
         parser.parse(expected);
 
