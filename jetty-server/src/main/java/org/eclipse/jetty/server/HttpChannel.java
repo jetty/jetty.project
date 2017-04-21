@@ -344,7 +344,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         try
                         {
-                            _response.reset();
+                            _response.reset(true);
                             Integer icode = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             int code = icode != null ? icode : HttpStatus.INTERNAL_SERVER_ERROR_500;
                             _response.setStatus(code);
@@ -528,7 +528,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         try
         {
             Integer code=(Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-            _response.reset();
+            _response.reset(true);
             _response.setStatus(code == null ? 500 : code);
             _response.flushBuffer();
         }
