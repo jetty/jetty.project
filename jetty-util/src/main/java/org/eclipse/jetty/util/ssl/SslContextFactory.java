@@ -1560,13 +1560,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      * If the given {@code address} is null, it is equivalent to {@link #newSSLEngine()}, otherwise
      * {@link #newSSLEngine(String, int)} is called.
      * <p>
-     * If {@link #getNeedClientAuth()} is {@code true}, then the host name is passed to
-     * {@link #newSSLEngine(String, int)}, possibly incurring in a reverse DNS lookup, which takes time
-     * and may hang the selector (since this method is usually called by the selector thread).
-     * <p>
-     * Otherwise, the host address is passed to {@link #newSSLEngine(String, int)} without DNS lookup
-     * penalties.
-     * <p>
      * Clients that wish to create {@link SSLEngine} instances must use {@link #newSSLEngine(String, int)}.
      *
      * @param address the remote peer address
@@ -1576,10 +1569,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         if (address == null)
             return newSSLEngine();
-
-        boolean useHostName = getNeedClientAuth();
-        String hostName = useHostName ? address.getHostName() : address.getAddress().getHostAddress();
-        return newSSLEngine(hostName, address.getPort());
+        return newSSLEngine(address.getHostString(), address.getPort());
     }
 
     /**
