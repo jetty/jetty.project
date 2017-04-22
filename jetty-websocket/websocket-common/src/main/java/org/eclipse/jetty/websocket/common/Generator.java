@@ -62,8 +62,9 @@ public class Generator
 
     private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
-    private final boolean validating;
     private final boolean readOnly;
+    
+    private boolean validating = true;
 
     /**
      * Are any flags in use
@@ -374,7 +375,12 @@ public class Generator
     {
         return bufferPool;
     }
-
+    
+    public boolean isValidating()
+    {
+        return validating;
+    }
+    
     public void setRsv1InUse(boolean rsv1InUse)
     {
         if (readOnly)
@@ -401,7 +407,12 @@ public class Generator
         }
         flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse?0x10:0x00));
     }
-
+    
+    public void setValidating(boolean validating)
+    {
+        this.validating = validating;
+    }
+    
     public boolean isRsv1InUse()
     {
         return (flagsInUse & 0x40) != 0;
