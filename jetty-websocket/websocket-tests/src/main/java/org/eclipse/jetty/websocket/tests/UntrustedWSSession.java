@@ -33,7 +33,9 @@ public class UntrustedWSSession extends WebSocketSession implements AutoCloseabl
     public UntrustedWSSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
     {
         super(containerScope, requestURI, endpoint, connection);
-        this.untrustedConnection = new UntrustedWSConnection((AbstractWebSocketConnection) connection);
+        AbstractWebSocketConnection abstractWebSocketConnection = (AbstractWebSocketConnection) connection;
+        abstractWebSocketConnection.getGenerator().setValidating(false);
+        this.untrustedConnection = new UntrustedWSConnection(abstractWebSocketConnection);
         this.untrustedEndpoint = (UntrustedWSEndpoint) endpoint;
     }
     
