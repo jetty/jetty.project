@@ -58,7 +58,7 @@ To enable communication using the GCloud Emulator:
    * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en
    * Follow the instructions link:https://cloud.google.com/datastore/docs/tools/datastore-emulator[here] on how to start the GCloud datastore emulator, and how to propagate the environment variables that it creates to the terminal in which you run Jetty.
 
-==== Configuring the Google Cloud DataStore Module
+==== Enabling the Google Cloud DataStore Module
 
 When using the Jetty distribution, you will first need to enable the `session-store-gcloud` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
@@ -177,7 +177,7 @@ Usage: java -jar $JETTY_HOME/start.jar [options] [properties] [configs]
 ----
 
 Doing this enables the GCloud Session module and any dependent session modules or files needed for it to run on the server.
-The example above is running an fresh `${jetty.base}` with nothing enabled.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
 Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
 
 You will notice, however, that the above output presented a warning: GCloud requires certain Java Commons Logging features to work correctly.
@@ -200,12 +200,15 @@ INFO  : Base directory was modified
 ----
 
 When the `--add-to-start` argument was added to the command line the first time, it enabled the the `session-store-gcloud` module as well as several others, such as as `server`, `sessions`, `webapp` and others which are required for GCloud session management to operate; the `slf4j-simple-impl` and its dependent modules were added when the the command was run the second time.
-In addition to adding these modules to the classpath of the server it also added the respective configuration files to the `start.d` directory of the `${jetty.base}`.
+
+In addition to adding these modules to the classpath of the server it also added the respective configuration files to the `${jetty.base}start.d` directory.
 
 ____
 [NOTE]
 If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 ____
+
+==== Configuring GCloud Session Properties
 
 Opening the `start.d/session-store-gcloud.ini` will display a list of all the configurable properties for the Google Cloud DataStore module:
 
@@ -219,6 +222,8 @@ Opening the `start.d/session-store-gcloud.ini` will display a list of all the co
 
 
 ## GCloudDatastore Session config
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
 #jetty.session.gcloud.maxRetries=5
 #jetty.session.gcloud.backoffMs=1000
 #jetty.session.gcloud.namespace=
@@ -235,6 +240,20 @@ Opening the `start.d/session-store-gcloud.ini` will display a list of all the co
 #jetty.session.gcloud.model.maxInactive=maxInactive
 #jetty.session.gcloud.model.attributes=attributes
 ----
+
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
 
 jetty.session.gcloud.maxRetries::
 Maxmium number of tries to connect to GCloud DataStore to write sessions.

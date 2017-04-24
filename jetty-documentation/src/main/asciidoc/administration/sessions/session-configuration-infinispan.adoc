@@ -18,6 +18,8 @@
 
 === Clustered Session Management: Inifinspan
 
+==== Enabling Infinispan Sessions
+
 When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 [source, screen, subs="{sub-order}"]
@@ -50,16 +52,20 @@ INFO  : Base directory was modified
 ----
 
 Doing this enables the remote Infinispan Session module and any dependent modules or files needed for it to run on the server.
-The example above is running an fresh `${jetty.base}` with nothing enabled.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
 Because Infinispan is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
 When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-infinispan-remote` module as well as the `sessions` and `server` modules, which are required for Infinispan session management to operate.
 It also downloaded the needed Infinispan-specific jar files and created a directory named `${jetty.base}/lib/infinispan/` to house them.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
 
 ____
 [NOTE]
 If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 ____
+
+==== Configuring Inifinspan Remote Properties
 
 Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
 
@@ -74,6 +80,7 @@ Opening the `start.d/session-store-infinispan-remote.ini` will show a list of al
 #jetty.session.infinispan.remoteCacheName=sessions
 #jetty.session.infinispan.idleTimeout.seconds=0
 #jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
 ----
 
 jetty.session.infinispan.remoteCacheName::
@@ -82,7 +89,17 @@ jetty.session.infinispan.idleTimeout.seconds::
 Amount of time, in seconds, that the system allows the connector to remain idle before closing the connection.
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
-
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
 
 ==== Configuring Embedded Inifinspan Clustering
 
@@ -113,8 +130,40 @@ INFO : Base directory was modified
 ----
 
 Doing this enables the embedded Infinispan Session module and any dependent modules or files needed for it to run on the server.
-The example above is running an fresh `${jetty.base}` with nothing enabled.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
 Because Infinispan is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
 When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-infinispan-embedded` module as well as the `sessions` and `server` modules, which are required for Infinispan session management to operate.
 It also downloaded the needed Infinispan-specific jar files and created a directory named `${jetty.base}/lib/infinispan/` to house them.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+
+==== Configuring Inifinspan Embedded Properties
+
+Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-infinispan-embedded
+# Enables session data store in a local Infinispan cache
+# ---------------------------------------
+--module=session-store-infinispan-embedded
+
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
+----
+
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
