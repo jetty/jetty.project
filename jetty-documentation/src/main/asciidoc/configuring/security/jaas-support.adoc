@@ -122,7 +122,7 @@ An example:
 [[jaas-step-2]]
 ===== Step 2
 
-Set up your `LoginModule` in a configuration file, following the http://java.sun.com/j2se/1.4.2/docs/api/javax/security/auth/login/Configuration.html[syntax rules] :
+Set up your `LoginModule` in a configuration file, following the https://docs.oracle.com/javase/7/docs/api/javax/security/auth/login/Configuration.html[syntax rules] :
 
 [source,ini]
 ----
