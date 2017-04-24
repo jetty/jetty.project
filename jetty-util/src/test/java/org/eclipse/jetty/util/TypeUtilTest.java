@@ -22,7 +22,6 @@ package org.eclipse.jetty.util;
 import org.eclipse.jetty.toolchain.test.JDK;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 public class TypeUtilTest
@@ -124,20 +123,19 @@ public class TypeUtilTest
     }
     
     @Test
-    public void testLoadedFrom() throws Exception
+    public void testGetLocationOfClass() throws Exception
     {
-        Assume.assumeFalse(JDK.IS_9);
-        Assert.assertThat(TypeUtil.getLoadedFrom(String.class).toString(),Matchers.containsString("/rt.jar"));
-        Assert.assertThat(TypeUtil.getLoadedFrom(Assert.class).toString(),Matchers.containsString(".jar"));
-        Assert.assertThat(TypeUtil.getLoadedFrom(TypeUtil.class).toString(),Matchers.containsString("/classes/"));
-    }
-    
-    @Test
-    public void testLoadedFrom9() throws Exception
-    {
-        Assume.assumeTrue(JDK.IS_9);
-        Assert.assertThat(TypeUtil.getLoadedFrom(String.class).toString(),Matchers.containsString("jrt:/java.base/java/lang/String.clas"));
-        Assert.assertThat(TypeUtil.getLoadedFrom(Assert.class).toString(),Matchers.containsString(".jar"));
-        Assert.assertThat(TypeUtil.getLoadedFrom(TypeUtil.class).toString(),Matchers.containsString("/classes/"));
+        // Classes from maven dependencies
+        Assert.assertThat(TypeUtil.getLocationOfClass(Assert.class).toASCIIString(),Matchers.containsString("/repository/"));
+        
+        // Class from project dependencies
+        Assert.assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(),Matchers.containsString("/classes/"));
+        
+        // Class from JVM core
+        String expectedJavaBase = "/rt.jar";
+        if(JDK.IS_9)
+            expectedJavaBase = "/java.base/";
+            
+        Assert.assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(),Matchers.containsString(expectedJavaBase));
     }
 }

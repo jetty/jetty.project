@@ -18,16 +18,17 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.io.File;
 import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+
 import sun.security.provider.Sun;
 
 public class ClasspathPatternTest
@@ -118,23 +119,23 @@ public class ClasspathPatternTest
         Assume.assumeFalse(JDK.IS_9);
 
         // jar from JVM classloader
-        Resource loc_string = TypeUtil.getLoadedFrom(String.class);
+        File loc_string = TypeUtil.getLocationOfClassAsFile(String.class);
         // System.err.println(loc_string);
 
         // another jar from JVM classloader
-        Resource loc_jsse = TypeUtil.getLoadedFrom(Sun.class);
+        File loc_jsse = TypeUtil.getLocationOfClassAsFile(Sun.class);
         // System.err.println(loc_jsse);
 
         // a jar from maven repo jar
-        Resource loc_junit = TypeUtil.getLoadedFrom(Test.class);
+        File loc_junit = TypeUtil.getLocationOfClassAsFile(Test.class);
         // System.err.println(loc_junit);
 
         // a jar from another maven repo jar
-        Resource loc_tool = TypeUtil.getLoadedFrom(JDK.class);
+        File loc_tool = TypeUtil.getLocationOfClassAsFile(JDK.class);
         // System.err.println(loc_tool);
 
         // class file 
-        Resource loc_test = TypeUtil.getLoadedFrom(ClasspathPatternTest.class);
+        File loc_test = TypeUtil.getLocationOfClassAsFile(ClasspathPatternTest.class);
         // System.err.println(loc_test);
 
         ClasspathPattern pattern = new ClasspathPattern();
@@ -146,7 +147,7 @@ public class ClasspathPatternTest
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
 
         // Add directory for both JVM classes
-        pattern.include(loc_string.getFile().getParentFile().toURI().toString());
+        pattern.include(loc_string.getParentFile().toURI().toString());
 
         // Add jar for individual class and classes directory
         pattern.include(loc_junit.toString(), loc_test.toString());
@@ -173,23 +174,23 @@ public class ClasspathPatternTest
         Assume.assumeFalse(JDK.IS_9);
 
         // jar from JVM classloader
-        Resource loc_string = TypeUtil.getLoadedFrom(String.class);
+        File loc_string = TypeUtil.getLocationOfClassAsFile(String.class);
         // System.err.println(loc_string);
 
         // another jar from JVM classloader
-        Resource loc_jsse = TypeUtil.getLoadedFrom(Sun.class);
+        File loc_jsse = TypeUtil.getLocationOfClassAsFile(Sun.class);
         // System.err.println(loc_jsse);
 
         // a jar from maven repo jar
-        Resource loc_junit = TypeUtil.getLoadedFrom(Test.class);
+        File loc_junit = TypeUtil.getLocationOfClassAsFile(Test.class);
         // System.err.println(loc_junit);
 
         // a jar from another maven repo jar
-        Resource loc_tool = TypeUtil.getLoadedFrom(JDK.class);
+        File loc_tool = TypeUtil.getLocationOfClassAsFile(JDK.class);
         // System.err.println(loc_tool);
 
         // class file 
-        Resource loc_test = TypeUtil.getLoadedFrom(ClasspathPatternTest.class);
+        File loc_test = TypeUtil.getLocationOfClassAsFile(ClasspathPatternTest.class);
         // System.err.println(loc_test);
 
         ClasspathPattern pattern = new ClasspathPattern();
@@ -204,7 +205,7 @@ public class ClasspathPatternTest
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
 
         // Add directory for both JVM classes
-        pattern.exclude(loc_string.getFile().getParentFile().toURI().toString());
+        pattern.exclude(loc_string.getParentFile().toURI().toString());
 
         // Add jar for individual class and classes directory
         pattern.exclude(loc_junit.toString(), loc_test.toString());

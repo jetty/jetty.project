@@ -640,7 +640,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public Resource getJarFor (ServletContainerInitializer service) 
     throws MalformedURLException, IOException
     {
-        return TypeUtil.getLoadedFrom(service.getClass());
+        URI uri = TypeUtil.getLocationOfClass(service.getClass());
+        if (uri == null)
+            return null;
+        return Resource.newResource(uri);
     }
     
     /**

@@ -20,6 +20,7 @@
 package org.eclipse.jetty.webapp;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.AbstractSet;
@@ -515,10 +516,9 @@ public class ClasspathPattern extends AbstractSet<String>
         try
         {
             Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
-            Resource resource = TypeUtil.getLoadedFrom(clazz);
-            Boolean byLocation = resource == null || resource.getFile() == null
-                    ? null
-                    : _locations.isIncludedAndNotExcluded(resource.getFile().toPath());
+            File locationFile = TypeUtil.getLocationOfClassAsFile(clazz);
+            Boolean byLocation = locationFile == null ? null
+                    : _locations.isIncludedAndNotExcluded(locationFile.toPath());
 
             // Combine the tri-state match of both IncludeExclude Sets
             boolean included = byName==Boolean.TRUE || byLocation==Boolean.TRUE
@@ -548,9 +548,12 @@ public class ClasspathPattern extends AbstractSet<String>
         Boolean byLocation = null;
         try
         {
-            Resource resource = Resource.newResource(URIUtil.getJarSource(url.toURI()));
-            File file = resource.getFile();
-            byLocation = _locations.isIncludedAndNotExcluded(file.toPath());
+            URI jarUri = URIUtil.getJarSource(url.toURI());
+            if ("file".equalsIgnoreCase(jarUri.getScheme()))
+            {
+                File file = new File(jarUri);
+                byLocation = _locations.isIncludedAndNotExcluded(file.toPath());
+            }
         }
         catch(Exception e)
         {

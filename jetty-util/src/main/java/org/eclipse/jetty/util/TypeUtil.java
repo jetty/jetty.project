@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
@@ -37,7 +40,6 @@ import java.util.Objects;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
 
 
 /* ------------------------------------------------------------ */
@@ -699,36 +701,48 @@ public class TypeUtil
     }
     
     /* ------------------------------------------------------------ */
-    public static Resource getLoadedFrom(Class<?> clazz)
+    public static URI getLocationOfClass(Class<?> clazz)
     {
-        ProtectionDomain domain = clazz.getProtectionDomain();
-        if (domain!=null)
+        try
         {
-            CodeSource source = domain.getCodeSource();
-            if (source!=null)
+            ProtectionDomain domain = clazz.getProtectionDomain();
+            if (domain != null)
             {
-                URL location = source.getLocation();
-                
-                if (location!=null)
-                    return Resource.newResource(location);
+                CodeSource source = domain.getCodeSource();
+                if (source != null)
+                {
+                    URL location = source.getLocation();
+                    
+                    if (location != null)
+                        return location.toURI();
+                }
+            }
+            
+            String resourceName = clazz.getName().replace('.', '/') + ".class";
+            ClassLoader loader = clazz.getClassLoader();
+            URL url = (loader == null ? ClassLoader.getSystemClassLoader() : loader).getResource(resourceName);
+            if (url != null)
+            {
+                return URIUtil.getJarSource(url.toURI());
             }
         }
-        
-        String rname = clazz.getName().replace('.','/')+".class";
-        ClassLoader loader = clazz.getClassLoader();
-        URL url = (loader==null?ClassLoader.getSystemClassLoader():loader).getResource(rname);
-        if (url!=null)
+        catch (URISyntaxException e)
         {
-            try
-            {
-                return Resource.newResource(URIUtil.getJarSource(url.toURI()));
-            }
-            catch(Exception e)
-            {
-                LOG.debug(e);
-            }  
-        }    
-        
+            LOG.debug(e);
+        }
         return null;
     }
+    
+    /* ------------------------------------------------------------ */
+    public static File getLocationOfClassAsFile(Class<?> clazz)
+    {
+        URI uri = getLocationOfClass(clazz);
+        
+        if (uri != null && "file".equalsIgnoreCase(uri.getScheme()))
+        {
+            return new File(uri);
+        }
+        return null;
+    }
+    
 }
