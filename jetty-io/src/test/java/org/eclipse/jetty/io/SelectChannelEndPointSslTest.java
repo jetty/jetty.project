@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -37,14 +33,20 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
@@ -261,6 +263,8 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     @Test
     public void checkSslEngineBehaviour() throws Exception
     {
+        Assume.assumeFalse(JDK.IS_9);
+
         SSLEngine server = __sslCtxFactory.newSSLEngine();
         SSLEngine client = __sslCtxFactory.newSSLEngine();
 
@@ -297,12 +301,10 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         netC2S.flip();
         assertEquals(netC2S.remaining(),result.bytesProduced());
 
-
         // start the server
         server.setUseClientMode(false);
         server.beginHandshake();
         Assert.assertEquals(HandshakeStatus.NEED_UNWRAP,server.getHandshakeStatus());
-
 
         // what if we try a needless wrap?
         serverOut.put(BufferUtil.toBuffer("Hello World"));
@@ -314,14 +316,12 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         assertEquals(0,result.bytesProduced());
         assertEquals(HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
 
-
         // Do the needed unwrap, to an empty buffer
         result=server.unwrap(netC2S,BufferUtil.EMPTY_BUFFER);
         assertEquals(SSLEngineResult.Status.BUFFER_OVERFLOW,result.getStatus());
         assertEquals(0,result.bytesConsumed());
         assertEquals(0,result.bytesProduced());
         assertEquals(HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
-
 
         // Do the needed unwrap, to a full buffer
         serverIn.position(serverIn.limit());
@@ -330,7 +330,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         assertEquals(0,result.bytesConsumed());
         assertEquals(0,result.bytesProduced());
         assertEquals(HandshakeStatus.NEED_UNWRAP,result.getHandshakeStatus());
-
 
         // Do the needed unwrap, to an empty buffer
         serverIn.clear();
@@ -343,9 +342,5 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         server.getDelegatedTask().run();
 
         assertEquals(HandshakeStatus.NEED_WRAP,server.getHandshakeStatus());
-
-
-
-
     }
 }

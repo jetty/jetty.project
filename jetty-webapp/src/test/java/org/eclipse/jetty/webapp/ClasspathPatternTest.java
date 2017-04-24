@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import sun.security.provider.Sun;
@@ -114,6 +115,8 @@ public class ClasspathPatternTest
     @Test
     public void testIncludedLocations() throws Exception
     {
+        Assume.assumeFalse(JDK.IS_9);
+
         // jar from JVM classloader
         Resource loc_string = TypeUtil.getLoadedFrom(String.class);
         // System.err.println(loc_string);
@@ -167,6 +170,8 @@ public class ClasspathPatternTest
     @Test
     public void testExcludeLocations() throws Exception
     {
+        Assume.assumeFalse(JDK.IS_9);
+
         // jar from JVM classloader
         Resource loc_string = TypeUtil.getLoadedFrom(String.class);
         // System.err.println(loc_string);
