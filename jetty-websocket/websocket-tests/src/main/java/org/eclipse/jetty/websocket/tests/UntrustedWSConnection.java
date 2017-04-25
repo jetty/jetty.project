@@ -56,8 +56,8 @@ public class UntrustedWSConnection
     }
     
     /**
-     * Forward a frame to the {@Link OutgoingFrames} handler
-     * @param frame
+     * Forward a frame to the {@link org.eclipse.jetty.websocket.api.extensions.OutgoingFrames} handler
+     * @param frame the frame to send out
      */
     public void write(Frame frame) throws Exception
     {
@@ -70,7 +70,7 @@ public class UntrustedWSConnection
      * Write arbitrary bytes out the active connection.
      *
      * @param buf the buffer to write
-     * @throws IOException
+     * @throws IOException if unable to write
      */
     public void writeRaw(ByteBuffer buf) throws IOException
     {
@@ -91,7 +91,7 @@ public class UntrustedWSConnection
      *
      * @param buf the buffer to write
      * @param numBytes the number of bytes from the buffer to write
-     * @throws IOException
+     * @throws IOException if unable to write
      */
     public void writeRaw(ByteBuffer buf, int numBytes) throws IOException
     {
@@ -116,7 +116,7 @@ public class UntrustedWSConnection
      * Write arbitrary String out the active connection.
      *
      * @param str the string, converted to UTF8 bytes, then written
-     * @throws IOException
+     * @throws IOException if unable to write
      */
     public void writeRaw(String str) throws IOException
     {
@@ -129,7 +129,7 @@ public class UntrustedWSConnection
      *
      * @param buf the buffer to write
      * @param segmentSize the segment size to write, with a {@link #flush()} after each segment
-     * @throws IOException
+     * @throws IOException if unable to write
      */
     public void writeRawSlowly(ByteBuffer buf, int segmentSize) throws IOException
     {
@@ -140,7 +140,7 @@ public class UntrustedWSConnection
         }
     }
     
-    public boolean isConnected()
+    public boolean isOpen()
     {
         return internalConnection.getEndPoint().isOpen();
     }
