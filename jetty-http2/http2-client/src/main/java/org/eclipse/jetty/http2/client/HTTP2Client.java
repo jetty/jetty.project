@@ -47,11 +47,9 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.strategy.ProduceConsume;
 
 /**
  * <p>{@link HTTP2Client} provides an asynchronous, non-blocking implementation
@@ -126,8 +124,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private long connectTimeout = 10000;
     private int inputBufferSize = 8192;
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
-    private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
-    private int initialStreamRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private int initialSessionRecvWindow = 16 * 1024 * 1024;
+    private int initialStreamRecvWindow = 8 * 1024 * 1024;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     @Override
