@@ -516,6 +516,8 @@ public class ClasspathPattern extends AbstractSet<String>
         try
         {
             Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
+            if (Boolean.FALSE.equals(byName))
+                return byName; // Already excluded so no need to check location.
             File locationFile = TypeUtil.getLocationOfClassAsFile(clazz);
             Boolean byLocation = locationFile == null ? null
                     : _locations.isIncludedAndNotExcluded(locationFile.toPath());
@@ -543,6 +545,8 @@ public class ClasspathPattern extends AbstractSet<String>
         name=name.replace("/",".");
 
         Boolean byName = _patterns.isIncludedAndNotExcluded(name);
+        if (Boolean.FALSE.equals(byName))
+            return byName; // Already excluded so no need to check location.
         
         // Try to find a file path for location matching
         Boolean byLocation = null;
@@ -566,4 +570,5 @@ public class ClasspathPattern extends AbstractSet<String>
         boolean excluded = byName==Boolean.FALSE || byLocation==Boolean.FALSE;
         return included && !excluded;
     }
+    
 }
