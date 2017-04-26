@@ -16,40 +16,31 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.client;
+package org.eclipse.jetty.websocket.tests.servlets;
 
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.util.function.BiConsumer;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.hamcrest.Matcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-@WebSocket
-public class TrackingSocket
+/**
+ * Utility Servlet to make easier testcases
+ */
+public class BiConsumerServiceServlet extends HttpServlet
 {
-    private Session session;
+    private final BiConsumer<HttpServletRequest, HttpServletResponse> consumer;
     
-    public void assertClose(int expectedStatusCode, Matcher<String> reasonMatcher)
+    public BiConsumerServiceServlet(BiConsumer<HttpServletRequest, HttpServletResponse> consumer)
     {
+        this.consumer = consumer;
     }
     
-    public Session getSession()
+    @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        return session;
-    }
-    
-    @OnWebSocketConnect
-    public void onOpen(Session session)
-    {
-        this.session = session;
-    }
-    
-    public void waitForClose(int timeout, TimeUnit unit)
-    {
-    }
-    
-    public void waitForConnected(int timeout, TimeUnit unit)
-    {
+        this.consumer.accept(req,resp);
     }
 }

@@ -20,27 +20,42 @@ package org.eclipse.jetty.websocket.tests;
 
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
-public class UntrustedWSServlet extends WebSocketServlet implements WebSocketCreator
+public class UntrustedWSServlet extends WebSocketServlet
 {
+    private final WebSocketCreator creator;
+    
+    @SuppressWarnings("unused")
+    public UntrustedWSServlet()
+    {
+        this((req, resp) ->
+        {
+            UntrustedWSEndpoint endpoint = new UntrustedWSEndpoint(WebSocketBehavior.SERVER.name());
+            if (req.hasSubProtocol("echo"))
+            {
+                endpoint.setOnTextFunction((session, payload) -> payload);
+                endpoint.setOnBinaryFunction((session, payload) -> payload);
+                resp.setAcceptedSubProtocol("echo");
+            }
+            return endpoint;
+        });
+    }
+    
+    public UntrustedWSServlet(WebSocketCreator creator)
+    {
+        this.creator = creator;
+    }
+    
     @Override
     public void configure(WebSocketServletFactory factory)
     {
         WebSocketServerFactory serverFactory = (WebSocketServerFactory) factory;
-        serverFactory.setCreator(this);
+        serverFactory.setCreator(this.creator);
         UntrustedWSSessionFactory sessionFactory = new UntrustedWSSessionFactory(serverFactory);
         this.getServletContext().setAttribute(UntrustedWSSessionFactory.class.getName(), sessionFactory);
         serverFactory.setSessionFactories(sessionFactory);
-    }
-    
-    @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
-    {
-        return new UntrustedWSEndpoint(WebSocketBehavior.SERVER.name());
     }
 }

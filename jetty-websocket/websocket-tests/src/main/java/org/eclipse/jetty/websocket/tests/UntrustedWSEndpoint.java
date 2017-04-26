@@ -36,14 +36,14 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
     private static final Logger LOG = Log.getLogger(UntrustedWSEndpoint.class);
     
     private UntrustedWSSession untrustedSession;
-    private CompletableFuture<UntrustedWSSession> connectFuture;
+    private CompletableFuture<UntrustedWSSession> onOpenFuture;
     
     private BiFunction<UntrustedWSSession, String, String> onTextFunction;
     private BiFunction<UntrustedWSSession, ByteBuffer, ByteBuffer> onBinaryFunction;
     
-    public CompletableFuture<UntrustedWSSession> getConnectFuture()
+    public CompletableFuture<UntrustedWSSession> getOnOpenFuture()
     {
-        return connectFuture;
+        return onOpenFuture;
     }
     
     public UntrustedWSEndpoint(String id)
@@ -56,9 +56,9 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
     {
         assertThat("Session type", session, instanceOf(UntrustedWSSession.class));
         this.untrustedSession = (UntrustedWSSession) session;
-        if (this.connectFuture != null)
+        if (this.onOpenFuture != null)
         {
-            this.connectFuture.complete(this.untrustedSession);
+            this.onOpenFuture.complete(this.untrustedSession);
         }
         
         super.onWebSocketConnect(session);
@@ -67,10 +67,10 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        if (this.connectFuture != null)
+        if (this.onOpenFuture != null)
         {
             // Always trip this, doesn't matter if if completed normally first.
-            this.connectFuture.completeExceptionally(cause);
+            this.onOpenFuture.completeExceptionally(cause);
         }
         
         super.onWebSocketError(cause);
@@ -121,9 +121,9 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
         }
     }
     
-    public void setConnectFuture(CompletableFuture<UntrustedWSSession> future)
+    public void setOnOpenFuture(CompletableFuture<UntrustedWSSession> future)
     {
-        this.connectFuture = future;
+        this.onOpenFuture = future;
     }
     
     public void setOnBinaryFunction(BiFunction<UntrustedWSSession, ByteBuffer, ByteBuffer> onBinaryFunction)

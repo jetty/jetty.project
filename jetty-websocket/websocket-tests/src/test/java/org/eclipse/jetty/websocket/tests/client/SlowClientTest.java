@@ -16,34 +16,38 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client;
+package org.eclipse.jetty.websocket.tests.client;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.common.test.IBlockheadServerConnection;
-import org.eclipse.jetty.websocket.common.test.XBlockheadServer;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 public class SlowClientTest
 {
     @Rule
-    public TestTracker tt = new TestTracker();
-
-    private XBlockheadServer server;
+    public TestName testname = new TestName();
+    
+    private UntrustedWSServer server;
     private WebSocketClient client;
-
+    
     @Before
     public void startClient() throws Exception
     {
@@ -51,69 +55,65 @@ public class SlowClientTest
         client.getPolicy().setIdleTimeout(60000);
         client.start();
     }
-
+    
     @Before
     public void startServer() throws Exception
     {
-        server = new XBlockheadServer();
+        server = new UntrustedWSServer();
         server.start();
     }
-
+    
     @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-
+    
     @After
     public void stopServer() throws Exception
     {
         server.stop();
     }
-
+    
     @Test
     @Slow
     public void testClientSlowToSend() throws Exception
     {
-        JettyTrackingSocket tsocket = new JettyTrackingSocket();
+        TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
         client.getPolicy().setIdleTimeout(60000);
-
-        URI wsUri = server.getWsUri();
-        Future<Session> future = client.connect(tsocket, wsUri);
-
-        IBlockheadServerConnection sconnection = server.accept();
-        sconnection.setSoTimeout(60000);
-        sconnection.upgrade();
-
+        
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        upgradeRequest.setSubProtocols("echo");
+        Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri);
+        
         // Confirm connected
-        future.get(30,TimeUnit.SECONDS);
-        tsocket.waitForConnected(30,TimeUnit.SECONDS);
-
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertThat("Client open event", clientEndpoint.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), is(true));
+        
         int messageCount = 10;
-
-        // Setup server read thread
-        ServerReadThread reader = new ServerReadThread(sconnection, messageCount);
-        reader.start();
-
+        
         // Have client write slowly.
-        ClientWriteThread writer = new ClientWriteThread(tsocket.getSession());
+        ClientWriteThread writer = new ClientWriteThread(clientSession);
         writer.setMessageCount(messageCount);
         writer.setMessage("Hello");
         writer.setSlowness(10);
         writer.start();
-        writer.join();
-
-        reader.waitForExpectedMessageCount(1, TimeUnit.MINUTES);
-
+        
         // Verify receive
-        Assert.assertThat("Frame Receive Count", reader.getFrameCount(), is(messageCount));
-
+        for (int i = 0; i < messageCount; i++)
+        {
+            String expectedMsg = "Hello";
+            String incomingMessage = clientEndpoint.messageQueue.poll(1, TimeUnit.SECONDS);
+            assertThat("Received Message[" + (i + 1) + "/" + messageCount + "]", incomingMessage, is(expectedMsg));
+        }
+        
+        // Wait for completion
+        writer.join();
+        
         // Close
-        tsocket.getSession().close(StatusCode.NORMAL, "Done");
-
-        Assert.assertTrue("Client Socket Closed", tsocket.closeLatch.await(3, TimeUnit.MINUTES));
-        tsocket.assertCloseCode(StatusCode.NORMAL);
-
-        reader.cancel(); // stop reading
+        clientSession.close();
+        assertTrue("Client close event", clientEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        clientEndpoint.assertCloseInfo("Client", StatusCode.NORMAL, is("Done"));
     }
 }

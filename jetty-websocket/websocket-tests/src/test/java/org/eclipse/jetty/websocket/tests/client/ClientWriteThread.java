@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client;
+package org.eclipse.jetty.websocket.tests.client;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
