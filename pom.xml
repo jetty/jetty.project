@@ -215,6 +215,7 @@
           </execution>
         </executions>
         <configuration>
+          <linkXRef>false</linkXRef>
           <targetJdk>1.8</targetJdk>
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
