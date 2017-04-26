@@ -50,7 +50,6 @@ public class ConfigSources implements Iterable<ConfigSource>
     }
 
     private LinkedList<ConfigSource> sources = new LinkedList<>();
-    private Props props = new Props();
     private AtomicInteger sourceWeight = new AtomicInteger(1);
 
     public void add(ConfigSource source) throws IOException
@@ -61,10 +60,7 @@ public class ConfigSources implements Iterable<ConfigSource>
             throw new UsageException(ERR_BAD_ARG,"Duplicate Configuration Source Reference: " + source);
         }
         sources.add(source);
-
         Collections.sort(sources,new WeightedConfigSourceComparator());
-
-        updateProps();
 
         // look for --include-jetty-dir entries
         for (RawArgs.Entry arg : source.getArgs())
@@ -72,7 +68,7 @@ public class ConfigSources implements Iterable<ConfigSource>
             if (arg.startsWith("--include-jetty-dir"))
             {
                 String ref = getValue(arg.getLine());
-                String dirName = props.expand(ref);
+                String dirName = getProps().expand(ref);
                 Path dir = FS.toPath(dirName).normalize().toAbsolutePath();
                 DirConfigSource dirsource = new DirConfigSource(ref,dir,sourceWeight.incrementAndGet(),true);
                 add(dirsource);
@@ -94,11 +90,20 @@ public class ConfigSources implements Iterable<ConfigSource>
 
     public Prop getProp(String key)
     {
-        return props.getProp(key);
+        return getProps().getProp(key);
     }
-
+    
     public Props getProps()
     {
+        Props props = new Props();
+
+        // add all properties from config sources (in reverse order)
+        ListIterator<ConfigSource> iter = sources.listIterator(sources.size());
+        while (iter.hasPrevious())
+        {
+            ConfigSource source = iter.previous();
+            props.addAll(source.getProps());
+        }
         return props;
     }
 
@@ -146,18 +151,5 @@ public class ConfigSources implements Iterable<ConfigSource>
         }
         str.append(']');
         return str.toString();
-    }
-
-    private void updateProps()
-    {
-        props.reset();
-
-        // add all properties from config sources (in reverse order)
-        ListIterator<ConfigSource> iter = sources.listIterator(sources.size());
-        while (iter.hasPrevious())
-        {
-            ConfigSource source = iter.previous();
-            props.addAll(source.getProps());
-        }
     }
 }

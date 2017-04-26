@@ -35,4 +35,4 @@ or (per the licensee's choosing) under
 
 [ini]
 logback.version?=1.1.7
-
+jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/logback/

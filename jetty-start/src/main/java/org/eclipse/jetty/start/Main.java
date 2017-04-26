@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_GRAPH;
 import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
 import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
 import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
@@ -295,6 +294,20 @@ public class Main
         StartArgs args = new StartArgs(baseHome);
         args.parse(baseHome.getConfigSources());
 
+        Props props = baseHome.getConfigSources().getProps();
+        Props.Prop home = props.getProp(BaseHome.JETTY_HOME);
+        if (!args.getProperties().containsKey(BaseHome.JETTY_HOME))
+            args.getProperties().setProperty(home);
+        args.getProperties().setProperty(BaseHome.JETTY_HOME+".uri",
+            baseHome.getHomePath().toUri().toString(),
+            home.origin);
+        Props.Prop base = props.getProp(BaseHome.JETTY_BASE);
+        if (!args.getProperties().containsKey(BaseHome.JETTY_BASE))
+            args.getProperties().setProperty(base);
+        args.getProperties().setProperty(BaseHome.JETTY_BASE+".uri",
+            baseHome.getBasePath().toUri().toString(),
+            base.origin);
+        
         // ------------------------------------------------------------
         // 3) Module Registration
         Modules modules = new Modules(baseHome,args);

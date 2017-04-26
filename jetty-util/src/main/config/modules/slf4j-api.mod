@@ -15,6 +15,7 @@ lib/slf4j/slf4j-api-${slf4j.version}.jar
 
 [ini]
 slf4j.version?=1.7.21
+jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/slf4j/
 
 [license]
 SLF4J is distributed under the MIT License.

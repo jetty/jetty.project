@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,12 +48,14 @@ import org.eclipse.jetty.util.resource.Resource;
  * A class pattern is a string of one of the forms:<ul>
  * <li>'org.package.SomeClass' will match a specific class
  * <li>'org.package.' will match a specific package hierarchy
- * <li>'-org.package.Classname' excludes a specific class
- * <li>'-org.package.' excludes a specific package hierarchy
- * <li>Nested classes must be specified with the '$' separator if they 
- * are to be explicitly included or excluded (eg. org.example.MyClass$NestedClass).
- * <li>Nested classes are matched by their containing class. (eg. -org.example.MyClass
- * would exclude org.example.MyClass$AnyNestedClass)
+ * <li>'org.package.SomeClass$NestedClass ' will match a nested class exactly otherwise.
+ * Nested classes are matched by their containing class. (eg. org.example.MyClass
+ * matches org.example.MyClass$AnyNestedClass)
+ * <li>'file:///some/location/' - A file system directory from which 
+ * the class was loaded
+ * <li>'file:///some/location.jar' - The URI of a jar file from which 
+ * the class was loaded
+ * <li>Any of the above patterns preceeded by '-' will exclude rather than include the match.
  * </ul>
  * When class is initialized from a classpath pattern string, entries 
  * in this string should be separated by ':' (semicolon) or ',' (comma).
@@ -76,7 +79,7 @@ public class ClasspathPattern extends AbstractSet<String>
             _pattern=pattern;
             _inclusive = !pattern.startsWith("-");
             _name = _inclusive ? pattern : pattern.substring(1).trim();
-            _type = (_name.startsWith("file:"))?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
+            _type = _name.startsWith("file:")?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
         }
         
         Entry(String name, boolean include)
@@ -84,7 +87,7 @@ public class ClasspathPattern extends AbstractSet<String>
             _pattern=include?name:("-"+name);
             _inclusive = include;
             _name = name;
-            _type = (_name.startsWith("file:"))?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
+            _type = _name.startsWith("file:")?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
         }
         
 
@@ -315,19 +318,22 @@ public class ClasspathPattern extends AbstractSet<String>
                 if (file.isDirectory())
                 {
                     if (path.startsWith(file.toPath()))
+                    {
                         return true;
-                }
+                    }
+               }
                 else
                 {
                     if (path.equals(file.toPath()))
+                    {
                         return true;
+                    }
                 }
             }
                 
             return false;
         }
     }
-    
     
     Map<String,Entry> _entries = new HashMap<>();
     IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
@@ -518,10 +524,13 @@ public class ClasspathPattern extends AbstractSet<String>
             Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
             if (Boolean.FALSE.equals(byName))
                 return byName; // Already excluded so no need to check location.
-            File locationFile = TypeUtil.getLocationOfClassAsFile(clazz);
-            Boolean byLocation = locationFile == null ? null
-                    : _locations.isIncludedAndNotExcluded(locationFile.toPath());
-
+            URI location = TypeUtil.getLocationOfClass(clazz);
+            Boolean byLocation = location == null ? null
+                    : _locations.isIncludedAndNotExcluded(Paths.get(location));
+            
+            if (LOG.isDebugEnabled())
+                LOG.debug("match {} from {} byName={} byLocation={} in {}",clazz,location,byName,byLocation,this);
+            
             // Combine the tri-state match of both IncludeExclude Sets
             boolean included = byName==Boolean.TRUE || byLocation==Boolean.TRUE
                 || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());

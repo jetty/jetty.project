@@ -732,17 +732,4 @@ public class TypeUtil
         }
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
-    public static File getLocationOfClassAsFile(Class<?> clazz)
-    {
-        URI uri = getLocationOfClass(clazz);
-        
-        if (uri != null && "file".equalsIgnoreCase(uri.getScheme()))
-        {
-            return new File(uri);
-        }
-        return null;
-    }
-    
 }

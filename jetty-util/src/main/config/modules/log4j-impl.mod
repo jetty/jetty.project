@@ -27,4 +27,4 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini]
 log4j.version?=1.2.17
-
+jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/log4j/

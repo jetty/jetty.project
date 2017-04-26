@@ -120,7 +120,7 @@ public class StartArgs
     private Set<String> skipFileValidationModules = new HashSet<>();
 
     /** Map of enabled modules to the source of where that activation occurred */
-    private Map<String, List<String>> sources = new HashMap<>();
+    Map<String, List<String>> sources = new HashMap<>();
 
     /** Map of properties to where that property was declared */
     private Map<String, String> propertySource = new HashMap<>();
