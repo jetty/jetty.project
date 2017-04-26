@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.tests.client;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +30,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.junit.After;
@@ -81,35 +85,34 @@ public class BadNetworkTest
     @Test
     public void testAbruptClientClose() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+    
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
         
-        URI wsUri = server.getWsUri();
-        
-        Future<Session> future = client.connect(wsocket, wsUri);
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
         
         // Validate that we are connected
-        future.get(30, TimeUnit.SECONDS);
-        wsocket.waitForConnected(30, TimeUnit.SECONDS);
+        assertThat("Client Open Event Received", clientSocket.openLatch.await(30, TimeUnit.SECONDS), is(true));
         
         // Have client disconnect abruptly
-        Session session = wsocket.getSession();
-        session.disconnect();
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        clientSession.disconnect();
         
         // Client Socket should see close
-        wsocket.waitForClose(10, TimeUnit.SECONDS);
+        clientSocket.awaitCloseEvent("Client");
         
         // Client Socket should see a close event, with status NO_CLOSE
         // This event is automatically supplied by the underlying WebSocketClientConnection
         // in the situation of a bad network connection.
-        wsocket.assertClose(StatusCode.NO_CLOSE, containsString("disconnect"));
+        clientSocket.assertCloseInfo("Client", StatusCode.NO_CLOSE, containsString("disconnect"));
     }
     
     @Test
     public void testAbruptServerClose() throws Exception
     {
-        TrackingSocket wsocket = new TrackingSocket();
-        
-        URI wsURI = server.getWsUri().resolve("/untrusted/" + testname.getMethodName());
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+    
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
     
         CompletableFuture<UntrustedWSSession> sessionFuture = new CompletableFuture<UntrustedWSSession>()
         {
@@ -121,19 +124,19 @@ public class BadNetworkTest
                 return super.complete(session);
             }
         };
-        server.registerConnectFuture(wsURI, sessionFuture);
-        Future<Session> future = client.connect(wsocket, wsURI);
+        server.registerOnOpenFuture(wsUri, sessionFuture);
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         
         // Validate that we are connected
-        future.get(30, TimeUnit.SECONDS);
-        wsocket.waitForConnected(30, TimeUnit.SECONDS);
+        clientSocket.awaitOpenEvent("Client");
         
         // Wait for close (as response to idle timeout)
-        wsocket.waitForClose(10, TimeUnit.SECONDS);
+        clientSocket.awaitCloseEvent("Client");
         
         // Client Socket should see a close event, with status NO_CLOSE
         // This event is automatically supplied by the underlying WebSocketClientConnection
         // in the situation of a bad network connection.
-        wsocket.assertClose(StatusCode.PROTOCOL, containsString("EOF"));
+        clientSocket.assertCloseInfo("Client", StatusCode.PROTOCOL, containsString("EOF"));
     }
 }

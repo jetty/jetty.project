@@ -22,33 +22,44 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 
 public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListener
 {
-    private final Logger LOG;
+    public final Logger LOG;
     
     public CountDownLatch openLatch = new CountDownLatch(1);
+    
+    public UpgradeRequest openUpgradeRequest;
+    public UpgradeResponse openUpgradeResponse;
+    
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
@@ -57,7 +68,7 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     
-    private WebSocketSession session;
+    public WebSocketSession session;
     
     public TrackingEndpoint(String id)
     {
@@ -70,6 +81,37 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
         assertThat(prefix + " close info", close, Matchers.notNullValue());
         assertThat(prefix + " received close code", close.getStatusCode(), Matchers.is(expectedCloseStatusCode));
         assertThat(prefix + " received close reason", close.getReason(), reasonMatcher);
+    }
+    
+    public void assertNotOpened(String prefix)
+    {
+        assertTrue(prefix + " open event should not have occurred", openLatch.getCount() > 0);
+    }
+    
+    public void assertNotClosed(String prefix)
+    {
+        assertTrue(prefix + " close event should not have occurred", closeLatch.getCount() > 0);
+    }
+    
+    public void assertNoErrorEvents(String prefix)
+    {
+        assertTrue(prefix + " error event should not have occurred", error.get() == null);
+    }
+    
+    public void assertErrorEvent(String prefix, Matcher<Throwable> throwableMatcher, Matcher<? super String> messageMatcher)
+    {
+        assertThat(prefix + " error event type", error.get(), throwableMatcher);
+        assertThat(prefix + " error event message", error.get().getMessage(), messageMatcher);
+    }
+    
+    public void awaitOpenEvent(String prefix) throws InterruptedException
+    {
+        assertTrue(prefix + " onOpen event", openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    }
+    
+    public void awaitCloseEvent(String prefix) throws InterruptedException
+    {
+        assertTrue(prefix + " onClose event", closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
     
     public void close(int statusCode, String reason)
@@ -106,6 +148,8 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
     {
         assertThat("Session type", session, instanceOf(WebSocketSession.class));
         this.session = (WebSocketSession) session;
+        this.openUpgradeRequest = session.getUpgradeRequest();
+        this.openUpgradeResponse = session.getUpgradeResponse();
         if (LOG.isDebugEnabled())
         {
             LOG.debug("onWebSocketConnect()");
@@ -143,7 +187,27 @@ public class TrackingEndpoint implements WebSocketListener, WebSocketFrameListen
         {
             LOG.debug("onWSText(\"{}\")", text);
         }
- 
+        
         messageQueue.offer(text);
+    }
+    
+    public AbstractWebSocketConnection getConnection()
+    {
+        LogicalConnection connection = this.session.getConnection();
+        if (connection instanceof AbstractWebSocketConnection)
+        {
+            return (AbstractWebSocketConnection) connection;
+        }
+        return null;
+    }
+    
+    public EndPoint getJettyEndPoint()
+    {
+        AbstractWebSocketConnection connection = getConnection();
+        if (connection != null)
+        {
+            return connection.getEndPoint();
+        }
+        return null;
     }
 }
