@@ -653,9 +653,8 @@ public class Response implements HttpServletResponse
             ErrorHandler error_handler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
             if (error_handler!=null)
                 error_handler.handle(null, request, request, this);
-            else
-                closeOutput();
         }
+        closeOutput();
     }
 
     /**
@@ -1040,10 +1039,12 @@ public class Response implements HttpServletResponse
                     _out.close();
                 break;
             case STREAM:
-                getOutputStream().close();
+                if (!_out.isClosed())
+                    getOutputStream().close();
                 break;
             default:
-                _out.close();
+                if (!_out.isClosed())
+                    _out.close();
         }
     }
 
