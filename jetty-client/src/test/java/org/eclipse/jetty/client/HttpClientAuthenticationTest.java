@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
+import org.eclipse.jetty.client.util.DelayedRepeatableContentProvider;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -461,5 +463,39 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         // Verify that the response was successful, it's the request that failed.
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testAuthenticateLongPostRequest()
+            throws Exception
+    {
+        startBasic(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                try (InputStream input = request.getInputStream()) {
+                    byte[] buffer = new byte[4 * 1024];
+                    while (input.read(buffer) != -1) {
+                        // skip
+                    }
+                }
+            }
+        });
+
+        AuthenticationStore authenticationStore = client.getAuthenticationStore();
+        URI uri = URI.create(scheme + "://localhost:" + connector.getLocalPort());
+        BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
+        authenticationStore.addAuthentication(authentication);
+
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/secure")
+                .content(new DelayedRepeatableContentProvider(10_000, 10, 50));
+
+        ContentResponse response = request.send();
+        Assert.assertEquals(response.getStatus(), 200);
     }
 }
