@@ -20,10 +20,10 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +33,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoSocket;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -72,14 +71,16 @@ public class AltFilterTest
             try
             {
                 client.start();
-                JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<List<String>> clientMessagesFuture = clientEcho.expectedMessages(1);
-                Future<Session> future = client.connect(clientEcho,uri.resolve("echo"));
+                JettyEchoSocket clientSocket = new JettyEchoSocket();
+                Future<Session> clientConnectFuture = client.connect(clientSocket,uri.resolve("echo"));
                 // wait for connect
-                future.get(1,TimeUnit.SECONDS);
-                clientEcho.sendMessage("Hello Echo");
-                List<String> msgs = clientMessagesFuture.get(1, TimeUnit.SECONDS);
-                Assert.assertEquals("Expected message","Hello Echo",msgs.get(0));
+                Session clientSession = clientConnectFuture.get(5,TimeUnit.SECONDS);
+                clientSocket.sendMessage("Hello Echo");
+                
+                String incomingMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
+                assertEquals("Expected message","Hello Echo",incomingMessage);
+                clientSession.close();
+                clientSocket.awaitCloseEvent("Client");
             }
             finally
             {
