@@ -174,13 +174,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
         {
             if (__rollover==null)
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
+    
+            // Calculate Today's Midnight, based on Configured TimeZone (will be in past, even if by a few milliseconds)
+            midnight = toMidnight(ZonedDateTime.now(zone.toZoneId()), zone.toZoneId());
             
-            ZonedDateTime now = ZonedDateTime.now(zone.toZoneId());
-            midnight = toMidnight(now, zone.toZoneId());
-            while (midnight.isBefore(now))
-                midnight = nextMidnight(midnight);
-            
-            scheduleNextRollover(now);
+            // This will schedule the rollover event to the next midnight
+            scheduleNextRollover();
         }
     }
     
@@ -204,15 +203,19 @@ public class RolloverFileOutputStream extends FilterOutputStream
      */
     public static ZonedDateTime nextMidnight(ZonedDateTime dateTime)
     {
-        // Increment to next day.
+        // Increment to next day, based on Configured TimeZone, then find start of that day.
+        // Will always be in the future, even if the Daylights Savings Time kicks in during
+        // the calculation.
         return dateTime.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(dateTime.getZone());
     }
     
-    private void scheduleNextRollover(ZonedDateTime now)
+    private void scheduleNextRollover()
     {
         _rollTask = new RollTask();
+        // Get tomorrow's midnight based on Configured TimeZone
         midnight = nextMidnight(midnight);
-        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli());
+        // Schedule next rollover event to occur, based on local machine's Unix Epoch milliseconds
+        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - System.currentTimeMillis());
     }
 
     /* ------------------------------------------------------------ */
@@ -279,11 +282,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
-    private void removeOldFiles(ZonedDateTime now)
+    private void removeOldFiles()
     {
         if (_retainDays>0)
         {
-            now.minus(_retainDays, ChronoUnit.DAYS);
+            // Establish expiration time, based on configured TimeZone
+            ZonedDateTime now = ZonedDateTime.now(this.midnight.getZone());
             long expired = now.toInstant().toEpochMilli();
             
             File file= new File(_filename);
@@ -356,10 +360,9 @@ public class RolloverFileOutputStream extends FilterOutputStream
         {
             try
             {
-                ZonedDateTime now = ZonedDateTime.now(midnight.getZone());
                 RolloverFileOutputStream.this.setFile();
-                RolloverFileOutputStream.this.scheduleNextRollover(now);
-                RolloverFileOutputStream.this.removeOldFiles(now);
+                RolloverFileOutputStream.this.scheduleNextRollover();
+                RolloverFileOutputStream.this.removeOldFiles();
             }
             catch(Throwable t)
             {

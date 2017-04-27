@@ -57,14 +57,37 @@ public class RolloverFileOutputStreamTest
         
         for (int i = 0; i < expected.length; i++)
         {
-            long lastMs = nextEvent.toInstant().toEpochMilli();
+            long currentMillis = nextEvent.toInstant().toEpochMilli();
             nextEvent = RolloverFileOutputStream.nextMidnight(nextEvent);
             assertThat("Next Event", toString(nextEvent), is(expected[i][0]));
-            long duration = (nextEvent.toInstant().toEpochMilli() - lastMs);
+            long duration = (nextEvent.toInstant().toEpochMilli() - currentMillis);
             assertThat("Duration to next event", duration, is((long) expected[i][1]));
         }
     }
     
+    /**
+     * <a href="Issue #1507">https://github.com/eclipse/jetty.project/issues/1507</a>
+     */
+    @Test
+    public void testMidnightRolloverCalc_PDT_Issue1507()
+    {
+        ZoneId zone = toZoneId("PST");
+        ZonedDateTime initialDate = toDateTime("2017.04.27-08:00:00.0 PM PDT", zone);
+        
+        ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate, zone);
+        assertThat("Midnight", toString(midnight), is("2017.04.27-12:00:00.0 AM PDT"));
+        
+        Object expected[][] = {
+                {"2017.04.28-12:00:00.0 AM PDT", 14_400_000L}, // Ensure not negative
+                {"2017.04.29-12:00:00.0 AM PDT", 86_400_000L},
+                {"2017.04.30-12:00:00.0 AM PDT", 86_400_000L},
+                {"2017.05.01-12:00:00.0 AM PDT", 86_400_000L},
+                {"2017.05.02-12:00:00.0 AM PDT", 86_400_000L},
+        };
+        
+        assertSequence(initialDate, expected);
+    }
+
     @Test
     public void testMidnightRolloverCalc_PST_DST_Start()
     {
