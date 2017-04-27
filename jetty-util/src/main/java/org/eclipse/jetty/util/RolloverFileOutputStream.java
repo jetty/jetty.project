@@ -214,8 +214,20 @@ public class RolloverFileOutputStream extends FilterOutputStream
         _rollTask = new RollTask();
         // Get tomorrow's midnight based on Configured TimeZone
         midnight = nextMidnight(midnight);
-        // Schedule next rollover event to occur, based on local machine's Unix Epoch milliseconds
-        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - System.currentTimeMillis());
+    
+        long now = System.currentTimeMillis();
+        long delay = midnight.toInstant().toEpochMilli() - System.currentTimeMillis();
+        try
+        {
+            // Schedule next rollover event to occur, based on local machine's Unix Epoch milliseconds
+            __rollover.schedule(_rollTask, delay);
+        }
+        catch (IllegalArgumentException e)
+        {
+            System.err.printf("[ERROR] midnight=%s, midnight-epoch=%d, now=%d, delay=%d - ",
+                    midnight, midnight.toInstant().toEpochMilli(), now, delay);
+            e.printStackTrace(System.err);
+        }
     }
 
     /* ------------------------------------------------------------ */
