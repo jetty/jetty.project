@@ -55,6 +55,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
     private RollTask _rollTask;
+    private ZonedDateTime midnight;
     private SimpleDateFormat _fileBackupFormat;
     private SimpleDateFormat _fileDateFormat;
 
@@ -185,9 +186,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
             if (__rollover==null)
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
             
-            midnight = toMidnight(ZonedDateTime.now(), zone.toZoneId());
+            ZonedDateTime now = ZonedDateTime.now(zone.toZoneId());
+            midnight = toMidnight(now, zone.toZoneId());
+            while (midnight.isBefore(now))
+                midnight = nextMidnight(midnight);
             
-            scheduleNextRollover();
+            scheduleNextRollover(now);
         }
     }
     
@@ -215,11 +219,11 @@ public class RolloverFileOutputStream extends FilterOutputStream
         return dateTime.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(dateTime.getZone());
     }
     
-    private void scheduleNextRollover()
+    private void scheduleNextRollover(ZonedDateTime now)
     {
         _rollTask = new RollTask();
         midnight = nextMidnight(midnight);
-        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - System.currentTimeMillis());
+        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli());
     }
 
     /* ------------------------------------------------------------ */
@@ -284,12 +288,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
-    void removeOldFiles(ZonedDateTime now)
+    private void removeOldFiles(ZonedDateTime now)
     {
         if (_retainDays>0)
         {
-            // Establish expiration time, based on configured TimeZone
-            long expired = now.minus(_retainDays, ChronoUnit.DAYS).toInstant().toEpochMilli();
+            now.minus(_retainDays, ChronoUnit.DAYS);
+            long expired = now.toInstant().toEpochMilli();
             
             File file= new File(_filename);
             File dir = new File(file.getParent());
@@ -361,13 +365,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
         {
             try
             {
-                synchronized(RolloverFileOutputStream.class)
-                {
-                    ZonedDateTime now = ZonedDateTime.now(_fileDateFormat.getTimeZone().toZoneId());
-                    RolloverFileOutputStream.this.setFile(now);
-                    RolloverFileOutputStream.this.scheduleNextRollover(now);
-                    RolloverFileOutputStream.this.removeOldFiles(now);
-                }
+                ZonedDateTime now = ZonedDateTime.now(midnight.getZone());
+                RolloverFileOutputStream.this.setFile();
+                RolloverFileOutputStream.this.scheduleNextRollover(now);
+                RolloverFileOutputStream.this.removeOldFiles(now);
             }
             catch(Throwable t)
             {
