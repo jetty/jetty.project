@@ -16,37 +16,43 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
+import java.net.URI;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 public class SuspendResumeTest
 {
     @WebSocket
-    public static class EchoSocket
+    public static class BackPressureEchoSocket
     {
         private Session session;
         
@@ -79,12 +85,12 @@ public class SuspendResumeTest
         }
     }
     
-    public static class EchoCreator implements WebSocketCreator
+    public static class BackPressureEchoCreator implements WebSocketCreator
     {
         @Override
         public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
-            return new EchoSocket();
+            return new BackPressureEchoSocket();
         }
     }
     
@@ -95,7 +101,7 @@ public class SuspendResumeTest
         @Override
         public void configure(WebSocketServletFactory factory)
         {
-            factory.setCreator(new EchoCreator());
+            factory.setCreator(new BackPressureEchoCreator());
         }
     }
     
@@ -109,30 +115,51 @@ public class SuspendResumeTest
     }
     
     @AfterClass
-    public static void stopServer()
+    public static void stopServer() throws Exception
     {
         server.stop();
+    }
+    
+    @Rule
+    public TestName testname = new TestName();
+    
+    private WebSocketClient client;
+    
+    @Before
+    public void startClient() throws Exception
+    {
+        client = new WebSocketClient();
+        client.start();
+    }
+    
+    @After
+    public void stopClient() throws Exception
+    {
+        client.stop();
     }
     
     @Test
     public void testSuspendResume() throws Exception
     {
-        try (XBlockheadClient client = new XBlockheadClient(server.getServerUri()))
-        {
-            client.setTimeout(1, TimeUnit.SECONDS);
-            
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("echo1"));
-            client.write(new TextFrame().setPayload("echo2"));
-            
-            EventQueue<WebSocketFrame> frames = client.readFrames(2, 30, TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
-            assertThat(EchoSocket.class.getSimpleName() + ".onMessage()", tf.getPayloadAsUTF8(), is("echo1"));
-            tf = frames.poll();
-            assertThat(EchoSocket.class.getSimpleName() + ".onMessage()", tf.getPayloadAsUTF8(), is("echo2"));
-        }
+        URI wsUri = server.getServerUri();
+        
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+        
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        
+        // Message
+        clientSession.getRemote().sendString("echo1");
+        clientSession.getRemote().sendString("echo2");
+        
+        // Read message
+        String incomingMsg;
+        incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        Assert.assertThat("Incoming Message 1", incomingMsg, is("echo1"));
+        incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        Assert.assertThat("Incoming Message 2", incomingMsg, is("echo2"));
+        
+        clientSession.close();
     }
 }

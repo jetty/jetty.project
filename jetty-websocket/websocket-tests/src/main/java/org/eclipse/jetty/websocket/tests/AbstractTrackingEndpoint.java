@@ -49,7 +49,7 @@ public abstract class AbstractTrackingEndpoint<T>
         LOG = Log.getLogger(this.getClass().getName() + "." + id);
     }
     
-    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<String> reasonMatcher) throws InterruptedException
+    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
     {
         CloseInfo close = closeInfo.get();
         assertThat(prefix + " close info", close, Matchers.notNullValue());
