@@ -141,27 +141,23 @@ public final class WSURI
         {
             // keep as-is
             wsScheme = httpScheme;
-            port = 80;
         }
         else if ("wss".equalsIgnoreCase(httpScheme))
         {
             // keep as-is
             wsScheme = httpScheme;
-            port = 443;
         }
         
         if ("http".equalsIgnoreCase(httpScheme))
         {
             // convert to ws
             wsScheme = "ws";
-            port = 80;
         }
         
         if ("https".equalsIgnoreCase(httpScheme))
         {
             // convert to wss
             wsScheme = "wss";
-            port = 443;
         }
         else
         {

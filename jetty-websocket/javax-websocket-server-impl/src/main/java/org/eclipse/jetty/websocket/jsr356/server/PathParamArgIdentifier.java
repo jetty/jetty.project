@@ -24,7 +24,7 @@ import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.ArgIdentifier;
 
 /**
- * Identify method parameters tagged with &#064;{@link javax.websocket.server.PathParam}
+ * Method argument identifier for {@link javax.websocket.server.PathParam} annotations.
  */
 @SuppressWarnings("unused")
 public class PathParamArgIdentifier implements ArgIdentifier
@@ -32,9 +32,9 @@ public class PathParamArgIdentifier implements ArgIdentifier
     @Override
     public Arg apply(Arg arg)
     {
-        PathParam param = arg.getAnnotation(PathParam.class);
-        if (param != null)
-            arg.setTag(param.value());
+        PathParam pathParam = arg.getAnnotation(PathParam.class);
+        if (pathParam != null)
+            arg.setTag(pathParam.value());
         return arg;
     }
 }

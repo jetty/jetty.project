@@ -133,6 +133,7 @@ public class WSServer
     {
         contexts.addHandler(webapp);
         contexts.manage(webapp);
+        webapp.setThrowUnavailableOnStartupException(true);
         webapp.start();
         if (LOG.isDebugEnabled())
         {
