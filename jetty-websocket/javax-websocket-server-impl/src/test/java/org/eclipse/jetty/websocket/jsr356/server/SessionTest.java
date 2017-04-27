@@ -46,9 +46,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class SessionTest
 {
-    private static interface Case
+    private interface Case
     {
-        public void customize(WebAppContext context);
+        void customize(WebAppContext context);
     }
 
     @Parameters
@@ -56,44 +56,28 @@ public class SessionTest
     {
         List<Case[]> cases = new ArrayList<>();
         cases.add(new Case[]
-        { new Case()
+        {context ->
         {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // no customization
-            }
-        } });
+            // no customization
+        }});
         cases.add(new Case[]
-        { new Case()
+        {context ->
         {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // Test with DefaultServlet only
-                context.addServlet(DefaultServlet.class,"/");
-            }
-        } });
+            // Test with DefaultServlet only
+            context.addServlet(DefaultServlet.class,"/");
+        }});
         cases.add(new Case[]
-        { new Case()
+        {context ->
         {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // Test with Servlet mapped to "/*"
-                context.addServlet(DefaultServlet.class,"/*");
-            }
-        } });
+            // Test with Servlet mapped to "/*"
+            context.addServlet(DefaultServlet.class,"/*");
+        }});
         cases.add(new Case[]
-        { new Case()
+        {context ->
         {
-            @Override
-            public void customize(WebAppContext context)
-            {
-                // Test with Servlet mapped to "/info/*"
-                context.addServlet(DefaultServlet.class,"/info/*");
-            }
-        } });
+            // Test with Servlet mapped to "/info/*"
+            context.addServlet(DefaultServlet.class,"/info/*");
+        }});
         return cases;
     }
 
@@ -137,14 +121,18 @@ public class SessionTest
         try
         {
             client.start();
-            JettyEchoSocket clientEcho = new JettyEchoSocket();
-            Future<List<String>> clientMessagesFuture = clientEcho.expectedMessages(1);
-            Future<Session> future = client.connect(clientEcho,serverUri.resolve(requestPath));
+            
+            JettyEchoSocket clientSocket = new JettyEchoSocket();
+            Future<Session> clientConnectFuture = client.connect(clientSocket,serverUri.resolve(requestPath));
             // wait for connect
-            future.get(1,TimeUnit.SECONDS);
-            clientEcho.sendMessage(requestMessage);
-            List<String> msgs = clientMessagesFuture.get(1, TimeUnit.SECONDS);
-            Assert.assertThat("Expected message",msgs.get(0),is(expectedResponse));
+            Session clientSession = clientConnectFuture.get(5,TimeUnit.SECONDS);
+            clientSocket.sendMessage(requestMessage);
+            
+            String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+            Assert.assertThat("Expected message",incomingMessage,is(expectedResponse));
+    
+            clientSession.close();
+            clientSocket.awaitCloseEvent("Client");
         }
         finally
         {

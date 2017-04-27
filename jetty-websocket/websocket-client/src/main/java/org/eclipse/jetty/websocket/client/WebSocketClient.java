@@ -141,6 +141,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(ByteBufferPool bufferPool)
     {
         this(new HttpClient());
+        addBean(this.httpClient);
         this.httpClient.setByteBufferPool(bufferPool);
     }
 
@@ -153,6 +154,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
         this(new HttpClient(sslContextFactory));
+        addBean(this.httpClient);
     }
 
     /**
@@ -166,6 +168,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
         this(new HttpClient(sslContextFactory));
+        addBean(this.httpClient);
         this.httpClient.setExecutor(executor);
     }
 

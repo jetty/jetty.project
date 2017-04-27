@@ -18,25 +18,29 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 
 /**
  * This is a Jetty API version of a websocket.
@@ -48,53 +52,30 @@ public class JettyEchoSocket
 {
     private static final Logger LOG = Log.getLogger(JettyEchoSocket.class);
     private RemoteEndpoint remote;
-    private CompletableFuture<List<String>> expectedMessagesFuture;
-    private AtomicInteger expectedMessageCount;
-    private List<String> messages = new ArrayList<>();
-    
-    public Future<List<String>> expectedMessages(int expected)
-    {
-        expectedMessagesFuture = new CompletableFuture<>();
-        expectedMessageCount = new AtomicInteger(expected);
-        return expectedMessagesFuture;
-    }
+    public CountDownLatch closeLatch = new CountDownLatch(1);
+    public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
+    public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
     
     @OnWebSocketClose
-    public void onClose(int code, String reason)
+    public void onClose(int statusCode, String reason)
     {
         remote = null;
-        synchronized (expectedMessagesFuture)
-        {
-            if ((code != StatusCode.NORMAL) ||
-                    (code != StatusCode.NO_CODE))
-            {
-                expectedMessagesFuture.completeExceptionally(new CloseException(code, reason));
-            }
-        }
+        CloseInfo close = new CloseInfo(statusCode, reason);
+        boolean closeTracked = closeInfo.compareAndSet(null, close);
+        this.closeLatch.countDown();
+        assertTrue("Close only happened once", closeTracked);
     }
     
     @OnWebSocketError
     public void onError(Throwable t)
     {
         LOG.warn(t);
-        synchronized (expectedMessagesFuture)
-        {
-            expectedMessagesFuture.completeExceptionally(t);
-        }
     }
     
     @OnWebSocketMessage
     public void onMessage(String msg) throws IOException
     {
-        messages.add(msg);
-        synchronized (expectedMessagesFuture)
-        {
-            int countLeft = expectedMessageCount.decrementAndGet();
-            if (countLeft <= 0)
-            {
-                expectedMessagesFuture.complete(messages);
-            }
-        }
+        messageQueue.offer(msg);
         sendMessage(msg);
     }
     
@@ -102,6 +83,19 @@ public class JettyEchoSocket
     public void onOpen(Session session)
     {
         this.remote = session.getRemote();
+    }
+    
+    public void awaitCloseEvent(String prefix) throws InterruptedException
+    {
+        assertTrue(prefix + " onClose event", closeLatch.await(5, TimeUnit.SECONDS));
+    }
+    
+    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
+    {
+        CloseInfo close = closeInfo.get();
+        assertThat(prefix + " close info", close, Matchers.notNullValue());
+        assertThat(prefix + " received close code", close.getStatusCode(), Matchers.is(expectedCloseStatusCode));
+        assertThat(prefix + " received close reason", close.getReason(), reasonMatcher);
     }
     
     public void sendMessage(String msg) throws IOException
