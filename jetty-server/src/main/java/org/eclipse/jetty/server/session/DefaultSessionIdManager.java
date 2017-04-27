@@ -519,15 +519,11 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     public Set<SessionHandler> getSessionHandlers()
     {
         Set<SessionHandler> handlers = new HashSet<>();
-
-        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-        for (int i=0; contexts!=null && i<contexts.length; i++)
+        Handler[] tmp = _server.getChildHandlersByClass(SessionHandler.class);
+        if (tmp != null)
         {
-            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-            if (sessionHandler != null) 
-            {
-                handlers.add(sessionHandler);
-            }
+            for (Handler h:tmp)
+                handlers.add((SessionHandler)h);
         }
         return handlers;
     }
