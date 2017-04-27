@@ -55,7 +55,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
     private RollTask _rollTask;
-    private Calendar midnight;
+    private ZonedDateTime midnight;
     private SimpleDateFormat _fileBackupFormat;
     private SimpleDateFormat _fileDateFormat;
 
@@ -68,7 +68,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     /**
      * @param filename The filename must include the string "yyyy_mm_dd", 
      * which is replaced with the actual date when creating and rolling over the file.
-     * @throws IOException
+     * @throws IOException if unable to create output
      */
     public RolloverFileOutputStream(String filename)
         throws IOException
@@ -81,7 +81,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
      * @param filename The filename must include the string "yyyy_mm_dd", 
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
-     * @throws IOException
+     * @throws IOException if unable to create output
      */
     public RolloverFileOutputStream(String filename, boolean append)
         throws IOException
@@ -95,7 +95,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them.  0 to retain forever.
-     * @throws IOException
+     * @throws IOException if unable to create output
      */
     public RolloverFileOutputStream(String filename,
                                     boolean append,
@@ -111,7 +111,8 @@ public class RolloverFileOutputStream extends FilterOutputStream
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them. 0 to retain forever.
-     * @throws IOException
+     * @param zone the timezone for the output
+     * @throws IOException if unable to create output
      */
     public RolloverFileOutputStream(String filename,
                                     boolean append,
@@ -129,9 +130,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them. 0 to retain forever.
+     * @param zone the timezone for the output
      * @param dateFormat The format for the date file substitution. The default is "yyyy_MM_dd". 
      * @param backupFormat The format for the file extension of backup files. The default is "HHmmssSSS". 
-     * @throws IOException
+     * @throws IOException if unable to create output
      */
     public RolloverFileOutputStream(String filename,
                                     boolean append,
@@ -173,9 +175,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
             if (__rollover==null)
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
             
-            midnight = toMidnight(ZonedDateTime.now(), zone.toZoneId());
+            ZonedDateTime now = ZonedDateTime.now(zone.toZoneId());
+            midnight = toMidnight(now, zone.toZoneId());
+            while (midnight.isBefore(now))
+                midnight = nextMidnight(midnight);
             
-            scheduleNextRollover();
+            scheduleNextRollover(now);
         }
     }
     
@@ -203,11 +208,11 @@ public class RolloverFileOutputStream extends FilterOutputStream
         return dateTime.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(dateTime.getZone());
     }
     
-    private void scheduleNextRollover()
+    private void scheduleNextRollover(ZonedDateTime now)
     {
         _rollTask = new RollTask();
         midnight = nextMidnight(midnight);
-        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - System.currentTimeMillis());
+        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli());
     }
 
     /* ------------------------------------------------------------ */
@@ -274,13 +279,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
-    private void removeOldFiles()
+    private void removeOldFiles(ZonedDateTime now)
     {
         if (_retainDays>0)
         {
-            Calendar now = Calendar.getInstance();
-            now.add(Calendar.DAY_OF_MONTH, (-1)*_retainDays);
-            long expired = now.getTimeInMillis();
+            now.minus(_retainDays, ChronoUnit.DAYS);
+            long expired = now.toInstant().toEpochMilli();
             
             File file= new File(_filename);
             File dir = new File(file.getParent());
@@ -352,9 +356,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
         {
             try
             {
+                ZonedDateTime now = ZonedDateTime.now(midnight.getZone());
                 RolloverFileOutputStream.this.setFile();
-                RolloverFileOutputStream.this.scheduleNextRollover();
-                RolloverFileOutputStream.this.removeOldFiles();
+                RolloverFileOutputStream.this.scheduleNextRollover(now);
+                RolloverFileOutputStream.this.removeOldFiles(now);
             }
             catch(Throwable t)
             {
