@@ -389,8 +389,6 @@ public class ConfiguratorTest
         
         server.start();
         baseServerUri = WSURI.toWebsocket(server.getURI()).resolve("/");
-        if (LOG.isDebugEnabled())
-            LOG.debug("Server started on {}", baseServerUri);
     }
     
     public static String toSafeAddr(InetSocketAddress addr)

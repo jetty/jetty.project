@@ -16,29 +16,36 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
+import java.net.URI;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 public class SubProtocolTest
 {
@@ -100,39 +107,60 @@ public class SubProtocolTest
     }
     
     @AfterClass
-    public static void stopServer()
+    public static void stopServer() throws Exception
     {
         server.stop();
+    }
+    
+    @Rule
+    public TestName testname = new TestName();
+    
+    private WebSocketClient client;
+    
+    @Before
+    public void startClient() throws Exception
+    {
+        client = new WebSocketClient();
+        client.start();
+    }
+    
+    @After
+    public void stopClient() throws Exception
+    {
+        client.stop();
     }
     
     @Test
     public void testSingleProtocol() throws Exception
     {
-        testSubProtocol("echo", "echo");
+        testSubProtocol(new String[]{"echo"}, "echo");
     }
     
     @Test
     public void testMultipleProtocols() throws Exception
     {
-        testSubProtocol("chat,info,echo", "chat");
+        testSubProtocol(new String[]{"chat", "info", "echo"}, "chat");
     }
     
-    private void testSubProtocol(String requestProtocols, String acceptedSubProtocols) throws Exception
+    private void testSubProtocol(String[] requestProtocols, String acceptedSubProtocols) throws Exception
     {
-        try (XBlockheadClient client = new XBlockheadClient(server.getServerUri()))
-        {
-            client.setTimeout(1, TimeUnit.SECONDS);
-            
-            client.connect();
-            client.addHeader("Sec-WebSocket-Protocol: "+ requestProtocols + "\r\n");
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("showme"));
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 30, TimeUnit.SECONDS);
-            WebSocketFrame tf = frames.poll();
-            
-            assertThat(ProtocolEchoSocket.class.getSimpleName() + ".onMessage()", tf.getPayloadAsUTF8(), is("acceptedSubprotocol=" + acceptedSubProtocols));
-        }
+        URI wsUri = server.getServerUri();
+        client.setMaxIdleTimeout(1000);
+        
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        upgradeRequest.setSubProtocols(requestProtocols);
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+        
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        
+        // Message
+        clientSession.getRemote().sendString("showme");
+        
+        // Read message
+        String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        Assert.assertThat("Incoming Message", incomingMsg, is("acceptedSubprotocol=" + acceptedSubProtocols));
+        
+        clientSession.close();
     }
 }

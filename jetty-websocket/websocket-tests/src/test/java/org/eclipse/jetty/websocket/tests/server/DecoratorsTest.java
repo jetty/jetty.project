@@ -16,36 +16,44 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URI;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
-public class DecoratorsLegacyTest
+public class DecoratorsTest
 {
     private static class DecoratorsSocket extends WebSocketAdapter
     {
@@ -109,8 +117,7 @@ public class DecoratorsLegacyTest
         }
     }
     
-    @SuppressWarnings("deprecation")
-    private static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
+    private static class DummyUtilDecorator implements org.eclipse.jetty.util.Decorator
     {
         @Override
         public <T> T decorate(T o)
@@ -133,49 +140,63 @@ public class DecoratorsLegacyTest
         decoratorsCreator = new DecoratorsCreator();
         server = new SimpleServletServer(new DecoratorsRequestServlet(decoratorsCreator))
         {
-            @SuppressWarnings("deprecation")
             @Override
             protected void configureServletContextHandler(ServletContextHandler context)
             {
+                // Add decorator in the new util way
                 context.getObjectFactory().clear();
-                // Add decorator in the legacy way
-                context.addDecorator(new DummyLegacyDecorator());
+                context.getObjectFactory().addDecorator(new DummyUtilDecorator());
             }
         };
         server.start();
     }
 
     @AfterClass
-    public static void stopServer()
+    public static void stopServer() throws Exception
     {
         server.stop();
+    }
+    
+    @Rule
+    public TestName testname = new TestName();
+    
+    private WebSocketClient client;
+    
+    @Before
+    public void startClient() throws Exception
+    {
+        client = new WebSocketClient();
+        client.start();
+    }
+    
+    @After
+    public void stopClient() throws Exception
+    {
+        client.stop();
     }
 
     @Test
     public void testAccessRequestCookies() throws Exception
     {
-        XBlockheadClient client = new XBlockheadClient(server.getServerUri());
-        client.setTimeout(1,TimeUnit.SECONDS);
-
-        try
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("info"));
-
-            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
-            WebSocketFrame resp = frames.poll();
-            String textMsg = resp.getPayloadAsUTF8();
-            
-            assertThat("DecoratedObjectFactory", textMsg, containsString("Object is a DecoratedObjectFactory"));
-            assertThat("decorators.size", textMsg, containsString("Decorators.size = [1]"));
-            assertThat("decorator type", textMsg, containsString("decorator[] = " + DummyLegacyDecorator.class.getName()));
-        }
-        finally
-        {
-            client.close();
-        }
+        client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(1));
+    
+        URI wsUri = server.getServerUri();
+    
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+    
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    
+        // Request Info
+        clientSession.getRemote().sendString("info");
+    
+        // Read message
+        String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        assertThat("DecoratedObjectFactory", incomingMsg, containsString("Object is a DecoratedObjectFactory"));
+        assertThat("decorators.size", incomingMsg, containsString("Decorators.size = [1]"));
+        assertThat("decorator type", incomingMsg, containsString("decorator[] = " + DummyUtilDecorator.class.getName()));
+    
+        clientSession.close();
     }
 }

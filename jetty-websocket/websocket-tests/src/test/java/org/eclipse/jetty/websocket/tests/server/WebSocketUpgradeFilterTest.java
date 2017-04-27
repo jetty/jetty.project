@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -27,6 +27,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,14 +37,23 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.test.XBlockheadClient;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.util.WSURI;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.WSServer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -279,86 +289,90 @@ public class WebSocketUpgradeFilterTest
         return cases;
     }
     
+    @Rule
+    public TestName testname = new TestName();
+    
+    private WebSocketClient client;
+    
+    @Before
+    public void startClient() throws Exception
+    {
+        client = new WebSocketClient();
+        client.start();
+    }
+    
+    @After
+    public void stopClient() throws Exception
+    {
+        client.stop();
+    }
+    
     private final Server server;
     private final URI serverUri;
     
     public WebSocketUpgradeFilterTest(String testId, ServerProvider serverProvider) throws Exception
     {
         this.server = serverProvider.newServer();
-        
-        ServerConnector connector = (ServerConnector) server.getConnectors()[0];
-        
-        // Establish the Server URI
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        
-        serverUri = new URI(String.format("ws://%s:%d/", host, port));
+        serverUri = WSURI.toWebsocket(server.getURI());
     }
     
     @Test
     public void testNormalConfiguration() throws Exception
     {
-        URI destUri = serverUri.resolve("/info/");
+        URI wsUri = serverUri.resolve("/info/");
+    
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+    
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        clientSession.getRemote().sendString("hello");
         
-        try (XBlockheadClient client = new XBlockheadClient(destUri))
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("hello"));
-            
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
-            
-            // If we can connect and send a text message, we know that the endpoint was
-            // added properly, and the response will help us verify the policy configuration too
-            assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
-        }
+        String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+    
+        // If we can connect and send a text message, we know that the endpoint was
+        // added properly, and the response will help us verify the policy configuration too
+        assertThat("Client incoming message", incomingMessage, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
     }
     
     @Test
     public void testStopStartOfHandler() throws Exception
     {
-        URI destUri = serverUri.resolve("/info/");
-        
-        try (XBlockheadClient client = new XBlockheadClient(destUri))
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-            
-            client.write(new TextFrame().setPayload("hello 1"));
-            
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
-            
-            // If we can connect and send a text message, we know that the endpoint was
-            // added properly, and the response will help us verify the policy configuration too
-            assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
-        }
+        URI wsUri = serverUri.resolve("/info/");
+    
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+    
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        clientSession.getRemote().sendString("hello 1");
+    
+        String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+    
+        // If we can connect and send a text message, we know that the endpoint was
+        // added properly, and the response will help us verify the policy configuration too
+        assertThat("Client incoming message", incomingMessage, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
+
+        clientSession.close();
         
         server.getHandler().stop();
         server.getHandler().start();
         
-        try (XBlockheadClient client = new XBlockheadClient(destUri))
-        {
-            client.connect();
-            client.sendStandardRequest();
-            client.expectUpgradeResponse();
-        
-            client.write(new TextFrame().setPayload("hello 2"));
-        
-            EventQueue<WebSocketFrame> frames = client.readFrames(1, 1000, TimeUnit.MILLISECONDS);
-            String payload = frames.poll().getPayloadAsUTF8();
-        
-            // If we can connect and send a text message, we know that the endpoint was
-            // added properly, and the response will help us verify the policy configuration too
-            assertThat("payload", payload, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
-        }
+        // Make request again (server should have retained websocket configuration)
+    
+        clientSocket = new TrackingEndpoint(testname.getMethodName());
+        upgradeRequest = new ClientUpgradeRequest();
+        clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+    
+        clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        clientSession.getRemote().sendString("hello 2");
+    
+        incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+    
+        // If we can connect and send a text message, we know that the endpoint was
+        // added properly, and the response will help us verify the policy configuration too
+        assertThat("Client incoming message", incomingMessage, containsString("session.maxTextMessageSize=" + (10 * 1024 * 1024)));
+    
+        clientSession.close();
     }
 }

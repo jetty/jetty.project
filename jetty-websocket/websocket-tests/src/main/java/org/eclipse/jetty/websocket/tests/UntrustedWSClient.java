@@ -23,10 +23,12 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -66,5 +68,17 @@ public class UntrustedWSClient extends WebSocketClient
                 return (UntrustedWSSession) connectFut.get(timeout, unit);
             }
         };
+    }
+    
+    public static String getStaticWebSocketKey()
+    {
+        return "dGhlIHNhbXBsZSBub25jZQ==";
+    }
+    
+    public static String genRandomWebSocketKey()
+    {
+        byte[] bytes = new byte[16];
+        ThreadLocalRandom.current().nextBytes(bytes);
+        return new String(B64Code.encode(bytes));
     }
 }
