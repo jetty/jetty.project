@@ -21,17 +21,14 @@ package org.eclipse.jetty.websocket.tests;
 import static org.eclipse.jetty.websocket.tests.Fuzzer.SendMode.BULK;
 import static org.eclipse.jetty.websocket.tests.Fuzzer.SendMode.PER_FRAME;
 import static org.eclipse.jetty.websocket.tests.Fuzzer.SendMode.SLOW;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
@@ -62,7 +59,6 @@ public class Fuzzer extends ContainerLifeCycle
         private final Generator generator;
         private SendMode sendMode = SendMode.BULK;
         private int slowSendSegmentSize = 5;
-        private boolean ignoreBrokenPipe = false;
         
         public Session(Fuzzed testcase, UntrustedWSSession session)
         {
@@ -95,13 +91,7 @@ public class Fuzzer extends ContainerLifeCycle
             this.sendMode = PER_FRAME;
             return this;
         }
-        
-        public Session ignoreBrokenPipe()
-        {
-            this.ignoreBrokenPipe = true;
-            return this;
-        }
-        
+    
         private void assertIsOpen() throws Exception
         {
             assertThat("Session exists", session, notNullValue());
@@ -218,36 +208,15 @@ public class Fuzzer extends ContainerLifeCycle
             assertIsOpen();
             LOG.debug("[{}] Sending {} frames (mode {})", testcase.getTestMethodName(), send.size(), sendMode);
             
-            try
+            session.getUntrustedConnection();
+            
+            for (WebSocketFrame f : send)
             {
-                for (WebSocketFrame f : send)
-                {
-                    BlockerFrameCallback blocker = new BlockerFrameCallback();
-                    session.getOutgoingHandler().outgoingFrame(f, blocker, BatchMode.OFF);
-                    blocker.block();
-                }
+                BlockerFrameCallback blocker = new BlockerFrameCallback();
+                session.getOutgoingHandler().outgoingFrame(f, blocker, BatchMode.OFF);
+                blocker.block();
             }
-            catch (SocketException e)
-            {
-                if (ignoreBrokenPipe)
-                {
-                    // Potential for SocketException (Broken Pipe) here.
-                    // But not in 100% of testing scenarios. It is a safe
-                    // exception to ignore in this testing scenario, as the
-                    // slow writing of the frames can result in the server
-                    // throwing a PROTOCOL ERROR termination/close when it
-                    // encounters the bad continuation frame above (this
-                    // termination is the expected behavior), and this
-                    // early socket close can propagate back to the client
-                    // before it has a chance to finish writing out the
-                    // remaining frame octets
-                    assertThat("Allowed to be a broken pipe", e.getMessage().toLowerCase(Locale.ENGLISH), containsString("broken pipe"));
-                }
-                else
-                {
-                    throw e;
-                }
-            }
+            
             return this;
         }
     }
@@ -257,14 +226,6 @@ public class Fuzzer extends ContainerLifeCycle
         BULK,
         PER_FRAME,
         SLOW
-    }
-    
-    public enum DisconnectMode
-    {
-        /** Disconnect occurred after a proper close handshake */
-        CLEAN,
-        /** Disconnect occurred in a harsh manner, without a close handshake */
-        UNCLEAN
     }
     
     private static final int KBYTE = 1024;

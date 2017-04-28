@@ -88,7 +88,6 @@ public class TestABCase5 extends AbstractABCase
              Fuzzer.Session session = fuzzer.connect(this))
         {
             session.perFrameMode();
-            session.ignoreBrokenPipe();
             session.send(send);
             session.expect(expect);
         }
@@ -114,7 +113,6 @@ public class TestABCase5 extends AbstractABCase
              Fuzzer.Session session = fuzzer.connect(this))
         {
             session.slowMode(1);
-            session.ignoreBrokenPipe();
             session.send(send);
             session.expect(expect);
         }
@@ -140,7 +138,6 @@ public class TestABCase5 extends AbstractABCase
              Fuzzer.Session session = fuzzer.connect(this))
         {
             session.bulkMode();
-            session.ignoreBrokenPipe();
             session.send(send);
             session.expect(expect);
         }
@@ -166,7 +163,6 @@ public class TestABCase5 extends AbstractABCase
              Fuzzer.Session session = fuzzer.connect(this))
         {
             session.perFrameMode();
-            session.ignoreBrokenPipe();
             session.send(send);
             session.expect(expect);
         }
@@ -192,7 +188,6 @@ public class TestABCase5 extends AbstractABCase
              Fuzzer.Session session = fuzzer.connect(this))
         {
             session.slowMode(1);
-            session.ignoreBrokenPipe();
             session.send(send);
             session.expect(expect);
         }
@@ -250,7 +245,6 @@ public class TestABCase5 extends AbstractABCase
              Fuzzer.Session session = fuzzer.connect(this))
         {
             session.bulkMode();
-            session.ignoreBrokenPipe();
             session.send(send);
             session.expect(expect);
         }
