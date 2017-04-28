@@ -21,13 +21,14 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorErrorSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorExceptionSocket;
@@ -37,6 +38,8 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenSessionIntSocket;
 import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -79,16 +82,36 @@ public class DeploymentExceptionTest
     @Parameterized.Parameter(0)
     public Class<?> pojo;
     
+    private Server server;
+    private HandlerCollection contexts;
+    
+    @Before
+    public void startServer() throws Exception
+    {
+        server = new Server(0);
+        contexts = new HandlerCollection(true, new Handler[0]);
+        server.setHandler(contexts);
+        server.start();
+    }
+    
+    @After
+    public void stopServer() throws Exception
+    {
+        server.stop();
+    }
+    
     @Test
     public void testDeploy_InvalidSignature() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
+        
         WebSocketServerFactory serverFactory = new WebSocketServerFactory(context.getServletContext());
         NativeWebSocketConfiguration configuration = new NativeWebSocketConfiguration(serverFactory);
-        Executor executor = new QueuedThreadPool();
-        ServerContainer container = new ServerContainer(configuration, executor);
-        context.addBean(container);
         
+        ServerContainer container = new ServerContainer(configuration, server.getThreadPool());
+        context.addBean(container);
+    
+        contexts.addHandler(context);
         try
         {
             context.start();
