@@ -367,8 +367,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
                             Throwable failure = (Throwable)_request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-                            failure.addSuppressed(x);
-                            minimalErrorResponse(failure);
+                            if (failure==null)
+                            {
+                                minimalErrorResponse(x);
+                            }
+                            else
+                            {
+                                failure.addSuppressed(x);
+                                minimalErrorResponse(failure);
+                            }
                         }
                         break;
                     }

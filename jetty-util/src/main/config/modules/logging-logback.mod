@@ -14,6 +14,3 @@ logging
 
 [exec]
 -Dorg.eclipse.jetty.util.log.class?=org.eclipse.jetty.util.log.Slf4jLog
-
-[ini]
-jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/slf4j/,${jetty.base.uri}/lib/logback/

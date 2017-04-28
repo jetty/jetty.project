@@ -89,6 +89,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final AtomicLong totalResponses = new AtomicLong();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
+    private boolean recycleHttpChannels;
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -113,6 +114,16 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     protected ServerParser getParser()
     {
         return (ServerParser)super.getParser();
+    }
+
+    public boolean isRecycleHttpChannels()
+    {
+        return recycleHttpChannels;
+    }
+
+    public void setRecycleHttpChannels(boolean recycleHttpChannels)
+    {
+        this.recycleHttpChannels = recycleHttpChannels;
     }
 
     @Override
@@ -234,7 +245,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
     {
-        HttpChannelOverHTTP2 channel = pollChannel();
+        HttpChannelOverHTTP2 channel = pollHttpChannel();
         if (channel != null)
         {
             channel.getHttpTransport().setStream(stream);
@@ -258,19 +269,29 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return new ServerHttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport);
     }
 
-    private void offerChannel(HttpChannelOverHTTP2 channel)
+    private void offerHttpChannel(HttpChannelOverHTTP2 channel)
     {
-        synchronized (this)
+        if (isRecycleHttpChannels())
         {
-            channels.offer(channel);
+            synchronized (this)
+            {
+                channels.offer(channel);
+            }
         }
     }
 
-    private HttpChannelOverHTTP2 pollChannel()
+    private HttpChannelOverHTTP2 pollHttpChannel()
     {
-        synchronized (this)
+        if (isRecycleHttpChannels())
         {
-            return channels.poll();
+            synchronized (this)
+            {
+                return channels.poll();
+            }
+        }
+        else
+        {
+            return null;
         }
     }
 
@@ -336,7 +357,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             getStream().removeAttribute(IStream.CHANNEL_ATTRIBUTE);
             super.recycle();
-            offerChannel(this);
+            offerHttpChannel(this);
         }
 
         @Override

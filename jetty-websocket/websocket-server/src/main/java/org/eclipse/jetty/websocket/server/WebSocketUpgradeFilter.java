@@ -207,12 +207,13 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 return;
             }
             
-            // Since this is a filter, we need to be smart about determining the target path
-            String contextPath = httpreq.getContextPath();
-            String target = httpreq.getRequestURI();
-            if (target.startsWith(contextPath))
+            // Since this is a filter, we need to be smart about determining the target path.
+            // We should rely on the Container for stripping path parameters and its ilk before
+            // attempting to match a specific mapped websocket creator.
+            String target = httpreq.getServletPath();
+            if (httpreq.getPathInfo() != null)
             {
-                target = target.substring(contextPath.length());
+                target = target + httpreq.getPathInfo();
             }
             
             MappedResource<WebSocketCreator> resource = configuration.getMatch(target);

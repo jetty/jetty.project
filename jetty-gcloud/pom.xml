@@ -13,7 +13,7 @@
   <name>Jetty :: GCloud</name>
 
   <properties>
-    <gcloud.version>0.10.0-beta</gcloud.version>
+    <gcloud.version>1.0.0</gcloud.version>
   </properties>
 
   <modules>

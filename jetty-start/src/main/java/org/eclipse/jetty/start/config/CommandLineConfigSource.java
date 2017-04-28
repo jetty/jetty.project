@@ -41,6 +41,7 @@ public class CommandLineConfigSource implements ConfigSource
 {
     public static final String ORIGIN_INTERNAL_FALLBACK = "<internal-fallback>";
     public static final String ORIGIN_CMD_LINE = "<command-line>";
+    public static final String ORIGIN_SYSTEM_PROPERTY = "<system-property>";
 
     private final RawArgs args;
     private final Props props;
@@ -79,6 +80,7 @@ public class CommandLineConfigSource implements ConfigSource
         String val = System.getProperty(BaseHome.JETTY_BASE);
         if (!Utils.isBlank(val))
         {
+            setProperty(BaseHome.JETTY_BASE,val,ORIGIN_SYSTEM_PROPERTY);
             return FS.toPath(val);
         }
 
@@ -101,6 +103,7 @@ public class CommandLineConfigSource implements ConfigSource
         String val = System.getProperty(BaseHome.JETTY_HOME);
         if (!Utils.isBlank(val))
         {
+            setProperty(BaseHome.JETTY_HOME,val,ORIGIN_SYSTEM_PROPERTY);
             return FS.toPath(val);
         }
 
@@ -116,7 +119,9 @@ public class CommandLineConfigSource implements ConfigSource
                 // ${jetty.home} is relative to found BaseHome class
                 try
                 {
-                    return new File(new URI(m.group(1))).getParentFile().toPath();
+                    Path home = new File(new URI(m.group(1))).getParentFile().toPath();
+                    setProperty(BaseHome.JETTY_HOME,home.toString(),ORIGIN_INTERNAL_FALLBACK);
+                    return home;
                 }
                 catch (URISyntaxException e)
                 {
@@ -127,7 +132,7 @@ public class CommandLineConfigSource implements ConfigSource
 
         // Lastly, fall back to ${user.dir} default
         Path home = FS.toPath(System.getProperty("user.dir","."));
-        setProperty(BaseHome.JETTY_HOME,home.toString(),ORIGIN_INTERNAL_FALLBACK);
+        setProperty(BaseHome.JETTY_HOME,home.toString(),"<user.dir>");
         return home;
     }
 

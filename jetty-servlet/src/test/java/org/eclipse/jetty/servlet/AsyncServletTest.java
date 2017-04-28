@@ -52,7 +52,6 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DebugListener;
-import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
@@ -753,7 +752,6 @@ public class AsyncServletTest
                 // ignored
             }
 
-            // System.err.println(request.getDispatcherType()+" "+request.getRequestURI());
             historyAdd(request.getDispatcherType()+" "+request.getRequestURI());
             if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
                 historyAdd("wrapped"+((request instanceof ServletRequestWrapper)?" REQ":"")+((response instanceof ServletResponseWrapper)?" RSP":""));

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,6 +46,8 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * The Deployment Manager.
@@ -594,5 +597,21 @@ public class DeploymentManager extends ContainerLifeCycle
     public Collection<App> getApps(@Name("nodeName") String nodeName)
     {
         return getApps(_lifecycle.getNodeByName(nodeName));
+    }
+
+    public void scope(XmlConfiguration xmlc, Resource webapp)
+        throws IOException
+    {
+        xmlc.getIdMap().put("Server", getServer());
+        Resource home = Resource.newResource(System.getProperty("jetty.home","."));
+        xmlc.getProperties().put("jetty.home",home.toString());
+        xmlc.getProperties().put("jetty.home.uri",home.getURI().toString());
+    
+        Resource base = Resource.newResource(System.getProperty("jetty.base",home.toString()));
+        xmlc.getProperties().put("jetty.base",base.toString());
+        xmlc.getProperties().put("jetty.base.uri",base.getURI().toString());
+        
+        xmlc.getProperties().put("jetty.webapp",webapp.toString());
+        xmlc.getProperties().put("jetty.webapps",webapp.getFile().toPath().getParent().toString());
     }
 }

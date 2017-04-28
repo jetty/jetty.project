@@ -19,7 +19,7 @@
 
 This chapter discusses various options for configuring logging.
 
-//include::configuring-jetty-logging.adoc[]
+include::configuring-jetty-logging.adoc[]
 include::default-logging-with-stderrlog.adoc[]
 include::configuring-jetty-request-logs.adoc[]
 include::configuring-logging-modules.adoc[]
