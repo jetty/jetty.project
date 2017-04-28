@@ -212,7 +212,10 @@ public class RolloverFileOutputStream extends FilterOutputStream
     {
         _rollTask = new RollTask();
         midnight = nextMidnight(midnight);
-        __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli());
+        synchronized(RolloverFileOutputStream.class)
+        {
+            __rollover.schedule(_rollTask,midnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli());
+        }
     }
 
     /* ------------------------------------------------------------ */
