@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.examples;
+package examples;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -37,9 +37,12 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 
 /**
- * This is not a general purpose websocket client. It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.
+ * This is not a general purpose websocket client.
+ * <p>
+ * It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.
+ * </p>
  */
-public class TestClient
+public class ClientDemo
 {
     public class TestSocket extends WebSocketAdapter
     {
@@ -96,7 +99,7 @@ public class TestClient
 
     private static final Random __random = new Random();
 
-    private static LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("TestClient");
+    private static LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("ClientDemo");
 
     private final String _host;
     private final int _port;
@@ -174,7 +177,7 @@ public class TestClient
             }
         }
 
-        TestClient[] client = new TestClient[clients];
+        ClientDemo[] client = new ClientDemo[clients];
         WebSocketClient wsclient = new WebSocketClient(bufferPool);
         try
         {
@@ -184,7 +187,7 @@ public class TestClient
 
             for (int i = 0; i < clients; i++)
             {
-                client[i] = new TestClient(wsclient,host,port,protocol,60000);
+                client[i] = new ClientDemo(wsclient,host,port,protocol,60000);
                 client[i].open();
             }
 
@@ -259,7 +262,7 @@ public class TestClient
     private static void usage(String[] args)
     {
         System.err.println("ERROR: " + Arrays.asList(args));
-        System.err.println("USAGE: java -cp CLASSPATH " + TestClient.class + " [ OPTIONS ]");
+        System.err.println("USAGE: java -cp CLASSPATH " + ClientDemo.class + " [ OPTIONS ]");
         System.err.println("  -h|--host HOST  (default localhost)");
         System.err.println("  -p|--port PORT  (default 8080)");
         System.err.println("  -b|--binary");
@@ -281,7 +284,7 @@ public class TestClient
     private WebSocketClient client;
     private TestSocket socket;
 
-    public TestClient(WebSocketClient client, String host, int port, String protocol, int timeoutMS) throws Exception
+    public ClientDemo(WebSocketClient client, String host, int port, String protocol, int timeoutMS) throws Exception
     {
         this.client = client;
         _host = host;
