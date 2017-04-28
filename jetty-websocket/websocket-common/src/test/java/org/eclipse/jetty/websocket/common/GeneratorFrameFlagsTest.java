@@ -16,20 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.ab;
+package org.eclipse.jetty.websocket.common;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.ProtocolException;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,51 +35,34 @@ import org.junit.runners.Parameterized.Parameters;
  * Test various invalid frame situations
  */
 @RunWith(value = Parameterized.class)
-public class TestABCase3
+public class GeneratorFrameFlagsTest
 {
     @Parameters
     public static Collection<WebSocketFrame[]> data()
     {
         List<WebSocketFrame[]> data = new ArrayList<>();
-        // @formatter:off
-        data.add(new WebSocketFrame[]
-                { new PingFrame().setFin(false) });
-        data.add(new WebSocketFrame[]
-                { new PingFrame().setRsv1(true) });
-        data.add(new WebSocketFrame[]
-                { new PingFrame().setRsv2(true) });
-        data.add(new WebSocketFrame[]
-                { new PingFrame().setRsv3(true) });
-        data.add(new WebSocketFrame[]
-                { new PongFrame().setFin(false) });
-        data.add(new WebSocketFrame[]
-                { new PingFrame().setRsv1(true) });
-        data.add(new WebSocketFrame[]
-                { new PongFrame().setRsv2(true) });
-        data.add(new WebSocketFrame[]
-                { new PongFrame().setRsv3(true) });
-        data.add(new WebSocketFrame[]
-                { new CloseInfo().asFrame().setFin(false) });
-        data.add(new WebSocketFrame[]
-                { new CloseInfo().asFrame().setRsv1(true) });
-        data.add(new WebSocketFrame[]
-                { new CloseInfo().asFrame().setRsv2(true) });
-        data.add(new WebSocketFrame[]
-                { new CloseInfo().asFrame().setRsv3(true) });
-        // @formatter:on
+        data.add(new WebSocketFrame[]{new PingFrame().setFin(false)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv2(true)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv3(true)});
+        data.add(new WebSocketFrame[]{new PongFrame().setFin(false)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
+        data.add(new WebSocketFrame[]{new PongFrame().setRsv2(true)});
+        data.add(new WebSocketFrame[]{new PongFrame().setRsv3(true)});
+        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setFin(false)});
+        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv1(true)});
+        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv2(true)});
+        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv3(true)});
         return data;
     }
-
-    @Rule
-    public TestTracker tt = new TestTracker();
-
+    
     private WebSocketFrame invalidFrame;
-
-    public TestABCase3(WebSocketFrame invalidFrame)
+    
+    public GeneratorFrameFlagsTest(WebSocketFrame invalidFrame)
     {
         this.invalidFrame = invalidFrame;
     }
-
+    
     @Test(expected = ProtocolException.class)
     public void testGenerateInvalidControlFrame()
     {
