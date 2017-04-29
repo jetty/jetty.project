@@ -24,6 +24,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
@@ -88,11 +89,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final List<LogicalConnection.Listener> listeners = new CopyOnWriteArrayList<>();
     private List<ExtensionConfig> extensions;
     private ByteBuffer networkBuffer;
-    private ByteBuffer prefillBuffer;
     
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {
         super(endp,executor);
+    
+        Objects.requireNonNull(endp, "EndPoint");
+        Objects.requireNonNull(executor, "Executor");
+        Objects.requireNonNull(scheduler, "Scheduler");
+        Objects.requireNonNull(policy, "WebSocketPolicy");
+        Objects.requireNonNull(bufferPool, "ByteBufferPool");
     
         LOG = Log.getLogger(AbstractWebSocketConnection.class.getName() + "." + policy.getBehavior());
         
@@ -279,10 +285,22 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return true;
     }
     
+    private ByteBuffer getNetworkBuffer()
+    {
+        synchronized (this)
+        {
+            if (networkBuffer == null)
+            {
+                networkBuffer = bufferPool.acquire(getInputBufferSize(), true);
+            }
+            return networkBuffer;
+        }
+    }
+    
     @Override
     public void onFillable()
     {
-        networkBuffer = bufferPool.acquire(getInputBufferSize(),true);
+        getNetworkBuffer();
         fillAndParse();
     }
     
@@ -297,38 +315,27 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                     return;
                 }
     
-                if (BufferUtil.hasContent(prefillBuffer))
+                if (networkBuffer.hasRemaining())
                 {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Parsing Upgrade prefill buffer ({})", prefillBuffer.remaining(), BufferUtil.toDetailString(prefillBuffer));
-                    }
-                    if (!parser.parse(prefillBuffer)) return;
-                }
-                else
-                {
-                    if (networkBuffer.hasRemaining())
-                    {
-                        if (!parser.parse(networkBuffer)) return;
-                    }
-    
-                    int filled = getEndPoint().fill(networkBuffer);
-    
-                    if (filled < 0)
-                    {
-                        bufferPool.release(networkBuffer);
-                        return;
-                    }
-    
-                    if (filled == 0)
-                    {
-                        bufferPool.release(networkBuffer);
-                        fillInterested();
-                        return;
-                    }
-    
                     if (!parser.parse(networkBuffer)) return;
                 }
+
+                int filled = getEndPoint().fill(networkBuffer);
+
+                if (filled < 0)
+                {
+                    bufferPool.release(networkBuffer);
+                    return;
+                }
+
+                if (filled == 0)
+                {
+                    bufferPool.release(networkBuffer);
+                    fillInterested();
+                    return;
+                }
+
+                // if (!parser.parse(networkBuffer)) return;
             }
         }
         catch (Throwable t)
@@ -349,7 +356,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG.debug("set Initial Buffer - {}",BufferUtil.toDetailString(prefilled));
         }
-        prefillBuffer = prefilled;
+    
+        if ((prefilled != null) && (prefilled.hasRemaining()))
+        {
+            networkBuffer = bufferPool.acquire(prefilled.remaining(), true);
+            BufferUtil.clearToFill(networkBuffer);
+            BufferUtil.put(prefilled, networkBuffer);
+            BufferUtil.flipToFlush(networkBuffer, 0);
+        }
     }
 
     private void notifyError(Throwable cause)
