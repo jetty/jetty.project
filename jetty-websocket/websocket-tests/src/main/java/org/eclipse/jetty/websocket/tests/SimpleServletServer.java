@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServlet;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -44,6 +45,7 @@ public class SimpleServletServer extends ContainerLifeCycle
     private static final Logger LOG = Log.getLogger(SimpleServletServer.class);
     private Server server;
     private ServerConnector connector;
+    private LocalConnector localConnector;
     private URI serverUri;
     private HttpServlet servlet;
     private boolean ssl = false;
@@ -58,7 +60,12 @@ public class SimpleServletServer extends ContainerLifeCycle
     {
         this.ssl = ssl;
     }
-
+    
+    public LocalConnector getLocalConnector()
+    {
+        return localConnector;
+    }
+    
     public URI getServerUri()
     {
         return serverUri;
@@ -113,7 +120,12 @@ public class SimpleServletServer extends ContainerLifeCycle
             connector = new ServerConnector(server);
             connector.setPort(0);
         }
+        // Add network connector
         server.addConnector(connector);
+        
+        // Add Local Connector
+        localConnector = new LocalConnector(server);
+        server.addConnector(localConnector);
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
@@ -146,6 +158,7 @@ public class SimpleServletServer extends ContainerLifeCycle
 
     protected void configureServletContextHandler(ServletContextHandler context)
     {
+        /* override to change context handler */
     }
 
     public WebSocketServletFactory getWebSocketServletFactory()

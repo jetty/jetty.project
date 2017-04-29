@@ -352,7 +352,7 @@ public class Generator
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {
-        buf.put(generateHeaderBytes(frame));
+        generateHeaderBytes(frame, buf);
         if (frame.hasPayload())
         {
             if (readOnly)
