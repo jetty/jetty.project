@@ -20,6 +20,8 @@
       </excludes>
     </fileSet>
   </fileSets>
+<!-- Removed until PropertyUserStore supports packed realm.properties -->
+<!--
   <files>
     <file>
       <source>src/main/assembly/embedded-jetty-web-for-webbundle.xml</source>
@@ -32,4 +34,5 @@
       <destName>realm.properties</destName>
     </file>
   </files>
+-->
 </assembly>

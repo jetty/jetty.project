@@ -51,7 +51,9 @@ detected.
     <Set name="loginService">
       <New class="org.eclipse.jetty.security.HashLoginService">
 	    <Set name="name">Test Realm</Set>
-	    <Set name="config"><Property name="this.web-inf.path"/>realm.properties</Set>
+	    <Set name="config">
+	       <Property name="web-inf.uri">/realm.properties</Property>      
+	    </Set>
             <!-- To enable reload of realm when properties change, uncomment the following lines -->
             <!-- changing refreshInterval (in seconds) as desired                                -->
             <!--

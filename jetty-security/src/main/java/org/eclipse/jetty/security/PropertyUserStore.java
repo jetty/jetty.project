@@ -20,6 +20,7 @@ package org.eclipse.jetty.security;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -84,18 +85,30 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
     @Deprecated
     public String getConfig()
     {
-        return _configPath.toString();
+        if (_configPath != null)
+            return _configPath.toString();
+        return null;
     }
 
     /**
      * Set the Config Path from a String reference to a file
-     * @param configFile the config file
-     * @deprecated use {@link #setConfigPath(String)} instead
+     * @param config the config file
      */
-    @Deprecated
-    public void setConfig(String configFile)
+    public void setConfig(String config)
     {
-        setConfigPath(configFile);
+        try
+        {
+            Resource configResource = Resource.newResource(config);
+            if (configResource.getFile() != null)
+                setConfigPath(configResource.getFile());
+            else
+                throw new IllegalArgumentException(config+" is not a file");
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+
     }
     
     /**

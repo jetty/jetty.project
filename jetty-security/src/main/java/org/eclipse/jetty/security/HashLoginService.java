@@ -53,8 +53,7 @@ public class HashLoginService extends MappedLoginService implements UserListener
     private static final Logger LOG = Log.getLogger(HashLoginService.class);
 
     private PropertyUserStore _propertyUserStore;
-    private File _configFile;
-    private Resource _configResource;
+    private String _config;
     private boolean hotReload = false; // default is not to reload
     
     
@@ -100,28 +99,15 @@ public class HashLoginService extends MappedLoginService implements UserListener
     /* ------------------------------------------------------------ */
     public String getConfig()
     {
-        if(_configFile == null)
-        {
-            return null;
-        }
-        return _configFile.getAbsolutePath();
+        return _config;
     }
 
+
     /* ------------------------------------------------------------ */
-    
-    /**
-     * @deprecated use {@link #setConfig(String)} instead
-     */
     @Deprecated
-    public void getConfig(String config)
-    {
-        setConfig(config);
-    }
-
-    /* ------------------------------------------------------------ */
     public Resource getConfigResource()
     {
-        return _configResource;
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -131,12 +117,11 @@ public class HashLoginService extends MappedLoginService implements UserListener
      * The property file maps usernames to password specs followed by an optional comma separated list of role names.
      * </p>
      * 
-     * @param configFile
-     *            Filename of user properties file.
+     * @param config uri or url or path to realm properties file
      */
-    public void setConfig(String configFile)
+    public void setConfig(String config)
     {
-        _configFile = new File(configFile);
+        _config=config;
     }
     
     /**
@@ -246,11 +231,10 @@ public class HashLoginService extends MappedLoginService implements UserListener
         if (_propertyUserStore == null)
         {
             if(LOG.isDebugEnabled())
-                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _configFile + " hotReload: " + hotReload);
-            
+                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " hotReload: " + hotReload);
             _propertyUserStore = new PropertyUserStore();
             _propertyUserStore.setHotReload(hotReload);
-            _propertyUserStore.setConfigPath(_configFile);
+            _propertyUserStore.setConfigPath(_config);
             _propertyUserStore.registerUserListener(this);
             _propertyUserStore.start();
         }
