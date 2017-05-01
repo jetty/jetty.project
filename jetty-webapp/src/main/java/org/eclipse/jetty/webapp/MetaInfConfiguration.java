@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -80,6 +81,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
     public static final String METAINF_RESOURCES = "org.eclipse.jetty.resources";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
+    public static final List<String> __allScanTypes = (List<String>) Arrays.asList(METAINF_TLDS, METAINF_RESOURCES, METAINF_FRAGMENTS);
+    
 
     /**
      * If set, to a list of URLs, these resources are added to the context
@@ -119,7 +122,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
-    {        
+    {
         // discover matching container jars
         if (context.getClassLoader() != null)
         {
@@ -165,9 +168,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
     protected void scanJars (WebAppContext context) throws Exception
     {
         boolean useContainerCache = DEFAULT_USE_CONTAINER_METAINF_CACHE;
-        Boolean attr = (Boolean)context.getServer().getAttribute(USE_CONTAINER_METAINF_CACHE);
-        if (attr != null)
-            useContainerCache = attr.booleanValue();
+        if (context.getServer() != null)
+        {
+            Boolean attr = (Boolean)context.getServer().getAttribute(USE_CONTAINER_METAINF_CACHE);
+            if (attr != null)
+                useContainerCache = attr.booleanValue();
+        }
         
         if (LOG.isDebugEnabled()) LOG.debug("{} = {}", USE_CONTAINER_METAINF_CACHE, useContainerCache);
         
@@ -180,9 +186,28 @@ public class MetaInfConfiguration extends AbstractConfiguration
             context.setAttribute(METAINF_RESOURCES, new HashSet<Resource>());
         if (context.getAttribute(METAINF_FRAGMENTS) == null)
             context.setAttribute(METAINF_FRAGMENTS, new HashMap<Resource, Resource>());
-       
-        scanJars(context, context.getMetaData().getContainerResources(), useContainerCache);
-        scanJars(context, context.getMetaData().getWebInfJars(), false);
+
+        //always scan everything from the container's classpath
+        scanJars(context, context.getMetaData().getContainerResources(), useContainerCache, __allScanTypes);
+        //only look for fragments if web.xml is not metadata complete, or it version 3.0 or greater
+        List<String> scanTypes = new ArrayList<>(__allScanTypes);
+        if (context.getMetaData().isMetaDataComplete() || (context.getServletContext().getEffectiveMajorVersion() < 3) && !context.isConfigurationDiscovered())
+            scanTypes.remove(METAINF_FRAGMENTS);
+        scanJars(context, context.getMetaData().getWebInfJars(), false, scanTypes);
+    }
+
+     /**
+      * For backwards compatibility. This method will always scan for all types of data.
+      * 
+     * @param context the context for the scan
+     * @param jars the jars to scan
+     * @param useCaches if true, the scanned info is cached
+     * @throws Exception
+     */
+    public void scanJars (final WebAppContext context, Collection<Resource> jars, boolean useCaches)
+    throws Exception
+    {
+        scanJars(context, jars, useCaches, __allScanTypes);
     }
     
 
@@ -212,9 +237,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @param jars the jars resources to scan
      * @param useCaches if true, cache the info discovered
+     * @param scanTypes the type of things to look for in the jars
      * @throws Exception if unable to scan the jars
      */
-    public void scanJars (final WebAppContext context, Collection<Resource> jars, boolean useCaches)
+    public void scanJars (final WebAppContext context, Collection<Resource> jars, boolean useCaches, List<String> scanTypes )
     throws Exception
     {
         ConcurrentHashMap<Resource, Resource> metaInfResourceCache = null;       
@@ -241,16 +267,18 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 context.getServer().setAttribute(CACHED_CONTAINER_TLDS, metaInfTldCache);
             }
         }
-        
+
         //Scan jars for META-INF information
         if (jars != null)
         {
             for (Resource r : jars)
-            {
-                
-               scanForResources(context, r, metaInfResourceCache);
-               scanForFragment(context, r, metaInfFragmentCache);
-               scanForTlds(context, r, metaInfTldCache);
+            {  
+                if (scanTypes.contains(METAINF_RESOURCES))
+                    scanForResources(context, r, metaInfResourceCache);
+                if (scanTypes.contains(METAINF_FRAGMENTS))
+                    scanForFragment(context, r, metaInfFragmentCache);
+                if (scanTypes.contains(METAINF_TLDS))
+                    scanForTlds(context, r, metaInfTldCache);
             }
         }
     }

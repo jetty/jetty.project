@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -448,9 +451,94 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testIsShutdown() {
+    public void testIsShutdown()
+    {
         ContextHandler handler = new ContextHandler();
         Assert.assertEquals(false, handler.isShutdown());
+    }
+    
+    @Test
+    public void testLogNameFromDisplayName() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setDisplayName("An Interesting Project: app.tast.ic");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".An_Interesting_Project__app_tast_ic"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+    
+    @Test
+    public void testLogNameFromContextPath_Deep() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("/app/tast/ic");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".app_tast_ic"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+    
+    @Test
+    public void testLogNameFromContextPath_Root() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".ROOT"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+    
+    @Test
+    public void testLogNameFromContextPath_Undefined() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".ROOT"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+    
+    @Test
+    public void testLogNameFromContextPath_Empty() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".ROOT"));
+        }
+        finally
+        {
+            handler.stop();
+        }
     }
 
     private void checkResourcePathsForExampleWebApp(String root) throws IOException

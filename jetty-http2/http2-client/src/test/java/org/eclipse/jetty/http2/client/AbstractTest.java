@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -55,7 +56,10 @@ public class AbstractTest
 
     protected void start(HttpServlet servlet) throws Exception
     {
-        prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
+        HTTP2ServerConnectionFactory connectionFactory = new HTTP2ServerConnectionFactory(new HttpConfiguration());
+        connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        prepareServer(connectionFactory);
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
         context.addServlet(new ServletHolder(servlet), servletPath + "/*");
         customizeContext(context);
@@ -71,7 +75,10 @@ public class AbstractTest
 
     protected void start(ServerSessionListener listener) throws Exception
     {
-        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener));
+        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
+        connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        prepareServer(connectionFactory);
         server.start();
 
         prepareClient();
@@ -93,6 +100,8 @@ public class AbstractTest
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);
+        client.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        client.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
     }
 
     protected Session newClient(Session.Listener listener) throws Exception

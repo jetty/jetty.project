@@ -653,9 +653,9 @@ public class Response implements HttpServletResponse
             ErrorHandler error_handler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
             if (error_handler!=null)
                 error_handler.handle(null, request, request, this);
-            else
-                closeOutput();
         }
+        if (!request.isAsyncStarted())
+            closeOutput();
     }
 
     /**
@@ -698,14 +698,14 @@ public class Response implements HttpServletResponse
             if (location.startsWith("/"))
             {
                 // absolute in context
-                location=URIUtil.canonicalPath(location);
+                location=URIUtil.canonicalEncodedPath(location);
             }
             else
             {
                 // relative to request
                 String path=_channel.getRequest().getRequestURI();
                 String parent=(path.endsWith("/"))?path:URIUtil.parentPath(path);
-                location=URIUtil.canonicalPath(URIUtil.addPaths(parent,location));
+                location=URIUtil.canonicalEncodedPath(URIUtil.addEncodedPaths(parent,location));
                 if (!location.startsWith("/"))
                     buf.append('/');
             }
@@ -1040,10 +1040,12 @@ public class Response implements HttpServletResponse
                     _out.close();
                 break;
             case STREAM:
-                getOutputStream().close();
+                if (!_out.isClosed())
+                    getOutputStream().close();
                 break;
             default:
-                _out.close();
+                if (!_out.isClosed())
+                    _out.close();
         }
     }
 

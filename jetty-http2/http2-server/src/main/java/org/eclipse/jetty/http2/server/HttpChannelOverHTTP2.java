@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -329,9 +330,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     {
         getHttpTransport().onStreamFailure(failure);
         if (onEarlyEOF())
-            handle();
+        {
+            ContextHandler handler = getState().getContextHandler();
+            if (handler != null)
+                handler.handle(getRequest(), this);
+            else
+                handle();
+        }
         else
+        {
             getState().asyncError(failure);
+        }
     }
 
     protected void consumeInput()

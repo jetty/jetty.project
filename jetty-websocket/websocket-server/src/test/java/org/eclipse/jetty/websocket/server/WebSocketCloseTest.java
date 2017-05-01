@@ -50,11 +50,13 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests various close scenarios
  */
+@Ignore
 public class WebSocketCloseTest
 {
     static class AbstractCloseSocket extends WebSocketAdapter

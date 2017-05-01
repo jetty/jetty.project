@@ -143,6 +143,7 @@ public class StringUtilTest
     }
 
     @Test
+    @Deprecated
     public void testSidConversion() throws Exception
     {
         String sid4 = "S-1-4-21-3623811015-3361044348-30300820";

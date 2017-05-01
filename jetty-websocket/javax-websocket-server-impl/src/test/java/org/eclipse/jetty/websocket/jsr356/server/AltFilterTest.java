@@ -77,7 +77,7 @@ public class AltFilterTest
             {
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> future = client.connect(clientEcho,uri.resolve("echo"));
+                Future<Session> future = client.connect(clientEcho,uri.resolve("echo;jsession=xyz"));
                 // wait for connect
                 future.get(1,TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello Echo");

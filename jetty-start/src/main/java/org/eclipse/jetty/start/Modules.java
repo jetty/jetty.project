@@ -335,12 +335,13 @@ public class Modules implements Iterable<Module>
         }
         
         // Process module dependencies (always processed as may be dynamic)
+        StartLog.debug("Enabled module %s depends on %s",module.getName(),module.getDepends());
         for(String dependsOn:module.getDepends())
         {
             // Look for modules that provide that dependency
             Set<Module> providers = getAvailableProviders(dependsOn);
                 
-            StartLog.debug("Module %s depends on %s provided by ",module,dependsOn,providers);
+            StartLog.debug("Module %s depends on %s provided by %s",module,dependsOn,providers);
             
             // If there are no known providers of the module
             if (providers.isEmpty())
@@ -381,11 +382,11 @@ public class Modules implements Iterable<Module>
     private Set<Module> getAvailableProviders(String name)
     {
         // Get all available providers 
-        
         Set<Module> providers = _provided.get(name);
+        StartLog.debug("Providers of %s are %s",name,providers);
         if (providers==null || providers.isEmpty())
             return Collections.emptySet();
-        
+
         providers = new HashSet<>(providers);
         
         // find all currently provided names by other modules
@@ -409,13 +410,15 @@ public class Modules implements Iterable<Module>
                 {
                     if (provided.contains(p))
                     {
+                        StartLog.debug("Removing provider %s because %s already enabled",provider,p);
                         i.remove();
                         break;
                     }
                 }
             }
         }
-        
+
+        StartLog.debug("Available providers of %s are %s",name,providers);
         return providers;
     }
 

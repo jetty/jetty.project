@@ -1257,7 +1257,7 @@ public class SessionHandler extends ScopedHandler
         if (isStopping() || isStopped())
             return;
         
-        if (LOG.isDebugEnabled()) LOG.debug("Scavenging sessions");
+        if (LOG.isDebugEnabled()) LOG.debug("{} scavenging sessions", this);
         //Get a snapshot of the candidates as they are now. Others that
         //arrive during this processing will be dealt with on 
         //subsequent call to scavenge

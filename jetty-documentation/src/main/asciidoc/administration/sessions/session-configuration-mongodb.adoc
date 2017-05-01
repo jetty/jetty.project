@@ -18,6 +18,8 @@
 
 === Clustered Session Management: MongoDB
 
+==== Enabling MongoDB Sessions
+
 When using the Jetty distribution, you will first need to enable the `session-store-mongo` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 [source, screen, subs="{sub-order}"]
@@ -49,16 +51,20 @@ INFO  : Base directory was modified
 ----
 
 Doing this enables the MongoDB Session module and any dependent modules or files needed for it to run on the server.
-The example above is running an fresh `${jetty.base}` with nothing enabled.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+
 Because MongoDB is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
 When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-mongo` module as well as the `sessions` and `server` modules, which are required for MongoDB session management to operate..
 It also downloaded the needed Mongo-specific jar file and created a directory named `${jetty.base}/lib/nosql/` to house it.
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `start.d` directory of the `${jetty.base}`.
+
+In addition to adding these modules to the classpath of the server, several ini configuration files were added to the `${jetty.base}/start.d` directory.
 
 ____
 [NOTE]
 If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 ____
+
+==== Configuring MongoDB Session Properties
 
 Opening the `start.d/session-store-mongo.ini` will show a list of all the configurable options for the MongoDB module:
 
@@ -73,6 +79,7 @@ Opening the `start.d/session-store-mongo.ini` will show a list of all the config
 #jetty.session.mongo.dbName=HttpSessions
 #jetty.session.mongo.collectionName=jettySessions
 #jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
 
 connection-type=address
 #jetty.session.mongo.host=localhost
@@ -81,6 +88,20 @@ connection-type=address
 #connection-type=uri
 #jetty.session.mongo.connectionString=mongodb://localhost
 ----
+
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
 
 jetty.session.mongo.dbName::
 Name of the database in Mongo used to store the Session collection.

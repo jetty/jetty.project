@@ -42,11 +42,8 @@ public class FragmentConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
-        if (!context.isConfigurationDiscovered())
-            return;
-
-        //find all web-fragment.xmls
-        findWebFragments(context, context.getMetaData());
+        //add all discovered web-fragment.xmls
+        addWebFragments(context, context.getMetaData());
     }
 
 
@@ -55,16 +52,33 @@ public class FragmentConfiguration extends AbstractConfiguration
     {
         context.setAttribute(FRAGMENT_RESOURCES, null);
     }
-
+    
     /* ------------------------------------------------------------------------------- */
     /**
-     * Look for any web-fragment.xml fragments in META-INF of jars in WEB-INF/lib
+     * Add in fragment descriptors that have already been discovered by MetaInfConfiguration
+     * 
+     * @param context the web app context to look in
+     * @param metaData the metadata to populate with fragments
+     * 
+     * @throws Exception if unable to find web fragments
+     * @deprecated
+     */
+    public void findWebFragments (final WebAppContext context, final MetaData metaData)
+    throws Exception
+    {
+        addWebFragments(context, metaData);
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    /**
+     * Add in fragment descriptors that have already been discovered by MetaInfConfiguration
+     * 
      * @param context the web app context to look in
      * @param metaData the metadata to populate with fragments
      * 
      * @throws Exception if unable to find web fragments
      */
-    public void findWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
+    public void addWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
     {
         @SuppressWarnings("unchecked")
         Map<Resource, Resource> frags = (Map<Resource,Resource>)context.getAttribute(FRAGMENT_RESOURCES);

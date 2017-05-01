@@ -94,15 +94,8 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
             if (globalContextSettings.exists())
             {
                 XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings.getInputStream());
-
                 Resource resource = Resource.newResource(app.getOriginId());
-                File file = resource.getFile();
-                jettyXmlConfig.getIdMap().put("Server",app.getDeploymentManager().getServer());
-                jettyXmlConfig.getProperties().put("jetty.home",System.getProperty("jetty.home","."));
-                jettyXmlConfig.getProperties().put("jetty.base",System.getProperty("jetty.base","."));
-                jettyXmlConfig.getProperties().put("jetty.webapp",file.getCanonicalPath());
-                jettyXmlConfig.getProperties().put("jetty.webapps",file.getParentFile().getCanonicalPath());
-                
+                app.getDeploymentManager().scope(jettyXmlConfig,resource);
                 WebAppClassLoader.runWithServerClassAccess(()->{jettyXmlConfig.configure(context);return null;});
             }
             else

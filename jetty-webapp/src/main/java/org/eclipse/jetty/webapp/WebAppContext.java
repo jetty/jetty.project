@@ -214,7 +214,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private Map<String, String> _resourceAliases;
     private boolean _ownClassLoader=false;
-    private boolean _configurationDiscovered=true;
+    private boolean _configurationDiscovered=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
     
@@ -253,6 +253,17 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
+     * @param contextPath The context path
+     * @param webApp The URL or filename of the webapp directory or war file.
+     */
+    public WebAppContext(Resource webApp, String contextPath)
+    {
+        this(null,contextPath,null,null,null,new ErrorPageErrorHandler(),SESSIONS|SECURITY);
+        setWarResource(webApp);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @param parent The parent HandlerContainer.
      * @param contextPath The context path
      * @param webApp The URL or filename of the webapp directory or war file.
@@ -261,6 +272,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         this(parent,contextPath,null,null,null,new ErrorPageErrorHandler(),SESSIONS|SECURITY);
         setWar(webApp);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param parent The parent HandlerContainer.
+     * @param contextPath The context path
+     * @param webApp The webapp directory or war file.
+     */
+    public WebAppContext(HandlerContainer parent, Resource webApp, String contextPath)
+    {
+        this(parent,contextPath,null,null,null,new ErrorPageErrorHandler(),SESSIONS|SECURITY);
+        setWarResource(webApp);
     }
 
     /* ------------------------------------------------------------ */
@@ -845,7 +868,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the war as a file or URL string (Resource)
+     * @return Returns the war as a file or URL string (Resource).
+     * The war may be different to the @link {@link #getResourceBase()}
+     * if the war has been expanded and/or copied.
      */
     @ManagedAttribute(value="war file location", readonly=true)
     public String getWar()
@@ -1289,11 +1314,25 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     
     /* ------------------------------------------------------------ */
     /**
-     * @param war The war to set as a file name or URL
+     * Set the war of the webapp. From this value a {@link #setResourceBase(String)}
+     * value is computed by {@link WebInfConfiguration}, which may be changed from
+     * the war URI by unpacking and/or copying.
+     * @param war The war to set as a file name or URL.
      */
     public void setWar(String war)
     {
         _war = war;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the war of the webapp as a {@link Resource}. 
+     * @see #setWar(String)
+     * @param war The war to set as a Resource.
+     */
+    public void setWarResource(Resource war)
+    {
+        setWar(war==null?null:war.toString());
     }
 
     /* ------------------------------------------------------------ */

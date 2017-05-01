@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.joda.time.Duration;
+import org.threeten.bp.Duration;
 
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
@@ -102,7 +102,7 @@ public class GCloudSessionTestSupport
     public void tearDown()
             throws Exception
     {
-        _helper.stop(Duration.standardMinutes(1)); //wait up to 1min for shutdown
+        _helper.stop(Duration.ofMinutes(1)); //wait up to 1min for shutdown
     }
     
     

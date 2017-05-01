@@ -581,7 +581,7 @@ public class AnnotationParser
     throws Exception
     {
         Class<?> cz = clazz;
-        while (cz != null)
+        while (cz != Object.class)
         {
             if (!isParsed(cz.getName()))
             {
@@ -601,7 +601,7 @@ public class AnnotationParser
             if (visitSuperClasses)
                 cz = cz.getSuperclass();
             else
-                cz = null;
+                break;
         }
     }
 

@@ -1255,7 +1255,7 @@ public class Request implements HttpServletRequest
                 relTo = relTo.substring(0,slash + 1);
             else
                 relTo = "/";
-            path = URIUtil.addPaths(URIUtil.encodePath(relTo),path);
+            path = URIUtil.addPaths(relTo,path);
         }
 
         return _context.getRequestDispatcher(path);
@@ -1700,7 +1700,7 @@ public class Request implements HttpServletRequest
      */
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
-        _metaData=request;
+        _metaData = request;
         HttpURI uri = request.getURI();
         _originalUri = uri.isAbsolute() && request.getHttpVersion()!=HttpVersion.HTTP_2
             ? uri.toString()
@@ -1719,26 +1719,33 @@ public class Request implements HttpServletRequest
             }
         }
         
-        String pathInfo = uri.getDecodedPath();
-        if (pathInfo==null || pathInfo.length()==0)
+        String encoded = uri.getPath();
+        String path;
+        if (encoded==null)
         {
-            // If null path was not from an absolute http without a path
-            if (!request.getURI().isAbsolute() || uri.getPath()!=null)
-            {
-                setPathInfo("");
-                throw new BadMessageException(400,"Bad URI");
-            }
-
-            pathInfo="/";
-            uri.setDecodedPath(pathInfo);
+            path = uri.isAbsolute()?"/":null;
+            uri.setPath(path);
         }
-        else if (!(pathInfo.startsWith("/") || "*".equals(request.getURI().getPath()) || HttpMethod.CONNECT.is(getMethod())))
+        else if (encoded.startsWith("/"))
         {
-            setPathInfo(pathInfo);
+            path = (encoded.length()==1)?"/":URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+        }
+        else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
+        {
+            path = encoded;
+        }
+        else
+        {
+            path = null;
+        }
+
+        if (path==null || path.isEmpty())
+        {
+            setPathInfo(encoded==null?"":encoded);
             throw new BadMessageException(400,"Bad URI");
         }
+        setPathInfo(path);
 
-        setPathInfo(pathInfo);
     }
 
     /* ------------------------------------------------------------ */

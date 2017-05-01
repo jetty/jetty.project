@@ -19,9 +19,14 @@
 
 package org.eclipse.jetty.security;
 
+import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.security.Credential;
 
 /**
@@ -31,9 +36,8 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class TestLoginService extends AbstractLoginService
 {
-    protected Map<String, UserPrincipal> _users = new HashMap<>();
-    protected Map<String, String[]> _roles = new HashMap<>();
- 
+
+    UserStore userStore = new UserStore();
 
 
     public TestLoginService(String name)
@@ -43,9 +47,7 @@ public class TestLoginService extends AbstractLoginService
 
     public void putUser (String username, Credential credential, String[] roles)
     {
-        UserPrincipal userPrincipal = new UserPrincipal(username,credential);
-        _users.put(username, userPrincipal);
-        _roles.put(username, roles);
+        userStore.addUser( username, credential, roles );
     }
     
     /** 
@@ -54,7 +56,16 @@ public class TestLoginService extends AbstractLoginService
     @Override
     protected String[] loadRoleInfo(UserPrincipal user)
     {
-       return _roles.get(user.getName());
+        UserIdentity userIdentity = userStore.getUserIdentity( user.getName() );
+        Set<RolePrincipal> roles = userIdentity.getSubject().getPrincipals( RolePrincipal.class);
+        if (roles == null)
+            return null;
+
+        List<String> list = new ArrayList<>();
+        for (RolePrincipal r:roles)
+            list.add(r.getName());
+
+        return list.toArray(new String[roles.size()]);
     }
 
     /** 
@@ -63,7 +74,8 @@ public class TestLoginService extends AbstractLoginService
     @Override
     protected UserPrincipal loadUserInfo(String username)
     {
-        return _users.get(username);
+        UserIdentity userIdentity = userStore.getUserIdentity( username );
+        return userIdentity == null ? null : (UserPrincipal) userIdentity.getUserPrincipal();
     }
 
 }

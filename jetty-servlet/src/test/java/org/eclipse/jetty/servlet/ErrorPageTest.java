@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -31,7 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
@@ -39,9 +41,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- *
- */
 public class ErrorPageTest
 {
     private Server _server;
@@ -62,6 +61,7 @@ public class ErrorPageTest
 
         context.addServlet(DefaultServlet.class, "/");
         context.addServlet(FailServlet.class, "/fail/*");
+        context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         context.addServlet(ErrorServlet.class, "/error/*");
         
         ErrorPageErrorHandler error = new ErrorPageErrorHandler();
@@ -81,7 +81,24 @@ public class ErrorPageTest
         _server.stop();
         _server.join();
     }
-
+    
+    @Test
+    public void testSendErrorClosedResponse() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail-closed/ HTTP/1.0\r\n\r\n");
+        System.out.println(response);
+        assertThat(response,Matchers.containsString("HTTP/1.1 599 599"));
+        assertThat(response,Matchers.containsString("DISPATCH: ERROR"));
+        assertThat(response,Matchers.containsString("ERROR_PAGE: /599"));
+        assertThat(response,Matchers.containsString("ERROR_CODE: 599"));
+        assertThat(response,Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response,Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response,Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailClosedServlet-"));
+        assertThat(response,Matchers.containsString("ERROR_REQUEST_URI: /fail-closed/"));
+        
+        assertThat(response,not(containsString("This shouldn't be seen")));
+    }
+    
     @Test
     public void testErrorCode() throws Exception
     {
@@ -152,17 +169,36 @@ public class ErrorPageTest
         }
     }
     
+    public static class FailClosedServlet extends HttpServlet implements Servlet
+    {
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.sendError(599);
+            // The below should result in no operation, as response should be closed.
+            try
+            {
+                response.setStatus(200); // this status code should not be seen
+                response.getWriter().append("This shouldn't be seen");
+            }
+            catch (Throwable ignore)
+            {
+            }
+        }
+    }
+    
     public static class ErrorServlet extends HttpServlet implements Servlet
     {
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            response.getWriter().println("ERROR_PAGE: "+request.getPathInfo());
-            response.getWriter().println("ERROR_MESSAGE: "+request.getAttribute(Dispatcher.ERROR_MESSAGE));
-            response.getWriter().println("ERROR_CODE: "+request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
-            response.getWriter().println("ERROR_EXCEPTION: "+request.getAttribute(Dispatcher.ERROR_EXCEPTION));
-            response.getWriter().println("ERROR_EXCEPTION_TYPE: "+request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
-            response.getWriter().println("ERROR_SERVLET: "+request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
-            response.getWriter().println("ERROR_REQUEST_URI: "+request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+            PrintWriter writer = response.getWriter();
+            writer.println("DISPATCH: " + request.getDispatcherType().name());
+            writer.println("ERROR_PAGE: " + request.getPathInfo());
+            writer.println("ERROR_MESSAGE: " + request.getAttribute(Dispatcher.ERROR_MESSAGE));
+            writer.println("ERROR_CODE: " + request.getAttribute(Dispatcher.ERROR_STATUS_CODE));
+            writer.println("ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
+            writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
+            writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+            writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
         }
     }
     

@@ -585,6 +585,7 @@ public class StringUtil
      * @param sidBytes the SID bytes to build from
      * @return the string SID
      */
+    @Deprecated
     public static String sidBytesToString(byte[] sidBytes)
     {
         StringBuilder sidString = new StringBuilder();
@@ -634,6 +635,7 @@ public class StringUtil
      * @param sidString the string SID
      * @return the binary SID
      */
+    @Deprecated
     public static byte[] sidStringToBytes( String sidString )
     {
         String[] sidTokens = sidString.split("-");

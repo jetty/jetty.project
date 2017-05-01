@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -358,8 +359,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
-       //Even if metadata is complete, we still need to scan for ServletContainerInitializers - if there are any
-      
        if (!context.getMetaData().isMetaDataComplete())
        {
            //If metadata isn't complete, if this is a servlet 3 webapp or isConfigDiscovered is true, we need to search for annotations
@@ -655,7 +654,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public Resource getJarFor (ServletContainerInitializer service) 
     throws MalformedURLException, IOException
     {
-        return TypeUtil.getLoadedFrom(service.getClass());
+        URI uri = TypeUtil.getLocationOfClass(service.getClass());
+        if (uri == null)
+            return null;
+        return Resource.newResource(uri);
     }
     
     /**
@@ -875,7 +877,26 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     }
                 }
             }
-        }   
+        }
+        
+        //final pass over the non-excluded SCIs if the webapp version is < 3, in which case 
+        //we will only call SCIs that are on the server's classpath
+        if (context.getServletContext().getEffectiveMajorVersion() < 3 && !context.isConfigurationDiscovered())
+        {
+            ListIterator<ServletContainerInitializer> it = nonExcludedInitializers.listIterator();
+            while (it.hasNext())
+            {
+                ServletContainerInitializer sci = it.next();
+                if (!isFromContainerClassPath(context, sci))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Ignoring SCI {}: old web.xml version {}.{}", sci.getClass().getName(),
+                                  context.getServletContext().getEffectiveMajorVersion(), 
+                                  context.getServletContext().getEffectiveMinorVersion());
+                    it.remove();
+                }
+            }
+        }
 
         if (LOG.isDebugEnabled()) 
         {

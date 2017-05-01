@@ -280,7 +280,7 @@ public class WebAppClassLoaderTest
     public void testResources() throws Exception
     {
         // The existence of a URLStreamHandler changes the behavior
-        assumeThat("No URLStreamHandler in place", URLStreamHandlerUtil.getFactory(), nullValue());
+        assumeThat("URLStreamHandler changes behavior, skip test", URLStreamHandlerUtil.getFactory(), nullValue());
         
         List<URL> expected = new ArrayList<>();
         List<URL> resources;

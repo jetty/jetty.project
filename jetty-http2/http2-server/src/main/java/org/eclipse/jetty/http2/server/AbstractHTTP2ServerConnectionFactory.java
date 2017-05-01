@@ -42,8 +42,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private final Connection.Listener connectionListener = new ConnectionListener();
     private final HttpConfiguration httpConfiguration;
     private int maxDynamicTableSize = 4096;
-    private int initialStreamRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
-    private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private int initialSessionRecvWindow = 1024 * 1024;
+    private int initialStreamRecvWindow = 512 * 1024;
     private int maxConcurrentStreams = 128;
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
@@ -54,7 +54,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this(httpConfiguration,"h2");
     }
 
-    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, String... protocols)
+    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(protocols);
         for (String p:protocols)

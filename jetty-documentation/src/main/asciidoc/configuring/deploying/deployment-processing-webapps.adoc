@@ -52,7 +52,7 @@ META-INF/web-fragment.xml
 
 ===== Anatomy of a Configuration Class
 
-A Configuration class is called 5 times in different phases of the link:http://download.eclipse.org/jetty/stable-9/apidocs/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext's`] lifecycle:
+A Configuration class is called 5 times in different phases of the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext's`] lifecycle:
 
 preConfigure::
   As the `WebAppContext` is starting up this phase is executed.

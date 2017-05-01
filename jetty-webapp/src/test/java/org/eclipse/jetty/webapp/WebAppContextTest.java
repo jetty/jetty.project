@@ -209,7 +209,7 @@ public class WebAppContextTest
         
         try
         {
-            String response = connector.getResponses("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
+            String response = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
             assertThat(response,containsString("200 OK"));
         }
         finally

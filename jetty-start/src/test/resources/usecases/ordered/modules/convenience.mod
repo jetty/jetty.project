@@ -1,0 +1,4 @@
+
+[depends]
+replacement
+something-else

@@ -18,20 +18,15 @@
 
 package org.eclipse.jetty.webapp;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 import org.eclipse.jetty.toolchain.test.JDK;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,7 +35,7 @@ import sun.security.provider.Sun;
 public class ClasspathPatternTest
 {
     private final ClasspathPattern _pattern = new ClasspathPattern();
-    
+
     @Before
     public void before()
     {
@@ -49,66 +44,64 @@ public class ClasspathPatternTest
         _pattern.add("-org.excluded.");
         _pattern.add("org.example.FooBar");
         _pattern.add("-org.example.Excluded");
-        _pattern.addAll(Arrays.asList(new String[]{
-            "-org.example.Nested$Minus",
-            "org.example.Nested",
-            "org.example.Nested$Something"}));
-        
-        
-        assertThat(_pattern,containsInAnyOrder(
-            "org.package.",
-            "-org.excluded.",
-            "org.example.FooBar",
-            "-org.example.Excluded",
-            "-org.example.Nested$Minus",
-            "org.example.Nested",
-            "org.example.Nested$Something"
-            ));
+        _pattern.addAll(Arrays.asList(
+                "-org.example.Nested$Minus",
+                "org.example.Nested",
+                "org.example.Nested$Something"));
+
+        Assert.assertThat(_pattern, Matchers.containsInAnyOrder(
+                "org.package.",
+                "-org.excluded.",
+                "org.example.FooBar",
+                "-org.example.Excluded",
+                "-org.example.Nested$Minus",
+                "org.example.Nested",
+                "org.example.Nested$Something"
+        ));
     }
-    
-    
+
     @Test
     public void testClassMatch()
     {
-        assertTrue(_pattern.match("org.example.FooBar"));
-        assertTrue(_pattern.match("org.example.Nested"));
-        
-        assertFalse(_pattern.match("org.example.Unknown"));
-        assertFalse(_pattern.match("org.example.FooBar.Unknown"));
+        Assert.assertTrue(_pattern.match("org.example.FooBar"));
+        Assert.assertTrue(_pattern.match("org.example.Nested"));
+
+        Assert.assertFalse(_pattern.match("org.example.Unknown"));
+        Assert.assertFalse(_pattern.match("org.example.FooBar.Unknown"));
     }
-    
+
     @Test
     public void testPackageMatch()
     {
-        assertTrue(_pattern.match("org.package.Something"));
-        assertTrue(_pattern.match("org.package.other.Something"));
-        
-        assertFalse(_pattern.match("org.example.Unknown"));
-        assertFalse(_pattern.match("org.example.FooBar.Unknown"));
-        assertFalse(_pattern.match("org.example.FooBarElse"));
+        Assert.assertTrue(_pattern.match("org.package.Something"));
+        Assert.assertTrue(_pattern.match("org.package.other.Something"));
+
+        Assert.assertFalse(_pattern.match("org.example.Unknown"));
+        Assert.assertFalse(_pattern.match("org.example.FooBar.Unknown"));
+        Assert.assertFalse(_pattern.match("org.example.FooBarElse"));
     }
 
     @Test
     public void testExplicitNestedMatch()
     {
-        assertTrue(_pattern.match("org.example.Nested$Something"));
-        assertFalse(_pattern.match("org.example.Nested$Minus"));
-        assertTrue(_pattern.match("org.example.Nested$Other"));
+        Assert.assertTrue(_pattern.match("org.example.Nested$Something"));
+        Assert.assertFalse(_pattern.match("org.example.Nested$Minus"));
+        Assert.assertTrue(_pattern.match("org.example.Nested$Other"));
     }
 
     @Test
     public void testImplicitNestedMatch()
     {
-        assertTrue(_pattern.match("org.example.FooBar$Other"));
-        assertTrue(_pattern.match("org.example.Nested$Other"));
+        Assert.assertTrue(_pattern.match("org.example.FooBar$Other"));
+        Assert.assertTrue(_pattern.match("org.example.Nested$Other"));
     }
-    
+
     @Test
     public void testDoubledNested()
     {
-        assertTrue(_pattern.match("org.example.Nested$Something$Else"));
-        
-        assertFalse(_pattern.match("org.example.Nested$Minus$Else"));
+        Assert.assertTrue(_pattern.match("org.example.Nested$Something$Else"));
+
+        Assert.assertFalse(_pattern.match("org.example.Nested$Minus$Else"));
     }
 
     @Test
@@ -116,133 +109,111 @@ public class ClasspathPatternTest
     {
         _pattern.clear();
         _pattern.add(".");
-        assertTrue(_pattern.match("org.example.Anything"));
-        assertTrue(_pattern.match("org.example.Anything$Else"));
+        Assert.assertTrue(_pattern.match("org.example.Anything"));
+        Assert.assertTrue(_pattern.match("org.example.Anything$Else"));
     }
 
-    /**
-     * 
-     */
     @SuppressWarnings("restriction")
     @Test
-    public void testiIncludedLocations() throws Exception
+    public void testIncludedLocations() throws Exception
     {
+        Assume.assumeFalse(JDK.IS_9);
+
         // jar from JVM classloader
-        Resource loc_string = TypeUtil.getLoadedFrom(String.class);
+        URI loc_string = TypeUtil.getLocationOfClass(String.class);
         // System.err.println(loc_string);
-        
-        // another jar from JVM classloader
-        Resource loc_jsse = TypeUtil.getLoadedFrom(Sun.class);
-        // System.err.println(loc_jsse);
-        
+
         // a jar from maven repo jar
-        Resource loc_junit = TypeUtil.getLoadedFrom(Test.class);
+        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
         // System.err.println(loc_junit);
-        
-        // a jar from another maven repo jar
-        Resource loc_tool = TypeUtil.getLoadedFrom(JDK.class);
-        // System.err.println(loc_tool);
 
         // class file 
-        Resource loc_test = TypeUtil.getLoadedFrom(ClasspathPatternTest.class);
+        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
         // System.err.println(loc_test);
-        
+
         ClasspathPattern pattern = new ClasspathPattern();
         pattern.include("something");
-        assertThat(pattern.match(String.class),is(false));
-        assertThat(pattern.match(Sun.class),is(false));
-        assertThat(pattern.match(Test.class),is(false));
-        assertThat(pattern.match(JDK.class),is(false));
-        assertThat(pattern.match(ClasspathPatternTest.class),is(false));
-        
+        Assert.assertThat(pattern.match(String.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+
         // Add directory for both JVM classes
-        pattern.include(loc_string.getFile().getParentFile().toURI().toString());
-        
+        pattern.include(Paths.get(loc_string).getParent().toUri().toString());
+
         // Add jar for individual class and classes directory
-        pattern.include(loc_junit.toString(),loc_test.toString());
-                
-        assertThat(pattern.match(String.class),is(true));
-        assertThat(pattern.match(Sun.class),is(true));
-        assertThat(pattern.match(Test.class),is(true));
-        assertThat(pattern.match(JDK.class),is(false));
-        assertThat(pattern.match(ClasspathPatternTest.class),is(true));
-        
+        pattern.include(loc_junit.toString(), loc_test.toString());
+
+        Assert.assertThat(pattern.match(String.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(Sun.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+
         // exclude by package name still works 
         pattern.add("-sun.security.provider.Sun");
-        assertThat(pattern.match(String.class),is(true));
-        assertThat(pattern.match(Sun.class),is(false));
-        assertThat(pattern.match(Test.class),is(true));
-        assertThat(pattern.match(JDK.class),is(false));
-        assertThat(pattern.match(ClasspathPatternTest.class),is(true));
-        
-        
+        Assert.assertThat(pattern.match(String.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
     }
-    
-    /**
-     * 
-     */
+
     @SuppressWarnings("restriction")
     @Test
     public void testExcludeLocations() throws Exception
     {
+        Assume.assumeFalse(JDK.IS_9);
+
         // jar from JVM classloader
-        Resource loc_string = TypeUtil.getLoadedFrom(String.class);
+        URI loc_string = TypeUtil.getLocationOfClass(String.class);
         // System.err.println(loc_string);
-        
-        // another jar from JVM classloader
-        Resource loc_jsse = TypeUtil.getLoadedFrom(Sun.class);
-        // System.err.println(loc_jsse);
-        
+
         // a jar from maven repo jar
-        Resource loc_junit = TypeUtil.getLoadedFrom(Test.class);
+        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
         // System.err.println(loc_junit);
-        
-        // a jar from another maven repo jar
-        Resource loc_tool = TypeUtil.getLoadedFrom(JDK.class);
-        // System.err.println(loc_tool);
 
         // class file 
-        Resource loc_test = TypeUtil.getLoadedFrom(ClasspathPatternTest.class);
+        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
         // System.err.println(loc_test);
-        
+
         ClasspathPattern pattern = new ClasspathPattern();
-        
+
         // include everything
         pattern.include(".");
-        
-        assertThat(pattern.match(String.class),is(true));
-        assertThat(pattern.match(Sun.class),is(true));
-        assertThat(pattern.match(Test.class),is(true));
-        assertThat(pattern.match(JDK.class),is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class),is(true));
-        
-        // Add directory for both JVM classes
-        pattern.exclude(loc_string.getFile().getParentFile().toURI().toString());
-        
-        // Add jar for individual class and classes directory
-        pattern.exclude(loc_junit.toString(),loc_test.toString());
-                
-        assertThat(pattern.match(String.class),is(false));
-        assertThat(pattern.match(Sun.class),is(false));
-        assertThat(pattern.match(Test.class),is(false));
-        assertThat(pattern.match(JDK.class),is(true));
-        assertThat(pattern.match(ClasspathPatternTest.class),is(false));
-    }
-    
 
-    
+        Assert.assertThat(pattern.match(String.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(Sun.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+
+        // Add directory for both JVM classes
+        pattern.exclude(Paths.get(loc_string).getParent().toUri().toString());
+
+        // Add jar for individual class and classes directory
+        pattern.exclude(loc_junit.toString(), loc_test.toString());
+
+        Assert.assertThat(pattern.match(String.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+    }
+
     @Test
     public void testLarge()
     {
         ClasspathPattern pattern = new ClasspathPattern();
-        for (int i=0; i<500; i++)
+        for (int i = 0; i < 500; i++)
         {
-            assertTrue(pattern.add("n"+i+"."+Integer.toHexString(100+i)+".Name"));
+            Assert.assertTrue(pattern.add("n" + i + "." + Integer.toHexString(100 + i) + ".Name"));
         }
-        
-        for (int i=0; i<500; i++)
+
+        for (int i = 0; i < 500; i++)
         {
-            assertTrue(pattern.match("n"+i+"."+Integer.toHexString(100+i)+".Name"));
+            Assert.assertTrue(pattern.match("n" + i + "." + Integer.toHexString(100 + i) + ".Name"));
         }
     }
 }
