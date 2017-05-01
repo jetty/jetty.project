@@ -22,14 +22,11 @@ package org.eclipse.jetty.quickstart;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -90,7 +87,7 @@ public class TestQuickStart
         server.start();
         
         //verify that FooServlet is now mapped to / and not the DefaultServlet
-        ServletHolder sh = webapp.getServletHandler().getHolderEntry("/").getResource();
+        ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getResource();
         assertNotNull(sh);
         assertEquals("foo", sh.getName());
         server.stop();

@@ -267,7 +267,7 @@ public class ServletHandlerTest
 
         handler.updateMappings();
 
-        MappedResource<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+        MappedResource<ServletHolder> entry=handler.getMappedServlet("/foo/*");
         assertNotNull(entry);
         assertEquals("s1", entry.getResource().getName());
     }
@@ -312,7 +312,7 @@ public class ServletHandlerTest
         handler.addServletMapping(sm2);
         handler.updateMappings();
         
-       MappedResource<ServletHolder> entry=handler.getHolderEntry("/foo/*");
+       MappedResource<ServletHolder> entry=handler.getMappedServlet("/foo/*");
        assertNotNull(entry);
        assertEquals("s2", entry.getResource().getName());
     }
