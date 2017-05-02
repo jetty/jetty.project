@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -117,9 +118,9 @@ public class RolloverFileOutputStream extends FilterOutputStream
                                     TimeZone zone)
         throws IOException
     {
-         this(filename,append,retainDays,zone,null,null);
+         this(filename,append,retainDays,zone,null,null,ZonedDateTime.now(zone.toZoneId()));
     }
-     
+
     /* ------------------------------------------------------------ */
     /**
      * @param filename The filename must include the string "yyyy_mm_dd", 
@@ -139,19 +140,32 @@ public class RolloverFileOutputStream extends FilterOutputStream
                                     String backupFormat)
         throws IOException
     {
+        this(filename,append,retainDays,zone,dateFormat,backupFormat,ZonedDateTime.now(zone.toZoneId()));
+    }
+    
+    
+    RolloverFileOutputStream(String filename,
+        boolean append,
+        int retainDays,
+        TimeZone zone,
+        String dateFormat,
+        String backupFormat,
+        ZonedDateTime now)
+            throws IOException
+    {
         super(null);
 
         if (dateFormat==null)
             dateFormat=ROLLOVER_FILE_DATE_FORMAT;
         _fileDateFormat = new SimpleDateFormat(dateFormat);
-        
+
         if (backupFormat==null)
             backupFormat=ROLLOVER_FILE_BACKUP_FORMAT;
         _fileBackupFormat = new SimpleDateFormat(backupFormat);
-        
+
         _fileBackupFormat.setTimeZone(zone);
         _fileDateFormat.setTimeZone(zone);
-        
+
         if (filename!=null)
         {
             filename=filename.trim();
@@ -171,7 +185,6 @@ public class RolloverFileOutputStream extends FilterOutputStream
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
     
             // Calculate Today's Midnight, based on Configured TimeZone (will be in past, even if by a few milliseconds)
-            ZonedDateTime now = ZonedDateTime.now(zone.toZoneId());    
             setFile(now);        
             // This will schedule the rollover event to the next midnight
             scheduleNextRollover(now);
@@ -187,7 +200,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
      */
     public static ZonedDateTime toMidnight(ZonedDateTime now)
     {
-        return now.toLocalDate().atStartOfDay(now.getZone());
+        return now.toLocalDate().atStartOfDay(now.getZone()).plus(1, ChronoUnit.DAYS);
     }
 
     /* ------------------------------------------------------------ */
@@ -223,7 +236,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
-    private synchronized void setFile(ZonedDateTime now)
+    synchronized void setFile(ZonedDateTime now)
         throws IOException
     {
         // Check directory
@@ -254,7 +267,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
             // Yep
             _file=file;
             if (!_append && file.exists())
-                file.renameTo(new File(file.toString()+"."+_fileBackupFormat.format(now)));
+                file.renameTo(new File(file.toString()+"."+_fileBackupFormat.format(new Date(now.toInstant().toEpochMilli()))));
             OutputStream oldOut=out;
             out=new FileOutputStream(file.toString(),_append);
             if (oldOut!=null)
@@ -264,12 +277,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
-    private void removeOldFiles(ZonedDateTime now)
+    void removeOldFiles(ZonedDateTime now)
     {
         if (_retainDays>0)
         {
             // Establish expiration time, based on configured TimeZone
-            long expired = now.toInstant().toEpochMilli();
+            long expired = now.minus(_retainDays, ChronoUnit.DAYS).toInstant().toEpochMilli();
             
             File file= new File(_filename);
             File dir = new File(file.getParent());
