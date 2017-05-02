@@ -13,14 +13,14 @@
   </Call>
   -->
 
-  <!-- Add a remote JMX connector. The parameters of the constructor
-  below specify the JMX service URL, and the object name string for the
-  connector server bean. The parameters of the JMXServiceURL constructor
+  <!-- Adds a remote JMXConnectorServer. The parameters of the constructor
+  below specify the JMXServiceURL, and the ObjectName string for the
+  JMXConnectorServer. The parameters of the JMXServiceURL constructor
   specify the protocol that clients will use to connect to the remote JMX
-  connector (RMI), the hostname of the server (local hostname), port number
-  (automatically assigned), and the URL path. Note that URL path contains
-  the RMI registry hostname and port number, that may need to be modified
-  in order to comply with the firewall requirements.
+  connector (rmi), the hostname and port number of the RMI server, and the
+  URL path. Note that URL path contains the RMI registry hostname and port
+  number. Modify the port numbers if you need to comply with the firewall
+  requirements.
   -->
   <Call name="addBean">
     <Arg>
@@ -28,9 +28,9 @@
         <Arg>
           <New class="javax.management.remote.JMXServiceURL">
             <Arg type="java.lang.String">rmi</Arg>
-            <Arg type="java.lang.String"><Property name="jetty.jmxremote.rmihost" deprecated="jetty.jmxrmihost" default="localhost"/></Arg>
-            <Arg type="java.lang.Integer"><Property name="jetty.jmxremote.rmiport" deprecated="jetty.jmxrmiport" default="1099"/></Arg>
-            <Arg type="java.lang.String">/jndi/rmi://<Property name="jetty.jmxremote.rmihost" deprecated="jetty.jmxrmihost" default="localhost"/>:<Property name="jetty.jmxremote.rmiport" deprecated="jetty.jmxrmiport" default="1099"/>/jmxrmi</Arg>
+            <Arg type="java.lang.String"><Property name="jetty.jmxremote.rmiserverhost" deprecated="jetty.jmxremote.rmihost,jetty.jmxrmihost" default="localhost"/></Arg>
+            <Arg type="java.lang.Integer"><Property name="jetty.jmxremote.rmiserverport" deprecated="jetty.jmxremote.rmiport,jetty.jmxrmiport" default="1099"/></Arg>
+            <Arg type="java.lang.String">/jndi/rmi://<Property name="jetty.jmxremote.rmiregistryhost" deprecated="jetty.jmxremote.rmihost,jetty.jmxrmihost" default="localhost"/>:<Property name="jetty.jmxremote.rmiregistryport" deprecated="jetty.jmxremote.rmiport,jetty.jmxrmiport" default="1099"/>/jmxrmi</Arg>
           </New>
         </Arg>
         <Arg>org.eclipse.jetty.jmx:name=rmiconnectorserver</Arg>

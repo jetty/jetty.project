@@ -23,12 +23,16 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.IntConsumer;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -36,26 +40,35 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnectorServer;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**
- * AbstractLifeCycle wrapper for JMXConnectorServer
+ * <p>LifeCycle wrapper for JMXConnectorServer.</p>
+ * <p>This class provides the following facilities:</p>
+ * <ul>
+ *   <li>participates in the {@code Server} lifecycle</li>
+ *   <li>starts the RMI registry if not there already</li>
+ *   <li>allows to bind the RMI registry and the RMI server to the loopback interface</li>
+ *   <li>makes it easy to use TLS for the JMX communication</li>
+ * </ul>
  */
 public class ConnectorServer extends AbstractLifeCycle
 {
+    public static final String RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE = "com.sun.jndi.rmi.factory.socket";
     private static final Logger LOG = Log.getLogger(ConnectorServer.class);
 
     private JMXServiceURL _jmxURL;
     private final Map<String, Object> _environment;
     private final String _objectName;
-    private String _registryHost;
+    private final SslContextFactory _sslContextFactory;
     private int _registryPort;
-    private String _rmiHost;
     private int _rmiPort;
     private JMXConnectorServer _connectorServer;
     private Registry _registry;
@@ -83,9 +96,15 @@ public class ConnectorServer extends AbstractLifeCycle
      */
     public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name)
     {
+        this(svcUrl, environment, name, null);
+    }
+
+    public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name, SslContextFactory sslContextFactory)
+    {
         this._jmxURL = svcUrl;
         this._environment = environment == null ? new HashMap<>() : new HashMap<>(environment);
         this._objectName = name;
+        this._sslContextFactory = sslContextFactory;
     }
 
     public JMXServiceURL getAddress()
@@ -100,20 +119,29 @@ public class ConnectorServer extends AbstractLifeCycle
         if (rmi)
         {
             if (!_environment.containsKey(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE))
-                _environment.put(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE, new JMXRMIServerSocketFactory(false));
+                _environment.put(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE, new JMXRMIServerSocketFactory(_jmxURL.getHost(), port -> _rmiPort = port));
+            if (_sslContextFactory != null)
+            {
+                SslRMIClientSocketFactory csf = new SslRMIClientSocketFactory();
+                if (!_environment.containsKey(RMIConnectorServer.RMI_CLIENT_SOCKET_FACTORY_ATTRIBUTE))
+                    _environment.put(RMIConnectorServer.RMI_CLIENT_SOCKET_FACTORY_ATTRIBUTE, csf);
+                if (!_environment.containsKey(RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE))
+                    _environment.put(RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE, csf);
+            }
         }
 
         String urlPath = _jmxURL.getURLPath();
         String jndiRMI = "/jndi/rmi://";
-        boolean registry = urlPath.startsWith(jndiRMI);
-        if (registry)
+        if (urlPath.startsWith(jndiRMI))
         {
             int startIndex = jndiRMI.length();
             int endIndex = urlPath.indexOf('/', startIndex);
             HostPort hostPort = new HostPort(urlPath.substring(startIndex, endIndex));
-            _registryHost = hostPort.getHost();
-            startRegistry(hostPort);
-            urlPath = jndiRMI + _registryHost + ":" + _registryPort + urlPath.substring(endIndex);
+            String registryHost = startRegistry(hostPort);
+            // If the RMI registry was already started, use the existing port.
+            if (_registryPort == 0)
+                _registryPort = hostPort.getPort();
+            urlPath = jndiRMI + registryHost + ":" + _registryPort + urlPath.substring(endIndex);
             // Rebuild JMXServiceURL to use it for the creation of the JMXConnectorServer.
             _jmxURL = new JMXServiceURL(_jmxURL.getProtocol(), _jmxURL.getHost(), _jmxURL.getPort(), urlPath);
         }
@@ -122,14 +150,15 @@ public class ConnectorServer extends AbstractLifeCycle
         _connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(_jmxURL, _environment, mbeanServer);
         mbeanServer.registerMBean(_connectorServer, new ObjectName(_objectName));
         _connectorServer.start();
+        String rmiHost = normalizeHost(_jmxURL.getHost());
+        // If _rmiPort is still zero, it's using the same port as the RMI registry.
+        if (_rmiPort == 0)
+            _rmiPort = _registryPort;
+        _jmxURL = new JMXServiceURL(_jmxURL.getProtocol(), rmiHost, _rmiPort, urlPath);
+
         ShutdownThread.register(0, this);
 
-        _jmxURL = new JMXServiceURL(_jmxURL.getProtocol(),
-                _rmiHost != null ? _rmiHost : _jmxURL.getHost(),
-                _rmiPort > 0 ? _rmiPort : _jmxURL.getPort(),
-                urlPath);
-
-        LOG.info("JMX Remote URL: {}", _jmxURL);
+        LOG.info("JMX URL: {}", _jmxURL);
     }
 
     @Override
@@ -142,7 +171,7 @@ public class ConnectorServer extends AbstractLifeCycle
         stopRegistry();
     }
 
-    private void startRegistry(HostPort hostPort) throws Exception
+    private String startRegistry(HostPort hostPort) throws Exception
     {
         String host = hostPort.getHost();
         int port = hostPort.getPort(1099);
@@ -151,14 +180,23 @@ public class ConnectorServer extends AbstractLifeCycle
         {
             // Check if a local registry is already running.
             LocateRegistry.getRegistry(host, port).list();
-            return;
+            return normalizeHost(host);
         }
         catch (Throwable ex)
         {
             LOG.ignore(ex);
         }
 
-        _registry = LocateRegistry.createRegistry(port, null, new JMXRMIServerSocketFactory(true));
+        RMIClientSocketFactory csf = _sslContextFactory == null ? null : new SslRMIClientSocketFactory();
+        RMIServerSocketFactory ssf = new JMXRMIServerSocketFactory(host, p -> _registryPort = p);
+        _registry = LocateRegistry.createRegistry(port, csf, ssf);
+
+        return normalizeHost(host);
+    }
+
+    private String normalizeHost(String host) throws UnknownHostException
+    {
+        return host == null || host.isEmpty() ? InetAddress.getLocalHost().getHostName() : host;
     }
 
     private void stopRegistry()
@@ -180,54 +218,56 @@ public class ConnectorServer extends AbstractLifeCycle
         }
     }
 
-
     private class JMXRMIServerSocketFactory implements RMIServerSocketFactory
     {
-        private boolean registry;
+        private final String _host;
+        private final IntConsumer _portConsumer;
 
-        private JMXRMIServerSocketFactory(boolean registry)
+        private JMXRMIServerSocketFactory(String host, IntConsumer portConsumer)
         {
-            this.registry = registry;
+            this._host = host;
+            this._portConsumer = portConsumer;
         }
 
         @Override
         public ServerSocket createServerSocket(int port) throws IOException
         {
-            if (registry)
+            InetAddress address = _host == null || _host.isEmpty() ? null : InetAddress.getByName(_host);
+            ServerSocket server = createServerSocket(address, port);
+            _portConsumer.accept(server.getLocalPort());
+            return server;
+        }
+
+        private ServerSocket createServerSocket(InetAddress address, int port) throws IOException
+        {
+            // A null address binds to the wildcard address.
+            if (_sslContextFactory == null)
             {
-                InetAddress address;
-                if (_registryHost == null || _registryHost.isEmpty())
-                {
-                    _registryHost = InetAddress.getLocalHost().getHostName();
-                    address = null;
-                }
-                else
-                {
-                    address = InetAddress.getByName(_registryHost);
-                }
                 ServerSocket server = new ServerSocket();
                 server.bind(new InetSocketAddress(address, port));
-                _registryPort = server.getLocalPort();
                 return server;
             }
             else
             {
-                InetAddress address;
-                _rmiHost = _jmxURL.getHost();
-                if (_rmiHost == null || _rmiHost.isEmpty())
-                {
-                    _rmiHost = InetAddress.getLocalHost().getHostName();
-                    address = null;
-                }
-                else
-                {
-                    address = InetAddress.getByName(_rmiHost);
-                }
-                ServerSocket server = new ServerSocket();
-                server.bind(new InetSocketAddress(address, port));
-                _rmiPort = server.getLocalPort();
-                return server;
+                return _sslContextFactory.newSslServerSocket(address == null ? null : address.getHostName(), port, 0);
             }
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return _host != null ? _host.hashCode() : 0;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
+            JMXRMIServerSocketFactory that = (JMXRMIServerSocketFactory)obj;
+            return Objects.equals(_host, that._host);
         }
     }
 }

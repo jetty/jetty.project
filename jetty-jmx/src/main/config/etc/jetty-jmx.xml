@@ -4,13 +4,13 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
-  <!-- Get the platform mbean server                               -->
+  <!-- Get the platform MBeanServer                                -->
   <!-- =========================================================== -->
   <Call id="MBeanServer" class="java.lang.management.ManagementFactory"
     name="getPlatformMBeanServer" />
 
   <!-- =========================================================== -->
-  <!-- Initialize the Jetty MBean container -->
+  <!-- Initialize the Jetty MBeanContainer                         -->
   <!-- =========================================================== -->
   <Call name="addBean">
     <Arg>
@@ -25,7 +25,7 @@
   <!-- Add the static log -->
   <Call name="addBean">
     <Arg>
-      <New class="org.eclipse.jetty.util.log.Log" />
+      <Get class="org.eclipse.jetty.util.log.Log" name="Log" />
     </Arg>
   </Call>
 </Configure>

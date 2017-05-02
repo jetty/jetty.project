@@ -22,9 +22,16 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -71,12 +78,23 @@ public class ConnectorServerTest
         connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi:///jmxrmi"), objectName);
         connectorServer.start();
 
-        InetAddress localHost = InetAddress.getLocalHost();
-        if (!localHost.isLoopbackAddress())
-        {
-            // Verify that I can connect to the RMIRegistry using a non-loopback address.
-            new Socket(localHost, 1099).close();
-        }
+        // Verify that I can connect to the RMI registry using a non-loopback address.
+        new Socket(InetAddress.getLocalHost(), 1099).close();
+        // Verify that I can connect to the RMI registry using the loopback address.
+        new Socket(InetAddress.getLoopbackAddress(), 1099).close();
+    }
+
+    @Test
+    public void testNoRegistryHostNonDefaultRegistryPort() throws Exception
+    {
+        int registryPort = 1299;
+        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi://:" + registryPort + "/jmxrmi"), objectName);
+        connectorServer.start();
+
+        // Verify that I can connect to the RMI registry using a non-loopback address.
+        new Socket(InetAddress.getLocalHost(), registryPort).close();
+        // Verify that I can connect to the RMI registry using the loopback address.
+        new Socket(InetAddress.getLoopbackAddress(), registryPort).close();
     }
 
     @Test
@@ -85,12 +103,10 @@ public class ConnectorServerTest
         connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi:///jmxrmi"), objectName);
         connectorServer.start();
 
-        InetAddress localHost = InetAddress.getLocalHost();
-        if (!localHost.isLoopbackAddress())
-        {
-            // Verify that I can connect to the RMI server using a non-loopback address.
-            new Socket(localHost, connectorServer.getAddress().getPort()).close();
-        }
+        // Verify that I can connect to the RMI server using a non-loopback address.
+        new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
+        // Verify that I can connect to the RMI server using the loopback address.
+        new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
     }
 
     @Test
@@ -159,5 +175,60 @@ public class ConnectorServerTest
 
         InetAddress loopback = InetAddress.getLoopbackAddress();
         new Socket(loopback, port).close();
+    }
+
+    @Test
+    public void testRMIServerAndRMIRegistryOnSameHostAndSamePort() throws Exception
+    {
+        // RMI can multiplex connections on the same address and port for different
+        // RMI objects, in this case the RMI registry and the RMI server. In this
+        // case, the RMIServerSocketFactory will be invoked only once.
+        // The case with different address and same port is already covered by TCP,
+        // that can listen to 192.168.0.1:1099 and 127.0.0.1:1099 without problems.
+
+        String host = "localhost";
+        int port = 1399;
+        connectorServer = new ConnectorServer(new JMXServiceURL("rmi", host, port, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), objectName);
+        connectorServer.start();
+
+        JMXServiceURL address = connectorServer.getAddress();
+        Assert.assertEquals(port, address.getPort());
+    }
+
+    @Test
+    public void testJMXOverTLS() throws Exception
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        String keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.jks").toString();
+        String keyStorePassword = "storepwd";
+        sslContextFactory.setKeyStorePath(keyStorePath);
+        sslContextFactory.setKeyStorePassword(keyStorePassword);
+        sslContextFactory.start();
+
+        // The RMIClientSocketFactory is stored within the RMI stub.
+        // When using TLS, the stub is deserialized in a possibly different
+        // JVM that does not have access to the server keystore, and there
+        // is no way to provide TLS configuration during the deserialization
+        // of the stub. Therefore the client must provide system properties
+        // to specify the TLS configuration. For this test it needs the
+        // trustStore because the server certificate is self-signed.
+        // The server needs to contact the RMI registry and therefore also
+        // needs these system properties.
+        System.setProperty("javax.net.ssl.trustStore", keyStorePath);
+        System.setProperty("javax.net.ssl.trustStorePassword", keyStorePassword);
+
+        connectorServer = new ConnectorServer(new JMXServiceURL("rmi", null, 1100, "/jndi/rmi://localhost:1100/jmxrmi"), null, objectName, sslContextFactory);
+        connectorServer.start();
+
+        // The client needs to talk TLS to the RMI registry to download
+        // the RMI server stub, and this is independent from JMX.
+        // The RMI server stub then contains the SslRMIClientSocketFactory
+        // needed to talk to the RMI server.
+        Map<String, Object> clientEnv = new HashMap<>();
+        clientEnv.put(ConnectorServer.RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE, new SslRMIClientSocketFactory());
+        try (JMXConnector client = JMXConnectorFactory.connect(connectorServer.getAddress(), clientEnv))
+        {
+            client.getMBeanServerConnection().queryNames(null, null);
+        }
     }
 }
