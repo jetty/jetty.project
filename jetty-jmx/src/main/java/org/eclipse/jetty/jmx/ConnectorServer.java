@@ -232,7 +232,7 @@ public class ConnectorServer extends AbstractLifeCycle
         @Override
         public ServerSocket createServerSocket(int port) throws IOException
         {
-            InetAddress address = _host == null || _host.isEmpty() ? null : InetAddress.getByName(_host);
+            InetAddress address = _host == null || _host.isEmpty() ? InetAddress.getLocalHost() : InetAddress.getByName(_host);
             ServerSocket server = createServerSocket(address, port);
             _portConsumer.accept(server.getLocalPort());
             return server;
