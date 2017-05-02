@@ -1,3 +1,5 @@
+jetty-9.4.6-SNAPSHOT
+
 jetty-9.4.5.v20170502 - 02 May 2017
  + 304 Review dead code - StringUtil.sidBytesToString
  + 1235 DNS lookup in newSSLEngine(InetSocketAddress address)
