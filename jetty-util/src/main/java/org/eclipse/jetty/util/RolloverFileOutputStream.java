@@ -267,7 +267,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
             // Yep
             _file=file;
             if (!_append && file.exists())
-                file.renameTo(new File(file.toString()+"."+_fileBackupFormat.format(now)));
+                file.renameTo(new File(file.toString()+"."+_fileBackupFormat.format(new Date(now.toInstant().toEpochMilli()))));
             OutputStream oldOut=out;
             out=new FileOutputStream(file.toString(),_append);
             if (oldOut!=null)
