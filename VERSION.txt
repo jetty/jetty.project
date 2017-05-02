@@ -1,4 +1,16 @@
-jetty-9.3.19-SNAPSHOT
+jetty-9.3.19.v20170502 - 02 May 2017
+ + 877 Programmatic servlet mappings cannot override mappings from
+   webdefault.xml using quickstart
+ + 1348 Add a BOM artifact
+ + 1390 HashLoginService and "this.web-inf.url" property are incompatible
+ + 1463 SSL Renegotiate limit
+ + 1469 IllegalStateException in RolloverFileOutputStream
+ + 1486 redirect to welcome file broken for sub directory
+ + 1487 add decoded paths
+ + 1507 Negative delay Timer.schedule exception due to mismatched local and
+   _logTimeZone values
+ + 1513 RolloverFileOutputStream can't handle multiple instances
+ + 1523 Update ALPN support for Java 8u131
 
 jetty-9.3.18.v20170406 - 06 April 2017
  + 877 Programmatic servlet mappings cannot override mappings from
