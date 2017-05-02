@@ -18,25 +18,31 @@
 
 package org.eclipse.jetty.jmx;
 
-import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.Map;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnectorServer;
-import javax.management.remote.JMXConnectorServerFactory;
-import javax.management.remote.JMXServiceURL;
-
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnectorServer;
+import javax.management.remote.JMXConnectorServerFactory;
+import javax.management.remote.JMXServiceURL;
+import javax.management.remote.rmi.RMIConnectorServer;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.RMIServerSocketFactory;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 
 
 /* ------------------------------------------------------------ */
@@ -49,6 +55,7 @@ public class ConnectorServer extends AbstractLifeCycle
 
     JMXConnectorServer _connectorServer;
     Registry _registry;
+    private final ObjectName _mBeanObjectName;
 
     /* ------------------------------------------------------------ */
     /**
@@ -94,9 +101,53 @@ public class ConnectorServer extends AbstractLifeCycle
                 svcUrl = new JMXServiceURL(svcUrl.getProtocol(), svcUrl.getHost(), svcUrl.getPort(), urlPath);
             }
         }
-        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        _connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(svcUrl, environment, mbeanServer);
-        mbeanServer.registerMBean(_connectorServer,new ObjectName(name));
+        ObjectName mBeanObjectName = new ObjectName(name);
+        _connectorServer = createConnectorServer(svcUrl, environment, mBeanObjectName);
+        _mBeanObjectName = mBeanObjectName;
+    }
+
+    private ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, ObjectName name, Registry registry)
+            throws Exception
+    {
+        _registry = registry;
+        _connectorServer = createConnectorServer(svcUrl, environment, name);
+        _mBeanObjectName = name;
+    }
+
+    /**
+     * Creates a connector server that only listens to the loopback interface
+     *
+     * @param port the port of the new connector server.
+     * @param name object name string to be assigned to connector server bean
+     * @throws Exception if unable to create connector server
+     */
+    public static ConnectorServer createUsingLoopbackInterface(int port, String name)
+            throws Exception
+    {
+        return createUsingAddress(InetAddress.getLoopbackAddress(), port, name);
+    }
+
+    private static ConnectorServer createUsingAddress(InetAddress address, int port, String name)
+            throws Exception
+    {
+        JMXServiceURL serviceUrl = new JMXServiceURL(
+                String.format("service:jmx:rmi://%1$s:%2$d/jndi/rmi://%1$s:%2$d/jmxrmi", address.getHostAddress(), port));
+        SinglePortRMIServerSocketFactory serverSocketFactory = new SinglePortRMIServerSocketFactory(address);
+        Map<String, ?> environment = Collections.singletonMap(
+                RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE,
+                serverSocketFactory);
+        System.setProperty("java.rmi.server.hostname", address.getHostAddress());
+        Registry registry = LocateRegistry.createRegistry(serviceUrl.getPort(), /*csf*/null, serverSocketFactory);
+        return new ConnectorServer(serviceUrl, environment, new ObjectName(name), registry);
+    }
+
+    private static JMXConnectorServer createConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, ObjectName name)
+            throws Exception
+    {
+        MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
+        JMXConnectorServer connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(svcUrl, environment, beanServer);
+        beanServer.registerMBean(connectorServer, name);
+        return connectorServer;
     }
 
         /* ------------------------------------------------------------ */
@@ -176,6 +227,13 @@ public class ConnectorServer extends AbstractLifeCycle
 
     private void stopRegistry()
     {
+        try
+        {
+            ManagementFactory.getPlatformMBeanServer().unregisterMBean(_mBeanObjectName);
+        } catch (InstanceNotFoundException | MBeanRegistrationException e)
+        {
+            LOG.warn(e);
+        }
         if (_registry != null)
         {
             try
@@ -186,6 +244,38 @@ public class ConnectorServer extends AbstractLifeCycle
             {
                 LOG.ignore(ex);
             }
+        }
+    }
+
+    private static class SinglePortRMIServerSocketFactory implements RMIServerSocketFactory
+    {
+        private final InetAddress address;
+
+        public SinglePortRMIServerSocketFactory(InetAddress address)
+        {
+            this.address = address;
+        }
+
+        @Override
+        public ServerSocket createServerSocket(int port)
+                throws IOException
+        {
+            return new ServerSocket(port, 0, address);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            SinglePortRMIServerSocketFactory that = (SinglePortRMIServerSocketFactory) o;
+            return Objects.equals(address, that.address);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(address);
         }
     }
 }
