@@ -95,6 +95,7 @@
 		    <appendOutput>false</appendOutput>
 		    <outputFile>${project.build.directory}/deps.txt</outputFile>
 		    <sort>true</sort>
+                    <excludeGroupIds>org.eclipse.jetty</excludeGroupIds>
 		    <prependGroupId>true</prependGroupId>
 		    <includeScope>runtime</includeScope>
                   </configuration>
