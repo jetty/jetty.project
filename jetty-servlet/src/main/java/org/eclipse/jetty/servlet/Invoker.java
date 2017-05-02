@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.PathMap.MappedEntry;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
@@ -66,6 +65,7 @@ import org.eclipse.jetty.util.log.Logger;
  * @version $Id: Invoker.java 4780 2009-03-17 15:36:08Z jesse $
  *
  */
+@SuppressWarnings("serial")
 public class Invoker extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(Invoker.class);
@@ -168,11 +168,11 @@ public class Invoker extends HttpServlet
             synchronized(_servletHandler)
             {
                 // find the entry for the invoker (me)
-                 _invokerEntry=_servletHandler.getHolderEntry(servlet_path);
+                 _invokerEntry=_servletHandler.getMappedServlet(servlet_path);
 
                 // Check for existing mapping (avoid threaded race).
                 String path=URIUtil.addPaths(servlet_path,servlet);
-                MappedResource<ServletHolder> entry = _servletHandler.getHolderEntry(path);
+                MappedResource<ServletHolder> entry = _servletHandler.getMappedServlet(path);
 
                 if (entry!=null && !entry.equals(_invokerEntry))
                 {

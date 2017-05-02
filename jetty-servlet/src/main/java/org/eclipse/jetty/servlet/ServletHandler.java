@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -51,8 +50,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.IdentityService;
@@ -361,14 +358,16 @@ public class ServletHandler extends ScopedHandler
     /**
      * ServletHolder matching path.
      *
-     * @param pathInContext Path within _context.
+     * @param target Path within _context or servlet name
      * @return PathMap Entries pathspec to ServletHolder
+     * @deprecated Use {@link #getMappedServlet(String)}
      */
-    public MappedResource<ServletHolder> getHolderEntry(String pathInContext)
+    @Deprecated
+    public MappedResource<ServletHolder> getHolderEntry(String target)
     {
-        if (_servletPathMap==null)
-            return null;
-        return _servletPathMap.getMatch(pathInContext);
+        if (target.startsWith("/"))
+            return getMappedServlet(target);
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -438,16 +437,14 @@ public class ServletHandler extends ScopedHandler
         ServletHolder servlet_holder=null;
         UserIdentity.Scope old_scope=null;
 
-        // find the servlet
-        if (target.startsWith("/"))
+        MappedResource<ServletHolder> mapping=getMappedServlet(target);
+        if (mapping!=null)
         {
-            // Look for the servlet by path
-            MappedResource<ServletHolder> entry=getHolderEntry(target);
-            if (entry!=null)
+            servlet_holder = mapping.getResource();
+            
+            if (mapping.getPathSpec()!=null)
             {
-                PathSpec pathSpec = entry.getPathSpec();
-                servlet_holder=entry.getResource();
-
+                PathSpec pathSpec = mapping.getPathSpec();
                 String servlet_path=pathSpec.getPathMatch(target);
                 String path_info=pathSpec.getPathInfo(target);
 
@@ -464,12 +461,7 @@ public class ServletHandler extends ScopedHandler
                 }
             }
         }
-        else
-        {
-            // look for a servlet by name!
-            servlet_holder= _servletNameMap.get(target);
-        }
-
+        
         if (LOG.isDebugEnabled())
             LOG.debug("servlet {}|{}|{} -> {}",baseRequest.getContextPath(),baseRequest.getServletPath(),baseRequest.getPathInfo(),servlet_holder);
 
@@ -550,7 +542,33 @@ public class ServletHandler extends ScopedHandler
                 baseRequest.setHandled(true);
         }
     }
+    
 
+    /* ------------------------------------------------------------ */
+    /**
+     * ServletHolder matching path.
+     *
+     * @param target Path within _context or servlet name
+     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     */
+    public MappedResource<ServletHolder> getMappedServlet(String target)
+    {
+        if (target.startsWith("/"))
+        {
+            if (_servletPathMap==null)
+                return null;
+            return _servletPathMap.getMatch(target);
+        }
+        
+        if (_servletNameMap==null)
+            return null;
+        ServletHolder holder = _servletNameMap.get(target);
+        if (holder==null)
+            return null;
+        return new MappedResource<>(null,holder);
+    }
+    
+    /* ------------------------------------------------------------ */
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
     {
         String key=pathInContext==null?servletHolder.getName():pathInContext;
@@ -703,8 +721,6 @@ public class ServletHandler extends ScopedHandler
     {
         return _startWithUnavailable;
     }
-
-
 
     /* ------------------------------------------------------------ */
     /** Initialize filters and load-on-startup servlets.
@@ -1766,6 +1782,7 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("serial")
     public static class Default404Servlet extends HttpServlet
     {
         @Override

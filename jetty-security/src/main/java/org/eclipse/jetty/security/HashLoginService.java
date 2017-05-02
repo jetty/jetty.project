@@ -50,8 +50,7 @@ public class HashLoginService extends AbstractLoginService
 {
     private static final Logger LOG = Log.getLogger(HashLoginService.class);
 
-    private File _configFile;
-    private Resource _configResource;
+    private String _config;
     private boolean hotReload = false; // default is not to reload
     private UserStore _userStore;
     private boolean _userStoreAutoCreate = false;
@@ -78,28 +77,15 @@ public class HashLoginService extends AbstractLoginService
     /* ------------------------------------------------------------ */
     public String getConfig()
     {
-        if(_configFile == null)
-        {
-            return null;
-        }
-        return _configFile.getAbsolutePath();
+        return _config;
     }
 
+
     /* ------------------------------------------------------------ */
-    
-    /**
-     * @deprecated use {@link #setConfig(String)} instead
-     */
     @Deprecated
-    public void getConfig(String config)
-    {
-        setConfig(config);
-    }
-
-    /* ------------------------------------------------------------ */
     public Resource getConfigResource()
     {
-        return _configResource;
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -109,12 +95,11 @@ public class HashLoginService extends AbstractLoginService
      * The property file maps usernames to password specs followed by an optional comma separated list of role names.
      * </p>
      * 
-     * @param configFile
-     *            Filename of user properties file.
+     * @param config uri or url or path to realm properties file
      */
-    public void setConfig(String configFile)
+    public void setConfig(String config)
     {
-        _configFile = new File(configFile);
+        _config=config;
     }
     
     /**
@@ -200,11 +185,10 @@ public class HashLoginService extends AbstractLoginService
         if (_userStore == null)
         {
             if(LOG.isDebugEnabled())
-                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _configFile + " hotReload: " + hotReload);
-
+                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " hotReload: " + hotReload);
             PropertyUserStore propertyUserStore = new PropertyUserStore();
             propertyUserStore.setHotReload(hotReload);
-            propertyUserStore.setConfigPath(_configFile);
+            propertyUserStore.setConfigPath(_config);
             propertyUserStore.start();
             _userStore = propertyUserStore;
             _userStoreAutoCreate = true;
