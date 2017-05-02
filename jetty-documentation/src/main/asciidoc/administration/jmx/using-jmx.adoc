@@ -192,8 +192,14 @@ Examples:
 [source, screen, subs="{sub-order}"]
 ----
 service:jmx:rmi:///jndi/rmi:///jmxrmi
-  rmi_server_host = any address
+  rmi_server_host = local host address
   rmi_server_port = randomly chosen
+  rmi_registry_host = local host address
+  rmi_registry_port = 1099
+
+service:jmx:rmi://0.0.0.0:1099/jndi/rmi://0.0.0.0:1099/jmxrmi
+  rmi_server_host = any address
+  rmi_server_port = 1099
   rmi_registry_host = any address
   rmi_registry_port = 1099
 

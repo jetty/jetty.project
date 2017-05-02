@@ -73,40 +73,61 @@ public class ConnectorServerTest
     }
 
     @Test
-    public void testNoRegistryHostBindsToAny() throws Exception
+    public void testNoRegistryHostBindsToHost() throws Exception
     {
         connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi:///jmxrmi"), objectName);
         connectorServer.start();
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), 1099).close();
-        // Verify that I can connect to the RMI registry using the loopback address.
-        new Socket(InetAddress.getLoopbackAddress(), 1099).close();
+        try
+        {
+            // Verify that I cannot connect to the RMI registry using the loopback address.
+            new Socket(InetAddress.getLoopbackAddress(), 1099).close();
+            Assert.fail();
+        }
+        catch (ConnectException ignored)
+        {
+            // Ignored.
+        }
     }
 
     @Test
     public void testNoRegistryHostNonDefaultRegistryPort() throws Exception
     {
-        int registryPort = 1299;
+        ServerSocket serverSocket = new ServerSocket(0);
+        int registryPort = serverSocket.getLocalPort();
+        serverSocket.close();
         connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi://:" + registryPort + "/jmxrmi"), objectName);
+        connectorServer.start();
+
+        // Verify that I can connect to the RMI registry using a non-loopback address.
+        new Socket(InetAddress.getLocalHost(), registryPort).close();
+        try
+        {
+            // Verify that I cannot connect to the RMI registry using the loopback address.
+            new Socket(InetAddress.getLoopbackAddress(), registryPort).close();
+            Assert.fail();
+        }
+        catch (ConnectException ignored)
+        {
+            // Ignored.
+        }
+    }
+
+    @Test
+    public void testAnyRegistryHostBindsToAny() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket(0);
+        int registryPort = serverSocket.getLocalPort();
+        serverSocket.close();
+        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi://0.0.0.0:" + registryPort + "/jmxrmi"), objectName);
         connectorServer.start();
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), registryPort).close();
         // Verify that I can connect to the RMI registry using the loopback address.
         new Socket(InetAddress.getLoopbackAddress(), registryPort).close();
-    }
-
-    @Test
-    public void testNoRMIHostBindsToAny() throws Exception
-    {
-        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi:///jmxrmi"), objectName);
-        connectorServer.start();
-
-        // Verify that I can connect to the RMI server using a non-loopback address.
-        new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
-        // Verify that I can connect to the RMI server using the loopback address.
-        new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
     }
 
     @Test
@@ -132,6 +153,38 @@ public class ConnectorServerTest
 
         InetAddress loopback = InetAddress.getLoopbackAddress();
         new Socket(loopback, 1099).close();
+    }
+
+    @Test
+    public void testNoRMIHostBindsToHost() throws Exception
+    {
+        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi:///jmxrmi"), objectName);
+        connectorServer.start();
+
+        // Verify that I can connect to the RMI server using a non-loopback address.
+        new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
+        try
+        {
+            // Verify that I cannot connect to the RMI server using the loopback address.
+            new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
+            Assert.fail();
+        }
+        catch (ConnectException ignored)
+        {
+            // Ignored.
+        }
+    }
+
+    @Test
+    public void testAnyRMIHostBindsToAny() throws Exception
+    {
+        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi://0.0.0.0/jndi/rmi:///jmxrmi"), objectName);
+        connectorServer.start();
+
+        // Verify that I can connect to the RMI server using a non-loopback address.
+        new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
+        // Verify that I can connect to the RMI server using the loopback address.
+        new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
     }
 
     @Test
@@ -187,7 +240,10 @@ public class ConnectorServerTest
         // that can listen to 192.168.0.1:1099 and 127.0.0.1:1099 without problems.
 
         String host = "localhost";
-        int port = 1399;
+        ServerSocket serverSocket = new ServerSocket(0);
+        int port = serverSocket.getLocalPort();
+        serverSocket.close();
+
         connectorServer = new ConnectorServer(new JMXServiceURL("rmi", host, port, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), objectName);
         connectorServer.start();
 
