@@ -171,8 +171,10 @@ public class Parser
     /**
      * Parse the buffer.
      *
-     * @param buffer the buffer to consume.
-     * @return true if buffer is fully consumed, false if still has remaining bytes
+     * @param buffer the buffer to parse from.
+     * @return true if parsing of entire buffer was successful,
+     * false if parsing was interrupted by {@link Handler}.  If false, cease parsing the remaining
+     * buffer until such time its allowed again (this is important for read backpressure scenarios)
      * @throws WebSocketException if unable to parse properly
      */
     public boolean parse(ByteBuffer buffer) throws WebSocketException
@@ -185,11 +187,11 @@ public class Parser
         
         try
         {
-            // parse through all the frames in the buffer
-            while (parseFrame(buffer))
+            // parse through
+            while (buffer.hasRemaining() && parseFrame(buffer))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Parsed Frame: {}", frame);
+                    LOG.debug("Parsed Frame: {} : {}", frame, BufferUtil.toDetailString(buffer));
     
                 assertBehavior();
     
@@ -200,15 +202,24 @@ public class Parser
     
                 if(!this.parserHandler.onFrame(frame))
                 {
+                    // Do not parse any more
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Parser.BackPressure [{} bytes remaining]", buffer.remaining());
                     return false;
                 }
             }
+    
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parsed Complete: [{} bytes left in read buffer]", buffer.remaining());
             
-            // completely consumed buffer
-            return true;
+            // parsing is free to continue
+            return !buffer.hasRemaining();
         }
         catch (Throwable t)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parsed Error: [" + buffer.remaining() + " bytes left in read buffer]", t);
+            
             buffer.position(buffer.limit()); // consume remaining
             
             // let session know
@@ -270,7 +281,7 @@ public class Parser
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Parsing {} bytes",buffer.remaining());
+            LOG.debug("Parsing {}", BufferUtil.toDetailString(buffer));
         }
         
         while (buffer.hasRemaining())

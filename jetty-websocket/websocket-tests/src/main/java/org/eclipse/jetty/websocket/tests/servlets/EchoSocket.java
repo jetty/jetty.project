@@ -19,8 +19,11 @@
 package org.eclipse.jetty.websocket.tests.servlets;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -30,6 +33,8 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter;
  */
 public class EchoSocket extends WebSocketAdapter
 {
+    private static final Logger LOG = Log.getLogger(EchoSocket.class);
+    
     @Override
     public void onWebSocketText(String message)
     {
@@ -37,7 +42,7 @@ public class EchoSocket extends WebSocketAdapter
         {
             return;
         }
-
+        
         try
         {
             // echo the data back
@@ -50,5 +55,33 @@ public class EchoSocket extends WebSocketAdapter
         {
             throw new RuntimeIOException(e);
         }
+    }
+    
+    @Override
+    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    {
+        if (isNotConnected())
+        {
+            return;
+        }
+        
+        try
+        {
+            // echo the data back
+            RemoteEndpoint remote = getRemote();
+            remote.sendBytes(ByteBuffer.wrap(payload, offset, len));
+            if (remote.getBatchMode() == BatchMode.ON)
+                remote.flush();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
+    }
+    
+    @Override
+    public void onWebSocketError(Throwable cause)
+    {
+        LOG.warn(cause);
     }
 }

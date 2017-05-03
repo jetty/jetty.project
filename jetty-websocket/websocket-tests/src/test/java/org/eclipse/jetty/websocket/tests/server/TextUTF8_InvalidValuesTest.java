@@ -24,15 +24,12 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,10 +39,8 @@ import org.junit.runners.Parameterized.Parameters;
  * Tests of Known Bad UTF8 sequences that should trigger a {@link StatusCode#BAD_PAYLOAD} close and early connection termination
  */
 @RunWith(Parameterized.class)
-public class TestABCase6_BadUTF extends AbstractABCase
+public class TextUTF8_InvalidValuesTest extends AbstractLocalServerCase
 {
-    private static final Logger LOG = Log.getLogger(TestABCase6_BadUTF.class);
-
     @Parameters(name = "{0} - {1}")
     public static Collection<String[]> data()
     {
@@ -147,7 +142,7 @@ public class TestABCase6_BadUTF extends AbstractABCase
 
     private final byte[] invalid;
 
-    public TestABCase6_BadUTF(String testId, String hexMsg)
+    public TextUTF8_InvalidValuesTest(String testId, String hexMsg)
     {
         LOG.debug("Test ID: {}",testId);
         this.invalid = Hex.asByteArray(hexMsg);
@@ -164,10 +159,9 @@ public class TestABCase6_BadUTF extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-            Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.bulkMode();
-            session.send(send);
+            session.sendBulk(send);
             session.expect(expect);
         }
     }

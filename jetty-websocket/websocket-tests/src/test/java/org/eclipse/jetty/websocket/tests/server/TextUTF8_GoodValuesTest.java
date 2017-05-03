@@ -24,13 +24,10 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,10 +39,8 @@ import org.junit.runners.Parameterized.Parameters;
  * Should be preserved / echoed back, with normal close code.
  */
 @RunWith(Parameterized.class)
-public class TestABCase6_GoodUTF extends AbstractABCase
+public class TextUTF8_GoodValuesTest extends AbstractLocalServerCase
 {
-    private static final Logger LOG = Log.getLogger(TestABCase6_GoodUTF.class);
-    
     @Parameters(name = "{0} - {1}")
     public static Collection<String[]> data()
     {
@@ -122,7 +117,7 @@ public class TestABCase6_GoodUTF extends AbstractABCase
     
     private final ByteBuffer msg;
     
-    public TestABCase6_GoodUTF(String testId, String hexMsg)
+    public TextUTF8_GoodValuesTest(String testId, String hexMsg)
     {
         LOG.debug("Test ID: {}", testId);
         this.msg = Hex.asByteBuffer(hexMsg);
@@ -139,10 +134,9 @@ public class TestABCase6_GoodUTF extends AbstractABCase
         expect.add(new TextFrame().setPayload(clone(msg)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
-        try (Fuzzer.Session session = fuzzer.connect(this))
+        try (LocalFuzzer session = newLocalFuzzer())
         {
-            session.bulkMode();
-            session.send(send);
+            session.sendBulk(send);
             session.expect(expect);
         }
     }

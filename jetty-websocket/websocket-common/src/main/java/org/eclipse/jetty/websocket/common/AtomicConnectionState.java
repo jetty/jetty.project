@@ -79,7 +79,8 @@ public class AtomicConnectionState
     
     public boolean onClosing()
     {
-        return state.compareAndSet(State.OPEN, State.CLOSING);
+        State orig = state.getAndUpdate(prev -> State.CLOSING);
+        return orig == State.CONNECTED || orig == State.OPEN;
     }
     
     public boolean onConnected()
