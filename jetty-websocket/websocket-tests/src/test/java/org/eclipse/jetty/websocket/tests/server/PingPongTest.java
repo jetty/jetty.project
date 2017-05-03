@@ -33,6 +33,8 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.tests.BadFrame;
+import org.eclipse.jetty.websocket.tests.DataUtils;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.junit.Test;
 
 public class PingPongTest extends AbstractLocalServerCase
@@ -66,8 +68,8 @@ public class PingPongTest extends AbstractLocalServerCase
         }
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -103,8 +105,8 @@ public class PingPongTest extends AbstractLocalServerCase
         }
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendSegmented(send, 5);
             session.expect(expect);
@@ -130,10 +132,10 @@ public class PingPongTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -159,10 +161,10 @@ public class PingPongTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL, "Test 2.6").asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL, "Test 2.6").asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendSegmented(send, 1);
             session.expect(expect);
@@ -187,8 +189,8 @@ public class PingPongTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame());
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -219,8 +221,8 @@ public class PingPongTest extends AbstractLocalServerCase
             
             List<WebSocketFrame> expect = new ArrayList<>();
             expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-            
-            try (LocalFuzzer session = newLocalFuzzer())
+    
+            try (LocalFuzzer session = server.newLocalFuzzer())
             {
                 session.sendBulk(send);
                 session.expect(expect);
@@ -246,10 +248,10 @@ public class PingPongTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -274,10 +276,10 @@ public class PingPongTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new PongFrame().setPayload(copyOf(payload)));
+        expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -301,8 +303,8 @@ public class PingPongTest extends AbstractLocalServerCase
         
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -326,8 +328,8 @@ public class PingPongTest extends AbstractLocalServerCase
         
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -353,8 +355,8 @@ public class PingPongTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload("our ping")); // our pong
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);

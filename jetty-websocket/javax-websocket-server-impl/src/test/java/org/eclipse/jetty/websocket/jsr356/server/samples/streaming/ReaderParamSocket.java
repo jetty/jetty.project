@@ -28,10 +28,10 @@ import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.util.StackUtil;
 
 @ServerEndpoint("/echo/streaming/readerparam/{param}")
 public class ReaderParamSocket
@@ -60,6 +60,6 @@ public class ReaderParamSocket
     public void onError(Throwable cause) throws IOException
     {
         LOG.warn("Error",cause);
-        session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
+        session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

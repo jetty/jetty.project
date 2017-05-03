@@ -488,9 +488,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     /**
      * Upgrade the request/response to a WebSocket Connection.
-     * <p/>
+     * <p>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
+     * </p>
      *
      * @param http      the raw http connection
      * @param request   the request to upgrade

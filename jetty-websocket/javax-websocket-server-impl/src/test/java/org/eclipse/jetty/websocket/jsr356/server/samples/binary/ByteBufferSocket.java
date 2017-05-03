@@ -26,10 +26,10 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.util.StackUtil;
 
 @ServerEndpoint("/echo/binary/bytebuffer")
 public class ByteBufferSocket
@@ -46,6 +46,6 @@ public class ByteBufferSocket
     public void onError(Session session, Throwable cause) throws IOException
     {
         LOG.warn("Error",cause);
-        session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
+        session.getBasicRemote().sendText("Exception: " + StackUtils.toString(cause));
     }
 }

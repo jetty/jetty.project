@@ -35,8 +35,8 @@ import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -81,7 +81,7 @@ public class AvailableEncodersTest
         Encoder.Binary<T> encoder = (Encoder.Binary<T>) encoders.getInstanceFor(type);
         assertThat("Encoder", encoder, notNullValue());
         ByteBuffer encoded = encoder.encode(value);
-        
+    
         String hexEncoded = Hex.asHex(encoded);
         assertThat("Encoded", hexEncoded, is(expectedEncodedHex));
     }
@@ -92,7 +92,7 @@ public class AvailableEncodersTest
         assertThat("Encoder", encoder, notNullValue());
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         encoder.encode(value, out);
-        
+    
         String hexEncoded = Hex.asHex(out.toByteArray());
         
         assertThat("Encoded", hexEncoded, is(expectedEncodedHex));

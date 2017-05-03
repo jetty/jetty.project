@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.jsr356.PathParamProvider;
 
 /**
@@ -42,7 +43,9 @@ public class PathParamServerEndpointConfig extends ServerEndpointConfigWrapper i
         pathParamMap = new HashMap<>();
         if (pathMap != null)
         {
-            pathParamMap.putAll(pathMap);
+            pathMap.entrySet().stream().forEach(
+                    entry -> pathParamMap.put(entry.getKey(), URIUtil.decodePath(entry.getValue()))
+            );
         }
     }
     
