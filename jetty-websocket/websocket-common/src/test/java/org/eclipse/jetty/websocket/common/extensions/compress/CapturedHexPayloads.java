@@ -21,11 +21,11 @@ package org.eclipse.jetty.websocket.common.extensions.compress;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.util.Hex;
 
 public class CapturedHexPayloads implements OutgoingFrames
 {

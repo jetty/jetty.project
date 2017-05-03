@@ -38,6 +38,8 @@ import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.tests.BadFrame;
+import org.eclipse.jetty.websocket.tests.DataUtils;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.junit.Test;
 
 /**
@@ -63,9 +65,9 @@ public class CloseHandlingTest extends AbstractLocalServerCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-
+    
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             LocalFuzzer session = newLocalFuzzer())
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -95,9 +97,9 @@ public class CloseHandlingTest extends AbstractLocalServerCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
-
+    
         try (StacklessLogging ignored = new StacklessLogging(Parser.class,CloseInfo.class);
-             LocalFuzzer session = newLocalFuzzer())
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -120,7 +122,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -146,9 +148,9 @@ public class CloseHandlingTest extends AbstractLocalServerCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL,reason).asFrame());
-
+    
         try (StacklessLogging ignored = new StacklessLogging(AbstractWebSocketConnection.class);
-             LocalFuzzer session = newLocalFuzzer())
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -173,7 +175,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         expect.add(new TextFrame().setPayload("Hello World"));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -197,7 +199,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -220,7 +222,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -243,7 +245,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL,"Hic").asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -267,7 +269,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -291,7 +293,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -316,7 +318,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -343,10 +345,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         send.add(new PingFrame().setPayload("out of band"));
 
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        try (LocalFuzzer session = newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);

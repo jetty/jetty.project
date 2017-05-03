@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.is;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -31,7 +32,6 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
-import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -80,7 +80,7 @@ public class DeMaskProcessorTest
         payload.position(6); // where payload starts
         
         LOG.debug("Payload: {}",BufferUtil.toDetailString(payload));
-        LOG.debug("Pre-Processed: {}",Hex.asHex(payload));
+        LOG.debug("Pre-Processed: {}", Hex.asHex(payload));
 
         DeMaskProcessor demask = new DeMaskProcessor();
         demask.reset(frame);
@@ -97,8 +97,8 @@ public class DeMaskProcessorTest
 
         demask.process(slice1);
         demask.process(slice2);
-        
-        LOG.debug("Post-Processed: {}",Hex.asHex(payload));
+    
+        LOG.debug("Post-Processed: {}", Hex.asHex(payload));
 
         Assert.assertThat("Payload.remaining",payload.remaining(),is(messageSize));
         for (int i = payload.position(); i < payload.limit(); i++)

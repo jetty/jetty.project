@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.ParserCapture;
+import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.junit.Test;
 
 /**
@@ -57,7 +58,7 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         ByteBuffer buf = ByteBuffer.allocate(4096);
         
         // Create Upgrade Request Header
-        String upgradeRequest = generateUpgradeRequest("/");
+        String upgradeRequest = UpgradeUtils.generateUpgradeRequest("/");
         ByteBuffer upgradeRequestBytes = BufferUtil.toBuffer(upgradeRequest.toString(), StandardCharsets.UTF_8);
         BufferUtil.put(upgradeRequestBytes, buf);
         
@@ -70,7 +71,7 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         generator.generate(buf, frames);
         
         // Send this buffer to the server
-        LocalConnector.LocalEndPoint endPoint = newLocalConnection();
+        LocalConnector.LocalEndPoint endPoint = server.newLocalConnection();
     
         BufferUtil.flipToFlush(buf,0);
         performUpgrade(endPoint, buf);

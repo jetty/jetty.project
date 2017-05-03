@@ -31,6 +31,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.BadFrame;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -70,9 +71,9 @@ public class BadOpCodesTest extends AbstractLocalServerCase
         
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-        
+    
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             LocalFuzzer session = newLocalFuzzer())
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -92,9 +93,9 @@ public class BadOpCodesTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-        
+    
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             LocalFuzzer session = newLocalFuzzer())
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);

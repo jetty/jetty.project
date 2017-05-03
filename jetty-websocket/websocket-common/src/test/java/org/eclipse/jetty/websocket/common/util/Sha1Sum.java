@@ -31,6 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.junit.Assert;
 

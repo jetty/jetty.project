@@ -28,6 +28,8 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.tests.DataUtils;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -69,10 +71,10 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -91,10 +93,10 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(clone(buf)));
+        expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendSegmented(send, 10);
             session.expect(expect);
@@ -113,10 +115,10 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new BinaryFrame().setPayload(clone(buf)));
+        expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -135,10 +137,10 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new BinaryFrame().setPayload(clone(buf)));
+        expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = newLocalFuzzer())
+    
+        try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendSegmented(send, 10);
             session.expect(expect);

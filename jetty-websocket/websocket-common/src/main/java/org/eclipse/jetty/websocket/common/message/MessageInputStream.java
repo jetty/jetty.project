@@ -48,9 +48,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     public void accept(Frame frame, FrameCallback callback)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("accepting {}", frame);
-        }
         
         // If closed, we should just toss incoming payloads into the bit bucket.
         if (closed.get())
@@ -83,6 +81,9 @@ public class MessageInputStream extends InputStream implements MessageSink
     @Override
     public void close() throws IOException
     {
+        if(LOG.isDebugEnabled())
+            LOG.debug("close()");
+        
         if (closed.compareAndSet(false, true))
         {
             synchronized (buffers)
@@ -96,6 +97,8 @@ public class MessageInputStream extends InputStream implements MessageSink
     
     private void shutdown()
     {
+        if(LOG.isDebugEnabled())
+            LOG.debug("shutdown()");
         closed.set(true);
         // Removed buffers that may have remained in the queue.
         buffers.clear();
@@ -144,7 +147,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         {
             try
             {
-                while ((result = buffers.poll()) == null)
+                while ((result = buffers.peek()) == null)
                 {
                     // TODO: handle read timeout here?
                     buffers.wait();
@@ -159,6 +162,8 @@ public class MessageInputStream extends InputStream implements MessageSink
         
         if (result == EOF)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Read EOF");
             shutdown();
             return -1;
         }
@@ -166,10 +171,11 @@ public class MessageInputStream extends InputStream implements MessageSink
         // We have content
         int fillLen = Math.min(result.buffer.remaining(), len);
         result.buffer.get(b, off, fillLen);
-        
+    
         if (!result.buffer.hasRemaining())
         {
             result.callback.succeed();
+            buffers.pop();
         }
         
         // return number of bytes actually copied into buffer

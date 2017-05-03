@@ -18,159 +18,39 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.net.URI;
-
 import javax.servlet.http.HttpServlet;
 
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
-public class SimpleServletServer extends ContainerLifeCycle
+public class SimpleServletServer extends LocalServer implements LocalFuzzer.Provider
 {
-    private static final Logger LOG = Log.getLogger(SimpleServletServer.class);
-    private Server server;
-    private ServerConnector connector;
-    private LocalConnector localConnector;
-    private URI serverUri;
-    private HttpServlet servlet;
-    private boolean ssl = false;
-    private SslContextFactory sslContextFactory;
+    private final HttpServlet servlet;
 
     public SimpleServletServer(HttpServlet servlet)
     {
+        super();
         this.servlet = servlet;
-    }
-
-    public void enableSsl(boolean ssl)
-    {
-        this.ssl = ssl;
-    }
-    
-    public LocalConnector getLocalConnector()
-    {
-        return localConnector;
-    }
-    
-    public URI getServerUri()
-    {
-        return serverUri;
-    }
-
-    public SslContextFactory getSslContextFactory()
-    {
-        return sslContextFactory;
-    }
-
-    public boolean isSslEnabled()
-    {
-        return ssl;
-    }
-    
-    @Override
-    protected void doStart() throws Exception
-    {
-        // Configure Server
-        server = new Server();
-        if (ssl)
-        {
-            // HTTP Configuration
-            HttpConfiguration http_config = new HttpConfiguration();
-            http_config.setSecureScheme("https");
-            http_config.setSecurePort(0);
-            http_config.setOutputBufferSize(32768);
-            http_config.setRequestHeaderSize(8192);
-            http_config.setResponseHeaderSize(8192);
-            http_config.setSendServerVersion(true);
-            http_config.setSendDateHeader(false);
-
-            sslContextFactory = new SslContextFactory();
-            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
-            sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setKeyManagerPassword("keypwd");
-            sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA","SSL_DHE_RSA_WITH_DES_CBC_SHA","SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                    "SSL_RSA_EXPORT_WITH_RC4_40_MD5","SSL_RSA_EXPORT_WITH_DES40_CBC_SHA","SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                    "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-
-            // SSL HTTP Configuration
-            HttpConfiguration https_config = new HttpConfiguration(http_config);
-            https_config.addCustomizer(new SecureRequestCustomizer());
-
-            // SSL Connector
-            connector = new ServerConnector(server,new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),new HttpConnectionFactory(https_config));
-            connector.setPort(0);
-        }
-        else
-        {
-            // Basic HTTP connector
-            connector = new ServerConnector(server);
-            connector.setPort(0);
-        }
-        // Add network connector
-        server.addConnector(connector);
-        
-        // Add Local Connector
-        localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        configureServletContextHandler(context);
-        server.setHandler(context);
-
-        // Serve capture servlet
-        context.addServlet(new ServletHolder(servlet),"/*");
-
-        // Start Server
-        addBean(server);
-        
-        super.doStart();
-
-        // Establish the Server URI
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverUri = new URI(String.format("%s://%s:%d/",ssl?"wss":"ws",host,port));
-
-        // Some debugging
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug(server.dump());
-        }
     }
 
     protected void configureServletContextHandler(ServletContextHandler context)
     {
-        /* override to change context handler */
+        // Serve capture servlet
+        context.addServlet(new ServletHolder(servlet),"/*");
     }
-
+    
     public WebSocketServletFactory getWebSocketServletFactory()
     {
         // Try filter approach first
-        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter)this.servlet.getServletContext().getAttribute(WebSocketUpgradeFilter.class.getName());
+        WebSocketUpgradeFilter filter = (WebSocketUpgradeFilter) this.servlet.getServletContext().getAttribute(WebSocketUpgradeFilter.class.getName());
         if (filter != null)
         {
             return filter.getFactory();
         }
-
+        
         // Try servlet next
-        return (WebSocketServletFactory)this.servlet.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
+        return (WebSocketServletFactory) this.servlet.getServletContext().getAttribute(WebSocketServletFactory.class.getName());
     }
 }

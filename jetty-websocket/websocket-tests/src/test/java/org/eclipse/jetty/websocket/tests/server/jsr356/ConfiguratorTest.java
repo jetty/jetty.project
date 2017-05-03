@@ -83,6 +83,7 @@ public class ConfiguratorTest
     {
     }
     
+    @SuppressWarnings("unused")
     @ServerEndpoint(value = "/empty", configurator = EmptyConfigurator.class)
     public static class EmptySocket
     {
@@ -102,6 +103,7 @@ public class ConfiguratorTest
         }
     }
     
+    @SuppressWarnings("unused")
     @ServerEndpoint(value = "/no-extensions", configurator = NoExtensionsConfigurator.class)
     public static class NoExtensionsSocket
     {
@@ -132,6 +134,7 @@ public class ConfiguratorTest
         }
     }
     
+    @SuppressWarnings("unused")
     @ServerEndpoint(value = "/capture-request-headers", configurator = CaptureHeadersConfigurator.class)
     public static class CaptureHeadersSocket
     {
@@ -183,6 +186,7 @@ public class ConfiguratorTest
         }
     }
     
+    @SuppressWarnings("unused")
     @ServerEndpoint(value = "/protocols", configurator = ProtocolsConfigurator.class)
     public static class ProtocolsSocket
     {
@@ -225,6 +229,7 @@ public class ConfiguratorTest
         }
     }
     
+    @SuppressWarnings("unused")
     @ServerEndpoint(value = "/unique-user-props", configurator = UniqueUserPropsConfigurator.class)
     public static class UniqueUserPropsSocket
     {
@@ -261,6 +266,7 @@ public class ConfiguratorTest
         }
     }
     
+    @SuppressWarnings("unused")
     @ServerEndpoint(value = "/addr", configurator = AddrConfigurator.class)
     public static class AddressSocket
     {
@@ -341,6 +347,7 @@ public class ConfiguratorTest
         }
     }
     
+    @SuppressWarnings("unused")
     @ServerEndpoint(value = "/timedecoder",
             subprotocols = {"time", "gmt"},
             configurator = SelectedProtocolConfigurator.class,

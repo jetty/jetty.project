@@ -125,6 +125,7 @@ public class JsrSessionTest
         // Whole Message
         session.addMessageHandler(String.class, (msg) -> received.add(msg));
         
+        session.connect();
         session.open();
     
         FrameCallback callback = new FrameCallback.Adapter();
@@ -155,7 +156,8 @@ public class JsrSessionTest
             copy.flip();
             received.add(new Object[]{copy, isLast});
         });
-        
+    
+        session.connect();
         session.open();
         
         FrameCallback callback = new FrameCallback.Adapter();

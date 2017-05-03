@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ParserCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
