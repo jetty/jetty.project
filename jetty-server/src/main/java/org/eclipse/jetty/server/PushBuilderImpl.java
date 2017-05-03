@@ -47,12 +47,10 @@ public class PushBuilderImpl implements PushBuilder
     private String _method;
     private String _queryString;
     private String _sessionId;
-    private boolean _conditional;
     private String _path;
-    private String _etag;
     private String _lastModified;
 
-    public PushBuilderImpl(Request request, HttpFields fields, String method, String queryString, String sessionId, boolean conditional)
+    public PushBuilderImpl(Request request, HttpFields fields, String method, String queryString, String sessionId)
     {
         super();
         _request = request;
@@ -60,10 +58,9 @@ public class PushBuilderImpl implements PushBuilder
         _method = method;
         _queryString = queryString;
         _sessionId = sessionId;
-        _conditional = conditional;
         _fields.add(JettyPush);
         if (LOG.isDebugEnabled())
-            LOG.debug("PushBuilder({} {}?{} s={} c={})",_method,_request.getRequestURI(),_queryString,_sessionId,_conditional);
+            LOG.debug("PushBuilder({} {}?{} s={} c={})",_method,_request.getRequestURI(),_queryString,_sessionId);
     }
 
     /* ------------------------------------------------------------ */
@@ -108,21 +105,6 @@ public class PushBuilderImpl implements PushBuilder
     public PushBuilder sessionId(String sessionId)
     {
         _sessionId = sessionId;
-        return this;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isConditional()
-    {
-        return _conditional;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public PushBuilder conditional(boolean conditional)
-    {
-        _conditional = conditional;
         return this;
     }
 
@@ -179,35 +161,6 @@ public class PushBuilderImpl implements PushBuilder
         return this;
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public String getEtag()
-    {
-        return _etag;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public PushBuilder etag(String etag)
-    {
-        _etag = etag;
-        return this;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public String getLastModified()
-    {
-        return _lastModified;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public PushBuilder lastModified(String lastModified)
-    {
-        _lastModified = lastModified;
-        return this;
-    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -240,14 +193,6 @@ public class PushBuilderImpl implements PushBuilder
             //      _fields.add("Cookie","JSESSIONID="+_sessionId);
         }
 
-        if (_conditional)
-        {
-            if (_etag!=null)
-                _fields.add(HttpHeader.IF_NONE_MATCH,_etag);
-            else if (_lastModified!=null)
-                _fields.add(HttpHeader.IF_MODIFIED_SINCE,_lastModified);
-        }
-
         HttpURI uri = HttpURI.createHttpURI(_request.getScheme(),_request.getServerName(),_request.getServerPort(),path,param,query,null);
         MetaData.Request push = new MetaData.Request(_method,uri,_request.getHttpVersion(),_fields);
 
@@ -256,7 +201,6 @@ public class PushBuilderImpl implements PushBuilder
 
         _request.getHttpChannel().getHttpTransport().push(push);
         _path=null;
-        _etag=null;
         _lastModified=null;
     }
 

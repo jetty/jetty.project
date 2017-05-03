@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -59,8 +60,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
+import javax.servlet.http.MappingMatch;
 import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
+import javax.servlet.http.ServletMapping;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -219,7 +222,23 @@ public class Request implements HttpServletRequest
         return metadata==null?null:metadata.getFields();
     }
 
-    public HttpFields getTrailers()
+    /* ------------------------------------------------------------ */
+    @Override
+    public Map<String,String> getTrailers()
+    {
+        if (_trailers==null)
+            return Collections.emptyMap();
+        Map<String,String> trailers = new HashMap<>();
+        for (HttpField field : _trailers)
+        {
+            String key = field.getName().toLowerCase();
+            String value = trailers.get(key);
+            trailers.put(key,value==null?field.getValue():value+","+field.getValue());
+        }
+        return trailers;
+    }
+
+    public HttpFields getTrailerHttpFields()
     {
         return _trailers;
     }
@@ -243,14 +262,20 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    @Deprecated
     public PushBuilder getPushBuilder()
+    {
+        return newPushBuilder();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public PushBuilder newPushBuilder()
     {
         if (!isPushSupported())
             throw new IllegalStateException(String.format("%s,push=%b,channel=%s", this, isPush(), getHttpChannel()));
 
         HttpFields fields = new HttpFields(getHttpFields().size()+5);
-        boolean conditional=false;
 
         for (HttpField field : getHttpFields())
         {
@@ -275,7 +300,7 @@ public class Request implements HttpServletRequest
 
                     case IF_NONE_MATCH:
                     case IF_MODIFIED_SINCE:
-                        conditional=true;
+                        // TODO
                         continue;
 
                     default:
@@ -301,7 +326,7 @@ public class Request implements HttpServletRequest
             id=getRequestedSessionId();
         }
 
-        PushBuilder builder = new PushBuilderImpl(this,fields,getMethod(),getQueryString(),id,conditional);
+        PushBuilder builder = new PushBuilderImpl(this,fields,getMethod(),getQueryString(),id);
         builder.addHeader("referer",getRequestURL().toString());
 
         // TODO process any set cookies
@@ -2429,7 +2454,7 @@ public class Request implements HttpServletRequest
     
     
     // TODO replace with overriden version from API
-    public Mapping getMapping() 
+    public ServletMapping getMapping()
     {
         final PathSpec pathSpec = _pathSpec;
         final MappingMatch match;
@@ -2460,18 +2485,18 @@ public class Request implements HttpServletRequest
                     mapping = _servletPath;
                     break;
                 default:
-                    match = MappingMatch.UNKNOWN;
+                    match = null;
                     mapping = _servletPath;
                     break;
             }
         }
         else
         {
-            match = MappingMatch.UNKNOWN;
+            match = null;
             mapping = _servletPath;
         }
         
-        return new Mapping()
+        return new ServletMapping()
         {
             @Override
             public String getMatchValue()
@@ -2488,57 +2513,16 @@ public class Request implements HttpServletRequest
             }
 
             @Override
-            public MappingMatch getMatchType()
+            public String getServletName()
+            {
+                return Request.this.getServletName();
+            }
+
+            @Override
+            public MappingMatch getMappingMatch()
             {
                 return match;
             }
-            
-            public String getServletName() 
-            {
-                return null;
-            }
         };
     }
-
-    /**
-     * Represents how the request from which this object was obtained was mapped to
-     * the associated servlet.
-     * TODO replace with API version
-     * @since 4.0
-     */
-    public interface Mapping {
-        /**
-         * @return The value that was matched or the empty String if not known.
-         */
-        String getMatchValue();
-     
-        /**
-         * @return The {@code url-pattern} that matched this request or the empty
-         *         String if not known.
-         */
-        String getPattern();
-     
-        /**
-         * @return The type of match ({@link MappingMatch#UNKNOWN} if not known)
-         */
-        MappingMatch getMatchType();
-    }
-    
-    /**
-     * Represents the ways that a request can be mapped to a servlet
-     * TODO replace with API version
-     * @since 4.0
-     */
-    public enum MappingMatch 
-    {
-        CONTEXT_ROOT,
-        DEFAULT,
-        EXACT,
-        EXTENSION,
-        IMPLICIT,
-        PATH,
-        UNKNOWN
-    }
-
-    
 }

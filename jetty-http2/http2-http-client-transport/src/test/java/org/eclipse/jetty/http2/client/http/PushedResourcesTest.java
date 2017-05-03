@@ -123,10 +123,10 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    baseRequest.getPushBuilder()
+                    baseRequest.newPushBuilder()
                             .path(path1)
                             .push();
-                    baseRequest.getPushBuilder()
+                    baseRequest.newPushBuilder()
                             .path(path2)
                             .push();
                     response.getOutputStream().write(bytes);
@@ -185,7 +185,7 @@ public class PushedResourcesTest extends AbstractTest
                 else if (target.equals(newPath))
                     response.getOutputStream().write(pushBytes);
                 else
-                    baseRequest.getPushBuilder().path(oldPath).push();
+                    baseRequest.newPushBuilder().path(oldPath).push();
             }
         });
 

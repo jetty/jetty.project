@@ -267,7 +267,7 @@ public class PushCacheFilter implements Filter
         // Push associated resources.
         if (!conditional && !primaryResource._associated.isEmpty())
         {
-            PushBuilder pushBuilder = jettyRequest.getPushBuilder();
+            PushBuilder pushBuilder = jettyRequest.newPushBuilder();
 
             // Breadth-first push of associated resources.
             Queue<PrimaryResource> queue = new ArrayDeque<>();

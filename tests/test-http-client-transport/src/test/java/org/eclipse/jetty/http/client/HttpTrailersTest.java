@@ -81,7 +81,7 @@ public class HttpTrailersTest extends AbstractTest
                 }
 
                 // Now the trailers can be accessed.
-                HttpFields trailers = jettyRequest.getTrailers();
+                HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 Assert.assertNotNull(trailers);
                 Assert.assertEquals(trailerValue, trailers.get(trailerName));
             }
@@ -118,7 +118,7 @@ public class HttpTrailersTest extends AbstractTest
                 }
 
                 // Now the trailers can be accessed.
-                HttpFields trailers = jettyRequest.getTrailers();
+                HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 Assert.assertNull(trailers);
             }
         });
@@ -157,7 +157,7 @@ public class HttpTrailersTest extends AbstractTest
                 trailers.put(trailerName, trailerValue);
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailers(() -> trailers);
+                jettyResponse.setTrailerHttpFields(() -> trailers);
                 if (content != null)
                     response.getOutputStream().write(content);
             }
@@ -199,7 +199,7 @@ public class HttpTrailersTest extends AbstractTest
                 HttpFields trailers = new HttpFields();
 
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailers(() -> trailers);
+                jettyResponse.setTrailerHttpFields(() -> trailers);
             }
         });
 

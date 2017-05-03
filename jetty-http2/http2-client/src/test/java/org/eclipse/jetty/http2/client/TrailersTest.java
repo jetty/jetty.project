@@ -104,7 +104,7 @@ public class TrailersTest extends AbstractTest
             {
                 Request jettyRequest = (Request)request;
                 // No trailers yet.
-                Assert.assertNull(jettyRequest.getTrailers());
+                Assert.assertNull(jettyRequest.getTrailerHttpFields());
 
                 trailerLatch.countDown();
 
@@ -118,7 +118,7 @@ public class TrailersTest extends AbstractTest
                 }
 
                 // Now we have the trailers.
-                HttpFields trailers = jettyRequest.getTrailers();
+                HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 Assert.assertNotNull(trailers);
                 Assert.assertNotNull(trailers.get("X-Trailer"));
             }

@@ -431,6 +431,7 @@ public class ServletHandler extends ScopedHandler
         // Get the base requests
         final String old_servlet_path=baseRequest.getServletPath();
         final String old_path_info=baseRequest.getPathInfo();
+        final PathSpec old_path_spec=baseRequest.getPathSpec();
 
         DispatcherType type = baseRequest.getDispatcherType();
 
@@ -482,6 +483,7 @@ public class ServletHandler extends ScopedHandler
             {
                 baseRequest.setServletPath(old_servlet_path);
                 baseRequest.setPathInfo(old_path_info);
+                baseRequest.setPathSpec(old_path_spec);
             }
         }
     }
