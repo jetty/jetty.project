@@ -35,4 +35,27 @@ public class AtomicConnectionStateTest
         assertThat("Closing", state.onClosing(), is(true));
         assertThat("Closed", state.onClosed(), is(true));
     }
+    
+    @Test
+    public void testSkipOpen()
+    {
+        AtomicConnectionState state = new AtomicConnectionState();
+        assertThat("Connecting", state.onConnecting(), is(true));
+        assertThat("Connected", state.onConnected(), is(true));
+        // SKIP assertThat("Open", state.onOpen(), is(true));
+        assertThat("Closing", state.onClosing(), is(true));
+        assertThat("Closed", state.onClosed(), is(true));
+    }
+    
+    @Test
+    public void testClosingTwice()
+    {
+        AtomicConnectionState state = new AtomicConnectionState();
+        assertThat("Connecting", state.onConnecting(), is(true));
+        assertThat("Connected", state.onConnected(), is(true));
+        // SKIP assertThat("Open", state.onOpen(), is(true));
+        assertThat("Closing", state.onClosing(), is(true));
+        assertThat("Closing", state.onClosing(), is(false));
+        assertThat("Closed", state.onClosed(), is(true));
+    }
 }

@@ -297,6 +297,16 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
     
+    private void releaseNetworkBuffer(ByteBuffer buffer)
+    {
+        synchronized (this)
+        {
+            assert(!buffer.hasRemaining());
+            bufferPool.release(buffer);
+            networkBuffer = null;
+        }
+    }
+    
     @Override
     public void onFillable()
     {
@@ -314,28 +324,31 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     return;
                 }
+                
+                ByteBuffer nBuffer = getNetworkBuffer();
     
-                if (networkBuffer.hasRemaining())
-                {
-                    if (!parser.parse(networkBuffer)) return;
-                }
-
-                int filled = getEndPoint().fill(networkBuffer);
-
+                if (!parser.parse(nBuffer)) return;
+                
+                // Shouldn't reach this point if buffer has un-parsed bytes
+                assert(!nBuffer.hasRemaining());
+    
+                int filled = getEndPoint().fill(nBuffer);
+                
+                if(LOG.isDebugEnabled())
+                    LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
+    
                 if (filled < 0)
                 {
-                    bufferPool.release(networkBuffer);
+                    releaseNetworkBuffer(nBuffer);
                     return;
                 }
-
+    
                 if (filled == 0)
                 {
-                    bufferPool.release(networkBuffer);
+                    releaseNetworkBuffer(nBuffer);
                     fillInterested();
                     return;
                 }
-
-                // if (!parser.parse(networkBuffer)) return;
             }
         }
         catch (Throwable t)
@@ -343,6 +356,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             notifyError(t);
         }
     }
+    
     
     /**
      * Extra bytes from the initial HTTP upgrade that need to

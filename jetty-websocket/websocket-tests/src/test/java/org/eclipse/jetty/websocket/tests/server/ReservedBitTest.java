@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -31,38 +30,42 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.tests.Fuzzer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Test various RSV violations
  */
-@RunWith(AdvancedRunner.class)
-public class TestABCase3 extends AbstractABCase
+public class ReservedBitTest extends AbstractLocalServerCase
 {
     /**
      * Send small text frame, with RSV1 == true, with no extensions defined.
+     * <p>
+     * From Autobahn WebSocket Server Testcase 3.1
+     * </p>
      * @throws Exception on test failure
      */
     @Test
     public void testCase3_1() throws Exception
     {
-        WebSocketFrame send = new TextFrame().setPayload("small").setRsv1(true); // intentionally bad
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload("small").setRsv1(true)); // intentionally bad
 
-        WebSocketFrame expect = new CloseInfo(StatusCode.PROTOCOL).asFrame();
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
     
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.bulkMode();
-            session.send(send);
+            session.sendBulk(send);
             session.expect(expect);
         }
     }
 
     /**
      * Send small text frame, send again with RSV2 == true, then ping, with no extensions defined.
+     * <p>
+     * From Autobahn WebSocket Server Testcase 3.2
+     * </p>
      * @throws Exception on test failure
      */
     @Test
@@ -78,16 +81,18 @@ public class TestABCase3 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
     
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.bulkMode();
-            session.send(send);
+            session.sendBulk(send);
             session.expect(expect);
         }
     }
 
     /**
      * Send small text frame, send again with (RSV1 & RSV2), then ping, with no extensions defined.
+     * <p>
+     * From Autobahn WebSocket Server Testcase 3.3
+     * </p>
      * @throws Exception on test failure
      */
     @Test
@@ -103,16 +108,18 @@ public class TestABCase3 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.perFrameMode();
-            session.send(send);
+            session.sendFrames(send);
             session.expect(expect);
         }
     }
 
     /**
      * Send small text frame, send again with (RSV3), then ping, with no extensions defined.
+     * <p>
+     * From Autobahn WebSocket Server Testcase 3.4
+     * </p>
      * @throws Exception on test failure
      */
     @Test
@@ -128,16 +135,18 @@ public class TestABCase3 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.slowMode(1);
-            session.send(send);
+            session.sendSegmented(send, 1);
             session.expect(expect);
         }
     }
 
     /**
      * Send binary frame with (RSV3 & RSV1), with no extensions defined.
+     * <p>
+     * From Autobahn WebSocket Server Testcase 3.5
+     * </p>
      * @throws Exception on test failure
      */
     @Test
@@ -153,16 +162,18 @@ public class TestABCase3 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
     
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.bulkMode();
-            session.send(send);
+            session.sendBulk(send);
             session.expect(expect);
         }
     }
 
     /**
      * Send ping frame with (RSV3 & RSV2), with no extensions defined.
+     * <p>
+     * From Autobahn WebSocket Server Testcase 3.6
+     * </p>
      * @throws Exception on test failure
      */
     @Test
@@ -178,24 +189,23 @@ public class TestABCase3 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-            Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.bulkMode();
-            session.send(send);
+            session.sendBulk(send);
             session.expect(expect);
         }
     }
 
     /**
      * Send close frame with (RSV3 & RSV2 & RSV1), with no extensions defined.
+     * <p>
+     * From Autobahn WebSocket Server Testcase 3.7
+     * </p>
      * @throws Exception on test failure
      */
     @Test
     public void testCase3_7() throws Exception
     {
-        byte payload[] = new byte[8];
-        Arrays.fill(payload,(byte)0xFF);
-
         List<WebSocketFrame> send = new ArrayList<>();
         WebSocketFrame frame = new CloseInfo(StatusCode.NORMAL).asFrame();
         frame.setRsv1(true);
@@ -207,10 +217,9 @@ public class TestABCase3 extends AbstractABCase
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
     
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
-             Fuzzer.Session session = fuzzer.connect(this))
+             LocalFuzzer session = newLocalFuzzer())
         {
-            session.bulkMode();
-            session.send(send);
+            session.sendBulk(send);
             session.expect(expect);
         }
     }

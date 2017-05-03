@@ -89,6 +89,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
 
     // The websocket endpoint object itself
     private final Object endpoint;
+    
+    // Callbacks
+    private FrameCallback onDisconnectCallback = new CompletionCallback() {
+        @Override
+        public void complete()
+        {
+            if (connectionState.onClosed())
+            {
+                LOG.debug("ConnectionState: Transition to CLOSED");
+                connection.disconnect();
+            }
+        }
+    };
 
     // Endpoint Functions and MessageSinks
     protected EndpointFunctions endpointFunctions;
@@ -152,12 +165,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public void close(int statusCode, String reason)
     {
-        close(new CloseInfo(statusCode, reason), EMPTY);
+        close(statusCode, reason, EMPTY);
+    }
+    
+    private void close(int statusCode, String reason, FrameCallback callback)
+    {
+        close(new CloseInfo(statusCode, reason), callback);
     }
     
     private void close(CloseInfo closeInfo, FrameCallback callback)
     {
-        // TODO: review close from onOpen
+        connectionState.onClosing(); // move to CLOSING state (always)
         
         if(closeSent.compareAndSet(false,true))
         {
@@ -451,18 +469,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                         if (closeInfo != null)
                         {
                             notifyClose(closeInfo.getStatusCode(), closeInfo.getReason());
-                            close(closeInfo, new CompletionCallback()
-                            {
-                                @Override
-                                public void complete()
-                                {
-                                    if (connectionState.onClosed())
-                                    {
-                                        LOG.debug("ConnectionState: Transition to CLOSED");
-                                        connection.disconnect();
-                                    }
-                                }
-                            });
+                            close(closeInfo, onDisconnectCallback);
                         }
                         
                         // let fill/parse continue
@@ -540,12 +547,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                     LOG.debug("Discarding post EOF frame - {}", frame);
             }
         }
+        catch (Throwable t)
+        {
+            callback.fail(t);
+        }
         
         // Unset active MessageSink if this was a fin frame
         if (frame.getType().isData() && frame.isFin() && activeMessageSink != null)
             activeMessageSink = null;
     }
-
+    
     @Override
     public boolean isOpen()
     {
@@ -607,24 +618,39 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     
         if (cause instanceof NotUtf8Exception)
         {
-            close(StatusCode.BAD_PAYLOAD, cause.getMessage());
+            close(StatusCode.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof SocketTimeoutException)
         {
-            close(StatusCode.SHUTDOWN, cause.getMessage());
+            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof IOException)
         {
-            close(StatusCode.PROTOCOL, cause.getMessage());
+            close(StatusCode.PROTOCOL, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof SocketException)
         {
-            close(StatusCode.SHUTDOWN, cause.getMessage());
+            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof CloseException)
         {
             CloseException ce = (CloseException) cause;
-            close(ce.getStatusCode(), ce.getMessage());
+            FrameCallback callback = EMPTY;
+    
+            // Force disconnect for protocol breaking status codes
+            switch (ce.getStatusCode())
+            {
+                case StatusCode.PROTOCOL:
+                case StatusCode.BAD_DATA:
+                case StatusCode.BAD_PAYLOAD:
+                case StatusCode.MESSAGE_TOO_LARGE:
+                case StatusCode.POLICY_VIOLATION:
+                {
+                    callback = onDisconnectCallback;
+                }
+            }
+            
+            close(ce.getStatusCode(), ce.getMessage(), callback);
         }
         else
         {

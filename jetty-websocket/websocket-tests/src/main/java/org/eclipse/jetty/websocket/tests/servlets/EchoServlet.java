@@ -30,6 +30,8 @@ public class EchoServlet extends WebSocketServlet
     @Override
     public void configure(WebSocketServletFactory factory)
     {
+        factory.getPolicy().setMaxBinaryMessageSize(20 * 1024 * 1024);
+        factory.getPolicy().setMaxTextMessageSize(20 * 1024 * 1024);
         factory.register(EchoSocket.class);
     }
 }
