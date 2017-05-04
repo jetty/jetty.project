@@ -71,7 +71,7 @@ public class AnnotatedServerEndpointTest
     }
     
     @AfterClass
-    public static void stopServer()
+    public static void stopServer() throws Exception
     {
         server.stop();
     }

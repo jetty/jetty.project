@@ -435,8 +435,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void resume()
     {
-        suspendToken.set(false);
-        fillAndParse();
+        if (suspendToken.compareAndSet(true, false))
+        {
+            fillAndParse();
+        }
     }
     
     public boolean addListener(LogicalConnection.Listener listener)

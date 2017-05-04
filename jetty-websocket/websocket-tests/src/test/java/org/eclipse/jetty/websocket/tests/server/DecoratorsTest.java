@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
@@ -33,28 +35,34 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+/**
+ * Test the {@link Decorator} features of the WebSocketServer
+ */
+@RunWith(Parameterized.class)
 public class DecoratorsTest
 {
+    private static final Logger LOG = Log.getLogger(DecoratorsTest.class);
+    
     private static class DecoratorsSocket extends WebSocketAdapter
     {
         private final DecoratedObjectFactory objFactory;
@@ -84,6 +92,8 @@ public class DecoratorsTest
             {
                 out.printf("DecoratedObjectFactory is NULL%n");
             }
+            
+            LOG.debug(out.toString());
 
             getRemote().sendStringByFuture(str.toString());
         }
@@ -130,73 +140,100 @@ public class DecoratorsTest
         {
         }
     }
-
-    private static SimpleServletServer server;
-    private static DecoratorsCreator decoratorsCreator;
-
-    @BeforeClass
-    public static void startServer() throws Exception
+    
+    @SuppressWarnings("deprecation")
+    private static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
     {
-        decoratorsCreator = new DecoratorsCreator();
-        server = new SimpleServletServer(new DecoratorsRequestServlet(decoratorsCreator))
+        @Override
+        public <T> T decorate(T o)
+        {
+            return o;
+        }
+        
+        @Override
+        public void destroy(Object o)
+        {
+        }
+    }
+    
+    private interface Case
+    {
+        void customize(ServletContextHandler context);
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> data()
+    {
+        List<Object[]> cases = new ArrayList<>();
+        
+        cases.add(new Object[] {
+                "Legacy Usage",
+                (Case) (context) -> {
+                    context.getObjectFactory().clear();
+                    // Add decorator in the legacy way
+                    context.addDecorator(new DummyLegacyDecorator());
+                },
+                DummyLegacyDecorator.class
+        });
+    
+        cases.add(new Object[] {
+                "Recommended Usage",
+                (Case) (context) -> {
+                    // Add decorator in the new util way
+                    context.getObjectFactory().clear();
+                    context.getObjectFactory().addDecorator(new DummyUtilDecorator());
+                },
+                DummyUtilDecorator.class
+        });
+        
+        return cases;
+    }
+
+    private SimpleServletServer server;
+    private Class<?> expectedDecoratorClass;
+    
+    public DecoratorsTest(String testId, Case testcase, Class<?> expectedDecoratorClass) throws Exception
+    {
+        LOG.debug("Testing {}", testId);
+        this.expectedDecoratorClass = expectedDecoratorClass;
+        server = new SimpleServletServer(new DecoratorsRequestServlet(new DecoratorsCreator()))
         {
             @Override
             protected void configureServletContextHandler(ServletContextHandler context)
             {
-                // Add decorator in the new util way
-                context.getObjectFactory().clear();
-                context.getObjectFactory().addDecorator(new DummyUtilDecorator());
+                super.configureServletContextHandler(context);
+                testcase.customize(context);
             }
         };
         server.start();
     }
 
-    @AfterClass
-    public static void stopServer() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
-    private WebSocketClient client;
-    
-    @Before
-    public void startClient() throws Exception
-    {
-        client = new WebSocketClient();
-        client.start();
-    }
-    
-    @After
-    public void stopClient() throws Exception
-    {
-        client.stop();
-    }
-
     @Test
     public void testAccessRequestCookies() throws Exception
     {
-        client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(1));
-    
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-    
-        // Request Info
-        clientSession.getRemote().sendString("info");
-    
-        // Read message
-        String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("DecoratedObjectFactory", incomingMsg, containsString("Object is a DecoratedObjectFactory"));
-        assertThat("decorators.size", incomingMsg, containsString("Decorators.size = [1]"));
-        assertThat("decorator type", incomingMsg, containsString("decorator[] = " + DummyUtilDecorator.class.getName()));
-    
-        clientSession.close();
+        try (LocalFuzzer session = server.newLocalFuzzer("/"))
+        {
+            session.sendFrames(
+                    new TextFrame().setPayload("info"),
+                    new CloseInfo(StatusCode.NORMAL).asFrame()
+            );
+        
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+        
+            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
+        
+            String payload = frame.getPayloadAsUTF8();
+            assertThat("Text - DecoratedObjectFactory", payload, containsString("Object is a DecoratedObjectFactory"));
+            assertThat("Text - decorators.size", payload, containsString("Decorators.size = [1]"));
+            assertThat("Text - decorator type", payload, containsString("decorator[] = " + this.expectedDecoratorClass.getName()));
+        }
     }
 }

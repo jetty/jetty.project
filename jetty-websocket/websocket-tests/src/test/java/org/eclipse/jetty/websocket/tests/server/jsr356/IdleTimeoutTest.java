@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.server;
+package org.eclipse.jetty.websocket.tests.server.jsr356;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
@@ -25,49 +25,47 @@ import static org.junit.Assert.assertThat;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
-import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.WSServer;
+import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.IdleTimeoutOnOpenEndpoint;
+import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.IdleTimeoutOnOpenSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 public class IdleTimeoutTest
 {
-    @WebSocket(maxIdleTime = 500)
-    public static class FastTimeoutSocket
-    {
-    }
-    
-    @SuppressWarnings("serial")
-    public static class TimeoutServlet extends WebSocketServlet
-    {
-        @Override
-        public void configure(WebSocketServletFactory factory)
-        {
-            factory.register(FastTimeoutSocket.class);
-        }
-    }
-    
-    protected static SimpleServletServer server;
-    
     @Rule
-    public TestName testname = new TestName();
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    
+    private static WSServer server;
     
     @BeforeClass
-    public static void startServer() throws Exception
+    public static void setupServer() throws Exception
     {
-        server = new SimpleServletServer(new TimeoutServlet());
+        server = new WSServer(MavenTestingUtils.getTargetTestingPath(IdleTimeoutTest.class.getName()), "app");
+        server.copyWebInf("idle-timeout-config-web.xml");
+        // the endpoint (extends javax.websocket.Endpoint)
+        server.copyClass(IdleTimeoutOnOpenEndpoint.class);
+        // the configuration that adds the endpoint
+        server.copyClass(IdleTimeoutContextListener.class);
+        // the annotated socket
+        server.copyClass(IdleTimeoutOnOpenSocket.class);
+        
         server.start();
+        
+        WebAppContext webapp = server.createWebAppContext();
+        server.deployWebapp(webapp);
+        // wsb.dump();
     }
     
     @AfterClass
@@ -76,15 +74,9 @@ public class IdleTimeoutTest
         server.stop();
     }
     
-    /**
-     * Test IdleTimeout on server.
-     *
-     * @throws Exception on test failure
-     */
-    @Test
-    public void testIdleTimeout() throws Exception
+    private void assertConnectionTimeout(String requestPath) throws Exception
     {
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
         {
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
@@ -98,5 +90,17 @@ public class IdleTimeoutTest
             assertThat("Close.statusCode", closeInfo.getStatusCode(), is(StatusCode.SHUTDOWN));
             assertThat("Close.reason", closeInfo.getReason(), containsString("Timeout"));
         }
+    }
+    
+    @Test
+    public void testAnnotated() throws Exception
+    {
+        assertConnectionTimeout("/app/idle-onopen-socket");
+    }
+    
+    @Test
+    public void testEndpoint() throws Exception
+    {
+        assertConnectionTimeout("/app/idle-onopen-endpoint");
     }
 }

@@ -24,20 +24,15 @@ import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Map;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -54,24 +49,18 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.Parser;
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
  * <p>
  * This is particularly useful when the WebSocket endpoints are discovered via the javax.websocket annotation scanning.
  */
-public class WSServer implements LocalFuzzer.Provider
+public class WSServer extends LocalServer implements LocalFuzzer.Provider
 {
     private static final Logger LOG = Log.getLogger(WSServer.class);
     private final Path contextDir;
     private final String contextPath;
-    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-    private Server server;
-    private URI serverUri;
     private ContextHandlerCollection contexts;
-    private LocalConnector localConnector;
     private Path webinf;
     private Path classesDir;
     
@@ -182,103 +171,16 @@ public class WSServer implements LocalFuzzer.Provider
         }
     }
     
-    public void dump()
-    {
-        server.dumpStdErr();
-    }
-    
-    public LocalConnector getLocalConnector()
-    {
-        return localConnector;
-    }
-    
-    @Override
-    public Parser newClientParser(Parser.Handler parserHandler)
-    {
-        return new Parser(WebSocketPolicy.newClientPolicy(), bufferPool, parserHandler);
-    }
-    
-    @Override
-    public LocalConnector.LocalEndPoint newLocalConnection()
-    {
-        return getLocalConnector().connect();
-    }
-    
-    public LocalFuzzer newLocalFuzzer() throws Exception
-    {
-        return new LocalFuzzer(this);
-    }
-
-    public LocalFuzzer newLocalFuzzer(CharSequence requestPath) throws Exception
-    {
-        return new LocalFuzzer(this, requestPath);
-    }
-    
-    public LocalFuzzer newLocalFuzzer(CharSequence requestPath, Map<String,String> upgradeRequest) throws Exception
-    {
-        return new LocalFuzzer(this, requestPath, upgradeRequest);
-    }
-    
-    public URI getServerBaseURI()
-    {
-        return serverUri;
-    }
-    
-    public Server getServer()
-    {
-        return server;
-    }
-    
     public Path getWebAppDir()
     {
         return this.contextDir;
     }
     
-    public void start() throws Exception
+    @Override
+    protected Handler createRootHandler(Server server) throws Exception
     {
-        server = new Server();
-        
-        // Main network connector
-        ServerConnector connector = new ServerConnector(server);
-        connector.setPort(0);
-        server.addConnector(connector);
-    
-        // Add Local Connector
-        localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
-        
         HandlerCollection handlers = new HandlerCollection();
         contexts = new ContextHandlerCollection();
-        handlers.addHandler(contexts);
-        server.setHandler(handlers);
-        
-        server.start();
-        
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d%s/", host, port, contextPath));
-        if (LOG.isDebugEnabled())
-            LOG.debug("Server started on {}", serverUri);
-    }
-    
-    public void stop()
-    {
-        if (server == null)
-        {
-            return;
-        }
-        
-        try
-        {
-            server.stop();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-        }
+        return contexts;
     }
 }

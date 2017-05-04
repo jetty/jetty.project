@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.is;
-
-import java.net.URI;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -30,24 +27,20 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 public class SuspendResumeTest
 {
@@ -69,7 +62,6 @@ public class SuspendResumeTest
             this.session.getRemote().sendString(message,
                     new WriteCallback()
                     {
-                        
                         @Override
                         public void writeSuccess()
                         {
@@ -94,7 +86,7 @@ public class SuspendResumeTest
         }
     }
     
-    public static class EchoServlet extends WebSocketServlet
+    public static class BackPressureServlet extends WebSocketServlet
     {
         private static final long serialVersionUID = 1L;
         
@@ -110,7 +102,7 @@ public class SuspendResumeTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new SimpleServletServer(new EchoServlet());
+        server = new SimpleServletServer(new BackPressureServlet());
         server.start();
     }
     
@@ -120,46 +112,43 @@ public class SuspendResumeTest
         server.stop();
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
-    private WebSocketClient client;
-    
-    @Before
-    public void startClient() throws Exception
-    {
-        client = new WebSocketClient();
-        client.start();
-    }
-    
-    @After
-    public void stopClient() throws Exception
-    {
-        client.stop();
-    }
-    
     @Test
     public void testSuspendResume() throws Exception
     {
-        URI wsUri = server.getServerUri();
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload("echo1"));
+        send.add(new TextFrame().setPayload("echo2"));
+        send.add(new CloseFrame());
         
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new TextFrame().setPayload("echo1"));
+        expect.add(new TextFrame().setPayload("echo2"));
+        expect.add(new CloseFrame());
         
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        try (LocalFuzzer session = server.newLocalFuzzer())
+        {
+            session.sendBulk(send);
+            session.expect(expect);
+        }
+    }
+    
+    @Test
+    public void testSuspendResume_SmallBuffers() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload("echo1"));
+        send.add(new TextFrame().setPayload("echo2"));
+        send.add(new CloseFrame());
         
-        // Message
-        clientSession.getRemote().sendString("echo1");
-        clientSession.getRemote().sendString("echo2");
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new TextFrame().setPayload("echo1"));
+        expect.add(new TextFrame().setPayload("echo2"));
+        expect.add(new CloseFrame());
         
-        // Read message
-        String incomingMsg;
-        incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        Assert.assertThat("Incoming Message 1", incomingMsg, is("echo1"));
-        incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        Assert.assertThat("Incoming Message 2", incomingMsg, is("echo2"));
-        
-        clientSession.close();
+        try (LocalFuzzer session = server.newLocalFuzzer())
+        {
+            session.sendSegmented(send, 2);
+            session.expect(expect);
+        }
     }
 }
