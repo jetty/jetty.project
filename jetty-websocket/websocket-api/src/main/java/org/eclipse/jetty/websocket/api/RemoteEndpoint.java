@@ -148,6 +148,40 @@ public interface RemoteEndpoint
     void sendString(String text, WriteCallback callback);
 
     /**
+     * Send a text message (assuming it has already been UTF-8 encoded), blocking until all bytes of the message have been transmitted.
+     * 
+     * <p>
+     * Note: this is a blocking call
+     * 
+     * @param bytes
+     *            the bytes of the text message to send
+     * @throws IOException
+     *             if unable to send the text message
+     */
+    void sendStringBytes(ByteBuffer bytes) throws IOException;
+
+    /**
+     * Initiates the asynchronous transmission of a text message (assuming it has already been UTF-8 encoded). This method may return before the message is
+     * transmitted. Developers may use the returned Future object to track progress of the transmission.
+     * 
+     * @param bytes
+     *            the bytes of the text message to send
+     * @return the Future object representing the send operation.
+     */
+    Future<Void> sendStringBytesByFuture(ByteBuffer bytes);
+
+    /**
+     * Initiates the asynchronous transmission of a text message (assuming it has already been UTF-8 encoded). This method may return before the message is
+     * transmitted. Developers may provide a callback to be notified when the message has been transmitted or resulted in an error.
+     * 
+     * @param bytes
+     *            the bytes of the text message to send
+     * @param callback
+     *            callback to notify of success or failure of the write operation
+     */
+    void sendStringBytes(ByteBuffer bytes, WriteCallback callback);
+
+    /**
      * @return the batch mode with which messages are sent.
      * @see #flush()
      */
@@ -177,4 +211,5 @@ public interface RemoteEndpoint
      * @see #getBatchMode()
      */
     void flush() throws IOException;
+	
 }

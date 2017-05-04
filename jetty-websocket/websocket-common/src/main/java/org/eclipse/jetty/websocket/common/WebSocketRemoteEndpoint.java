@@ -435,7 +435,65 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             unlockMsg(MsgType.ASYNC);
         }
     }
+    
+    
+    @Override
+    public void sendStringBytes(ByteBuffer bytes) throws IOException
+    {
+        lockMsg(MsgType.BLOCKING);
+        try
+        {
+            WebSocketFrame frame = new TextFrame().setPayload(bytes);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendString with {}",BufferUtil.toDetailString(frame.getPayload()));
+            }
+            blockingWrite(frame);
+        }
+        finally
+        {
+            unlockMsg(MsgType.BLOCKING);
+        }
+    }
 
+    @Override
+    public Future<Void> sendStringBytesByFuture(ByteBuffer bytes)
+    {
+        lockMsg(MsgType.ASYNC);
+        try
+        {
+            TextFrame frame = new TextFrame().setPayload(bytes);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendStringByFuture with {}",BufferUtil.toDetailString(frame.getPayload()));
+            }
+            return sendAsyncFrame(frame);
+        }
+        finally
+        {
+            unlockMsg(MsgType.ASYNC);
+        }
+    }
+
+    @Override
+    public void sendStringBytes(ByteBuffer bytes, WriteCallback callback)
+    {
+        lockMsg(MsgType.ASYNC);
+        try
+        {
+            TextFrame frame = new TextFrame().setPayload(bytes);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("sendString({},{})",BufferUtil.toDetailString(frame.getPayload()),callback);
+            }
+            uncheckedSendFrame(frame,callback == null?NOOP_CALLBACK:callback);
+        }
+        finally
+        {
+            unlockMsg(MsgType.ASYNC);
+        }
+    }
+    
     @Override
     public BatchMode getBatchMode()
     {
