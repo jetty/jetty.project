@@ -20,31 +20,31 @@ package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.UnitExtensionStack;
+import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 public class FragmentExtensionTest
 {
@@ -61,24 +61,6 @@ public class FragmentExtensionTest
     public static void stopServer() throws Exception
     {
         server.stop();
-    }
-    
-    @Rule
-    public TestName testname = new TestName();
-    
-    private WebSocketClient client;
-    
-    @Before
-    public void startClient() throws Exception
-    {
-        client = new WebSocketClient();
-        client.start();
-    }
-    
-    @After
-    public void stopClient() throws Exception
-    {
-        client.stop();
     }
     
     private String[] split(String str, int partSize)
@@ -98,36 +80,41 @@ public class FragmentExtensionTest
     @Test
     public void testFragmentExtension() throws Exception
     {
-        Assume.assumeTrue("Server has fragment registered",
-                server.getWebSocketServletFactory().getExtensionFactory().isAvailable("fragment"));
+        ExtensionFactory extensionFactory = server.getWebSocketServletFactory().getExtensionFactory();
+        assertThat("Extension Factory", extensionFactory, notNullValue());
+        Assume.assumeTrue("Server has fragment registered", extensionFactory.isAvailable("fragment"));
         
         int fragSize = 4;
         
-        URI wsUri = server.getServerUri();
-        
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.addExtensions("fragment;maxLength=" + fragSize);
-        upgradeRequest.setSubProtocols("onConnect");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        List<ExtensionConfig> extensionConfigList = clientSession.getUpgradeResponse().getExtensions();
-        assertThat("Client Upgrade Response.Extensions", extensionConfigList.size(), is(1));
-        assertThat("Client Upgrade Response.Extensions[0]", extensionConfigList.get(0).toString(), containsString("fragment"));
-        
-        // Message
         String msg = "Sent as a long message that should be split";
-        clientSession.getRemote().sendString(msg);
-        
-        // Read message
-        String parts[] = split(msg, fragSize);
-        for (int i = 0; i < parts.length; i++)
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload(msg));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
+    
+        Map<String,String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS, "fragment;maxLength=" + fragSize);
+    
+        try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
         {
-            WebSocketFrame frame = clientSocket.framesQueue.poll();
-            Assert.assertThat("text[" + i + "].payload", frame.getPayloadAsUTF8(), is(parts[i]));
+            String negotiatedExtensions = session.upgradeResponse.get(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS);
+    
+            List<ExtensionConfig> extensionConfigList = ExtensionConfig.parseList(negotiatedExtensions);
+            assertThat("Client Upgrade Response.Extensions", extensionConfigList.size(), is(1));
+            assertThat("Client Upgrade Response.Extensions[0]", extensionConfigList.get(0).toString(), containsString("fragment"));
+    
+            UnitExtensionStack extensionStack = UnitExtensionStack.clientBased();
+            List<WebSocketFrame> outgoingFrames = extensionStack.processOutgoing(send);
+            session.sendBulk(outgoingFrames);
+    
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            BlockingQueue<WebSocketFrame> incomingFrames = extensionStack.processIncoming(framesQueue);
+            
+            String parts[] = split(msg, fragSize);
+            for (int i = 0; i < parts.length; i++)
+            {
+                WebSocketFrame frame = incomingFrames.poll();
+                Assert.assertThat("text[" + i + "].payload", frame.getPayloadAsUTF8(), is(parts[i]));
+            }
         }
-        
-        clientSession.close();
     }
 }

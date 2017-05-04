@@ -18,92 +18,41 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.tests.Defaults;
-import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
-public class FirefoxTest
+public class FirefoxTest extends AbstractLocalServerCase
 {
-    private static SimpleServletServer server;
-
-    @BeforeClass
-    public static void startServer() throws Exception
-    {
-        server = new SimpleServletServer(new EchoServlet());
-        server.start();
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception
-    {
-        server.stop();
-    }
-    
-    @Rule
-    public TestName testname = new TestName();
-    
-    private WebSocketClient client;
-    
-    @Before
-    public void startClient() throws Exception
-    {
-        client = new WebSocketClient();
-        client.start();
-    }
-    
-    @After
-    public void stopClient() throws Exception
-    {
-        client.stop();
-    }
-    
     @Test
     public void testConnectionKeepAlive() throws Exception
     {
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        // Odd Connection Header value seen in Firefox
-        upgradeRequest.setHeader("Connection", "keep-alive, Upgrade");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        List<ExtensionConfig> extensionConfigList = clientSession.getUpgradeResponse().getExtensions();
-        assertThat("Client Upgrade Response.Extensions", extensionConfigList.size(), is(1));
-        assertThat("Client Upgrade Response.Extensions[0]", extensionConfigList.get(0).toString(), containsString("x-webkit-deflate-frame"));
-    
-        // Message
         String msg = "this is an echo ... cho ... ho ... o";
-        clientSession.getRemote().sendString(msg);
+        
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload(msg));
+        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        // Read message
-        String incomingMsg = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        Assert.assertThat("Incoming Message", incomingMsg, is(msg));
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new TextFrame().setPayload(msg));
+        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
     
-        clientSession.close();
+        Map<String,String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
+        // Odd Connection Header value seen in Firefox
+        upgradeHeaders.put("Connection", "keep-alive, Upgrade");
     
+        try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
+        {
+            session.sendBulk(send);
+            session.expect(expect);
+        }
     }
 }

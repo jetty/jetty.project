@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.tests.server.jsr356;
 
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -58,9 +58,10 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
-import org.eclipse.jetty.websocket.common.util.Sha1Sum;
+import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.tests.Sha1Sum;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;

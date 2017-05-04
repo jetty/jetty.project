@@ -24,6 +24,7 @@ import java.util.Map;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -115,6 +116,14 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         return new LocalFuzzer(this, requestPath, upgradeRequest);
     }
     
+    protected Handler createRootHandler(Server server) throws Exception
+    {
+        servletContextHandler = new ServletContextHandler(server, "/", true, false);
+        servletContextHandler.setContextPath("/");
+        configureServletContextHandler(servletContextHandler);
+        return servletContextHandler;
+    }
+    
     protected void configureServletContextHandler(ServletContextHandler context) throws Exception
     {
         /* override to change context handler */
@@ -166,10 +175,8 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         localConnector = new LocalConnector(server);
         server.addConnector(localConnector);
         
-        servletContextHandler = new ServletContextHandler(server, "/", true, false);
-        servletContextHandler.setContextPath("/");
-        configureServletContextHandler(servletContextHandler);
-        server.setHandler(servletContextHandler);
+        Handler rootHandler = createRootHandler(server);
+        server.setHandler(rootHandler);
         
         // Start Server
         addBean(server);

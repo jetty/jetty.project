@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.function;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -32,6 +33,8 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
  */
 public interface EndpointFunctions<T> extends LifeCycle
 {
+    Logger getLog();
+    
     void onOpen(T session);
 
     void onClose(CloseInfo close);

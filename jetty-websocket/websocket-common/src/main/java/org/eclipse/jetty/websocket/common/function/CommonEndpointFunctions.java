@@ -79,6 +79,7 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     protected final WebSocketPolicy policy;
     protected final Executor executor;
     
+    protected Logger endpointLog;
     private T session;
     private Function<T, Void> onOpenFunction;
     private Function<CloseInfo, Void> onCloseFunction;
@@ -511,6 +512,16 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     public Executor getExecutor()
     {
         return executor;
+    }
+    
+    public Logger getLog()
+    {
+        if(endpointLog == null)
+        {
+            endpointLog = Log.getLogger(endpoint.getClass());
+        }
+        
+        return endpointLog;
     }
     
     public T getSession()

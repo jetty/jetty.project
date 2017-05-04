@@ -18,42 +18,43 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-import java.net.URI;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.api.WebSocketConstants;
+import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.eclipse.jetty.websocket.tests.Defaults;
+import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
-import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.UpgradeUtils;
+import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 /**
  * Tests various close scenarios
@@ -61,310 +62,254 @@ import org.junit.rules.TestName;
 @Ignore
 public class WebSocketCloseTest
 {
-    static class AbstractCloseSocket extends WebSocketAdapter
+    /**
+     * On Message, return container information
+     */
+    public static class ContainerSocket extends WebSocketAdapter
     {
-        public CountDownLatch closeLatch = new CountDownLatch(1);
-        public String closeReason = null;
-        public int closeStatusCode = -1;
-        public List<Throwable> errors = new ArrayList<>();
-
-        @Override
-        public void onWebSocketClose(int statusCode, String reason)
+        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.ContainerSocket.class);
+        private final WebSocketServerFactory container;
+        private Session session;
+        
+        public ContainerSocket(WebSocketServerFactory container)
         {
-            LOG.debug("onWebSocketClose({}, {})",statusCode,reason);
-            this.closeStatusCode = statusCode;
-            this.closeReason = reason;
-            closeLatch.countDown();
+            this.container = container;
         }
-
+        
         @Override
-        public void onWebSocketError(Throwable cause)
+        public void onWebSocketText(String message)
         {
-            errors.add(cause);
+            LOG.debug("onWebSocketText({})", message);
+            if (message.equalsIgnoreCase("openSessions"))
+            {
+                try
+                {
+                    Collection<WebSocketSession> sessions = container.getOpenSessions();
+                    
+                    StringBuilder ret = new StringBuilder();
+                    ret.append("openSessions.size=").append(sessions.size()).append('\n');
+                    int idx = 0;
+                    for (WebSocketSession sess : sessions)
+                    {
+                        ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
+                    }
+                    session.getRemote().sendString(ret.toString());
+                }
+                catch (IOException e)
+                {
+                    LOG.warn(e);
+                }
+            }
+            session.close(StatusCode.NORMAL, "ContainerSocket");
+        }
+        
+        @Override
+        public void onWebSocketConnect(Session sess)
+        {
+            LOG.debug("onWebSocketConnect({})", sess);
+            this.session = sess;
         }
     }
-
-    @SuppressWarnings("serial")
+    
+    /**
+     * On Connect, close socket
+     */
+    public static class FastCloseSocket extends WebSocketAdapter
+    {
+        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastCloseSocket.class);
+        
+        @Override
+        public void onWebSocketConnect(Session sess)
+        {
+            LOG.debug("onWebSocketConnect({})", sess);
+            sess.close(StatusCode.NORMAL, "FastCloseServer");
+        }
+    }
+    
+    /**
+     * On Connect, throw unhandled exception
+     */
+    public static class FastFailSocket extends WebSocketAdapter
+    {
+        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastFailSocket.class);
+        
+        @Override
+        public void onWebSocketConnect(Session sess)
+        {
+            LOG.debug("onWebSocketConnect({})", sess);
+            // Test failure due to unhandled exception
+            // this should trigger a fast-fail closure during open/connect
+            throw new RuntimeException("Intentional FastFail");
+        }
+    }
+    
+    /**
+     * On Message, drop connection
+     */
+    public static class DropServerConnectionSocket extends WebSocketAdapter
+    {
+        @Override
+        public void onWebSocketText(String message)
+        {
+            try
+            {
+                getSession().disconnect();
+            }
+            catch (IOException ignore)
+            {
+            }
+        }
+    }
+    
     public static class CloseServlet extends WebSocketServlet implements WebSocketCreator
     {
         private WebSocketServerFactory serverFactory;
-
+        
         @Override
         public void configure(WebSocketServletFactory factory)
         {
             factory.setCreator(this);
             if (factory instanceof WebSocketServerFactory)
             {
-                this.serverFactory = (WebSocketServerFactory)factory;
+                this.serverFactory = (WebSocketServerFactory) factory;
             }
         }
-
+        
         @Override
         public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
         {
             if (req.hasSubProtocol("fastclose"))
             {
-                closeSocket = new FastCloseSocket();
-                return closeSocket;
+                return new FastCloseSocket();
             }
-
+            
             if (req.hasSubProtocol("fastfail"))
             {
-                closeSocket = new FastFailSocket();
-                return closeSocket;
+                return new FastFailSocket();
             }
-
+            
+            if (req.hasSubProtocol("drop"))
+            {
+                return new DropServerConnectionSocket();
+            }
+            
             if (req.hasSubProtocol("container"))
             {
-                closeSocket = new ContainerSocket(serverFactory);
-                return closeSocket;
+                return new ContainerSocket(serverFactory);
             }
+            
             return new RFC6455Socket();
         }
     }
-
-    /**
-     * On Message, return container information
-     */
-    public static class ContainerSocket extends AbstractCloseSocket
-    {
-        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.ContainerSocket.class);
-        private final WebSocketServerFactory container;
-        private Session session;
-
-        public ContainerSocket(WebSocketServerFactory container)
-        {
-            this.container = container;
-        }
-
-        @Override
-        public void onWebSocketText(String message)
-        {
-            LOG.debug("onWebSocketText({})",message);
-            if (message.equalsIgnoreCase("openSessions"))
-            {
-                Collection<WebSocketSession> sessions = container.getOpenSessions();
-
-                StringBuilder ret = new StringBuilder();
-                ret.append("openSessions.size=").append(sessions.size()).append('\n');
-                int idx = 0;
-                for (WebSocketSession sess : sessions)
-                {
-                    ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
-                }
-                session.getRemote().sendStringByFuture(ret.toString());
-            }
-            session.close(StatusCode.NORMAL,"ContainerSocket");
-        }
-
-        @Override
-        public void onWebSocketConnect(Session sess)
-        {
-            LOG.debug("onWebSocketConnect({})",sess);
-            this.session = sess;
-        }
-    }
-
-    /**
-     * On Connect, close socket
-     */
-    public static class FastCloseSocket extends AbstractCloseSocket
-    {
-        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastCloseSocket.class);
-
-        @Override
-        public void onWebSocketConnect(Session sess)
-        {
-            LOG.debug("onWebSocketConnect({})",sess);
-            sess.close(StatusCode.NORMAL,"FastCloseServer");
-        }
-    }
-
-    /**
-     * On Connect, throw unhandled exception
-     */
-    public static class FastFailSocket extends AbstractCloseSocket
-    {
-        private static final Logger LOG = Log.getLogger(WebSocketCloseTest.FastFailSocket.class);
-
-        @Override
-        public void onWebSocketConnect(Session sess)
-        {
-            LOG.debug("onWebSocketConnect({})",sess);
-            // Test failure due to unhandled exception
-            // this should trigger a fast-fail closure during open/connect
-            throw new RuntimeException("Intentional FastFail");
-        }
-    }
-
-    private static final Logger LOG = Log.getLogger(WebSocketCloseTest.class);
-
-    private static SimpleServletServer server;
-    private static AbstractCloseSocket closeSocket;
-
-    @BeforeClass
-    public static void startServer() throws Exception
+    
+    private SimpleServletServer server;
+    
+    @Before
+    public void startServer() throws Exception
     {
         server = new SimpleServletServer(new CloseServlet());
         server.start();
     }
-
-    @AfterClass
-    public static void stopServer() throws Exception
+    
+    @After
+    public void stopServer() throws Exception
     {
         server.stop();
     }
     
-    @Rule
-    public TestName testname = new TestName();
-    
-    private WebSocketClient client;
-    
-    @Before
-    public void startClient() throws Exception
-    {
-        client = new WebSocketClient();
-        client.start();
-    }
-    
-    @After
-    public void stopClient() throws Exception
-    {
-        client.stop();
-    }
-
     /**
      * Test fast close (bug #403817)
-     * 
-     * @throws Exception
-     *             on test failure
+     *
+     * @throws Exception on test failure
      */
     @Test
-    public void testFastClose() throws Exception
+    public void fastClose() throws Exception
     {
-        client.setMaxIdleTimeout(5000);
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("fastclose");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, anything());
+        Map<String, String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "fastclose");
         
-        clientSession.close();
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.NORMAL, "FastCloseServer").asFrame());
+        
+        try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
+        {
+            session.sendFrames(new CloseInfo(StatusCode.NORMAL).asFrame());
+            session.expect(expect);
+        }
     }
-
+    
     /**
      * Test fast fail (bug #410537)
-     * 
-     * @throws Exception
-     *             on test failure
+     *
+     * @throws Exception on test failure
      */
     @Test
-    public void testFastFail() throws Exception
+    public void fastFail() throws Exception
     {
-        client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("fastfail");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-    
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.SERVER_ERROR, anything());
-    
-        clientSession.close();
+        Map<String, String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "fastfail");
+        
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new CloseInfo(StatusCode.SERVER_ERROR).asFrame());
+        
+        try (StacklessLogging ignore = new StacklessLogging(FastFailSocket.class);
+             LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
+        {
+            session.expect(expect);
+        }
     }
-
+    
+    @Test
+    public void dropServerConnection() throws Exception
+    {
+        Map<String, String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "drop");
+        
+        try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
+        {
+            session.sendFrames(new TextFrame().setPayload("drop"));
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            assertThat("No frames as output", framesQueue.size(), Matchers.is(0));
+        }
+    }
+    
     /**
      * Test session open session cleanup (bug #474936)
-     * 
-     * @throws Exception
-     *             on test failure
+     *
+     * @throws Exception on test failure
      */
     @Test
     public void testOpenSessionCleanup() throws Exception
     {
         fastFail();
         fastClose();
-        dropConnection();
-    
-        client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("container");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        dropClientConnection();
         
-        clientSession.getRemote().sendString("openSessions");
+        Map<String, String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "container");
         
-        String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("Incoming Message", incomingMessage, containsString("openSessions.size=1\n"));
-
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, anything());
-    }
-
-    @SuppressWarnings("Duplicates")
-    private void fastClose() throws Exception
-    {
-        client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("fastclose");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-    
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, anything());
-    
-        clientSession.close();
-    }
-
-    private void fastFail() throws Exception
-    {
-        client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("fastfail");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-    
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.SERVER_ERROR, anything());
-    
-        clientSession.close();
+        try (LocalFuzzer session = server.newLocalFuzzer("/?openSessions", upgradeHeaders))
+        {
+            session.sendFrames(
+                    new TextFrame().setPayload("openSessions"),
+                    new CloseInfo(StatusCode.NORMAL).asFrame()
+            );
+            
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), containsString("openSessions.size=1\n"));
+        }
     }
     
-    @SuppressWarnings("Duplicates")
-    private void dropConnection() throws Exception
+    private void dropClientConnection() throws Exception
     {
-        client.setMaxIdleTimeout(1000);
-        URI wsUri = server.getServerUri();
-    
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.setSubProtocols("container");
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-    
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-    
-        clientSession.close();
+        Map<String, String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "container");
+        
+        try (LocalFuzzer ignored = server.newLocalFuzzer("/", upgradeHeaders))
+        {
+            // do nothing, just let endpoint close
+        }
     }
 }

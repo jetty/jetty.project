@@ -50,6 +50,7 @@ public class LocalFuzzer implements AutoCloseable
     public final LocalFuzzer.Provider provider;
     public final UnitGenerator generator;
     public final LocalConnector.LocalEndPoint endPoint;
+    public final HttpTester.Response upgradeResponse;
     
     public LocalFuzzer(LocalFuzzer.Provider provider) throws Exception
     {
@@ -68,7 +69,7 @@ public class LocalFuzzer implements AutoCloseable
         LOG.debug("Request: {}", upgradeRequest);
         ByteBuffer upgradeRequestBytes = BufferUtil.toBuffer(upgradeRequest.toString(), StandardCharsets.UTF_8);
         this.endPoint = this.provider.newLocalConnection();
-        performUpgrade(endPoint, upgradeRequestBytes);
+        this.upgradeResponse = performUpgrade(endPoint, upgradeRequestBytes);
         this.generator = new UnitGenerator(WebSocketPolicy.newClientPolicy());
     }
     
@@ -277,6 +278,27 @@ public class LocalFuzzer implements AutoCloseable
      * @param frames the list of frames to send
      */
     public void sendFrames(List<WebSocketFrame> frames)
+    {
+        boolean eof = false;
+        for (WebSocketFrame f : frames)
+        {
+            ByteBuffer buffer = generator.generate(f);
+            endPoint.addInput(buffer);
+            if (f.getOpCode() == OpCode.CLOSE)
+                eof = true;
+        }
+        
+        if (eof)
+            endPoint.addInputEOF();
+    }
+    
+    /**
+     * Generate a ByteBuffer for each frame, and submit each to
+     * {@link org.eclipse.jetty.server.LocalConnector.LocalEndPoint#addInput(ByteBuffer)}
+     *
+     * @param frames the list of frames to send
+     */
+    public void sendFrames(WebSocketFrame ... frames)
     {
         boolean eof = false;
         for (WebSocketFrame f : frames)
