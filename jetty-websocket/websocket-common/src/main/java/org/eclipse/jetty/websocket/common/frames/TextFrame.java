@@ -44,7 +44,19 @@ public class TextFrame extends DataFrame
         setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(str)));
         return this;
     }
-    
+
+    public TextFrame setPayload(ByteBuffer buf)
+    {
+        super.setPayload(buf);
+        return this;
+    }
+
+    public TextFrame setPayload(byte[] buf)
+    {
+        setPayload(ByteBuffer.wrap(buf));
+        return this;
+    }
+
     public String getPayloadAsUTF8()
     {
         if (data == null)
