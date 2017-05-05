@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.tests.servlets.BiConsumerServiceServlet;
@@ -61,8 +62,13 @@ public class UntrustedWSServer extends ContainerLifeCycle implements UntrustedWS
     @Override
     protected void doStart() throws Exception
     {
+        QueuedThreadPool threadPool= new QueuedThreadPool();
+        String name = "qtp-untrustedWSServer-" + hashCode();
+        threadPool.setName(name);
+        threadPool.setDaemon(true);
+        
         // Configure Server
-        server = new Server();
+        server = new Server(threadPool);
         if (ssl)
         {
             // HTTP Configuration
@@ -122,7 +128,7 @@ public class UntrustedWSServer extends ContainerLifeCycle implements UntrustedWS
         if (LOG.isDebugEnabled())
         {
             LOG.debug("WebSocket Server URI: " + wsUri.toASCIIString());
-            LOG.debug(server.dump());
+            server.dump();
         }
         
         super.doStart();

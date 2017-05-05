@@ -47,6 +47,7 @@ public abstract class AbstractTrackingEndpoint<T>
     public AbstractTrackingEndpoint(String id)
     {
         LOG = Log.getLogger(this.getClass().getName() + "." + id);
+        LOG.debug("init");
     }
     
     public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException

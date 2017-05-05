@@ -76,6 +76,8 @@ public class ReaderMessageSink implements MessageSink
                             LOG.debug("Unhandled throwable", t);
                         }
                     }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("return from dispatch - {}", stream);
                     // Returned from dispatch, stream should be closed
                     IO.close(dispatchedStream);
                     dispatchCompleted.countDown();
@@ -88,7 +90,7 @@ public class ReaderMessageSink implements MessageSink
             if (frame.isFin())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("dispatch complete await() - {}", stream);
+                    LOG.debug("fin/dispatch complete await() - {}", stream);
                 try
                 {
                     dispatchCompleted.await();

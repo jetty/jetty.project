@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.client.jsr356;
+package org.eclipse.jetty.websocket.tests.jsr356.coders;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,18 +32,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class QuotesDecoder implements Decoder.TextStream<Quotes>
 {
     private static final Logger LOG = Log.getLogger(QuotesDecoder.class);
-    
-    @Override
-    public void init(EndpointConfig config)
-    {
-        // TODO: verify init called
-    }
-    
-    @Override
-    public void destroy()
-    {
-        // TODO: verify destroy called
-    }
     
     @Override
     public Quotes decode(Reader reader) throws DecodeException, IOException
@@ -69,5 +57,17 @@ public class QuotesDecoder implements Decoder.TextStream<Quotes>
             LOG.debug("decode() complete");
         }
         return quotes;
+    }
+    
+    @Override
+    public void destroy()
+    {
+        CoderEventTracking.getInstance().addEvent(this, "destroy()");
+    }
+    
+    @Override
+    public void init(EndpointConfig config)
+    {
+        CoderEventTracking.getInstance().addEvent(this, "init(EndpointConfig)");
     }
 }

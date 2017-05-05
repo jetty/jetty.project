@@ -83,6 +83,10 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     
     private List<Function<Object, EndpointConfig>> annotatedConfigFunctions = new ArrayList<>();
     
+    /**
+     * @deprecated use {@link #ClientContainer(WebSocketContainerScope)}
+     */
+    @Deprecated
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.

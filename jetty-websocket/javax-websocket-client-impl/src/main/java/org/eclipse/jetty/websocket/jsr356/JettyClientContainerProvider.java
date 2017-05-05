@@ -24,13 +24,7 @@ import java.util.concurrent.Executor;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 
@@ -147,7 +141,21 @@ public class JettyClientContainerProvider extends ContainerProvider
     @Override
     protected WebSocketContainer getContainer()
     {
-        synchronized (lock)
+        SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        QueuedThreadPool threadPool= new QueuedThreadPool();
+        String name = "qtp-JSR356CLI-" + hashCode();
+        threadPool.setName(name);
+        threadPool.setDaemon(true);
+        containerScope.setExecutor(threadPool);
+        containerScope.addBean(threadPool);
+        ClientContainer container = new ClientContainer(containerScope);
+        try
+        {
+            // We need to start this container properly.
+            container.start();
+            return container;
+        }
+        catch (Exception e)
         {
             WebSocketContainer webSocketContainer = null;
             Object contextHandler = getContextHandler();

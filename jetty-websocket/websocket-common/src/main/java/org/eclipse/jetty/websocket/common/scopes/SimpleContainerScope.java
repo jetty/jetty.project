@@ -52,26 +52,21 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
         this.containerPolicy = containerPolicy;
         this.bufferPool = bufferPool;
         this.objectFactory = objectFactory;
-
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        String name = "WebSocketSimpleContainer@" + hashCode();
-        threadPool.setName(name);
-        threadPool.setDaemon(true);
-        this.executor = threadPool;
-
-        try
-        {
-            threadPool.start();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     protected void doStart() throws Exception
     {
+        if(this.executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = this.getClass().getSimpleName() + ".QTP@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            this.executor = threadPool;
+            addBean(executor);
+        }
+    
         super.doStart();
     }
 
@@ -92,7 +87,12 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         return this.executor;
     }
-
+    
+    public void setExecutor(Executor executor)
+    {
+        this.executor = executor;
+    }
+    
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {

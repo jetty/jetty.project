@@ -30,8 +30,8 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.tests.server.jsr356.coders.DateDecoder;
-import org.eclipse.jetty.websocket.tests.server.jsr356.coders.DateEncoder;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.DateDecoder;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.DateEncoder;
 
 @ServerEndpoint(value = "/echo/beans/date", decoders = { DateDecoder.class }, encoders = { DateEncoder.class })
 public class DateTextSocket

@@ -35,6 +35,8 @@ public interface EndpointFunctions<T> extends LifeCycle
 {
     Logger getLog();
     
+    T getSession();
+    
     void onOpen(T session);
 
     void onClose(CloseInfo close);

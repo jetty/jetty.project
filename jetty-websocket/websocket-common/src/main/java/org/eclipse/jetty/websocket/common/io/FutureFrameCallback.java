@@ -16,33 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.server.jsr356.coders;
+package org.eclipse.jetty.websocket.common.io;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.concurrent.Future;
 
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 
 /**
- * Encode Date
+ * Allows events to a {@link FrameCallback} to drive a {@link Future} for the internals.
  */
-public class DateTimeEncoder implements Encoder.Text<Date>
+public class FutureFrameCallback extends FutureCallback implements FrameCallback
 {
     @Override
-    public void destroy()
+    public void fail(Throwable cause)
     {
+        failed(cause);
     }
-
+    
     @Override
-    public String encode(Date object) throws EncodeException
+    public void succeed()
     {
-        return new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z").format(object);
-    }
-
-    @Override
-    public void init(EndpointConfig config)
-    {
+        succeeded();
     }
 }

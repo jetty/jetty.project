@@ -16,27 +16,35 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.message;
+package org.eclipse.jetty.websocket.tests.jsr356.coders;
 
-import java.nio.ByteBuffer;
+import javax.websocket.EncodeException;
+import javax.websocket.Encoder;
+import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-
-public class FrameCallbackBuffer
+public class QuotesEncoder implements Encoder.Text<Quotes>
 {
-    public ByteBuffer buffer;
-    public FrameCallback callback;
-    
-    public FrameCallbackBuffer(FrameCallback callback, ByteBuffer buffer)
+    @Override
+    public String encode(Quotes q) throws EncodeException
     {
-        this.callback = callback;
-        this.buffer = buffer;
+        StringBuilder buf = new StringBuilder();
+        buf.append("Author: ").append(q.getAuthor()).append('\n');
+        for (String quote : q.getQuotes())
+        {
+            buf.append("Quote: ").append(quote).append('\n');
+        }
+        return buf.toString();
     }
     
     @Override
-    public String toString()
+    public void destroy()
     {
-        return String.format("FrameCallbackBuffer[%s,%s]", BufferUtil.toDetailString(buffer),callback.getClass().getSimpleName());
+        CoderEventTracking.getInstance().addEvent(this, "destroy()");
+    }
+    
+    @Override
+    public void init(EndpointConfig config)
+    {
+        CoderEventTracking.getInstance().addEvent(this, "init(EndpointConfig)");
     }
 }

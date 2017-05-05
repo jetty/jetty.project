@@ -16,31 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.websocket.tests.jsr356.coders;
 
-import javax.websocket.CloseReason;
-import javax.websocket.EndpointConfig;
-import javax.websocket.OnClose;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
+import java.util.ArrayList;
+import java.util.List;
 
-@SuppressWarnings("unused")
-public abstract class AbstractJsrTrackingEndpoint extends AbstractTrackingEndpoint<Session>
+public class Quotes
 {
-    public AbstractJsrTrackingEndpoint(String id)
+    private String author;
+    private List<String> quotes = new ArrayList<>();
+    
+    public void addQuote(String quote)
     {
-        super(id);
+        quotes.add(quote);
     }
     
-    @OnOpen
-    public void onOpen(Session session, EndpointConfig config)
+    public String getAuthor()
     {
-        super.onWSOpen(session);
+        return author;
     }
     
-    @OnClose
-    public void onClose(CloseReason closeReason)
+    public void setAuthor(String author)
     {
-        super.onWSClose(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
+        this.author = author;
+    }
+    
+    public List<String> getQuotes()
+    {
+        return quotes;
     }
 }

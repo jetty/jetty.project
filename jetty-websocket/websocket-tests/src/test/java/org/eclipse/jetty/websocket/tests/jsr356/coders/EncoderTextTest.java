@@ -16,27 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.message;
+package org.eclipse.jetty.websocket.tests.jsr356.coders;
 
-import java.nio.ByteBuffer;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.junit.Test;
 
-public class FrameCallbackBuffer
+/**
+ * Test various {@link javax.websocket.Encoder.Text} scenarios
+ */
+public class EncoderTextTest
 {
-    public ByteBuffer buffer;
-    public FrameCallback callback;
-    
-    public FrameCallbackBuffer(FrameCallback callback, ByteBuffer buffer)
+    @Test
+    public void testQuotesEncoder_Direct() throws Exception
     {
-        this.callback = callback;
-        this.buffer = buffer;
-    }
-    
-    @Override
-    public String toString()
-    {
-        return String.format("FrameCallbackBuffer[%s,%s]", BufferUtil.toDetailString(buffer),callback.getClass().getSimpleName());
+        QuotesEncoder encoder = new QuotesEncoder();
+        Quotes quotes = QuotesUtil.loadQuote("quotes-ben.txt");
+        String result = encoder.encode(quotes);
+        assertThat("Result", result, containsString("Author: Benjamin Franklin\n"));
+        assertThat("Result", result, containsString("Quote: We must, "));
     }
 }

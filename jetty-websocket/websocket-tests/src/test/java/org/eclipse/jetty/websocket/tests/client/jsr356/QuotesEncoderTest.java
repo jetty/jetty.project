@@ -37,8 +37,10 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.websocket.tests.AbstractJsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesEncoder;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
