@@ -20,14 +20,12 @@ package org.eclipse.jetty.websocket.tests.server.jsr356;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
@@ -77,31 +75,6 @@ public class ReaderEchoTest
     }
     
     @SuppressWarnings("unused")
-    @ServerEndpoint("/echo/reader-self")
-    public static class ReaderSelfSocket extends BaseSocket
-    {
-        @OnMessage
-        public Writer onReader(Session session, Reader reader) throws IOException
-        {
-            final Writer writer = session.getBasicRemote().getSendWriter();
-            
-            new Thread(() ->
-            {
-                try
-                {
-                    IO.copy(reader, writer);
-                }
-                catch (IOException e)
-                {
-                    LOG.warn(e);
-                }
-            }).start();
-            
-            return writer;
-        }
-    }
-    
-    @SuppressWarnings("unused")
     @ServerEndpoint("/echo/reader-param/{param}")
     public static class ReaderParamSocket extends BaseSocket
     {
@@ -128,7 +101,6 @@ public class ReaderEchoTest
             {
                 ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
                 container.addEndpoint(ReaderSocket.class);
-                // TODO: container.addEndpoint(ReaderSelfSocket.class);
                 container.addEndpoint(ReaderParamSocket.class);
             }
         };

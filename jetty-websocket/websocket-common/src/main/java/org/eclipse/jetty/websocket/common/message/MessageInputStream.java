@@ -43,6 +43,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     private static final FrameCallbackBuffer EOF = new FrameCallbackBuffer(new FrameCallback.Adapter(), ByteBuffer.allocate(0).asReadOnlyBuffer());
     private final Deque<FrameCallbackBuffer> buffers = new ArrayDeque<>(2);
     private final AtomicBoolean closed = new AtomicBoolean(false);
+    private FrameCallbackBuffer activeFrame;
     
     @Override
     public void accept(Frame frame, FrameCallback callback)
@@ -95,6 +96,34 @@ public class MessageInputStream extends InputStream implements MessageSink
         super.close();
     }
     
+    public FrameCallbackBuffer getActiveFrame() throws InterruptedIOException
+    {
+        if(activeFrame == null)
+        {
+            // sync and poll queue
+            FrameCallbackBuffer result;
+            synchronized (buffers)
+            {
+                try
+                {
+                    while ((result = buffers.poll()) == null)
+                    {
+                        // TODO: handle read timeout here?
+                        buffers.wait();
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    shutdown();
+                    throw new InterruptedIOException();
+                }
+            }
+            activeFrame = result;
+        }
+        
+        return activeFrame;
+    }
+    
     private void shutdown()
     {
         if(LOG.isDebugEnabled())
@@ -132,7 +161,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     }
     
     @Override
-    public int read(byte[] b, int off, int len) throws IOException
+    public int read(final byte[] b, final int off, final int len) throws IOException
     {
         if (closed.get())
         {
@@ -141,24 +170,10 @@ public class MessageInputStream extends InputStream implements MessageSink
             return -1;
         }
         
-        // sync and poll queue
-        FrameCallbackBuffer result;
-        synchronized (buffers)
-        {
-            try
-            {
-                while ((result = buffers.peek()) == null)
-                {
-                    // TODO: handle read timeout here?
-                    buffers.wait();
-                }
-            }
-            catch (InterruptedException e)
-            {
-                shutdown();
-                throw new InterruptedIOException();
-            }
-        }
+        FrameCallbackBuffer result = getActiveFrame();
+    
+        if (LOG.isDebugEnabled())
+            LOG.debug("result = {}", result);
         
         if (result == EOF)
         {
@@ -174,8 +189,8 @@ public class MessageInputStream extends InputStream implements MessageSink
     
         if (!result.buffer.hasRemaining())
         {
+            activeFrame = null;
             result.callback.succeed();
-            buffers.pop();
         }
         
         // return number of bytes actually copied into buffer

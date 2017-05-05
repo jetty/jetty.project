@@ -18,31 +18,30 @@
 
 package org.eclipse.jetty.websocket.tests.client.jsr356;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
-public class Quotes
+import javax.websocket.ClientEndpoint;
+import javax.websocket.OnMessage;
+
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesDecoder;
+
+@ClientEndpoint(decoders = QuotesDecoder.class, subprotocols = "quotes")
+public class QuotesSocket extends AbstractJsrTrackingEndpoint
 {
-    private String author;
-    private List<String> quotes = new ArrayList<>();
+    public BlockingQueue<Quotes> messageQueue = new LinkedBlockingDeque<>();
     
-    public void addQuote(String quote)
+    public QuotesSocket(String id)
     {
-        quotes.add(quote);
+        super(id);
     }
     
-    public String getAuthor()
+    @OnMessage
+    public void onMessage(Quotes quote)
     {
-        return author;
-    }
-    
-    public List<String> getQuotes()
-    {
-        return quotes;
-    }
-    
-    public void setAuthor(String author)
-    {
-        this.author = author;
+        LOG.debug("onMessage({})", quote);
+        messageQueue.offer(quote);
     }
 }

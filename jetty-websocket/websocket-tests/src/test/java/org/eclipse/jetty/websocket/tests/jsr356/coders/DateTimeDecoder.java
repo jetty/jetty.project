@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.server.jsr356.coders;
+package org.eclipse.jetty.websocket.tests.jsr356.coders;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -27,16 +27,16 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 /**
- * Decode Time
+ * Decode Date and Time
  */
-public class TimeDecoder implements Decoder.Text<Date>
+public class DateTimeDecoder implements Decoder.Text<Date>
 {
     @Override
     public Date decode(String s) throws DecodeException
     {
         try
         {
-            return new SimpleDateFormat("HH:mm:ss z").parse(s);
+            return new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z").parse(s);
         }
         catch (ParseException e)
         {
@@ -47,16 +47,19 @@ public class TimeDecoder implements Decoder.Text<Date>
     @Override
     public void destroy()
     {
+        CoderEventTracking.getInstance().addEvent(this, "destroy()");
     }
 
     @Override
     public void init(EndpointConfig config)
     {
+        CoderEventTracking.getInstance().addEvent(this, "init(EndpointConfig)");
     }
 
     @Override
     public boolean willDecode(String s)
     {
+        CoderEventTracking.getInstance().addEvent(this, "willDecode(String)");
         return true;
     }
 }

@@ -31,8 +31,8 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.tests.server.jsr356.coders.DateDecoder;
-import org.eclipse.jetty.websocket.tests.server.jsr356.coders.TimeEncoder;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.DateDecoder;
+import org.eclipse.jetty.websocket.tests.jsr356.coders.TimeEncoder;
 import org.eclipse.jetty.websocket.tests.server.jsr356.configs.EchoSocketConfigurator;
 
 /**

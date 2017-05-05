@@ -16,37 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.client.jsr356;
+package org.eclipse.jetty.websocket.tests.jsr356;
 
-import javax.websocket.EncodeException;
-import javax.websocket.Encoder;
+import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
 
-public class QuotesEncoder implements Encoder.Text<Quotes>
+import org.eclipse.jetty.websocket.tests.AbstractTrackingEndpoint;
+
+@SuppressWarnings("unused")
+public abstract class AbstractJsrTrackingEndpoint extends AbstractTrackingEndpoint<Session>
 {
-    @Override
-    public void destroy()
+    public AbstractJsrTrackingEndpoint(String id)
     {
-        // TODO: verify destroy called
+        super(id);
     }
     
-    @Override
-    public String encode(Quotes q) throws EncodeException
+    @OnOpen
+    public void onOpen(Session session, EndpointConfig config)
     {
-        StringBuilder buf = new StringBuilder();
-        buf.append("Author: ").append(q.getAuthor());
-        buf.append(System.lineSeparator());
-        for (String quote : q.getQuotes())
-        {
-            buf.append("Quote: ").append(quote);
-            buf.append(System.lineSeparator());
-        }
-        return buf.toString();
+        super.onWSOpen(session);
     }
     
-    @Override
-    public void init(EndpointConfig config)
+    @OnClose
+    public void onClose(CloseReason closeReason)
     {
-        // TODO: verify init called
+        super.onWSClose(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
     }
 }

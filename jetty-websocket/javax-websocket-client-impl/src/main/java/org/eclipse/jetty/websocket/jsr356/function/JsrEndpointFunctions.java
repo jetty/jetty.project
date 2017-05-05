@@ -305,7 +305,9 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             {
                 Decoder.TextStream decoderInstance = decoders.getInstanceOf(registeredDecoder);
                 DecodedReaderMessageSink textSink = new DecodedReaderMessageSink(
-                        this, decoderInstance,
+                        this,
+                        getExecutor(),
+                        decoderInstance,
                         (msg) ->
                         {
                             //noinspection unchecked
@@ -321,7 +323,9 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             {
                 Decoder.BinaryStream decoderInstance = decoders.getInstanceOf(registeredDecoder);
                 DecodedInputStreamMessageSink binarySink = new DecodedInputStreamMessageSink(
-                        this, decoderInstance,
+                        this,
+                        getExecutor(),
+                        decoderInstance,
                         (msg) ->
                         {
                             //noinspection unchecked
@@ -622,6 +626,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 Decoder.BinaryStream decoderInstance = decoders.getInstanceOf(decoder);
                 DecodedInputStreamMessageSink streamSink = new DecodedInputStreamMessageSink(
                         this,
+                        getExecutor(),
                         decoderInstance,
                         (msg) ->
                         {
@@ -662,6 +667,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 Decoder.TextStream decoderInstance = decoders.getInstanceOf(decoder);
                 DecodedReaderMessageSink streamSink = new DecodedReaderMessageSink(
                         this,
+                        getExecutor(),
                         decoderInstance,
                         (msg) ->
                         {

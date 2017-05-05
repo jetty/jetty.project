@@ -21,6 +21,10 @@ package org.eclipse.jetty.websocket.jsr356;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+
 /**
  * Client {@link ContainerProvider} implementation.
  * <p>
@@ -36,7 +40,14 @@ public class JettyClientContainerProvider extends ContainerProvider
     @Override
     protected WebSocketContainer getContainer()
     {
-        ClientContainer container = new ClientContainer();
+        SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        QueuedThreadPool threadPool= new QueuedThreadPool();
+        String name = "qtp-JSR356CLI-" + hashCode();
+        threadPool.setName(name);
+        threadPool.setDaemon(true);
+        containerScope.setExecutor(threadPool);
+        containerScope.addBean(threadPool);
+        ClientContainer container = new ClientContainer(containerScope);
         try
         {
             // We need to start this container properly.

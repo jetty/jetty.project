@@ -224,6 +224,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public boolean isOpen()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug(".isOpen() = {}", !closed.get());
         return !closed.get();
     }
 
@@ -249,22 +251,30 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         AtomicBoolean result = new AtomicBoolean(false);
         
+        if(LOG.isDebugEnabled())
+            LOG.debug("onFrame({})", frame);
+        
         extensionStack.incomingFrame(frame, new FrameCallback()
         {
             @Override
             public void succeed()
             {
+                if(LOG.isDebugEnabled())
+                    LOG.debug("onFrame({}).succeed()", frame);
                 parser.release(frame);
                 if(!result.compareAndSet(false,true))
                 {
                     // callback has been notified asynchronously
-                    fillAndParse();
+                    // fillAndParse();
+                    fillInterested();
                 }
             }
             
             @Override
             public void fail(Throwable cause)
             {
+                if(LOG.isDebugEnabled())
+                    LOG.debug("onFrame("+ frame + ").fail()", cause);
                 parser.release(frame);
                 
                 // notify session & endpoint

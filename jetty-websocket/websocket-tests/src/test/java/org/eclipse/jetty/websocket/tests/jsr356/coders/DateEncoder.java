@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.server.jsr356.coders;
+package org.eclipse.jetty.websocket.tests.jsr356.coders;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,18 +31,20 @@ import javax.websocket.EndpointConfig;
 public class DateEncoder implements Encoder.Text<Date>
 {
     @Override
-    public void destroy()
-    {
-    }
-
-    @Override
     public String encode(Date object) throws EncodeException
     {
         return new SimpleDateFormat("[yyyy/MM/dd]").format(object);
     }
-
+    
+    @Override
+    public void destroy()
+    {
+        CoderEventTracking.getInstance().addEvent(this, "destroy()");
+    }
+    
     @Override
     public void init(EndpointConfig config)
     {
+        CoderEventTracking.getInstance().addEvent(this, "init(EndpointConfig)");
     }
 }

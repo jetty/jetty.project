@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Parser;
 
@@ -132,8 +133,11 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     @Override
     protected void doStart() throws Exception
     {
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setName("qtp-LocalServer");
+        
         // Configure Server
-        server = new Server();
+        server = new Server(threadPool);
         if (ssl)
         {
             // HTTP Configuration
