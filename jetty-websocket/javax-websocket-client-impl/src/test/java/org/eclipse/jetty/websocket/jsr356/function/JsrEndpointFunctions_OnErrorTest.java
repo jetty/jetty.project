@@ -18,62 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.function;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.EndpointConfig;
 import javax.websocket.OnError;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.test.DummyConnection;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class JsrEndpointFunctions_OnErrorTest
+public class JsrEndpointFunctions_OnErrorTest extends AbstractJsrEndpointFunctionsTest
 {
     private static final String EXPECTED_THROWABLE = "java.lang.RuntimeException: From Testcase";
-    private static ClientContainer container;
-
-    @BeforeClass
-    public static void initContainer()
-    {
-        container = new ClientContainer();
-    }
-    
-    private AvailableEncoders encoders;
-    private AvailableDecoders decoders;
-    private Map<String, String> uriParams = new HashMap<>();
-    private EndpointConfig endpointConfig;
-    
-    public JsrEndpointFunctions_OnErrorTest()
-    {
-        endpointConfig = new EmptyClientEndpointConfig();
-        encoders = new AvailableEncoders(endpointConfig);
-        decoders = new AvailableDecoders(endpointConfig);
-        uriParams = new HashMap<>();
-    }
-
-    public JsrSession newSession(Object websocket)
-    {
-        String id = JsrEndpointFunctions_OnErrorTest.class.getSimpleName();
-        URI requestURI = URI.create("ws://localhost/" + id);
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        DummyConnection connection = new DummyConnection(policy);
-        ClientEndpointConfig config = new EmptyClientEndpointConfig();
-        ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket, config);
-        return new JsrSession(container, id, requestURI, ei, connection);
-    }
 
     private void assertOnErrorInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {

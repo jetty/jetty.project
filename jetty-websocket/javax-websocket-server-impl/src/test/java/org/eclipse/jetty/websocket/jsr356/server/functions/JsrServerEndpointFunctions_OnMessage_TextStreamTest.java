@@ -16,76 +16,26 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.server.functions;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
-import org.eclipse.jetty.websocket.common.test.DummyConnection;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.eclipse.jetty.websocket.jsr356.server.JsrServerEndpointFunctions;
+import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-public class JsrServerEndpointFunctions_OnMessage_TextStreamTest
+public class JsrServerEndpointFunctions_OnMessage_TextStreamTest extends AbstractJsrEndpointFunctionsTest
 {
-    private static ClientContainer container;
-    
-    @BeforeClass
-    public static void initContainer()
-    {
-        container = new ClientContainer();
-    }
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    
-    private AvailableEncoders encoders;
-    private AvailableDecoders decoders;
-    private Map<String, String> uriParams = new HashMap<>();
-    private EndpointConfig endpointConfig;
-    
-    public JsrServerEndpointFunctions_OnMessage_TextStreamTest()
-    {
-        endpointConfig = new EmptyClientEndpointConfig();
-        encoders = new AvailableEncoders(endpointConfig);
-        decoders = new AvailableDecoders(endpointConfig);
-        uriParams = new HashMap<>();
-        uriParams.put("param", "foo");
-    }
-    
-    public JsrSession newSession(Object websocket)
-    {
-        String id = JsrServerEndpointFunctions_OnMessage_TextStreamTest.class.getSimpleName();
-        URI requestURI = URI.create("ws://localhost/" + id);
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        DummyConnection connection = new DummyConnection(policy);
-        ClientEndpointConfig config = new EmptyClientEndpointConfig();
-        ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket, config);
-        return new JsrSession(container, id, requestURI, ei, connection);
-    }
-    
     @SuppressWarnings("Duplicates")
     private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<EndpointFunctions, Void> func) throws Exception
     {
@@ -159,6 +109,7 @@ public class JsrServerEndpointFunctions_OnMessage_TextStreamTest
     @Test
     public void testInvokeMessageStreamParam() throws Exception
     {
+        uriParams.put("param", "foo");
         TrackingSocket socket = performOnMessageInvocation(new MessageStreamParamSocket(), (endpoint) ->
         {
             endpoint.onText(new TextFrame().setPayload("Hello World").setFin(true), new FrameCallback.Adapter());
