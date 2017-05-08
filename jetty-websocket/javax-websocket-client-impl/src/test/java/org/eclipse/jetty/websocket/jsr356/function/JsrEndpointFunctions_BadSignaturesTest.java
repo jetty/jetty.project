@@ -20,54 +20,19 @@ package org.eclipse.jetty.websocket.jsr356.function;
 
 import static org.hamcrest.Matchers.containsString;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
-import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-public class JsrEndpointFunctions_BadSignaturesTest
+public class JsrEndpointFunctions_BadSignaturesTest extends AbstractJsrEndpointFunctionsTest
 {
-    private static ClientContainer container;
-
-    @BeforeClass
-    public static void initContainer()
-    {
-        container = new ClientContainer();
-    }
-    
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-    
-    private AvailableEncoders encoders;
-    private AvailableDecoders decoders;
-    private Map<String, String> uriParams = new HashMap<>();
-    private EndpointConfig endpointConfig;
-
-    public JsrEndpointFunctions_BadSignaturesTest()
-    {
-        endpointConfig = new EmptyClientEndpointConfig();
-        encoders = new AvailableEncoders(endpointConfig);
-        decoders = new AvailableDecoders(endpointConfig);
-        uriParams = new HashMap<>();
-    }
-
     private void assertBadSocket(TrackingSocket socket, String expectedString) throws Exception
     {
         JsrEndpointFunctions functions = new JsrEndpointFunctions(

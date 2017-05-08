@@ -18,65 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356.function;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
-import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.test.DummyConnection;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
-import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
-import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class JsrEndpointFunctions_OnCloseTest
+public class JsrEndpointFunctions_OnCloseTest extends AbstractJsrEndpointFunctionsTest
 {
     private static final String EXPECTED_REASON = "CloseReason[1000,Normal]";
-    private static ClientContainer container;
-
-    @BeforeClass
-    public static void initContainer()
-    {
-        container = new ClientContainer();
-    }
-    
-    private AvailableEncoders encoders;
-    private AvailableDecoders decoders;
-    private Map<String, String> uriParams = new HashMap<>();
-    private EndpointConfig endpointConfig;
-    
-    public JsrEndpointFunctions_OnCloseTest()
-    {
-        endpointConfig = new EmptyClientEndpointConfig();
-        encoders = new AvailableEncoders(endpointConfig);
-        decoders = new AvailableDecoders(endpointConfig);
-        uriParams = new HashMap<>();
-    }
-
-    public JsrSession newSession(Object websocket)
-    {
-        String id = JsrEndpointFunctions_OnCloseTest.class.getSimpleName();
-        URI requestURI = URI.create("ws://localhost/" + id);
-        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        DummyConnection connection = new DummyConnection(policy);
-        ClientEndpointConfig config = new EmptyClientEndpointConfig();
-        ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket, config);
-        return new JsrSession(container, id, requestURI, ei, connection);
-    }
 
     private void assertOnCloseInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
