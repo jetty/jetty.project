@@ -265,8 +265,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 if(!result.compareAndSet(false,true))
                 {
                     // callback has been notified asynchronously
-                    // fillAndParse();
-                    fillInterested();
+                    fillAndParse();
+                    // fillInterested();
                 }
             }
             
