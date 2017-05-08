@@ -48,6 +48,8 @@ import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.EventTracker;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -55,7 +57,20 @@ import org.junit.rules.TestName;
 public class CommonEndpointFunctionsTest
 {
     private static final Charset UTF8 = StandardCharsets.UTF_8;
-    private WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
+    private static SimpleContainerScope containerScope;
+    
+    @BeforeClass
+    public static void startContainer() throws Exception
+    {
+        containerScope = new SimpleContainerScope(WebSocketPolicy.newServerPolicy());
+        containerScope.start();
+    }
+    
+    @AfterClass
+    public static void stopContainer() throws Exception
+    {
+        containerScope.stop();
+    }
 
     @Rule
     public TestName testname = new TestName();
