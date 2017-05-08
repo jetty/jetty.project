@@ -791,6 +791,8 @@ public class DefaultServletTest
         FS.ensureDirExists(resBase);
         File file0 = new File(resBase, "data0.txt");
         createFile(file0, "Hello Text 0");
+        File image = new File(resBase, "image.jpg");
+        createFile(image, "not an image");
 
         String resBasePath = resBase.getAbsolutePath();
 
@@ -817,6 +819,11 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Length: 12", response);
         assertResponseContains("Content-Type: text/plain;charset=utf-8", response);
 
+        response = connector.getResponse("GET /context/image.jpg HTTP/1.0\r\n\r\n");
+        assertResponseContains("Content-Length: 2", response); // 20 something long
+        assertResponseContains("Extra Info", response);
+        assertResponseContains("Content-Type: image/jpeg;charset=utf-8", response);
+        
         server.stop();
         context.getServletHandler().setFilterMappings(new FilterMapping[]{});
         context.getServletHandler().setFilters(new FilterHolder[]{});
@@ -827,6 +834,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
+        
     }
 
 

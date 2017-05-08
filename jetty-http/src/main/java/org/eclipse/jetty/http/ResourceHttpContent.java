@@ -117,7 +117,7 @@ public class ResourceHttpContent implements HttpContent
     {
         return _contentType==null?null:MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public HttpField getLastModified()
@@ -227,7 +227,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,c=%b}",this.getClass().getSimpleName(),hashCode(),_resource,_precompressedContents!=null);
+        return String.format("%s@%x{r=%s,ct=%s,c=%b}",this.getClass().getSimpleName(),hashCode(),_resource,_contentType,_precompressedContents!=null);
     }
 
     /* ------------------------------------------------------------ */
