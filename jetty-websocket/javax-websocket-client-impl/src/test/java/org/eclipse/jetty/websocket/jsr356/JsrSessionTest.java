@@ -55,6 +55,7 @@ public class JsrSessionTest
     @Rule
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
     
+    private SimpleContainerScope containerScope;
     private ClientContainer container;
     private JsrSession session;
     
@@ -67,7 +68,9 @@ public class JsrSessionTest
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         
         // Container
-        container = new ClientContainer(new SimpleContainerScope(policy, bufferPool));
+        containerScope = new SimpleContainerScope(policy, bufferPool);
+        containerScope.start();
+        container = new ClientContainer(containerScope);
         container.start();
         LocalWebSocketConnection connection = new LocalWebSocketConnection(bufferPool);
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
