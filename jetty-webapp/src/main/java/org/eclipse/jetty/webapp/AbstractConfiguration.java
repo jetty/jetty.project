@@ -131,13 +131,13 @@ public class AbstractConfiguration implements Configuration
     
     
     @Override
-    public Collection<String> getConfigurationsAfterThis()
+    public Collection<String> getDependents()
     {
         return _after;
     }
 
     @Override
-    public Collection<String> getConfigurationsBeforeThis()
+    public Collection<String> getDependencies()
     {
         return _beforeThis;
     }

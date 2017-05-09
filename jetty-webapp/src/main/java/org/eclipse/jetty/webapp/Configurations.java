@@ -46,8 +46,8 @@ import org.eclipse.jetty.util.log.Logger;
  * The ordering of Configurations will initially be the order in which they
  * are added.  The {@link #sort()} method can be used to apply a 
  * {@link TopologicalSort} to the ordering as defined by the 
- * {@link Configuration#getConfigurationsBeforeThis()} and
- * {@link Configuration#getConfigurationsAfterThis()} methods.
+ * {@link Configuration#getDependencies()} and
+ * {@link Configuration#getDependents()} methods.
  * Instances that do not have ordering dependencies will maintain 
  * their add order, as will additions/insertions made after the 
  * the sort.
@@ -344,7 +344,7 @@ public class Configurations extends AbstractList<Configuration>
         
         for (Configuration c:configurations)
         {
-            for (String b:c.getConfigurationsBeforeThis())
+            for (String b:c.getDependencies())
             {
                 Configuration before=by_name.get(b);
                 if (before!=null)
@@ -352,7 +352,7 @@ public class Configurations extends AbstractList<Configuration>
                 if (replaced_by.containsKey(b))
                     replaced_by.get(b).forEach(bc->sort.addBeforeAfter(bc,c));
             }
-            for (String a:c.getConfigurationsAfterThis())
+            for (String a:c.getDependents())
             {
                 Configuration after=by_name.get(a);
                 if (after!=null)

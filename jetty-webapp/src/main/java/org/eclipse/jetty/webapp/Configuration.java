@@ -43,8 +43,8 @@ import org.eclipse.jetty.util.annotation.Name;
  * {@link WebAppContext#setConfigurations(Configuration[])}, {@link WebAppContext#addConfiguration(Configuration...)}
  * or {@link WebAppContext#getWebAppConfigurations()}.
  * </p>
- * <p>Since Jetty-9.4, Configurations are self ordering using the {@link #getConfigurationsBeforeThis()} and
- * {@link #getConfigurationsAfterThis()} methods for a {@link TopologicalSort} initiated by {@link Configurations#sort()}
+ * <p>Since Jetty-9.4, Configurations are self ordering using the {@link #getDependencies()} and
+ * {@link #getDependents()} methods for a {@link TopologicalSort} initiated by {@link Configurations#sort()}
  * when a {@link WebAppContext} is started.  This means that feature configurations 
  * (eg {@link JndiConfiguration}, {@link JaasConfiguration}} etc.) can be added or removed without concern 
  * for ordering.
@@ -58,7 +58,6 @@ public interface Configuration
 {
     public final static String ATTR="org.eclipse.jetty.webapp.configuration";
     
-    /* ------------------------------------------------------------------------------- */
     /** Get a class that this class replaces/extends.
      * If this is added to {@link Configurations} collection that already contains a 
      * configuration of the replaced class or that reports to replace the same class, then
@@ -67,33 +66,28 @@ public interface Configuration
      */
     public default Class<? extends Configuration> replaces() { return null; } 
 
-    /* ------------------------------------------------------------------------------- */
     /** Get known Configuration Dependencies.
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * before this configuration.
      */
-    public default Collection<String> getConfigurationsBeforeThis() { return Collections.emptyList(); }
+    public default Collection<String> getDependencies() { return Collections.emptyList(); }
 
-    /* ------------------------------------------------------------------------------- */
     /** Get known Configuration Dependents.
      * @return The names of Configurations that {@link TopologicalSort} must order 
      * after this configuration.
      */
-    public default Collection<String> getConfigurationsAfterThis(){ return Collections.emptyList(); }
+    public default Collection<String> getDependents(){ return Collections.emptyList(); }
 
-    /* ------------------------------------------------------------------------------- */
     /** Get the system classes associated with this Configuration.
      * @return ClasspathPattern of system classes.
      */
     public default ClasspathPattern getSystemClasses() { return new ClasspathPattern();  }
 
-    /* ------------------------------------------------------------------------------- */
     /** Get the system classes associated with this Configuration.
      * @return ClasspathPattern of server classes.
      */
     public default ClasspathPattern getServerClasses() { return new ClasspathPattern();  }
     
-    /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
      * <p>
      * Typically this step discovers configuration resources.
@@ -105,7 +99,6 @@ public interface Configuration
      */
     public void preConfigure (WebAppContext context) throws Exception;
     
-    /* ------------------------------------------------------------------------------- */
     /** Configure WebApp.
      * <p>
      * Typically this step applies the discovered configuration resources to
@@ -115,15 +108,12 @@ public interface Configuration
      */
     public void configure (WebAppContext context) throws Exception;
     
-    
-    /* ------------------------------------------------------------------------------- */
     /** Clear down after configuration.
      * @param context The context to configure
      * @throws Exception if unable to post configure
      */
     public void postConfigure (WebAppContext context) throws Exception;
     
-    /* ------------------------------------------------------------------------------- */
     /** DeConfigure WebApp.
      * This method is called to undo all configuration done. This is
      * called to allow the context to work correctly over a stop/start cycle
@@ -132,7 +122,6 @@ public interface Configuration
      */
     public void deconfigure (WebAppContext context) throws Exception;
 
-    /* ------------------------------------------------------------------------------- */
     /** Destroy WebApp.
      * This method is called to destroy a webappcontext. It is typically called when a context 
      * is removed from a server handler hierarchy by the deployer.
@@ -155,6 +144,7 @@ public interface Configuration
     /**
      * @deprecated Use {@link Configurations}
      */
+    @Deprecated
     public class ClassList extends Configurations
     {
         @Deprecated

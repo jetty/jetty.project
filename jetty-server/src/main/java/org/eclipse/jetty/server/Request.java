@@ -223,8 +223,8 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    // TODO @Override
-    public Map<String,String> getTrailers()
+    @Override
+    public Map<String,String> getTrailerFields()
     {
         if (_trailers==null)
             return Collections.emptyMap();
