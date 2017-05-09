@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -53,7 +52,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
     public JettyWebXmlConfiguration()
     {
-        beforeThis(WebXmlConfiguration.class,FragmentConfiguration.class,MetaInfConfiguration.class);
+        addDependencies(WebXmlConfiguration.class, FragmentConfiguration.class, MetaInfConfiguration.class);
     }
     
     /**

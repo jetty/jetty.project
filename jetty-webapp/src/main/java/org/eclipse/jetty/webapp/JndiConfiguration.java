@@ -34,8 +34,8 @@ public class JndiConfiguration extends AbstractConfiguration
 {
     public JndiConfiguration()
     {
-        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,FragmentConfiguration.class);
-        afterThis(WebAppConfiguration.class);
+        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
+        addDependents(WebAppConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jndi.");
     }
 }

@@ -34,8 +34,8 @@ public class WebSocketConfiguration extends AbstractConfiguration
 {
     public WebSocketConfiguration()
     {
-        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,FragmentConfiguration.class);
-        afterThis("org.eclipse.jetty.annotations.AnnotationConfiguration",WebAppConfiguration.class.getName());
+        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
+        addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
         protectAndExpose("org.eclipse.jetty.websocket.");
     }
 }

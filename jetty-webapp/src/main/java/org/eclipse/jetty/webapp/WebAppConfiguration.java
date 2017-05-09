@@ -29,8 +29,8 @@ public class WebAppConfiguration extends AbstractConfiguration
 {
     public WebAppConfiguration()
     {
-        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class);
-        afterThis(JettyWebXmlConfiguration.class);
+        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
+        addDependents(JettyWebXmlConfiguration.class);
         protectAndExpose(
             "org.eclipse.jetty.util.log.",
             "org.eclipse.jetty.server.session.SessionData",

@@ -113,7 +113,8 @@ public class ConfigurationsTest
     
     public static class ConfigFoo extends AbstractConfiguration 
     { 
-        {afterThis(ConfigBar.class); }
+        {
+            addDependents(ConfigBar.class); }
     }
     
     public static class ConfigBar extends AbstractConfiguration 
@@ -123,14 +124,14 @@ public class ConfigurationsTest
     public static class ConfigX extends AbstractConfiguration 
     { 
         {
-            beforeThis(ConfigBar.class);
+            addDependencies(ConfigBar.class);
         }
     }
     public static class ConfigY extends AbstractConfiguration 
     { 
         {
-            beforeThis(ConfigX.class);
-            afterThis(ConfigZ.class);
+            addDependencies(ConfigX.class);
+            addDependents(ConfigZ.class);
         }
     }
     public static class ConfigZ extends AbstractConfiguration 
@@ -144,21 +145,21 @@ public class ConfigurationsTest
     public static class ConfigDick extends AbstractConfiguration 
     { 
         {
-            beforeThis(ConfigTom.class);
+            addDependencies(ConfigTom.class);
         }
     }
     
     public static class ConfigHarry extends AbstractConfiguration 
     { 
         {
-            beforeThis(ConfigDick.class);
+            addDependencies(ConfigDick.class);
         }
     }
 
     public static class ConfigExtendedDick extends ConfigDick 
     { 
         {
-            beforeThis(ConfigTom.class);
+            addDependencies(ConfigTom.class);
         }
 
         @Override

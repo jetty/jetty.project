@@ -93,7 +93,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     public MetaInfConfiguration()
     {
-        beforeThis(WebXmlConfiguration.class);
+        addDependencies(WebXmlConfiguration.class);
     }
 
     

@@ -50,8 +50,8 @@ public class PlusConfiguration extends AbstractConfiguration
 
     public PlusConfiguration()
     {
-        beforeThis(EnvConfiguration.class,WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class);
-        afterThis(JettyWebXmlConfiguration.class);
+        addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
+        addDependents(JettyWebXmlConfiguration.class);
     }    
     
     @Override

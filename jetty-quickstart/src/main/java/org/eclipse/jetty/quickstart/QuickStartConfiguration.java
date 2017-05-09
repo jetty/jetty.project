@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.StandardDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
@@ -65,8 +63,8 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
 
     public QuickStartConfiguration()
     {
-        beforeThis(WebInfConfiguration.class);
-        afterThis(WebXmlConfiguration.class);
+        addDependencies(WebInfConfiguration.class);
+        addDependents(WebXmlConfiguration.class);
     }
 
     public void setMode(Mode mode)

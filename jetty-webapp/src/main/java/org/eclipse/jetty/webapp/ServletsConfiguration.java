@@ -29,8 +29,8 @@ public class ServletsConfiguration extends AbstractConfiguration
 {
     public ServletsConfiguration()
     {
-        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,WebInfConfiguration.class,WebAppConfiguration.class);
-        afterThis(JettyWebXmlConfiguration.class);
+        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, WebAppConfiguration.class);
+        addDependents(JettyWebXmlConfiguration.class);
         protectAndExpose();
         protect("org.eclipse.jetty.servlets.PushCacheFilter", //must be loaded by container classpath
                 "org.eclipse.jetty.servlets.PushSessionCacheFilter" //must be loaded by container classpath

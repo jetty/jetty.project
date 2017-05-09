@@ -41,7 +41,7 @@ public class AbstractConfiguration implements Configuration
      * Add configuration classes that come before this configuration
      * @param classes Classname or package name
      */
-    protected void beforeThis(String... classes)
+    protected void addDependencies(String... classes)
     {
         for (String c:classes)
             _beforeThis.add(c);
@@ -51,16 +51,16 @@ public class AbstractConfiguration implements Configuration
      * Add configuration classes that come before this configuration
      * @param classes Classes
      */
-    protected void beforeThis(Class<?>... classes)
+    protected void addDependencies(Class<? extends Configuration>... classes)
     {
-        beforeThis(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
+        addDependencies(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
     }
 
     /**
      * Add configuration classes that come after this configuration
      * @param classes Classname or package name
      */
-    protected void afterThis(String... classes)
+    protected void addDependents(String... classes)
     {
         for (String c:classes)
             _after.add(c);
@@ -70,9 +70,9 @@ public class AbstractConfiguration implements Configuration
      * Add configuration classes that come after this configuration
      * @param classes Class
      */
-    protected void afterThis(Class<?>... classes)
+    protected void addDependents(Class<?>... classes)
     {
-        afterThis(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
+        addDependents(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
     }
     
     /** 

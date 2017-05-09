@@ -96,8 +96,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public AnnotationConfiguration()
     {
-        beforeThis(WebXmlConfiguration.class,MetaInfConfiguration.class,FragmentConfiguration.class,PlusConfiguration.class);
-        afterThis(JettyWebXmlConfiguration.class);
+        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class, PlusConfiguration.class);
+        addDependents(JettyWebXmlConfiguration.class);
         protectAndExpose("org.eclipse.jetty.util.annotation.");
         hide("org.objectweb.asm.");
     }
