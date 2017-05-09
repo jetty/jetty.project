@@ -45,11 +45,11 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
  * </p>
  * <pre>
  *     Connection Thread | DispatchedMessageSink | Thread 2
- *     TEXT                > accept
- *                         - dispatch -            function.read(stream)
- *     CONT                > accept                stream.read()
- *     CONT                > accept                stream.read()
- *     CONT=fin            > accept                stream.read()
+ *     TEXT                accept()
+ *                          - dispatch -           function.read(stream)
+ *     CONT                accept()                stream.read()
+ *     CONT                accept()                stream.read()
+ *     CONT=fin            accept()                stream.read()
  *                           EOF                   stream.read EOF
  *     IDLE
  *                                                 exit method
@@ -60,9 +60,9 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
  * </p>
  * <pre>
  *     Connection Thread | DispatchedMessageSink | Thread 2
- *     TEXT                > accept
- *                         - dispatch -            function.read(stream)
- *     CONT                > accept                exit method (normal return)
+ *     TEXT                accept()
+ *                          - dispatch -           function.read(stream)
+ *     CONT                accept()                exit method (normal return)
  *     IDLE
  *     TIMEOUT
  * </pre>
@@ -71,9 +71,9 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
  * </p>
  * <pre>
  *     Connection Thread | DispatchedMessageSink | Thread 2
- *     TEXT                > accept
- *                         - dispatch -            function.read(stream)
- *     CONT                > accept                exit method (throwable)
+ *     TEXT                accept()
+ *                          - dispatch -           function.read(stream)
+ *     CONT                accept()                exit method (throwable)
  *     callback.fail()
  *     endpoint.onError()
  *     close(error)
@@ -83,13 +83,13 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
  * </p>
  * <pre>
  *     Connection Thread | DispatchedMessageSink | Thread 2              | Thread 3
- *     TEXT                > accept
- *                         - dispatch -            function.read(stream)
+ *     TEXT                accept()
+ *                          - dispatch -           function.read(stream)
  *                                                 thread.new(stream)      stream.read()
  *                                                 exit method
- *     CONT                > accept                                        stream.read()
- *     CONT                > accept                                        stream.read()
- *     CONT=fin            > accept                                        stream.read()
+ *     CONT                accept()                                        stream.read()
+ *     CONT                accept()                                        stream.read()
+ *     CONT=fin            accept()                                        stream.read()
  *                           EOF                                           stream.read EOF
  *     RESUME(NEXT MSG)
  * </pre>
