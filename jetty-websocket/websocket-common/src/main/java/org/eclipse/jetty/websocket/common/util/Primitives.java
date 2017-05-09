@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+@Deprecated
 public class Primitives
 {
     private static final Map<Class<?>, Class<?>> PRIMITIVE_CLASS_MAP;

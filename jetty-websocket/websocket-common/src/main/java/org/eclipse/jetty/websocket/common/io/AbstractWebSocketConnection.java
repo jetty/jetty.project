@@ -261,12 +261,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             {
                 if(LOG.isDebugEnabled())
                     LOG.debug("onFrame({}).succeed()", frame);
+                
                 parser.release(frame);
                 if(!result.compareAndSet(false,true))
                 {
                     // callback has been notified asynchronously
                     fillAndParse();
-                    // fillInterested();
                 }
             }
             

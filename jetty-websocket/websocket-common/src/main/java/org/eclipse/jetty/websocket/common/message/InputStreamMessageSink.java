@@ -19,87 +19,21 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.InputStream;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 
-public class InputStreamMessageSink implements MessageSink
+public class InputStreamMessageSink extends DispatchedMessageSink<InputStream, Void>
 {
-    private static final Logger LOG = Log.getLogger(ReaderMessageSink.class);
-    private final Function<InputStream, Void> onStreamFunction;
-    private final Executor executor;
-    private MessageInputStream stream;
-    private CountDownLatch dispatchCompleted = new CountDownLatch(1);
-
     public InputStreamMessageSink(Executor executor, Function<InputStream, Void> function)
     {
-        this.executor = executor;
-        this.onStreamFunction = function;
+        super(executor, function);
     }
-
+    
     @Override
-    public void accept(Frame frame, FrameCallback callback)
+    public MessageSink newSink(Frame frame)
     {
-        try
-        {
-            boolean first = false;
-
-            if (stream == null)
-            {
-                stream = new MessageInputStream();
-                first = true;
-            }
-
-            stream.accept(frame, callback);
-            if (first)
-            {
-                dispatchCompleted = new CountDownLatch(1);
-                executor.execute(() -> {
-                    final MessageInputStream dispatchedStream = stream;
-                    try
-                    {
-                        onStreamFunction.apply(dispatchedStream);
-                    }
-                    catch (Throwable t)
-                    {
-                        // processing of errors is the responsibility
-                        // of the stream function
-                        if (LOG.isDebugEnabled())
-                        {
-                            LOG.debug("Unhandled throwable", t);
-                        }
-                    }
-                    // Returned from dispatch, stream should be closed
-                    IO.close(dispatchedStream);
-                    dispatchCompleted.countDown();
-                });
-            }
-        }
-        finally
-        {
-            //noinspection Duplicates
-            if (frame.isFin())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("dispatch complete await() - {}", stream);
-                try
-                {
-                    // TODO: remove
-                    dispatchCompleted.await();
-                }
-                catch (InterruptedException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug(e);
-                }
-                stream = null;
-            }
-        }
+        return new MessageInputStream();
     }
 }

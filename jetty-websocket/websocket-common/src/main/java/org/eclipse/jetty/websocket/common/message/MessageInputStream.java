@@ -82,7 +82,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     @Override
     public void close() throws IOException
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("close()");
         
         if (closed.compareAndSet(false, true))
@@ -98,7 +98,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     
     public FrameCallbackBuffer getActiveFrame() throws InterruptedIOException
     {
-        if(activeFrame == null)
+        if (activeFrame == null)
         {
             // sync and poll queue
             FrameCallbackBuffer result;
@@ -126,11 +126,19 @@ public class MessageInputStream extends InputStream implements MessageSink
     
     private void shutdown()
     {
-        if(LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled())
             LOG.debug("shutdown()");
-        closed.set(true);
-        // Removed buffers that may have remained in the queue.
-        buffers.clear();
+        synchronized (buffers)
+        {
+            closed.set(true);
+            Throwable cause = new IOException("Shutdown");
+            for (FrameCallbackBuffer buffer : buffers)
+            {
+                buffer.callback.fail(cause);
+            }
+            // Removed buffers that may have remained in the queue.
+            buffers.clear();
+        }
     }
     
     @Override
@@ -171,7 +179,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         }
         
         FrameCallbackBuffer result = getActiveFrame();
-    
+        
         if (LOG.isDebugEnabled())
             LOG.debug("result = {}", result);
         
@@ -186,7 +194,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         // We have content
         int fillLen = Math.min(result.buffer.remaining(), len);
         result.buffer.get(b, off, fillLen);
-    
+        
         if (!result.buffer.hasRemaining())
         {
             activeFrame = null;
