@@ -29,6 +29,34 @@ import javax.websocket.WebSocketContainer;
  */
 public class JettyClientContainerProvider extends ContainerProvider
 {
+    private static Object lock = new Object();
+    private static ClientContainer INSTANCE;
+    
+    public static ClientContainer getInstance()
+    {
+        return INSTANCE;
+    }
+    
+    public static void stop() throws Exception
+    {
+        synchronized (lock)
+        {
+            if (INSTANCE == null)
+            {
+                return;
+            }
+            
+            try
+            {
+                INSTANCE.stop();
+            }
+            finally
+            {
+                INSTANCE = null;
+            }
+        }
+    }
+    
     /**
      * Used by {@link ContainerProvider#getWebSocketContainer()} to get a new instance
      * of the Client {@link WebSocketContainer}.
@@ -36,16 +64,22 @@ public class JettyClientContainerProvider extends ContainerProvider
     @Override
     protected WebSocketContainer getContainer()
     {
-        ClientContainer container = new ClientContainer();
-        try
+        synchronized (lock)
         {
-            // We need to start this container properly.
-            container.start();
-            return container;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Unable to start Client Container",e);
+            if (INSTANCE == null)
+            {
+                try
+                {
+                    INSTANCE = new ClientContainer();
+                    INSTANCE.start();
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException("Unable to start Client Container", e);
+                }
+            }
+            
+            return INSTANCE;
         }
     }
 }
