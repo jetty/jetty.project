@@ -362,10 +362,10 @@ public class JettyWebAppContext extends WebAppContext
             setAttribute(WebInfConfiguration.WEBINF_JAR_PATTERN, _webInfIncludeJarPattern);
    
         //Set up the classes dirs that comprises the equivalent of WEB-INF/classes
-        if (_testClasses != null)
-            _webInfClasses.add(_testClasses);
         if (_classes != null)
             _webInfClasses.add(_classes);
+        if (_testClasses != null)
+            _webInfClasses.add(_testClasses);
         
         // Set up the classpath
         _classpathFiles = new ArrayList<File>();
