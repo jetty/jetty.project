@@ -44,6 +44,12 @@ public class UnitGenerator extends Generator
         applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
     }
     
+    public UnitGenerator(WebSocketPolicy policy, boolean validating)
+    {
+        super(policy, new MappedByteBufferPool(), validating);
+        applyMask = (getBehavior() == WebSocketBehavior.CLIENT);
+    }
+    
     public ByteBuffer asBuffer(List<WebSocketFrame> frames)
     {
         int bufferLength = 0;
@@ -58,7 +64,33 @@ public class UnitGenerator extends Generator
         return buffer;
     }
     
+    public ByteBuffer asBuffer(WebSocketFrame ... frames)
+    {
+        int bufferLength = 0;
+        for (Frame f : frames)
+        {
+            bufferLength += f.getPayloadLength() + Generator.MAX_HEADER_LENGTH;
+        }
+        
+        ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
+        generate(buffer, frames);
+        BufferUtil.flipToFlush(buffer, 0);
+        return buffer;
+    }
+    
     public void generate(ByteBuffer buffer, List<WebSocketFrame> frames)
+    {
+        // Generate frames
+        for (WebSocketFrame f : frames)
+        {
+            if (applyMask)
+                f.setMask(MASK);
+            
+            generateWholeFrame(f, buffer);
+        }
+    }
+    
+    public void generate(ByteBuffer buffer, WebSocketFrame ... frames)
     {
         // Generate frames
         for (WebSocketFrame f : frames)

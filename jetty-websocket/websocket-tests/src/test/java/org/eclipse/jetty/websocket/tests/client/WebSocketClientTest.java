@@ -160,16 +160,12 @@ public class WebSocketClientTest
         clientEndpoint.close(StatusCode.NORMAL, "Normal Close");
         
         // Server close event
-        serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
+        serverEndpoint.awaitCloseEvent("Server");
         serverEndpoint.assertCloseInfo("Server", StatusCode.NORMAL, containsString("Normal Close"));
         
         // client triggers close event on client ws-endpoint
         clientEndpoint.awaitCloseEvent("Client");
         clientEndpoint.assertCloseInfo("Client", StatusCode.NORMAL, containsString("Normal Close"));
-        
-        // Verify Client Session Tracking
-        sessions = client.getBeans(WebSocketSession.class);
-        // TODO: Assert.assertThat("client.beans[session].size", sessions.size(), is(0));
     }
     
     @Test
@@ -225,6 +221,7 @@ public class WebSocketClientTest
         URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setSubProtocols("echo");
+        client.getPolicy().setMaxTextMessageSize(100 * 1024);
         Future<Session> clientConnectFuture = client.connect(clientEndpoint, wsUri, upgradeRequest);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -236,9 +233,9 @@ public class WebSocketClientTest
         String outgoingMessage = StringUtil.toUTF8String(buf, 0, buf.length);
         
         clientSession.getRemote().sendStringByFuture(outgoingMessage);
+        
         String incomingMessage = clientEndpoint.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat("Message received", incomingMessage, is(outgoingMessage));
-        
         clientSession.close();
     }
     

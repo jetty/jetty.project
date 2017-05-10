@@ -18,10 +18,15 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+
 import java.net.URI;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
@@ -29,11 +34,11 @@ import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 
 public class WebSocketInvalidVersionTest
@@ -55,6 +60,9 @@ public class WebSocketInvalidVersionTest
     
     @Rule
     public TestName testname = new TestName();
+    
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
     
     private WebSocketClient client;
     
@@ -83,8 +91,11 @@ public class WebSocketInvalidVersionTest
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.setHeader("Sec-WebSocket-Version", "29");
+        
+        expectedException.expect(ExecutionException.class);
+        expectedException.expectCause(instanceOf(UpgradeException.class));
+        expectedException.expectMessage(containsString("Unsupported websocket version"));
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
-        // TODO: handle exception?
-        Assert.fail("Should have handled exception check");
+        clientConnectFuture.get();
     }
 }

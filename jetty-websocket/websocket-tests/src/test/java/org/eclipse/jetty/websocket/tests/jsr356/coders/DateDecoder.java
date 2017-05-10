@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests.jsr356.coders;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -31,12 +32,16 @@ import javax.websocket.EndpointConfig;
  */
 public class DateDecoder implements Decoder.Text<Date>
 {
+    private TimeZone GMT = TimeZone.getTimeZone("GMT");
+    
     @Override
     public Date decode(String s) throws DecodeException
     {
         try
         {
-            return new SimpleDateFormat("yyyy.MM.dd").parse(s);
+            SimpleDateFormat format = new SimpleDateFormat("yyyy.MM.dd");
+            format.setTimeZone(GMT);
+            return format.parse(s);
         }
         catch (ParseException e)
         {

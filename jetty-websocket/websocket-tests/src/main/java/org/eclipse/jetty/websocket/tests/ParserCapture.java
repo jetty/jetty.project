@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -25,9 +28,29 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
+import sun.plugin2.message.Pipe;
+
 public class ParserCapture implements Parser.Handler
 {
     public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
+    private Pipe frames;
+    
+    public void assertHasFrame(byte opCode, int expectedCount)
+    {
+        int count = 0;
+        for(WebSocketFrame frame: framesQueue)
+        {
+            if(frame.getOpCode() == opCode)
+                count++;
+        }
+        assertThat("Frames[op=" + opCode + "].count", count, is(expectedCount));
+    }
+    
+    @Deprecated
+    public BlockingQueue<WebSocketFrame> getFrames()
+    {
+        return framesQueue;
+    }
     
     @Override
     public boolean onFrame(Frame frame)
