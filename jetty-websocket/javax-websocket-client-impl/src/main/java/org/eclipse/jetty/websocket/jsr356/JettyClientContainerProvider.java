@@ -68,9 +68,13 @@ public class JettyClientContainerProvider extends ContainerProvider
         {
             if (INSTANCE == null)
             {
+                INSTANCE = new ClientContainer();
+            }
+        
+            if (!INSTANCE.isStarted())
+            {
                 try
                 {
-                    INSTANCE = new ClientContainer();
                     INSTANCE.start();
                 }
                 catch (Exception e)
@@ -78,7 +82,7 @@ public class JettyClientContainerProvider extends ContainerProvider
                     throw new RuntimeException("Unable to start Client Container", e);
                 }
             }
-            
+        
             return INSTANCE;
         }
     }

@@ -133,9 +133,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param bufferPool
      *            byte buffer pool to use
-     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
-    @Deprecated
     public WebSocketClient(ByteBufferPool bufferPool)
     {
         this(null,null,bufferPool);

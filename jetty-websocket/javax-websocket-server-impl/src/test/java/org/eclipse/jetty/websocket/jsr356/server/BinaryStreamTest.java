@@ -67,7 +67,6 @@ public class BinaryStreamTest
         server.start();
 
         wsClient = ContainerProvider.getWebSocketContainer();
-        server.addBean(wsClient, true);
     }
 
     @After
