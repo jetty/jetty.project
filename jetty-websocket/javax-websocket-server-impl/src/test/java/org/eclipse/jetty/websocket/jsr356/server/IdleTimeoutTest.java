@@ -22,41 +22,30 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrEvents;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.IdleTimeoutContextListener;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.samples.idletimeout.OnOpenIdleTimeoutSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class IdleTimeoutTest
 {
     private static final Logger LOG = Log.getLogger(IdleTimeoutTest.class);
-
-    @Rule
-    public TestingDir testdir = new TestingDir();
-
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private static WSServer server;
 
@@ -85,15 +74,15 @@ public class IdleTimeoutTest
         server.stop();
     }
 
-    private void assertConnectionTimeout(URI uri) throws Exception, IOException, InterruptedException, ExecutionException, TimeoutException
+    private void assertConnectionTimeout(URI uri) throws Exception
     {
-        WebSocketClient client = new WebSocketClient(bufferPool);
+        WebSocketClient client = new WebSocketClient();
         try
         {
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
             if (LOG.isDebugEnabled())
-                LOG.debug("Client Attempting to connnect");
+                LOG.debug("Client Attempting to connect");
             Future<Session> future = client.connect(clientEcho,uri);
             // wait for connect
             future.get(1,TimeUnit.SECONDS);
@@ -129,7 +118,7 @@ public class IdleTimeoutTest
     @Test
     public void testAnnotated() throws Exception
     {
-        try(StacklessLogging stackless = new StacklessLogging(JsrEvents.class))
+        try(StacklessLogging ignored = new StacklessLogging(JsrEvents.class))
         {
             URI uri = server.getServerBaseURI();
             assertConnectionTimeout(uri.resolve("idle-onopen-socket"));
