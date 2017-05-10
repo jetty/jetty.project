@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.tests.jsr356;
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
+import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
@@ -44,5 +45,11 @@ public abstract class AbstractJsrTrackingEndpoint extends AbstractTrackingEndpoi
     public void onClose(CloseReason closeReason)
     {
         super.onWSClose(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());
+    }
+    
+    @OnError
+    public void onError(Throwable cause)
+    {
+        super.onWSError(cause);
     }
 }

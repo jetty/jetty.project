@@ -32,21 +32,16 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.WSServer;
 import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.IdleTimeoutOnOpenEndpoint;
 import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.IdleTimeoutOnOpenSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class IdleTimeoutTest
 {
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
-    
     private static WSServer server;
     
     @BeforeClass

@@ -273,6 +273,10 @@ public class UnorderedSignature
             }
             try
             {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Invoking {}", method);
+                }
                 return method.invoke(obj, args);
             }
             catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
