@@ -44,6 +44,7 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class CookiesTest
@@ -69,6 +70,12 @@ public class CookiesTest
     public void stopServer() throws Exception
     {
         server.stop();
+    }
+    
+    @Before
+    public void resetClientContainer() throws Exception
+    {
+        JettyClientContainerProvider.stop();
     }
 
     @Test
