@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -123,7 +124,7 @@ class JarFileResource extends JarResource
         
         int sep = _urlString.lastIndexOf("!/");
         _jarUrl=_urlString.substring(0,sep+2);
-        _path=_urlString.substring(sep+2);
+        _path=URIUtil.decodePath(_urlString.substring(sep+2));
         if (_path.length()==0)
             _path=null;   
         _jarFile=_jarConnection.getJarFile();
