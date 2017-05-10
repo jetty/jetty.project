@@ -245,10 +245,19 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         if (LOG.isDebugEnabled())
             LOG.debug("stopping - {}", this);
-        
+    
         try
         {
-            close(StatusCode.SHUTDOWN, "Shutdown");
+            CloseInfo closeInfo = new CloseInfo(StatusCode.SHUTDOWN, "Shutdown");
+            close(closeInfo, new FrameCallback.Adapter()
+            {
+                @Override
+                public void succeed()
+                {
+                    endpointFunctions.onClose(closeInfo);
+                }
+            });
+        
         }
         catch (Throwable ignore)
         {
