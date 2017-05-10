@@ -157,7 +157,7 @@ public class MessageOutputStream extends OutputStream
             // Buffer has been sent, buffer should have been consumed
             assert buffer.remaining() == 0;
 
-            BufferUtil.flipToFill(buffer);
+            BufferUtil.clearToFill(buffer);
         }
     }
 
@@ -175,7 +175,7 @@ public class MessageOutputStream extends OutputStream
                 // There may be no space available, we want
                 // to handle correctly when space == 0.
                 int space = buffer.remaining();
-                int size = Math.min(space, length);
+                int size = Math.min(space, remaining);
                 buffer.put(bytes, off, size);
                 off += size;
                 remaining -= size;

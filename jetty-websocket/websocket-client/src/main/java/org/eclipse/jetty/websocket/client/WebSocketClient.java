@@ -405,7 +405,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}",this);
 
-
         if (ShutdownThread.isRegistered(this))
         {
             ShutdownThread.deregister(this);

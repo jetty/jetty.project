@@ -130,7 +130,7 @@ public class MessageOutputStreamTest
         Assert.assertThat("Message",msg,allOf(containsString("byte[11]"),containsString("Hello World")));
     }
     
-    @Test(timeout = 2000)
+    @Test(timeout = 2000000)
     public void testWriteMultipleBuffers() throws Exception
     {
         int bufsize = (int)(policy.getOutputBufferSize() * 2.5);

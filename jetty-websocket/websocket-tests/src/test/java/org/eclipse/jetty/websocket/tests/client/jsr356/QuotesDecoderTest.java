@@ -46,7 +46,6 @@ import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesUtil;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -120,7 +119,6 @@ public class QuotesDecoderTest
     }
     
     @Test
-    @Ignore("TODO: Needs repair")
     public void testSingleQuotes() throws Exception
     {
         server.registerWebSocket("/quoter", new QuoteServingCreator());
@@ -138,7 +136,6 @@ public class QuotesDecoderTest
     }
     
     @Test
-    @Ignore("TODO: Too Slow")
     public void testTwoQuotes() throws Exception
     {
         server.registerWebSocket("/quoter", new QuoteServingCreator());

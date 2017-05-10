@@ -55,7 +55,6 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.ProtocolException;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -189,57 +188,6 @@ public class ClientCloseTest
     }
     
     @Test
-    public void testHalfClose() throws Exception
-    {
-        // Set client timeout
-        final int timeout = 1000;
-        client.setMaxIdleTimeout(timeout);
-        
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
-        // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
-        
-        // client confirms connection via echo
-        confirmConnection(clientSocket, clientConnectFuture, serverSession);
-        
-        // client sends close frame (code 1000, normal)
-        final String origCloseReason = "Normal Close";
-        clientSocket.close(StatusCode.NORMAL, origCloseReason);
-        
-        // server receives close frame
-        serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
-        
-        // server sends 2 messages
-        RemoteEndpoint remote = serverSession.getRemote();
-        remote.sendString("Hello");
-        remote.sendString("World");
-        
-        // server sends close frame (code 1000, no reason)
-        serverSession.close(StatusCode.NORMAL, "From Server");
-        
-        // client receives 2 messages
-        String incomingMessage;
-        incomingMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Received message 1", incomingMessage, is("Hello"));
-        incomingMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Received message 1", incomingMessage, is("World"));
-        
-        // Verify that there are no errors
-        clientSocket.assertNoErrorEvents("Client");
-        
-        // client close event on ws-endpoint
-        assertTrue("Client close event", clientSocket.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
-        clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, containsString("From Server"));
-    }
-    
-    @Test
     public void testNetworkCongestion() throws Exception
     {
         // Set client timeout
@@ -328,6 +276,7 @@ public class ClientCloseTest
             clientSocket.assertErrorEvent("Client", instanceOf(ProtocolException.class), containsString("Invalid control frame"));
             
             // client parse invalid frame, notifies server of close (protocol error)
+            serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
             serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
         }
         
@@ -335,7 +284,7 @@ public class ClientCloseTest
         serverSession.disconnect();
         
         // client close event on ws-endpoint
-        assertTrue("Client close event", clientSocket.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        clientSocket.awaitCloseEvent("Client");
         clientSocket.assertCloseInfo("Client", StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
     }
     
@@ -367,6 +316,7 @@ public class ClientCloseTest
             clientSocket.close(StatusCode.NORMAL, origCloseReason);
             
             // server receives close frame
+            serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
             serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
             
             // client should not have received close message (yet)
@@ -378,7 +328,7 @@ public class ClientCloseTest
             // client reads -1 (EOF)
             clientSocket.assertErrorEvent("Client", instanceOf(IOException.class), containsString("EOF"));
             // client triggers close event on client ws-endpoint
-            assertTrue("Client close event", clientSocket.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+            clientSocket.awaitCloseEvent("Client");
             clientSocket.assertCloseInfo("Client", StatusCode.ABNORMAL, containsString("Disconnected"));
         }
     }
@@ -410,6 +360,7 @@ public class ClientCloseTest
         clientSocket.close(StatusCode.NORMAL, origCloseReason);
         
         // server receives close frame
+        serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
         serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
         
         // client should not have received close message (yet)
@@ -461,15 +412,15 @@ public class ClientCloseTest
         {
             // server receives close frame
             UntrustedWSEndpoint serverEndpoint = serverSessions[i].getUntrustedEndpoint();
-            assertTrue("Close of server session[" + i + "]", serverEndpoint.closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+            serverEndpoint.awaitCloseEvent("Server");
             serverEndpoint.assertCloseInfo("Server", StatusCode.SHUTDOWN, containsString("Shutdown"));
         }
         
         // clients disconnect
         for (int i = 0; i < clientCount; i++)
         {
-            assertTrue("Close of client endpoint[" + i + "]", clientSockets[i].closeLatch.await(1, TimeUnit.SECONDS));
-            clientSockets[i].assertCloseInfo("Client", StatusCode.SHUTDOWN, containsString("Shutdown"));
+            clientSockets[i].awaitCloseEvent("Client[" + i + "]");
+            clientSockets[i].assertCloseInfo("Client[" + i + "]", StatusCode.SHUTDOWN, containsString("Shutdown"));
         }
     }
     

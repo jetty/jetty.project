@@ -54,8 +54,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
@@ -176,7 +176,7 @@ public class StreamTest
         String expectedSha1 = Sha1Sum.loadSha1(sha1File);
         String actualSha1 = Sha1Sum.calculate(file);
 
-        Assert.assertThat("SHA1Sum of content: " + file,expectedSha1,equalToIgnoringCase(actualSha1));
+        Assert.assertThat("SHA1Sum of content: " + file,actualSha1,equalToIgnoringCase(expectedSha1));
     }
 
     @ClientEndpoint
