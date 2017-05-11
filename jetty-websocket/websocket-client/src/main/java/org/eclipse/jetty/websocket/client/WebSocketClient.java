@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
@@ -267,7 +268,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             sslContextFactory = new SslContextFactory();
         }
         this.httpClient = new HttpClient(sslContextFactory);
-        this.httpClient.setExecutor(scope.getExecutor());
+        Executor executor = scope.getExecutor();
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = "WebSocketClient@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            executor = threadPool;
+        }
+    
+        this.httpClient.setExecutor(executor);
         addBean(this.httpClient);
 
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);

@@ -37,6 +37,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -175,6 +176,19 @@ public class DelayedStartClientOnServerTest
         }
     }
     
+    private void assertNoHttpClientPoolThreads(List<String> threadNames)
+    {
+        for (String threadName : threadNames)
+        {
+            if (threadName.startsWith("HttpClient@") && !threadName.endsWith("-scheduler"))
+            {
+                throw new AssertionError("Found non-scheduler HttpClient thread in <" +
+                        threadNames.stream().collect(Collectors.joining("[", ", ", "]"))
+                        + ">");
+            }
+        }
+    }
+    
     /**
      * Using the Server specific techniques of JSR356, configure the WebSocketContainer.
      */
@@ -212,14 +226,16 @@ public class DelayedStartClientOnServerTest
         {
             server.start();
             List<String> threadNames = getThreadNames();
-            assertThat("Threads", threadNames, not(hasItem(containsString("SimpleContainerScope.Executor@"))));
-            assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
+            assertNoHttpClientPoolThreads(threadNames);
+            assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
+            assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
         }
         finally
         {
             server.stop();
         }
     }
+    
     
     @Test
     public void testHttpClientThreads_AfterClientConnectTo() throws Exception
@@ -237,8 +253,8 @@ public class DelayedStartClientOnServerTest
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
             List<String> threadNames = getThreadNames();
-            assertThat("Threads", threadNames, hasItem(containsString("SimpleContainerScope.Executor@")));
-            assertThat("Threads", threadNames, hasItem(containsString("HttpClient@")));
+            assertNoHttpClientPoolThreads(threadNames);
+            assertThat("Threads", threadNames, hasItem(containsString("WebSocketContainer@")));
         }
         finally
         {
@@ -262,7 +278,8 @@ public class DelayedStartClientOnServerTest
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
             List<String> threadNames = getThreadNames();
-            assertThat("Threads", threadNames, hasItem(containsString("HttpClient@")));
+            assertNoHttpClientPoolThreads(threadNames);
+            assertThat("Threads", threadNames, hasItem(containsString("WebSocketClient@")));
         }
         finally
         {
@@ -286,8 +303,9 @@ public class DelayedStartClientOnServerTest
             String response = GET(server.getURI().resolve("/configure"));
             assertThat("Response", response, startsWith("Configured " + ClientContainer.class.getName()));
             List<String> threadNames = getThreadNames();
-            assertThat("Threads", threadNames, not(hasItem(containsString("SimpleContainerScope.Executor@"))));
-            assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
+            assertNoHttpClientPoolThreads(threadNames);
+            assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
+            assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
         }
         finally
         {
@@ -311,8 +329,8 @@ public class DelayedStartClientOnServerTest
             String response = GET(server.getURI().resolve("/configure"));
             assertThat("Response", response, startsWith("Configured " + ServerContainer.class.getName()));
             List<String> threadNames = getThreadNames();
-            assertThat("Threads", threadNames, not(hasItem(containsString("SimpleContainerScope.Executor@"))));
-            assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
+            assertNoHttpClientPoolThreads(threadNames);
+            assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
         }
         finally
         {
