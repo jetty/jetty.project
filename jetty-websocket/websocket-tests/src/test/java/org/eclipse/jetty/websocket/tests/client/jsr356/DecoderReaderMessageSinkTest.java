@@ -37,6 +37,7 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
+import org.eclipse.jetty.websocket.common.io.CompletableFutureFrameCallback;
 import org.eclipse.jetty.websocket.common.io.FutureFrameCallback;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
@@ -112,16 +113,17 @@ public class DecoderReaderMessageSinkTest
         
         FutureFrameCallback callback1 = new FutureFrameCallback();
         FutureFrameCallback callback2 = new FutureFrameCallback();
-        FutureFrameCallback callback3 = new FutureFrameCallback();
+        CompletableFutureFrameCallback finCallback = new CompletableFutureFrameCallback();
         
         sink.accept(new TextFrame().setPayload("Hello.\n").setFin(false), callback1);
         sink.accept(new ContinuationFrame().setPayload("Is this thing on?\n").setFin(false), callback2);
-        sink.accept(new ContinuationFrame().setPayload("Please reply\n").setFin(true), callback3);
+        sink.accept(new ContinuationFrame().setPayload("Please reply\n").setFin(true), finCallback);
         
+        finCallback.get(1, TimeUnit.SECONDS); // wait for fin
         Lines lines = futureLines.get(1, TimeUnit.SECONDS);
         assertThat("Callback1.done", callback1.isDone(), is(true));
         assertThat("Callback2.done", callback2.isDone(), is(true));
-        assertThat("Callback3.done", callback3.isDone(), is(true));
+        assertThat("FinCallback.done", finCallback.isDone(), is(true));
         assertThat("Lines.size", lines.size(), is(3));
         assertThat("Lines[0]", lines.get(0), is("Hello."));
         assertThat("Lines[1]", lines.get(1), is("Is this thing on?"));
