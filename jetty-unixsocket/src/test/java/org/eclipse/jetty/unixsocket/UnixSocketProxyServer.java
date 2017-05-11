@@ -35,14 +35,15 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
-public class UnixSocketServer
+public class UnixSocketProxyServer
 {
     public static void main (String... args) throws Exception
     {
         Server server = new Server();
         
         HttpConnectionFactory http = new HttpConnectionFactory();
-        UnixSocketConnector connector = new UnixSocketConnector(server,http);
+        ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
+        UnixSocketConnector connector = new UnixSocketConnector(server,proxy,http);
         server.addConnector(connector);
         
         Path socket = Paths.get(connector.getUnixSocket());
@@ -81,8 +82,6 @@ public class UnixSocketServer
         while (true)
         {
             Thread.sleep(5000);
-            System.err.println();
-            System.err.println("==============================");
             connector.dumpStdErr();
         }
         
