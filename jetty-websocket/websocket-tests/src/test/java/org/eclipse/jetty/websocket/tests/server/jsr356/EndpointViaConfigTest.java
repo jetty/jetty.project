@@ -25,19 +25,21 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.WSServer;
-import org.eclipse.jetty.websocket.tests.client.jsr356.JsrClientTrackingSocket;
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,15 +48,16 @@ import org.junit.Test;
  * Example of an {@link javax.websocket.Endpoint} extended echo server added programmatically via the
  * {@link ServerContainer#addEndpoint(javax.websocket.server.ServerEndpointConfig)}
  */
-public class BasicEndpointTest
+public class EndpointViaConfigTest
 {
-    public static class BasicEchoEndpoint extends Endpoint implements MessageHandler.Whole<String>
+    private static final Logger LOG = Log.getLogger(EndpointViaConfigTest.class);
+    
+    public static class BasicEchoEndpoint extends AbstractJsrTrackingEndpoint implements MessageHandler.Whole<String>
     {
-        private javax.websocket.Session session;
-        
         @Override
         public void onMessage(String msg)
         {
+            super.onWsText(msg);
             // reply with echo
             session.getAsyncRemote().sendText(msg);
         }
@@ -62,7 +65,7 @@ public class BasicEndpointTest
         @Override
         public void onOpen(javax.websocket.Session session, EndpointConfig config)
         {
-            this.session = session;
+            super.onOpen(session, config);
             this.session.addMessageHandler(this);
         }
     }
@@ -124,7 +127,7 @@ public class BasicEndpointTest
             try
             {
                 client.start();
-                JsrClientTrackingSocket clientSocket = new JsrClientTrackingSocket();
+                TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
                 Future<Session> clientConnectFuture = client.connect(clientSocket,uri.resolve("/app/echo"));
                 // wait for connect
                 Session clientSession = clientConnectFuture.get(5,TimeUnit.SECONDS);
@@ -134,15 +137,18 @@ public class BasicEndpointTest
                 Assert.assertEquals("Expected message","Hello World",incomingMessage);
                 
                 clientSession.close();
+                clientSocket.awaitCloseEvent("Client");
             }
             finally
             {
                 client.stop();
+                LOG.debug("Stopped - " + client);
             }
         }
         finally
         {
             wsb.stop();
+            LOG.debug("Stopped - " + wsb);
         }
     }
 }

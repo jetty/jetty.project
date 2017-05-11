@@ -85,7 +85,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final LogicalConnection connection;
     private final Executor executor;
     private final AtomicConnectionState connectionState = new AtomicConnectionState();
-    private final AtomicBoolean closeSent = new AtomicBoolean();
+    private final AtomicBoolean closeSent = new AtomicBoolean(false);
+    private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     
     // The websocket endpoint object itself
     private final Object endpoint;
@@ -338,6 +339,16 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         return this.containerScope;
     }
     
+    public Object getEndpoint()
+    {
+        Object ret = endpoint;
+        while (ret instanceof ManagedEndpoint)
+        {
+            ret = ((ManagedEndpoint) ret).getRawEndpoint();
+        }
+        return ret;
+    }
+    
     public Executor getExecutor()
     {
         return executor;
@@ -458,6 +469,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader))
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("incomingFrame({}, {}) - this.state={}, connectionState={}, endpointFunctions={}",
+                        frame, callback, getState(), connectionState.get(), endpointFunctions);
+            }
             if (connectionState.get() != AtomicConnectionState.State.CLOSED)
             {
                 // For endpoints that want to see raw frames.
@@ -469,31 +485,29 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                 {
                     case OpCode.CLOSE:
                     {
-                        CloseInfo closeInfo = null;
                         
                         if (connectionState.onClosing())
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ConnectionState: Transition to CLOSING");
                             CloseFrame closeframe = (CloseFrame) frame;
-                            closeInfo = new CloseInfo(closeframe, true);
+                            CloseInfo closeInfo = new CloseInfo(closeframe, true);
+                            notifyClose(closeInfo);
+                            close(closeInfo, onDisconnectCallback);
                         }
                         else if (connectionState.onClosed())
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ConnectionState: Transition to CLOSED");
+                            CloseFrame closeframe = (CloseFrame) frame;
+                            CloseInfo closeInfo = new CloseInfo(closeframe, true);
+                            notifyClose(closeInfo);
                             connection.disconnect();
                         }
                         else
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ConnectionState: {} - Close Frame Received", connectionState);
-                        }
-                        
-                        if (closeInfo != null)
-                        {
-                            notifyClose(closeInfo.getStatusCode(), closeInfo.getReason());
-                            close(closeInfo, onDisconnectCallback);
                         }
                         
                         // let fill/parse continue
@@ -601,15 +615,18 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         return "wss".equalsIgnoreCase(requestURI.getScheme());
     }
     
-    public void notifyClose(int statusCode, String reason)
+    public void notifyClose(CloseInfo closeInfo)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("notifyClose({},{}) [{}]", statusCode, reason, getState());
+            LOG.debug("notifyClose({}) closeNotified={} [{}]", closeInfo, closeNotified.get(), getState());
         }
         
-        CloseInfo closeInfo = new CloseInfo(statusCode, reason);
-        endpointFunctions.onClose(closeInfo);
+        // only notify once
+        if (closeNotified.compareAndSet(false, true))
+        {
+            endpointFunctions.onClose(closeInfo);
+        }
     }
     
     /**
