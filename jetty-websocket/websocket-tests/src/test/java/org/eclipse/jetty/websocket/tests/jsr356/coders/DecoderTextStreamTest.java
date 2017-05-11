@@ -37,7 +37,7 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
-import org.eclipse.jetty.websocket.common.io.FutureFrameCallback;
+import org.eclipse.jetty.websocket.common.io.CompletableFutureFrameCallback;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
 import org.eclipse.jetty.websocket.tests.jsr356.DummyJsrEndpointFunctions;
@@ -95,18 +95,25 @@ public class DecoderTextStreamTest
             return null;
         });
         
-        List<FutureFrameCallback> callbacks = new ArrayList<>();
+        List<CompletableFutureFrameCallback> callbacks = new ArrayList<>();
+        CompletableFutureFrameCallback finCallback = null;
         List<WebSocketFrame> frames = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         for (WebSocketFrame frame : frames)
         {
-            FutureFrameCallback callback = new FutureFrameCallback();
+            CompletableFutureFrameCallback callback = new CompletableFutureFrameCallback();
+            if (frame.isFin())
+            {
+                finCallback = callback;
+            }
             callbacks.add(callback);
             sink.accept(frame, callback);
         }
         
+        assertThat("Should have found finCallback", finCallback, notNullValue());
+        finCallback.get(1, TimeUnit.SECONDS); // wait for fin
         Quotes quotes = futureQuotes.get(1, TimeUnit.SECONDS);
         assertThat("Quotes", quotes, notNullValue());
-        for (FutureFrameCallback callback : callbacks)
+        for (CompletableFutureFrameCallback callback : callbacks)
         {
             assertThat("Callback", callback.isDone(), is(true));
         }
