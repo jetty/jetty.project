@@ -37,7 +37,7 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingSocket;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesEncoder;
@@ -51,7 +51,7 @@ import org.junit.rules.TestName;
 public class QuotesEncoderTest
 {
     @ClientEndpoint(encoders = QuotesEncoder.class, subprotocols = "echo")
-    public static class QuotesSocket extends AbstractJsrTrackingEndpoint
+    public static class QuotesSocket extends AbstractJsrTrackingSocket
     {
         public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
         

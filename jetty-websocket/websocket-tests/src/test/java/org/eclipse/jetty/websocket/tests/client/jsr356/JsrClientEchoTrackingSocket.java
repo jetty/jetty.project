@@ -30,28 +30,30 @@ import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingSocket;
 
 @ClientEndpoint
-public class JsrClientTrackingSocket extends AbstractJsrTrackingSocket
+public class JsrClientEchoTrackingSocket extends AbstractJsrTrackingSocket
 {
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> pongQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
     
-    public JsrClientTrackingSocket()
+    public JsrClientEchoTrackingSocket()
     {
         super("@ClientEndpoint");
     }
     
     @OnMessage(maxMessageSize = 50 * 1024 * 1024)
-    public void onText(String msg)
+    public String onText(String msg)
     {
         messageQueue.offer(msg);
+        return msg;
     }
     
     @OnMessage(maxMessageSize = 50 * 1024 * 1024)
-    public void onBinary(ByteBuffer buffer)
+    public ByteBuffer onBinary(ByteBuffer buffer)
     {
         ByteBuffer copy = DataUtils.copyOf(buffer);
         bufferQueue.offer(copy);
+        return buffer;
     }
     
     @OnMessage

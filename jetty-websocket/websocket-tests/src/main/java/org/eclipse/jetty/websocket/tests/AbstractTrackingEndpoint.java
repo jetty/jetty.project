@@ -101,6 +101,10 @@ public abstract class AbstractTrackingEndpoint<T>
     
     protected void onWSClose(int statusCode, String reason)
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("onWSClose({}, {})", statusCode, reason);
+        }
         CloseInfo close = new CloseInfo(statusCode, reason);
         boolean closeTracked = closeInfo.compareAndSet(null, close);
         this.closeLatch.countDown();
@@ -109,6 +113,10 @@ public abstract class AbstractTrackingEndpoint<T>
     
     protected void onWSError(Throwable cause)
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("onWSError()", cause);
+        }
         assertThat("Error must have value", cause, notNullValue());
         if (error.compareAndSet(null, cause) == false)
         {

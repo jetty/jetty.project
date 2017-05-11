@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.tests.WSServer;
-import org.eclipse.jetty.websocket.tests.client.jsr356.JsrClientTrackingSocket;
+import org.eclipse.jetty.websocket.tests.client.jsr356.JsrClientEchoTrackingSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -177,7 +177,7 @@ public class PingPongTest
     
     private void assertEcho(String endpointPath, Consumer<Session> sendAction, String ... expectedMsgs) throws Exception
     {
-        JsrClientTrackingSocket socket = new JsrClientTrackingSocket();
+        JsrClientEchoTrackingSocket socket = new JsrClientEchoTrackingSocket();
         Session session = null;
         URI toUri = serverUri.resolve(endpointPath);
     

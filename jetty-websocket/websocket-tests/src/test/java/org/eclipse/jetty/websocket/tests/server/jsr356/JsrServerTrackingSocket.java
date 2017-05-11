@@ -20,10 +20,10 @@ package org.eclipse.jetty.websocket.tests.server.jsr356;
 
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingSocket;
 
 @ServerEndpoint("/echo")
-public class JsrServerTrackingSocket extends AbstractJsrTrackingEndpoint
+public class JsrServerTrackingSocket extends AbstractJsrTrackingSocket
 {
     public JsrServerTrackingSocket()
     {

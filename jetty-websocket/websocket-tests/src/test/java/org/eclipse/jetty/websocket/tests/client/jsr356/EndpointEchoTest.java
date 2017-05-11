@@ -22,114 +22,89 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
-import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.ContainerProvider;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.tests.jsr356.JsrTrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.jsr356.endpoints.EchoStringEndpoint;
+import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.tests.SimpleServletServer;
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class EndpointEchoTest
 {
-    private static final Logger LOG = Log.getLogger(EndpointEchoTest.class);
-    private static Server server;
-    private static EchoHandler handler;
-    private static URI serverUri;
-
+    private static SimpleServletServer server;
+    
     @BeforeClass
     public static void startServer() throws Exception
     {
-        server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        server.addConnector(connector);
-
-        handler = new EchoHandler();
-
-        ContextHandler context = new ContextHandler();
-        context.setContextPath("/");
-        context.setHandler(handler);
-        server.setHandler(context);
-
-        // Start Server
+        server = new SimpleServletServer(new EchoServlet());
         server.start();
-
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
     }
-
+    
     @AfterClass
-    public static void stopServer()
+    public static void stopServer() throws Exception
     {
-        try
+        server.stop();
+    }
+    
+    public static class ClientEndpoint extends AbstractJsrTrackingEndpoint implements MessageHandler.Whole<String>
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
         {
-            server.stop();
+            super.onOpen(session, config);
+            session.addMessageHandler(this);
         }
-        catch (Exception e)
+    
+        @Override
+        public void onMessage(String message)
         {
-            e.printStackTrace(System.err);
+            super.onWsText(message);
         }
     }
-
+    
     @Test
-    public void testBasicEchoInstance() throws Exception
+    public void testEchoInstance() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        JsrTrackingEndpoint echoer = new JsrTrackingEndpoint();
-        assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
+        ClientEndpoint clientEndpoint = new ClientEndpoint();
+        assertThat(clientEndpoint, instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
-        Session session = container.connectToServer(echoer,serverUri);
+        Session session = container.connectToServer(clientEndpoint, server.getServerUri());
         session.getBasicRemote().sendText("Echo");
-        String resp = echoer.messageQueue.poll(1,TimeUnit.SECONDS);
+        
+        String resp = clientEndpoint.messageQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("Echo"));
+        session.close();
+        clientEndpoint.awaitCloseEvent("Client");
     }
-
+    
     @Test
-    public void testBasicEchoClassref() throws Exception
+    public void testEchoClassRef() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
         // Issue connect using class reference (class extends Endpoint)
-        Session session = container.connectToServer(JsrTrackingEndpoint.class,serverUri);
+        Session session = container.connectToServer(ClientEndpoint.class, server.getServerUri());
         session.getBasicRemote().sendText("Echo");
-    }
-
-    @Test
-    public void testAbstractEchoInstance() throws Exception
-    {
-        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        server.addBean(container); // allow to shutdown with server
-        EchoStringEndpoint echoer = new EchoStringEndpoint();
-        assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
-        // Issue connect using instance of class that extends abstract that extends Endpoint
-        Session session = container.connectToServer(echoer,serverUri);
-        session.getBasicRemote().sendText("Echo");
-        String resp = echoer.messageQueue.poll(1,TimeUnit.SECONDS);
+        
+        JsrSession jsrSession = (JsrSession) session;
+        Object obj = jsrSession.getEndpoint();
+        
+        assertThat("session.endpoint", obj, instanceOf(ClientEndpoint.class));
+        ClientEndpoint endpoint = (ClientEndpoint) obj;
+        String resp = endpoint.messageQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("Echo"));
-    }
-
-    @Test
-    public void testAbstractEchoClassref() throws Exception
-    {
-        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        server.addBean(container); // allow to shutdown with server
-        // Issue connect using class reference (class that extends abstract that extends Endpoint)
-        Session session = container.connectToServer(EchoStringEndpoint.class,serverUri);
-        session.getBasicRemote().sendText("Echo");
+        
+        session.close();
+        endpoint.awaitCloseEvent("Client");
     }
 }
