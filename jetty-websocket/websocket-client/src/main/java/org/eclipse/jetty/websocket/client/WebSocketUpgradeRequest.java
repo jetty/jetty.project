@@ -504,6 +504,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             Throwable failure = result.getFailure();
             if ( (failure instanceof java.net.SocketException) ||
                  (failure instanceof java.io.InterruptedIOException) ||
+                 (failure instanceof HttpResponseException) ||
                  (failure instanceof UpgradeException) )
             {
                 // handle as-is
@@ -519,7 +520,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI,responseStatusCode,responseLine));
+            handleException(new HttpResponseException("Not a 101 Switching Protocols Response: " + responseLine, response));
         }
     }
 

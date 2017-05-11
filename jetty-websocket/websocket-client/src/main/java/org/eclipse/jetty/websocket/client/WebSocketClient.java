@@ -675,7 +675,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public void setMaxIdleTimeout(long ms)
     {
-        this.containerPolicy.setIdleTimeout(ms);
+        getPolicy().setIdleTimeout(ms);
+        httpClient.setIdleTimeout(ms);
     }
     
     /**
