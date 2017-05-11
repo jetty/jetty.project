@@ -89,7 +89,6 @@ public class OnPartialTest
         
         @SuppressWarnings("resource")
         JsrSession session = new JsrSession(container,id,requestURI,driver,connection);
-        session.setPolicy(policy);
         session.start();
         session.open();
         return driver;

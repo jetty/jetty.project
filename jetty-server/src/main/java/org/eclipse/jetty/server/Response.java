@@ -1454,9 +1454,10 @@ public class Response implements HttpServletResponse
         {
             if (_characterEncoding!=null && 
                 content.getCharacterEncoding()==null && 
+                content.getContentTypeValue()!=null &&
                 __explicitCharset.contains(_encodingFrom))
             {
-                setContentType(content.getMimeType().getBaseType().asString());
+                setContentType(MimeTypes.getContentTypeWithoutCharset(content.getContentTypeValue()));
             }
             else
             {

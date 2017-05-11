@@ -201,5 +201,13 @@ public class JarResourceTest
         assertFalse(dest.exists());
     }
 
+    @Test
+    public void testEncodedFileName()
+    throws Exception
+    {
+        String s = "jar:"+testResURI+"TestData/test.zip!/file%20name.txt";
+        Resource r = Resource.newResource(s);
+        assertTrue(r.exists());
+    }
 
 }

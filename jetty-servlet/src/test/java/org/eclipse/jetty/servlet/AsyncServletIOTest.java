@@ -681,8 +681,7 @@ public class AsyncServletIOTest
             }
 
             LOG.debug("last: "+last);
-            // last non empty line should contain some X's
-            assertThat(last,Matchers.anyOf(containsString("X"),is("")));
+            
             // last non empty line should not contain end chunk
             assertThat(last,not(containsString("0")));
         }

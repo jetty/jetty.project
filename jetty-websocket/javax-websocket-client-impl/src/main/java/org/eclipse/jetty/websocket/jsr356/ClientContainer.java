@@ -46,12 +46,14 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
@@ -81,6 +83,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     private final EncoderFactory encoderFactory;
     /** The jetty websocket client in use for this container */
     private final WebSocketClient client;
+    private final boolean internalClient;
     /** Tracking for all declared Client endpoints */
     private final Map<Class<?>, EndpointMetadata> endpointClientMetadataCache;
     
@@ -99,26 +102,74 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      *
      * @param scope the scope of the ServerContainer
      */
-    public ClientContainer(WebSocketContainerScope scope)
+    public ClientContainer(final WebSocketContainerScope scope)
     {
-        boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
-
-        this.scopeDelegate = scope;
-        client = new WebSocketClient(scope,
-                new JsrEventDriverFactory(scope),
+        String jsr356TrustAll = System.getProperty("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+    
+        WebSocketContainerScope clientScope;
+        if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            clientScope = scope;
+        }
+        else
+        {
+            // We need to wrap the scope for the CLIENT Policy behaviors
+            clientScope = new DelegatedContainerScope(WebSocketPolicy.newClientPolicy(), scope);
+        }
+    
+        this.scopeDelegate = clientScope;
+        this.client = new WebSocketClient(scopeDelegate,
+                new JsrEventDriverFactory(scopeDelegate),
                 new JsrSessionFactory(this));
-        client.getSslContextFactory().setTrustAll(trustAll);
-        addBean(client);
-
+        this.internalClient = true;
+        
+        if(jsr356TrustAll != null)
+        {
+            boolean trustAll = Boolean.parseBoolean(jsr356TrustAll);
+            client.getSslContextFactory().setTrustAll(trustAll);
+        }
+        
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
         this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
 
         ShutdownThread.register(this);
     }
+    
+    /**
+     * Build a ClientContainer with a specific WebSocketClient in mind.
+     *
+     * @param client the WebSocketClient to use.
+     */
+    public ClientContainer(WebSocketClient client)
+    {
+        this.scopeDelegate = client;
+        this.client = client;
+        this.internalClient = false;
+        
+        this.endpointClientMetadataCache = new ConcurrentHashMap<>();
+        this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
+        this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
+    }
 
     private Session connect(EndpointInstance instance, URI path) throws IOException
     {
+        synchronized (this.client)
+        {
+            if (this.internalClient && !this.client.isStarted())
+            {
+                try
+                {
+                    this.client.start();
+                    addManaged(this.client);
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException("Unable to start Client", e);
+                }
+            }
+        }
+        
         Objects.requireNonNull(instance,"EndpointInstance cannot be null");
         Objects.requireNonNull(path,"Path cannot be null");
 

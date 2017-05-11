@@ -11,5 +11,5 @@ server
 [xml]
 etc/jetty-stats.xml
 
-[ini-template]
+[ini]
 jetty.webapp.addServerClasses+=,-org.eclipse.jetty.servlet.StatisticsServlet

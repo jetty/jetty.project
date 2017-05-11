@@ -409,7 +409,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         BasicDBList list = new BasicDBList();
         list.add(gt);
         list.add(lt);
-        query.append("and", list);
+        query.append("$and", list);
 
         DBCursor oldExpiredSessions = null;
         try

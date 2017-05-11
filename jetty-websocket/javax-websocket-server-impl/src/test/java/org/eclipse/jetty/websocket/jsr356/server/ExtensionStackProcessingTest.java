@@ -75,7 +75,6 @@ public class ExtensionStackProcessingTest
         container.addEndpoint(config);
 
         client = ContainerProvider.getWebSocketContainer();
-        server.addBean(client, true);
         
         server.start();
     }
