@@ -25,8 +25,8 @@ import java.net.URI;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
@@ -93,7 +93,7 @@ public class WebSocketInvalidVersionTest
         upgradeRequest.setHeader("Sec-WebSocket-Version", "29");
         
         expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(instanceOf(UpgradeException.class));
+        expectedException.expectCause(instanceOf(HttpResponseException.class));
         expectedException.expectMessage(containsString("Unsupported websocket version"));
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
         clientConnectFuture.get();
