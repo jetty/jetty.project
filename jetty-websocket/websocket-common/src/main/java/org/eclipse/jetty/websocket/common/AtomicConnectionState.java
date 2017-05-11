@@ -97,4 +97,10 @@ public class AtomicConnectionState
     {
         return state.compareAndSet(State.CONNECTED, State.OPEN);
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", this.getClass().getSimpleName(), state.get());
+    }
 }
