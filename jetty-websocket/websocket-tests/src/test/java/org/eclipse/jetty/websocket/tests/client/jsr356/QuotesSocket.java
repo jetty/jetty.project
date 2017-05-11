@@ -24,12 +24,12 @@ import java.util.concurrent.LinkedBlockingDeque;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 
-import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingSocket;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.Quotes;
 import org.eclipse.jetty.websocket.tests.jsr356.coders.QuotesDecoder;
 
 @ClientEndpoint(decoders = QuotesDecoder.class, subprotocols = "quotes")
-public class QuotesSocket extends AbstractJsrTrackingEndpoint
+public class QuotesSocket extends AbstractJsrTrackingSocket
 {
     public BlockingQueue<Quotes> messageQueue = new LinkedBlockingDeque<>();
     

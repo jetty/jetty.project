@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
+import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingSocket;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.junit.After;
@@ -88,7 +88,7 @@ public class DecoderReaderManySmallTest
     }
     
     @ClientEndpoint(decoders = EventIdDecoder.class, subprotocols = "eventids")
-    public static class EventIdSocket extends AbstractJsrTrackingEndpoint
+    public static class EventIdSocket extends AbstractJsrTrackingSocket
     {
         public BlockingQueue<EventId> messageQueue = new LinkedBlockingDeque<>();
         
