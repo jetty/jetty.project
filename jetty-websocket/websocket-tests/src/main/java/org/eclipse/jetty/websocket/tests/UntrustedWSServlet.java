@@ -54,6 +54,9 @@ public class UntrustedWSServlet extends WebSocketServlet
     {
         WebSocketServerFactory serverFactory = (WebSocketServerFactory) factory;
         serverFactory.setCreator(this.creator);
+        serverFactory.getPolicy().setMaxTextMessageSize(100 * 1024);
+        serverFactory.getPolicy().setMaxBinaryMessageSize(100 * 1024);
+        
         UntrustedWSSessionFactory sessionFactory = new UntrustedWSSessionFactory(serverFactory);
         this.getServletContext().setAttribute(UntrustedWSSessionFactory.class.getName(), sessionFactory);
         serverFactory.setSessionFactories(sessionFactory);
