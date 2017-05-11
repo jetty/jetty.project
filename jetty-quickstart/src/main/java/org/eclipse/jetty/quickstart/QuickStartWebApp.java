@@ -29,9 +29,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class QuickStartWebApp extends WebAppContext
 {
-
     private final QuickStartConfiguration _quickStartConfiguration;
-
 
     private String _originAttribute;
     private boolean _generateOrigin;
@@ -51,30 +49,40 @@ public class QuickStartWebApp extends WebAppContext
     @Deprecated
     public boolean isPreconfigure()
     {
-        return isGenerate();
+        switch(_quickStartConfiguration.getMode())
+        {
+            case AUTO:
+            case GENERATE:
+                return true;
+            default: return false;
+        }
     }
     
     @Deprecated
     public void setPreconfigure(boolean preconfigure)
     {
-        setGenerate(preconfigure);
+        _quickStartConfiguration.setMode(preconfigure?Mode.GENERATE:Mode.DISABLED);
     }
 
     @Deprecated
     public boolean isAutoPreconfigure()
     {
-        return isAutoGenerate();
+        switch(_quickStartConfiguration.getMode())
+        {
+            case AUTO: return true;
+            default: return false;
+        }
     }
 
     @Deprecated
     public void setAutoPreconfigure(boolean autoPrecompile)
     {
-        setAutoGenerate(autoPrecompile);
+        _quickStartConfiguration.setMode(autoPrecompile?Mode.AUTO:Mode.DISABLED);
     }
 
     public void setOriginAttribute (String name)
     {
-        _quickStartConfiguration.getGenerator().setOriginAttribute(name);
+        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE,name);
     }
 
     /**
@@ -82,15 +90,8 @@ public class QuickStartWebApp extends WebAppContext
      */
     public String getOriginAttribute()
     {
-        return _originAttribute;
-    }
-
-    /**
-     * @return the generateOrigin
-     */
-    public boolean isGenerateOrigin()
-    {
-        return _generateOrigin;
+        Object attr = getAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE);
+        return attr==null?null:attr.toString();
     }
 
     /**
@@ -98,26 +99,25 @@ public class QuickStartWebApp extends WebAppContext
      */
     public void setGenerateOrigin(boolean generateOrigin)
     {
-        _quickStartConfiguration.getGenerator().setGenerateOrigin(generateOrigin);
+        setAttribute(QuickStartConfiguration.GENERATE_ORIGIN,generateOrigin);
     }
 
-    public boolean isGenerate()
+    /**
+     * @return the generateOrigin
+     */
+    public boolean isGenerateOrigin()
     {
-        return _quickStartConfiguration.getMode()==Mode.GENERATE;
+        Object attr = getAttribute(QuickStartConfiguration.GENERATE_ORIGIN);
+        return attr==null?false:Boolean.valueOf(attr.toString());
     }
-    
-    public void setGenerate(boolean preconfigure)
+
+    public Mode getMode()
     {
-        _quickStartConfiguration.setMode(Mode.GENERATE);
+        return _quickStartConfiguration.getMode();
     }
-    
-    public boolean isAutoGenerate()
+
+    public void setMode(Mode mode)
     {
-        return _quickStartConfiguration.getMode()==Mode.AUTO;
-    }
-    
-    public void setAutoGenerate(boolean autoPrecompile)
-    {
-        _quickStartConfiguration.setMode(Mode.AUTO);
+        _quickStartConfiguration.setMode(mode);
     }
 }

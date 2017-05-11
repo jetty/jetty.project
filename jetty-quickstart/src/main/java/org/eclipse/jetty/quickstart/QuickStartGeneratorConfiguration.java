@@ -73,22 +73,36 @@ import org.eclipse.jetty.xml.XmlAppendable;
  * Generate an effective web.xml from a WebAppContext, including all components 
  * from web.xml, web-fragment.xmls annotations etc.
  */
-public class QuickStartGeneratorConfiguration extends AbstractConfiguration implements Configuration.DisabledByDefault
+public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
     public static final String ORIGIN = "org.eclipse.jetty.originAttribute";
     public static final String DEFAULT_ORIGIN_ATTRIBUTE_NAME = "origin";
+
+    protected final boolean _abort;
     protected String _originAttribute;
     protected boolean _generateOrigin;
     protected int _count;
     protected Resource _quickStartWebXml;
-    
+
     public QuickStartGeneratorConfiguration()
     {
-        _count = 0;
+        this(false);
     }
 
-    
+    public QuickStartGeneratorConfiguration(boolean abort)
+    {
+        super(true);
+        _count = 0;
+        _abort = abort;
+    }
+
+    @Override
+    public boolean abort(WebAppContext context)
+    {
+        return _abort;
+    }
+
     public void setOriginAttribute (String name)
     {
         _originAttribute = name;
@@ -596,7 +610,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
      * 
      * @param out
      * @param attribute
-     * @param resourceBase
      * @throws IOException
      */
     private void addContextParamFromAttribute(WebAppContext context, XmlAppendable out, String attribute, AttributeNormalizer normalizer) throws IOException
@@ -630,7 +643,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration impl
      * 
      * @param out
      * @param md
-     * @param tag
      * @param holder
      * @throws IOException
      */

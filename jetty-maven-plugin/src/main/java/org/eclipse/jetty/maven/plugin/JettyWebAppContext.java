@@ -19,7 +19,6 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -37,7 +36,6 @@ import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.quickstart.ExtraXmlDescriptorProcessor;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
-import org.eclipse.jetty.quickstart.QuickStartGeneratorConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -49,12 +47,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 /**
  * JettyWebAppContext
@@ -81,10 +75,7 @@ public class JettyWebAppContext extends WebAppContext
     private List<File> _classpathFiles;  //webInfClasses+testClasses+webInfJars
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
-    private Resource _quickStartWebXml;
-    private String _originAttribute;
-    private boolean _generateOrigin;
-   
+
     /**
      * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
      * container classpath to scan. This is analogous to the WebAppContext.setAttribute() call.
@@ -210,29 +201,20 @@ public class JettyWebAppContext extends WebAppContext
     {
         _overlays = overlays;
     }
-    
+
+
+    public void setOriginAttribute (String name)
+    {
+        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE,name);
+    }
+
     /**
      * @return the originAttribute
      */
     public String getOriginAttribute()
     {
-        return _originAttribute;
-    }
-
-    /**
-     * @param originAttribute the originAttribute to set
-     */
-    public void setOriginAttribute(String originAttribute)
-    {
-        _originAttribute = originAttribute;
-    }
-
-    /**
-     * @return the generateOrigin
-     */
-    public boolean isGenerateOrigin()
-    {
-        return _generateOrigin;
+        Object attr = getAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE);
+        return attr==null?null:attr.toString();
     }
 
     /**
@@ -240,7 +222,16 @@ public class JettyWebAppContext extends WebAppContext
      */
     public void setGenerateOrigin(boolean generateOrigin)
     {
-        _generateOrigin = generateOrigin;
+        setAttribute(QuickStartConfiguration.GENERATE_ORIGIN,generateOrigin);
+    }
+
+    /**
+     * @return the generateOrigin
+     */
+    public boolean isGenerateOrigin()
+    {
+        Object attr = getAttribute(QuickStartConfiguration.GENERATE_ORIGIN);
+        return attr==null?false:Boolean.valueOf(attr.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -270,13 +261,13 @@ public class JettyWebAppContext extends WebAppContext
     /* ------------------------------------------------------------ */
     protected void setQuickStartWebDescriptor (Resource quickStartWebXml)
     {
-        _quickStartWebXml = quickStartWebXml;
+        setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML,quickStartWebXml.toString());
     }
     
     /* ------------------------------------------------------------ */
     public Resource getQuickStartWebDescriptor ()
     {
-        return _quickStartWebXml;
+        return (Resource)getAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML);
     }
     
     /* ------------------------------------------------------------ */
@@ -326,23 +317,16 @@ public class JettyWebAppContext extends WebAppContext
         if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
         {
             MavenQuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
-            quickStart.setMode(Mode.QUCKSTART);
-            quickStart.setQuickStartWebXml(getQuickStartWebDescriptor());
+            quickStart.setMode(Mode.QUICKSTART);
             addConfiguration(quickStart);
         }
-        else
-        { 
-            if (isGenerateQuickStart())
-            {
-                MavenQuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
-                quickStart.setMode(Mode.GENERATE);
-                quickStart.getGenerator().setGenerateOrigin(isGenerateOrigin());
-                quickStart.getGenerator().setOriginAttribute(getOriginAttribute());
-                quickStart.setQuickStartWebXml(getQuickStartWebDescriptor());
-                quickStart.getGenerator().setQuickStartWebXml(getQuickStartWebDescriptor());
-                addConfiguration(quickStart);
-            }
+        else if (isGenerateQuickStart())
+        {
+            MavenQuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
+            quickStart.setMode(Mode.GENERATE);
+            addConfiguration(quickStart);
         }
+
 
         //Set up the pattern that tells us where the jars are that need scanning
 

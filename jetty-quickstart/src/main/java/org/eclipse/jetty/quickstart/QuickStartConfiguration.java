@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.quickstart;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,11 +42,15 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
  * Re-inflate a deployable webapp from a saved effective-web.xml
  * which combines all pre-parsed web xml descriptors and annotations.
  */
-public class QuickStartConfiguration extends AbstractConfiguration implements Configuration.DisabledByDefault
+public class QuickStartConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
 
     public static final Set<Class<? extends Configuration>> __replacedConfigurations = new HashSet<>();
+    public static final String ORIGIN_ATTRIBUTE = "org.eclipse.jetty.quickstart.ORIGIN_ATTRIBUTE";
+    public static final String GENERATE_ORIGIN = "org.eclipse.jetty.quickstart.GENERATE_ORIGIN";
+    public static final String QUICKSTART_WEB_XML = "org.eclipse.jetty.quickstart.QUICKSTART_WEB_XML";
+
     static
     { 
         __replacedConfigurations.add(org.eclipse.jetty.webapp.WebXmlConfiguration.class);
@@ -54,15 +59,20 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
         __replacedConfigurations.add(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
     };
 
-    public enum Mode {DISABLED, GENERATE, AUTO, QUCKSTART};
+    public enum Mode
+    {
+        DISABLED,  // No Quick start
+        GENERATE,  // Generate quickstart-web.xml and then stop
+        AUTO,      // use or generate depending on the existance of quickstart-web.xml
+        QUICKSTART // Use quickstart-web.xml
+    };
+
     private Mode _mode=Mode.AUTO;
     private boolean _quickStart;
-    private QuickStartGeneratorConfiguration _generator = new QuickStartGeneratorConfiguration();
-    
-
 
     public QuickStartConfiguration()
     {
+        super(true);
         addDependencies(WebInfConfiguration.class);
         addDependents(WebXmlConfiguration.class);
     }
@@ -76,12 +86,7 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
     {
         return _mode;
     }
-    
-    public QuickStartGeneratorConfiguration getGenerator()
-    {
-        return _generator;
-    }
-    
+
     /**
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -105,24 +110,29 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
                 break;
                 
             case GENERATE:
-                super.preConfigure(context);     
-                
-        
-                context.addConfiguration(_generator);
-                context.addConfiguration(new StopContextConfiguration());
+            {
+                super.preConfigure(context);
+                QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(true);
+                configure(generator, context);
+                context.addConfiguration(generator);
                 break;
+            }
                 
             case AUTO:
+            {
                 if (quickStartWebXml.exists())
-                    quickStart(context,quickStartWebXml);
+                    quickStart(context, quickStartWebXml);
                 else
                 {
                     super.preConfigure(context);
-                    context.addConfiguration(new QuickStartGeneratorConfiguration());
+                    QuickStartGeneratorConfiguration generator = new QuickStartGeneratorConfiguration(false);
+                    configure(generator, context);
+                    context.addConfiguration(generator);
                 }
                 break;
+            }
                 
-            case QUCKSTART:
+            case QUICKSTART:
                 if (quickStartWebXml.exists())
                     quickStart(context,quickStartWebXml);
                 else
@@ -130,7 +140,23 @@ public class QuickStartConfiguration extends AbstractConfiguration implements Co
                 break;
         }
     }
-    
+
+    protected void configure(QuickStartGeneratorConfiguration generator, WebAppContext context) throws IOException
+    {
+        Object attr;
+        attr = context.getAttribute(GENERATE_ORIGIN);
+        if (attr!=null)
+            generator.setGenerateOrigin(Boolean.valueOf(attr.toString()));
+        attr = context.getAttribute(ORIGIN_ATTRIBUTE);
+        if (attr!=null)
+            generator.setOriginAttribute(attr.toString());
+        attr = context.getAttribute(QUICKSTART_WEB_XML);
+        if (attr instanceof Resource)
+            generator.setQuickStartWebXml((Resource)attr);
+        else if (attr!=null)
+            generator.setQuickStartWebXml(Resource.newResource(attr.toString()));
+    }
+
     protected void quickStart(WebAppContext context, Resource quickStartWebXml)
             throws Exception
     {

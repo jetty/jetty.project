@@ -133,7 +133,7 @@ public class TestAnnotationConfiguration
         File testSciJar = new File(jarDir, "test-sci.jar");
         assertTrue(testSciJar.exists());
         URLClassLoader webAppLoader = new URLClassLoader(new URL[]{testSciJar.toURI().toURL()}, Thread.currentThread().getContextClassLoader());
-        
+
         ClassLoader orig = Thread.currentThread().getContextClassLoader();
         try
         {

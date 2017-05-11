@@ -129,18 +129,17 @@ public interface Configuration
      * @throws Exception if unable to destroy
      */
     public void destroy (WebAppContext context) throws Exception;
-    
+
     /**
-     * A Configuration that is not added by default to a context
-     *
+     * @return true if configuration is disabled by default
      */
-    interface DisabledByDefault extends Configuration {}
-    
+    public boolean isDisabledByDefault();
+
     /**
-     * A Configuration that will cause {@link Configurations#configure(WebAppContext)} to abort with a false return
+     * @return true if configuration should be aborted
      */
-    interface AbortConfiguration extends DisabledByDefault,Configuration {}
-    
+    public boolean abort(WebAppContext context);
+
     /**
      * @deprecated Use {@link Configurations}
      */

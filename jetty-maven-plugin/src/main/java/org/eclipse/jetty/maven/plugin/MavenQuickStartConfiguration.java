@@ -39,24 +39,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
-    
-    private Resource _quickStartWebXml;
-
-    
-    
-    
-    public void setQuickStartWebXml (Resource r)
-    {
-        _quickStartWebXml = r;
-    }
-    
-   
-    
-    @Override
-    public Resource getQuickStartWebXml(WebAppContext context) throws Exception
-    {
-        return _quickStartWebXml;
-    }
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception

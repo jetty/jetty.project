@@ -187,7 +187,7 @@ public class Configurations extends AbstractList<Configuration>
         if (configurations==null)
         {
             configurations=new Configurations(Configurations.getKnown().stream()
-                    .filter(c->!(c instanceof Configuration.DisabledByDefault))
+                    .filter(c->!c.isDisabledByDefault())
                     .map(c->c.getClass().getName())
                     .toArray(String[]::new));
         }
@@ -438,7 +438,7 @@ public class Configurations extends AbstractList<Configuration>
     
     /**
      * @param webapp The webapp to configure
-     * @return false if a {@link Configuration.AbortConfiguration} was encountered, true otherwise
+     * @return false if a {@link Configuration#abort(WebAppContext)} returns true, true otherwise
      * @throws Exception Thrown by {@link Configuration#configure(WebAppContext)}
      */
     public boolean configure(WebAppContext webapp) throws Exception
@@ -448,7 +448,7 @@ public class Configurations extends AbstractList<Configuration>
         {
             LOG.debug("configure {}",configuration);
             configuration.configure(webapp);
-            if (configuration instanceof Configuration.AbortConfiguration)
+            if (configuration.abort(webapp))
                 return false;
         }
         return true;

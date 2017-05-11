@@ -61,7 +61,7 @@ public class QuickStartTest
         Server server = new Server(0);
         
         QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setAutoGenerate(true);
+        webapp.setMode(QuickStartConfiguration.Mode.AUTO);
         webapp.setWar(war);
         webapp.setContextPath("/");
 
@@ -107,7 +107,7 @@ public class QuickStartTest
         Server server = new Server(0);
         
         QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setAutoGenerate(true);
+        webapp.setMode(QuickStartConfiguration.Mode.AUTO);
         webapp.setWar(war);
         webapp.setContextPath("/");
 
@@ -153,7 +153,7 @@ public class QuickStartTest
         Server server = new Server(0);
         
         QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setAutoGenerate(true);
+        webapp.setMode(QuickStartConfiguration.Mode.AUTO);
         webapp.setWar(war);
         webapp.setContextPath("/");
 

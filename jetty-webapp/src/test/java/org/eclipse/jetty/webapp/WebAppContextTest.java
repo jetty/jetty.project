@@ -57,7 +57,7 @@ public class WebAppContextTest
     public void testConfigurationClassesFromDefault ()
     {
         String[] known_and_enabled=Configurations.getKnown().stream()
-                .filter(c->!(c instanceof Configuration.DisabledByDefault))
+                .filter(c->!c.isDisabledByDefault())
                 .map(c->c.getClass().getName())
                 .toArray(String[]::new);
         
