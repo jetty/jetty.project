@@ -28,12 +28,9 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
-import sun.plugin2.message.Pipe;
-
 public class ParserCapture implements Parser.Handler
 {
     public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
-    private Pipe frames;
     
     public void assertHasFrame(byte opCode, int expectedCount)
     {
