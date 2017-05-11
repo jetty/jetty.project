@@ -7,6 +7,6 @@
     version="3.0">
     
     <listener>
-      <listener-class>org.eclipse.jetty.websocket.tests.server.jsr356.BasicEndpointTest$BasicEchoEndpointConfigContextListener</listener-class>
+      <listener-class>org.eclipse.jetty.websocket.tests.server.jsr356.EndpointViaConfigTest$BasicEchoEndpointConfigContextListener</listener-class>
     </listener>
 </web-app>
