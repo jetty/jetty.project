@@ -372,7 +372,10 @@
             <encoding>UTF-8</encoding>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
-            <detectJavaApiLink>true</detectJavaApiLink>
+            <detectJavaApiLink>false</detectJavaApiLink>
+            <show>protected</show>
+            <!-- needed for Java 8+ -->
+            <additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
