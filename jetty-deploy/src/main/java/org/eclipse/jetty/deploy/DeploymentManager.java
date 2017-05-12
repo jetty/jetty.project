@@ -605,13 +605,20 @@ public class DeploymentManager extends ContainerLifeCycle
         xmlc.getIdMap().put("Server", getServer());
         Resource home = Resource.newResource(System.getProperty("jetty.home","."));
         xmlc.getProperties().put("jetty.home",home.toString());
-        xmlc.getProperties().put("jetty.home.uri",home.getURI().toString());
+        xmlc.getProperties().put("jetty.home.uri",normalizeURI(home.getURI().toString()));
     
         Resource base = Resource.newResource(System.getProperty("jetty.base",home.toString()));
         xmlc.getProperties().put("jetty.base",base.toString());
-        xmlc.getProperties().put("jetty.base.uri",base.getURI().toString());
+        xmlc.getProperties().put("jetty.base.uri",normalizeURI(base.getURI().toString()));
         
         xmlc.getProperties().put("jetty.webapp",webapp.toString());
         xmlc.getProperties().put("jetty.webapps",webapp.getFile().toPath().getParent().toString());
+    }
+    
+    private String normalizeURI(String uri)
+    {
+        if (uri.endsWith("/"))
+            return uri.substring(0,uri.length()-1);
+        return uri;
     }
 }

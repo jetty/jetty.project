@@ -388,9 +388,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         SelectableChannel channel = null;
         try
         {
-            channel = _selectorManager.doAccept(server);
-            if (channel!=null)
+            while(true)
+            {
+                channel = _selectorManager.doAccept(server);
+                if (channel==null)
+                    break;
                 _selectorManager.accepted(channel);
+            }
         }
         catch (Throwable x)
         {
@@ -534,7 +538,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             try
             {
-                SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, null);
+                SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, "Acceptor");
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} acceptor={}", this, key);
             }

@@ -70,9 +70,9 @@ public class MainTest
         // baseHome.getConfigSources().getProps().forEach(p->System.err.println(p));
         
         assertThat(args.getProperties().getString("jetty.home"),is(baseHome.getHome()));
-        assertThat(args.getProperties().getString("jetty.home.uri"),is(baseHome.getHomePath().toUri().toString()));
+        assertThat(args.getProperties().getString("jetty.home.uri")+"/",is(baseHome.getHomePath().toUri().toString()));
         assertThat(args.getProperties().getString("jetty.base"),is(baseHome.getBase()));
-        assertThat(args.getProperties().getString("jetty.base.uri"),is(baseHome.getBasePath().toUri().toString()));
+        assertThat(args.getProperties().getString("jetty.base.uri")+"/",is(baseHome.getBasePath().toUri().toString()));
     }
 
     @Test

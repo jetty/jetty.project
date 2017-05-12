@@ -51,7 +51,7 @@ public class DelayedStartClientTest
         assertThat("Container", container, notNullValue());
     
         List<String> threadNames = getThreadNames();
-        assertThat("Threads", threadNames, not(hasItem(containsString("SimpleContainerScope.Executor@"))));
+        assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
         assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
     }
     

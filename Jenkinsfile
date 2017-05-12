@@ -37,8 +37,8 @@ node {
   {
     stage('Javadoc') {
       withEnv(mvnEnv) {
-        timeout(time: 15, unit: 'MINUTES') {
-          sh "mvn -B javadoc:javadoc"
+        timeout(time: 20, unit: 'MINUTES') {
+          sh "mvn --offline -B javadoc:javadoc"
         }
       }
     }
