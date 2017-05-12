@@ -299,13 +299,13 @@ public class Main
         if (!args.getProperties().containsKey(BaseHome.JETTY_HOME))
             args.getProperties().setProperty(home);
         args.getProperties().setProperty(BaseHome.JETTY_HOME+".uri",
-            baseHome.getHomePath().toUri().toString(),
+            normalizeURI(baseHome.getHomePath().toUri().toString()),
             home.origin);
         Props.Prop base = props.getProp(BaseHome.JETTY_BASE);
         if (!args.getProperties().containsKey(BaseHome.JETTY_BASE))
             args.getProperties().setProperty(base);
         args.getProperties().setProperty(BaseHome.JETTY_BASE+".uri",
-            baseHome.getBasePath().toUri().toString(),
+            normalizeURI(baseHome.getBasePath().toUri().toString()),
             base.origin);
         
         // ------------------------------------------------------------
@@ -362,6 +362,13 @@ public class Main
         return args;
     }
     
+    private String normalizeURI(String uri)
+    {
+        if (uri.endsWith("/"))
+            return uri.substring(0,uri.length()-1);
+        return uri;
+    }
+
     public void start(StartArgs args) throws IOException, InterruptedException
     {
         StartLog.debug("StartArgs: %s",args);
