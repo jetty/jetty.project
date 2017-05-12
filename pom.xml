@@ -441,9 +441,11 @@
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
             <docfilessubdirs>true</docfilessubdirs>
-            <detectLinks>true</detectLinks>
-            <detectJavaApiLink>true</detectJavaApiLink>
+            <detectLinks>false</detectLinks>
+            <detectJavaApiLink>false</detectJavaApiLink>
             <show>protected</show>
+            <!-- needed for Java 8+ -->
+            <additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
               <link>http://docs.oracle.com/javase/8/docs/api/</link>
@@ -1450,18 +1452,6 @@
       <properties>
         <alpn.version>8.1.11.v20170118</alpn.version>
       </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <configuration>
-              <!-- Required for Java 8u121 or later -->
-              <additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>8u131</id>
