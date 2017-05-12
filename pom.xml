@@ -441,9 +441,8 @@
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
             <docfilessubdirs>true</docfilessubdirs>
-            <detectLinks>false</detectLinks>
-            <detectJavaApiLink>false</detectJavaApiLink>
-            <detectOfflineLinks>false</detectOfflineLinks>
+            <detectLinks>true</detectLinks>
+            <detectJavaApiLink>true</detectJavaApiLink>
             <show>protected</show>
             <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
             <links>
