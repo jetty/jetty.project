@@ -1240,14 +1240,14 @@ public class RequestTest
         response=_connector.getResponse(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "Cookie: name=quoted=\"\\\"value\\\"\"\n" +
+                    "Cookie: name=quoted=\"\\\"badly\\\"\"\n" +
                     "Connection: close\n"+
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(1,cookies.size());
         assertEquals("name", cookies.get(0).getName());
-        assertEquals("quoted=\"value\"", cookies.get(0).getValue());
+        assertEquals("quoted=\"\\\"badly\\\"\"", cookies.get(0).getValue());
 
         cookies.clear();
         response=_connector.getResponse(

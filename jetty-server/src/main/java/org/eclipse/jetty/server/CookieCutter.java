@@ -148,17 +148,16 @@ public class CookieCutter
                             tokenend=i;
                             quoted=false;
 
-                            // handle quote as last character specially
-                            if (i==last)
+                            if (invalue)
+                                value = hdr.substring(tokenstart+1, tokenend).replace("\\\"","\"");
+                            else
                             {
-                                if (invalue)
-                                    value = hdr.substring(tokenstart, tokenend+1);
-                                else
-                                {
-                                    name = hdr.substring(tokenstart, tokenend+1);
+                                name = hdr.substring(tokenstart+1, tokenend).replace("\\\"","\"");
+                                if (i==last)
                                     value = "";
-                                }
                             }
+                            tokenstart=-1;
+                            tokenend=-1;
                             break;
                             
                         case '\\':
@@ -272,11 +271,7 @@ public class CookieCutter
 
                 // If after processing the current character we have a value and a name, then it is a cookie
                 if (value!=null && name!=null)
-                {
-                   
-                    name=QuotedCSV.unquote(name);
-                    value=QuotedCSV.unquote(value);
-                    
+                {                    
                     try
                     {
                         if (name.startsWith("$"))
