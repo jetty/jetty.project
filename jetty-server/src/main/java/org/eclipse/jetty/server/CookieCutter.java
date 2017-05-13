@@ -296,6 +296,13 @@ public class CookieCutter
                             {
                                 version = Integer.parseInt(value);
                             }
+                            else
+                            {
+                                cookie = new Cookie(name, value);
+                                if (version > 0)
+                                    cookie.setVersion(version);
+                                cookies.add(cookie);
+                            }
                         }
                         else
                         {

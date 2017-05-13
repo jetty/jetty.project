@@ -166,7 +166,7 @@ public class CookieCutterTest
         Cookie cookies[] = parseCookieHeaders(rawCookie);
         
         assertThat("Cookies.length", cookies.length, is(1));
-        assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 1, null);
+        assertCookie("Cookies[0]", cookies[0], "SID", "31d4d96e407aad42", 0, null);
     }
     
     /**
