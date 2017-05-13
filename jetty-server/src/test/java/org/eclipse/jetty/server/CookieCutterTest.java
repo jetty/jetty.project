@@ -23,7 +23,7 @@ import static org.junit.Assert.assertThat;
 
 import javax.servlet.http.Cookie;
 
-import org.hamcrest.Matcher;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class CookieCutterTest
@@ -48,11 +48,6 @@ public class CookieCutterTest
         assertThat(prefix + ".value", cookie.getValue(), is(expectedValue));
         assertThat(prefix + ".version", cookie.getVersion(), is(expectedVersion));
         assertThat(prefix + ".path", cookie.getPath(), is(expectedPath));
-    }
-    
-    private void assertCookieComment(String prefix, Cookie cookie, Matcher<String> commentMatcher)
-    {
-        assertThat(prefix + ".comment", cookie.getComment(), commentMatcher);
     }
     
     /**
@@ -143,8 +138,10 @@ public class CookieCutterTest
      * Example from RFC2965
      */
     @Test
+    @Ignore
     public void testRFC2965_CookieSpoofingExample()
     {
+        // Ignored because comma separation no longer supported by RFC6265
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
                 "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
         

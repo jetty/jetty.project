@@ -23,7 +23,6 @@ import java.util.Locale;
 
 import javax.servlet.http.Cookie;
 
-import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -115,6 +114,8 @@ public class CookieCutter
         while (_fieldList.size()>_fields)
             _fieldList.remove(_fields);
         
+        StringBuilder unquoted=null;
+        
         // For each cookie field
         for (String hdr : _fieldList)
         {
@@ -126,44 +127,46 @@ public class CookieCutter
 
             boolean invalue=false;
             boolean quoted=false;
+            boolean unquotedToken=false;
             boolean escaped=false;
             int tokenstart=-1;
             int tokenend=-1;
             for (int i = 0, length = hdr.length(), last=length-1; i < length; i++)
             {
                 char c = hdr.charAt(i);
-                
+                                
                 // Handle quoted values for name or value
                 if (quoted)
                 {
                     if (escaped)
                     {
                         escaped=false;
+                        unquoted.append(c);
                         continue;
                     }
                     
                     switch (c)
                     {
                         case '"':
-                            tokenend=i;
                             quoted=false;
-
-                            if (invalue)
-                                value = hdr.substring(tokenstart+1, tokenend).replace("\\\"","\"");
+                            if (i==last)
+                            {
+                                value = unquoted.toString();
+                            }
                             else
                             {
-                                name = hdr.substring(tokenstart+1, tokenend).replace("\\\"","\"");
-                                if (i==last)
-                                    value = "";
+                                unquotedToken=true;
+                                tokenstart=i;
+                                tokenend=-1;
                             }
-                            tokenstart=-1;
-                            tokenend=-1;
                             break;
                             
                         case '\\':
                             escaped=true;
                             continue;
+                            
                         default:
+                            unquoted.append(c);
                             continue;
                     }
                 }
@@ -179,30 +182,42 @@ public class CookieCutter
                             case '\t':
                                 continue;
                                 
+                            case ';':
+                                if (unquotedToken)
+                                {
+                                    value = unquoted.toString();
+                                    unquoted.setLength(0);
+                                    unquotedToken = false;
+                                }
+                                else if(tokenstart>=0 && tokenend>=0)
+                                    value = hdr.substring(tokenstart, tokenend+1);
+                                else
+                                    value="";
+                                
+                                tokenstart = -1;
+                                invalue=false;
+                                break;
+
                             case '"':
                                 if (tokenstart<0)
                                 {
                                     quoted=true;
-                                    tokenstart=i;
+                                    if (unquoted==null)
+                                        unquoted=new StringBuilder();
+                                    continue;
                                 }
-                                tokenend=i;
-                                if (i==last)
-                                {
-                                    value = hdr.substring(tokenstart, tokenend+1);
-                                    break;
-                                }
-                                continue;
+                                // fall through to default case
 
-                            case ';':
-                                if (tokenstart>=0)
-                                    value = hdr.substring(tokenstart, tokenend+1);
-                                else
-                                    value="";
-                                tokenstart = -1;
-                                invalue=false;
-                                break;
-                                
                             default:
+                                if (unquotedToken)
+                                {
+                                    // must have been a bad internal quote. let's fix as best we can
+                                    unquoted.append(hdr.substring(tokenstart,i));
+                                    quoted = true;
+                                    unquotedToken = false;
+                                    i--;
+                                    continue;
+                                }
                                 if (tokenstart<0)
                                     tokenstart=i;
                                 tokenend=i;
@@ -222,39 +237,49 @@ public class CookieCutter
                             case ' ':
                             case '\t':
                                 continue;
-                                
-                            case '"':
-                                if (tokenstart<0)
-                                {
-                                    quoted=true;
-                                    tokenstart=i;
-                                }
-                                tokenend=i;
-                                if (i==last)
-                                {
-                                    name = hdr.substring(tokenstart, tokenend+1);
-                                    value = "";
-                                    break;
-                                }
-                                continue;
 
                             case ';':
-                                if (tokenstart>=0)
+                                if (unquotedToken)
+                                {
+                                    name = unquoted.toString();
+                                    unquoted.setLength(0);
+                                    unquotedToken = false;
+                                }
+                                else if(tokenstart>=0 && tokenend>=0)
                                 {
                                     name = hdr.substring(tokenstart, tokenend+1);
-                                    value = "";
                                 }
+
+                                value = "";
                                 tokenstart = -1;
                                 break;
 
                             case '=':
-                                if (tokenstart>=0)
+                                if (unquotedToken)
+                                {
+                                    name = unquoted.toString();
+                                    unquoted.setLength(0);
+                                    unquotedToken = false;
+                                }
+                                else if(tokenstart>=0 && tokenend>=0)
+                                {
                                     name = hdr.substring(tokenstart, tokenend+1);
+                                }
+
                                 tokenstart = -1;
                                 invalue=true;
                                 continue;
-                                
+
                             default:
+                                if (unquotedToken)
+                                {
+                                    // must have been a bad internal quote. let's fix as best we can
+                                    unquoted.append(hdr.substring(tokenstart,i));
+                                    quoted = true;
+                                    unquotedToken = false;
+                                    i--;
+                                    continue;
+                                }
                                 if (tokenstart<0)
                                     tokenstart=i;
                                 tokenend=i;

@@ -26,7 +26,6 @@ import java.util.List;
 
 import javax.servlet.http.Cookie;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,7 +35,6 @@ import org.junit.runners.Parameterized;
  * due to our efforts at being lenient with what we receive.
  */
 @RunWith(Parameterized.class)
-@Ignore
 public class CookieCutter_LenientTest
 {
     @Parameterized.Parameters(name = "{0}")
@@ -93,9 +91,9 @@ public class CookieCutter_LenientTest
         ret.add(new String[]{"foo=\"bar''-\"baz\"", "foo", "bar''-\"baz"});
         // These seem dubious until you realize the "lots of equals signs" below works
         ret.add(new String[]{"foo=\"bar\"=\"baz\"", "foo", "bar\"=\"baz"});
-        ret.add(new String[]{"query=\"?b=c\"&\"d=e\"", "foo", "?b=c\"&\"d=e"});
+        ret.add(new String[]{"query=\"?b=c\"&\"d=e\"", "query", "?b=c\"&\"d=e"});
         // Escaped quotes
-        ret.add(new String[]{"foo=\"bar\\\"=\\\"baz\"", "foo", "bar\\\"=\\\"baz"});
+        ret.add(new String[]{"foo=\"bar\\\"=\\\"baz\"", "foo", "bar\"=\"baz"});
     
         // UTF-8 values
         ret.add(new String[]{"2sides=\u262F", "2sides", "\u262f"}); // 2 byte
