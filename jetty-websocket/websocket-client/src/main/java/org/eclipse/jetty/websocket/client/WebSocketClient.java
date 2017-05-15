@@ -224,7 +224,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
         this.httpClient = new HttpClient(sslContextFactory);
-        this.httpClient.setExecutor(executor);
+        this.httpClient.setExecutor(getExecutor(executor));
         this.httpClient.setByteBufferPool(bufferPool);
         addBean(this.httpClient);
         
@@ -234,7 +234,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         this.sessionFactory = new WebSocketSessionFactory(containerScope);
     }
-
+    
     /**
      * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
@@ -264,17 +264,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             sslContextFactory = new SslContextFactory();
         }
         this.httpClient = new HttpClient(sslContextFactory);
-        Executor executor = scope.getExecutor();
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            String name = "WebSocketClient@" + hashCode();
-            threadPool.setName(name);
-            threadPool.setDaemon(true);
-            executor = threadPool;
-        }
-    
-        this.httpClient.setExecutor(executor);
+        this.httpClient.setExecutor(getExecutor(scope.getExecutor()));
         addBean(this.httpClient);
 
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
@@ -431,6 +421,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getExecutor();
     }
 
+    // Internal getExecutor for defaulting to internal executor if not provided
+    private Executor getExecutor(final Executor executor)
+    {
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = "WebSocketClient@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            return threadPool;
+        }
+        
+        return executor;
+    }
+    
     public ExtensionFactory getExtensionFactory()
     {
         return extensionRegistry;

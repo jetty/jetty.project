@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -33,6 +33,7 @@ import java.util.List;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,6 +54,7 @@ public class DelayedStartClientTest
         List<String> threadNames = getThreadNames();
         assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
         assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
+        assertThat("Threads", threadNames, not(hasItem(containsString("Jsr356Client@"))));
     }
     
     private List<String> getThreadNames()

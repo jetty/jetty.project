@@ -74,7 +74,7 @@ public class JettyClientContainerProvider extends ContainerProvider
             {
                 SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
                 QueuedThreadPool threadPool= new QueuedThreadPool();
-                String name = "qtp-JSR356CLI-" + hashCode();
+                String name = "Jsr356Client@" + hashCode();
                 threadPool.setName(name);
                 threadPool.setDaemon(true);
                 containerScope.setExecutor(threadPool);
