@@ -193,21 +193,4 @@ public class CookieCutterTest
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "key", "value", 0, null);
     }
-    
-    /**
-     * Multiple name=value, heavy abuse, badly terminated quotes, lenient behavior test
-     */
-    @Test
-    public void testMultiName_BadQuoteTerminate()
-    {
-        // TODO: this seems very hokey, and allowing this as 3 separate entries is probably a security issue.
-        String rawCookie = "a=\"b; $Path=/a; c=d; $PATH=/c; e=f\"; $Path=/e/";
-        
-        Cookie cookies[] = parseCookieHeaders(rawCookie);
-        
-        assertThat("Cookies.length", cookies.length, is(3));
-        assertCookie("Cookies[0]", cookies[0], "a", "\"b", 0, "/a");
-        assertCookie("Cookies[1]", cookies[1], "c", "d", 0, "/c");
-        assertCookie("Cookies[2]", cookies[2], "e", "f\"", 0, "/e/");
-    }
 }

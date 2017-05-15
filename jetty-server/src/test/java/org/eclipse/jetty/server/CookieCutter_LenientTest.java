@@ -64,6 +64,8 @@ public class CookieCutter_LenientTest
         // RFC2109 - quoted-string values
         //   quoted-string  = ( <"> *(qdtext) <"> )
         //   qdtext         = <any TEXT except <">>
+
+        ret.add(new String[]{"abc=\"\"", "abc", ""});
         // The backslash character ("\") may be used as a single-character quoting
         // mechanism only within quoted-string and comment constructs.
         //   quoted-pair    = "\" CHAR
@@ -98,7 +100,9 @@ public class CookieCutter_LenientTest
         // Unterminated Quotes
         ret.add(new String[]{"x=\"abc", "x", "\"abc"});
         // Unterminated Quotes with valid cookie params after it
-        ret.add(new String[]{"x=\"abc $Path=/", "x", "\"abc"});
+        ret.add(new String[]{"x=\"abc $Path=/", "x", "\"abc $Path=/"});
+        // Unterminated Quotes with trailing escape
+        ret.add(new String[]{"x=\"abc\\", "x", "\"abc\\"});
     
         // UTF-8 values
         ret.add(new String[]{"2sides=\u262F", "2sides", "\u262f"}); // 2 byte
@@ -111,9 +115,9 @@ public class CookieCutter_LenientTest
         ret.add(new String[]{"z=a b c d e f g", "z", "a b c d e f g"});
     
         // Bad tspecials usage
-        ret.add(new String[]{"foo=bar;baz", "foo", "bar;baz"}); // TODO: not sure supporting this is sane
+        ret.add(new String[]{"foo=bar;baz", "foo", "bar"});
         ret.add(new String[]{"foo=\"bar;baz\"", "foo", "bar;baz"});
-        ret.add(new String[]{"z=a;b,c:d;e/f[g]", "z", "a;b,c:d;e/f[g]"});
+        ret.add(new String[]{"z=a;b,c:d;e/f[g]", "z", "a"});
         ret.add(new String[]{"z=\"a;b,c:d;e/f[g]\"", "z", "a;b,c:d;e/f[g]"});
         
         // Quoted with other Cookie keywords
@@ -121,6 +125,7 @@ public class CookieCutter_LenientTest
         ret.add(new String[]{"x=\"$Path=/\"", "x", "$Path=/"});
         ret.add(new String[]{"x=\"$Path=/ $Domain=.foo.com\"", "x", "$Path=/ $Domain=.foo.com"});
         ret.add(new String[]{"x=\" $Path=/ $Domain=.foo.com \"", "x", " $Path=/ $Domain=.foo.com "});
+        ret.add(new String[]{"a=\"b; $Path=/a; c=d; $PATH=/c; e=f\"; $Path=/e/", "a", "b; $Path=/a; c=d; $PATH=/c; e=f"});
         
         // Lots of equals signs
         ret.add(new String[]{"query=b=c&d=e", "query", "b=c&d=e"});
@@ -161,4 +166,5 @@ public class CookieCutter_LenientTest
             assertThat("Cookie.value", cookies[0].getValue(), is(expectedValue));
         }
     }
+    
 }
