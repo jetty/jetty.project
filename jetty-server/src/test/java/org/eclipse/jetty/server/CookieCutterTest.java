@@ -138,10 +138,9 @@ public class CookieCutterTest
      * Example from RFC2965
      */
     @Test
-    @Ignore
+    @Ignore("comma separation no longer supported by RFC6265")
     public void testRFC2965_CookieSpoofingExample()
     {
-        // Ignored because comma separation no longer supported by RFC6265
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
                 "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
         
@@ -182,7 +181,7 @@ public class CookieCutterTest
     }
     
     /**
-     * Basic key=value, following RFC6265 rules
+     * Basic name=value, following RFC6265 rules
      */
     @Test
     public void testKeyValue()
@@ -193,5 +192,22 @@ public class CookieCutterTest
         
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "key", "value", 0, null);
+    }
+    
+    /**
+     * Multiple name=value, heavy abuse, badly terminated quotes, lenient behavior test
+     */
+    @Test
+    public void testMultiName_BadQuoteTerminate()
+    {
+        // TODO: this seems very hokey, and allowing this as 3 separate entries is probably a security issue.
+        String rawCookie = "a=\"b; $Path=/a; c=d; $PATH=/c; e=f\"; $Path=/e/";
+        
+        Cookie cookies[] = parseCookieHeaders(rawCookie);
+        
+        assertThat("Cookies.length", cookies.length, is(3));
+        assertCookie("Cookies[0]", cookies[0], "a", "\"b", 0, "/a");
+        assertCookie("Cookies[1]", cookies[1], "c", "d", 0, "/c");
+        assertCookie("Cookies[2]", cookies[2], "e", "f\"", 0, "/e/");
     }
 }
