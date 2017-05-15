@@ -223,7 +223,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    // TODO @Override
     public Map<String,String> getTrailerFields()
     {
         if (_trailers==null)

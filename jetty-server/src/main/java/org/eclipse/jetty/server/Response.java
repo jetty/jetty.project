@@ -1319,7 +1319,7 @@ public class Response implements HttpServletResponse
         this.trailers = trailers;
     }
 
-    @Override
+    // TODO: @Override
     public void setTrailerFields(Supplier<Map<String,String>> trailers)
     {
         // TODO new for 4.0 - avoid transient supplier?
