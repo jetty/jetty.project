@@ -154,6 +154,7 @@ public class CookieCutter
                             if (i==last)
                             {
                                 value = unquoted.toString();
+                                unquoted.setLength(0);
                             }
                             else
                             {
