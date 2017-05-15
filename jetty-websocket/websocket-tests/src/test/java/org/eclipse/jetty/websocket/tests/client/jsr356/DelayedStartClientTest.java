@@ -24,16 +24,13 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
+import org.eclipse.jetty.websocket.tests.server.jsr356.DelayedStartClientOnServerTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,21 +48,9 @@ public class DelayedStartClientTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         assertThat("Container", container, notNullValue());
     
-        List<String> threadNames = getThreadNames();
+        List<String> threadNames = DelayedStartClientOnServerTest.getThreadNames(JettyClientContainerProvider.getInstance());
         assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
         assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
         assertThat("Threads", threadNames, not(hasItem(containsString("Jsr356Client@"))));
-    }
-    
-    private List<String> getThreadNames()
-    {
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        ThreadInfo[] threads = threadMXBean.dumpAllThreads(false, false);
-        List<String> ret = new ArrayList<>();
-        for (ThreadInfo info : threads)
-        {
-            ret.add(info.getThreadName());
-        }
-        return ret;
     }
 }
