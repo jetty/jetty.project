@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.annotation.Name;
  * </p>
  * <p>Configuration instances are discovered by the {@link Configurations} class using either the 
  * {@link ServiceLoader} mechanism or by an explicit call to {@link Configurations#setKnown(String...)}.
- * By default, all Configurations that do not implement the {@link DisabledByDefault} interface
+ * By default, all Configurations that do not implement the {@link #isDisabledByDefault()} interface
  * are applied to all {@link WebAppContext}s within the JVM.  However a Server wide default {@link Configurations}
  * collection may also be defined with {@link Configurations#setServerDefault(org.eclipse.jetty.server.Server)}.
  * Furthermore, each individual Context may have its Configurations list explicitly set and/or amended with

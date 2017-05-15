@@ -64,7 +64,6 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -97,7 +96,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  *       <ul>
  *         <li>Add all Server class inclusions from all known configurations {@link Configurations#getKnown()}</li>
  *         <li>{@link #loadConfigurations()}, which uses either explicitly set Configurations or takes the server
- *         default (which is all known non {@link Configuration.DisabledByDefault} Configurations.</li>
+ *         default (which is all known non {@link Configuration#isDisabledByDefault()} Configurations.</li>
  *         <li>Sort the configurations using {@link TopologicalSort} in {@link Configurations#sort()}.</li>
  *         <li>Add all Server class exclusions from this webapps {@link Configurations}</li>
  *         <li>Add all System classes inclusions and exclusions for this webapps {@link Configurations}</li>
