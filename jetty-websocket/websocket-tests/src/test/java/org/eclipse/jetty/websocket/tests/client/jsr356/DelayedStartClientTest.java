@@ -24,9 +24,6 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -35,6 +32,7 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
+import org.eclipse.jetty.websocket.tests.server.jsr356.DelayedStartClientOnServerTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,57 +52,9 @@ public class DelayedStartClientTest
         container = ContainerProvider.getWebSocketContainer();
         assertThat("Container", container, notNullValue());
     
-        List<String> threadNames = getThreadNames((ContainerLifeCycle)container);
+        List<String> threadNames = DelayedStartClientOnServerTest.getThreadNames(JettyClientContainerProvider.getInstance());
         assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
         assertThat("Threads", threadNames, not(hasItem(containsString("HttpClient@"))));
         assertThat("Threads", threadNames, not(hasItem(containsString("Jsr356Client@"))));
-    }
-    
-    public static List<String> getThreadNames(ContainerLifeCycle... containers)
-    {
-        List<String> threadNames = new ArrayList<>();
-        Set<Object> seen = new HashSet<>();
-        for (ContainerLifeCycle container : containers)
-        {
-            if (container == null)
-            {
-                continue;
-            }
-            
-            findConfiguredThreadNames(seen, threadNames, container);
-        }
-        seen.clear();
-        // System.out.println("Threads: " + threadNames.stream().collect(Collectors.joining(", ", "[", "]")));
-        return threadNames;
-    }
-    
-    private static void findConfiguredThreadNames(Set<Object> seen, List<String> threadNames, ContainerLifeCycle container)
-    {
-        if (seen.contains(container))
-        {
-            // skip
-            return;
-        }
-        
-        seen.add(container);
-        
-        Collection<Executor> executors = container.getBeans(Executor.class);
-        for (Executor executor : executors)
-        {
-            if (executor instanceof QueuedThreadPool)
-            {
-                QueuedThreadPool qtp = (QueuedThreadPool) executor;
-                threadNames.add(qtp.getName());
-            }
-            else
-            {
-                System.err.println("### Executor: " + executor);
-            }
-        }
-        
-        for (ContainerLifeCycle child : container.getBeans(ContainerLifeCycle.class))
-        {
-            findConfiguredThreadNames(seen, threadNames, child);
-        }
     }
 }
