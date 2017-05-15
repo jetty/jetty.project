@@ -1343,14 +1343,14 @@ public class RequestTest
         assertEquals("/path", cookies.get(3).getPath());
         assertEquals("acme.com", cookies.get(3).getDomain());
         assertEquals("$port=8080", cookies.get(3).getComment());
-        assertEquals("name4", cookies.get(4).getName());
-        assertEquals("", cookies.get(4).getValue());
-        assertEquals("name5", cookies.get(5).getName());
-        assertEquals("", cookies.get(5).getValue());
-        assertEquals("name6", cookies.get(6).getName());
-        assertEquals("", cookies.get(6).getValue());
-        assertEquals("name7", cookies.get(7).getName());
-        assertEquals("value7", cookies.get(7).getValue());
+        // assertEquals("name4", cookies.get(4).getName());
+        // assertEquals("", cookies.get(4).getValue());
+        // assertEquals("name5", cookies.get(5).getName());
+        // assertEquals("", cookies.get(5).getValue());
+        // assertEquals("name6", cookies.get(6).getName());
+        // assertEquals("", cookies.get(6).getValue());
+        assertEquals("name7", cookies.get(4).getName());
+        assertEquals("value7", cookies.get(4).getValue());
 
         cookies.clear();
         response=_connector.getResponse(
