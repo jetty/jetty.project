@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -123,9 +122,8 @@ public class RequestTest
             {
                 try
                 {
-                    Map<String, String[]> map = null;
                     // do the parse
-                    map = request.getParameterMap();
+                    request.getParameterMap();
                     return false;
                 }
                 catch(BadMessageException e)
@@ -952,7 +950,7 @@ public class RequestTest
         _server.setHandler(handler);
         _server.start();
         
-        String request="GET / HTTP/1.1\r\n"+
+        String requests="GET / HTTP/1.1\r\n"+
                 "Host: whatever\r\n"+
                 "Content-Type: text/plane\r\n"+
                 "Content-Length: "+10+"\r\n"+
@@ -966,7 +964,9 @@ public class RequestTest
                 "\r\n"+
                 "ABCDEFGHIJ\r\n";
         
-        String responses = _connector.getResponses(request);
+        
+        LocalEndPoint endp = _connector.executeRequest(requests);
+        String responses = endp.getResponse() + endp.getResponse();
         
         int index=responses.indexOf("read="+(int)'0');
         assertTrue(index>0);
@@ -1325,7 +1325,7 @@ public class RequestTest
         response=_connector.getResponse(
                 "POST / HTTP/1.1\r\n"+
                 "Host: whatever\r\n"+
-                "Cookie: name0=value0; name1 = value1 ; \"name2\"  =  \"\\\"value2\\\"\"  \n" +
+                "Cookie: name0=value0; name1 = value1 ; name2  =  \"\\\"value2\\\"\"  \n" +
                 "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080; name4=; name5 =  ; name6\n" +
                 "Cookie: name7=value7;\n" +
                 "Connection: close\r\n"+
