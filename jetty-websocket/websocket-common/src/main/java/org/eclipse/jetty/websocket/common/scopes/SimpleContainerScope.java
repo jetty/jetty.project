@@ -53,28 +53,12 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
         this.containerPolicy = containerPolicy;
         this.bufferPool = bufferPool;
         this.objectFactory = objectFactory;
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        if(this.executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            String name = this.getClass().getSimpleName() + ".QTP@" + hashCode();
-            threadPool.setName(name);
-            threadPool.setDaemon(true);
-            this.executor = threadPool;
-            addBean(executor);
-        }
-    
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        String name = "WebSocketContainer@" + hashCode();
+        threadPool.setName(name);
+        threadPool.setDaemon(true);
+        this.executor = threadPool;
+        addBean(executor);
     }
 
     @Override

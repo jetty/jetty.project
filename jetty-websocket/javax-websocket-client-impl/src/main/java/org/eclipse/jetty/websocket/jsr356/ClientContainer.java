@@ -20,16 +20,13 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -48,6 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -55,6 +53,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
+import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointConfig;
@@ -75,9 +74,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     /** The delegated Container Scope */
     private final WebSocketContainerScope scopeDelegate;
     /** The jetty websocket client in use for this container */
-    private WebSocketClient client;
-    
-    private List<Function<Object, EndpointConfig>> annotatedConfigFunctions = new ArrayList<>();
+    private final WebSocketClient client;
+    private final boolean internalClient;
     
     /**
      * @deprecated use {@link #ClientContainer(WebSocketContainerScope)}
@@ -95,16 +93,46 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      *
      * @param scope the scope of the ServerContainer
      */
-    public ClientContainer(WebSocketContainerScope scope)
+    public ClientContainer(final WebSocketContainerScope scope)
     {
-        boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+        String jsr356TrustAll = System.getProperty("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+    
+        WebSocketContainerScope clientScope;
+        if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            clientScope = scope;
+        }
+        else
+        {
+            // We need to wrap the scope for the CLIENT Policy behaviors
+            clientScope = new DelegatedContainerScope(WebSocketPolicy.newClientPolicy(), scope);
+        }
+    
+        this.scopeDelegate = clientScope;
+        this.client = new WebSocketClient(scopeDelegate);
+        this.client.setSessionFactory(new JsrSessionFactory(this));
+        this.internalClient = true;
         
-        this.scopeDelegate = scope;
-        client = new WebSocketClient(scope, new SslContextFactory(trustAll));
-        client.setSessionFactory(new JsrSessionFactory(this));
-        addBean(client);
-
+        if(jsr356TrustAll != null)
+        {
+            boolean trustAll = Boolean.parseBoolean(jsr356TrustAll);
+            client.getSslContextFactory().setTrustAll(trustAll);
+        }
+        
         ShutdownThread.register(this);
+    }
+    
+    /**
+     * Build a ClientContainer with a specific WebSocketClient in mind.
+     *
+     * @param client the WebSocketClient to use.
+     */
+    public ClientContainer(WebSocketClient client)
+    {
+        this.scopeDelegate = client;
+        this.client = client;
+        this.client.setSessionFactory(new JsrSessionFactory(this));
+        this.internalClient = false;
     }
     
     public EndpointFunctions newJsrEndpointFunction(Object endpoint,
@@ -125,10 +153,26 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     
     private Session connect(ConfiguredEndpoint instance, URI path) throws IOException
     {
-        Objects.requireNonNull(instance, "EndpointInstance cannot be null");
-        Objects.requireNonNull(path, "Path cannot be null");
+        synchronized (this.client)
+        {
+            if (this.internalClient && !this.client.isStarted())
+            {
+                try
+                {
+                    this.client.start();
+                    addManaged(this.client);
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException("Unable to start Client", e);
+                }
+            }
+        }
         
-        ClientEndpointConfig config = (ClientEndpointConfig) instance.getConfig();
+        Objects.requireNonNull(instance,"EndpointInstance cannot be null");
+        Objects.requireNonNull(path,"Path cannot be null");
+
+        ClientEndpointConfig config = (ClientEndpointConfig)instance.getConfig();
         ClientUpgradeRequest req = new ClientUpgradeRequest();
         UpgradeListener upgradeListener = null;
         

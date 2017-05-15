@@ -240,10 +240,13 @@ public class UnixSocketConnector extends AbstractConnector
     {
         if (_acceptChannel == null)
         {
+            File file = new File(_unixSocket);
+            file.deleteOnExit();
+            SocketAddress bindAddress = new UnixSocketAddress(file);
             UnixServerSocketChannel serverChannel = UnixServerSocketChannel.open();
-            SocketAddress bindAddress = new UnixSocketAddress(new File(_unixSocket));
-            serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+
             serverChannel.configureBlocking(getAcceptors()>0);
+            serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
             addBean(serverChannel);
 
             LOG.debug("opened {}",serverChannel);
@@ -287,7 +290,7 @@ public class UnixSocketConnector extends AbstractConnector
     @Override
     public void accept(int acceptorID) throws IOException
     {
-        LOG.warn("Blocking UnixSocket accept used.  Cannot be interrupted!");
+        LOG.debug("Blocking UnixSocket accept used.  Might not be able to be interrupted!");
         UnixServerSocketChannel serverChannel = _acceptChannel;
         if (serverChannel != null && serverChannel.isOpen())
         {

@@ -39,9 +39,11 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
@@ -52,6 +54,7 @@ import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
@@ -69,8 +72,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private final WebSocketContainerScope containerScope;
     private final WebSocketExtensionFactory extensionRegistry;
     private SessionFactory sessionFactory;
-    private Masker masker;
-
+    
     private final int id = ThreadLocalRandom.current().nextInt();
 
     /**
@@ -107,7 +109,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy(),new MappedByteBufferPool(),objectFactory);
         this.httpClient = httpClient;
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
-        this.masker = new RandomMasker();
         this.sessionFactory = new WebSocketSessionFactory(containerScope);
     }
 
@@ -231,7 +232,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
 
-        this.masker = new RandomMasker();
         this.sessionFactory = new WebSocketSessionFactory(containerScope);
     }
 
@@ -244,21 +244,41 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @param sessionFactory
      *            the SessionFactory to use
      */
-    public WebSocketClient(WebSocketContainerScope scope, SessionFactory sessionFactory)
+    public WebSocketClient(final WebSocketContainerScope scope, SessionFactory sessionFactory)
     {
-        this.containerScope = scope;
+        WebSocketContainerScope clientScope;
+        if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            clientScope = scope;
+        }
+        else
+        {
+            // We need to wrap the scope
+            clientScope = new DelegatedContainerScope(WebSocketPolicy.newClientPolicy(), scope);
+        }
+        
+        this.containerScope = clientScope;
         SslContextFactory sslContextFactory = scope.getSslContextFactory();
         if(sslContextFactory == null)
         {
             sslContextFactory = new SslContextFactory();
         }
         this.httpClient = new HttpClient(sslContextFactory);
-        this.httpClient.setExecutor(scope.getExecutor());
+        Executor executor = scope.getExecutor();
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = "WebSocketClient@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            executor = threadPool;
+        }
+    
+        this.httpClient.setExecutor(executor);
         addBean(this.httpClient);
 
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
 
-        this.masker = new RandomMasker();
         this.sessionFactory = sessionFactory;
     }
 
@@ -415,10 +435,14 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         return extensionRegistry;
     }
-
+    
+    /**
+     * @deprecated not used, no replacement
+     */
+    @Deprecated
     public Masker getMasker()
     {
-        return masker;
+        return new RandomMasker();
     }
 
     /**
@@ -576,7 +600,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this.httpClient.setCookieStore(cookieStore);
     }
-
+    
+    /**
+     * @deprecated not used, configure threading in HttpClient instead
+     */
+    @Deprecated
     public void setDaemon(boolean daemon)
     {
         // do nothing
@@ -592,10 +620,14 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this.httpClient.setExecutor(executor);
     }
-
+    
+    /**
+     * @deprecated not used, no replacement
+     */
+    @Deprecated
     public void setMasker(Masker masker)
     {
-        this.masker = masker;
+        /* do nothing */
     }
 
     /**

@@ -40,10 +40,12 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class CookiesTest
@@ -69,6 +71,12 @@ public class CookiesTest
     public void stopServer() throws Exception
     {
         server.stop();
+    }
+    
+    @Before
+    public void resetClientContainer() throws Exception
+    {
+        JettyClientContainerProvider.stop();
     }
 
     @Test

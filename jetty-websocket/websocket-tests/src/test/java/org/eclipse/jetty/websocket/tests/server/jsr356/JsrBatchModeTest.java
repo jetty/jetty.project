@@ -83,7 +83,6 @@ public class JsrBatchModeTest
         server.start();
 
         client = ContainerProvider.getWebSocketContainer();
-        server.addBean(client, true);
     }
 
     @After

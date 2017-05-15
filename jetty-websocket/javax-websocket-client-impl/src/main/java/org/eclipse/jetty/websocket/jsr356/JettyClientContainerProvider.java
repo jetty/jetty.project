@@ -33,6 +33,34 @@ import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
  */
 public class JettyClientContainerProvider extends ContainerProvider
 {
+    private static Object lock = new Object();
+    private static ClientContainer INSTANCE;
+    
+    public static ClientContainer getInstance()
+    {
+        return INSTANCE;
+    }
+    
+    public static void stop() throws Exception
+    {
+        synchronized (lock)
+        {
+            if (INSTANCE == null)
+            {
+                return;
+            }
+            
+            try
+            {
+                INSTANCE.stop();
+            }
+            finally
+            {
+                INSTANCE = null;
+            }
+        }
+    }
+    
     /**
      * Used by {@link ContainerProvider#getWebSocketContainer()} to get a new instance
      * of the Client {@link WebSocketContainer}.
@@ -40,23 +68,34 @@ public class JettyClientContainerProvider extends ContainerProvider
     @Override
     protected WebSocketContainer getContainer()
     {
-        SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-        QueuedThreadPool threadPool= new QueuedThreadPool();
-        String name = "qtp-JSR356CLI-" + hashCode();
-        threadPool.setName(name);
-        threadPool.setDaemon(true);
-        containerScope.setExecutor(threadPool);
-        containerScope.addBean(threadPool);
-        ClientContainer container = new ClientContainer(containerScope);
-        try
+        synchronized (lock)
         {
-            // We need to start this container properly.
-            container.start();
-            return container;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Unable to start Client Container",e);
+            if (INSTANCE == null)
+            {
+                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+                QueuedThreadPool threadPool= new QueuedThreadPool();
+                String name = "qtp-JSR356CLI-" + hashCode();
+                threadPool.setName(name);
+                threadPool.setDaemon(true);
+                containerScope.setExecutor(threadPool);
+                containerScope.addBean(threadPool);
+                INSTANCE = new ClientContainer(containerScope);
+            }
+        
+            if (!INSTANCE.isStarted())
+            {
+                try
+                {
+                    // We need to start this container properly.
+                    INSTANCE.start();
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException("Unable to start Client Container", e);
+                }
+            }
+        
+            return INSTANCE;
         }
     }
 }

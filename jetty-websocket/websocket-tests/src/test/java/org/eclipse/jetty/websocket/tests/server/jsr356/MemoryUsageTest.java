@@ -85,7 +85,6 @@ public class MemoryUsageTest
         server.start();
 
         client = ContainerProvider.getWebSocketContainer();
-        server.addBean(client, true);
     }
 
     @After
