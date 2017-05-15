@@ -162,27 +162,14 @@ public class JettyClientContainerProvider extends ContainerProvider
             
             if (useServerContainer && contextHandler != null)
             {
-                try
-                {
-                    // Attempt to use the ServerContainer attribute.
-                    Method methodGetServletContext = contextHandler.getClass().getMethod("getServletContext");
-                    Object objServletContext = methodGetServletContext.invoke(contextHandler);
-                    if (objServletContext != null)
-                    {
-                        Method methodGetAttribute = objServletContext.getClass().getMethod("getAttribute", String.class);
-                        Object objServerContainer = methodGetAttribute.invoke(objServletContext, "javax.websocket.server.ServerContainer");
-                        if (objServerContainer != null && objServerContainer instanceof WebSocketContainer)
-                        {
-                            webSocketContainer = (WebSocketContainer) objServerContainer;
-                        }
-                    }
-                    
-                }
-                catch (Throwable ignore)
-                {
-                    LOG.ignore(ignore);
-                    // continue, without server container
-                }
+                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+                QueuedThreadPool threadPool= new QueuedThreadPool();
+                String name = "Jsr356Client@" + hashCode();
+                threadPool.setName(name);
+                threadPool.setDaemon(true);
+                containerScope.setExecutor(threadPool);
+                containerScope.addBean(threadPool);
+                INSTANCE = new ClientContainer(containerScope);
             }
             
             if (useSingleton && INSTANCE != null)

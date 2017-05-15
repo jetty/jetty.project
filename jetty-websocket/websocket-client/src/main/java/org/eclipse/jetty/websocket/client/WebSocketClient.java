@@ -251,7 +251,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
         this.httpClient = new HttpClient(sslContextFactory);
-        this.httpClient.setExecutor(executor);
+        this.httpClient.setExecutor(getExecutor(executor));
         this.httpClient.setByteBufferPool(bufferPool);
         addBean(this.httpClient);
         
@@ -262,7 +262,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.eventDriverFactory = new EventDriverFactory(containerScope);
         this.sessionFactory = new WebSocketSessionFactory(containerScope);
     }
-
+    
     /**
      * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
@@ -276,36 +276,30 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory)
     {
-        this(scope, eventDriverFactory, sessionFactory, null);
-    }
-    
-    /**
-     * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
-     * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
-     *
-     * @param scope
-     *            the Container Scope
-     * @param eventDriverFactory
-     *            the EventDriver Factory to use
-     * @param sessionFactory
-     *            the SessionFactory to use
-     */
-    public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
-    {
-        this.containerPolicy = WebSocketPolicy.newClientPolicy();
-        this.sslContextFactory = sslContextFactory;
-        this.objectFactory = objectFactory;
-        this.extensionRegistry = new WebSocketExtensionFactory(this);
-        this.masker = new RandomMasker();
-    
-        setExecutor(executor);
-        setBufferPool(bufferPool);
+        WebSocketContainerScope clientScope;
+        if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+        {
+            clientScope = scope;
+        }
+        else
+        {
+            // We need to wrap the scope
+            clientScope = new DelegatedContainerScope(WebSocketPolicy.newClientPolicy(), scope);
+        }
         
-        if(sslContextFactory!=null)
-            addBean(sslContextFactory);
-        addBean(this.executor);
-        addBean(this.sslContextFactory);
-        addBean(this.bufferPool);
+        this.containerScope = clientScope;
+        SslContextFactory sslContextFactory = scope.getSslContextFactory();
+        if(sslContextFactory == null)
+        {
+            sslContextFactory = new SslContextFactory();
+        }
+        this.httpClient = new HttpClient(sslContextFactory);
+        this.httpClient.setExecutor(getExecutor(scope.getExecutor()));
+        addBean(this.httpClient);
+
+        this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
+
+        this.sessionFactory = sessionFactory;
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -457,6 +451,21 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getExecutor();
     }
 
+    // Internal getExecutor for defaulting to internal executor if not provided
+    private Executor getExecutor(final Executor executor)
+    {
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = "WebSocketClient@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            return threadPool;
+        }
+        
+        return executor;
+    }
+    
     public ExtensionFactory getExtensionFactory()
     {
         return extensionRegistry;

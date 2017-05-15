@@ -173,30 +173,40 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
     
     @Override
-    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig config, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, config);
+        ClientEndpointConfig clientEndpointConfig = config;
+        if (clientEndpointConfig == null)
+        {
+            clientEndpointConfig = new EmptyClientEndpointConfig();
+        }
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, clientEndpointConfig);
         return connect(instance, path);
     }
     
     @Override
-    public Session connectToServer(Class<?> annotatedEndpointClass, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, null);
+        ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new EmptyClientEndpointConfig());
         return connect(instance, path);
     }
     
     @Override
-    public Session connectToServer(Endpoint endpoint, ClientEndpointConfig config, URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig config, final URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, config);
+        ClientEndpointConfig clientEndpointConfig = config;
+        if (clientEndpointConfig == null)
+        {
+            clientEndpointConfig = new EmptyClientEndpointConfig();
+        }
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, clientEndpointConfig);
         return connect(instance, path);
     }
     
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, null);
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, new EmptyClientEndpointConfig());
         return connect(instance, path);
     }
     
