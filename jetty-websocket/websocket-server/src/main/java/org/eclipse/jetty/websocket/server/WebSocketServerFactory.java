@@ -562,7 +562,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         ByteBufferPool bufferPool = connector.getByteBufferPool();
         
         // Setup websocket connection
-        AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, getPolicy().clonePolicy(), bufferPool, extensionStack);
+        AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, getPolicy().clonePolicy(), bufferPool, extensionStack);
 
         extensionStack.setPolicy(wsConnection.getPolicy());
         extensionStack.configure(wsConnection.getParser());

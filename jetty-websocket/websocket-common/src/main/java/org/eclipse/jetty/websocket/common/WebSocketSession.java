@@ -664,6 +664,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
         else if (cause instanceof SocketTimeoutException)
         {
+            // A path often seen in Windows
             close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof IOException)
@@ -672,6 +673,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
         else if (cause instanceof SocketException)
         {
+            // A path unique to Unix
             close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof CloseException)
@@ -711,7 +713,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     }
     
     /**
-     * Connection Disconnect Event
+     * Connection Disconnect Event.
+     * <p>
+     *     Represents the low level Jetty Connection close/disconnect.
+     * </p>
      *
      * @param connection the connection
      */
@@ -722,6 +727,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{}.onSessionClosed()", containerScope.getClass().getSimpleName());
+            remote = null;
             containerScope.onSessionClosed(this);
         }
         catch (Throwable t)
@@ -732,6 +738,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     
     /**
      * Connection Open Event
+     * <p>
+     *     Represents the low level Jetty Connection open/connect.
+     * </p>
      *
      * @param connection the connection
      */

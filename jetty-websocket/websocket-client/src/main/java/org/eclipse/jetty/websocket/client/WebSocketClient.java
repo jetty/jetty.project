@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -518,11 +517,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketPolicy getPolicy()
     {
         return this.containerScope.getPolicy();
-    }
-
-    public Scheduler getScheduler()
-    {
-        return httpClient.getScheduler();
     }
 
     public SessionFactory getSessionFactory()

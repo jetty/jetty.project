@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -77,7 +75,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     
     private final Logger LOG;
     private final ByteBufferPool bufferPool;
-    private final Scheduler scheduler;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketPolicy policy;
@@ -90,13 +87,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private List<ExtensionConfig> extensions;
     private ByteBuffer networkBuffer;
     
-    public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
+    public AbstractWebSocketConnection(EndPoint endp, Executor executor, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {
         super(endp,executor);
     
         Objects.requireNonNull(endp, "EndPoint");
         Objects.requireNonNull(executor, "Executor");
-        Objects.requireNonNull(scheduler, "Scheduler");
         Objects.requireNonNull(policy, "WebSocketPolicy");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
     
@@ -113,7 +109,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy,bufferPool,this);
-        this.scheduler = scheduler;
         this.extensions = new ArrayList<>();
         this.suspendToken = new AtomicBoolean(false);
         this.flusher = new Flusher(policy.getOutputBufferSize(),generator,endp);
@@ -146,19 +141,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         closed.set(true);
     }
     
-    protected void execute(Runnable task)
-    {
-        try
-        {
-            getExecutor().execute(task);
-        }
-        catch (RejectedExecutionException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Job not dispatched: {}",task);
-        }
-    }
-
     @Override
     public ByteBufferPool getBufferPool()
     {
@@ -214,11 +196,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
-    }
-
-    public Scheduler getScheduler()
-    {
-        return scheduler;
     }
 
     @Override

@@ -591,7 +591,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         
         endp = configure(endp);
 
-        WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getScheduler(),wsClient.getPolicy(),
+        WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getPolicy(),
                 wsClient.getBufferPool(), extensionStack);
 
         URI requestURI = this.getURI();
