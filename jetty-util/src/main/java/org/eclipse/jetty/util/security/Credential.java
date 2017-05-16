@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
  * Credentials. The Credential class represents an abstract mechanism for
  * checking authentication credentials. A credential instance either represents
@@ -39,15 +38,12 @@ import org.eclipse.jetty.util.log.Logger;
  * This class includes an implementation for unix Crypt an MD5 digest.
  * 
  * @see Password
- * 
  */
 public abstract class Credential implements Serializable
 {
+    private static final long serialVersionUID = -7760551052768181572L;
     private static final Logger LOG = Log.getLogger(Credential.class);
 
-    private static final long serialVersionUID = -7760551052768181572L;
-
-    /* ------------------------------------------------------------ */
     /**
      * Check a credential
      * 
@@ -59,7 +55,6 @@ public abstract class Credential implements Serializable
      */
     public abstract boolean check(Object credentials);
 
-    /* ------------------------------------------------------------ */
     /**
      * Get a credential from a String. If the credential String starts with a
      * known Credential type (eg "CRYPT:" or "MD5:" ) then a Credential of that
@@ -76,15 +71,51 @@ public abstract class Credential implements Serializable
         return new Password(credential);
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * <p>Utility method that replaces String.equals() to avoid timing attacks.</p>
+     *
+     * @param s1 the first string to compare
+     * @param s2 the second string to compare
+     * @return whether the two strings are equal
+     */
+    protected static boolean stringEquals(String s1, String s2)
+    {
+        if (s1 == s2)
+            return true;
+        if (s1 == null || s2 == null || s1.length() != s2.length())
+            return false;
+        boolean result = false;
+        for (int i = 0; i < s1.length(); i++)
+            result |= s1.charAt(i) == s2.charAt(i);
+        return result;
+    }
+
+    /**
+     * <p>Utility method that replaces Arrays.equals() to avoid timing attacks.</p>
+     *
+     * @param b1 the first byte array to compare
+     * @param b2 the second byte array to compare
+     * @return whether the two byte arrays are equal
+     */
+    protected static boolean byteEquals(byte[] b1, byte[] b2)
+    {
+        if (b1 == b2)
+            return true;
+        if (b1 == null || b2 == null || b1.length != b2.length)
+            return false;
+        boolean result = false;
+        for (int i = 0; i < b1.length; i++)
+            result |= b1[i] == b2[i];
+        return result;
+    }
+
     /**
      * Unix Crypt Credentials
      */
     public static class Crypt extends Credential
     {
         private static final long serialVersionUID = -2027792997664744210L;
-
-        public static final String __TYPE = "CRYPT:";
+        private static final String __TYPE = "CRYPT:";
 
         private final String _cooked;
 
@@ -100,58 +131,48 @@ public abstract class Credential implements Serializable
                 credentials=new String((char[])credentials);
             if (!(credentials instanceof String) && !(credentials instanceof Password)) 
                 LOG.warn("Can't check " + credentials.getClass() + " against CRYPT");
-
-            String passwd = credentials.toString();
-            return _cooked.equals(UnixCrypt.crypt(passwd, _cooked));
+            return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(), _cooked));
         }
 
         public static String crypt(String user, String pw)
         {
-            return "CRYPT:" + UnixCrypt.crypt(pw, user);
+            return __TYPE + UnixCrypt.crypt(pw, user);
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * MD5 Credentials
      */
     public static class MD5 extends Credential
     {
         private static final long serialVersionUID = 5533846540822684240L;
-
-        public static final String __TYPE = "MD5:";
-
-        public static final Object __md5Lock = new Object();
-
+        private static final String __TYPE = "MD5:";
+        private static final Object __md5Lock = new Object();
         private static MessageDigest __md;
 
         private final byte[] _digest;
 
-        /* ------------------------------------------------------------ */
         MD5(String digest)
         {
             digest = digest.startsWith(__TYPE) ? digest.substring(__TYPE.length()) : digest;
             _digest = TypeUtil.parseBytes(digest, 16);
         }
 
-        /* ------------------------------------------------------------ */
         public byte[] getDigest()
         {
             return _digest;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public boolean check(Object credentials)
         {
             try
             {
-                byte[] digest = null;
-
                 if (credentials instanceof char[])
                     credentials=new String((char[])credentials);
                 if (credentials instanceof Password || credentials instanceof String)
                 {
+                    byte[] digest;
                     synchronized (__md5Lock)
                     {
                         if (__md == null) __md = MessageDigest.getInstance("MD5");
@@ -159,26 +180,18 @@ public abstract class Credential implements Serializable
                         __md.update(credentials.toString().getBytes(StandardCharsets.ISO_8859_1));
                         digest = __md.digest();
                     }
-                    if (digest == null || digest.length != _digest.length) return false;
-                    boolean digestMismatch = false;
-                    for (int i = 0; i < digest.length; i++)
-                        digestMismatch |= (digest[i] != _digest[i]);
-                    return !digestMismatch;
+                    return byteEquals(_digest, digest);
                 }
                 else if (credentials instanceof MD5)
                 {
-                    MD5 md5 = (MD5) credentials;
-                    if (_digest.length != md5._digest.length) return false;
-                    boolean digestMismatch = false;
-                    for (int i = 0; i < _digest.length; i++)
-                        digestMismatch |= (_digest[i] != md5._digest[i]);
-                    return !digestMismatch;
+                    MD5 md5 = (MD5)credentials;
+                    return byteEquals(_digest, md5._digest);
                 }
                 else if (credentials instanceof Credential)
                 {
                     // Allow credential to attempt check - i.e. this'll work
                     // for DigestAuthModule$Digest credentials
-                    return ((Credential) credentials).check(this);
+                    return ((Credential)credentials).check(this);
                 }
                 else
                 {
@@ -193,7 +206,6 @@ public abstract class Credential implements Serializable
             }
         }
 
-        /* ------------------------------------------------------------ */
         public static String digest(String password)
         {
             try
