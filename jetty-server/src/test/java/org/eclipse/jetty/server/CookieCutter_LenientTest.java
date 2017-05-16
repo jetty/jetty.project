@@ -65,7 +65,18 @@ public class CookieCutter_LenientTest
         //   quoted-string  = ( <"> *(qdtext) <"> )
         //   qdtext         = <any TEXT except <">>
 
+        // lenient with spaces and EOF
+        ret.add(new String[]{"abc=", "abc", ""});
+        ret.add(new String[]{"abc = ", "abc", ""});
+        ret.add(new String[]{"abc = ;", "abc", ""});
+        ret.add(new String[]{"abc = ; ", "abc", ""});
+        ret.add(new String[]{"abc = x ", "abc", "x"});
         ret.add(new String[]{"abc=\"\"", "abc", ""});
+        ret.add(new String[]{"abc= \"\" ", "abc", ""});
+        ret.add(new String[]{"abc= \"x\" ", "abc", "x"});
+        ret.add(new String[]{"abc= \"x\" ;", "abc", "x"});
+        ret.add(new String[]{"abc= \"x\" ; ", "abc", "x"});
+
         // The backslash character ("\") may be used as a single-character quoting
         // mechanism only within quoted-string and comment constructs.
         //   quoted-pair    = "\" CHAR
@@ -80,7 +91,7 @@ public class CookieCutter_LenientTest
         // See https://tools.ietf.org/html/draft-ietf-httpbis-cookie-prefixes-00#section-5.2
         // Cannot pass names through as javax.servlet.http.Cookie class does not allow them
         ret.add(new String[]{"$foo=bar", null, null});
-    
+
         // Tests that conform to RFC6265
         ret.add(new String[]{"abc=foobar!", "abc", "foobar!"});
         ret.add(new String[]{"abc=\"foobar!\"", "abc", "foobar!"});
