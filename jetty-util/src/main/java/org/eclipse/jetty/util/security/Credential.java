@@ -98,9 +98,9 @@ public abstract class Credential implements Serializable
             return true;
         if (s1 == null || s2 == null || s1.length() != s2.length())
             return false;
-        boolean result = false;
+        boolean result = true;
         for (int i = 0; i < s1.length(); i++)
-            result |= s1.charAt(i) == s2.charAt(i);
+            result &= s1.charAt(i) == s2.charAt(i);
         return result;
     }
 
@@ -117,9 +117,9 @@ public abstract class Credential implements Serializable
             return true;
         if (b1 == null || b2 == null || b1.length != b2.length)
             return false;
-        boolean result = false;
+        boolean result = true;
         for (int i = 0; i < b1.length; i++)
-            result |= b1[i] == b2[i];
+            result &= b1[i] == b2[i];
         return result;
     }
 
