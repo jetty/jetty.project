@@ -341,7 +341,7 @@ public class DigestAuthModule extends BaseAuthModule
                 byte[] digest = md.digest();
 
                 // check digest
-                return (TypeUtil.toString(digest, 16).equalsIgnoreCase(response));
+                return stringEquals(TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
             }
             catch (Exception e)
             {
@@ -356,6 +356,5 @@ public class DigestAuthModule extends BaseAuthModule
         {
             return username + "," + response;
         }
-
     }
 }

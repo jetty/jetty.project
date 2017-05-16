@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.security;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Locale;
 
 import org.eclipse.jetty.util.log.Log;
@@ -96,15 +95,20 @@ public class Password extends Credential
     @Override
     public boolean check(Object credentials)
     {
-        if (this == credentials) return true;
+        if (this == credentials)
+            return true;
 
-        if (credentials instanceof Password) return credentials.equals(_pw);
+        if (credentials instanceof Password)
+            return credentials.equals(_pw);
 
-        if (credentials instanceof String) return credentials.equals(_pw);
+        if (credentials instanceof String)
+            return stringEquals(_pw, (String)credentials);
 
-        if (credentials instanceof char[]) return Arrays.equals(_pw.toCharArray(), (char[]) credentials);
+        if (credentials instanceof char[])
+            return stringEquals(_pw, new String((char[])credentials));
 
-        if (credentials instanceof Credential) return ((Credential) credentials).check(_pw);
+        if (credentials instanceof Credential)
+            return ((Credential)credentials).check(_pw);
 
         return false;
     }
@@ -120,14 +124,10 @@ public class Password extends Credential
             return false;
 
         if (o instanceof Password)
-        {
-            Password p = (Password) o;
-            //noinspection StringEquality
-            return p._pw == _pw || (null != _pw && _pw.equals(p._pw));
-        }
+            return stringEquals(_pw, ((Password)o)._pw);
 
         if (o instanceof String)
-            return o.equals(_pw);
+            return stringEquals(_pw, (String)o);
 
         return false;
     }
@@ -175,7 +175,6 @@ public class Password extends Credential
 
         }
         return buf.toString();
-
     }
 
     /* ------------------------------------------------------------ */

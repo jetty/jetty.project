@@ -401,7 +401,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                 byte[] digest = md.digest();
 
                 // check digest
-                return (TypeUtil.toString(digest, 16).equalsIgnoreCase(response));
+                return stringEquals(TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
             }
             catch (Exception e)
             {
