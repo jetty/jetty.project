@@ -40,8 +40,6 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -252,37 +250,29 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new TimeoutHandler(2 * timeout));
         client.stop();
         final AtomicBoolean sslIdle = new AtomicBoolean();
-        client = new HttpClient(new HttpClientTransportOverHTTP()
+        client = new HttpClient(sslContextFactory)
         {
             @Override
-            public HttpDestination newHttpDestination(Origin origin)
+            public ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
             {
-                return new HttpDestinationOverHTTP(getHttpClient(), origin)
+                return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
-                    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        HttpClient client = getHttpClient();
-                        return new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory)
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine)
                         {
                             @Override
-                            protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                            protected boolean onReadTimeout()
                             {
-                                return new SslConnection(byteBufferPool, executor, endPoint, engine)
-                                {
-                                    @Override
-                                    protected boolean onReadTimeout()
-                                    {
-                                        sslIdle.set(true);
-                                        return super.onReadTimeout();
-                                    }
-                                };
+                                sslIdle.set(true);
+                                return super.onReadTimeout();
                             }
                         };
                     }
                 };
             }
-        }, sslContextFactory);
+        };
         client.setIdleTimeout(timeout);
         client.start();
 

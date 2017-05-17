@@ -150,7 +150,7 @@ public class HTTP2Client extends ContainerLifeCycle
                 if (sslContextFactory != null)
                 {
                     ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), h2, getProtocols());
-                    factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
+                    factory = newSslClientConnectionFactory(sslContextFactory, alpn);
                 }
                 return factory.newConnection(endPoint, context);
             });
@@ -169,6 +169,11 @@ public class HTTP2Client extends ContainerLifeCycle
     protected SelectorManager newSelectorManager()
     {
         return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors());
+    }
+
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
+    {
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     public Executor getExecutor()

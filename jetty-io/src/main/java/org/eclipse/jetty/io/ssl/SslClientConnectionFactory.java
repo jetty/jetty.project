@@ -42,6 +42,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private final ByteBufferPool byteBufferPool;
     private final Executor executor;
     private final ClientConnectionFactory connectionFactory;
+    private boolean allowMissingCloseMessage = true;
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
@@ -49,6 +50,16 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         this.byteBufferPool = byteBufferPool;
         this.executor = executor;
         this.connectionFactory = connectionFactory;
+    }
+
+    public boolean isAllowMissingCloseMessage()
+    {
+        return allowMissingCloseMessage;
+    }
+
+    public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
+    {
+        this.allowMissingCloseMessage = allowMissingCloseMessage;
     }
 
     @Override
@@ -84,6 +95,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             SslConnection sslConnection = (SslConnection)connection;
             sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
+            sslConnection.setAllowMissingCloseMessage(isAllowMissingCloseMessage());
             ContainerLifeCycle connector = (ContainerLifeCycle)context.get(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY);
             connector.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
