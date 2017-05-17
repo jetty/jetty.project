@@ -147,29 +147,30 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     private Path extractPackedFile( String configFile )
         throws IOException
     {
-
         int fileIndex = configFile.indexOf( "!" );
         String filePath = configFile.substring( JAR_FILE.length(), fileIndex );
         String entryPath = configFile.substring( fileIndex + 1, configFile.length() );
 
         try (FileInputStream fileInputStream = new FileInputStream( new File( filePath ) ))
         {
-            ZipInputStream zin = new ZipInputStream( fileInputStream );
-            for ( ZipEntry e; ( e = zin.getNextEntry() ) != null; )
+            try (ZipInputStream zin = new ZipInputStream( fileInputStream ))
             {
-                if ( e.getName().equals( entryPath ) )
+                for ( ZipEntry e; ( e = zin.getNextEntry() ) != null; )
                 {
-                    Path extractedPath = Files.createTempFile( "users_store", ".tmp" );
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    try (OutputStream textOutputStream = Files.newOutputStream( extractedPath ))
+                    if ( e.getName().equals( entryPath ) )
                     {
-                        while ( ( bytesRead = zin.read( buffer ) ) != -1 )
+                        Path extractedPath = Files.createTempFile( "users_store", ".tmp" );
+                        byte[] buffer = new byte[1024];
+                        int bytesRead;
+                        try (OutputStream textOutputStream = Files.newOutputStream( extractedPath ))
                         {
-                            textOutputStream.write( buffer, 0, bytesRead );
+                            while ( ( bytesRead = zin.read( buffer ) ) != -1 )
+                            {
+                                textOutputStream.write( buffer, 0, bytesRead );
+                            }
                         }
+                        return extractedPath;
                     }
-                    return extractedPath;
                 }
             }
         }
