@@ -24,12 +24,10 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -93,144 +91,10 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         super.testEcho();
     }
 
-
     @Ignore // SSL does not do half closes
     @Override
     public void testShutdown() throws Exception
     {
-    }
-
-
-    @Test
-    public void testTcpClose() throws Exception
-    {
-        // This test replaces SSLSocket() with a very manual SSL client
-        // so we can close TCP underneath SSL.
-
-        SocketChannel client = SocketChannel.open(_connector.socket().getLocalSocketAddress());
-        client.socket().setSoTimeout(500);
-
-        SocketChannel server = _connector.accept();
-        server.configureBlocking(false);
-        _manager.accept(server);
-
-        SSLEngine engine = __sslCtxFactory.newSSLEngine();
-        engine.setUseClientMode(true);
-        engine.beginHandshake();
-
-        ByteBuffer appOut = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize());
-        ByteBuffer sslOut = ByteBuffer.allocate(engine.getSession().getPacketBufferSize()*2);
-        ByteBuffer appIn = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize());
-        ByteBuffer sslIn = ByteBuffer.allocate(engine.getSession().getPacketBufferSize()*2);
-
-        boolean debug=false;
-
-        if (debug) System.err.println(engine.getHandshakeStatus());
-        int loop=20;
-        while (engine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
-        {
-            if (--loop==0)
-                throw new IllegalStateException();
-
-            if (engine.getHandshakeStatus()==HandshakeStatus.NEED_WRAP)
-            {
-                if (debug) System.err.printf("sslOut %d-%d-%d%n",sslOut.position(),sslOut.limit(),sslOut.capacity());
-                if (debug) System.err.printf("appOut %d-%d-%d%n",appOut.position(),appOut.limit(),appOut.capacity());
-                SSLEngineResult result =engine.wrap(appOut,sslOut);
-                if (debug) System.err.println(result);
-                sslOut.flip();
-                int flushed=client.write(sslOut);
-                if (debug) System.err.println("out="+flushed);
-                sslOut.clear();
-            }
-
-            if (engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP)
-            {
-                if (debug) System.err.printf("sslIn %d-%d-%d%n",sslIn.position(),sslIn.limit(),sslIn.capacity());
-                if (sslIn.position()==0)
-                {
-                    int filled=client.read(sslIn);
-                    if (debug) System.err.println("in="+filled);
-                }
-                sslIn.flip();
-                if (debug) System.err.printf("sslIn %d-%d-%d%n",sslIn.position(),sslIn.limit(),sslIn.capacity());
-                SSLEngineResult result =engine.unwrap(sslIn,appIn);
-                if (debug) System.err.println(result);
-                if (debug) System.err.printf("sslIn %d-%d-%d%n",sslIn.position(),sslIn.limit(),sslIn.capacity());
-                if (sslIn.hasRemaining())
-                    sslIn.compact();
-                else
-                    sslIn.clear();
-                if (debug) System.err.printf("sslIn %d-%d-%d%n",sslIn.position(),sslIn.limit(),sslIn.capacity());
-            }
-
-            if (engine.getHandshakeStatus()==HandshakeStatus.NEED_TASK)
-            {
-                Runnable task;
-                while ((task=engine.getDelegatedTask())!=null)
-                    task.run();
-                if (debug) System.err.println(engine.getHandshakeStatus());
-            }
-        }
-
-        if (debug) System.err.println("\nSay Hello");
-
-        // write a message
-        appOut.put("HelloWorld".getBytes(StandardCharsets.UTF_8));
-        appOut.flip();
-        SSLEngineResult result =engine.wrap(appOut,sslOut);
-        if (debug) System.err.println(result);
-        sslOut.flip();
-        int flushed=client.write(sslOut);
-        if (debug) System.err.println("out="+flushed);
-        sslOut.clear();
-        appOut.clear();
-
-        // read the response
-        int filled=client.read(sslIn);
-        if (debug) System.err.println("in="+filled);
-        sslIn.flip();
-        result =engine.unwrap(sslIn,appIn);
-        if (debug) System.err.println(result);
-        if (sslIn.hasRemaining())
-            sslIn.compact();
-        else
-            sslIn.clear();
-
-        appIn.flip();
-        String reply= new String(appIn.array(),appIn.arrayOffset(),appIn.remaining());
-        appIn.clear();
-
-        Assert.assertEquals("HelloWorld",reply);
-
-        if (debug) System.err.println("Shutting down output");
-        client.socket().shutdownOutput();
-
-        filled=client.read(sslIn);
-        if (debug) System.err.println("in="+filled);
-        
-        if (filled>=0)
-        {
-            // this is the old behaviour. 
-            sslIn.flip();
-            try
-            {
-                // Since the client closed abruptly, the server is sending a close alert with a failure
-                engine.unwrap(sslIn, appIn);
-                Assert.fail();
-            }
-            catch (SSLException x)
-            {
-                // Expected
-            }
-        }
-
-        sslIn.clear();
-        filled=client.read(sslIn);
-        Assert.assertEquals(-1,filled);
-
-        Thread.sleep(100); // TODO This should not be needed
-        Assert.assertFalse(server.isOpen());
     }
 
     @Test
