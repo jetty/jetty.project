@@ -332,6 +332,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             catch (IOException e)
             {
                 LOG.debug(e);
+                _parser.atEOF();
                 return -1;
             }
         }

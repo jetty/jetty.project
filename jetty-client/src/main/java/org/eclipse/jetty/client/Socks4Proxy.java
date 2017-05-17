@@ -30,7 +30,6 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -197,7 +196,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 HttpClient client = destination.getHttpClient();
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
-                    connectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
+                    connectionFactory = client.newSslClientConnectionFactory(connectionFactory);
                 org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
                 getEndPoint().upgrade(newConnection);
                 if (LOG.isDebugEnabled())

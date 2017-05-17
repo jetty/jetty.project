@@ -646,6 +646,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public void visitSessionConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
+        if (context.getSessionHandler() == null)
+            return; //no session handler, ignore session setup
+        
         XmlParser.Node tNode = node.get("session-timeout");
         if (tNode != null)
         { 

@@ -34,7 +34,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -124,7 +123,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
-        return new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
+        return client.newSslClientConnectionFactory(connectionFactory);
     }
 
     public boolean isSecure()
