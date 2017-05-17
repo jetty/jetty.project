@@ -18,22 +18,34 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSocket;
+
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -391,5 +403,117 @@ public class HttpClientTLSTest
 
         Assert.assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         Assert.assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClientRawCloseDoesNotInvalidateSession() throws Exception
+    {
+        SslContextFactory serverTLSFactory = createSslContextFactory();
+        startServer(serverTLSFactory, new EmptyServerHandler());
+
+        SslContextFactory clientTLSFactory = createSslContextFactory();
+        clientTLSFactory.start();
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        Socket socket = new Socket(host, port);
+        SSLSocket sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        CountDownLatch handshakeLatch1 = new CountDownLatch(1);
+        AtomicReference<byte[]> session1 = new AtomicReference<>();
+        sslSocket.addHandshakeCompletedListener(event ->
+        {
+            session1.set(event.getSession().getId());
+            handshakeLatch1.countDown();
+        });
+        sslSocket.startHandshake();
+        Assert.assertTrue(handshakeLatch1.await(5, TimeUnit.SECONDS));
+
+        // The client closes abruptly.
+        socket.close();
+
+        // Try again and compare the session ids.
+        socket = new Socket(host, port);
+        sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        CountDownLatch handshakeLatch2 = new CountDownLatch(1);
+        AtomicReference<byte[]> session2 = new AtomicReference<>();
+        sslSocket.addHandshakeCompletedListener(event ->
+        {
+            session2.set(event.getSession().getId());
+            handshakeLatch2.countDown();
+        });
+        sslSocket.startHandshake();
+        Assert.assertTrue(handshakeLatch2.await(5, TimeUnit.SECONDS));
+
+        Assert.assertArrayEquals(session1.get(), session2.get());
+
+        sslSocket.close();
+    }
+
+    @Test
+    public void testServerRawCloseDetectedByClient() throws Exception
+    {
+        SslContextFactory serverTLSFactory = createSslContextFactory();
+        serverTLSFactory.start();
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            QueuedThreadPool clientThreads = new QueuedThreadPool();
+            clientThreads.setName("client");
+            client = new HttpClient(createSslContextFactory())
+            {
+                @Override
+                protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+                {
+                    SslClientConnectionFactory ssl = (SslClientConnectionFactory)super.newSslClientConnectionFactory(connectionFactory);
+                    ssl.setAllowMissingCloseMessage(false);
+                    return ssl;
+                }
+            };
+            client.setExecutor(clientThreads);
+            client.start();
+
+            CountDownLatch latch = new CountDownLatch(1);
+            client.newRequest("localhost", server.getLocalPort())
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .send(result ->
+                    {
+                        Assert.assertThat(result.getResponseFailure(), Matchers.instanceOf(SSLException.class));
+                        latch.countDown();
+                    });
+
+            Socket socket = server.accept();
+            SSLSocket sslSocket = (SSLSocket)serverTLSFactory.getSslContext().getSocketFactory().createSocket(socket, null, socket.getPort(), true);
+            sslSocket.setUseClientMode(false);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(sslSocket.getInputStream(), StandardCharsets.UTF_8));
+            while (true)
+            {
+                String line = reader.readLine();
+                if (line == null || line.isEmpty())
+                    break;
+            }
+
+            // If the response is Content-Length delimited, allowing the
+            // missing TLS Close Message is fine because the application
+            // will see a EOFException anyway.
+            // If the response is connection delimited, allowing the
+            // missing TLS Close Message is bad because the application
+            // will see a successful response with truncated content.
+
+            // Verify that by not allowing the missing
+            // TLS Close Message we get a response failure.
+
+            byte[] half = new byte[8];
+            String response = "HTTP/1.1 200 OK\r\n" +
+//                    "Content-Length: " + (half.length * 2) + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            OutputStream output = sslSocket.getOutputStream();
+            output.write(response.getBytes(StandardCharsets.UTF_8));
+            output.write(half);
+            output.flush();
+            // Simulate a truncation attack by raw closing.
+            socket.close();
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 }

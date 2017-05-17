@@ -92,6 +92,7 @@ public class SslConnection extends AbstractConnection
     private boolean _renegotiationAllowed;
     private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
+    private boolean _allowMissingCloseMessage = true;
     private final Runnable _runCompletWrite = new Runnable()
     {
         @Override
@@ -191,6 +192,16 @@ public class SslConnection extends AbstractConnection
     public void setRenegotiationLimit(int renegotiationLimit)
     {
         _renegotiationLimit = renegotiationLimit;
+    }
+
+    public boolean isAllowMissingCloseMessage()
+    {
+        return _allowMissingCloseMessage;
+    }
+
+    public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
+    {
+        this._allowMissingCloseMessage = allowMissingCloseMessage;
     }
 
     @Override
@@ -602,7 +613,7 @@ public class SslConnection extends AbstractConnection
 
                                 if (_underFlown)
                                 {
-                                    if (net_filled < 0)
+                                    if (net_filled < 0 && _sslEngine.getUseClientMode())
                                         closeInbound();
                                     if (net_filled <= 0)
                                         return net_filled;
@@ -800,30 +811,46 @@ public class SslConnection extends AbstractConnection
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Renegotiation denied {}", SslConnection.this);
-                closeInbound();
+                shutdownInput();
                 return false;
             }
             
-            if (_renegotiationLimit==0)
+            if (getRenegotiationLimit()==0)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Renegotiation limit exceeded {}", SslConnection.this);
-                closeInbound();
+                shutdownInput();
                 return false;
             }
             
             return true;
         }
 
-        private void closeInbound()
+        private void shutdownInput()
         {
+            try
+            {
+                _sslEngine.closeInbound();
+            }
+            catch (Throwable x)
+            {
+                LOG.ignore(x);
+            }
+        }
+
+        private void closeInbound() throws SSLException
+        {
+            HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
             try
             {
                 _sslEngine.closeInbound();
             }
             catch (SSLException x)
             {
-                LOG.ignore(x);
+                if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && !isAllowMissingCloseMessage())
+                    throw x;
+                else
+                    LOG.ignore(x);
             }
         }
 
