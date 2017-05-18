@@ -172,7 +172,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     {
         if(!isEnabledViaContext(context, ENABLE_KEY, true))
         {
-            LOG.info("JSR-356 is disabled by configuration");
+            LOG.info("JSR-356 is disabled by configuration for context {}", context.getContextPath());
             return;
         }
         
