@@ -17,7 +17,7 @@
 [[jetty-xml-config]]
 === jetty.xml
 
-`jetty.xml` is the default configuration file for Jetty, typically located at ` $JETTY_HOME/etc/jetty.xml`. Usually the `jetty.xml` configures:
+`jetty.xml` is the default configuration file for Jetty, typically located at `$JETTY_HOME/etc/jetty.xml`. Usually the `jetty.xml` configures:
 
 * The Server class (or subclass if extended) and global options.
 * A ThreadPool (min and max thread).
