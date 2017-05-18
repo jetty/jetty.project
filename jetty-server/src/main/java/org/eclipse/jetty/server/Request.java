@@ -756,7 +756,7 @@ public class Request implements HttpServletRequest
         for (String c : metadata.getFields().getValuesList(HttpHeader.COOKIE))
         {
             if (_cookies == null)
-                _cookies = new CookieCutter();
+                _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getCookieCompliance());
             _cookies.addCookieField(c);
         }
 
@@ -2043,7 +2043,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies == null)
-            _cookies = new CookieCutter();
+            _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getCookieCompliance());
         _cookies.setCookies(cookies);
     }
 

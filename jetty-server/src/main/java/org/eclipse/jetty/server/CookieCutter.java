@@ -23,6 +23,7 @@ import java.util.Locale;
 
 import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -40,6 +41,7 @@ public class CookieCutter
 {
     private static final Logger LOG = Log.getLogger(CookieCutter.class);
 
+    private final CookieCompliance _compliance;
     private Cookie[] _cookies;
     private Cookie[] _lastCookies;
     private final List<String> _fieldList = new ArrayList<>();
@@ -47,6 +49,12 @@ public class CookieCutter
     
     public CookieCutter()
     {  
+        this(CookieCompliance.RFC6265);
+    }
+    
+    public CookieCutter(CookieCompliance compliance)
+    {  
+        _compliance = compliance;
     }
     
     public Cookie[] getCookies()
@@ -335,7 +343,11 @@ public class CookieCutter
                         if (name.startsWith("$"))
                         {
                             String lowercaseName = name.toLowerCase(Locale.ENGLISH);
-                            if ("$path".equals(lowercaseName))
+                            if (_compliance==CookieCompliance.RFC6265)
+                            {
+                                // Ignore 
+                            }
+                            else if ("$path".equals(lowercaseName))
                             {
                                 if (cookie!=null)
                                     cookie.setPath(value);
@@ -353,13 +365,6 @@ public class CookieCutter
                             else if ("$version".equals(lowercaseName))
                             {
                                 version = Integer.parseInt(value);
-                            }
-                            else
-                            {
-                                cookie = new Cookie(name, value);
-                                if (version > 0)
-                                    cookie.setVersion(version);
-                                cookies.add(cookie);
                             }
                         }
                         else
