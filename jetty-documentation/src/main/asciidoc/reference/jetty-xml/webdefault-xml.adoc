@@ -29,7 +29,7 @@ The `webdefault.xml` file is located in `$(jetty.home)/etc/webdefault.xml`.
 [[using-webdefault-xml]]
 ==== Using webdefault.xml
 
-You can specify a custom configuration file to use for specific webapps, or for all webapps. If you do not specify an alternate defaults descriptor, the $JETTY-HOME/etc/jetty-deploy.xml file will configure jetty to automatically use $JETTY_HOME/etc/`webdefault.xml`.
+You can specify a custom configuration file to use for specific webapps, or for all webapps. If you do not specify an alternate defaults descriptor, the `$JETTY-HOME/etc/jetty-deploy.xml` file will configure jetty to automatically use `$JETTY_HOME/etc/webdefault.xml`.
 
 ____
 [NOTE]
@@ -73,9 +73,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
 Alternatively, you can use a xref:jetty-classloading[] to find the resource representing your custom `webdefault.xml`.
 
 [[creating-custom-webdefault-xml-multiple-webapps]]
-===== Creating a Custom `webdefault.xml` for Multiple WebApps
+===== Creating a Custom webdefault.xml for Multiple WebApps
 
-If you want to apply the same custom `webdefault.xml` to a number of webapps, provide the path to the file in xref:jetty-xml-config[] in the $JETTY_HOME/etc/jetty-deploy.xml file:
+If you want to apply the same custom `webdefault.xml` to a number of webapps, provide the path to the file in xref:jetty-xml-config[] in the `$JETTY_HOME/etc/jetty-deploy.xml` file:
 
 [source, xml, subs="{sub-order}"]
 ----

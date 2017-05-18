@@ -58,6 +58,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -1318,39 +1319,6 @@ public class RequestTest
 
         assertNotSame(cookies.get(0), cookies.get(2));
         assertNotSame(cookies.get(1), cookies.get(3));
-
-        cookies.clear();
-        //NOTE: the javax.servlet.http.Cookie class sets the system property org.glassfish.web.rfc2109_cookie_names_enforced
-        //to TRUE by default, and rejects all cookie names containing punctuation.Therefore this test cannot use "name2".
-        response=_connector.getResponse(
-                "POST / HTTP/1.1\r\n"+
-                "Host: whatever\r\n"+
-                "Cookie: name0=value0; name1 = value1 ; name2  =  \"\\\"value2\\\"\"  \n" +
-                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080; name4=; name5 =  ; name6\n" +
-                "Cookie: name7=value7;\n" +
-                "Connection: close\r\n"+
-        "\r\n");
-
-        assertEquals("name0", cookies.get(0).getName());
-        assertEquals("value0", cookies.get(0).getValue());
-        assertEquals("name1", cookies.get(1).getName());
-        assertEquals("value1", cookies.get(1).getValue());
-        assertEquals("name2", cookies.get(2).getName());
-        assertEquals("\"value2\"", cookies.get(2).getValue());
-        assertEquals("name3", cookies.get(3).getName());
-        assertEquals("value3=value3", cookies.get(3).getValue());
-        assertEquals(2, cookies.get(3).getVersion());
-        assertEquals("/path", cookies.get(3).getPath());
-        assertEquals("acme.com", cookies.get(3).getDomain());
-        assertEquals("$port=8080", cookies.get(3).getComment());
-        // assertEquals("name4", cookies.get(4).getName());
-        // assertEquals("", cookies.get(4).getValue());
-        // assertEquals("name5", cookies.get(5).getName());
-        // assertEquals("", cookies.get(5).getValue());
-        // assertEquals("name6", cookies.get(6).getName());
-        // assertEquals("", cookies.get(6).getValue());
-        assertEquals("name7", cookies.get(4).getName());
-        assertEquals("value7", cookies.get(4).getValue());
 
         cookies.clear();
         response=_connector.getResponse(

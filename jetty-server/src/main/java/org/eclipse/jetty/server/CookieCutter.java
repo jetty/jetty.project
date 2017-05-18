@@ -23,6 +23,7 @@ import java.util.Locale;
 
 import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -40,6 +41,7 @@ public class CookieCutter
 {
     private static final Logger LOG = Log.getLogger(CookieCutter.class);
 
+    private final CookieCompliance _compliance;
     private Cookie[] _cookies;
     private Cookie[] _lastCookies;
     private final List<String> _fieldList = new ArrayList<>();
@@ -47,6 +49,12 @@ public class CookieCutter
     
     public CookieCutter()
     {  
+        this(CookieCompliance.RFC6265);
+    }
+    
+    public CookieCutter(CookieCompliance compliance)
+    {  
+        _compliance = compliance;
     }
     
     public Cookie[] getCookies()
@@ -154,6 +162,7 @@ public class CookieCutter
                             if (i==last)
                             {
                                 value = unquoted.toString();
+                                unquoted.setLength(0);
                             }
                             else
                             {
@@ -179,6 +188,7 @@ public class CookieCutter
                         default:
                             if (i==last)
                             {
+                                // unterminated quote, let's ignore quotes
                                 unquoted.setLength(0);
                                 inQuoted = false;
                                 i--;
@@ -200,7 +210,7 @@ public class CookieCutter
                         {
                             case ' ':
                             case '\t':
-                                continue;
+                                break;
                                 
                             case ';':
                                 if (quoted)
@@ -211,6 +221,8 @@ public class CookieCutter
                                 }
                                 else if(tokenstart>=0 && tokenend>=0)
                                     value = hdr.substring(tokenstart, tokenend+1);
+                                else
+                                    value = "";
                                 
                                 tokenstart = -1;
                                 invalue=false;
@@ -223,7 +235,7 @@ public class CookieCutter
                                     inQuoted=true;
                                     if (unquoted==null)
                                         unquoted=new StringBuilder();
-                                    continue;
+                                    break;
                                 }
                                 // fall through to default case
 
@@ -283,10 +295,9 @@ public class CookieCutter
                                 {
                                     name = hdr.substring(tokenstart, tokenend+1);
                                 }
-
                                 tokenstart = -1;
                                 invalue=true;
-                                continue;
+                                break;
 
                             default:
                                 if (quoted)
@@ -302,24 +313,41 @@ public class CookieCutter
                                     tokenstart=i;
                                 tokenend=i;
                                 if (i==last)
-                                {
-                                    name = hdr.substring(tokenstart, tokenend+1);
                                     break;
-                                }
                                 continue;
                         }
                     }
                 }
 
+                if (invalue && i==last && value==null)
+                {
+                    if (quoted)
+                    {
+                        value = unquoted.toString();
+                        unquoted.setLength(0);
+                        quoted = false;
+                    }
+                    else if(tokenstart>=0 && tokenend>=0)
+                    {
+                        value = hdr.substring(tokenstart, tokenend+1);
+                    }
+                    else
+                        value = "";
+                }
+                    
                 // If after processing the current character we have a value and a name, then it is a cookie
-                if (value!=null && name!=null)
+                if (name!=null && value!=null)
                 {                    
                     try
                     {
                         if (name.startsWith("$"))
                         {
                             String lowercaseName = name.toLowerCase(Locale.ENGLISH);
-                            if ("$path".equals(lowercaseName))
+                            if (_compliance==CookieCompliance.RFC6265)
+                            {
+                                // Ignore 
+                            }
+                            else if ("$path".equals(lowercaseName))
                             {
                                 if (cookie!=null)
                                     cookie.setPath(value);
@@ -337,13 +365,6 @@ public class CookieCutter
                             else if ("$version".equals(lowercaseName))
                             {
                                 version = Integer.parseInt(value);
-                            }
-                            else
-                            {
-                                cookie = new Cookie(name, value);
-                                if (version > 0)
-                                    cookie.setVersion(version);
-                                cookies.add(cookie);
                             }
                         }
                         else
