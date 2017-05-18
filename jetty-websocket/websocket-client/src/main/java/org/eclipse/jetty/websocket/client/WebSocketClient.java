@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
@@ -84,7 +83,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient()
     {
         // Create synthetic HttpClient
-        this(new HttpClient());
+        this(HttpClientProvider.get(null));
         addBean(this.httpClient);
     }
 
@@ -262,23 +261,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
         
         this.containerScope = clientScope;
-        SslContextFactory sslContextFactory = scope.getSslContextFactory();
-        if(sslContextFactory == null)
-        {
-            sslContextFactory = new SslContextFactory();
-        }
-        this.httpClient = new HttpClient(sslContextFactory);
-        Executor executor = scope.getExecutor();
-        if (executor == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            String name = "WebSocketClient@" + hashCode();
-            threadPool.setName(name);
-            threadPool.setDaemon(true);
-            executor = threadPool;
-        }
-    
-        this.httpClient.setExecutor(executor);
+        
+        this.httpClient = HttpClientProvider.get(scope);
         addBean(this.httpClient);
 
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
