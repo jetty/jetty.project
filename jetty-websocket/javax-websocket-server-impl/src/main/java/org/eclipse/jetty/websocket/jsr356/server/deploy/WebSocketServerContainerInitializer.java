@@ -38,6 +38,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
@@ -190,11 +191,8 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         ServletContextHandler jettyContext = (ServletContextHandler)handler;
 
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try
+        try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
-            Thread.currentThread().setContextClassLoader(context.getClassLoader());
-            
             // Create the Jetty ServerContainer implementation
             ServerContainer jettyContainer = configureContext(jettyContext);
     
@@ -303,8 +301,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                     throw new ServletException(e);
                 }
             }
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
         }
     }
 
