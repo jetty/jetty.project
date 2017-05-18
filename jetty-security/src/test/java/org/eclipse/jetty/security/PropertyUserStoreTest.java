@@ -115,7 +115,7 @@ public class PropertyUserStoreTest
         File users = dir.resolve( "users.txt" ).toFile();
         writeUser( users );
         File usersJar = dir.resolve( "users.jar" ).toFile();
-        String entryPath = "/mountain_goat/pale_ale.txt";
+        String entryPath = "mountain_goat/pale_ale.txt";
         try (FileInputStream fileInputStream = new FileInputStream( users ))
         {
             try (OutputStream outputStream = new FileOutputStream( usersJar ))
@@ -123,7 +123,7 @@ public class PropertyUserStoreTest
                 try (JarOutputStream jarOutputStream = new JarOutputStream( outputStream ))
                 {
                     // add fake entry
-                    jarOutputStream.putNextEntry( new JarEntry( "/foo/wine" ) );
+                    jarOutputStream.putNextEntry( new JarEntry( "foo/wine" ) );
 
                     JarEntry jarEntry = new JarEntry( entryPath );
                     jarOutputStream.putNextEntry( jarEntry );
@@ -134,12 +134,12 @@ public class PropertyUserStoreTest
                         jarOutputStream.write( buffer, 0, bytesRead );
                     }
                     // add fake entry
-                    jarOutputStream.putNextEntry( new JarEntry( "/foo/cheese" ) );
+                    jarOutputStream.putNextEntry( new JarEntry( "foo/cheese" ) );
                 }
             }
 
         }
-        return "jar:file:" + usersJar.getCanonicalPath() + "!" + entryPath;
+        return "jar:file:" + usersJar.getCanonicalPath() + "!/" + entryPath;
     }
 
     private void writeUser(File usersFile)

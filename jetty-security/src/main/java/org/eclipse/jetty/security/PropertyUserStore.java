@@ -23,16 +23,16 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,8 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 /**
  * PropertyUserStore
@@ -148,33 +146,16 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         throws IOException
     {
         int fileIndex = configFile.indexOf( "!" );
-        String filePath = configFile.substring( JAR_FILE.length(), fileIndex );
         String entryPath = configFile.substring( fileIndex + 1, configFile.length() );
 
-        try (FileInputStream fileInputStream = new FileInputStream( new File( filePath ) ))
-        {
-            try (ZipInputStream zin = new ZipInputStream( fileInputStream ))
-            {
-                for ( ZipEntry e; ( e = zin.getNextEntry() ) != null; )
-                {
-                    if ( e.getName().equals( entryPath ) )
-                    {
-                        Path extractedPath = Files.createTempFile( "users_store", ".tmp" );
-                        byte[] buffer = new byte[1024];
-                        int bytesRead;
-                        try (OutputStream textOutputStream = Files.newOutputStream( extractedPath ))
-                        {
-                            while ( ( bytesRead = zin.read( buffer ) ) != -1 )
-                            {
-                                textOutputStream.write( buffer, 0, bytesRead );
-                            }
-                        }
-                        return extractedPath;
-                    }
-                }
-            }
-        }
-        throw new RuntimeException( "cannot find file from url " + configFile );
+        Path tmpDirectory = Files.createTempDirectory( "users_store" );
+        Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
+        // delete if exists as copyTo do not overwrite
+        Files.deleteIfExists( extractedPath );
+        // delete on shutdown
+        extractedPath.toFile().deleteOnExit();
+        JarResource.newResource( configFile ).copyTo( tmpDirectory.toFile() );
+        return extractedPath;
     }
 
     /**
