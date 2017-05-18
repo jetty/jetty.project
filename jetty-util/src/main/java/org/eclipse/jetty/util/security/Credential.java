@@ -96,10 +96,15 @@ public abstract class Credential implements Serializable
     {
         if (s1 == s2)
             return true;
-        if (s1 == null || s2 == null || s1.length() != s2.length())
+        if (s1 == null || s2 == null)
             return false;
         boolean result = true;
-        for (int i = 0; i < s1.length(); i++)
+        int l1 = s1.length();
+        int l2 = s2.length();
+        if (l1 != l2)
+            result = false;
+        int l = Math.min(l1, l2);
+        for (int i = 0; i < l; ++i)
             result &= s1.charAt(i) == s2.charAt(i);
         return result;
     }
@@ -115,10 +120,15 @@ public abstract class Credential implements Serializable
     {
         if (b1 == b2)
             return true;
-        if (b1 == null || b2 == null || b1.length != b2.length)
+        if (b1 == null || b2 == null)
             return false;
         boolean result = true;
-        for (int i = 0; i < b1.length; i++)
+        int l1 = b1.length;
+        int l2 = b2.length;
+        if (l1 != l2)
+            result = false;
+        int l = Math.min(l1, l2);
+        for (int i = 0; i < l; ++i)
             result &= b1[i] == b2[i];
         return result;
     }

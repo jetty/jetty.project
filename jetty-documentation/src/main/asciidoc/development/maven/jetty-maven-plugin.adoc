@@ -115,11 +115,11 @@ Maximum idle time for a connection.
 soLinger;;
 The socket linger time.
 +
-You could instead configure the connectors in a standard link:#jetty-xml-config[jetty xml config file] and put its location into the ` jettyXml` parameter.
+You could instead configure the connectors in a standard link:#jetty-xml-config[jetty xml config file] and put its location into the `jettyXml` parameter.
 Note that since jetty-9.0 it is no longer possible to configure a link:#maven-config-https[https connector] directly in the pom.xml: you need to link:#maven-config-https[use jetty xml config files to do it].
 jettyXml::
 Optional.
-A comma separated list of locations of `jetty xml` files to apply in addition to any plugin configuration parameters.
+A comma separated list of locations of Jetty xml files to apply in addition to any plugin configuration parameters.
 You might use it if you have other webapps, handlers, specific types of connectors etc., to deploy, or if you have other Jetty objects that you cannot configure from the plugin.
 scanIntervalSeconds::
 The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
@@ -152,7 +152,7 @@ There are three other ways to configure the RequestLog:
 See link:#configuring-jetty-request-logs[Configuring Request Logs] for more information.
 server::
 Optional as of Jetty 9.3.1.
-This would configure an instance of the link:{SRCDIR}/jetty-server/src/main/java/org/eclipse/jetty/server/Server.java[`org.eclipse.jetty.server.Server`] for the plugin to use, however it is usually NOT necessary to configure this, as the plugin will automatically configure one for you.
+This would configure an instance of the link:{GITBROWSEURL}/jetty-server/src/main/java/org/eclipse/jetty/server/Server.java[`org.eclipse.jetty.server.Server`] for the plugin to use, however it is usually NOT necessary to configure this, as the plugin will automatically configure one for you.
 In particular, if you use the jettyXml element, then you generally DON'T want to define this element, as you are probably using the jettyXml file to configure up a Server with a special constructor argument, such as a custom threadpool.
 If you define both a server element AND use a jetty xml element which points to a config file that has a line like `<Configure id="Server" class="org.eclipse.jetty.server.Server">` then the the xml configuration will override what you configure for the server in the `pom.xml`.
 stopPort::
@@ -196,21 +196,29 @@ This example uses files copied directly from the jetty distribution etc/ directo
 We will use the following files:
 
 jetty.xml::
-Sets up various characteristics of the link:{SRCDIR}/jetty-server/src/main/java/org/eclipse/jetty/server/Server.java[`org.eclipse.jetty.server.Server`] instance for the plugin to use.
-Importantly, it sets up the link:{SRCDIR}/jetty-server/src/main/java/org/eclipse/jetty/server/HttpConfiguration.java[`org.eclipse.jetty.server.HttpConfiguration`] element that we can refer to in subsequent xml files that configure the connectors.
-Here's the relevant section:
+Sets up various characteristics of the link:{GITBROWSEURL}/jetty-server/src/main/java/org/eclipse/jetty/server/Server.java[`org.eclipse.jetty.server.Server`] instance for the plugin to use.
+Importantly, it sets up the link:{GITBROWSEURL}/jetty-server/src/main/java/org/eclipse/jetty/server/HttpConfiguration.java[`org.eclipse.jetty.server.HttpConfiguration`] element that we can refer to in subsequent xml files that configure the connectors.
+Below is the relevant section taken from link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty.xml[jetty.xml].
 +
 [source, xml, subs="{sub-order}"]
 ----
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  ...
     <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-      <Set name="secureScheme">https</Set>
-      <Set name="securePort"><Property name="jetty.secure.port" default="8443" /></Set>
-      <Set name="outputBufferSize">32768</Set>
-      <Set name="requestHeaderSize">8192</Set>
-      <Set name="responseHeaderSize">8192</Set>
-      <Set name="sendServerVersion">true</Set>
-      <Set name="sendDateHeader">false</Set>
-      <Set name="headerCacheSize">512</Set>
+      <Set name="secureScheme"><Property name="jetty.httpConfig.secureScheme" default="https" /></Set>
+      <Set name="securePort"><Property name="jetty.httpConfig.securePort" deprecated="jetty.secure.port" default="8443" /></Set>
+      <Set name="outputBufferSize"><Property name="jetty.httpConfig.outputBufferSize" deprecated="jetty.output.buffer.size" default="32768" /></Set>
+      <Set name="outputAggregationSize"><Property name="jetty.httpConfig.outputAggregationSize" deprecated="jetty.output.aggregation.size" default="8192" /></Set>
+      <Set name="requestHeaderSize"><Property name="jetty.httpConfig.requestHeaderSize" deprecated="jetty.request.header.size" default="8192" /></Set>
+      <Set name="responseHeaderSize"><Property name="jetty.httpConfig.responseHeaderSize" deprecated="jetty.response.header.size" default="8192" /></Set>
+      <Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion" deprecated="jetty.send.server.version" default="true" /></Set>
+      <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader" deprecated="jetty.send.date.header" default="false" /></Set>
+      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="512" /></Set>
+      <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent" deprecated="jetty.delayDispatchUntilContent" default="true"/></Set>
+      <Set name="maxErrorDispatches"><Property name="jetty.httpConfig.maxErrorDispatches" default="10"/></Set>
+      <Set name="blockingTimeout"><Property name="jetty.httpConfig.blockingTimeout" default="-1"/></Set>
+      <Set name="persistentConnectionsEnabled"><Property name="jetty.httpConfig.persistentConnectionsEnabled" default="true"/></Set>
+      <Set name="cookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.cookieCompliance" default="RFC6265"/></Arg></Call></Set>
 
       <!-- Uncomment to enable handling of X-Forwarded- style headers
       <Call name="addCustomizer">
@@ -218,9 +226,11 @@ Here's the relevant section:
       </Call>
       -->
     </New>
+  ...
+</Configure>
 ----
 jetty-ssl.xml::
-Set up ssl which will be used by the https connector.
+Sets up ssl which will be used by the https connector.
 Here's the `jetty-ssl.xml` file from the jetty-distribution:
 +
 [source, xml, subs="{sub-order}"]
@@ -251,7 +261,7 @@ Now you need to let the plugin know to apply the files above:
 
 ____
 [CAUTION]
-Just like with an installed distribution of Jetty, the ordering of the xml files is significant.
+Just as with an installed distribution of Jetty, the ordering of the xml files is significant.
 ____
 
 You can also use Jetty xml files to configure a http connector for the plugin to use.
@@ -445,6 +455,7 @@ Here's an example:
       </configuration>
     </plugin>
   </plugins>
+...
 </project>
 ----
 
