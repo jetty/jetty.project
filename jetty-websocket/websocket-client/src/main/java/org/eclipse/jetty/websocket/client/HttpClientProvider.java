@@ -43,7 +43,7 @@ public final class HttpClientProvider
         }
         catch (Throwable ignore)
         {
-            Log.getLogger(HttpClientProvider.class).warn(ignore);
+            Log.getLogger(HttpClientProvider.class).ignore(ignore);
         }
         
         return DefaultHttpClientProvider.newHttpClient(scope);

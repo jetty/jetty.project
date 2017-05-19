@@ -50,6 +50,28 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
     
+    /**
+     * Get the WebSocketContainer out of the current ThreadLocal reference
+     * of the active ContextHandler.
+     *
+     * @return the WebSocketContainer if found, null if not found.
+     */
+    public static WebSocketContainer getWebSocketContainer()
+    {
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        if (context == null)
+            return null;
+        
+        ContextHandler handler = ContextHandler.getContextHandler(context);
+        if (handler == null)
+            return null;
+        
+        if (!(handler instanceof ServletContextHandler))
+            return null;
+        
+        return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
+    }
+    
     private final NativeWebSocketConfiguration configuration;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
