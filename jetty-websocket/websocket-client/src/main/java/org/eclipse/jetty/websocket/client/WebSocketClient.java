@@ -249,6 +249,22 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory)
     {
+        this(scope, eventDriverFactory, sessionFactory, null);
+    }
+    
+    /**
+     * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
+     * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
+     *
+     * @param scope
+     *            the Container Scope
+     * @param eventDriverFactory
+     *            the EventDriver Factory to use
+     * @param sessionFactory
+     *            the SessionFactory to use
+     */
+    public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
+    {
         WebSocketContainerScope clientScope;
         if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
         {
@@ -262,11 +278,18 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         
         this.containerScope = clientScope;
         
-        this.httpClient = HttpClientProvider.get(scope);
-        addBean(this.httpClient);
-
+        if(httpClient == null)
+        {
+            this.httpClient = HttpClientProvider.get(scope);
+            addBean(this.httpClient);
+        }
+        else
+        {
+            this.httpClient = httpClient;
+        }
+        
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
-
+        
         this.eventDriverFactory = eventDriverFactory;
         this.sessionFactory = sessionFactory;
     }

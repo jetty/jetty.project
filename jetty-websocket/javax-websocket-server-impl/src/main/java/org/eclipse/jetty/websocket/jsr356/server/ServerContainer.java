@@ -27,9 +27,13 @@ import java.util.concurrent.Executor;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -45,14 +49,23 @@ import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
-
+    
     private final NativeWebSocketConfiguration configuration;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
-
+    
+    /**
+     * @deprecated use {@code ServerContainer(NativeWebSocketConfiguration, HttpClient)} instead
+     */
+    @Deprecated
     public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
     {
-        super(configuration.getFactory());
+        this(configuration, (HttpClient) null);
+    }
+    
+    public ServerContainer(NativeWebSocketConfiguration configuration, HttpClient httpClient)
+    {
+        super(configuration.getFactory(), httpClient);
         this.configuration = configuration;
         EventDriverFactory eventDriverFactory = this.configuration.getFactory().getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());

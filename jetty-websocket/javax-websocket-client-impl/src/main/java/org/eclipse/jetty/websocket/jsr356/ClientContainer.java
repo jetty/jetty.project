@@ -38,6 +38,7 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -104,8 +105,19 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public ClientContainer(final WebSocketContainerScope scope)
     {
-        String jsr356TrustAll = System.getProperty("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+        this(scope, null);
+    }
     
+    /**
+     * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
+     *
+     * @param scope the scope of the ServerContainer
+     * @param httpClient the HttpClient instance to use
+     */
+    protected ClientContainer(final WebSocketContainerScope scope, final HttpClient httpClient)
+    {
+        String jsr356TrustAll = System.getProperty("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+        
         WebSocketContainerScope clientScope;
         if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
         {
@@ -120,19 +132,22 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.scopeDelegate = clientScope;
         this.client = new WebSocketClient(scopeDelegate,
                 new JsrEventDriverFactory(scopeDelegate),
-                new JsrSessionFactory(this));
-        this.internalClient = true;
-        
+                new JsrSessionFactory(this),
+                httpClient);
+        this.client.addBean(httpClient);
+    
         if(jsr356TrustAll != null)
         {
             boolean trustAll = Boolean.parseBoolean(jsr356TrustAll);
             client.getSslContextFactory().setTrustAll(trustAll);
         }
         
+        this.internalClient = true;
+        
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
         this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
-
+    
         ShutdownThread.register(this);
     }
     

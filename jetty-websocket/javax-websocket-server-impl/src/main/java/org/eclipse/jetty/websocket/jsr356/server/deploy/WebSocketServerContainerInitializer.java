@@ -33,6 +33,7 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.TypeUtil;
@@ -51,6 +52,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
     public static final String ADD_DYNAMIC_FILTER_KEY = "org.eclipse.jetty.websocket.jsr356.addDynamicFilter";
     private static final Logger LOG = Log.getLogger(WebSocketServerContainerInitializer.class);
+    public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.jsr356.HttpClient";
     
     /**
      * DestroyListener
@@ -136,8 +138,15 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         // Create Basic components
         NativeWebSocketConfiguration nativeWebSocketConfiguration = NativeWebSocketServletContainerInitializer.getDefaultFrom(context.getServletContext());
         
+        // Build HttpClient
+        HttpClient httpClient = (HttpClient) context.getServletContext().getAttribute(HTTPCLIENT_ATTRIBUTE);
+        if(httpClient == null)
+        {
+            httpClient = (HttpClient) context.getServer().getAttribute(HTTPCLIENT_ATTRIBUTE);
+        }
+        
         // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(nativeWebSocketConfiguration, context.getServer().getThreadPool());
+        ServerContainer jettyContainer = new ServerContainer(nativeWebSocketConfiguration, httpClient);
         context.addBean(jettyContainer);
         
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
