@@ -110,6 +110,7 @@ public class StartArgs
     }
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
+    private static final String PRECONFIGURE_QUICKSTART_MAIN = "org.eclipse.jetty.quickstart.PreconfigureQuickStartWar";
 
     private final BaseHome baseHome;
 
@@ -178,6 +179,8 @@ public class StartArgs
     private boolean dryRun = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
+    private boolean pregenerateQuickstart = false;
+    private String warFileDir;
 
     private boolean exec = false;
     private String exec_properties;
@@ -655,6 +658,19 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
+    public CommandLineBuilder getPreconfigureQuickstartArgs()
+    {
+        CommandLineBuilder cmd = new CommandLineBuilder();
+        cmd.addRawArg(getPreconfigureQuickstartClassname());
+        cmd.addRawArg(warFileDir);
+        return cmd;
+    }
+
+    public String getPreconfigureQuickstartClassname()
+    {
+        return System.getProperty("main.class", PRECONFIGURE_QUICKSTART_MAIN);
+    }
+
     public String getMavenLocalRepoDir()
     {
         String localRepo = getProperties().getString("maven.local.repo");
@@ -827,6 +843,11 @@ public class StartArgs
     public boolean isUpdateIni()
     {
         return updateIni;
+    }
+
+    public boolean isPregenerateQuickstart()
+    {
+        return pregenerateQuickstart;
     }
 
     public void parse(ConfigSources sources)
@@ -1085,6 +1106,13 @@ public class StartArgs
         {
             this.moduleGraphFilename = Props.getValue(arg);
             run = false;
+            return;
+        }
+
+        if (arg.startsWith("--pregenerate-quickstart-xml="))
+        {
+            pregenerateQuickstart = true;
+            warFileDir = Props.getValue(arg);
             return;
         }
 

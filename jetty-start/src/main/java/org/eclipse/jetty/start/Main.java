@@ -189,10 +189,9 @@ public class Main
         return "";
     }
 
-    public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
+    public void invokeMain(ClassLoader classloader, String mainclass, CommandLineBuilder cmd) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
     {
         Class<?> invoked_class = null;
-        String mainclass = args.getMainClassname();
 
         try
         {
@@ -208,7 +207,6 @@ public class Main
 
         StartLog.debug("%s - %s",invoked_class,invoked_class.getPackage().getImplementationVersion());
 
-        CommandLineBuilder cmd = args.getMainArgs(false);
         String argArray[] = cmd.getArgs().toArray(new String[0]);
         StartLog.debug("Command Line Args: %s",cmd.toString());
 
@@ -503,7 +501,14 @@ public class Main
         // Invoke the Main Class
         try
         {
-            invokeMain(cl, args);
+            if (args.isPregenerateQuickstart())
+            {
+                invokeMain(cl, args.getPreconfigureQuickstartClassname(), args.getPreconfigureQuickstartArgs());
+            }
+            else
+            {
+                invokeMain(cl, args.getMainClassname(), args.getMainArgs(false));
+            }
         }
         catch (Throwable e)
         {

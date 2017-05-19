@@ -96,6 +96,8 @@ This allows the generated properties file to be saved and reused.
 Without this option, a temporary file is used.
 --commands=<filename>::
 Instructs `start.jar` to use each line of the specified file as arguments on the command line.
+--pregenerate-quickstart-xml=<war>|<wardir>::
+Expands war and generates quickstart-web.xml. See <<quickstart-webapp,Quickstart>> doc.
 
 ===== Debugg and Start Logging
 
