@@ -33,14 +33,22 @@ To start Jetty on the default port of 8080, run the following command:
 ----
 
 You can point a browser at this server at link:http://localhost:8080[].
-However, as there are no webapps deployed in the $JETTY_HOME directory, you will see a 404 error page served by Jetty.
-*Note* the HomeBase warning - it is _not_ recommended to run Jetty from the $JETTY_HOME directory.
+However, as there are no webapps deployed in the `$JETTY_HOME` directory, you will see a 404 error page served by Jetty.
+*Note* the HomeBase warning - it is _not_ recommended to run Jetty from the `$JETTY_HOME` directory.
 Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
+
+____
+[NOTE]
+You will see examples throughout the documentation referencing `$JETTY_HOME` and `$JETTY_BASE` as well as `{jetty.home}` and `$jetty.base}`.
+These terms are used to refer to the location of your Jetty installation directories.
+Many users find it helpful to define `JETTY_HOME` as an environment variable that maps to their Jetty distribution directory.
+More information can be found in our Administration section on link:#startup-base-and-home[managing Jetty Home and Jetty Base.]
+____
 
 [[demo-webapps-base]]
 ==== Demo Base
 
-Within the standard jetty distribution there is the `demo-base` directory, which demonstrates the recommended way to run Jetty in a directory separately from $JETTY_HOME:
+Within the standard Jetty distribution there is the `demo-base` directory, which demonstrates the recommended way to run a Jetty base in a directory separate from `$JETTY_HOME`:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -74,7 +82,7 @@ You can visit this demo server by pointing a browser at link:http://localhost:80
 
 ____
 [WARNING]
-The demonstration web applications are not necessarily secure and should not be deployed in production web servers.
+The demonstration web applications are not necessarily secure and should *not* be deployed in production web servers.
 ____
 
 You can see the configuration of the demo-base by using the following commands:
@@ -89,21 +97,22 @@ You can see the configuration of the demo-base by using the following commands:
 ...
 ----
 
- The `--list-modules` command will return a complete list of available and enabled modules for the server.
- It will also display the location of the modules, how and in what order they are implemented, dependent modules, and associated jar files.
- The `--list-config` command displays a trove of  information about the server including the Java and Jetty environments, the configuration order, any JVM arguments or System Properties set, general server properties, a full listing of the Jetty server class path, and active Jetty XML files.
+The  `--list-modules` command will return a complete list of available and enabled modules for the server.
+It will also display the location of the modules, how and in what order they are implemented, dependent modules, and associated jar files.
+
+The `--list-config` command displays a trove of  information about the server including the Java and Jetty environments, the configuration order, any JVM arguments or System Properties set, general server properties, a full listing of the Jetty server class path, and active Jetty XML files.
 
 [[creating-jetty-base]]
 ==== Creating a new Jetty Base
 
-The `demo-base` directory described above is an example of the link:#startup-base-and-home[jetty.base] mechanism added in Jetty 9.1.
+The `demo-base` directory described above is an example of the link:#startup-base-and-home[`jetty.base`] mechanism.
 A Jetty base directory allows the configuration and web applications of a server instance to be stored separately from the Jetty distribution, so that upgrades can be done with minimal disruption.
 Jetty's default configuration is based on two properties:
 
 jetty.home::
-  The property that defines the location of the jetty distribution, its libs, default modules and default XML files (typically start.jar, lib, etc)
+  The property that defines the location of the Jetty distribution, its libs, default modules and default XML files (typically start.jar, lib, etc).
 jetty.base::
-  The property that defines the location of a specific instance of a jetty server, its configuration, logs and web applications (typically start.ini, start.d, logs and webapps)
+  The property that defines the location of a specific implementation of a Jetty server, its configuration, logs and web applications (typically start.d/*.ini files, logs and webapps).
 
 ____
 [IMPORTANT]
@@ -162,7 +171,7 @@ INFO: Base directory was modified
 [[quickstart-changing-jetty-port]]
 ==== Changing the Jetty Port
 
-You can configure Jetty to run on a different port by setting the `jetty.http.port` Property on the command line:
+You can configure Jetty to run on a different port by setting the `jetty.http.port` property on the command line:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -171,8 +180,9 @@ You can configure Jetty to run on a different port by setting the `jetty.http.po
 ...
 ----
 
-Alternatively, property values can be added to the effective command line built from either the `start.ini` file or `start.d/http.ini` files.
-By default, the Jetty distribution defines the `jetty.http.port` property in the `start.d/http.ini` file, which may be edited to set another value.
+When the server starts, it will now run on port 8081.
+It is important to note that setting properties on the command line will only take affect for that instance of the server.
+To change the configuration so that the server will always start on the desired port, you will need to edit the `start.d/http.ini`
 
 ____
 [NOTE]
@@ -190,24 +200,48 @@ ____
 [[quickstart-starting-https]]
 ==== Adding SSL for HTTPS & HTTP2
 
+Building on the example above, we can activate additional modules to add support HTTPS and HTTP2 for the server.
 To add HTTPS and HTTP2 connectors to a Jetty configuration, the modules can be activated by the following command:
 
 [source, screen, subs="{sub-order}"]
 ----
 > java -jar $JETTY_HOME/start.jar --add-to-start=https,http2
-[...]
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: alpn-impl/alpn-8
+  + ALPN is a hosted at github under the GPL v2 with ClassPath Exception.
+  + ALPN replaces/modifies OpenJDK classes in the sun.security.ssl package.
+  + http://github.com/jetty-project/jetty-alpn
+  + http://openjdk.java.net/legal/gplv2+ce.html
+
+Proceed (y/N)? y
+INFO  : alpn-impl/alpn-1.8.0_92 dynamic dependency of alpn-impl/alpn-8
+INFO  : alpn            transitively enabled, ini template available with --add-to-start=alpn
+INFO  : alpn-impl/alpn-8 dynamic dependency of alpn
+INFO  : http2           initialized in ${jetty.base}/start.d/http2.ini
+INFO  : https           initialized in ${jetty.base}/start.d/https.ini
+INFO  : ssl             transitively enabled, ini template available with --add-to-start=ssl
+MKDIR : ${jetty.base}/lib/alpn
+DOWNLD: http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/8.1.8.v20160420/alpn-boot-8.1.8.v20160420.jar to ${jetty.base}/lib/alpn/alpn-boot-8.1.8.v20160420.jar
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
+INFO  : Base directory was modified
 
 > java -jar $JETTY_HOME/start.jar
 [...]
-
-2015-06-04 13:52:01.933:INFO:oejs.ServerConnector:main: Started ServerConnector@6f1fba17{SSL,[ssl, alpn, h2, http/1.1]}{0.0.0.0:8443}
+2017-05-22 12:48:23.271:INFO:oejs.AbstractConnector:main: Started ServerConnector@134d0064{SSL,[ssl, alpn, h2, http/1.1]}{0.0.0.0:8443}
 [...]
 ----
 
 The `--add-to-start` command sets up the effective command line in the ini files to run an ssl connection that supports the HTTPS and HTTP2 protocols as follows:
 
-* creates `start.d/ssl.ini` that configures an SSL connector (eg port, keystore etc.) by adding `etc/jetty-ssl.xml` and `etc/jetty-ssl-context.xml` to the effective command line.
-* creates `start.d/alpn.ini` that configures protocol negotiation on the SSL connector by adding `etc/jetty-alpn.xml` to the effective command line.
+* transitively enabled the `ssl` module that configures an SSL connector (eg port, keystore etc.) by adding `etc/jetty-ssl.xml` and `etc/jetty-ssl-context.xml` to the effective command line.
+* transitively enabled the `alpn` module that configures protocol negotiation on the SSL connector by adding `etc/jetty-alpn.xml` to the effective command line.
 * creates `start.d/https.ini` that configures the HTTPS protocol on the SSL connector by adding `etc/jetty-https.xml` to the effective command line.
 * creates `start.d/http2.ini` that configures the HTTP/2 protocol on the SSL connector by adding `etc/jetty-http2.xml` to the effective command line.
 * checks for the existence of a `etc/keystore` file and if not present, downloads a demonstration keystore file.

@@ -15,8 +15,7 @@
 //  ========================================================================
 
 [[jetty-home-and-jetty-base]]
-=== Using the $\{jetty.home} and $\{jetty.base} Concepts to Configure
-Security
+=== Configuring Security with Jetty Home and Base Directories
 
 Jetty implementations are structured around the idea of `${jetty.base}` and `${jetty.home}` directories.
 
