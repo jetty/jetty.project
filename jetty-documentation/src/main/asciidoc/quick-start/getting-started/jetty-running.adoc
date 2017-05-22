@@ -39,9 +39,9 @@ Instead, see how to link:#creating-jetty-base[create a Jetty Base] below.
 
 ____
 [NOTE]
-You will see examples throughout the documentation referencing `$JETTY_HOME` and `$JETTY_BASE` as well as `{jetty.home}` and `$jetty.base}`.
+You will see examples throughout the documentation referencing `$JETTY_HOME` and `$JETTY_BASE` as well as `{jetty.home}` and `{jetty.base}`.
 These terms are used to refer to the location of your Jetty installation directories.
-Many users find it helpful to define `JETTY_HOME` as an environment variable that maps to their Jetty distribution directory.
+Many users find it helpful to define `$JETTY_HOME` as an environment variable that maps to their Jetty distribution directory.
 More information can be found in our Administration section on link:#startup-base-and-home[managing Jetty Home and Jetty Base.]
 ____
 
