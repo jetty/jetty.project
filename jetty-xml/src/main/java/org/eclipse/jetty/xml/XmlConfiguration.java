@@ -35,6 +35,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1479,7 +1480,7 @@ public class XmlConfiguration
 
                     // For all arguments, parse XMLs
                     XmlConfiguration last = null;
-                    Object[] obj = new Object[args.length];
+                    List<Object> objects = new ArrayList<>(args.length);
                     for (int i = 0; i < args.length; i++)
                     {
                         if (!args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties") && (args[i].indexOf('=')<0))
@@ -1496,17 +1497,20 @@ public class XmlConfiguration
                                 }
                                 configuration.getProperties().putAll(props);
                             }
-                            obj[i] = configuration.configure();
+                            
+                            Object obj = configuration.configure();
+                            if (obj!=null && !objects.contains(obj))
+                                objects.add(obj);
                             last = configuration;
                         }
                     }
 
                     // For all objects created by XmlConfigurations, start them if they are lifecycles.
-                    for (int i = 0; i < args.length; i++)
-                    {
-                        if (obj[i] instanceof LifeCycle)
+                    for (Object obj : objects)
+                    {           
+                        if (obj instanceof LifeCycle)
                         {
-                            LifeCycle lc = (LifeCycle)obj[i];
+                            LifeCycle lc = (LifeCycle)obj;
                             if (!lc.isRunning())
                                 lc.start();
                         }
