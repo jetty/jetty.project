@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
@@ -84,7 +83,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient()
     {
         // Create synthetic HttpClient
-        this(new HttpClient());
+        this(HttpClientProvider.get(null));
         addBean(this.httpClient);
     }
 
@@ -250,6 +249,22 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory)
     {
+        this(scope, eventDriverFactory, sessionFactory, null);
+    }
+    
+    /**
+     * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
+     * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
+     *
+     * @param scope
+     *            the Container Scope
+     * @param eventDriverFactory
+     *            the EventDriver Factory to use
+     * @param sessionFactory
+     *            the SessionFactory to use
+     */
+    public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
+    {
         WebSocketContainerScope clientScope;
         if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
         {
@@ -262,27 +277,19 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
         
         this.containerScope = clientScope;
-        SslContextFactory sslContextFactory = scope.getSslContextFactory();
-        if(sslContextFactory == null)
+        
+        if(httpClient == null)
         {
-            sslContextFactory = new SslContextFactory();
+            this.httpClient = HttpClientProvider.get(scope);
+            addBean(this.httpClient);
         }
-        this.httpClient = new HttpClient(sslContextFactory);
-        Executor executor = scope.getExecutor();
-        if (executor == null)
+        else
         {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            String name = "WebSocketClient@" + hashCode();
-            threadPool.setName(name);
-            threadPool.setDaemon(true);
-            executor = threadPool;
+            this.httpClient = httpClient;
         }
-    
-        this.httpClient.setExecutor(executor);
-        addBean(this.httpClient);
-
+        
         this.extensionRegistry = new WebSocketExtensionFactory(containerScope);
-
+        
         this.eventDriverFactory = eventDriverFactory;
         this.sessionFactory = sessionFactory;
     }

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.lang.reflect.Method;
+
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -66,6 +68,20 @@ public class JettyClientContainerProvider extends ContainerProvider
     {
         synchronized (lock)
         {
+            try
+            {
+                Class<?> clazzServerContainer = Class.forName("org.eclipse.jetty.websocket.jsr356.server.ServerContainer");
+                Method method = clazzServerContainer.getMethod("getWebSocketContainer");
+                WebSocketContainer container = (WebSocketContainer) method.invoke(null);
+                if (container != null)
+                {
+                    return container;
+                }
+            }
+            catch (Throwable ignore)
+            {
+            }
+    
             if (INSTANCE == null)
             {
                 INSTANCE = new ClientContainer();
