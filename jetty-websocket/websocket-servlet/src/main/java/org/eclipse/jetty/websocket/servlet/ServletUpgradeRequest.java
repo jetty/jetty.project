@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
+import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -48,6 +51,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
 {
     private static final String CANNOT_MODIFY_SERVLET_REQUEST = "Cannot modify Servlet Request";
     private final URI requestURI;
+    private final String queryString;
     private final UpgradeHttpServletRequest request;
     private final boolean secure;
     private List<HttpCookie> cookies;
@@ -61,9 +65,18 @@ public class ServletUpgradeRequest implements UpgradeRequest
         String scheme = secure ? "wss" : "ws";
         String authority = servletURI.getAuthority();
         String path = servletURI.getPath();
-        String query = httpRequest.getQueryString();
+        this.queryString = httpRequest.getQueryString();
         String fragment = null;
-        this.requestURI = new URI(scheme,authority,path,query,fragment);
+        URI reqURI;
+        try
+        {
+            reqURI = new URI(scheme,authority,path, URLDecoder.decode(queryString, StandardCharsets.UTF_8.toString()),fragment);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            reqURI = new URI(scheme,authority,path, queryString, fragment);
+        }
+        this.requestURI = reqURI;
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
 
@@ -292,7 +305,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
     @Override
     public String getQueryString()
     {
-        return requestURI.getQuery();
+        return this.queryString;
     }
 
     /**
