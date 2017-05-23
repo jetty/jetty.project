@@ -66,17 +66,20 @@ public class ServletUpgradeRequest implements UpgradeRequest
         String authority = servletURI.getAuthority();
         String path = servletURI.getPath();
         this.queryString = httpRequest.getQueryString();
+        String decodedQuery = null;
+        if (this.queryString != null)
+        {
+            try
+            {
+                decodedQuery = URLDecoder.decode(queryString, StandardCharsets.UTF_8.toString());
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                decodedQuery = queryString;
+            }
+        }
         String fragment = null;
-        URI reqURI;
-        try
-        {
-            reqURI = new URI(scheme,authority,path, URLDecoder.decode(queryString, StandardCharsets.UTF_8.toString()),fragment);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            reqURI = new URI(scheme,authority,path, queryString, fragment);
-        }
-        this.requestURI = reqURI;
+        this.requestURI = new URI(scheme,authority,path, decodedQuery, fragment);
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
 
