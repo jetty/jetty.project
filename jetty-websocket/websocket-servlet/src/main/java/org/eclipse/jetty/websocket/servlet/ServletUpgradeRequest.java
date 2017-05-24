@@ -60,26 +60,14 @@ public class ServletUpgradeRequest implements UpgradeRequest
 
     public ServletUpgradeRequest(HttpServletRequest httpRequest) throws URISyntaxException
     {
-        URI servletURI = URI.create(httpRequest.getRequestURL().toString());
-        this.secure = httpRequest.isSecure();
-        String scheme = secure ? "wss" : "ws";
-        String authority = servletURI.getAuthority();
-        String path = servletURI.getPath();
         this.queryString = httpRequest.getQueryString();
-        String decodedQuery = null;
-        if (this.queryString != null)
-        {
-            try
-            {
-                decodedQuery = URLDecoder.decode(queryString, StandardCharsets.UTF_8.toString());
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                decodedQuery = queryString;
-            }
-        }
-        String fragment = null;
-        this.requestURI = new URI(scheme,authority,path, decodedQuery, fragment);
+        this.secure = httpRequest.isSecure();
+
+        StringBuffer uri = httpRequest.getRequestURL();
+        if (this.queryString!=null)
+            uri.append("?").append(this.queryString);
+        uri.replace(0,uri.indexOf(":"),secure ? "wss" : "ws");        
+        this.requestURI = new URI(uri.toString());
         this.request = new UpgradeHttpServletRequest(httpRequest);
     }
 

@@ -42,28 +42,25 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri,"Input URI must not be null");
         String wsScheme = inputUri.getScheme();
-        String httpScheme = null;
         if ("http".equalsIgnoreCase(wsScheme) || "https".equalsIgnoreCase(wsScheme))
         {
             // leave alone
-            httpScheme = wsScheme;
+            return inputUri; // TODO should this be cloned?
         }
-        else if ("ws".equalsIgnoreCase(wsScheme))
+        
+        if ("ws".equalsIgnoreCase(wsScheme))
         {
             // convert to http
-            httpScheme = "http";
+            return new URI("http"+inputUri.toString().substring(2));
         }
-        else if ("wss".equalsIgnoreCase(wsScheme))
+        
+        if ("wss".equalsIgnoreCase(wsScheme))
         {
             // convert to https
-            httpScheme = "https";
+            return new URI("http"+inputUri.toString().substring(2));
         }
-        else
-        {
-            throw new URISyntaxException(inputUri.toString(),"Unrecognized WebSocket scheme");
-        }
-
-        return new URI(httpScheme,inputUri.getUserInfo(),inputUri.getHost(),inputUri.getPort(),inputUri.getPath(),inputUri.getQuery(),inputUri.getFragment());
+        
+        throw new URISyntaxException(inputUri.toString(),"Unrecognized WebSocket scheme");
     }
 
     /**
