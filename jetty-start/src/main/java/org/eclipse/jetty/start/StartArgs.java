@@ -662,7 +662,7 @@ public class StartArgs
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
         cmd.addRawArg(getPreconfigureQuickstartClassname());
-        cmd.addRawArg(warFileDir);
+        cmd.addArg(warFileDir);
         return cmd;
     }
 
