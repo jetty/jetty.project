@@ -35,5 +35,9 @@
     <module>test-jdbc-sessions</module>
     <!-- Requires mongodb server running -->
     <module>test-mongodb-sessions</module>
+    <module>test-infinispan-sessions</module>
+    <module>test-gcloud-sessions</module>
+    <module>test-memcached-sessions</module>
+    <module>test-hazelcast-sessions</module>
   </modules>
 </project>

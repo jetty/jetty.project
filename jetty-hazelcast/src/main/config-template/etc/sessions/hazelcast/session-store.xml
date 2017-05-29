@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory HazelcastSessionDataStoreaMap                       -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory">
+
+    </New>
+   </Arg>
+  </Call>
+  
+</Configure>
