@@ -43,7 +43,22 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <phase>generate-resources</phase>
+            <id>populate distribution from home</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <copy todir="${assembly-directory}">
+                  <fileset dir="${home-directory}/jetty-home-${project.version}/" />
+                </copy>
+              </tasks>
+            </configuration>
+          </execution>
+          <execution>
+            <id>set jetty.sh</id>
+            <phase>process-resources</phase>
             <goals>
               <goal>run</goal>
             </goals>
