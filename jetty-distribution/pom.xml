@@ -51,7 +51,7 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>popluate distribution from home</id>
+            <id>populate distribution from home</id>
             <phase>process-resources</phase>
             <goals>
               <goal>run</goal>

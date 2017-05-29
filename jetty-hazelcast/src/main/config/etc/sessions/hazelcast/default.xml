@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Get a reference to the default local Hazelcast Instance.              -->
+  <!-- ===================================================================== -->
+  <!--
+  <New id="hazelcastInstance" class="com.hazelcast.core.HazelcastInstance">
+
+  </New>
+  -->
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for HazelcastSessionDataStore using               -->
+  <!-- an embedded Hazelcast Instance                                        -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+    <Arg>
+      <New id="sessionDataStoreFactory" class="org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory">
+        <!--
+         <Set name="hazelcastInstance"><Ref id="hazelcastInstance"/></Set>
+        -->
+        <!--
+        <Set name="configurationLocation">
+          <Property name="jetty.session.configurationLocation" default="0"/>
+        </Set>
+        -->
+      </New>
+    </Arg>
+  </Call>
+</Configure> 

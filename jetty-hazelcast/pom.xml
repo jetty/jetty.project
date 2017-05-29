@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
     <version>9.4.6-SNAPSHOT</version>
   </parent>
 
@@ -13,7 +13,7 @@
 
   <properties>
     <hazelcast.version>3.8.2</hazelcast.version>
-    <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.hazelcast</bundle-symbolic-name>
   </properties>
 
   <dependencies>
@@ -66,83 +66,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Export-Package>
-                  org.eclipse.jetty.hazelcast.session.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";
-                </Export-Package>
-              </instructions>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>build-deps-file</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>list</goal>
-            </goals>
-            <configuration>
-              <appendOutput>false</appendOutput>
-              <outputFile>${project.build.directory}/deps.txt</outputFile>
-              <sort>true</sort>
-              <excludeGroupIds>org.eclipse.jetty</excludeGroupIds>
-              <prependGroupId>true</prependGroupId>
-              <includeScope>runtime</includeScope>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>process-deps</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <replaceregexp file="${project.build.directory}/deps.txt"
-                               match="The following files have been resolved:"
-                               replace="[files]"
-                />
-              </tasks>
-            </configuration>
-          </execution>
-          <execution>
-            <id>process-mod</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <concat destfile="${project.build.directory}/hazelcast-datastore.mod">
-                  <fileset file="src/main/config-template/modules/hazelcast-datastore.mod"/>
-                  <fileset file="${project.build.directory}/deps.txt"/>
-                </concat>
-              </tasks>
-            </configuration>
-          </execution>
-
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
@@ -152,9 +75,9 @@
               <goal>single</goal>
             </goals>
             <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
+              <descriptorRefs>
+                <descriptorRef>config</descriptorRef>
+              </descriptorRefs>
             </configuration>
           </execution>
         </executions>
