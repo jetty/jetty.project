@@ -100,8 +100,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     public void addValue(String value)
     {
         super.addValue(value);
-        while(_quality.size()<_values.size())
-            _quality.add(ONE);
     }
     
     /* ------------------------------------------------------------ */
@@ -109,6 +107,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     protected void parsedValue(StringBuffer buffer)
     {
         super.parsedValue(buffer);
+        _quality.add(ONE);
     }
 
     /* ------------------------------------------------------------ */
@@ -120,7 +119,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             if (buffer.charAt(buffer.length()-1)==';')
                 buffer.setLength(buffer.length()-1);
         }
-        if (paramValue>=0 && 
+        else if (paramValue>=0 && 
             buffer.charAt(paramName)=='q' && paramValue>paramName && 
             buffer.length()>=paramName && buffer.charAt(paramName+1)=='=')
         {
@@ -134,12 +133,11 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             catch(Exception e)
             {
                 q=ZERO;
-            }
-            buffer.setLength(paramName-1);
+            }            
+            buffer.setLength(Math.max(0,paramName-1));
             
-            while(_quality.size()<_values.size())
-                _quality.add(ONE);
-            _quality.add(q);
+           if (!ONE.equals(q))
+               _quality.set(_quality.size()-1,q);
         }
     }
 
