@@ -44,7 +44,7 @@ public class WSURITest
     {
         assertURI(WSURI.toWebsocket(URI.create("https://localhost/")),URI.create("wss://localhost/"));
     }
-
+    
     @Test
     public void testHttpToHttp() throws URISyntaxException
     {
