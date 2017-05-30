@@ -206,7 +206,7 @@ public class PathResource extends Resource
 		// Note: The org.eclipse.jetty.server.ResourceCache.Content uses #toString() instead of
 		// #getName() for determining the file name for mime type resolution based on the file name 
         // extension.
-		return _path.toString();
+		return path.toString();
 	}
 
     @Override
