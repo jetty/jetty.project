@@ -44,6 +44,11 @@ By default Session files will be saved to this directory.
 
 In addition to adding these modules to the classpath of the server, several ini configuration files were added to the `${jetty.base}/start.d` directory.
 
+____
+[NOTE]
+Session data is now only loaded when requested.
+Previous functionality such as `setLazyLoad` has been removed.
+____
 
 ==== Configuring File System Session Properties
 
@@ -75,6 +80,6 @@ ____
 [NOTE]
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
-This allows the possibility that a node may prematurely expire the session, even though it is in use by another node. 
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
 ____
