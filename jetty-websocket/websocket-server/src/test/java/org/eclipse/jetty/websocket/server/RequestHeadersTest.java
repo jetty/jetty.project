@@ -21,14 +21,15 @@ package org.eclipse.jetty.websocket.server;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.net.HttpCookie;
+import java.net.URI;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.server.helper.EchoSocket;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -71,9 +71,6 @@ public class RequestHeadersTest
 
     public static class EchoRequestServlet extends WebSocketServlet
     {
-        /**
-         * 
-         */
         private static final long serialVersionUID = -6575001979901924179L;
         private final WebSocketCreator creator;
 
@@ -120,15 +117,42 @@ public class RequestHeadersTest
             client.expectUpgradeResponse();
 
             UpgradeRequest req = echoCreator.getLastRequest();
-            Assert.assertThat("Last Request",req,notNullValue());
+            assertThat("Last Request",req,notNullValue());
             List<HttpCookie> cookies = req.getCookies();
-            Assert.assertThat("Request cookies",cookies,notNullValue());
-            Assert.assertThat("Request cookies.size",cookies.size(),is(2));
+            assertThat("Request cookies",cookies,notNullValue());
+            assertThat("Request cookies.size",cookies.size(),is(2));
             for (HttpCookie cookie : cookies)
             {
-                Assert.assertThat("Cookie name",cookie.getName(),anyOf(is("fruit"),is("type")));
-                Assert.assertThat("Cookie value",cookie.getValue(),anyOf(is("Pear"),is("Anjou")));
+                assertThat("Cookie name",cookie.getName(),anyOf(is("fruit"),is("type")));
+                assertThat("Cookie value",cookie.getValue(),anyOf(is("Pear"),is("Anjou")));
             }
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
+    @Test
+    public void testRequestURI() throws Exception
+    {
+        URI destUri = server.getServerUri().resolve("/?abc=x%20z&breakfast=bacon%26eggs&2*2%3d5=false");
+        BlockheadClient client = new BlockheadClient(destUri);
+        client.setTimeout(1,TimeUnit.SECONDS);
+    
+        try
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+                    
+            UpgradeRequest req = echoCreator.getLastRequest();
+            assertThat("Last Request",req,notNullValue());
+            assertThat("Request.host", req.getHost(), is(server.getServerUri().getHost()));
+            assertThat("Request.queryString", req.getQueryString(), is("abc=x%20z&breakfast=bacon%26eggs&2*2%3d5=false"));
+            assertThat("Request.uri.path", req.getRequestURI().getPath(), is("/"));
+            assertThat("Request.uri.rawQuery", req.getRequestURI().getRawQuery(), is("abc=x%20z&breakfast=bacon%26eggs&2*2%3d5=false"));
+            assertThat("Request.uri.query", req.getRequestURI().getQuery(), is("abc=x z&breakfast=bacon&eggs&2*2=5=false"));
         }
         finally
         {

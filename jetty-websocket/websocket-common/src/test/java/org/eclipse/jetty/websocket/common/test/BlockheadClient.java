@@ -530,7 +530,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         path.append(destHttpURI.getPath());
         if (StringUtil.isNotBlank(destHttpURI.getQuery()))
         {
-            path.append('?').append(destHttpURI.getQuery());
+            path.append('?').append(destHttpURI.getRawQuery());
         }
         return path.toString();
     }

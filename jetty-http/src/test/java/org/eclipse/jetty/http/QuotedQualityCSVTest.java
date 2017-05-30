@@ -158,6 +158,70 @@ public class QuotedQualityCSVTest
                 "value1.0",
                 "value0.5;p=v"));
     }
+    
+    @Test
+    public void testBad()
+    {
+        QuotedQualityCSV values = new QuotedQualityCSV();
+
+        
+        // None of these should throw exceptions
+        values.addValue(null);
+        values.addValue("");
+
+        values.addValue(";");
+        values.addValue("=");
+        values.addValue(",");
+
+        values.addValue(";;");
+        values.addValue(";=");
+        values.addValue(";,");
+        values.addValue("=;");
+        values.addValue("==");
+        values.addValue("=,");
+        values.addValue(",;");
+        values.addValue(",=");
+        values.addValue(",,");
+
+        values.addValue(";;;");
+        values.addValue(";;=");
+        values.addValue(";;,");
+        values.addValue(";=;");
+        values.addValue(";==");
+        values.addValue(";=,");
+        values.addValue(";,;");
+        values.addValue(";,=");
+        values.addValue(";,,");
+
+        values.addValue("=;;");
+        values.addValue("=;=");
+        values.addValue("=;,");
+        values.addValue("==;");
+        values.addValue("===");
+        values.addValue("==,");
+        values.addValue("=,;");
+        values.addValue("=,=");
+        values.addValue("=,,");
+
+        values.addValue(",;;");
+        values.addValue(",;=");
+        values.addValue(",;,");
+        values.addValue(",=;");
+        values.addValue(",==");
+        values.addValue(",=,");
+        values.addValue(",,;");
+        values.addValue(",,=");
+        values.addValue(",,,");
+
+        values.addValue("x;=1");
+        values.addValue("=1");
+        values.addValue("q=x");
+        values.addValue("q=0");
+        values.addValue("q=");
+        values.addValue("q=,");
+        values.addValue("q=;");
+        
+    }
 
     /* ------------------------------------------------------------ */
 

@@ -23,14 +23,16 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -56,6 +58,8 @@ import java.util.Set;
 public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 {
     private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
+
+    private static final String JAR_FILE = "jar:file:";
 
     protected Path _configPath;
     protected Resource _configResource;
@@ -111,7 +115,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 
     /**
      * Set the Config Path from a String reference to a file
-     * @param configFile the config file
+     * @param configFile the config file can a be a file path or a reference to a file within a jar file <code>jar:file:</code>
      */
     public void setConfigPath(String configFile)
     {
@@ -119,10 +123,39 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         {
             _configPath = null;
         }
-        else
+        else if (new File( configFile ).exists())
         {
             _configPath = new File(configFile).toPath();
         }
+        if ( !new File( configFile ).exists() && configFile.startsWith( JAR_FILE ))
+        {
+            // format of the url is jar:file:/foo/bar/beer.jar!/mountain_goat/pale_ale.txt
+            // ideally we'd like to extract this to Resource class?
+            try
+            {
+                _configPath = extractPackedFile( configFile );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "cannot extract file from url:" + configFile, e );
+            }
+        }
+    }
+
+    private Path extractPackedFile( String configFile )
+        throws IOException
+    {
+        int fileIndex = configFile.indexOf( "!" );
+        String entryPath = configFile.substring( fileIndex + 1, configFile.length() );
+
+        Path tmpDirectory = Files.createTempDirectory( "users_store" );
+        Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
+        // delete if exists as copyTo do not overwrite
+        Files.deleteIfExists( extractedPath );
+        // delete on shutdown
+        extractedPath.toFile().deleteOnExit();
+        JarResource.newResource( configFile ).copyTo( tmpDirectory.toFile() );
+        return extractedPath;
     }
 
     /**
