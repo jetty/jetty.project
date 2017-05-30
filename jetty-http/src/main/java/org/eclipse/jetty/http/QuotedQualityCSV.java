@@ -95,12 +95,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     {
         this._secondaryOrdering = secondaryOrdering;
     }
-
-    /* ------------------------------------------------------------ */
-    public void addValue(String value)
-    {
-        super.addValue(value);
-    }
     
     /* ------------------------------------------------------------ */
     @Override
