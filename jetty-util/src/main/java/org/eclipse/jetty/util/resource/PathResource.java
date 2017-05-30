@@ -201,13 +201,10 @@ public class PathResource extends Resource
         return path.toAbsolutePath().toString();
     }
 
-	@Override
-	public String toString() {
-		// Note: The org.eclipse.jetty.server.ResourceCache.Content uses #toString() instead of
-		// #getName() for determining the file name for mime type resolution based on the file name 
-        // extension.
-		return path.toString();
-	}
+    @Override
+    public String toString() {
+        return path.toString();
+    }
 
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
