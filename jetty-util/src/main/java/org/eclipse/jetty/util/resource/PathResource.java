@@ -405,6 +405,11 @@ public class PathResource extends Resource
     }
 
     @Override
+    public String toString() {
+        return path.toString();
+    }
+
+    @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
         return FileChannel.open(path,StandardOpenOption.READ);
