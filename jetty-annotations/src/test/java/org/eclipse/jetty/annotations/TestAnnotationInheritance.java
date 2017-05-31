@@ -26,6 +26,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.naming.Context;
@@ -35,7 +37,6 @@ import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.After;
 import org.junit.Test;
 
@@ -147,7 +148,7 @@ public class TestAnnotationInheritance
     @Test
     public void testTypeInheritanceHandling() throws Exception
     {
-       ConcurrentHashMap<String, ConcurrentHashSet<String>> map = new ConcurrentHashMap<String, ConcurrentHashSet<String>>();
+        Map<String, Set<String>> map = new ConcurrentHashMap<>();
         
         AnnotationParser parser = new AnnotationParser();
         ClassInheritanceHandler handler = new ClassInheritanceHandler(map);
@@ -171,7 +172,7 @@ public class TestAnnotationInheritance
         
         assertTrue (map.keySet().contains("org.eclipse.jetty.annotations.ClassA"));
         assertTrue (map.keySet().contains("org.eclipse.jetty.annotations.InterfaceD"));
-        ConcurrentHashSet<String> classes = map.get("org.eclipse.jetty.annotations.ClassA");
+        Set<String> classes = map.get("org.eclipse.jetty.annotations.ClassA");
         assertEquals(1, classes.size());
         assertEquals ("org.eclipse.jetty.annotations.ClassB", classes.iterator().next());
 

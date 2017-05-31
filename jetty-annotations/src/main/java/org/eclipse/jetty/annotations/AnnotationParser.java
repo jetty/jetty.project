@@ -28,10 +28,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.log.Log;
@@ -68,7 +68,7 @@ public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
-    protected Set<String> _parsedClassNames = new ConcurrentHashSet<String>();
+    protected Set<String> _parsedClassNames = ConcurrentHashMap.newKeySet();
     
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM5; //compatibility of api
    

@@ -46,7 +46,6 @@ import javax.servlet.annotation.HandlesTypes;
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -395,7 +394,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        ConcurrentHashMap<String, ConcurrentHashSet<String>> classMap = (ClassInheritanceMap)context.getAttribute(CLASS_INHERITANCE_MAP);
+        Map<String, Set<String>> classMap = (ClassInheritanceMap)context.getAttribute(CLASS_INHERITANCE_MAP);
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
         
         context.removeAttribute(CLASS_INHERITANCE_MAP);
@@ -610,7 +609,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     if (context.getAttribute(CLASS_INHERITANCE_MAP) == null)
                     {
                         //MultiMap<String> map = new MultiMap<>();
-                        ConcurrentHashMap<String, ConcurrentHashSet<String>> map = new ClassInheritanceMap();
+                        Map<String, Set<String>> map = new ClassInheritanceMap();
                         context.setAttribute(CLASS_INHERITANCE_MAP, map);
                         _classInheritanceHandler = new ClassInheritanceHandler(map);
                     }
@@ -1087,7 +1086,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
     }
 
-    public static class ClassInheritanceMap extends ConcurrentHashMap<String, ConcurrentHashSet<String>>
+    public static class ClassInheritanceMap extends ConcurrentHashMap<String, Set<String>>
     {
         
         @Override

@@ -24,13 +24,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.ServletContainerInitializer;
 
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -43,8 +43,8 @@ public class ContainerInitializer
     
     final protected ServletContainerInitializer _target;
     final protected Class<?>[] _interestedTypes;
-    final protected Set<String> _applicableTypeNames = new ConcurrentHashSet<String>();
-    final protected Set<String> _annotatedTypeNames = new ConcurrentHashSet<String>();
+    final protected Set<String> _applicableTypeNames = ConcurrentHashMap.newKeySet();
+    final protected Set<String> _annotatedTypeNames = ConcurrentHashMap.newKeySet();
 
 
     public ContainerInitializer (ServletContainerInitializer target, Class<?>[] classes)

@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * @deprecated Use Java 8 method {@code ConcurrentHashMap.newKeySet()} instead.
+ */
+@Deprecated
 public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E>
 {
     private final Map<E, Boolean> _map = new ConcurrentHashMap<E, Boolean>();
