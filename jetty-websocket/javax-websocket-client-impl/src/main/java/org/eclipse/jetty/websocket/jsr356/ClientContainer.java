@@ -41,6 +41,7 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -72,6 +73,7 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * <p>
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
+@ManagedObject("JSR356 Client Container")
 public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
