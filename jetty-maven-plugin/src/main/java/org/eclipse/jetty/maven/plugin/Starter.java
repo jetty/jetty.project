@@ -63,54 +63,7 @@ public class Starter
     private Properties props;
     private String token;
 
-    
-    /**
-     * Artifact
-     *
-     * A mock maven Artifact class as the maven jars are not put onto the classpath for the
-     * execution of this class.
-     *
-     */
-    public class Artifact
-    {
-        public String gid;
-        public String aid;
-        public String path;
-        public Resource resource;
-        
-        public Artifact (String csv)
-        {
-            if (csv != null && !"".equals(csv))
-            {
-                String[] atoms = StringUtil.csvSplit(csv);
-                if (atoms.length >= 3)
-                {
-                    gid = atoms[0].trim();
-                    aid = atoms[1].trim();
-                    path = atoms[2].trim();
-                }
-            }
-        }
-        
-        public Artifact (String gid, String aid, String path)
-        {
-            this.gid = gid;
-            this.aid = aid;
-            this.path = path;
-        }
-        
-        public boolean equals(Object o)
-        {
-            if (!(o instanceof Artifact))
-                return false;
-            
-            Artifact ao = (Artifact)o;
-            return (((gid == null && ao.gid == null) || (gid != null && gid.equals(ao.gid)))
-                    &&  ((aid == null && ao.aid == null) || (aid != null && aid.equals(ao.aid))));      
-        }
-    }
-    
-    
+
     
     public void configureJetty () throws Exception
     {
@@ -204,88 +157,7 @@ public class Starter
             ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
             webApp.setWar(null);
             webApp.setBaseResource(bases);
-        }
-
-        //Get the original base dirs without the overlays
-        str = (String)props.get("base.dirs.orig");
-        if (str != null && !"".equals(str.trim()))
-        {
-            ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
-            webApp.setAttribute ("org.eclipse.jetty.resources.originalBases", bases);
-        }
-        
-        //For overlays
-        str = (String)props.getProperty("maven.war.includes");
-        List<String> defaultWarIncludes = fromCSV(str);
-        str = (String)props.getProperty("maven.war.excludes");
-        List<String> defaultWarExcludes = fromCSV(str);
-       
-        //List of war artifacts
-        List<Artifact> wars = new ArrayList<Artifact>();
-        
-        //List of OverlayConfigs
-        TreeMap<String, OverlayConfig> orderedConfigs = new TreeMap<String, OverlayConfig>();
-        Enumeration<String> pnames = (Enumeration<String>)props.propertyNames();
-        while (pnames.hasMoreElements())
-        {
-            String n = pnames.nextElement();
-            if (n.startsWith("maven.war.artifact"))
-            {
-                Artifact a = new Artifact((String)props.get(n));
-                a.resource = Resource.newResource("jar:"+Resource.toURL(new File(a.path)).toString()+"!/");
-                wars.add(a);
-            }
-            else if (n.startsWith("maven.war.overlay"))
-            {
-                OverlayConfig c = new OverlayConfig ((String)props.get(n), defaultWarIncludes, defaultWarExcludes);
-                orderedConfigs.put(n,c);
-            }
-        }
-        
-    
-        Set<Artifact> matchedWars = new HashSet<Artifact>();
-        
-        //process any overlays and the war type artifacts
-        List<Overlay> overlays = new ArrayList<Overlay>();
-        for (OverlayConfig config:orderedConfigs.values())
-        {
-            //overlays can be individually skipped
-            if (config.isSkip())
-                continue;
-
-            //an empty overlay refers to the current project - important for ordering
-            if (config.isCurrentProject())
-            {
-                Overlay overlay = new Overlay(config, null);
-                overlays.add(overlay);
-                continue;
-            }
-
-            //if a war matches an overlay config
-            Artifact a = getArtifactForOverlayConfig(config, wars);
-            if (a != null)
-            {
-                matchedWars.add(a);
-                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:"+Resource.toURL(new File(a.path)).toString()+"!/"));
-                r.setIncludes(config.getIncludes());
-                r.setExcludes(config.getExcludes());
-                Overlay overlay = new Overlay(config, r);
-                overlays.add(overlay);
-            }
-        }
-
-        //iterate over the left over war artifacts and unpack them (without include/exclude processing) as necessary
-        for (Artifact a: wars)
-        {
-            if (!matchedWars.contains(a))
-            {
-                Overlay overlay = new Overlay(null, a.resource);
-                overlays.add(overlay);
-            }
-        }
-
-        webApp.setOverlays(overlays);
-     
+        }     
 
         // - the equivalent of web-inf classes
         str = (String)props.getProperty("classes.dir");
@@ -417,25 +289,6 @@ public class Starter
         System.arraycopy(existing, 0, children, 1, existing.length);
         handlers.setHandlers(children);
     }
-    
-    
-    
-    protected Artifact getArtifactForOverlayConfig (OverlayConfig c, List<Artifact> wars)
-    {
-        if (wars == null || wars.isEmpty() || c == null)
-            return null;
-
-        Artifact war = null;
-        Iterator<Artifact> itor = wars.iterator();
-        while(itor.hasNext() && war == null)
-        {
-            Artifact a = itor.next();
-            if (c.matchesArtifact(a.gid, a.aid, null))
-                war = a;
-        }
-        return war;
-    }
-
 
     /**
      * @param csv

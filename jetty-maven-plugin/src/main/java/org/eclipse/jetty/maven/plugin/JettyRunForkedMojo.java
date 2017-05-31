@@ -143,9 +143,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
      */
     private Random random;    
     
- 
-    
-    private Resource originalBaseResource;
+
     private boolean originalPersistTemp;
     
     
@@ -249,9 +247,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
-            
-            //copy the base resource as configured by the plugin
-            originalBaseResource = webApp.getBaseResource();
 
             //get the original persistance setting
             originalPersistTemp = webApp.isPersistTempDirectory();
@@ -288,12 +283,14 @@ public class JettyRunForkedMojo extends JettyRunMojo
             //leave everything unpacked for the forked process to use
             webApp.setPersistTempDirectory(true);
             
-            webApp.start(); //just enough to generate the quickstart           
+            webApp.start(); //just enough to generate the quickstart
            
             //save config of the webapp BEFORE we stop
             File props = prepareConfiguration();
             
             webApp.stop();
+            
+            
             
             if (tpool != null)
                 tpool.stop();
@@ -454,106 +451,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
         {   
             //work out the configuration based on what is configured in the pom
             File propsFile = new File (target, "fork.props");
-            if (propsFile.exists())
-                propsFile.delete();   
-
-            propsFile.createNewFile();
-            //propsFile.deleteOnExit();
-
-            Properties props = new Properties();
-
-
-            //web.xml
-            if (webApp.getDescriptor() != null)
-            {
-                props.put("web.xml", webApp.getDescriptor());
-            }
-            
-            if (webApp.getQuickStartWebDescriptor() != null)
-            {
-                props.put("quickstart.web.xml", webApp.getQuickStartWebDescriptor().getFile().getAbsolutePath());
-            }
-
-            //sort out the context path
-            if (webApp.getContextPath() != null)
-            {
-                props.put("context.path", webApp.getContextPath());       
-            }
-
-            //tmp dir
-            props.put("tmp.dir", webApp.getTempDirectory().getAbsolutePath());
-            props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
-
-            //send over the original base resources before any overlays were added
-            if (originalBaseResource instanceof ResourceCollection)
-                props.put("base.dirs.orig", toCSV(((ResourceCollection)originalBaseResource).getResources()));
-            else
-                props.put("base.dirs.orig", originalBaseResource.toString());
-
-            //send over the calculated resource bases that includes unpacked overlays, but none of the
-            //meta-inf resources
-            Resource postOverlayResources = (Resource)webApp.getAttribute(MavenWebInfConfiguration.RESOURCE_BASES_POST_OVERLAY);
-            if (postOverlayResources instanceof ResourceCollection)
-                props.put("base.dirs", toCSV(((ResourceCollection)postOverlayResources).getResources()));
-            else
-                props.put("base.dirs", postOverlayResources.toString());
-        
-            
-            //web-inf classes
-            if (webApp.getClasses() != null)
-            {
-                props.put("classes.dir",webApp.getClasses().getAbsolutePath());
-            }
-            
-            if (useTestScope && webApp.getTestClasses() != null)
-            {
-                props.put("testClasses.dir", webApp.getTestClasses().getAbsolutePath());
-            }
-
-            //web-inf lib
-            List<File> deps = webApp.getWebInfLib();
-            StringBuffer strbuff = new StringBuffer();
-            for (int i=0; i<deps.size(); i++)
-            {
-                File d = deps.get(i);
-                strbuff.append(d.getAbsolutePath());
-                if (i < deps.size()-1)
-                    strbuff.append(",");
-            }
-            props.put("lib.jars", strbuff.toString());
-
-            //any war files
-            List<Artifact> warArtifacts = getWarArtifacts(); 
-            for (int i=0; i<warArtifacts.size(); i++)
-            {
-                strbuff.setLength(0);           
-                Artifact a  = warArtifacts.get(i);
-                strbuff.append(a.getGroupId()+",");
-                strbuff.append(a.getArtifactId()+",");
-                strbuff.append(a.getFile().getAbsolutePath());
-                props.put("maven.war.artifact."+i, strbuff.toString());
-            }
-          
-            
-            //any overlay configuration
-            WarPluginInfo warPlugin = new WarPluginInfo(project);
-            
-            //add in the war plugins default includes and excludes
-            props.put("maven.war.includes", toCSV(warPlugin.getDependentMavenWarIncludes()));
-            props.put("maven.war.excludes", toCSV(warPlugin.getDependentMavenWarExcludes()));
-            
-            
-            List<OverlayConfig> configs = warPlugin.getMavenWarOverlayConfigs();
-            int i=0;
-            for (OverlayConfig c:configs)
-            {
-                props.put("maven.war.overlay."+(i++), c.toString());
-            }
-            
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
-            {
-                props.store(out, "properties for forked webapp");
-            }
+            convertWebAppToProperties(propsFile);
             return propsFile;
         }
         catch (Exception e)
@@ -566,26 +464,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
     
     
   
-    
-    /**
-     * @return
-     * @throws MalformedURLException
-     * @throws IOException
-     */
-    private List<Artifact> getWarArtifacts()
-    throws MalformedURLException, IOException
-    {
-        List<Artifact> warArtifacts = new ArrayList<Artifact>();
-        for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
-        {
-            Artifact artifact = (Artifact) iter.next();  
-            
-            if (artifact.getType().equals("war"))
-                warArtifacts.add(artifact);
-        }
-
-        return warArtifacts;
-    }
     
     public boolean isPluginArtifact(Artifact artifact)
     {
@@ -739,33 +617,5 @@ public class JettyRunForkedMojo extends JettyRunMojo
         Thread thread = new Thread(pump,"ConsoleStreamer/" + mode);
         thread.setDaemon(true);
         thread.start();
-    }
-
-    private String toCSV (List<String> strings)
-    {
-        if (strings == null)
-            return "";
-        StringBuffer strbuff = new StringBuffer();
-        Iterator<String> itor = strings.iterator();
-        while (itor.hasNext())
-        {
-            strbuff.append(itor.next());
-            if (itor.hasNext())
-                strbuff.append(",");
-        }
-        return strbuff.toString();
-    }
-
-    private String toCSV (Resource[] resources)
-    {
-        StringBuffer rb = new StringBuffer();
-
-        for (Resource r:resources)
-        {
-            if (rb.length() > 0) rb.append(",");
-            rb.append(r.toString());
-        }        
-
-        return rb.toString();
     }
 }

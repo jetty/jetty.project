@@ -18,14 +18,18 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
@@ -33,7 +37,9 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -156,7 +162,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     protected List<Artifact> warArtifacts;
     
     
-    
+    protected Resource originalBaseResource;
     
     
     
@@ -265,68 +271,34 @@ public class JettyRunMojo extends AbstractJettyMojo
        Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
        if (webApp.getWar() == null)
            webApp.setWar(webAppSourceDirectoryResource.toString());
-       
-       if (webApp.getBaseResource() == null)
-               webApp.setBaseResource(webAppSourceDirectoryResource);
+
+       //The first time we run, remember the original base dir
+       if (originalBaseResource == null)
+       {
+           if (webApp.getBaseResource() == null)
+               originalBaseResource = webAppSourceDirectoryResource;
+           else
+               originalBaseResource = webApp.getBaseResource();
+       }
+
+       //On every subsequent re-run set it back to the original base dir before
+       //we might have applied any war overlays onto it
+       webApp.setBaseResource(originalBaseResource);
 
        if (classesDirectory != null)
            webApp.setClasses (classesDirectory);
        if (useTestScope && (testClassesDirectory != null))
            webApp.setTestClasses (testClassesDirectory);
-       
+
        webApp.setWebInfLib (getDependencyFiles());
 
-       //get copy of a list of war artifacts
-       Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
 
 
-
-       //process any overlays and the war type artifacts
-       List<Overlay> overlays = new ArrayList<Overlay>();
-       for (OverlayConfig config:warPluginInfo.getMavenWarOverlayConfigs())
+       //if we have not already set web.xml location, need to set one up
+       if (webApp.getDescriptor() == null)
        {
-           //overlays can be individually skipped
-           if (config.isSkip())
-               continue;
-
-           //an empty overlay refers to the current project - important for ordering
-           if (config.isCurrentProject())
-           {
-               Overlay overlay = new Overlay(config, null);
-               overlays.add(overlay);
-               continue;
-           }
-
-           //if a war matches an overlay config
-           Artifact a = getArtifactForOverlay(config, getWarArtifacts());
-           if (a != null)
-           {
-               matchedWarArtifacts.add(a);
-               SelectiveJarResource r = new SelectiveJarResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/"));
-               r.setIncludes(config.getIncludes());
-               r.setExcludes(config.getExcludes());
-               Overlay overlay = new Overlay(config, r);
-               overlays.add(overlay);
-           }
-       }
-
-       //iterate over the left over war artifacts and unpack them (without include/exclude processing) as necessary
-       for (Artifact a: getWarArtifacts())
-       {
-           if (!matchedWarArtifacts.contains(a))
-           {
-               Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/")));
-               overlays.add(overlay);
-           }
-       }
-
-       webApp.setOverlays(overlays);
-       
-        //if we have not already set web.xml location, need to set one up
-        if (webApp.getDescriptor() == null)
-        {
-            //Has an explicit web.xml file been configured to use?
-            if (webXml != null)
+           //Has an explicit web.xml file been configured to use?
+           if (webXml != null)
             {
                 Resource r = Resource.newResource(webXml);
                 if (r.exists() && !r.isDirectory())
@@ -354,9 +326,14 @@ public class JettyRunMojo extends AbstractJettyMojo
                    webApp.setDescriptor(f.getCanonicalPath());
                 }
             }
-        }
-        getLog().info( "web.xml file = "+webApp.getDescriptor());       
-        getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
+       }
+
+       //process any overlays and the war type artifacts
+       List<Overlay> overlays = getOverlays();
+       unpackOverlays(overlays); //this sets up the base resource collection
+
+       getLog().info( "web.xml file = "+webApp.getDescriptor());       
+       getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
     
     
@@ -583,7 +560,138 @@ public class JettyRunMojo extends AbstractJettyMojo
     }
     
     
+    private List<Overlay> getOverlays()
+    throws Exception
+    {
+        //get copy of a list of war artifacts
+        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
+        List<Overlay> overlays = new ArrayList<Overlay>();
+        for (OverlayConfig config:warPluginInfo.getMavenWarOverlayConfigs())
+        {
+            //overlays can be individually skipped
+            if (config.isSkip())
+                continue;
+
+            //an empty overlay refers to the current project - important for ordering
+            if (config.isCurrentProject())
+            {
+                Overlay overlay = new Overlay(config, null);
+                overlays.add(overlay);
+                continue;
+            }
+
+            //if a war matches an overlay config
+            Artifact a = getArtifactForOverlay(config, getWarArtifacts());
+            if (a != null)
+            {
+                matchedWarArtifacts.add(a);
+                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/"));
+                r.setIncludes(config.getIncludes());
+                r.setExcludes(config.getExcludes());
+                Overlay overlay = new Overlay(config, r);
+                overlays.add(overlay);
+            }
+        }
+
+        //iterate over the left over war artifacts and unpack them (without include/exclude processing) as necessary
+        for (Artifact a: getWarArtifacts())
+        {
+            if (!matchedWarArtifacts.contains(a))
+            {
+                Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/")));
+                overlays.add(overlay);
+            }
+        }
+        return overlays;
+    }
+
+
+    public void unpackOverlays (List<Overlay> overlays)
+            throws Exception
+    {
+        if (overlays == null || overlays.isEmpty())
+            return;
+
+        List<Resource> resourceBaseCollection = new ArrayList<Resource>();
+
+        for (Overlay o:overlays)
+        {
+            //can refer to the current project in list of overlays for ordering purposes
+            if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
+            {
+                resourceBaseCollection.add(webApp.getBaseResource()); 
+                continue;
+            }
+
+            Resource unpacked = unpackOverlay(o);
+            //_unpackedOverlayResources.add(unpacked); //remember the unpacked overlays for later so we can delete the tmp files
+            resourceBaseCollection.add(unpacked); //add in the selectively unpacked overlay in the correct order to the webapps resource base
+            System.err.println("Adding "+unpacked+" to resource base list");
+        }
+
+        if (!resourceBaseCollection.contains(webApp.getBaseResource()) && webApp.getBaseResource().exists())
+        {
+            if (webApp.getBaseAppFirst())
+            {
+                System.err.println("Adding virtual project first in resource base list");
+                resourceBaseCollection.add(0, webApp.getBaseResource());
+            }
+            else
+            {
+                System.err.println("Adding virtual project last in resource base list");
+                resourceBaseCollection.add(webApp.getBaseResource());
+            }
+        }
+        webApp.setBaseResource(new ResourceCollection(resourceBaseCollection.toArray(new Resource[resourceBaseCollection.size()])));
+    }
     
+
+
+
+    public  Resource unpackOverlay (Overlay overlay)
+    throws IOException
+    {
+        System.err.println("Unpacking overlay: " + overlay);
+        
+        if (overlay.getResource() == null)
+            return null; //nothing to unpack
+   
+        //Get the name of the overlayed war and unpack it to a dir of the
+        //same name in the temporary directory
+        String name = overlay.getResource().getName();
+        if (name.endsWith("!/"))
+            name = name.substring(0,name.length()-2);
+        int i = name.lastIndexOf('/');
+        if (i>0)
+            name = name.substring(i+1,name.length());
+        name = name.replace('.', '_');
+        //name = name+(++COUNTER); //add some digits to ensure uniqueness
+        File overlaysDir = new File (project.getBuild().getDirectory(), "jetty_overlays");
+        File dir = new File(overlaysDir, name);
+        System.err.println(" unpack dir exists="+dir.exists());
+
+        //if specified targetPath, unpack to that subdir instead
+        File unpackDir = dir;
+        if (overlay.getConfig() != null && overlay.getConfig().getTargetPath() != null)
+            unpackDir = new File (dir, overlay.getConfig().getTargetPath());
+
+        System.err.println("Unpackdir="+unpackDir+" exists="+unpackDir.exists());
+        System.err.println("Overlay resource="+overlay.getResource()+" exists="+overlay.getResource().exists()+" is jarresource="+(overlay.getResource() instanceof JarResource));
+        //only unpack if the overlay is newer
+        if (!unpackDir.exists() || (overlay.getResource().lastModified() > unpackDir.lastModified()))
+        {
+            boolean made=unpackDir.mkdirs();
+            System.err.println("Unpack dir="+unpackDir.getAbsolutePath()+" exists now="+unpackDir.exists());
+            System.err.println("Unpacking! made="+made);
+            overlay.getResource().copyTo(unpackDir);
+        }
+
+        //use top level of unpacked content
+        Resource unpackedOverlay = Resource.newResource(dir.getCanonicalPath());
+
+        System.err.println("Unpacked overlay: "+overlay+" to "+unpackedOverlay);
+        return  unpackedOverlay;
+    }
     
     /**
      * @return
@@ -627,5 +735,105 @@ public class JettyRunMojo extends AbstractJettyMojo
         }
         
         return null;
+    }
+    
+    public void convertWebAppToProperties (File propsFile)
+    throws Exception
+    {
+        //work out the configuration based on what is configured in the pom
+        if (propsFile.exists())
+            propsFile.delete();   
+
+        boolean created = propsFile.createNewFile();
+        System.err.println("Created new props file" +created);
+
+        Properties props = new Properties();
+        //web.xml
+        if (webApp.getDescriptor() != null)
+        {
+            props.put("web.xml", webApp.getDescriptor());
+        }
+        
+        if (webApp.getQuickStartWebDescriptor() != null)
+        {
+            props.put("quickstart.web.xml", webApp.getQuickStartWebDescriptor().getFile().getAbsolutePath());
+        }
+
+        //sort out the context path
+        if (webApp.getContextPath() != null)
+        {
+            props.put("context.path", webApp.getContextPath());       
+        }
+
+        //tmp dir
+        props.put("tmp.dir", webApp.getTempDirectory().getAbsolutePath());
+        //props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
+        props.put("tmp.dir.persist", Boolean.toString(webApp.isPersistTempDirectory()));
+
+        //send over the calculated resource bases that includes unpacked overlays
+        Resource baseResource = webApp.getBaseResource();
+        if (baseResource instanceof ResourceCollection)
+            props.put("base.dirs", toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
+        else
+            props.put("base.dirs", webApp.getBaseResource().toString());
+
+
+        //web-inf classes
+        if (webApp.getClasses() != null)
+        {
+            props.put("classes.dir",webApp.getClasses().getAbsolutePath());
+        }
+        
+        if (useTestScope && webApp.getTestClasses() != null)
+        {
+            props.put("testClasses.dir", webApp.getTestClasses().getAbsolutePath());
+        }
+
+        //web-inf lib
+        List<File> deps = webApp.getWebInfLib();
+        StringBuffer strbuff = new StringBuffer();
+        for (int i=0; i<deps.size(); i++)
+        {
+            File d = deps.get(i);
+            strbuff.append(d.getAbsolutePath());
+            if (i < deps.size()-1)
+                strbuff.append(",");
+        }
+        props.put("lib.jars", strbuff.toString()); 
+        
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
+        {
+            props.store(out, "properties for forked webapp");
+        }
+        
+    }
+    
+
+    private String toCSV (List<String> strings)
+    {
+        if (strings == null)
+            return "";
+        StringBuffer strbuff = new StringBuffer();
+        Iterator<String> itor = strings.iterator();
+        while (itor.hasNext())
+        {
+            strbuff.append(itor.next());
+            if (itor.hasNext())
+                strbuff.append(",");
+        }
+        return strbuff.toString();
+    }
+
+    private String toCSV (Resource[] resources)
+    {
+        StringBuffer rb = new StringBuffer();
+
+        for (Resource r:resources)
+        {
+            if (rb.length() > 0) rb.append(",");
+            rb.append(r.toString());
+        }        
+
+        return rb.toString();
     }
 }

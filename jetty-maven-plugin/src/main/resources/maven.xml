@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure  class="org.eclipse.jetty.maven.plugin.WebAppStarter">
+  <Set name="properties"><Property name="jetty.base" default="."/>/etc/maven.props</Set>
+  <Set name="contexts"><Ref id="Contexts"/></Set>
+  <Call name="start"/>
+</Configure>
