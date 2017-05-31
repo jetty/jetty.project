@@ -120,7 +120,7 @@ public final class WSURI
         if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
         {
             // keep as-is
-            return new URI(inputUri.toString());
+            return inputUri;
         }
         
         if ("http".equalsIgnoreCase(httpScheme))
