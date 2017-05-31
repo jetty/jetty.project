@@ -29,6 +29,7 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.AsyncEvent;
@@ -54,7 +55,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -247,7 +247,7 @@ public class SessionHandler extends ScopedHandler
     protected boolean _usingURLs;
     protected boolean _usingCookies=true;
     
-    protected ConcurrentHashSet<String> _candidateSessionIdsForExpiry = new ConcurrentHashSet<String>();
+    protected Set<String> _candidateSessionIdsForExpiry = ConcurrentHashMap.newKeySet();
 
     protected Scheduler _scheduler;
     protected boolean _ownScheduler = false;

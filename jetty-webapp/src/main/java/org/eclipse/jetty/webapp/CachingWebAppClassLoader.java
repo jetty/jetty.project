@@ -20,9 +20,9 @@ package org.eclipse.jetty.webapp;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.log.Log;
@@ -40,7 +40,7 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
 {
     private static final Logger LOG = Log.getLogger(CachingWebAppClassLoader.class);
     
-    private final ConcurrentHashSet<String> _notFound = new ConcurrentHashSet<>();
+    private final Set<String> _notFound = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String,URL> _cache = new ConcurrentHashMap<>();
     
     public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
