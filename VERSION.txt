@@ -1,4 +1,30 @@
-jetty-9.4.6-SNAPSHOT
+jetty-9.4.6.v20170531 - 31 May 2017
+ + 523 TLS close behaviour breaking session resumption
+ + 1108 Please improve logging in SslContextFactory when there are no approved
+   cipher suites
+ + 1505 Adding jetty.base.uri and jetty.home.uri
+ + 1514 websocket dump badly formatted
+ + 1516 Delay starting of WebSocketClient until an attempt to connect is made
+ + 1520 PropertyUserStore should extract packed config file
+ + 1526 MongoSessionDataStore old session scavenging is broken due to the
+   missing $ sign in "and" operation
+ + 1527 Jetty BOM should not depend on jetty-parent
+ + 1528 Internal HttpClient usages should have common configurable technique
+ + 1536 Jetty BOM should include more artifacts
+ + 1538 NPE in Response.putHeaders
+ + 1539 JarFileResource mishandles paths with spaces
+ + 1544 Disabling JSR-356 doesn't indicate context it was disabled for
+ + 1546 Improve handling of quotes in cookies
+ + 1553 X509.isCertSign() can throw ArrayIndexOutOfBoundsException on
+   non-standard implementations
+ + 1556 A timing channel in Password.java
+ + 1558 When creating WebAppContext without session-config and with NO_SESSIONS
+   throws NPE
+ + 1567 XmlConfiguration will start the same object multiple times
+ + 1568 ServletUpgradeRequest mangles query strings containing percent-escapes
+   by re-escaping them
+ + 1569 Allow setting of maxBinaryMessageSize to 0 in WebSocketPolicy
+ + 1579 NPE in Quoted Quality CSV
 
 jetty-9.4.5.v20170502 - 02 May 2017
  + 304 Review dead code - StringUtil.sidBytesToString
