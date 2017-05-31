@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.cdi</groupId>
     <artifactId>jetty-cdi-parent</artifactId>
-    <version>9.3.20.v20170531</version>
+    <version>9.3.21-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-cdi-webapp</artifactId>
