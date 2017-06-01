@@ -18,21 +18,18 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataMap;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -46,10 +43,6 @@ public class HazelcastSessionDataStore
 
     private  final static Logger LOG = Log.getLogger( "org.eclipse.jetty.server.session");
 
-    private HazelcastInstance hazelcastInstance;
-
-    private String jettySessionMapName;
-
     private IMap<String, SessionData> sessionDataMap;
 
     public HazelcastSessionDataStore()
@@ -57,46 +50,53 @@ public class HazelcastSessionDataStore
         // no op
     }
 
-    public HazelcastSessionDataStore( HazelcastInstance hazelcastInstance, String jettySessionMapName )
-    {
-        this.hazelcastInstance = hazelcastInstance;
-        this.jettySessionMapName = jettySessionMapName;
-        this.sessionDataMap = hazelcastInstance.getMap( getJettySessionMapName() );
-    }
-
-    public HazelcastInstance getHazelcastInstance()
-    {
-        return hazelcastInstance;
-    }
-
-    public void setHazelcastInstance( HazelcastInstance hazelcastInstance )
-    {
-        this.hazelcastInstance = hazelcastInstance;
-    }
-
-    public String getJettySessionMapName()
-    {
-        return jettySessionMapName;
-    }
-
-    public void setJettySessionMapName( String jettySessionMapName )
-    {
-        this.jettySessionMapName = jettySessionMapName;
-    }
-
-
     @Override
     public SessionData load( String id )
         throws Exception
     {
-        return sessionDataMap == null ? null : sessionDataMap.get( id );
+
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+
+        //ensure the load runs in the context classloader scope
+        _context.run( () -> {
+            try
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug( "Loading session {} from hazelcast", id );
+                }
+                SessionData sd = sessionDataMap.get( getCacheKey( id ) );
+                reference.set(sd);
+            }
+            catch (Exception e)
+            {
+                exception.set(e);
+            }
+        } );
+
+        if (exception.get() != null)
+        {
+            throw exception.get();
+        }
+        return reference.get();
     }
 
     @Override
     public boolean delete( String id )
         throws Exception
     {
-        return sessionDataMap == null ? false : sessionDataMap.remove( id ) != null;
+        return sessionDataMap == null ? false : sessionDataMap.remove( getCacheKey( id ) ) != null;
+    }
+
+    public IMap<String, SessionData> getSessionDataMap()
+    {
+        return sessionDataMap;
+    }
+
+    public void setSessionDataMap( IMap<String, SessionData> sessionDataMap )
+    {
+        this.sessionDataMap = sessionDataMap;
     }
 
     @Override
@@ -104,30 +104,19 @@ public class HazelcastSessionDataStore
         throws Exception
     {
         _context = context;
-        if (this.sessionDataMap == null)
-        {
-            this.sessionDataMap = getHazelcastInstance().getMap( getJettySessionMapName() );
-        }
-    }
-
-    @Override
-    public void store( String id, SessionData data )
-        throws Exception
-    {
-        this.sessionDataMap.put( id, data );
     }
 
     @Override
     public void doStore( String id, SessionData data, long lastSaveTime )
         throws Exception
     {
-        this.sessionDataMap.put( id, data);
+        this.sessionDataMap.put( getCacheKey( id ), data);
     }
 
     @Override
     public boolean isPassivating()
     {
-        return false;
+        return true;
     }
 
     @Override
@@ -206,6 +195,11 @@ public class HazelcastSessionDataStore
     public boolean exists( String id )
         throws Exception
     {
-        return this.sessionDataMap.containsKey( id );
+        return this.sessionDataMap.containsKey( getCacheKey( id ) );
+    }
+
+    public String getCacheKey( String id )
+    {
+        return _context.getCanonicalContextPath() + "_" + _context.getVhost() + "_" + id;
     }
 }

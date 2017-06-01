@@ -41,15 +41,13 @@ public class HazelcastSessionDataStoreFactory
     implements SessionDataStoreFactory
 {
 
-    public static final String DEFAULT_HAZELCAST_INSTANCE_NAME = "JETTY_DISTRIBUTED_SESSION_INSTANCE";
-
-    public static final String DEFAULT_HAZELCAST_MAP_NAME = "jetty-distributed-session-map";
+    private String hazelcastInstanceName = "JETTY_DISTRIBUTED_SESSION_INSTANCE";
 
     private boolean onlyClient;
 
     private String configurationLocation;
 
-    private String jettySessionMapName = DEFAULT_HAZELCAST_MAP_NAME;
+    private String mapName = "jetty-distributed-session-map";
 
     private HazelcastInstance hazelcastInstance;
 
@@ -70,13 +68,12 @@ public class HazelcastSessionDataStoreFactory
                 {
                     if ( configurationLocation == null )
                     {
-                        hazelcastSessionDataStore.setHazelcastInstance(
-                            HazelcastClient.newHazelcastClient( new ClientConfig() ) );
+                        hazelcastInstance = HazelcastClient.newHazelcastClient( new ClientConfig() );
                     }
                     else
                     {
-                        hazelcastSessionDataStore.setHazelcastInstance( HazelcastClient.newHazelcastClient(
-                            new XmlClientConfigBuilder( configurationLocation ).build() ) );
+                        hazelcastInstance = HazelcastClient.newHazelcastClient(
+                            new XmlClientConfigBuilder( configurationLocation ).build() );
                     }
 
                 }
@@ -90,12 +87,12 @@ public class HazelcastSessionDataStoreFactory
                         if ( mapConfig == null )
                         {
                             mapConfig = new MapConfig();
-                            mapConfig.setName( jettySessionMapName );
+                            mapConfig.setName( mapName );
                         }
                         else
                         {
                             // otherwise we reuse the name
-                            jettySessionMapName = mapConfig.getName();
+                            mapName = mapConfig.getName();
                         }
                         config.addMapConfig( mapConfig );
                     }
@@ -103,8 +100,8 @@ public class HazelcastSessionDataStoreFactory
                     {
                         config = new XmlConfigBuilder( configurationLocation ).build();
                     }
-                    config.setInstanceName( DEFAULT_HAZELCAST_INSTANCE_NAME );
-                    hazelcastSessionDataStore.setHazelcastInstance( Hazelcast.getOrCreateHazelcastInstance( config ) );
+                    config.setInstanceName( hazelcastInstanceName );
+                    hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance( config );
                 }
             }
             catch ( IOException e )
@@ -112,14 +109,10 @@ public class HazelcastSessionDataStoreFactory
                 throw new RuntimeException( e.getMessage(), e );
             }
         }
-        else
-        {
-            hazelcastSessionDataStore.setHazelcastInstance( hazelcastInstance );
-        }
-        hazelcastSessionDataStore.setJettySessionMapName( jettySessionMapName );
         // initialize the map
-        hazelcastSessionDataStore.getHazelcastInstance().getMap( jettySessionMapName );
-
+        hazelcastSessionDataStore.setSessionDataMap(hazelcastInstance.getMap( mapName ) );
+        hazelcastSessionDataStore.setGracePeriodSec( getGracePeriodSec() );
+        hazelcastSessionDataStore.setSavePeriodSec( getSavePeriodSec() );
         return hazelcastSessionDataStore;
     }
 
@@ -143,14 +136,14 @@ public class HazelcastSessionDataStoreFactory
         this.configurationLocation = configurationLocation;
     }
 
-    public String getJettySessionMapName()
+    public String getMapName()
     {
-        return jettySessionMapName;
+        return mapName;
     }
 
-    public void setJettySessionMapName( String jettySessionMapName )
+    public void setMapName( String mapName )
     {
-        this.jettySessionMapName = jettySessionMapName;
+        this.mapName = mapName;
     }
 
     public HazelcastInstance getHazelcastInstance()
@@ -171,5 +164,15 @@ public class HazelcastSessionDataStoreFactory
     public void setMapConfig( MapConfig mapConfig )
     {
         this.mapConfig = mapConfig;
+    }
+
+    public String getHazelcastInstanceName()
+    {
+        return hazelcastInstanceName;
+    }
+
+    public void setHazelcastInstanceName( String hazelcastInstanceName )
+    {
+        this.hazelcastInstanceName = hazelcastInstanceName;
     }
 }

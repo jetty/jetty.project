@@ -78,16 +78,16 @@ Opening the `start.d/session-store-hazelcast-remote.ini` will show a list of all
 # ---------------------------------------
 --module=session-store-hazelcast-remote
 
-#jetty.session.hazelcast.jettySessionMapName=jetty_sessions
+#jetty.session.hazelcast.mapName=jetty_sessions
 #jetty.session.hazelcast.onlyClient=true
 #jetty.session.hazelcast.configurationLocation=
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
 ----
 
-jetty.session.hazelcast.jettySessionMapName::
+jetty.session.hazelcast.mapName::
 Name of the Map in Hazelcast where sessions will be stored.
-jetty.session.hazelcast.idleTimeout.onlyClient::
+jetty.session.hazelcast.onlyClient::
 Hazelcast instance will be configured in client mode
 jetty.session.hazelcast.configurationLocation::
 Path to an an Hazelcast xml configuration file
@@ -160,12 +160,12 @@ Opening the `start.d/start.d/session-store-hazelcast-embedded.ini` will show a l
 # ---------------------------------------
 --module=session-store-hazelcast-embedded
 
-#jetty.session.hazelcast.jettySessionMapName=jetty_sessions
+#jetty.session.hazelcast.mapName=jetty_sessions
 #jetty.session.hazelcast.configurationLocation=
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
 ----
-jetty.session.hazelcast.jettySessionMapName::
+jetty.session.hazelcast.mapName::
 Name of the Map in Hazelcast where sessions will be stored.
 jetty.session.gracePeriod.seconds::
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
