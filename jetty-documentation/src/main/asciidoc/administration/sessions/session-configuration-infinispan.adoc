@@ -16,7 +16,7 @@
 
 [[configuring-sessions-infinispan]]
 
-=== Clustered Session Management: Inifinspan
+=== Clustered Session Management: Infinispan
 
 ==== Enabling Infinispan Sessions
 
@@ -65,9 +65,9 @@ ____
 If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 ____
 
-==== Configuring Inifinspan Remote Properties
+==== Configuring Infinispan Remote Properties
 
-Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
+Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the Infinispan module:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -101,7 +101,7 @@ This allows the possibility that a node may prematurely expire the session, even
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
 ____
 
-==== Configuring Embedded Inifinspan Clustering
+==== Configuring Embedded Infinispan Clustering
 
 During testing, it can be helpful to run an in-process instance of Infinispan.
 To enable this you will first need to enable the `session-store-infinispan-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
@@ -140,7 +140,7 @@ In addition to adding these modules to the classpath of the server it also added
 
 ==== Configuring Inifinspan Embedded Properties
 
-Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
+Opening the `start.d/session-store-infinispan-embedded.ini` will show a list of all the configurable options for the Infinispan module:
 
 [source, screen, subs="{sub-order}"]
 ----
