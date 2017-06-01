@@ -1,3 +1,5 @@
+jetty-9.4.7-SNAPSHOT
+
 jetty-9.4.6.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
  + 1108 Please improve logging in SslContextFactory when there are no approved
