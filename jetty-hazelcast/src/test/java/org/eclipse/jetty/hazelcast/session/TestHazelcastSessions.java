@@ -25,15 +25,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.AbstractSessionCache;
-import org.eclipse.jetty.server.session.CachingSessionDataStore;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
-import org.eclipse.jetty.server.session.NullSessionDataStore;
-import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataMap;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -100,6 +93,7 @@ public class TestHazelcastSessions
     }
 
     private HazelcastSessionDataStore hazelcastSessionDataStore;
+    private HazelcastSessionDataStoreFactory hazelcastSessionDataStoreFactory;
 
     private Server server;
 
@@ -123,7 +117,7 @@ public class TestHazelcastSessions
 
         SessionContext sessionContext = new SessionContext( "foo", null );
 
-        HazelcastSessionDataStoreFactory hazelcastSessionDataStoreFactory = new HazelcastSessionDataStoreFactory();
+        hazelcastSessionDataStoreFactory = new HazelcastSessionDataStoreFactory();
         hazelcastSessionDataStore = (HazelcastSessionDataStore) hazelcastSessionDataStoreFactory.getSessionDataStore(
             context.getSessionHandler() );
         hazelcastSessionDataStore.initialize( sessionContext );
@@ -141,7 +135,7 @@ public class TestHazelcastSessions
     public void shutdown()
         throws Exception
     {
-        hazelcastSessionDataStore.getHazelcastInstance().shutdown();
+        hazelcastSessionDataStoreFactory.getHazelcastInstance().shutdown();
         server.stop();
     }
 

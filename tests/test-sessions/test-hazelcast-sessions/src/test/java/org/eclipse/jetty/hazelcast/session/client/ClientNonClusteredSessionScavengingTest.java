@@ -90,7 +90,7 @@ public class ClientNonClusteredSessionScavengingTest
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
         factory.setOnlyClient( true );
-        factory.setJettySessionMapName( MAP_NAME );
+        factory.setMapName( MAP_NAME );
         return factory;
     }
 }

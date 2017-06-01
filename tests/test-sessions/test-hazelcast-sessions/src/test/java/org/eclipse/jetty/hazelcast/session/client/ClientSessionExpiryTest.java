@@ -28,7 +28,6 @@ import org.eclipse.jetty.server.session.AbstractSessionExpiryTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 
 public class ClientSessionExpiryTest
     extends AbstractSessionExpiryTest
@@ -64,7 +63,7 @@ public class ClientSessionExpiryTest
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
         factory.setOnlyClient( true );
-        factory.setJettySessionMapName( MAP_NAME );
+        factory.setMapName( MAP_NAME );
         return factory;
     }
 
