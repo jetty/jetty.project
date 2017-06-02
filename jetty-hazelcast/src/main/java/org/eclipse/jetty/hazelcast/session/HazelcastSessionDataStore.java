@@ -141,7 +141,7 @@ public class HazelcastSessionDataStore
                 {
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug( "Session {} does not exist in infinispan", candidate );
+                        LOG.debug( "Session {} does not exist in Hazelcast", candidate );
                     }
                     return true;
                 }
