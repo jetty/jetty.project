@@ -119,7 +119,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpGenerator newHttpGenerator()
     {
-        return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
+        return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy(), _config.isChunkedResponsesOverNonPersistentConnectionsEnabled());
     }
 
     protected HttpChannelOverHttp newHttpChannel()
@@ -699,7 +699,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     case NEED_INFO:
                         throw new EofException("request lifecycle violation");
-                        
+
                     case NEED_HEADER:
                     {
                         _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);

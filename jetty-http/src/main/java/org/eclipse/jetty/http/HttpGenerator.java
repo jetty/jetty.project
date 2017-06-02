@@ -67,10 +67,11 @@ public class HttpGenerator
     private Boolean _persistent = null;
 
     private final int _send;
+    private final boolean _chunkEOFContent;
     private final static int SEND_SERVER = 0x01;
     private final static int SEND_XPOWEREDBY = 0x02;
     private final static Set<String> __assumedContentMethods = new HashSet<>(Arrays.asList(new String[]{HttpMethod.POST.asString(),HttpMethod.PUT.asString()}));
-  
+
     /* ------------------------------------------------------------------------------- */
     public static void setJettyVersion(String serverVersion)
     {
@@ -87,13 +88,20 @@ public class HttpGenerator
     /* ------------------------------------------------------------------------------- */
     public HttpGenerator()
     {
-        this(false,false);
+        this(false, false, false);
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpGenerator(boolean sendServerVersion,boolean sendXPoweredBy)
+    public HttpGenerator(boolean sendServerVersion, boolean sendXPoweredBy)
+    {
+        this(sendServerVersion, sendServerVersion, false);
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public HttpGenerator(boolean sendServerVersion, boolean sendXPoweredBy, boolean chunkEOFContent)
     {
         _send=(sendServerVersion?SEND_SERVER:0) | (sendXPoweredBy?SEND_XPOWEREDBY:0);
+        _chunkEOFContent = chunkEOFContent;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -228,7 +236,7 @@ public class HttpGenerator
 
                     if (info.getHttpVersion()==HttpVersion.HTTP_0_9)
                         throw new BadMessageException(500,"HTTP/0.9 not supported");
-                    
+
                     generateHeaders(info,header,content,last);
 
                     boolean expect100 = info.getFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
@@ -351,12 +359,12 @@ public class HttpGenerator
                         if (_persistent==null)
                             _persistent=Boolean.FALSE;
                         break;
-                        
+
                     case HTTP_1_1:
                         if (_persistent==null)
                             _persistent=Boolean.TRUE;
                         break;
-                        
+
                     default:
                         _persistent = false;
                         _endOfContent=EndOfContent.EOF_CONTENT;
@@ -365,7 +373,7 @@ public class HttpGenerator
                         _state = last?State.COMPLETING:State.COMMITTED;
                         return Result.FLUSH;
                 }
-                
+
                 // Do we need a response header
                 if (header==null)
                     return Result.NEED_HEADER;
@@ -672,7 +680,7 @@ public class HttpGenerator
                                     {
                                         close=true;
                                         _persistent=false;
-                                        if (response!=null)
+                                        if (response != null && (!_chunkEOFContent || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal()))
                                         {
                                             if (_endOfContent == EndOfContent.UNKNOWN_CONTENT)
                                                 _endOfContent=EndOfContent.EOF_CONTENT;
@@ -730,8 +738,8 @@ public class HttpGenerator
         // 5. Content-Length without Transfer-Encoding
         // 6. Request and none over the above, then Content-Length=0 if POST/PUT
         // 7. close
-        
-        
+
+
         int status=response!=null?response.getStatus():-1;
         switch (_endOfContent)
         {
@@ -762,7 +770,7 @@ public class HttpGenerator
 
                     if (content_length>=0 && content_length!=actual_length)
                         throw new BadMessageException(500,"Content-Length header("+content_length+") != actual("+actual_length+")");
-                    
+
                     // Do we need to tell the headers about it
                     putContentLength(header,actual_length,content_type,request,response);
                 }
@@ -774,7 +782,7 @@ public class HttpGenerator
                     // For a request with HTTP 1.0 & Connection: keep-alive
                     // we *must* close the connection, otherwise the client
                     // has no way to detect the end of the content.
-                    if (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal())
+                    if ((!_chunkEOFContent && !isPersistent()) || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal())
                         _endOfContent = EndOfContent.EOF_CONTENT;
                 }
                 break;
