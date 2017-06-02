@@ -21,7 +21,6 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
@@ -84,6 +83,16 @@ public class JettyRunWithDistro extends JettyRunMojo
  
     private File targetBase;
     
+    
+    // IDEAS:
+    // 1. if no jetty-home, download jetty-home.zip from repo and install in target
+    // 2. put out a warning if pluginDependencies are configured (use a jetty-home and configure)
+    // 3. don't copy existing jetty-base/webapps because a context.xml will confuse the deployer - or
+    //    do copy webapps but if the contextXml file matches a file in webapps, don't copy that over
+    // 4. try to make the maven.xml configure a JettyWebAppContext which uses helper classes to configure
+    //    itself and apply the context.xml file: that way we can configure the normal jetty deployer
+    // 5. try to use the scanner as normal and remake the properties and context.xml file to get the
+    //    deployer to automatically redeploy it on changes.
 
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#startJetty()
@@ -103,8 +112,6 @@ public class JettyRunWithDistro extends JettyRunMojo
             configureJettyBase();
             
             ProcessBuilder command = configureCommand();
-            
-            //fork the command
             Process process = command.start();
             process.waitFor();
         }
@@ -117,14 +124,16 @@ public class JettyRunWithDistro extends JettyRunMojo
 
 
 
+    /**
+     * Create or configure a jetty base.
+     * 
+     * @throws Exception
+     */
     public void configureJettyBase() throws Exception
     {
         if (jettyBase != null && !jettyBase.exists())
             throw new IllegalStateException(jettyBase.getAbsolutePath() +" does not exist");
         
-        File etc;
-        File modules;
-
         targetBase = new File(target, "jetty-base");
         Path basePath = targetBase.toPath();
         
@@ -144,12 +153,10 @@ public class JettyRunWithDistro extends JettyRunMojo
         }
         
         //make the jetty base structure
-        Path modulesPath = Files.createDirectory(basePath.resolve("modules"));
-        System.err.println(modulesPath+" exists:"+Files.exists(modulesPath));
-        Path etcPath = Files.createDirectory(basePath.resolve("etc"));
-        System.err.println(etcPath+" exists:"+Files.exists(etcPath));
+        Path modulesPath = Files.createDirectories(basePath.resolve("modules"));
+        Path etcPath = Files.createDirectories(basePath.resolve("etc"));
         Path libPath = Files.createDirectories(basePath.resolve("lib/maven"));
-        System.err.println(libPath+" exists:"+Files.exists(libPath));
+
         //copy in the jetty-maven-plugin jar
         URI thisJar = TypeUtil.getLocationOfClass(this.getClass());
         if (thisJar == null)
@@ -159,7 +166,6 @@ public class JettyRunWithDistro extends JettyRunMojo
             FileOutputStream fileStream =  new FileOutputStream(libPath.resolve("plugin.jar").toFile()))
         {
             IO.copy(jarStream,fileStream);
-            System.err.println("copied "+thisJar+" to plugin.jar");
         }
         
         //copy in the maven.xml and maven.mod file
@@ -167,14 +173,12 @@ public class JettyRunWithDistro extends JettyRunMojo
                 FileOutputStream fileStream = new FileOutputStream(etcPath.resolve("maven.xml").toFile()))
         {
             IO.copy(mavenXmlStream, fileStream);
-            System.err.println("Copied maven.xml to etc/maven.xml");
         }
 
         try (InputStream mavenModStream = getClass().getClassLoader().getResourceAsStream("maven.mod");
                 FileOutputStream fileStream = new FileOutputStream(modulesPath.resolve("maven.mod").toFile()))
         {
             IO.copy(mavenModStream, fileStream);
-            System.err.println("Copied maven.mod to modules/maven.mod");
         }
         
         createPropertiesFile(basePath, etcPath);
@@ -196,6 +200,12 @@ public class JettyRunWithDistro extends JettyRunMojo
     }
     
     
+    /**
+     * Make the command to spawn a process to
+     * run jetty from a distro.
+     * 
+     * @return
+     */
     public ProcessBuilder configureCommand()
     {
         List<String> cmd = new ArrayList<>();
@@ -203,12 +213,14 @@ public class JettyRunWithDistro extends JettyRunMojo
         cmd.add("-jar");
         cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
         StringBuilder tmp = new StringBuilder();
-        tmp.append("--module=server,http,webapp,plus,annotations,quickstart,maven");
+        tmp.append("--module=");
+        tmp.append("server,http,webapp");
         if (modules != null)
         {
             for (String m:modules)
                 tmp.append(","+m);
         }
+        tmp.append(",maven");
         cmd.add(tmp.toString());
         if (properties != null)
         {
@@ -221,8 +233,6 @@ public class JettyRunWithDistro extends JettyRunMojo
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.directory(targetBase);
         builder.inheritIO();
-        
-        System.err.println(builder.command());
         
         return builder;
     }

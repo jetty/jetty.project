@@ -2,7 +2,18 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure  class="org.eclipse.jetty.maven.plugin.WebAppStarter">
+
+  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call name="replace">
+      <Arg>org.eclipse.jetty.webapp.WebInfConfiguration</Arg>
+      <Arg>org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration</Arg>
+    </Call>
+  </Call>
+
+
   <Set name="properties"><Property name="jetty.base" default="."/>/etc/maven.props</Set>
   <Set name="contexts"><Ref id="Contexts"/></Set>
+  <Set name="server"><Ref id="Server"/></Set>
   <Call name="start"/>
 </Configure>

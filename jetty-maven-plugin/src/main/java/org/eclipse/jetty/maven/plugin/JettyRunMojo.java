@@ -744,8 +744,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         if (propsFile.exists())
             propsFile.delete();   
 
-        boolean created = propsFile.createNewFile();
-        System.err.println("Created new props file" +created);
+        propsFile.createNewFile();
 
         Properties props = new Properties();
         //web.xml
@@ -801,11 +800,14 @@ public class JettyRunMojo extends AbstractJettyMojo
         }
         props.put("lib.jars", strbuff.toString()); 
         
+        //context xml to apply
+        if (contextXml != null)
+            props.put("context.xml", contextXml);
+        
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
         {
             props.store(out, "properties for forked webapp");
         }
-        
     }
     
 

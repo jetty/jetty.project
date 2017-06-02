@@ -26,11 +26,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * WebAppStarter
@@ -43,11 +45,11 @@ public class WebAppStarter extends AbstractLifeCycle
     String _properties;
     Properties _props;
     private ContextHandlerCollection _contexts;
+    private Server _server;
     
 
 
     /** 
-     * @param _webApp 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     @Override
@@ -57,7 +59,10 @@ public class WebAppStarter extends AbstractLifeCycle
             throw new IllegalStateException("No properties");
         
         if (_contexts == null)
-            throw new IllegalStateException("No contexts");
+            throw new IllegalStateException("No contexts");        
+        
+        if (_server == null)
+            throw new IllegalStateException("No Server");
         
         File f = new File(_properties);
         _props = new Properties();
@@ -68,37 +73,33 @@ public class WebAppStarter extends AbstractLifeCycle
         
         _webApp = new JettyWebAppContext();
         
-        //TODO
-        _webApp.setConfigurationClasses(JettyWebAppContext.DEFAULT_CONFIGURATION_CLASSES);
-        
         //apply a properties file that defines the things that we configure in the jetty:run plugin:
         // - the context path
         String str = (String)_props.get("context.path");
-        if (str != null)
+        if (!StringUtil.isBlank(str))
             _webApp.setContextPath(str);
-        
         
         // - web.xml
         str = (String)_props.get("web.xml");
-        if (str != null)
+        if (!StringUtil.isBlank(str))
             _webApp.setDescriptor(str); 
         
         str = (String)_props.get("quickstart.web.xml");
-        if (str != null)
+        if (!StringUtil.isBlank(str))
             _webApp.setQuickStartWebDescriptor(Resource.newResource(new File(str)));
         
         // - the tmp directory
         str = (String)_props.getProperty("tmp.dir");
-        if (str != null)
+        if (!StringUtil.isBlank(str))
             _webApp.setTempDirectory(new File(str.trim()));
 
         str = (String)_props.getProperty("tmp.dir.persist");
-        if (str != null)
+        if (!StringUtil.isBlank(str))
             _webApp.setPersistTempDirectory(Boolean.valueOf(str));
         
         //Get the calculated base dirs which includes the overlays
         str = (String)_props.getProperty("base.dirs");
-        if (str != null && !"".equals(str.trim()))
+        if (!StringUtil.isBlank(str))
         {
             ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
             _webApp.setWar(null);
@@ -107,14 +108,14 @@ public class WebAppStarter extends AbstractLifeCycle
 
         // - the equivalent of web-inf classes
         str = (String)_props.getProperty("classes.dir");
-        if (str != null && !"".equals(str.trim()))
+        if (!StringUtil.isBlank(str))
         {
             _webApp.setClasses(new File(str));
             System.err.println("SET CLASSES DIR="+str);
         }
         
         str = (String)_props.getProperty("testClasses.dir"); 
-        if (str != null && !"".equals(str.trim()))
+        if (!StringUtil.isBlank(str))
         {
             _webApp.setTestClasses(new File(str));
             System.err.println("SET TEST CLASSES DIR="+str);
@@ -123,7 +124,7 @@ public class WebAppStarter extends AbstractLifeCycle
 
         // - the equivalent of web-inf lib
         str = (String)_props.getProperty("lib.jars");
-        if (str != null && !"".equals(str.trim()))
+        if (!StringUtil.isBlank(str))
         {
             List<File> jars = new ArrayList<File>();
             String[] names = StringUtil.csvSplit(str);
@@ -135,7 +136,18 @@ public class WebAppStarter extends AbstractLifeCycle
             _webApp.setWebInfLib(jars);
         }
         
-       // _webApp.start();
+        
+        //- a context xml file to apply: in keeping with the other goals that
+        //cannot apply an xml file first to be overridden, we apply the context 
+        //xml file last too
+        str = (String)_props.getProperty("context.xml");
+        if (!StringUtil.isBlank(str))
+        {
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str).getURI().toURL());
+            xmlConfiguration.getIdMap().put("Server",_server);
+            xmlConfiguration.configure(_webApp);
+        }
+
         _contexts.addHandler(_webApp);
         
         super.doStart();
@@ -176,5 +188,21 @@ public class WebAppStarter extends AbstractLifeCycle
     public ContextHandlerCollection getContexts()
     {
         return _contexts;
+    }
+
+    /**
+     * @return the server
+     */
+    public Server getServer()
+    {
+        return _server;
+    }
+
+    /**
+     * @param server the server to set
+     */
+    public void setServer(Server server)
+    {
+        _server = server;
     }
 }

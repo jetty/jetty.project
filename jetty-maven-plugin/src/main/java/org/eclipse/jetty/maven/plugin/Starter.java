@@ -21,15 +21,9 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
-import java.util.TreeMap;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -51,8 +45,7 @@ public class Starter
 { 
     private static final Logger LOG = Log.getLogger(Starter.class);
 
-    private List<File> jettyXmls; // list of jetty.xml config files to apply - Mandatory
-    private File contextXml; //name of context xml file to configure the webapp - Mandatory
+    private List<File> jettyXmls; // list of jetty.xml config files to apply
 
     private Server server;
     private JettyWebAppContext webApp;
@@ -95,18 +88,7 @@ public class Starter
                 webApp.setQuickStartWebDescriptor(Resource.newResource(qs));
         }
         
-        //set up the webapp from the context xml file provided
-        //NOTE: just like jetty:run mojo this means that the context file can
-        //potentially override settings made in the pom. Ideally, we'd like
-        //the pom to override the context xml file, but as the other mojos all
-        //configure a WebAppContext in the pom (the <webApp> element), it is 
-        //already configured by the time the context xml file is applied.
-        if (contextXml != null)
-        {
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(contextXml));
-            xmlConfiguration.getIdMap().put("Server",server);
-            xmlConfiguration.configure(webApp);
-        }
+
 
         ServerSupport.addWebApplication(server, webApp);
 
@@ -139,7 +121,10 @@ public class Starter
         
         str = (String)props.get("quickstart.web.xml");
         if (str != null)
+        {
             webApp.setQuickStartWebDescriptor(Resource.newResource(new File(str)));
+            webApp.setConfigurationClasses(JettyWebAppContext.QUICKSTART_CONFIGURATION_CLASSES);
+        }
         
         // - the tmp directory
         str = (String)props.getProperty("tmp.dir");
@@ -184,6 +169,19 @@ public class Starter
             webApp.setWebInfLib(jars);
         }
         
+        //set up the webapp from the context xml file provided
+        //NOTE: just like jetty:run mojo this means that the context file can
+        //potentially override settings made in the pom. Ideally, we'd like
+        //the pom to override the context xml file, but as the other mojos all
+        //configure a WebAppContext in the pom (the <webApp> element), it is 
+        //already configured by the time the context xml file is applied.
+        str = (String)props.getProperty("context.xml");
+        if (!StringUtil.isBlank(str))
+        {
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str).getURI().toURL());
+            xmlConfiguration.getIdMap().put("Server",server);
+            xmlConfiguration.configure(webApp);
+        }
     }
 
     public void getConfiguration (String[] args)
@@ -208,12 +206,6 @@ public class Starter
                 {
                     jettyXmls.add(new File(names[j].trim()));
                 }  
-            }
-
-            //--context-xml
-            if ("--context-xml".equals(args[i]))
-            {
-                contextXml = new File(args[++i]);
             }
 
             //--props
