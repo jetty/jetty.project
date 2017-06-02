@@ -25,6 +25,8 @@ package org.eclipse.jetty.util;
  */
 public class HostPort
 {
+    private final static boolean LEGACY_IPV6 = Boolean.getBoolean("org.eclipse.jetty.util.HostPort.LEGACY_IPV6");
+    
     private final String _host;
     private final int _port;
 
@@ -45,7 +47,7 @@ public class HostPort
                 int close=authority.lastIndexOf(']');
                 if (close<0)
                     throw new IllegalArgumentException("Bad IPv6 host");
-                _host=authority.substring(0,close+1);
+                _host=LEGACY_IPV6?authority.substring(0,close+1):authority.substring(1,close);
 
                 if (authority.length()>close+1)
                 {
