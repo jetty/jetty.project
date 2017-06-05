@@ -269,8 +269,20 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param scope
      *            the Container Scope
-     * @param eventDriverFactory
-     *            the EventDriver Factory to use
+     * @param sessionFactory
+     *            the SessionFactory to use
+     */
+    public WebSocketClient(final WebSocketContainerScope scope, SessionFactory sessionFactory)
+    {
+        this(scope, sessionFactory, null);
+    }
+    
+    /**
+     * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
+     * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
+     *
+     * @param scope
+     *            the Container Scope
      * @param sessionFactory
      *            the SessionFactory to use
      */
