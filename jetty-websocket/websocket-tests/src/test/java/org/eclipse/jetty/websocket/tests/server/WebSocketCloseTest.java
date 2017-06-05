@@ -295,7 +295,7 @@ public class WebSocketCloseTest
             );
             
             BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
-            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            WebSocketFrame frame = framesQueue.poll(3, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), containsString("openSessions.size=1\n"));
         }
