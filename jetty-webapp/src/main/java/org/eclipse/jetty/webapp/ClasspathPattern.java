@@ -342,10 +342,17 @@ public class ClasspathPattern extends AbstractSet<String>
     public ClasspathPattern()
     {
     }
-    
-    public ClasspathPattern(String[] patterns)
+
+    public ClasspathPattern(ClasspathPattern patterns)
     {
-        setAll(patterns);
+        if (patterns!=null)
+            setAll(patterns.getPatterns());
+    }
+    
+    public ClasspathPattern(String... patterns)
+    {
+        if (patterns!=null && patterns.length>0)
+            setAll(patterns);
     }
     
     public ClasspathPattern(String pattern)
@@ -499,6 +506,21 @@ public class ClasspathPattern extends AbstractSet<String>
         return toArray(new String[_entries.size()]);
     }
 
+    /**
+     * @return array of inclusive classpath patterns
+     */
+    public String[] getInclusions()
+    {
+        return _entries.values().stream().filter(Entry::isInclusive).map(Entry::getName).toArray(String[]::new);
+    }
+
+    /**
+     * @return array of excluded classpath patterns (without '-' prefix)
+     */
+    public String[] getExclusions()
+    {
+        return _entries.values().stream().filter(e->!e.isInclusive()).map(Entry::getName).toArray(String[]::new);
+    }
     
     /**
      * Match the class name against the pattern
@@ -578,6 +600,5 @@ public class ClasspathPattern extends AbstractSet<String>
             || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
         boolean excluded = byName==Boolean.FALSE || byLocation==Boolean.FALSE;
         return included && !excluded;
-    }
-    
+    }    
 }

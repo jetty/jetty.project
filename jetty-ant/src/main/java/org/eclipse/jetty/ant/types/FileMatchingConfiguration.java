@@ -34,11 +34,11 @@ import org.apache.tools.ant.DirectoryScanner;
 public class FileMatchingConfiguration
 {
 
-    private List directoryScanners;
+    private List<DirectoryScanner> directoryScanners;
 
     public FileMatchingConfiguration()
     {
-        this.directoryScanners = new ArrayList();
+        this.directoryScanners = new ArrayList<>();
     }
 
     /**
@@ -54,10 +54,10 @@ public class FileMatchingConfiguration
      * @return a list of base directories denoted by a list of directory
      *         scanners.
      */
-    public List getBaseDirectories()
+    public List<File> getBaseDirectories()
     {
-        List baseDirs = new ArrayList();
-        Iterator scanners = directoryScanners.iterator();
+        List<File> baseDirs = new ArrayList<>();
+        Iterator<DirectoryScanner> scanners = directoryScanners.iterator();
         while (scanners.hasNext())
         {
             DirectoryScanner scanner = (DirectoryScanner) scanners.next();
@@ -75,7 +75,7 @@ public class FileMatchingConfiguration
      */
     public boolean isIncluded(String pathToFile)
     {
-        Iterator scanners = directoryScanners.iterator();
+        Iterator<DirectoryScanner> scanners = directoryScanners.iterator();
         while (scanners.hasNext())
         {
             DirectoryScanner scanner = (DirectoryScanner) scanners.next();

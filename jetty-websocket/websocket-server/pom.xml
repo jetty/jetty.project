@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-parent</artifactId>
-        <version>9.4.6-SNAPSHOT</version>
+        <version>10.0.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -13,6 +13,26 @@
     <properties>
         <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
     </properties>
+
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Require-Capability>
+                osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+              </Require-Capability>
+              <Provide-Capability>
+                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+              </Provide-Capability>
+            </instructions>
+          </configuration>
+        </plugin>
+      </plugins>
+    </build>
 
     <dependencies>
         <dependency>

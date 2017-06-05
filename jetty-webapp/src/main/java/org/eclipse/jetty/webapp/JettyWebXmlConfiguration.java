@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -51,6 +50,11 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
 
+    public JettyWebXmlConfiguration()
+    {
+        addDependencies(WebXmlConfiguration.class, FragmentConfiguration.class, MetaInfConfiguration.class);
+    }
+    
     /**
      * Configure
      * Apply web-jetty.xml configuration
@@ -59,13 +63,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     @Override
     public void configure (WebAppContext context) throws Exception
     {
-        //cannot configure if the _context is already started
-        if (context.isStarted())
-        {
-            LOG.debug("Cannot configure webapp after it is started");
-            return;
-        }
-
         LOG.debug("Configuring web-jetty.xml");
 
         Resource web_inf = context.getWebInf();

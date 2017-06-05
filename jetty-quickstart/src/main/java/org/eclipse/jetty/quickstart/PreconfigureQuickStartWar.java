@@ -109,14 +109,11 @@ public class PreconfigureQuickStartWar
             xmlConfiguration.configure(webapp);
         }
         webapp.setResourceBase(dir.getFile().getAbsolutePath());
-        webapp.setPreconfigure(true);
+        webapp.setMode(QuickStartConfiguration.Mode.GENERATE);
         server.setHandler(webapp);
         server.start();
         server.stop();
     }
-    
-    
-    
 
     private static void error(String message)
     {

@@ -119,10 +119,12 @@ public class TestJettyOSGiBootWithAnnotations
     }
 
 
+
     @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
+        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         TestOSGiUtil.debugBundles(bundleContext);
     }

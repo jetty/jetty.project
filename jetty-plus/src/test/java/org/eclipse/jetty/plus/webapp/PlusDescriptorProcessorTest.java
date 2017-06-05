@@ -30,6 +30,7 @@ import java.net.URL;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.Origin;
@@ -56,6 +57,8 @@ public class PlusDescriptorProcessorTest
     public void setUp() throws Exception
     {
         context = new WebAppContext();
+        context.setConfigurations(new Configuration[]{new PlusConfiguration(),new EnvConfiguration()});
+        context.preConfigure();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());

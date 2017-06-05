@@ -39,26 +39,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
-    
-    private Resource _quickStartWebXml;
-
-
-    public void setQuickStartWebXml (Resource r)
-    {
-        _quickStartWebXml = r;
-    }
-    
-   
-    
-    @Override
-    public Resource getQuickStartWebXml(WebAppContext context) throws Exception
-    {
-        return _quickStartWebXml;
-    }
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
-    {
+    {        
         //check that webapp is suitable for quick start 
         if (context.getBaseResource() == null)
             throw new IllegalStateException ("No location for webapp");  
@@ -66,16 +50,13 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         
         //look for quickstart-web.xml in WEB-INF of webapp
         Resource quickStartWebXml = getQuickStartWebXml(context);
-        LOG.debug("quickStartWebXml={}",quickStartWebXml);
-        
-        context.getMetaData().setWebXml(quickStartWebXml);
+        if (LOG.isDebugEnabled()) LOG.debug("quickStartWebXml={}",quickStartWebXml);
+        super.preConfigure(context);
     }
-
 
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        
        JettyWebAppContext jwac = (JettyWebAppContext)context;
         
         //put the classes dir and all dependencies into the classpath
@@ -88,21 +69,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         }
         
         //Set up the quickstart environment for the context
-        super.configure(context);
-        
-        // knock out environmental maven and plexus classes from webAppContext
-        String[] existingServerClasses = context.getServerClasses();
-        String[] newServerClasses = new String[2+(existingServerClasses==null?0:existingServerClasses.length)];
-        newServerClasses[0] = "org.apache.maven.";
-        newServerClasses[1] = "org.codehaus.plexus.";
-        System.arraycopy( existingServerClasses, 0, newServerClasses, 2, existingServerClasses.length );
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Server classes:");
-            for (int i=0;i<newServerClasses.length;i++)
-                LOG.debug(newServerClasses[i]);
-        }
-        context.setServerClasses( newServerClasses ); 
+        super.configure(context);       
     }
     
     @Override
@@ -127,6 +94,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
                 }
             }
         }
+        super.deconfigure(context);
     }
     
 }

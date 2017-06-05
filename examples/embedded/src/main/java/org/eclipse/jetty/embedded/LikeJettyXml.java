@@ -49,7 +49,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 
 /**
  * Starts the Jetty Distribution's demo-base directory using entirely
@@ -165,9 +165,9 @@ public class LikeJettyXml
 
         // === jetty-deploy.xml ===
         DeploymentManager deployer = new DeploymentManager();
-        DebugListener debug = new DebugListener(System.err,true,true,true);
-        server.addBean(debug);        
-        deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
+        //DebugListener debug = new DebugListener(System.out,true,true,true);
+        // server.addBean(debug);        
+        // deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
         deployer.setContexts(contexts);
         deployer.setContextAttribute(
                 "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -184,10 +184,7 @@ public class LikeJettyXml
         server.addBean(deployer);
         
         // === setup jetty plus ==
-        Configuration.ClassList.setServerDefault(server).addAfter(
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        Configurations.setServerDefault(server).add("org.eclipse.jetty.plus.webapp.EnvConfiguration","org.eclipse.jetty.plus.webapp.PlusConfiguration");
 
         // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();
@@ -234,6 +231,7 @@ public class LikeJettyXml
         
         // Start the server
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

@@ -39,8 +39,7 @@ public class TestQuickStart
 {
     File testDir;
     File webInf;
-    
-    
+
     @Before
     public void setUp()
     {
@@ -49,9 +48,7 @@ public class TestQuickStart
         webInf = new File(testDir, "WEB-INF");
         FS.ensureDirExists(webInf);
     }
-    
 
-    
     @Test
     public void testProgrammaticOverrideOfDefaultServletMapping() throws Exception
     {
@@ -64,7 +61,7 @@ public class TestQuickStart
         //generate a quickstart-web.xml
         QuickStartWebApp quickstart = new QuickStartWebApp();
         quickstart.setResourceBase(testDir.getAbsolutePath());
-        quickstart.setPreconfigure(true);
+        quickstart.setMode(QuickStartConfiguration.Mode.GENERATE);
         quickstart.setGenerateOrigin(true);
         ServletHolder fooHolder = new ServletHolder();
         fooHolder.setServlet(new FooServlet());
@@ -80,7 +77,7 @@ public class TestQuickStart
         //now run the webapp again purely from the generated quickstart
         QuickStartWebApp webapp = new QuickStartWebApp();
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.setPreconfigure(false);
+        webapp.setMode(QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setClassLoader(Thread.currentThread().getContextClassLoader()); //only necessary for junit testing
         server.setHandler(webapp);
         

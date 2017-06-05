@@ -9,10 +9,9 @@
   <!-- =========================================================== -->
   <!-- Add plus Configuring classes to all webapps for this Server -->
   <!-- =========================================================== -->
-  <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
+  <Call class="org.eclipse.jetty.webapp.Configurations" name="setServerDefault">
     <Arg><Ref refid="Server" /></Arg>
-    <Call name="addAfter">
-      <Arg name="afterClass">org.eclipse.jetty.webapp.FragmentConfiguration</Arg>
+    <Call name="add">
       <Arg>
         <Array type="String">
           <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>

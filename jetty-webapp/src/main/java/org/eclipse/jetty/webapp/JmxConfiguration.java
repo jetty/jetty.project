@@ -18,27 +18,24 @@
 
 package org.eclipse.jetty.webapp;
 
-public class CloneConfiguration extends AbstractConfiguration
+import java.util.ServiceLoader;
+
+/**
+ * <p>JMX Configuration</p>
+ * <p>This configuration configures the WebAppContext server/system classes to
+ * be able to see the org.eclipse.jetty.jmx package.   This class is defined
+ * in the webapp package, as it implements the {@link Configuration} interface,
+ * which is unknown to the jmx package.  However, the corresponding {@link ServiceLoader}
+ * resource is defined in the jmx package, so that this configuration only be 
+ * loaded if the jetty-jmx jars are on the classpath.
+ * </p>
+ *
+ */
+public class JmxConfiguration extends AbstractConfiguration
 {
-    final WebAppContext _template;
-    
-    CloneConfiguration(WebAppContext template)
+    public JmxConfiguration()
     {
-        _template=template;
-    }
-    
-    @Override
-    public void configure(WebAppContext context) throws Exception
-    {
-        for (Configuration configuration : _template.getConfigurations())
-            configuration.cloneConfigure(_template,context);
-    }
-
-
-    @Override
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-        for (Configuration configuration : _template.getConfigurations())
-            configuration.deconfigure(context);
+        addDependents(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
+        protectAndExpose("org.eclipse.jetty.jmx.");
     }
 }

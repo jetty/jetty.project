@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.6-SNAPSHOT</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot</artifactId>
@@ -76,8 +76,8 @@
  javax.mail.internet;version="1.4.0";resolution:=optional,
  javax.mail.search;version="1.4.0";resolution:=optional,
  javax.mail.util;version="1.4.0";resolution:=optional,
- javax.servlet;version="[3.1,3.2)",
- javax.servlet.http;version="[3.1,3.2)",
+ javax.servlet;version="[3.1,4.1)",
+ javax.servlet.http;version="[3.1,4.1)",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
  org.objectweb.asm;version=4;resolution:=optional,
@@ -95,6 +95,12 @@
  org.eclipse.jetty.annotations;resolution:=optional,
  *
                         </Import-Package>
+                        <Require-Capability>
+                          osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+                        </Require-Capability>
+                        <Provide-Capability>
+                          osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+                        </Provide-Capability>
                         <_nouses>true</_nouses>
                     </instructions>
                 </configuration>

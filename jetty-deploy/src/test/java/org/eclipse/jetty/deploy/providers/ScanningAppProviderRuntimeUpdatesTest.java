@@ -174,7 +174,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
-
+        
         // Test that webapp response contains "-1"
         jetty.assertResponseContains("/foo/info","FooServlet-1");
 

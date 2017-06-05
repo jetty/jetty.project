@@ -57,8 +57,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * parent loader.  Java2 compliant loading, where the parent loader
  * always has priority, can be selected with the 
  * {@link org.eclipse.jetty.webapp.WebAppContext#setParentLoaderPriority(boolean)} 
- * method and influenced with {@link WebAppContext#isServerClass(String)} and 
- * {@link WebAppContext#isSystemClass(String)}.
+ * method and influenced with {@link WebAppContext#isServerClass(Class)} and 
+ * {@link WebAppContext#isSystemClass(Class)}.
  * <p>
  * If no parent class loader is provided, then the current thread 
  * context classloader will be used.  If that is null then the 
@@ -149,6 +149,7 @@ public class WebAppClassLoader extends URLClassLoader
      * @param action The action to run
      * @return The return from the action
      * @throws Exception if thrown by the action
+     * @param <T> the type of PrivilegedExceptionAction
      */
     public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
     {

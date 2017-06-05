@@ -161,17 +161,21 @@ public class ServletContextHandler extends ContextHandler
         if (contextPath!=null)
             setContextPath(contextPath);
         
-        if (parent instanceof HandlerWrapper)
-            ((HandlerWrapper)parent).setHandler(this);
-        else if (parent instanceof HandlerCollection)
-            ((HandlerCollection)parent).addHandler(this);
-        
+        setParent(parent);
         
         // Link the handlers
         relinkHandlers();
         
         if (errorHandler!=null)
             setErrorHandler(errorHandler);
+    }
+    
+    protected void setParent(HandlerContainer parent)
+    {
+        if (parent instanceof HandlerWrapper)
+            ((HandlerWrapper)parent).setHandler(this);
+        else if (parent instanceof HandlerCollection)
+            ((HandlerCollection)parent).addHandler(this);
     }
     
     @Override

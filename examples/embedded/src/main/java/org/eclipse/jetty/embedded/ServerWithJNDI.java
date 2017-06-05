@@ -21,8 +21,9 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 import java.util.Properties;
 
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -36,20 +37,16 @@ public class ServerWithJNDI
         // Create the server
         Server server = new Server(8080);
 
-        // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
-        classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
-
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         File warFile = new File(
                 "../../jetty-distribution/target/distribution/demo-base/webapps/test-jndi.war");
         webapp.setWar(warFile.getAbsolutePath());
-        server.setHandler(webapp);
+        server.setHandler(webapp);        
+
+        // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
+        webapp.addConfiguration(new EnvConfiguration(),new PlusConfiguration());
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction

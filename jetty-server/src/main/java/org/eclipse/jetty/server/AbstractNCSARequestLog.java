@@ -54,7 +54,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
     private String[] _ignorePaths;
     private boolean _extended;
-    private transient PathMappings<String> _ignorePathMap;
+    private PathMappings<String> _ignorePathMap;
     private boolean _logLatency = false;
     private boolean _logCookies = false;
     private boolean _logServer = false;

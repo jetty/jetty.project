@@ -53,12 +53,13 @@ public class TopologicalSort<T> implements Dumpable
 {
     private final Map<T,Set<T>> _dependencies = new HashMap<>();
 
+    
     /**
      * Add a dependency to be considered in the sort.
      * @param dependent The dependent item will be sorted after all its dependencies
      * @param dependency The dependency item, will be sorted before its dependent item
      */
-    public void addDependency(T dependent, T dependency)
+    public void addDependency(T dependent, T... dependency)
     {
         Set<T> set = _dependencies.get(dependent);
         if (set==null)
@@ -66,11 +67,24 @@ public class TopologicalSort<T> implements Dumpable
             set=new HashSet<>();
             _dependencies.put(dependent,set);
         }
-        set.add(dependency);
+        for (T d:dependency)
+            set.add(d);
+    }
+    
+    /** 
+     * An alternative to {@link #addDependency(Object, Object[])}, which is
+     * equivalent to addDependency(after,before) as the after item is dependent
+     * of the before item.
+     * @param before The item will be sorted before the after
+     * @param after The item will be sorted after the before
+     */
+    public void addBeforeAfter(T before, T after)
+    {
+        addDependency(after,before);
     }
     
     /** Sort the passed array according to dependencies previously set with
-     * {@link #addDependency(Object, Object)}.  Where possible, ordering will be
+     * {@link #addDependency(Object, Object[])}.  Where possible, ordering will be
      * preserved if no dependency
      * @param array The array to be sorted.
      */
@@ -88,7 +102,7 @@ public class TopologicalSort<T> implements Dumpable
     }
 
     /** Sort the passed list according to dependencies previously set with
-     * {@link #addDependency(Object, Object)}.  Where possible, ordering will be
+     * {@link #addDependency(Object, Object[])}.  Where possible, ordering will be
      * preserved if no dependency
      * @param list The list to be sorted.
      */

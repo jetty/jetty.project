@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -1312,9 +1313,32 @@ public class Response implements HttpServletResponse
         _out.resetBuffer();
     }
 
-    public void setTrailers(Supplier<HttpFields> trailers)
+    @Deprecated
+    public void setTrailerHttpFields(Supplier<HttpFields> trailers)
     {
         this.trailers = trailers;
+    }
+
+    // TODO: @Override
+    public void setTrailerFields(Supplier<Map<String,String>> trailers)
+    {
+        // TODO new for 4.0 - avoid transient supplier?
+        this.trailers = new Supplier<HttpFields>()
+        {
+            @Override
+            public HttpFields get()
+            {
+                Map<String,String> t = trailers.get();
+                if (t==null)
+                    return null;
+                HttpFields fields = new HttpFields();
+                for (Map.Entry<String,String> e : t.entrySet())
+                {
+                    fields.add(e.getKey(),e.getValue());
+                }
+                return fields;
+            }
+        };
     }
 
     public Supplier<HttpFields> getTrailers()

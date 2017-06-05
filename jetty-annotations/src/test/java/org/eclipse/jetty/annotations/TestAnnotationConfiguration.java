@@ -122,72 +122,83 @@ public class TestAnnotationConfiguration
     @Test
     public void testSCIControl ()
     throws Exception
-    {        
+    {
         File web25 = MavenTestingUtils.getTestResourceFile("web25.xml");
         File web31false = MavenTestingUtils.getTestResourceFile("web31false.xml");
         File web31true = MavenTestingUtils.getTestResourceFile("web31true.xml");
         Set<String> sciNames = new HashSet<>(Arrays.asList("org.eclipse.jetty.annotations.ServerServletContainerInitializer", "com.acme.initializer.FooInitializer"));
-        
+
         //prepare an sci that will be on the webapp's classpath
         File jarDir = new File(MavenTestingUtils.getTestResourcesDir().getParentFile(), "jar");
         File testSciJar = new File(jarDir, "test-sci.jar");
-        assertTrue(testSciJar.exists());   
-        URLClassLoader webAppLoader = new URLClassLoader(new URL[] {testSciJar.toURI().toURL()}, Thread.currentThread().getContextClassLoader());
-        
-        //test 3.1 webapp loads both server and app scis
-        AnnotationConfiguration config = new AnnotationConfiguration();
-        WebAppContext context = new WebAppContext();
-        context.setClassLoader(webAppLoader);
-        context.getMetaData().setWebXml(Resource.newResource(web31true));
-        context.getServletContext().setEffectiveMajorVersion(3);
-        context.getServletContext().setEffectiveMinorVersion(1);
-        List<ServletContainerInitializer> scis = config.getNonExcludedInitializers(context);
-        assertNotNull(scis);
-        assertEquals(2, scis.size());
-        assertTrue (sciNames.contains(scis.get(0).getClass().getName()));
-        assertTrue (sciNames.contains(scis.get(1).getClass().getName()));
-        
-        //test a 3.1 webapp with metadata-complete=false loads both server and webapp scis
-        config = new AnnotationConfiguration();
-        context = new WebAppContext();
-        context.setClassLoader(webAppLoader);
-        context.getMetaData().setWebXml(Resource.newResource(web31false));
-        context.getServletContext().setEffectiveMajorVersion(3);
-        context.getServletContext().setEffectiveMinorVersion(1);
-        scis = config.getNonExcludedInitializers(context);
-        assertNotNull(scis);
-        assertEquals(2, scis.size());
-        assertTrue (sciNames.contains(scis.get(0).getClass().getName()));
-        assertTrue (sciNames.contains(scis.get(1).getClass().getName()));
-        
-        
-        //test 2.5 webapp with configurationDiscovered=false loads only server scis
-        config = new AnnotationConfiguration();
-        context = new WebAppContext();
-        context.setClassLoader(webAppLoader);
-        context.getMetaData().setWebXml(Resource.newResource(web25));
-        context.getServletContext().setEffectiveMajorVersion(2);
-        context.getServletContext().setEffectiveMinorVersion(5);
-        scis = config.getNonExcludedInitializers(context);
-        assertNotNull(scis);
-        assertEquals(1, scis.size());
-        assertTrue ("org.eclipse.jetty.annotations.ServerServletContainerInitializer".equals(scis.get(0).getClass().getName()));
- 
-        //test 2.5 webapp with configurationDiscovered=true loads both server and webapp scis
-        config = new AnnotationConfiguration();
-        context = new WebAppContext();
-        context.setConfigurationDiscovered(true);
-        context.setClassLoader(webAppLoader);
-        context.getMetaData().setWebXml(Resource.newResource(web25));
-        context.getServletContext().setEffectiveMajorVersion(2);
-        context.getServletContext().setEffectiveMinorVersion(5);
-        scis = config.getNonExcludedInitializers(context);
-        assertNotNull(scis);
-        assertEquals(2, scis.size());
-        assertTrue (sciNames.contains(scis.get(0).getClass().getName()));
-        assertTrue (sciNames.contains(scis.get(1).getClass().getName()));
+        assertTrue(testSciJar.exists());
+        URLClassLoader webAppLoader = new URLClassLoader(new URL[]{testSciJar.toURI().toURL()}, Thread.currentThread().getContextClassLoader());
+
+        ClassLoader orig = Thread.currentThread().getContextClassLoader();
+        try
+        {
+
+            //test 3.1 webapp loads both server and app scis
+            AnnotationConfiguration config = new AnnotationConfiguration();
+            WebAppContext context = new WebAppContext();
+            context.setClassLoader(webAppLoader);
+            context.getMetaData().setWebXml(Resource.newResource(web31true));
+            context.getServletContext().setEffectiveMajorVersion(3);
+            context.getServletContext().setEffectiveMinorVersion(1);
+            Thread.currentThread().setContextClassLoader(webAppLoader);
+            List<ServletContainerInitializer> scis = config.getNonExcludedInitializers(context);
+
+            assertNotNull(scis);
+            assertEquals(2, scis.size());
+            assertTrue(sciNames.contains(scis.get(0).getClass().getName()));
+            assertTrue(sciNames.contains(scis.get(1).getClass().getName()));
+
+            //test a 3.1 webapp with metadata-complete=false loads both server and webapp scis
+            config = new AnnotationConfiguration();
+            context = new WebAppContext();
+            context.setClassLoader(webAppLoader);
+            context.getMetaData().setWebXml(Resource.newResource(web31false));
+            context.getServletContext().setEffectiveMajorVersion(3);
+            context.getServletContext().setEffectiveMinorVersion(1);
+            scis = config.getNonExcludedInitializers(context);
+            assertNotNull(scis);
+            assertEquals(2, scis.size());
+            assertTrue(sciNames.contains(scis.get(0).getClass().getName()));
+            assertTrue(sciNames.contains(scis.get(1).getClass().getName()));
+
+
+            //test 2.5 webapp with configurationDiscovered=false loads only server scis
+            config = new AnnotationConfiguration();
+            context = new WebAppContext();
+            context.setClassLoader(webAppLoader);
+            context.getMetaData().setWebXml(Resource.newResource(web25));
+            context.getServletContext().setEffectiveMajorVersion(2);
+            context.getServletContext().setEffectiveMinorVersion(5);
+            scis = config.getNonExcludedInitializers(context);
+            assertNotNull(scis);
+            assertEquals(1, scis.size());
+            assertTrue("org.eclipse.jetty.annotations.ServerServletContainerInitializer".equals(scis.get(0).getClass().getName()));
+
+            //test 2.5 webapp with configurationDiscovered=true loads both server and webapp scis
+            config = new AnnotationConfiguration();
+            context = new WebAppContext();
+            context.setConfigurationDiscovered(true);
+            context.setClassLoader(webAppLoader);
+            context.getMetaData().setWebXml(Resource.newResource(web25));
+            context.getServletContext().setEffectiveMajorVersion(2);
+            context.getServletContext().setEffectiveMinorVersion(5);
+            scis = config.getNonExcludedInitializers(context);
+            assertNotNull(scis);
+            assertEquals(2, scis.size());
+            assertTrue(sciNames.contains(scis.get(0).getClass().getName()));
+            assertTrue(sciNames.contains(scis.get(1).getClass().getName()));
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(orig);
+        }
     }
-    
+
     
     @Test
     public void testGetFragmentFromJar() throws Exception

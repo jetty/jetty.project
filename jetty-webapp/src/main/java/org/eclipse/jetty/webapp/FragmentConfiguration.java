@@ -32,6 +32,13 @@ public class FragmentConfiguration extends AbstractConfiguration
 {
     public final static String FRAGMENT_RESOURCES="org.eclipse.jetty.webFragments";
 
+    public FragmentConfiguration()
+    {
+        addDependencies(MetaInfConfiguration.class, WebXmlConfiguration.class);
+    }
+
+   
+    
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {

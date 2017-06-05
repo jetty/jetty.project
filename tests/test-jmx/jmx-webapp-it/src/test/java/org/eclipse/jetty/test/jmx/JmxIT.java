@@ -32,13 +32,13 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.jmx.ConnectorServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Before;
@@ -90,10 +90,9 @@ public class JmxIT
         WebAppContext context = new WebAppContext();
         context.setWar(war.getCanonicalPath());
         context.setContextPath("/jmx-webapp");
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(_server);
-        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+
+        context.addConfiguration(new AnnotationConfiguration());
+
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
                 ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$");
         _server.setHandler(context);
@@ -153,7 +152,7 @@ public class JmxIT
     {
         ObjectName serverName = new ObjectName("org.eclipse.jetty.server:type=server,id=0");
         String version = getStringAttribute(serverName, "version");
-        assertThat("Version", version, startsWith("9.4."));
+        assertThat("Version", version, startsWith("10.0."));
     }
 
     @Test

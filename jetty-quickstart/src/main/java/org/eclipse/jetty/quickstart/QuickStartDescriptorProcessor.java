@@ -72,7 +72,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
     @Override
     public void start(WebAppContext context, Descriptor descriptor)
     {
-        _originAttributeName = context.getInitParameter(QuickStartDescriptorGenerator.ORIGIN);
+        _originAttributeName = context.getInitParameter(QuickStartGeneratorConfiguration.ORIGIN);
     }
 
     /**
@@ -135,7 +135,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         // extract values
         switch(name)
         {
-            case QuickStartDescriptorGenerator.ORIGIN:
+            case QuickStartGeneratorConfiguration.ORIGIN:
             {
                 //value already contains what we need
                 break;
@@ -161,9 +161,9 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         // handle values
         switch(name)
         {
-            case QuickStartDescriptorGenerator.ORIGIN:
+            case QuickStartGeneratorConfiguration.ORIGIN:
             {
-                context.setAttribute(QuickStartDescriptorGenerator.ORIGIN, value);
+                context.setAttribute(QuickStartGeneratorConfiguration.ORIGIN, value);
                 break;
             }
             case ServletContext.ORDERED_LIBS:

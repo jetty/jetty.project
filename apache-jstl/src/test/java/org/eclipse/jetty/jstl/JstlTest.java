@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 
 import javax.servlet.jsp.JspException;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -68,21 +69,16 @@ public class JstlTest
         File testTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
         JAR.create(testTagLibDir,new File(libDir, "testtaglib.jar"));
         
-        // Configure WebAppContext
- 
-        Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
-
-        classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
-        
+        // Configure WebAppCont
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         
         File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
         JspConfig.init(context,testWebAppDir.toURI(),scratchDir);
+        
+        context.addConfiguration(new AnnotationConfiguration());
+        
         
         server.setHandler(context);
         

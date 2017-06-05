@@ -212,12 +212,14 @@ public class ResourceCollection extends Resource
         int i=0;
         for(; i<_resources.length; i++)
         {
-            resource = _resources[i].addPath(path);  
-            if (resource.exists())
+            Resource r = _resources[i].addPath(path);  
+            if (resource==null)
+                resource=r;
+            if (r.exists())
             {
-                if (resource.isDirectory())
+                if (r.isDirectory())
                     break;       
-                return resource;
+                return r;
             }
         }  
 

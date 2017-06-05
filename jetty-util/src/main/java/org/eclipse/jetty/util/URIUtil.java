@@ -343,8 +343,10 @@ public class URIUtil
                             char u=path.charAt(i+1);
                             if (u=='u')
                             {
-                                // TODO this is wrong. This is a codepoint not a char
-                                builder.append((char)(0xffff&TypeUtil.parseInt(path,i+2,4,16)));
+                                int codepoint=0xffff&TypeUtil.parseInt(path,i+2,4,16);
+                                char[] chars = Character.toChars(codepoint);
+                                for (char ch:chars)
+                                    builder.append(ch);
                                 i+=5;
                             }
                             else
