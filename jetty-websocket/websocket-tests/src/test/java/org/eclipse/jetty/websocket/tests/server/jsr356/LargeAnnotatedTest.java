@@ -28,17 +28,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.WSServer;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -51,32 +48,17 @@ public class LargeAnnotatedTest
     @ServerEndpoint(value = "/echo/large")
     public static class LargeEchoConfiguredSocket
     {
-        private javax.websocket.Session session;
-        
-        @OnOpen
-        public void open(javax.websocket.Session session)
+        @OnMessage(maxMessageSize = 128 * 1024)
+        public String echo(String msg)
         {
-            this.session = session;
-            this.session.setMaxTextMessageBufferSize(128 * 1024);
-        }
-        
-        @OnMessage
-        public void echo(String msg)
-        {
-            // reply with echo
-            session.getAsyncRemote().sendText(msg);
+            return msg;
         }
     }
     
     @Rule
     public TestingDir testdir = new TestingDir();
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
-
-    @SuppressWarnings("Duplicates")
     @Test
-    @Ignore("Not working yet")
     public void testEcho() throws Exception
     {
         WSServer wsb = new WSServer(testdir,"app");
@@ -90,9 +72,8 @@ public class LargeAnnotatedTest
 
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            // wsb.dump();
 
-            WebSocketClient client = new WebSocketClient(bufferPool);
+            WebSocketClient client = new WebSocketClient();
             try
             {
                 client.getPolicy().setMaxTextMessageSize(128*1024);
