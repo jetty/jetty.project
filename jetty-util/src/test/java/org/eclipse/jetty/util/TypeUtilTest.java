@@ -24,6 +24,9 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public class TypeUtilTest
 {
     @Test
@@ -125,8 +128,10 @@ public class TypeUtilTest
     @Test
     public void testGetLocationOfClass() throws Exception
     {
+        Path mavenRepoPath = Paths.get( System.getProperty( "mavenRepoPath" ) );
+        String mavenRepo = mavenRepoPath.toFile().getPath();
         // Classes from maven dependencies
-        Assert.assertThat(TypeUtil.getLocationOfClass(Assert.class).toASCIIString(),Matchers.containsString("/repository/"));
+        Assert.assertThat(TypeUtil.getLocationOfClass(Assert.class).toASCIIString(),Matchers.containsString(mavenRepo));
         
         // Class from project dependencies
         Assert.assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(),Matchers.containsString("/classes/"));
