@@ -37,13 +37,16 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -52,6 +55,7 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -845,7 +849,7 @@ public abstract class FlowControlStrategyTest
             {
                 return InvocationType.NON_BLOCKING;
             }
-            
+
             @Override
             public void succeeded()
             {
@@ -916,7 +920,7 @@ public abstract class FlowControlStrategyTest
             {
                 return InvocationType.NON_BLOCKING;
             }
-            
+
             @Override
             public void succeeded()
             {
@@ -997,7 +1001,7 @@ public abstract class FlowControlStrategyTest
             {
                 return InvocationType.NON_BLOCKING;
             }
-            
+
             @Override
             public void failed(Throwable x)
             {
@@ -1007,5 +1011,72 @@ public abstract class FlowControlStrategyTest
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testNoWindowUpdateForRemotelyClosedStream() throws Exception
+    {
+        List<Callback> callbacks = new ArrayList<>();
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        callbacks.add(callback);
+                        if (frame.isEndStream())
+                        {
+                            // Succeed the callbacks when the stream is already remotely closed.
+                            callbacks.forEach(Callback::succeeded);
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
+                    }
+                };
+            }
+        });
+
+        List<WindowUpdateFrame> sessionWindowUpdates = new ArrayList<>();
+        List<WindowUpdateFrame> streamWindowUpdates = new ArrayList<>();
+        client.setFlowControlStrategyFactory(() -> new BufferingFlowControlStrategy(0.5F)
+        {
+            @Override
+            public void onWindowUpdate(ISession session, IStream stream, WindowUpdateFrame frame)
+            {
+                if (frame.getStreamId() == 0)
+                    sessionWindowUpdates.add(frame);
+                else
+                    streamWindowUpdates.add(frame);
+                super.onWindowUpdate(session, stream, frame);
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+
+        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - 1);
+        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(sessionWindowUpdates.size() > 0);
+        Assert.assertEquals(0, streamWindowUpdates.size());
     }
 }
