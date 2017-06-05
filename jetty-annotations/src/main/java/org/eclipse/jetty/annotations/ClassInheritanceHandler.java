@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -35,10 +36,10 @@ public class ClassInheritanceHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
     
-    ConcurrentHashMap<String, ConcurrentHashSet<String>> _inheritanceMap;
+    Map<String, Set<String>> _inheritanceMap;
  
     
-    public ClassInheritanceHandler(ConcurrentHashMap<String, ConcurrentHashSet<String>> map)
+    public ClassInheritanceHandler(Map<String, Set<String>> map)
     {
         _inheritanceMap = map;
     }
@@ -69,13 +70,13 @@ public class ClassInheritanceHandler extends AbstractHandler
     {
       
         //As it is likely that the interfaceOrSuperClassName is already in the map, try getting it first
-        ConcurrentHashSet<String> implementingClasses = _inheritanceMap.get(interfaceOrSuperClassName);
+        Set<String> implementingClasses = _inheritanceMap.get(interfaceOrSuperClassName);
         //If it isn't in the map, then add it in, but test to make sure that someone else didn't get in 
         //first and add it
         if (implementingClasses == null)
         {
-            implementingClasses = new ConcurrentHashSet<String>();
-            ConcurrentHashSet<String> tmp = _inheritanceMap.putIfAbsent(interfaceOrSuperClassName, implementingClasses);
+            implementingClasses = ConcurrentHashMap.newKeySet();
+            Set<String> tmp = _inheritanceMap.putIfAbsent(interfaceOrSuperClassName, implementingClasses);
             if (tmp != null)
                 implementingClasses = tmp;
         }

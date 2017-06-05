@@ -30,7 +30,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -40,7 +39,7 @@ import org.osgi.framework.Constants;
  */
 public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationParser
 {
-    private Set<URI> _alreadyParsed = new ConcurrentHashSet<URI>();
+    private Set<URI> _alreadyParsed = ConcurrentHashMap.newKeySet();
     
     private ConcurrentHashMap<URI,Bundle> _uriToBundle = new ConcurrentHashMap<URI, Bundle>();
     private ConcurrentHashMap<Bundle,Resource> _bundleToResource = new ConcurrentHashMap<Bundle,Resource>();

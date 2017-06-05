@@ -52,10 +52,10 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
         Frame[] streamFrame = Frame.EMPTY_ARRAY;
         if (stream != null)
         {
-            if (stream.isClosed())
+            if (stream.isRemotelyClosed())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, ignoring update stream recv window by {} for closed {}", length, stream);
+                    LOG.debug("Data consumed, ignoring update stream recv window by {} for remotely closed {}", length, stream);
             }
             else
             {

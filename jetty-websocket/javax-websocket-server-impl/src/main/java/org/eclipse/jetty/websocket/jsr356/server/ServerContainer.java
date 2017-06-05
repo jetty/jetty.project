@@ -29,9 +29,14 @@ import java.util.concurrent.Executor;
 import javax.websocket.DeploymentException;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -45,17 +50,49 @@ import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
+@ManagedObject("JSR356 Server Container")
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
     
+    /**
+     * Get the WebSocketContainer out of the current ThreadLocal reference
+     * of the active ContextHandler.
+     *
+     * @return the WebSocketContainer if found, null if not found.
+     */
+    public static WebSocketContainer getWebSocketContainer()
+    {
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        if (context == null)
+            return null;
+        
+        ContextHandler handler = ContextHandler.getContextHandler(context);
+        if (handler == null)
+            return null;
+        
+        if (!(handler instanceof ServletContextHandler))
+            return null;
+        
+        return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
+    }
+    
     private final NativeWebSocketConfiguration configuration;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
-
+    
+    /**
+     * @deprecated use {@code ServerContainer(NativeWebSocketConfiguration, HttpClient)} instead
+     */
+    @Deprecated
     public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
     {
-        super(configuration.getFactory());
+        this(configuration, (HttpClient) null);
+    }
+    
+    public ServerContainer(NativeWebSocketConfiguration configuration, HttpClient httpClient)
+    {
+        super(configuration.getFactory(), httpClient);
         this.configuration = configuration;
         this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this));
         addBean(this.configuration);

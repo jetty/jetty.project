@@ -58,7 +58,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
@@ -308,7 +307,7 @@ public class DelayedStartClientOnServerTest
         {
             server.start();
             String response = GET(server.getURI().resolve("/configure"));
-            assertThat("Response", response, startsWith("Configured " + ClientContainer.class.getName()));
+            assertThat("Response", response, startsWith("Configured " + ServerContainer.class.getName()));
             
             List<String> threadNames = getThreadNames(server, JettyClientContainerProvider.getInstance());
             assertNoHttpClientPoolThreads(threadNames);

@@ -37,8 +37,10 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -67,6 +69,7 @@ import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
  * <p>
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
+@ManagedObject("JSR356 Client Container")
 public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
@@ -95,8 +98,19 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public ClientContainer(final WebSocketContainerScope scope)
     {
-        String jsr356TrustAll = System.getProperty("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+        this(scope, null);
+    }
     
+    /**
+     * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
+     *
+     * @param scope the scope of the ServerContainer
+     * @param httpClient the HttpClient instance to use
+     */
+    protected ClientContainer(final WebSocketContainerScope scope, final HttpClient httpClient)
+    {
+        String jsr356TrustAll = System.getProperty("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+        
         WebSocketContainerScope clientScope;
         if (scope.getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
         {

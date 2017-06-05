@@ -35,10 +35,10 @@ public class WebSocketPolicy
         return new WebSocketPolicy(WebSocketBehavior.SERVER);
     }
     
-    /* NOTE TO OTHER DEVELOPERS: 
+    /* NOTE TO OTHER DEVELOPERS:
      * If you change any of these default values,
-     * make sure you sync the values with 
-     * org.eclipse.jetty.websocket.api.annotations.WebSocket 
+     * make sure you sync the values with
+     * org.eclipse.jetty.websocket.api.annotations.WebSocket
      * annotation defaults
      */
     
@@ -53,11 +53,13 @@ public class WebSocketPolicy
 
     /**
      * The maximum size of a text message buffer.
-     * @deprecated see {@link #inputBufferSize}, {@link #outputBufferSize}, and {@link #maxAllowedFrameSize}
+     * <p>
+     * Used ONLY for stream based message writing.
+     * <p>
+     * Default: 32768 (32 K)
      */
-    @Deprecated
-    private int maxTextMessageBufferSize;
-    
+    private int maxTextMessageBufferSize = 32 * KB;
+
     /**
      * The maximum size of a binary message during parsing/generating.
      * <p>
@@ -70,10 +72,11 @@ public class WebSocketPolicy
     /**
      * The maximum size of a binary message buffer
      * <p>
-     * @deprecated see {@link #inputBufferSize}, {@link #outputBufferSize}, and {@link #maxAllowedFrameSize}
+     * Used ONLY for for stream based message writing
+     * <p>
+     * Default: 32768 (32 K)
      */
-    @Deprecated
-    private int maxBinaryMessageBufferSize;
+    private int maxBinaryMessageBufferSize = 32 * KB;
 
     /**
      * The timeout in ms (milliseconds) for async write operations.
@@ -168,7 +171,9 @@ public class WebSocketPolicy
         WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
+        clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
         clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
+        clone.maxBinaryMessageBufferSize = this.maxBinaryMessageBufferSize;
         clone.inputBufferSize = this.inputBufferSize;
         clone.outputBufferSize = this.outputBufferSize;
         clone.maxAllowedFrameSize = this.maxAllowedFrameSize;
@@ -208,7 +213,7 @@ public class WebSocketPolicy
      * <p>
      * This is the raw read operation buffer size, before the parsing of the websocket frames.
      * </p>
-     * 
+     *
      * @return the raw network buffer input size.
      */
     public int getInputBufferSize()
@@ -248,12 +253,10 @@ public class WebSocketPolicy
     /**
      * Get the maximum size of a binary message buffer.
      * @return the maximum size of a binary message buffer
-     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
      */
-    @Deprecated
     public int getMaxBinaryMessageBufferSize()
     {
-        return maxBinaryMessageSize;
+        return maxBinaryMessageBufferSize;
     }
 
     /**
@@ -269,14 +272,13 @@ public class WebSocketPolicy
     }
 
     /**
-     * Get the maximum size of a text message buffer.
+     * Get the maximum size of a text message buffer (for streaming writing)
+     * 
      * @return the maximum size of a text message buffer
-     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
      */
-    @Deprecated
     public int getMaxTextMessageBufferSize()
     {
-        return maxTextMessageSize;
+        return maxTextMessageBufferSize;
     }
 
     /**
@@ -369,15 +371,17 @@ public class WebSocketPolicy
     
     /**
      * The maximum size of a binary message buffer.
-     *
+     * <p>
+     * Used ONLY for stream based message writing.
+     * 
      * @param size
      *            the maximum size of the binary message buffer
-     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
      */
-    @Deprecated
     public void setMaxBinaryMessageBufferSize(int size)
     {
-        /* does nothing */
+        assertGreaterThan("MaxBinaryMessageBufferSize",size,1);
+
+        this.maxBinaryMessageBufferSize = size;
     }
     
     /**
@@ -410,22 +414,22 @@ public class WebSocketPolicy
     {
         if(size < 0) return; // no change (likely came from annotation)
 
-        assertGreaterThan("MaxBinaryMessageSize",size,1);
-
-        this.maxBinaryMessageSize = size;
+        this.maxBinaryMessageSize = Math.max(-1, size);
     }
 
     /**
      * The maximum size of a text message buffer.
-     *
+     * <p>
+     * Used ONLY for stream based message writing.
+     * 
      * @param size
      *            the maximum size of the text message buffer
-     * @deprecated see {@link #getInputBufferSize()}, {@link #getOutputBufferSize()}, and {@link #getMaxAllowedFrameSize()}
      */
-    @Deprecated
     public void setMaxTextMessageBufferSize(int size)
     {
-        /* does nothing */
+        assertGreaterThan("MaxTextMessageBufferSize",size,1);
+
+        this.maxTextMessageBufferSize = size;
     }
     
     /**
@@ -444,7 +448,7 @@ public class WebSocketPolicy
         }
         this.setMaxTextMessageSize((int) size);
     }
-
+    
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
@@ -457,9 +461,7 @@ public class WebSocketPolicy
     {
         if(size < 0) return; // no change (likely came from annotation)
 
-        assertGreaterThan("MaxTextMessageSize",size,1);
-
-        this.maxTextMessageSize = size;
+        this.maxTextMessageSize = Math.max(-1, size);
     }
 
     @SuppressWarnings("StringBufferReplaceableByString")
