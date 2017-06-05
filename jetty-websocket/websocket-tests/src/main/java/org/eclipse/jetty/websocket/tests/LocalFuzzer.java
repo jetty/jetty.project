@@ -131,7 +131,7 @@ public class LocalFuzzer implements AutoCloseable
             prefix = "Frame[" + i + "]";
             
             WebSocketFrame expected = expect.get(i);
-            WebSocketFrame actual = framesQueue.poll(1, TimeUnit.SECONDS);
+            WebSocketFrame actual = framesQueue.poll(3, TimeUnit.SECONDS);
             assertThat(prefix + ".poll", actual, notNullValue());
             
             if (LOG.isDebugEnabled())
