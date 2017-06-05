@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -43,26 +41,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.toolchain.test.TestTracker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.Defaults;
-import org.eclipse.jetty.websocket.tests.RawFrameBuilder;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSConnection;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
@@ -155,6 +147,7 @@ public class ClientCloseTest
         {
             boolean flushed = super.flush(buffers);
             congestedFlush.set(!flushed);
+            // TODO: if true, toss exception (different use case)
             return flushed;
         }
     }
@@ -233,104 +226,6 @@ public class ClientCloseTest
         
         // Verify timeout error
         clientSocket.assertErrorEvent("Client", instanceOf(SocketTimeoutException.class), anything());
-    }
-    
-    @Test
-    public void testProtocolException() throws Exception
-    {
-        // Set client timeout
-        final int timeout = 1000;
-        client.setMaxIdleTimeout(timeout);
-        
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
-        // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
-        
-        // client confirms connection via echo
-        confirmConnection(clientSocket, clientConnectFuture, serverSession);
-        
-        // client should not have received close message (yet)
-        clientSocket.assertNotClosed("Client");
-        
-        // server sends bad close frame (too big of a reason message)
-        byte msg[] = new byte[400];
-        Arrays.fill(msg, (byte) 'x');
-        ByteBuffer bad = ByteBuffer.allocate(500);
-        RawFrameBuilder.putOpFin(bad, OpCode.CLOSE, true);
-        RawFrameBuilder.putLength(bad, msg.length + 2, false);
-        bad.putShort((short) StatusCode.NORMAL);
-        bad.put(msg);
-        BufferUtil.flipToFlush(bad, 0);
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class))
-        {
-            serverSession.getUntrustedConnection().writeRaw(bad);
-            
-            // client should have noticed the error
-            clientSocket.assertErrorEvent("Client", instanceOf(ProtocolException.class), containsString("Invalid control frame"));
-            
-            // client parse invalid frame, notifies server of close (protocol error)
-            serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
-            serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
-        }
-        
-        // server disconnects
-        serverSession.disconnect();
-        
-        // client close event on ws-endpoint
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
-    }
-    
-    @Test
-    public void testReadEOF() throws Exception
-    {
-        // Set client timeout
-        final int timeout = 1000;
-        client.setMaxIdleTimeout(timeout);
-        
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
-        // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
-        
-        // client confirms connection via echo
-        confirmConnection(clientSocket, clientConnectFuture, serverSession);
-        
-        try (StacklessLogging ignored = new StacklessLogging(clientSocket.LOG))
-        {
-            // client sends close frame
-            final String origCloseReason = "Normal Close";
-            clientSocket.close(StatusCode.NORMAL, origCloseReason);
-            
-            // server receives close frame
-            serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
-            serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
-            
-            // client should not have received close message (yet)
-            clientSocket.assertNotClosed("Client");
-            
-            // server shuts down connection (no frame reply)
-            serverSession.disconnect();
-            
-            // client reads -1 (EOF)
-            clientSocket.assertErrorEvent("Client", instanceOf(IOException.class), containsString("EOF"));
-            // client triggers close event on client ws-endpoint
-            clientSocket.awaitCloseEvent("Client");
-            clientSocket.assertCloseInfo("Client", StatusCode.ABNORMAL, containsString("Disconnected"));
-        }
     }
     
     @Test
@@ -422,43 +317,5 @@ public class ClientCloseTest
             clientSockets[i].awaitCloseEvent("Client[" + i + "]");
             clientSockets[i].assertCloseInfo("Client[" + i + "]", StatusCode.SHUTDOWN, containsString("Shutdown"));
         }
-    }
-    
-    @Test
-    public void testWriteException() throws Exception
-    {
-        // Set client timeout
-        final int timeout = 1000;
-        client.setMaxIdleTimeout(timeout);
-        
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
-        // Client connects
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
-        
-        // client confirms connection via echo
-        confirmConnection(clientSocket, clientConnectFuture, serverSession);
-        
-        // setup client endpoint for write failure (test only)
-        EndPoint endp = clientSocket.getJettyEndPoint();
-        endp.shutdownOutput();
-        
-        // client enqueue close frame
-        // client write failure
-        final String origCloseReason = "Normal Close";
-        clientSocket.close(StatusCode.NORMAL, origCloseReason);
-        
-        assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
-        
-        // client triggers close event on client ws-endpoint
-        // assert - close code==1006 (abnormal)
-        // assert - close reason message contains (write failure)
-        assertTrue("Client onClose not called", clientSocket.closeLatch.getCount() > 0);
     }
 }

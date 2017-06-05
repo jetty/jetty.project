@@ -135,10 +135,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         // close FrameFlusher, we cannot write anymore at this point.
         flusher.close();
         
-        // We need to gently close first, to allow
-        // SSL close alerts to be sent by Jetty
-        getEndPoint().close();
         closed.set(true);
+        close();
     }
     
     @Override
