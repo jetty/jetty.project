@@ -130,10 +130,10 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         Frame[] windowFrames = Frame.EMPTY_ARRAY;
         if (stream != null)
         {
-            if (stream.isClosed())
+            if (stream.isRemotelyClosed())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, {} bytes, ignoring update stream recv window for closed {}", length, stream);
+                    LOG.debug("Data consumed, {} bytes, ignoring update stream recv window for remotely closed {}", length, stream);
             }
             else
             {

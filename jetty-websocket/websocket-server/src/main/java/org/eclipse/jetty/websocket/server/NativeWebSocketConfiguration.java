@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import javax.servlet.ServletContext;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -43,7 +41,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
  * Only applicable if using {@link WebSocketUpgradeFilter}
  * </p>
  */
-public class NativeWebSocketConfiguration extends ContainerLifeCycle implements MappedWebSocketCreator, Dumpable
+public class NativeWebSocketConfiguration extends ContainerLifeCycle implements MappedWebSocketCreator
 {
     private final WebSocketServerFactory factory;
     private final PathMappings<WebSocketCreator> mappings = new PathMappings<>();
@@ -57,6 +55,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     {
         this.factory = webSocketServerFactory;
         addBean(this.factory);
+        addBean(this.mappings);
     }
     
     @Override
@@ -64,19 +63,6 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     {
         mappings.removeIf((mapped) -> !(mapped.getResource() instanceof PersistedWebSocketCreator));
         super.doStop();
-    }
-    
-    @Override
-    public String dump()
-    {
-        return ContainerLifeCycle.dump(this);
-    }
-    
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        // TODO: show factory/mappings ?
-        mappings.dump(out, indent);
     }
     
     /**

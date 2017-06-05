@@ -67,7 +67,10 @@ public class JsrBrowserDebugTool
         {
             JsrBrowserDebugTool tool = new JsrBrowserDebugTool();
             tool.setupServer(port);
-            tool.runForever();
+            tool.server.start();
+            tool.server.dumpStdErr();
+            LOG.info("Server available at {}", tool.server.getURI());
+            tool.server.join();
         }
         catch (Throwable t)
         {
@@ -77,17 +80,11 @@ public class JsrBrowserDebugTool
 
     private Server server;
 
-    private void runForever() throws Exception
-    {
-        server.start();
-        server.dumpStdErr();
-        LOG.info("Server available.");
-        server.join();
-    }
-
-    private void setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException, IOException
+    private ServerContainer setupServer(int port) throws DeploymentException, ServletException, URISyntaxException, MalformedURLException, IOException
     {
         server = new Server();
+        
+        server.setDumpAfterStart(true);
         
         HttpConfiguration httpConf = new HttpConfiguration();
         httpConf.setSendServerVersion(true);
@@ -113,5 +110,6 @@ public class JsrBrowserDebugTool
         container.addEndpoint(JsrBrowserSocket.class);
 
         LOG.info("{} setup on port {}",this.getClass().getName(),port);
+        return container;
     }
 }
