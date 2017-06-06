@@ -140,7 +140,7 @@ public class ContextHandlerCollectionTest
                 handlerF.reset();
 
                 String t = String.format("test   %d %s@%s --> %s | %s%n",i,uri,host,connector.getName(),handler);
-                String response = connector.getResponses("GET "+uri+" HTTP/1.0\nHost: "+host+"\n\n");
+                String response = connector.getResponse("GET "+uri+" HTTP/1.0\nHost: "+host+"\n\n");
                 
                 if (handler==null)
                 {
@@ -301,32 +301,32 @@ public class ContextHandlerCollectionTest
         server.setHandler(contexts);
         server.start();
         
-        String response=connector.getResponses("GET / HTTP/1.0\r\n\r\n");
+        String response=connector.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /foobar/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /left/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /leftcentre/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left of centre"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /rightcentre/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right of centre"));
         assertThat(response, containsString("Wrapped: TRUE"));
 
-        response=connector.getResponses("GET /right/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right"));
         assertThat(response, containsString("Wrapped: TRUE"));
@@ -362,32 +362,32 @@ public class ContextHandlerCollectionTest
         server.setHandler(contexts);
         server.start();
         
-        String response=connector.getResponses("GET / HTTP/1.0\r\n\r\n");
+        String response=connector.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /foobar/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /left/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /leftcentre/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left of centre"));
         assertThat(response, not(containsString("Wrapped: TRUE")));
 
-        response=connector.getResponses("GET /rightcentre/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right of centre"));
         assertThat(response, containsString("Wrapped: ASYNC"));
 
-        response=connector.getResponses("GET /right/info HTTP/1.0\r\n\r\n");
+        response=connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right"));
         assertThat(response, containsString("Wrapped: ASYNC"));
