@@ -37,6 +37,12 @@ Some user-agents might be excluded from compression to avoid common browser bugs
 The `GzipHandler` is added to the entire server by the `etc/jetty-gzip.xml` file from the `gzip.mod` module.
 It may also be added to individual contexts in a context xml file.
 
+____
+[NOTE]
+Jetty 9 only compresses using GZip.
+Using link:http://docs.oracle.com/javase/8/docs/api/java/util/zip/Deflater.html[Deflate] is not supported and will not work.
+____
+
 [[gzip-filter-rules]]
 ==== Gzip Rules
 
