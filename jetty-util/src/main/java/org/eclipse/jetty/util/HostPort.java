@@ -25,8 +25,7 @@ package org.eclipse.jetty.util;
  */
 public class HostPort
 {
-    @Deprecated
-    private final static boolean LEGACY_IPV6 = Boolean.getBoolean("org.eclipse.jetty.util.HostPort.LEGACY_IPV6");
+    private final static boolean LEGACY_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.LEGACY_IPV6","true"));
     
     private final String _host;
     private final int _port;
