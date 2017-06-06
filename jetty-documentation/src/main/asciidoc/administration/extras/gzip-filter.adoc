@@ -40,18 +40,16 @@ It may also be added to individual contexts in a context xml file.
 [[gzip-filter-rules]]
 ==== Gzip Rules
 
-`GzipHandler` will gzip or deflate the content of a response if:
+`GzipHandler` will gzip the content of a response if:
 
 * It is mapped to a matching path
 * The request method is configured to support gzip
 * The request is not from an excluded User-Agent
-* accept-encoding header is set to either gzip, deflate or a combination of those
+* accept-encoding header is set to gzip
 * The response status code is >=200 and <300
 * The content length is unknown or more than the minGzipSize initParameter or the minGzipSize is 0(default)
 * The content-type does not match an excluded mime-type
 * No content-encoding is specified by the resource
-
-If both gzip and deflate are specified in the accept-encoding header, then gzip will be used.
 
 Compressing the content can greatly improve the network bandwidth usage, but at the cost of memory and CPU cycles.
 The link:#default-servlet[DefaultServlet] is capable of serving pre-compressed static content, which saves memory and CPU.
@@ -65,8 +63,6 @@ Content will only be compressed if content length is either unknown or greater t
 checkGzExists::
 True by default.
 If set to false, the handler will not check for pre-compressed content.
-compressionLevel::
-The compression level used for deflate compression. (0-9).
 includedMethods::
 List of HTTP methods to compress.
 If not set, only `GET` requests are compressed.
