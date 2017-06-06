@@ -52,7 +52,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
     @Test
     public void testInvalidation() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int maxInactiveInterval = 30;
         int scavengeInterval = 1;
@@ -84,8 +84,8 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                 try
                 {
                     String[] urls = new String[2];
-                    urls[0] = "http://localhost:" + port1 + contextPath + servletMapping;
-                    urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
+                    urls[0] = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
+                    urls[1] = "http://localhost:" + port2 + contextPath + servletMapping.substring(1);
 
                     // Create the session on node1
                     ContentResponse response1 = client.GET(urls[0] + "?action=init");

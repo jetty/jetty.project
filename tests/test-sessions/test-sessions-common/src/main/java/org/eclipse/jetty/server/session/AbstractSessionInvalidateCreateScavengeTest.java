@@ -87,7 +87,7 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
     @Test
     public void testSessionScavenge() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 6;
         int scavengePeriod = 3;
@@ -115,7 +115,7 @@ public abstract class AbstractSessionInvalidateCreateScavengeTest extends Abstra
             client.start();
             try
             {
-                String url = "http://localhost:" + port1 + contextPath + servletMapping;
+                String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
 
                 // Create the session
