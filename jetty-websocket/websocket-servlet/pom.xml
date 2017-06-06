@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-parent</artifactId>
-        <version>9.4.7-SNAPSHOT</version>
+        <version>9.2.23-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -15,6 +15,23 @@
     </properties>
     <build>
       <plugins>
+           <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>artifact-jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <archive>
+                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -23,7 +40,9 @@
                     <instructions>
                         <Bundle-Description>Websocket Servlet Interface</Bundle-Description>
                         <Bundle-Classpath />
+                        <_nouses>true</_nouses>
                         <DynamicImport-Package>org.eclipse.jetty.websocket.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}",org.eclipse.jetty.websocket.server.pathmap.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}"</DynamicImport-Package>
+                        <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.websocket.servlet.WebSocketServletFactory)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)"</Require-Capability>
                     </instructions>
                 </configuration>
             </plugin>

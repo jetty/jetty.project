@@ -2,11 +2,13 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn-parent</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-client</artifactId>
-  <name>Jetty :: ALPN :: Client</name>
+  <name>Jetty :: ALPN Client</name>
+  <description>Jetty ALPN client services</description>
+  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.client</bundle-symbolic-name>
   </properties>
@@ -28,6 +30,15 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
       </plugin>
       <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
       with a snapshot. -->

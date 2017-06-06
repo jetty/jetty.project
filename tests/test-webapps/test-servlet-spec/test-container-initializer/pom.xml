@@ -3,20 +3,49 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
   </parent>
   <artifactId>test-container-initializer</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Tests :: WebApp :: Servlet Spec :: ServletContainerInitializer Test Jar</name>
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.sci</bundle-symbolic-name>
-  </properties>
   <build>
     <plugins>
+       <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <verbose>false</verbose>
+        </configuration>
+       </plugin>
+       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+            <execution>
+                <id>artifact-jar</id>
+                <goals>
+                    <goal>jar</goal>
+                </goals>
+            </execution>
+        </executions>
+        <configuration>
+            <archive>
+                <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+            </archive>
+        </configuration>
+      </plugin>
       <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>
+                      <goal>manifest</goal>
+                  </goals>
+              </execution>
+          </executions>
           <configuration>
               <instructions>
                   <Bundle-SymbolicName>org.eclipse.jetty.tests.test-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>

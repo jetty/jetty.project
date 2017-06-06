@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot</artifactId>
@@ -30,8 +30,8 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.osgi</groupId>
-      <artifactId>org.eclipse.osgi</artifactId>
+    	<groupId>org.eclipse.osgi</groupId>
+    	<artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.osgi</groupId>
@@ -63,14 +63,46 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>artifact-jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <archive>
+                        <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
                         <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[9.1,10.0)"</DynamicImport-Package>
                         <Import-Package>javax.mail;version="1.4.0";resolution:=optional,
  javax.mail.event;version="1.4.0";resolution:=optional,
  javax.mail.internet;version="1.4.0";resolution:=optional,
@@ -80,6 +112,8 @@
  javax.servlet.http;version="[3.1,3.2)",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
+ org.eclipse.jetty.annotations;version="9.1";resolution:=optional,
+ org.eclipse.jetty.plus.webapp;version="9.1";resolution:=optional,
  org.objectweb.asm;version=4;resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
@@ -92,7 +126,6 @@
  org.slf4j.helpers;resolution:=optional,
  org.xml.sax,
  org.xml.sax.helpers,
- org.eclipse.jetty.annotations;resolution:=optional,
  *
                         </Import-Package>
                         <_nouses>true</_nouses>

@@ -2,25 +2,32 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>apache-jstl</artifactId>
   <name>Apache :: JSTL module</name>
   <url>http://tomcat.apache.org/taglibs/standard/</url>
   <packaging>jar</packaging>
-  <properties>
-   <bundle-symbolic-name>${project.groupId}.apache.jstl</bundle-symbolic-name>
-  </properties>
 
   <build>
     <plugins>
       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-             <useSystemClassLoader>false</useSystemClassLoader>
-          </configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>config</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -44,34 +51,6 @@
        <groupId>org.apache.taglibs</groupId>
        <artifactId>taglibs-standard-impl</artifactId>
     </dependency>
-    
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-       <scope>test</scope>
-    </dependency>
-    
-    <dependency>
-       <groupId>org.eclipse.jetty</groupId>
-       <artifactId>apache-jsp</artifactId>
-       <version>${project.version}</version>
-       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-       <groupId>org.eclipse.jetty</groupId>
-       <artifactId>jetty-annotations</artifactId>
-       <version>${project.version}</version>
-       <scope>test</scope>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
 </project>

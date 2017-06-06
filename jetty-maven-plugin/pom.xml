@@ -2,17 +2,15 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>Jetty :: Jetty Maven Plugin</name>
-  <description>Jetty maven plugins</description>
   <properties>
     <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>3.4</pluginToolsVersion>
-    <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
+    <pluginToolsVersion>3.1</pluginToolsVersion>
   </properties>
   <build>
     <plugins>
@@ -25,11 +23,13 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
+        <version>${pluginToolsVersion}</version>
         <executions>
           <execution>
             <id>exec-plugin-doc</id>
             <phase>generate-sources</phase>
             <goals>
+              <goal>xdoc</goal>
               <goal>helpmojo</goal>
             </goals>
           </execution>
@@ -149,14 +149,15 @@
      </dependency>
   </dependencies>
   <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <configuration>
-          <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
-        </configuration>
-        <reportSets>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-project-info-reports-plugin</artifactId>
+      <version>2.1</version>
+      <configuration>
+        <dependencyLocationEnabled>false</dependencyLocationEnabled>
+       </configuration>
+         <reportSets>
           <reportSet>
             <reports>
               <report>project-team</report>
@@ -168,7 +169,7 @@
             </reports>
           </reportSet>
         </reportSets>
-      </plugin>
-    </plugins>
+    </plugin>
+  </plugins>
   </reporting>
 </project>

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-runner</artifactId>
@@ -10,7 +10,6 @@
 
  <properties>
     <assembly-directory>target/distribution</assembly-directory>
-    <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
   </properties>
   <url>http://www.eclipse.org/jetty</url>
   <build>
@@ -21,7 +20,7 @@
         <executions>
           <execution>
             <id>unpack-dependencies</id>
-            <phase>prepare-package</phase>
+            <phase>package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
@@ -36,46 +35,42 @@
         </executions>
       </plugin>
       <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <executions>
-              <execution>
-                  <goals>
-                      <goal>manifest</goal>
-                  </goals>
-              </execution>
-          </executions>
-          <configuration>
-            <instructions>
-              <Main-Class>org.eclipse.jetty.runner.Runner</Main-Class>
-              <Import-Package>!*</Import-Package>
-              <Export-Package />
-            </instructions>
-          </configuration>
-        </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
+        <groupId>org.apache.maven.plugins </groupId>
         <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>package</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <archive>
+                <manifest>
+                  <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
+                </manifest>
+                <manifestEntries>
+                  <mode>development</mode>
+                  <url>http://eclipse.org/jetty</url>
+                  <Built-By>${user.name}</Built-By>
+                  <package>org.eclipse.jetty.runner</package>
+                  <Bundle-Name>Jetty Runner</Bundle-Name>
+                  <Bundle-Vendor>Mort Bay Consulting</Bundle-Vendor>
+                </manifestEntries>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
         <configuration>
-         <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-         </archive>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <configuration>
-            <!-- Clirr fails with "org.apache.tools.ant.Task not found" on this project -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <dependencies>
@@ -104,15 +99,10 @@
       <artifactId>jetty-jndi</artifactId>
       <version>${project.version}</version>
     </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jsp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jstl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>

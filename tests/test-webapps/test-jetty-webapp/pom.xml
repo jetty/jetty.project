@@ -1,9 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+// ========================================================================
+// Copyright (c) Webtide LLC
+// 
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+//
+// The Apache License v2.0 is available at
+// http://www.apache.org/licenses/LICENSE-2.0.txt
+//
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
+ -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -12,9 +29,6 @@
   <name>Test :: Jetty Test Webapp</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.tests.webapp</bundle-symbolic-name>
-  </properties>
   <build>
     <plugins>
       <plugin>
@@ -56,29 +70,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <supportedProjectTypes>
-            <supportedProjectType>war</supportedProjectType>
-          </supportedProjectTypes>
-          <instructions>
-            <Import-Package>javax.servlet.jsp.*;version="[2.2.0,3.0)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
-            <Export-Package>!com.acme*</Export-Package>
-            <!-- the test webapp is configured via a jetty xml file
-            in order to add the security handler. -->
-            <Web-ContextPath>/</Web-ContextPath>
-            <!-- in fact the '.' must not be there
-            but Felix-BND has a bug:
-            http://www.mail-archive.com/users@felix.apache.org/msg04730.html
-            https://issues.apache.org/jira/browse/FELIX-1571
-            -->
-            <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
-          </instructions>
-        </configuration>
-      </plugin>
       <!-- also make this webapp an osgi bundle -->
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
@@ -87,6 +78,41 @@
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <supportedProjectTypes>
+            <supportedProjectType>war</supportedProjectType>
+          </supportedProjectTypes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
+                <Import-Package>javax.servlet.jsp.*;version="[2.2.0, 3.0)",javax.servlet.*;version="[2.6,3.2)",org.eclipse.jetty.*;version="9.1",*</Import-Package>
+                <Export-Package>!com.acme*</Export-Package>
+                <!-- the test webapp is configured via a jetty xml file
+                in order to add the security handler. -->
+                <Web-ContextPath>/</Web-ContextPath>
+                <!-- in fact the '.' must not be there
+                but Felix-BND has a bug:
+                http://www.mail-archive.com/users@felix.apache.org/msg04730.html
+                https://issues.apache.org/jira/browse/FELIX-1571
+                -->
+                <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+              </instructions>
+            </configuration>
+           </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
@@ -117,6 +143,11 @@
           <webApp>
             <contextPath>/test</contextPath>
             <tempDirectory>${project.build.directory}/work</tempDirectory>
+            <sessionHandler implementation="org.eclipse.jetty.server.session.SessionHandler">
+              <sessionManager implementation="org.eclipse.jetty.server.session.HashSessionManager">
+                <storeDirectory>${basedir}/target/sessions</storeDirectory>
+              </sessionManager>
+            </sessionHandler>
           </webApp>
           <loginServices>
             <loginService implementation="org.eclipse.jetty.security.HashLoginService">
@@ -124,14 +155,6 @@
               <config>src/main/config/demo-base/etc/realm.properties</config>
             </loginService>
           </loginServices>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- must deploy: required for jetty-distribution -->
-          <skip>false</skip>
         </configuration>
       </plugin>
     </plugins>
@@ -176,13 +199,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
@@ -198,6 +214,12 @@
       <artifactId>jsp-api</artifactId>
       <version>2.1</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-http-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -227,14 +249,10 @@
               <goals>
                 <goal>jspc</goal>
               </goals>
-             <!-- example configuration
               <configuration>
-                <includes>**/*.foo</includes>
-                <excludes>**/*.fff</excludes>
-                <sourceVersion>1.8</sourceVersion>
-                <targetVersion>1.8</targetVersion>
+                 <includes>**/*.foo</includes>
+                 <excludes>**/*.fff</excludes>
               </configuration>
-              -->
             </execution>
           </executions>
         </plugin>

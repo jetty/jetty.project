@@ -1,9 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+// ========================================================================
+// Copyright (c) Webtide LLC
+// 
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+//
+// The Apache License v2.0 is available at
+// http://www.apache.org/licenses/LICENSE-2.0.txt
+//
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
+ -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jmx-parent</artifactId>
-    <version>9.4.7-SNAPSHOT</version>
+    <version>9.2.23-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jmx-webapp-it</artifactId>
@@ -14,18 +31,17 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <bundle-symbolic-name>${project.groupId}.jmx.webapp.it</bundle-symbolic-name>
+    <scripts-dir>${project.basedir}/src/test/scripts</scripts-dir>
     <test-base-dir>${project.build.directory}/test-base</test-base-dir>
+    <test-home-dir>${project.build.directory}/test-home</test-home-dir>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <artifactId>jetty-distribution</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
+      <type>zip</type>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
@@ -56,14 +72,136 @@
               <includeArtifactIds>jmx-webapp</includeArtifactIds>
               <includeScope>runtime</includeScope>
               <includeTypes>war</includeTypes>
-              <overWriteSnapshots>true</overWriteSnapshots>
-              <overWriteReleases>true</overWriteReleases>
+              <overwriteSnapshots>true</overwriteSnapshots>
+              <overwriteReleases>true</overwriteReleases>
               <stripVersion>true</stripVersion>
               <outputDirectory>${test-base-dir}/webapps</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-jetty-distro</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeArtifactIds>jetty-distribution</includeArtifactIds>
+              <includeScope>runtime</includeScope>
+              <includeTypes>zip</includeTypes>
+              <outputAbsoluteArtifactFilename>true</outputAbsoluteArtifactFilename>
+              <outputDirectory>${test-home-dir}</outputDirectory>
+              <overWriteSnapshots>true</overWriteSnapshots>
+              <overWriteIfNewer>true</overWriteIfNewer>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.17</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.7</version>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <property name="jetty.jmx.home" location="${test-home-dir}/jetty-distribution-${project.version}" />
+                <property name="jetty.jmx.base" location="${test-base-dir}" />
+                <echo>Integration Test : Setup Jetty</echo>
+                <exec executable="${run.command}" dir="${scripts-dir}" spawn="false">
+                  <arg value="${run.command.xtra}" />
+                  <arg value="${setup.script}" />
+                  <arg file="${java.home}" />
+                  <arg file="${jetty.jmx.home}" />
+                  <arg file="${jetty.jmx.base}" />
+                </exec>
+
+                <echo>Integration Test : Starting Jetty ...</echo>
+                <exec executable="${run.command}" dir="${scripts-dir}" spawn="true">
+                  <arg value="${run.command.xtra}" />
+                  <arg value="${start.script}" />
+                  <arg file="${java.home}" />
+                  <arg file="${jetty.jmx.home}" />
+                  <arg file="${jetty.jmx.base}" />
+                </exec>
+                <waitfor maxwait="5" maxwaitunit="second" checkevery="500" checkeveryunit="millisecond">
+                  <http url="http://localhost:58080/jmx-webapp/" />
+                </waitfor>
+                <echo>Integration Test : Jetty is now available</echo>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stop-jetty</id>
+            <phase>post-integration-test</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <property name="jetty.jmx.home" location="${test-home-dir}/jetty-distribution-${project.version}" />
+                <property name="jetty.jmx.base" location="${test-base-dir}" />
+                <echo>Integration Test : Stop Jetty</echo>
+                <exec executable="${run.command}" dir="${scripts-dir}" spawn="false">
+                  <arg value="${run.command.xtra}" />
+                  <arg value="${stop.script}" />
+                  <arg file="${java.home}" />
+                  <arg file="${jetty.jmx.home}" />
+                  <arg file="${jetty.jmx.base}" />
+                </exec>
+              </target>
             </configuration>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>it-windows</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+        </os>
+      </activation>
+      <properties>
+        <run.command>cmd</run.command>
+        <run.command.xtra>/c</run.command.xtra>
+        <start.script>start-jetty.bat</start.script>
+        <stop.script>stop-jetty.bat</stop.script>
+      </properties>
+    </profile>
+    <profile>
+      <id>it-unix</id>
+      <activation>
+        <os>
+          <family>unix</family>
+        </os>
+      </activation>
+      <properties>
+        <run.command>sh</run.command>
+        <run.command.xtra>--</run.command.xtra>
+        <setup.script>setup-jetty.sh</setup.script>
+        <start.script>start-jetty.sh</start.script>
+        <stop.script>stop-jetty.sh</stop.script>
+      </properties>
+    </profile>
+  </profiles>
 </project>
