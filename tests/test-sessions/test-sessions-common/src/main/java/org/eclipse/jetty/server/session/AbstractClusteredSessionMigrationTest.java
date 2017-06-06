@@ -47,7 +47,7 @@ public abstract class AbstractClusteredSessionMigrationTest extends AbstractTest
     @Test
     public void testSessionMigration() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
@@ -79,7 +79,7 @@ public abstract class AbstractClusteredSessionMigrationTest extends AbstractTest
                 {
                     // Perform one request to server1 to create a session
                     int value = 1;
-                    Request request1 = client.POST("http://localhost:" + port1 + contextPath + servletMapping + "?action=set&value=" + value);
+                    Request request1 = client.POST("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=set&value=" + value);
                     ContentResponse response1 = request1.send();
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
@@ -89,7 +89,7 @@ public abstract class AbstractClusteredSessionMigrationTest extends AbstractTest
 
                     // Perform a request to server2 using the session cookie from the previous request
                     // This should migrate the session from server1 to server2.
-                    Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
+                    Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=get");
                     request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());

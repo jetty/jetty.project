@@ -18,11 +18,16 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -87,32 +92,38 @@ public class JdbcTestHelper
      */
     public static SessionDataStoreFactory newSessionDataStoreFactory()
     {
-        JDBCSessionDataStoreFactory factory = new JDBCSessionDataStoreFactory();
-        
         DatabaseAdaptor da = new DatabaseAdaptor();
         da.setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
-        factory.setDatabaseAdaptor(da);
-        
-        JDBCSessionDataStore.SessionTableSchema sessionTableSchema = new JDBCSessionDataStore.SessionTableSchema();
-        sessionTableSchema.setTableName(TABLE);
-        sessionTableSchema.setIdColumn(ID_COL);
-        sessionTableSchema.setAccessTimeColumn(ACCESS_COL);
-        sessionTableSchema.setContextPathColumn(CONTEXT_COL);
-        sessionTableSchema.setCookieTimeColumn(COOKIE_COL);
-        sessionTableSchema.setCreateTimeColumn(CREATE_COL);
-        sessionTableSchema.setExpiryTimeColumn(EXPIRY_COL);
-        sessionTableSchema.setLastAccessTimeColumn(LAST_ACCESS_COL);
-        sessionTableSchema.setLastNodeColumn(LAST_NODE_COL);
-        sessionTableSchema.setLastSavedTimeColumn(LAST_SAVE_COL);
-        sessionTableSchema.setMapColumn(MAP_COL);
-        sessionTableSchema.setMaxIntervalColumn(MAX_IDLE_COL);       
-        factory.setSessionTableSchema(sessionTableSchema);
-        return factory;
+        return newSessionDataStoreFactory(da);
     }
 
-   
+   public static SessionDataStoreFactory newSessionDataStoreFactory(DatabaseAdaptor da)
+   {
+       JDBCSessionDataStoreFactory factory = new JDBCSessionDataStoreFactory();
+       factory.setDatabaseAdaptor(da);
+       JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema();
+       factory.setSessionTableSchema(sessionTableSchema);
+       return factory;
+   }
    
     
+   public static JDBCSessionDataStore.SessionTableSchema newSessionTableSchema()
+   {
+       JDBCSessionDataStore.SessionTableSchema sessionTableSchema = new JDBCSessionDataStore.SessionTableSchema();
+       sessionTableSchema.setTableName(TABLE);
+       sessionTableSchema.setIdColumn(ID_COL);
+       sessionTableSchema.setAccessTimeColumn(ACCESS_COL);
+       sessionTableSchema.setContextPathColumn(CONTEXT_COL);
+       sessionTableSchema.setCookieTimeColumn(COOKIE_COL);
+       sessionTableSchema.setCreateTimeColumn(CREATE_COL);
+       sessionTableSchema.setExpiryTimeColumn(EXPIRY_COL);
+       sessionTableSchema.setLastAccessTimeColumn(LAST_ACCESS_COL);
+       sessionTableSchema.setLastNodeColumn(LAST_NODE_COL);
+       sessionTableSchema.setLastSavedTimeColumn(LAST_SAVE_COL);
+       sessionTableSchema.setMapColumn(MAP_COL);
+       sessionTableSchema.setMaxIntervalColumn(MAX_IDLE_COL);
+       return sessionTableSchema;
+   }
     
     public static boolean existsInSessionTable(String id, boolean verbose)
     throws Exception
@@ -146,6 +157,36 @@ public class JdbcTestHelper
         }
     }
     
+    
+    public static void insertSession (String id, String contextPath, String vhost)
+    throws Exception
+    {
+        Class.forName(DRIVER_CLASS);
+        try (Connection con=DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
+        {
+            PreparedStatement statement = con.prepareStatement("insert into "+TABLE+
+                                                               " ("+ID_COL+", "+CONTEXT_COL+", virtualHost, "+LAST_NODE_COL+
+                                                               ", "+ACCESS_COL+", "+LAST_ACCESS_COL+", "+CREATE_COL+", "+COOKIE_COL+
+                                                               ", "+LAST_SAVE_COL+", "+EXPIRY_COL+" "+") "+
+                                                               " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+           
+            statement.setString(1, id);
+            statement.setString(2, contextPath);
+            statement.setString(3,  vhost);
+            statement.setString(4, "0");
+            
+            statement.setLong(5, System.currentTimeMillis());
+            statement.setLong(6, System.currentTimeMillis());
+            statement.setLong(7, System.currentTimeMillis());
+            statement.setLong(8, System.currentTimeMillis());
+            
+            statement.setLong(9, System.currentTimeMillis());
+            statement.setLong(10, System.currentTimeMillis());
+
+            statement.execute();
+            assertEquals(1,statement.getUpdateCount());
+        }
+    }
     
     
     public static Set<String> getSessionIds ()

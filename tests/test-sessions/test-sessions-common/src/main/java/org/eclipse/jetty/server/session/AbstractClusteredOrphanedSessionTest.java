@@ -52,7 +52,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
     public void testOrphanedSession() throws Exception
     {
         // Disable scavenging for the first server, so that we simulate its "crash".
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 5;
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
@@ -85,7 +85,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
                 try
                 {
                     // Connect to server1 to create a session and get its session cookie
-                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
@@ -98,7 +98,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
                     Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + 2L * scavengePeriod));
 
                     // Perform one request to server2 to be sure that the session has been expired
-                    Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=check");
+                    Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=check");
                     request.header("Cookie", sessionCookie);
                     ContentResponse response2 = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
