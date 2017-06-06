@@ -257,14 +257,14 @@ public class SpecExampleConstraintTest
             //There are uncovered methods for GET/POST at url /*
             //without deny-uncovered-http-methods they should be accessible
             String response;
-            response = _connector.getResponses("GET /ctx/index.html HTTP/1.0\r\n\r\n");
+            response = _connector.getResponse("GET /ctx/index.html HTTP/1.0\r\n\r\n");
             assertThat(response,startsWith("HTTP/1.1 200 OK"));   
             
             //set deny-uncovered-http-methods true
             _security.setDenyUncoveredHttpMethods(true);
             
             //check they cannot be accessed
-            response = _connector.getResponses("GET /ctx/index.html HTTP/1.0\r\n\r\n");
+            response = _connector.getResponse("GET /ctx/index.html HTTP/1.0\r\n\r\n");
             assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
         }
         finally
@@ -294,39 +294,39 @@ public class SpecExampleConstraintTest
         */
 
         //a user in role HOMEOWNER is forbidden HEAD request
-        response = _connector.getResponses("HEAD /ctx/index.html HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("HEAD /ctx/index.html HTTP/1.0\r\n" +
+        response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n" +
                 "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
                 "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("HEAD /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
+        response = _connector.getResponse("HEAD /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
         
-        response = _connector.getResponses("HEAD /ctx/acme/retail/index.html HTTP/1.0\r\n" +
+        response = _connector.getResponse("HEAD /ctx/acme/retail/index.html HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
         
         //a user in role CONTRACTOR can do a GET
-        response = _connector.getResponses("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
+        response = _connector.getResponse("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("chris:password") + "\r\n" +
                                            "\r\n");
 
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
         
         //a user in role CONTRACTOR can only do a post if confidential
-        response = _connector.getResponses("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
+        response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("chris:password") + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 403 !"));
         
         //a user in role HOMEOWNER can do a GET
-        response = _connector.getResponses("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +
+        response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +
                                            "Authorization: Basic " + B64Code.encode("harry:password") + "\r\n" +
                                            "\r\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));   

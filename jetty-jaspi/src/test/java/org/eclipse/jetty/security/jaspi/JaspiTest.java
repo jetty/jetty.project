@@ -147,14 +147,14 @@ public class JaspiTest
     @Test
     public void testNoConstraint() throws Exception
     {
-        String response = _connector.getResponses("GET /ctx/test HTTP/1.0\n\n");
+        String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
     }
     
     @Test
     public void testConstraintNoAuth() throws Exception
     {
-        String response = _connector.getResponses("GET /ctx/jaspi/test HTTP/1.0\n\n");
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response,Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
     }
@@ -162,7 +162,7 @@ public class JaspiTest
     @Test
     public void testConstraintWrongAuth() throws Exception
     {
-        String response = _connector.getResponses("GET /ctx/jaspi/test HTTP/1.0\n"+
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n"+
                                                   "Authorization: Basic " + B64Code.encode("user:wrong") + "\n\n");
         assertThat(response,startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response,Matchers.containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
@@ -171,7 +171,7 @@ public class JaspiTest
     @Test
     public void testConstraintAuth() throws Exception
     {
-        String response = _connector.getResponses("GET /ctx/jaspi/test HTTP/1.0\n"+
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n"+
                                                   "Authorization: Basic " + B64Code.encode("user:password") + "\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
     }
@@ -179,14 +179,14 @@ public class JaspiTest
     @Test
     public void testOtherNoAuth() throws Exception
     {
-        String response = _connector.getResponses("GET /other/test HTTP/1.0\n\n");
+        String response = _connector.getResponse("GET /other/test HTTP/1.0\n\n");
         assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
     }
     
     @Test
     public void testOtherAuth() throws Exception
     {
-        String response = _connector.getResponses("GET /other/test HTTP/1.0\n"+
+        String response = _connector.getResponse("GET /other/test HTTP/1.0\n"+
                                                   "X-Forwarded-User: user\n\n");
         assertThat(response,startsWith("HTTP/1.1 200 OK"));
     }
