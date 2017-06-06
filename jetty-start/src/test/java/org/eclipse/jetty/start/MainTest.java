@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -208,5 +209,21 @@ public class MainTest
         assertThat("jetty.base",baseHome.getBase(),is(homePath.toString()));
 
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-spaces.txt");
+    }
+
+    @Test
+    public void testPregenerateQuickstartIsLikeRun() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+        Path warDir = MavenTestingUtils.getTargetTestingPath().resolve("path with spaces");
+        cmdLineArgs.add("--pregenerate-quickstart-xml=" + warDir);
+
+        Main main = new Main();
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
+
+        assertThat(args.isRun(), is(true));
+        assertThat(args.isPregenerateQuickstart(), is(true));
+
+        assertThat(args.getPreconfigureQuickstartArgs().toString(), endsWith(CommandLineBuilder.quote(warDir.toString())));
     }
 }

@@ -45,6 +45,10 @@ Command Line Options:
                    Use each line of the file as arguments on the command
                    line.
 
+  --pregenerate-quickstart-xml=<war>|<wardir>
+                   Expands war and generates quickstart-web.xml.
+                   http://www.eclipse.org/jetty/documentation/
+
 Debug and Start Logging:
 ------------------------
 
