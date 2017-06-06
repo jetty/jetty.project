@@ -63,7 +63,7 @@ import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.MappingMatch;
 import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
-import javax.servlet.http.ServletMapping;
+import javax.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -2452,9 +2452,9 @@ public class Request implements HttpServletRequest
         return _pathSpec;
     }
     
-    
+
     // TODO replace with overriden version from API
-    public ServletMapping getMapping()
+    public HttpServletMapping getMapping()
     {
         final PathSpec pathSpec = _pathSpec;
         final MappingMatch match;
@@ -2496,7 +2496,7 @@ public class Request implements HttpServletRequest
             mapping = _servletPath;
         }
         
-        return new ServletMapping()
+        return new HttpServletMapping()
         {
             @Override
             public String getMatchValue()

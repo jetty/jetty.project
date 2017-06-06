@@ -271,7 +271,19 @@ public class WebSocketCloseTest
             assertThat("No frames as output", framesQueue.size(), Matchers.is(0));
         }
     }
-    
+
+    /**
+     *
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testFastFailFastClose() throws Exception
+    {
+        fastFail();
+        fastClose();
+    }
+
+
     /**
      * Test session open session cleanup (bug #474936)
      *
