@@ -115,7 +115,7 @@ public class AsyncContextTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         assertThat(responseString, startsWith("HTTP/1.1 200 "));
         assertThat(responseString, containsString("doGet:getServletPath:/servletPath"));
@@ -131,7 +131,7 @@ public class AsyncContextTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String responseString = _connector.getResponses(request,10,TimeUnit.MINUTES);
+        String responseString = _connector.getResponse(request,10,TimeUnit.MINUTES);
 
         assertThat(responseString, startsWith("HTTP/1.1 500 "));
         assertThat(responseString, containsString("ERROR: /error"));
@@ -147,7 +147,7 @@ public class AsyncContextTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         assertThat(responseString, startsWith("HTTP/1.1 500 "));
         assertThat(responseString, containsString("ERROR: /error"));
@@ -163,7 +163,7 @@ public class AsyncContextTest
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = new BufferedReader(new StringReader(responseString));
 
@@ -184,7 +184,7 @@ public class AsyncContextTest
                     "Content-Type: application/x-www-form-urlencoded\r\n" + 
                     "Connection: close\r\n" + 
                     "\r\n";
-            String responseString = _connector.getResponses(request);
+            String responseString = _connector.getResponse(request);
 
             BufferedReader br = new BufferedReader(new StringReader(responseString));
 
@@ -200,7 +200,7 @@ public class AsyncContextTest
     {
         String request = "GET /ctx/servletPath?dispatch=true HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = parseHeader(responseString);
 
@@ -218,7 +218,7 @@ public class AsyncContextTest
     {
         String request = "GET /ctx/path%20with%20spaces/servletPath?dispatch=true&queryStringWithEncoding=space%20space HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = parseHeader(responseString);
 
@@ -237,7 +237,7 @@ public class AsyncContextTest
         String request = "GET /ctx/servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
 
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = parseHeader(responseString);
 
@@ -252,7 +252,7 @@ public class AsyncContextTest
         String request = "GET /ctx/servletPath?dispatch=true HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
 
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = parseHeader(responseString);
 
@@ -290,7 +290,7 @@ public class AsyncContextTest
                 "Connection: close\r\n" +
                 "\r\n";
 
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = parseHeader(responseString);
 
@@ -369,7 +369,7 @@ public class AsyncContextTest
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = new BufferedReader(new StringReader(responseString));
 
@@ -386,7 +386,7 @@ public class AsyncContextTest
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String responseString = _connector.getResponses(request);
+        String responseString = _connector.getResponse(request);
 
         BufferedReader br = new BufferedReader(new StringReader(responseString));
 

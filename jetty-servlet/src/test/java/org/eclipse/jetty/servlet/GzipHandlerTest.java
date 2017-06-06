@@ -207,7 +207,7 @@ public class GzipHandlerTest
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
         
         assertThat(response.getStatus(),is(200));
         assertThat(response.get("Content-Encoding"),not(equalToIgnoringCase("gzip")));
@@ -235,7 +235,7 @@ public class GzipHandlerTest
         request.setHeader("Host","tester");
         request.setHeader("accept-encoding","gzip");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(),is(200));
         assertThat(response.get("Content-Encoding"),Matchers.equalToIgnoringCase("gzip"));
@@ -262,7 +262,7 @@ public class GzipHandlerTest
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding","gzip");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(),is(200));
         assertThat(response.get("Content-Encoding"),not(containsString("gzip")));
@@ -319,7 +319,7 @@ public class GzipHandlerTest
         request.setHeader("If-None-Match",__contentETag);
         request.setHeader("accept-encoding","gzip");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(),is(304));
         assertThat(response.get("Content-Encoding"),not(Matchers.equalToIgnoringCase("gzip")));
@@ -340,7 +340,7 @@ public class GzipHandlerTest
         request.setHeader("If-None-Match",__contentETagGzip);
         request.setHeader("accept-encoding","gzip");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(),is(304));
         assertThat(response.get("Content-Encoding"),not(Matchers.equalToIgnoringCase("gzip")));
@@ -360,7 +360,7 @@ public class GzipHandlerTest
         request.setHeader("accept-encoding","gzip");
         request.setURI("/ctx/forward");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(),is(200));
         assertThat(response.get("Content-Encoding"),Matchers.equalToIgnoringCase("gzip"));
@@ -387,7 +387,7 @@ public class GzipHandlerTest
         request.setHeader("accept-encoding","gzip");
         request.setURI("/ctx/include");
 
-        response = HttpTester.parseResponse(_connector.getResponses(request.generate()));
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(),is(200));
         assertThat(response.get("Content-Encoding"),Matchers.equalToIgnoringCase("gzip"));
