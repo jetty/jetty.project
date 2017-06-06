@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.common.io;
 
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
@@ -36,15 +36,9 @@ public class FramePipes
         }
 
         @Override
-        public void incomingError(Throwable t)
+        public void incomingFrame(Frame frame, FrameCallback callback)
         {
-            /* cannot send exception on */
-        }
-
-        @Override
-        public void incomingFrame(Frame frame)
-        {
-            this.outgoing.outgoingFrame(frame,null, BatchMode.OFF);
+            this.outgoing.outgoingFrame(frame, callback, BatchMode.OFF);
         }
     }
 
@@ -58,17 +52,9 @@ public class FramePipes
         }
 
         @Override
-        public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+        public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
         {
-            try
-            {
-                this.incoming.incomingFrame(frame);
-                callback.writeSuccess();
-            }
-            catch (Throwable t)
-            {
-                callback.writeFailed(t);
-            }
+            this.incoming.incomingFrame(frame, callback);
         }
     }
 

@@ -222,7 +222,6 @@ public class UriTemplatePathSpec extends RegexPathSpec
     /**
      * Validate variable literal name, per RFC6570, Section 2.1 Literals
      * @param variable
-     * @param pathParamSpec
      */
     private void assertIsValidVariableLiteral(String variable)
     {

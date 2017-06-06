@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.extensions.compress;
 import java.util.zip.DataFormatException;
 
 import org.eclipse.jetty.websocket.api.BadPayloadException;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
@@ -49,7 +50,7 @@ public class DeflateFrameExtension extends CompressExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame)
+    public void incomingFrame(Frame frame, FrameCallback callback)
     {
         // Incoming frames are always non concurrent because
         // they are read and parsed with a single thread, and
@@ -57,16 +58,16 @@ public class DeflateFrameExtension extends CompressExtension
 
         if ( frame.getType().isControl() || !frame.isRsv1() || !frame.hasPayload() )
         {
-            nextIncomingFrame(frame);
+            nextIncomingFrame(frame, callback);
             return;
         }
-
+        
         try
         {
-            ByteAccumulator accumulator = newByteAccumulator();
+            ByteAccumulator accumulator = new ByteAccumulator(getPolicy().getMaxAllowedFrameSize());
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
-            forwardIncoming(frame, accumulator);
+            forwardIncoming(frame, callback, accumulator);
         }
         catch (DataFormatException e)
         {

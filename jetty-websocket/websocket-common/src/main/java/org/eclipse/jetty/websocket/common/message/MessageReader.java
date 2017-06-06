@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Support class for reading a (single) WebSocket TEXT message via a Reader.
  * <p>
- * In compliance to the WebSocket spec, this reader always uses the UTF8 {@link Charset}.
+ * In compliance to the WebSocket spec, this reader always uses the {@link StandardCharsets#UTF_8}.
  */
-public class MessageReader extends InputStreamReader implements MessageAppender
+public class MessageReader extends InputStreamReader implements MessageSink
 {
     private final MessageInputStream stream;
 
@@ -38,16 +38,10 @@ public class MessageReader extends InputStreamReader implements MessageAppender
         super(stream, StandardCharsets.UTF_8);
         this.stream = stream;
     }
-
+    
     @Override
-    public void appendFrame(ByteBuffer payload, boolean isLast) throws IOException
+    public void accept(Frame frame, FrameCallback callback)
     {
-        this.stream.appendFrame(payload, isLast);
-    }
-
-    @Override
-    public void messageComplete()
-    {
-        this.stream.messageComplete();
+        this.stream.accept(frame, callback);
     }
 }

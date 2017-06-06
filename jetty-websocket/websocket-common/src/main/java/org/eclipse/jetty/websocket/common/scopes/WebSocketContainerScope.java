@@ -44,7 +44,7 @@ public interface WebSocketContainerScope
      * @return the Executor in use by the container.
      */
     Executor getExecutor();
-
+    
     /**
      * Object Factory used to create objects.
      * 

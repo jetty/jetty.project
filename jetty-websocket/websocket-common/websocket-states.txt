@@ -1,0 +1,107 @@
+Documenting the States of a WebSocket Session.
+
+NEW: (Internal)
+
+  A new WebSocket session.
+  It has had no connection attempted yet.
+
+CONNECTING: (RFC6455) // synonyms: HANDSHAKING
+
+  The connection is being attempted, along with the Upgrade handshake.
+
+CONNECTED: (Internal) // synonyms: HANDSHAKED, HANDSHAKEN, OPENING
+
+  The connection is established.
+  The User WebSocket Endpoint has not been notified yet.
+
+OPEN: (RFC6455) // synonyms: OPENED
+
+  User WebSocket Endpoint is now Opened (the onOpen method has been called, no close by onOpen)
+
+CLOSING: (RFC6455)
+
+  The close handshake has begun.
+  Either the local initiated the close, waiting for the remote to reply.
+  Or the remote initiated the close, and the local hasn't replied yet.
+  This can be considered a logical half-closed state.
+
+  + (sub state) CLOSE_FRAME_SENT (bool)
+
+CLOSED: (RFC6455)
+
+  The connection and session is closed.
+  This means either the close handshake completed, or the connection was
+  disconnected for other reasons.
+
+----
+
+Normal Client Initiated Close State Transition
+
+  Client: State: NEW
+  Client: WSEndpoint created
+  Client: WSSession created
+  Http GET w/Upgrade initiated
+  Client: State: CONNECTING
+  Upgrade Handshake negotiated (HTTP 101 response)
+  Client: State: CONNECTED
+  Client: WSEndpoint.onOpen() called
+  Client: State: OPEN
+  Client: WSEndpoint.onMessage() - received msg
+  Client: WSSession.close(local close details)
+  Client: State: CLOSING
+  Client: Send CLOSE Frame to remote
+  Remote: Received CLOSE Frame from client
+  Remote: Sends CLOSE Frame reply (remote close details)
+  Client: WSEndpoint.onClose(remote close details)
+  Client: State: CLOSED
+  Client: TCP Connection disconnect completely
+
+----
+
+Normal Remote Initiated Close State Transition
+
+  Client: State: NEW
+  Client: WSEndpoint created
+  Client: WSSession created
+  Http GET w/Upgrade initiated
+  Client: State: CONNECTING
+  Upgrade Handshake negotiated (HTTP 101 response)
+  Client: State: CONNECTED
+  Client: WSEndpoint.onOpen() called
+  Client: State: OPEN
+  Client: WSEndpoint.onMessage() - received msg
+  Remote: Sends CLOSE Frame (remote close details)
+  Client: Received CLOSE Frame from remote
+  Client: State: CLOSING
+  Client: WSEndpoint.onClose(remote close details)
+  Client: after onClose()
+          if can transition to CLOSED
+            Client: Sends CLOSE Frame
+  Client: TCP Connection disconnect completely
+
+---
+
+Overlapping Close State (Remote first) Transition
+
+  Client: WSEndpoint created
+  Client: WSSession created
+  Http GET w/Upgrade initiated
+  Client: State: CONNECTING
+  Upgrade Handshake negotiated (HTTP 101 response)
+  Client: State: CONNECTED
+  Client: WSEndpoint.onOpen() called
+  Client: State: OPEN
+  Client: WSEndpoint.onMessage() - received msg
+  Remote[t1]: Sends CLOSE Frame (remote close details)
+  Client[t2]: WSSession.close(local close details)
+  Client[t2]: State: CLOSING
+  Client[t1]: Received CLOSE Frame from remote
+  Client[t1]: Cannot transition to State: CLOSING (no-op)
+  Client[t1]: WSEndpoint.onClose(remote close details)
+  Client[t1]: after onClose()
+          if can transition to CLOSED
+            Client: Sends CLOSE Frame
+  Client: TCP Connection disconnect completely
+
+
+

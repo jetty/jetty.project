@@ -34,7 +34,14 @@ public class WebSocketPolicy
     {
         return new WebSocketPolicy(WebSocketBehavior.SERVER);
     }
-
+    
+    /* NOTE TO OTHER DEVELOPERS:
+     * If you change any of these default values,
+     * make sure you sync the values with
+     * org.eclipse.jetty.websocket.api.annotations.WebSocket
+     * annotation defaults
+     */
+    
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
@@ -76,27 +83,44 @@ public class WebSocketPolicy
      * <p>
      * Negative values indicate a disabled timeout.
      */
-    private long asyncWriteTimeout = 60000;
+    private long asyncWriteTimeout = 60_000;
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
      * <p>
      * Default: 300000 (ms)
      */
-    private long idleTimeout = 300000;
+    private long idleTimeout = 300_000;
 
     /**
-     * The size of the input (read from network layer) buffer size.
+     * The input (read from network layer) buffer size.
      * <p>
      * Default: 4096 (4 K)
      */
     private int inputBufferSize = 4 * KB;
+    
+    /**
+     * The maximum size of an individual Frame payload.
+     * <p>
+     *     This is for raw memory management on parse.
+     * </p>
+     */
+    // TODO: when ws-over-http2 exists, this needs to be set appropriately
+    private int maxAllowedFrameSize = (int) Math.min(Integer.MAX_VALUE, Runtime.getRuntime().maxMemory());
+    
+    /**
+     * The output (writes to network layer) buffer size.
+     * <p>
+     *     Default: 4096 (4 K)
+     * </p>
+     */
+    private int outputBufferSize = 4 * KB;
 
     /**
      * Behavior of the websockets
      */
     private final WebSocketBehavior behavior;
-
+    
     public WebSocketPolicy(WebSocketBehavior behavior)
     {
         this.behavior = behavior;
@@ -151,10 +175,12 @@ public class WebSocketPolicy
         clone.maxBinaryMessageSize = this.maxBinaryMessageSize;
         clone.maxBinaryMessageBufferSize = this.maxBinaryMessageBufferSize;
         clone.inputBufferSize = this.inputBufferSize;
+        clone.outputBufferSize = this.outputBufferSize;
+        clone.maxAllowedFrameSize = this.maxAllowedFrameSize;
         clone.asyncWriteTimeout = this.asyncWriteTimeout;
         return clone;
     }
-
+    
     /**
      * The timeout in ms (milliseconds) for async write operations.
      * <p>
@@ -183,20 +209,49 @@ public class WebSocketPolicy
     }
 
     /**
-     * The size of the input (read from network layer) buffer size.
+     * The input (read from network layer) buffer size.
      * <p>
      * This is the raw read operation buffer size, before the parsing of the websocket frames.
-     * 
-     * @return the raw network bytes read operation buffer size.
+     * </p>
+     *
+     * @return the raw network buffer input size.
      */
     public int getInputBufferSize()
     {
         return inputBufferSize;
     }
-
+    
     /**
-     * Get the maximum size of a binary message buffer (for streaming writing)
-     * 
+     * The output (write to network layer) buffer size.
+     * <p>
+     *   This is the raw write operation buffer size and has no relationship to the websocket frame.
+     * </p>
+     *
+     * @return the raw network buffer output size.
+     */
+    public int getOutputBufferSize()
+    {
+        return outputBufferSize;
+    }
+    
+    /**
+     * The maximum allowed frame size.
+     * <p>
+     *     This is used to manage frame payload memory allocation concerns.
+     *     If an excessively large frame payload size is received, then this
+     *     will short circuit the parsing step and trigger a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     for that endpoint before the allocation of the memory for that payload is even made.
+     * </p>
+     *
+     * @return the maximum allowed frame size that this implementation can handle
+     */
+    public int getMaxAllowedFrameSize()
+    {
+        return maxAllowedFrameSize;
+    }
+    
+    /**
+     * Get the maximum size of a binary message buffer.
      * @return the maximum size of a binary message buffer
      */
     public int getMaxBinaryMessageBufferSize()
@@ -260,22 +315,60 @@ public class WebSocketPolicy
      */
     public void setIdleTimeout(long ms)
     {
+        if(ms < -1) return; // no change (likely came from annotation)
+
         assertGreaterThan("IdleTimeout",ms,0);
         this.idleTimeout = ms;
     }
 
     /**
-     * The size of the input (read from network layer) buffer size.
+     * The input (read from network layer) buffer size.
      * 
      * @param size
      *            the size in bytes
      */
     public void setInputBufferSize(int size)
     {
+        if(size < 0) return; // no change (likely came from annotation)
         assertGreaterThan("InputBufferSize",size,1);
+
         this.inputBufferSize = size;
     }
-
+    
+    /**
+     * The output (write to network layer) buffer size.
+     *
+     * @param size
+     *            the size in bytes
+     */
+    public void setOutputBufferSize(int size)
+    {
+        if(size < 0) return; // no change (likely came from annotation)
+        assertGreaterThan("OutputBufferSize",size,1);
+        
+        this.outputBufferSize = size;
+    }
+    
+    /**
+     * The maximum supported size of an individual frame.
+     * <p>
+     *     This is used to manage frame payload memory allocation concerns.
+     *     If an excessively large frame payload size is received, then this
+     *     will short circuit the parsing step and trigger a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     for that endpoint before the allocation of the memory for that payload is even made.
+     * </p>
+     *
+     * @param size
+     *            the size in bytes
+     */
+    public void setMaxAllowedFrameSize(int size)
+    {
+        if(size < 0) return; // no change (likely came from annotation)
+        assertGreaterThan("MaxAllowedFrameSize",size,1);
+        
+        this.maxAllowedFrameSize = size;
+    }
+    
     /**
      * The maximum size of a binary message buffer.
      * <p>
@@ -290,7 +383,25 @@ public class WebSocketPolicy
 
         this.maxBinaryMessageBufferSize = size;
     }
-
+    
+    /**
+     * The maximum size of a binary message during parsing/generating.
+     * <p>
+     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
+     *
+     * @param size
+     *            the maximum allowed size of a binary message.
+     */
+    public void setMaxBinaryMessageSize(long size)
+    {
+        if (size > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("This implementation does not support binary message sizes over " + Integer.MAX_VALUE);
+        }
+        this.setMaxBinaryMessageSize((int) size);
+    }
+    
     /**
      * The maximum size of a binary message during parsing/generating.
      * <p>
@@ -301,9 +412,9 @@ public class WebSocketPolicy
      */
     public void setMaxBinaryMessageSize(int size)
     {
-        assertGreaterThan("MaxBinaryMessageSize",size,-1);
+        if(size < 0) return; // no change (likely came from annotation)
 
-        this.maxBinaryMessageSize = size;
+        this.maxBinaryMessageSize = Math.max(-1, size);
     }
 
     /**
@@ -320,7 +431,24 @@ public class WebSocketPolicy
 
         this.maxTextMessageBufferSize = size;
     }
-
+    
+    /**
+     * The maximum size of a text message during parsing/generating.
+     * <p>
+     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *
+     * @param size
+     *            the maximum allowed size of a text message.
+     */
+    public void setMaxTextMessageSize(long size)
+    {
+        if (size > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("This implementation does not support text message sizes over " + Integer.MAX_VALUE);
+        }
+        this.setMaxTextMessageSize((int) size);
+    }
+    
     /**
      * The maximum size of a text message during parsing/generating.
      * <p>
@@ -331,24 +459,21 @@ public class WebSocketPolicy
      */
     public void setMaxTextMessageSize(int size)
     {
-        assertGreaterThan("MaxTextMessageSize",size,-1);
+        if(size < 0) return; // no change (likely came from annotation)
 
-        this.maxTextMessageSize = size;
+        this.maxTextMessageSize = Math.max(-1, size);
     }
 
+    @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
         builder.append("WebSocketPolicy@").append(Integer.toHexString(hashCode()));
-        builder.append("[behavior=").append(behavior);
-        builder.append(",maxTextMessageSize=").append(maxTextMessageSize);
-        builder.append(",maxTextMessageBufferSize=").append(maxTextMessageBufferSize);
-        builder.append(",maxBinaryMessageSize=").append(maxBinaryMessageSize);
-        builder.append(",maxBinaryMessageBufferSize=").append(maxBinaryMessageBufferSize);
-        builder.append(",asyncWriteTimeout=").append(asyncWriteTimeout);
+        builder.append("[").append(behavior);
+        builder.append(",textSize=").append(maxTextMessageSize);
+        builder.append(",binarySize=").append(maxBinaryMessageSize);
         builder.append(",idleTimeout=").append(idleTimeout);
-        builder.append(",inputBufferSize=").append(inputBufferSize);
         builder.append("]");
         return builder.toString();
     }

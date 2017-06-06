@@ -131,7 +131,13 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     }
     
     /**
-     * Embedded Jetty approach for non-bytecode scanning.
+     * Jetty Native approach.
+     * <p>
+     * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
+     *
+     * @param context the servlet context handler
+     * @return the created websocket server container
+     * @throws ServletException if unable to create the websocket server container
      */
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
@@ -204,18 +210,8 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         {
             // Create the Jetty ServerContainer implementation
             ServerContainer jettyContainer = configureContext(jettyContext);
-    
             context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
-    
-            if (c.isEmpty())
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("No JSR-356 annotations or interfaces discovered");
-                }
-                return;
-            }
-    
+            
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Found {} classes",c.size());

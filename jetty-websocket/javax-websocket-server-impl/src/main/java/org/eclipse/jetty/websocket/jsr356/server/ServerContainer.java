@@ -19,13 +19,15 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
@@ -35,15 +37,16 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
-import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
-import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
-import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
+import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
@@ -91,83 +94,185 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         super(configuration.getFactory(), httpClient);
         this.configuration = configuration;
-        EventDriverFactory eventDriverFactory = this.configuration.getFactory().getEventDriverFactory();
-        eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
-        eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
         this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this));
         addBean(this.configuration);
     }
-
-    public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
+    
+    @Override
+    protected EndpointConfig newEmptyConfig(Object endpoint)
     {
-        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
-        ServerEndpointConfig cec = config;
-        if (config == null)
-        {
-            if (metadata instanceof AnnotatedServerEndpointMetadata)
-            {
-                cec = ((AnnotatedServerEndpointMetadata)metadata).getConfig();
-            }
-            else
-            {
-                cec = new BasicServerEndpointConfig(this,endpoint.getClass(),path);
-            }
-        }
-        return new EndpointInstance(endpoint,cec,metadata);
+        return new UndefinedServerEndpointConfig(endpoint.getClass());
     }
-
+    
+    protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
+    {
+        ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);
+        if (anno != null)
+        {
+            // Overwrite Config from Annotation
+            // TODO: should we merge with provided config?
+            return new AnnotatedServerEndpointConfig(this, endpoint.getClass(), anno, config);
+        }
+        return config;
+    }
+    
+    /**
+     * Register a &#064;{@link ServerEndpoint} annotated endpoint class to
+     * the server
+     *
+     * @param endpointClass the annotated endpoint class to add to the server
+     * @throws DeploymentException if unable to deploy that endpoint class
+     * @see javax.websocket.server.ServerContainer#addEndpoint(Class)
+     */
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("EndpointClass is null");
+        }
+        
         if (isStarted() || isStarting())
         {
-            ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass,null);
-            addEndpoint(metadata);
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            if (anno == null)
+            {
+                throw new DeploymentException(String.format("Class must be @%s annotated: %s",
+                        ServerEndpoint.class.getName(), endpointClass.getName()));
+            }
+            
+            ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
+            addEndpointMapping(config);
         }
         else
         {
             if (deferredEndpointClasses == null)
             {
-                deferredEndpointClasses = new ArrayList<Class<?>>();
+                deferredEndpointClasses = new ArrayList<>();
             }
             deferredEndpointClasses.add(endpointClass);
         }
     }
 
-    private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
-    {
-        JsrCreator creator = new JsrCreator(this,metadata,this.configuration.getFactory().getExtensionFactory());
-        this.configuration.addMapping("uri-template|" + metadata.getPath(), creator);
-    }
-
+    /**
+     * Register a ServerEndpointConfig to the server
+     *
+     * @param config the endpoint config to add
+     * @throws DeploymentException if unable to deploy that endpoint class
+     * @see javax.websocket.server.ServerContainer#addEndpoint(ServerEndpointConfig)
+     */
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
+        if (config == null)
+        {
+            throw new DeploymentException("ServerEndpointConfig is null");
+        }
+        
         if (isStarted() || isStarting())
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("addEndpoint({}) path={} endpoint={}",config,config.getPath(),config.getEndpointClass());
+                LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
             }
-            ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
-            addEndpoint(metadata);
+            addEndpointMapping(config);
         }
         else
         {
             if (deferredEndpointConfigs == null)
             {
-                deferredEndpointConfigs = new ArrayList<ServerEndpointConfig>();
+                deferredEndpointConfigs = new ArrayList<>();
             }
             deferredEndpointConfigs.add(config);
         }
     }
-
+    
+    private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
+    {
+        assertIsValidEndpoint(config);
+        
+        JsrCreator creator = new JsrCreator(this, config, this.configuration.getFactory().getExtensionFactory());
+        this.configuration.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+    }
+    
+    private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException
+    {
+        EndpointFunctions endpointFunctions = null;
+        try
+        {
+            // Test that endpoint can be instantiated
+            Object endpoint = config.getEndpointClass().newInstance();
+            
+            // Establish an EndpointFunctions to test validity of Endpoint declaration
+            AvailableEncoders availableEncoders = new AvailableEncoders(config);
+            AvailableDecoders availableDecoders = new AvailableDecoders(config);
+            Map<String, String> pathParameters = new HashMap<>();
+            
+            // if any pathspec has a URI Template with variables, we should include them (as String value 0)
+            // in the test for validity of the declared @OnMessage methods that use @PathParam annotation
+            // We chose the default string "0" as that is the most reliably converted to a
+            // Java Primitive during this initial "is valid" test (the real URITemplate value
+            // is used when a real connection is established later)
+            for (String variable : new UriTemplatePathSpec(config.getPath()).getVariables())
+            {
+                pathParameters.put(variable, "0");
+            }
+            
+            endpointFunctions = newJsrEndpointFunction(endpoint, getPolicy(), availableEncoders, availableDecoders, pathParameters, config);
+            endpointFunctions.start(); // this should trigger an exception if endpoint is invalid.
+        }
+        catch (InstantiationException e)
+        {
+            throw new DeploymentException("Unable to instantiate new instance of endpoint: " + config.getEndpointClass().getName(), e);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new DeploymentException("Unable access endpoint: " + config.getEndpointClass().getName(), e);
+        }
+        catch (Exception e)
+        {
+            throw new DeploymentException("Unable add endpoint: " + config.getEndpointClass().getName(), e);
+        }
+        finally
+        {
+            if (endpointFunctions != null)
+            {
+                try
+                {
+                    // Dispose of EndpointFunctions
+                    endpointFunctions.stop();
+                }
+                catch (Exception ignore)
+                {
+                    // ignore
+                }
+            }
+        }
+    }
+    
+    @Override
+    public EndpointFunctions newJsrEndpointFunction(Object endpoint,
+                                                    WebSocketPolicy sessionPolicy,
+                                                    AvailableEncoders availableEncoders,
+                                                    AvailableDecoders availableDecoders,
+                                                    Map<String, String> pathParameters,
+                                                    EndpointConfig config)
+    {
+        return new JsrServerEndpointFunctions(endpoint,
+                sessionPolicy,
+                getExecutor(),
+                availableEncoders,
+                availableDecoders,
+                pathParameters,
+                config);
+    }
+    
     @Override
     protected void doStart() throws Exception
     {
         // Proceed with Normal Startup
         super.doStart();
-
+        
         // Process Deferred Endpoints
         if (deferredEndpointClasses != null)
         {
@@ -177,7 +282,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             deferredEndpointClasses.clear();
         }
-
+        
         if (deferredEndpointConfigs != null)
         {
             for (ServerEndpointConfig config : deferredEndpointConfigs)
@@ -187,58 +292,25 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             deferredEndpointConfigs.clear();
         }
     }
-
-    public ServerEndpointMetadata getServerEndpointMetadata(final Class<?> endpoint, final ServerEndpointConfig config) throws DeploymentException
-    {
-        ServerEndpointMetadata metadata = null;
-
-        ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
-        if (anno != null)
-        {
-            // Annotated takes precedence here
-            AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this,endpoint,config);
-            AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
-            metadata = ametadata;
-            scanner.scan();
-        }
-        else if (Endpoint.class.isAssignableFrom(endpoint))
-        {
-            // extends Endpoint
-            @SuppressWarnings("unchecked")
-            Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
-            metadata = new SimpleServerEndpointMetadata(eendpoint,config);
-        }
-        else
-        {
-            StringBuilder err = new StringBuilder();
-            err.append("Not a recognized websocket [");
-            err.append(endpoint.getName());
-            err.append("] does not extend @").append(ServerEndpoint.class.getName());
-            err.append(" or extend from ").append(Endpoint.class.getName());
-            throw new DeploymentException("Unable to identify as valid Endpoint: " + endpoint);
-        }
-
-        return metadata;
-    }
     
     @Override
     public long getDefaultAsyncSendTimeout()
     {
         return this.configuration.getPolicy().getAsyncWriteTimeout();
     }
-
+    
     @Override
     public int getDefaultMaxBinaryMessageBufferSize()
     {
         return this.configuration.getPolicy().getMaxBinaryMessageSize();
     }
-
+    
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
         return this.configuration.getPolicy().getIdleTimeout();
     }
-
+    
     @Override
     public int getDefaultMaxTextMessageBufferSize()
     {
@@ -249,53 +321,49 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         return this.configuration.getFactory();
     }
-
+    
     @Override
     public void setAsyncSendTimeout(long ms)
     {
         super.setAsyncSendTimeout(ms);
         this.configuration.getPolicy().setAsyncWriteTimeout(ms);
     }
-
+    
     @Override
     public void setDefaultMaxBinaryMessageBufferSize(int max)
     {
         super.setDefaultMaxBinaryMessageBufferSize(max);
         // overall message limit (used in non-streaming)
         this.configuration.getPolicy().setMaxBinaryMessageSize(max);
-        // incoming streaming buffer size
-        this.configuration.getPolicy().setMaxBinaryMessageBufferSize(max);
     }
-
+    
     @Override
     public void setDefaultMaxSessionIdleTimeout(long ms)
     {
         super.setDefaultMaxSessionIdleTimeout(ms);
         this.configuration.getPolicy().setIdleTimeout(ms);
     }
-
+    
     @Override
     public void setDefaultMaxTextMessageBufferSize(int max)
     {
         super.setDefaultMaxTextMessageBufferSize(max);
         // overall message limit (used in non-streaming)
         this.configuration.getPolicy().setMaxTextMessageSize(max);
-        // incoming streaming buffer size
-        this.configuration.getPolicy().setMaxTextMessageBufferSize(max);
     }
-
+    
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
         getWebSocketServerFactory().onSessionClosed(session);
     }
-
+    
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
         getWebSocketServerFactory().onSessionOpened(session);
     }
-
+    
     @Override
     public Set<Session> getOpenSessions()
     {

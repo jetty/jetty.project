@@ -20,14 +20,25 @@ package org.eclipse.jetty.websocket.common;
 
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.common.events.EventDriver;
-
 /**
  * Interface for creating jetty {@link WebSocketSession} objects.
  */
 public interface SessionFactory
 {
-    public boolean supports(EventDriver websocket);
+    /**
+     * Does this implementation support this object type
+     * @param websocket the object instance
+     * @return true if this SessionFactory supports this object type
+     */
+    boolean supports(Object websocket);
     
-    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection);
+    /**
+     * Create a new WebSocketSession from the provided information
+     *
+     * @param requestURI
+     * @param websocket
+     * @param connection
+     * @return
+     */
+    WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection);
 }

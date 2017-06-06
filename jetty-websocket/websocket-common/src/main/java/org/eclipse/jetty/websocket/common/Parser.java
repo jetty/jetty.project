@@ -32,7 +32,6 @@ import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
@@ -48,6 +47,17 @@ import org.eclipse.jetty.websocket.common.io.payload.PayloadProcessor;
  */
 public class Parser
 {
+    public interface Handler
+    {
+        /**
+         * Notification of completely parsed frame.
+         *
+         * @param frame the frame
+         * @return true to continue parsing, false to stop parsing
+         */
+        boolean onFrame(Frame frame);
+    }
+    
     private enum State
     {
         START,
@@ -58,9 +68,10 @@ public class Parser
         PAYLOAD
     }
 
-    private static final Logger LOG = Log.getLogger(Parser.class);
+    private final Logger LOG;
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
+    private final Parser.Handler parserHandler;
 
     // State specific
     private State state = State.START;
@@ -86,49 +97,31 @@ public class Parser
      */
     private byte flagsInUse=0x00;
     
-    private IncomingFrames incomingFramesHandler;
-
-    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
+    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool, Parser.Handler parserHandler)
     {
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
+        this.parserHandler = parserHandler;
+    
+        LOG = Log.getLogger(Parser.class.getName() + "." + wspolicy.getBehavior());
     }
-
+    
     private void assertSanePayloadLength(long len)
     {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{} Payload Length: {} - {}",policy.getBehavior(),len,this);
-        }
-
-        // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
-        if (len > Integer.MAX_VALUE)
+        if (len > this.policy.getMaxAllowedFrameSize())
         {
-            // OMG! Sanity Check! DO NOT WANT! Won't anyone think of the memory!
-            throw new MessageTooLargeException("[int-sane!] cannot handle payload lengths larger than " + Integer.MAX_VALUE);
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + this.policy.getMaxAllowedFrameSize());
         }
-
-        switch (frame.getOpCode())
+    
+        if (frame.getOpCode() == OpCode.CLOSE && (len == 1))
         {
-            case OpCode.CLOSE:
-                if (len == 1)
-                {
-                    throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
-                }
-                // fall thru
-            case OpCode.PING:
-            case OpCode.PONG:
-                if (len > ControlFrame.MAX_CONTROL_PAYLOAD)
-                {
-                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                            + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
-                }
-                break;
-            case OpCode.TEXT:
-                policy.assertValidTextMessageSize((int)len);
-                break;
-            case OpCode.BINARY:
-                policy.assertValidBinaryMessageSize((int)len);
-                break;
+            throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
+        }
+    
+        if (frame.isControlFrame() && len > ControlFrame.MAX_CONTROL_PAYLOAD)
+        {
+            throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
+                    + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
         }
     }
 
@@ -155,11 +148,6 @@ public class Parser
         }
     }
 
-    public IncomingFrames getIncomingFramesHandler()
-    {
-        return incomingFramesHandler;
-    }
-
     public WebSocketPolicy getPolicy()
     {
         return policy;
@@ -179,25 +167,87 @@ public class Parser
     {
         return (flagsInUse & 0x10) != 0;
     }
-
-    protected void notifyFrame(final Frame f)
+    
+    /**
+     * Parse the buffer.
+     *
+     * @param buffer the buffer to parse from.
+     * @return true if parsing of entire buffer was successful,
+     * false if parsing was interrupted by {@link Handler}.  If false, cease parsing the remaining
+     * buffer until such time its allowed again (this is important for read backpressure scenarios)
+     * @throws WebSocketException if unable to parse properly
+     */
+    public boolean parse(ByteBuffer buffer) throws WebSocketException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} Notify {}",policy.getBehavior(),getIncomingFramesHandler());
-
+        // quick fail, nothing left to parse
+        if (!buffer.hasRemaining())
+        {
+            return true;
+        }
+        
+        try
+        {
+            // parse through
+            while (buffer.hasRemaining() && parseFrame(buffer))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Parsed Frame: {} : {}", frame, BufferUtil.toDetailString(buffer));
+    
+                assertBehavior();
+    
+                if (frame.isDataFrame())
+                {
+                    priorDataFrame = !frame.isFin();
+                }
+    
+                if(!this.parserHandler.onFrame(frame))
+                {
+                    // Do not parse any more
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Parser.BackPressure [{} bytes remaining]", buffer.remaining());
+                    return false;
+                }
+            }
+    
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parsed Complete: [{} bytes left in read buffer]", buffer.remaining());
+            
+            // parsing is free to continue
+            return !buffer.hasRemaining();
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parsed Error: [" + buffer.remaining() + " bytes left in read buffer]", t);
+            
+            buffer.position(buffer.limit()); // consume remaining
+            
+            // let session know
+            WebSocketException wse;
+            if(t instanceof WebSocketException)
+                wse = (WebSocketException) t;
+            else
+                wse = new WebSocketException(t);
+                
+            throw wse;
+        }
+    }
+    
+    private void assertBehavior()
+    {
         if (policy.getBehavior() == WebSocketBehavior.SERVER)
         {
             /* Parsing on server.
-             * 
+             *
              * Then you MUST make sure all incoming frames are masked!
-             * 
+             *
              * Technically, this test is in violation of RFC-6455, Section 5.1
              * http://tools.ietf.org/html/rfc6455#section-5.1
-             * 
+             *
              * But we can't trust the client at this point, so Jetty opts to close
              * the connection as a Protocol error.
              */
-            if (!f.isMasked())
+            if (!frame.isMasked())
             {
                 throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
             }
@@ -205,115 +255,43 @@ public class Parser
         else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
         {
             // Required by RFC-6455 / Section 5.1
-            if (f.isMasked())
+            if (frame.isMasked())
             {
                 throw new ProtocolException("Server MUST NOT mask any frames (RFC-6455: Section 5.1)");
             }
         }
-
-        if (incomingFramesHandler == null)
-        {
-            return;
-        }
-        try
-        {
-            incomingFramesHandler.incomingFrame(f);
-        }
-        catch (WebSocketException e)
-        {
-            notifyWebSocketException(e);
-        }
-        catch (Throwable t)
-        {
-            LOG.warn(t);
-            notifyWebSocketException(new WebSocketException(t));
-        }
     }
-
-    protected void notifyWebSocketException(WebSocketException e)
+    
+    public void release(Frame frame)
     {
-        LOG.warn(e);
-        if (incomingFramesHandler == null)
+        if (frame.hasPayload())
         {
-            return;
-        }
-        incomingFramesHandler.incomingError(e);
-    }
-
-    public void parse(ByteBuffer buffer) throws WebSocketException
-    {
-        if (buffer.remaining() <= 0)
-        {
-            return;
-        }
-        try
-        {
-            // parse through all the frames in the buffer
-            while (parseFrame(buffer))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
-                notifyFrame(frame);
-                if (frame.isDataFrame())
-                {
-                    priorDataFrame = !frame.isFin();
-                }
-                reset();
-            }
-        }
-        catch (WebSocketException e)
-        {
-            buffer.position(buffer.limit()); // consume remaining
-            reset();
-            // let session know
-            notifyWebSocketException(e);
-            // need to throw for proper close behavior in connection
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            buffer.position(buffer.limit()); // consume remaining
-            reset();
-            // let session know
-            WebSocketException e = new WebSocketException(t);
-            notifyWebSocketException(e);
-            // need to throw for proper close behavior in connection
-            throw e;
+            bufferPool.release(frame.getPayload());
         }
     }
-
-    private void reset()
-    {
-        if (frame != null)
-            frame.reset();
-        frame = null;
-        bufferPool.release(payload);
-        payload = null;
-    }
-
+    
     /**
      * Parse the base framing protocol buffer.
-     * <p>
-     * Note the first byte (fin,rsv1,rsv2,rsv3,opcode) are parsed by the {@link Parser#parse(ByteBuffer)} method
-     * <p>
-     * Not overridable
-     * 
+     *
      * @param buffer
      *            the buffer to parse from.
-     * @return true if done parsing base framing protocol and ready for parsing of the payload. false if incomplete parsing of base framing protocol.
+     * @return true if done parsing a whole frame. false if incomplete/partial parsing of frame.
      */
     private boolean parseFrame(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
+            LOG.debug("Parsing {}", BufferUtil.toDetailString(buffer));
         }
+        
         while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case START:
                 {
+                    payload = null;
+                    
                     // peek at byte
                     byte b = buffer.get();
                     boolean fin = ((b & 0x80) != 0);
@@ -326,8 +304,7 @@ public class Parser
                     }
                     
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
-                                policy.getBehavior(),
+                        LOG.debug("OpCode {}, fin={} rsv={}{}{}",
                                 OpCode.name(opcode),
                                 fin,
                                 (((b & 0x40) != 0)?'1':'.'),
@@ -616,42 +593,33 @@ public class Parser
             buffer.limit(limit);
             buffer.position(buffer.position() + window.remaining());
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{} Window: {}",policy.getBehavior(),BufferUtil.toDetailString(window));
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Raw Payload: {}",BufferUtil.toDetailString(window));
             }
 
             maskProcessor.process(window);
 
-            if (window.remaining() == payloadLength)
+            if (payload == null)
             {
-                // We have the whole content, no need to copy.
-                frame.setPayload(window);
+                payload = bufferPool.acquire(payloadLength,false);
+                BufferUtil.clearToFill(payload);
+            }
+            
+            // Copy the payload.
+            payload.put(window);
+
+            // if the payload is complete
+            if (payload.position() == payloadLength)
+            {
+                BufferUtil.flipToFlush(payload, 0);
+                frame.setPayload(payload);
+                // notify that frame is complete
                 return true;
             }
-            else
-            {
-                if (payload == null)
-                {
-                    payload = bufferPool.acquire(payloadLength,false);
-                    BufferUtil.clearToFill(payload);
-                }
-                // Copy the payload.
-                payload.put(window);
-
-                if (payload.position() == payloadLength)
-                {
-                    BufferUtil.flipToFlush(payload, 0);
-                    frame.setPayload(payload);
-                    return true;
-                }
-            }
         }
+        // frame not (yet) complete
         return false;
-    }
-
-    public void setIncomingFramesHandler(IncomingFrames incoming)
-    {
-        this.incomingFramesHandler = incoming;
     }
 
     @Override
@@ -659,20 +627,11 @@ public class Parser
     {
         StringBuilder builder = new StringBuilder();
         builder.append("Parser@").append(Integer.toHexString(hashCode()));
-        builder.append("[");
-        if (incomingFramesHandler == null)
-        {
-            builder.append("NO_HANDLER");
-        }
-        else
-        {
-            builder.append(incomingFramesHandler.getClass().getSimpleName());
-        }
+        builder.append("[").append(policy.getBehavior());
         builder.append(",s=").append(state);
         builder.append(",c=").append(cursor);
         builder.append(",len=").append(payloadLength);
         builder.append(",f=").append(frame);
-        // builder.append(",p=").append(policy);
         builder.append("]");
         return builder.toString();
     }

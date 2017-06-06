@@ -23,6 +23,10 @@ import java.lang.reflect.Method;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+
 /**
  * Client {@link ContainerProvider} implementation.
  * <p>
@@ -84,13 +88,21 @@ public class JettyClientContainerProvider extends ContainerProvider
     
             if (INSTANCE == null)
             {
-                INSTANCE = new ClientContainer();
+                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+                QueuedThreadPool threadPool= new QueuedThreadPool();
+                String name = "Jsr356Client@" + hashCode();
+                threadPool.setName(name);
+                threadPool.setDaemon(true);
+                containerScope.setExecutor(threadPool);
+                containerScope.addBean(threadPool);
+                INSTANCE = new ClientContainer(containerScope);
             }
         
             if (!INSTANCE.isStarted())
             {
                 try
                 {
+                    // We need to start this container properly.
                     INSTANCE.start();
                 }
                 catch (Exception e)

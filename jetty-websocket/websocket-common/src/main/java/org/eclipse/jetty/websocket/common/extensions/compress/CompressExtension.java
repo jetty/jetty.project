@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.extensions.AbstractExtension;
@@ -127,7 +127,7 @@ public abstract class CompressExtension extends AbstractExtension
      */
     abstract int getRsvUseMode();
 
-    protected void forwardIncoming(Frame frame, ByteAccumulator accumulator)
+    protected void forwardIncoming(Frame frame, FrameCallback callback, ByteAccumulator accumulator)
     {
         DataFrame newFrame = new DataFrame(frame);
         // Unset RSV1 since it's not compressed anymore.
@@ -139,18 +139,12 @@ public abstract class CompressExtension extends AbstractExtension
             BufferUtil.flipToFill(buffer);
             accumulator.transferTo(buffer);
             newFrame.setPayload(buffer);
-            nextIncomingFrame(newFrame);
+            nextIncomingFrame(newFrame, callback);
         }
         finally
         {
             getBufferPool().release(buffer);
         }
-    }
-
-    protected ByteAccumulator newByteAccumulator()
-    {
-        int maxSize = Math.max(getPolicy().getMaxTextMessageSize(),getPolicy().getMaxBinaryMessageBufferSize());
-        return new ByteAccumulator(maxSize);
     }
 
     protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
@@ -199,7 +193,7 @@ public abstract class CompressExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         // We use a queue and an IteratingCallback to handle concurrency.
         // We must compress and write atomically, otherwise the compression
@@ -234,12 +228,12 @@ public abstract class CompressExtension extends AbstractExtension
         }
     }
 
-    protected void notifyCallbackSuccess(WriteCallback callback)
+    protected void notifyCallbackSuccess(FrameCallback callback)
     {
         try
         {
             if (callback != null)
-                callback.writeSuccess();
+                callback.succeed();
         }
         catch (Throwable x)
         {
@@ -248,12 +242,12 @@ public abstract class CompressExtension extends AbstractExtension
         }
     }
 
-    protected void notifyCallbackFailure(WriteCallback callback, Throwable failure)
+    protected void notifyCallbackFailure(FrameCallback callback, Throwable failure)
     {
         try
         {
             if (callback != null)
-                callback.writeFailed(failure);
+                callback.fail(failure);
         }
         catch (Throwable x)
         {
@@ -390,10 +384,10 @@ public abstract class CompressExtension extends AbstractExtension
     private static class FrameEntry
     {
         private final Frame frame;
-        private final WriteCallback callback;
+        private final FrameCallback callback;
         private final BatchMode batchMode;
 
-        private FrameEntry(Frame frame, WriteCallback callback, BatchMode batchMode)
+        private FrameEntry(Frame frame, FrameCallback callback, BatchMode batchMode)
         {
             this.frame = frame;
             this.callback = callback;
@@ -407,7 +401,7 @@ public abstract class CompressExtension extends AbstractExtension
         }
     }
 
-    private class Flusher extends IteratingCallback implements WriteCallback
+    private class Flusher extends IteratingCallback implements FrameCallback
     {
         private FrameEntry current;
         private boolean finished = true;
@@ -564,22 +558,22 @@ public abstract class CompressExtension extends AbstractExtension
             while ((entry = pollEntry()) != null)
                 notifyCallbackFailure(entry.callback,x);
         }
-
+    
         @Override
-        public void writeSuccess()
+        public void succeed()
         {
             if (finished)
                 notifyCallbackSuccess(current.callback);
             succeeded();
         }
-
+    
         @Override
-        public void writeFailed(Throwable x)
+        public void fail(Throwable cause)
         {
-            notifyCallbackFailure(current.callback,x);
+            notifyCallbackFailure(current.callback,cause);
             // If something went wrong, very likely the compression context
             // will be invalid, so we need to fail this IteratingCallback.
-            failed(x);
+            failed(cause);
         }
     }
 }

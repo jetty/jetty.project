@@ -286,7 +286,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
     public String getProtocolVersion()
     {
         String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
-        if(version == null) 
+        if(version == null)
         {
             return Integer.toString(WebSocketConstants.SPEC_VERSION);
         }

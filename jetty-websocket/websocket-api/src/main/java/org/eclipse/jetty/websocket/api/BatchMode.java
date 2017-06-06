@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.websocket.api;
 
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 
 /**
- * The possible batch modes when invoking {@link OutgoingFrames#outgoingFrame(org.eclipse.jetty.websocket.api.extensions.Frame, WriteCallback, BatchMode)}.
+ * The possible batch modes when invoking {@link OutgoingFrames#outgoingFrame(Frame, FrameCallback, BatchMode)}.
  */
 public enum BatchMode
 {

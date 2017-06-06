@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -126,12 +126,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         return policy;
     }
 
-    @Override
-    public void incomingError(Throwable e)
-    {
-        nextIncomingError(e);
-    }
-
     /**
      * Used to indicate that the extension makes use of the RSV1 bit of the base websocket framing.
      * <p>
@@ -171,18 +165,13 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         return false;
     }
 
-    protected void nextIncomingError(Throwable e)
-    {
-        this.nextIncoming.incomingError(e);
-    }
-
-    protected void nextIncomingFrame(Frame frame)
+    protected void nextIncomingFrame(Frame frame, FrameCallback callback)
     {
         log.debug("nextIncomingFrame({})",frame);
-        this.nextIncoming.incomingFrame(frame);
+        this.nextIncoming.incomingFrame(frame, callback);
     }
 
-    protected void nextOutgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    protected void nextOutgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
     {
         log.debug("nextOutgoingFrame({})",frame);
         this.nextOutgoing.outgoingFrame(frame,callback, batchMode);

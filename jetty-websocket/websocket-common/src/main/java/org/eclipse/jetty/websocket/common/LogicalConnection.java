@@ -22,42 +22,33 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.io.IOState;
 
 public interface LogicalConnection extends OutgoingFrames, SuspendToken
 {
-    /**
-     * Send a websocket Close frame, without a status code or reason.
-     * <p>
-     * Basic usage: results in an non-blocking async write, then connection close.
-     * 
-     * @see org.eclipse.jetty.websocket.api.StatusCode
-     * @see #close(int, String)
-     */
-    public void close();
-
-    /**
-     * Send a websocket Close frame, with status code.
-     * <p>
-     * Advanced usage: results in an non-blocking async write, then connection close.
-     * 
-     * @param statusCode
-     *            the status code
-     * @param reason
-     *            the (optional) reason. (can be null for no reason)
-     * @see org.eclipse.jetty.websocket.api.StatusCode
-     */
-    public void close(int statusCode, String reason);
-
+    interface Listener extends Connection.Listener
+    {
+        /**
+         * Notification of an error condition at the Connection level
+         *
+         * @param cause the cause
+         */
+        void onError(Throwable cause);
+    }
+    
     /**
      * Terminate the connection (no close frame sent)
      */
     void disconnect();
-
+    
+    /**
+     * Register Read Interest in Connection.
+     */
+    void fillInterested();
+    
     /**
      * Get the ByteBufferPool in use by the connection
      * @return the buffer pool
@@ -75,14 +66,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * 
      * @return the idle timeout in milliseconds
      */
-    public long getIdleTimeout();
-
-    /**
-     * Get the IOState of the connection.
-     * 
-     * @return the IOState of the connection.
-     */
-    IOState getIOState();
+    long getIdleTimeout();
 
     /**
      * Get the local {@link InetSocketAddress} in use for this connection.
@@ -98,10 +82,11 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * @return the idle timeout in milliseconds
      */
     long getMaxIdleTimeout();
-
+    
     /**
-     * The policy that the connection is running under.
-     * @return the policy for the connection
+     * Get the Connection based WebSocket Policy.
+     *
+     * @return the WebSocket policy for the connection
      */
     WebSocketPolicy getPolicy();
 
@@ -119,14 +104,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * 
      *  @return true if connection is open
      */
-    public boolean isOpen();
-
-    /**
-     * Tests if the connection is actively reading.
-     * 
-     * @return true if connection is actively attempting to read.
-     */
-    boolean isReading();
+    boolean isOpen();
 
     /**
      * Set the maximum number of milliseconds of idleness before the connection is closed/disconnected, (ie no frames are either sent or received)
@@ -140,16 +118,6 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     void setMaxIdleTimeout(long ms);
 
     /**
-     * Set where the connection should send the incoming frames to.
-     * <p>
-     * Often this is from the Parser to the start of the extension stack, and eventually on to the session.
-     * 
-     * @param incoming
-     *            the incoming frames handler
-     */
-    void setNextIncomingFrames(IncomingFrames incoming);
-
-    /**
      * Suspend a the incoming read events on the connection.
      * @return the suspend token
      */
@@ -159,5 +127,5 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Get Unique ID for the Connection
      * @return the unique ID for the connection
      */
-    public String getId();
+    String getId();
 }

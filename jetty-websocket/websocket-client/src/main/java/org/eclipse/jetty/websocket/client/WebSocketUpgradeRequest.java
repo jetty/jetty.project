@@ -67,7 +67,6 @@ import org.eclipse.jetty.websocket.client.io.WebSocketClientConnection;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
 public class WebSocketUpgradeRequest extends HttpRequest implements CompleteListener, HttpConnectionUpgrader
@@ -353,8 +352,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
     }
 
     private final WebSocketClient wsClient;
-    private final EventDriver localEndpoint;
     private final CompletableFuture<Session> fut;
+    private final Object localEndpoint;
     /** WebSocket API UpgradeRequest Facade to HttpClient HttpRequest */
     private final ClientUpgradeRequestFacade apiRequestFacade;
     private UpgradeListener upgradeListener;
@@ -410,9 +409,9 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             throw new IllegalStateException("Unable to start WebSocketClient", e);
         }
-        this.localEndpoint = this.wsClient.getEventDriverFactory().wrap(localEndpoint);
-
-        this.fut = new CompletableFuture<Session>();
+        
+        this.localEndpoint = localEndpoint;
+        this.fut = new CompletableFuture<>();
     }
 
     private final String genRandomKey()
@@ -502,7 +501,10 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             }
 
             Throwable failure = result.getFailure();
-            if ((failure instanceof java.net.ConnectException) || (failure instanceof UpgradeException))
+            if ( (failure instanceof java.net.SocketException) ||
+                 (failure instanceof java.io.InterruptedIOException) ||
+                 (failure instanceof HttpResponseException) ||
+                 (failure instanceof UpgradeException) )
             {
                 // handle as-is
                 handleException(failure);
@@ -517,13 +519,12 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI,responseStatusCode,responseLine));
+            handleException(new HttpResponseException("Not a 101 Switching Protocols Response: " + responseLine, response));
         }
     }
 
     private void handleException(Throwable failure)
     {
-        localEndpoint.incomingError(failure);
         fut.completeExceptionally(failure);
     }
 
@@ -564,20 +565,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash",response);
         }
-
-        // We can upgrade
-        EndPoint endp = oldConn.getEndPoint();
-
-        WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getScheduler(),localEndpoint.getPolicy(),
-                wsClient.getBufferPool());
-
-        URI requestURI = this.getURI();
-
-        WebSocketSession session = getSessionFactory().createSession(requestURI,localEndpoint,connection);
-        session.setUpgradeRequest(new ClientUpgradeRequest(this));
-        session.setUpgradeResponse(new ClientUpgradeResponse(response));
-        connection.addListener(session);
-
+    
         ExtensionStack extensionStack = new ExtensionStack(getExtensionFactory());
         List<ExtensionConfig> extensions = new ArrayList<>();
         HttpField extField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
@@ -597,12 +585,23 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             }
         }
         extensionStack.negotiate(extensions);
+    
+        // We can upgrade
+        EndPoint endp = oldConn.getEndPoint();
+        
+        endp = configure(endp);
 
-        extensionStack.configure(connection.getParser());
-        extensionStack.configure(connection.getGenerator());
+        WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getPolicy(),
+                wsClient.getBufferPool(), extensionStack);
+
+        URI requestURI = this.getURI();
+
+        WebSocketSession session = getSessionFactory().createSession(requestURI,localEndpoint,connection);
+        session.setUpgradeRequest(new ClientUpgradeRequest(this));
+        session.setUpgradeResponse(new ClientUpgradeResponse(response));
+        connection.addListener(session);
 
         // Setup Incoming Routing
-        connection.setNextIncomingFrames(extensionStack);
         extensionStack.setNextIncoming(session);
 
         // Setup Outgoing Routing
@@ -620,6 +619,11 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         // Now swap out the connection
         endp.upgrade(connection);
+    }
+    
+    public EndPoint configure(EndPoint endp)
+    {
+        return endp;
     }
 
     public void setUpgradeListener(UpgradeListener upgradeListener)

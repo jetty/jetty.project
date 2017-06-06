@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -64,7 +65,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         out.append("PathMappings[size=").append(Integer.toString(_mappings.size())).append("]\n");
         ContainerLifeCycle.dump(out, indent, _mappings);
     }
-
+    
     @ManagedAttribute(value = "mappings", readonly = true)
     public List<MappedResource<E>> getMappings()
     {
@@ -204,6 +205,18 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
             throw new RuntimeException("Path Spec String must start with '^', '/', or '*.': got [" + pathSpecString + "]");
         }
         return pathSpecString.charAt(0) == '^' ? new RegexPathSpec(pathSpecString):new ServletPathSpec(pathSpecString);
+    }
+    
+    public E get(PathSpec spec)
+    {
+        Optional<E> optionalResource = _mappings.stream()
+                .filter(mappedResource -> mappedResource.getPathSpec().equals(spec))
+                .map(mappedResource -> mappedResource.getResource())
+                .findFirst();
+        if(!optionalResource.isPresent())
+            return null;
+                
+        return optionalResource.get();
     }
     
     public boolean put(String pathSpecString, E resource)

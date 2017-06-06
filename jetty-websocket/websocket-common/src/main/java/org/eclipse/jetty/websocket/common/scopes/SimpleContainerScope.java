@@ -33,44 +33,32 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 {
     private final ByteBufferPool bufferPool;
     private final DecoratedObjectFactory objectFactory;
-    private final WebSocketPolicy policy;
+    private final WebSocketPolicy containerPolicy;
     private Executor executor;
     private SslContextFactory sslContextFactory;
 
-    public SimpleContainerScope(WebSocketPolicy policy)
+    public SimpleContainerScope(WebSocketPolicy containerPolicy)
     {
-        this(policy,new MappedByteBufferPool(),new DecoratedObjectFactory());
+        this(containerPolicy, new MappedByteBufferPool(), new DecoratedObjectFactory());
         this.sslContextFactory = new SslContextFactory();
     }
 
-    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public SimpleContainerScope(WebSocketPolicy containerPolicy, ByteBufferPool bufferPool)
     {
-        this(policy,bufferPool,new DecoratedObjectFactory());
+        this(containerPolicy, bufferPool, new DecoratedObjectFactory());
     }
 
-    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
+    public SimpleContainerScope(WebSocketPolicy containerPolicy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        this.policy = policy;
+        this.containerPolicy = containerPolicy;
         this.bufferPool = bufferPool;
         this.objectFactory = objectFactory;
-
         QueuedThreadPool threadPool = new QueuedThreadPool();
         String name = "WebSocketContainer@" + hashCode();
         threadPool.setName(name);
         threadPool.setDaemon(true);
         this.executor = threadPool;
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
+        addBean(executor);
     }
 
     @Override
@@ -84,7 +72,12 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         return this.executor;
     }
-
+    
+    public void setExecutor(Executor executor)
+    {
+        this.executor = executor;
+    }
+    
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
@@ -94,7 +87,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return this.policy;
+        return this.containerPolicy;
     }
 
     @Override

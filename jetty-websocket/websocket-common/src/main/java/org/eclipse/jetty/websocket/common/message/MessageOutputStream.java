@@ -45,6 +45,7 @@ public class MessageOutputStream extends OutputStream
     private final ByteBufferPool bufferPool;
     private final BlockingWriteCallback blocker;
     private long frameCount;
+    private long bytesSent;
     private BinaryFrame frame;
     private ByteBuffer buffer;
     private WriteCallback callback;
@@ -52,7 +53,7 @@ public class MessageOutputStream extends OutputStream
 
     public MessageOutputStream(WebSocketSession session)
     {
-        this(session.getOutgoingHandler(), session.getPolicy().getMaxBinaryMessageBufferSize(), session.getBufferPool());
+        this(session.getOutgoingHandler(), session.getPolicy().getOutputBufferSize(), session.getBufferPool());
     }
 
     public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
@@ -118,7 +119,7 @@ public class MessageOutputStream extends OutputStream
             flush(true);
             bufferPool.release(buffer);
             if (LOG.isDebugEnabled())
-                LOG.debug("Stream closed, {} frames sent", frameCount);
+                LOG.debug("Stream closed, {} frames ({} bytes) sent", frameCount, bytesSent);
             // Notify without holding locks.
             notifySuccess();
         }
@@ -153,33 +154,39 @@ public class MessageOutputStream extends OutputStream
             // Any flush after the first will be a CONTINUATION frame.
             frame.setIsContinuation();
 
-            BufferUtil.flipToFill(buffer);
+            // Buffer has been sent, buffer should have been consumed
+            assert buffer.remaining() == 0;
+
+            BufferUtil.clearToFill(buffer);
         }
     }
 
-    private void send(byte[] bytes, int offset, int length) throws IOException
+    private void send(byte[] bytes, final int offset, final int length) throws IOException
     {
         synchronized (this)
         {
             if (closed)
                 throw new IOException("Stream is closed");
 
-            while (length > 0)
+            int remaining = length;
+            int off = offset;
+            while (remaining > 0)
             {
                 // There may be no space available, we want
                 // to handle correctly when space == 0.
                 int space = buffer.remaining();
-                int size = Math.min(space, length);
-                buffer.put(bytes, offset, size);
-                offset += size;
-                length -= size;
-                if (length > 0)
+                int size = Math.min(space, remaining);
+                buffer.put(bytes, off, size);
+                off += size;
+                remaining -= size;
+                if (remaining > 0)
                 {
                     // If we could not write everything, it means
                     // that the buffer was full, so flush it.
                     flush(false);
                 }
             }
+            bytesSent += length;
         }
     }
 
