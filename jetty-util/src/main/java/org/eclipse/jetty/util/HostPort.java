@@ -23,11 +23,11 @@ package org.eclipse.jetty.util;
  * <p>Parse a string in the form "host:port", handling IPv4 an IPv6 hosts</p>
  *
  * <p>The System property "org.eclipse.jetty.util.HostPort.STRIP_IPV6" can be set to a boolean 
- * value to control of the square brackets are stripped off IPv6 addresses.</p>
+ * value to control of the square brackets are stripped off IPv6 addresses (default false).</p>
  */
 public class HostPort
 {
-    private final static boolean STRIP_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.STRIP_IPV6","true"));
+    private final static boolean STRIP_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.STRIP_IPV6","false"));
     
     private final String _host;
     private final int _port;
@@ -49,7 +49,7 @@ public class HostPort
                 int close=authority.lastIndexOf(']');
                 if (close<0)
                     throw new IllegalArgumentException("Bad IPv6 host");
-                _host=STRIP_IPV6?authority.substring(0,close+1):authority.substring(1,close);
+                _host=STRIP_IPV6?authority.substring(1,close):authority.substring(0,close+1);
 
                 if (authority.length()>close+1)
                 {
