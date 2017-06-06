@@ -40,7 +40,7 @@ It may also be added to individual contexts in a context xml file.
 ____
 [NOTE]
 Jetty 9 only compresses using GZip.
-Using link:http://docs.oracle.com/javase/8/docs/api/java/util/zip/Deflater.html[Deflate] is not supported and will not work.
+Using deflate http compression is not supported and will not function.
 ____
 
 [[gzip-filter-rules]]
