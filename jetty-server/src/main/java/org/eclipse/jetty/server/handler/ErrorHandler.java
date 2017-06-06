@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -196,11 +198,18 @@ public class ErrorHandler extends AbstractHandler
     protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException
     {
+        Response baseResponse = (Response) response;
+        if (baseResponse.isWriting())
+        {
+            // Return existing writer
+            return response.getWriter();
+        }
+        
         List<String> acceptable=baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
         if (acceptable.isEmpty())
         {
             response.setCharacterEncoding(StandardCharsets.ISO_8859_1.name());
-            return response.getWriter();
+            return new OutputStreamWriter(response.getOutputStream(), response.getCharacterEncoding());
         }
         
         for (String charset:acceptable)
@@ -211,7 +220,8 @@ public class ErrorHandler extends AbstractHandler
                     response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 else
                     response.setCharacterEncoding(Charset.forName(charset).name());
-                return response.getWriter();
+    
+                return new OutputStreamWriter(response.getOutputStream(), response.getCharacterEncoding());
             }
             catch(Exception e)
             {
