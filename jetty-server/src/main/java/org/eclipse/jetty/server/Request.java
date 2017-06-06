@@ -60,6 +60,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
+import javax.servlet.http.PushBuilder;
+import javax.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -2461,5 +2463,90 @@ public class Request implements HttpServletRequest
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
+    }
+    
+    
+    public void setPathSpec(PathSpec pathSpec)
+    {
+        _pathSpec = pathSpec;
+    }
+
+    public PathSpec getPathSpec()
+    {
+        return _pathSpec;
+    }
+    
+
+    // TODO replace with overriden version from API
+    public HttpServletMapping getMapping()
+    {
+        final PathSpec pathSpec = _pathSpec;
+        final MappingMatch match;
+        final String mapping;
+        if (pathSpec instanceof ServletPathSpec)
+        {
+            switch(((ServletPathSpec)pathSpec).getGroup())
+            {
+                case ROOT:
+                    match = MappingMatch.CONTEXT_ROOT;
+                    mapping = "";
+                    break;
+                case DEFAULT:
+                    match = MappingMatch.DEFAULT;
+                    mapping = "/";
+                    break;
+                case EXACT:
+                    match = MappingMatch.EXACT;
+                    mapping = _servletPath;
+                    break;
+                case SUFFIX_GLOB:
+                    match = MappingMatch.EXTENSION;
+                    int dot = _servletPath.lastIndexOf('.');
+                    mapping = _servletPath.substring(0,dot);
+                    break;
+                case PREFIX_GLOB:
+                    match = MappingMatch.PATH;
+                    mapping = _servletPath;
+                    break;
+                default:
+                    match = null;
+                    mapping = _servletPath;
+                    break;
+            }
+        }
+        else
+        {
+            match = null;
+            mapping = _servletPath;
+        }
+        
+        return new HttpServletMapping()
+        {
+            @Override
+            public String getMatchValue()
+            {   
+                return mapping;
+            }
+
+            @Override
+            public String getPattern()
+            {
+                if (pathSpec!=null)
+                    pathSpec.toString();
+                return null;
+            }
+
+            @Override
+            public String getServletName()
+            {
+                return Request.this.getServletName();
+            }
+
+            @Override
+            public MappingMatch getMappingMatch()
+            {
+                return match;
+            }
+        };
     }
 }
