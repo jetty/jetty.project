@@ -82,7 +82,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
     @Test
     public void testNoScavenging() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 3;
         int scavengePeriod = 0;
@@ -109,7 +109,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             client.start();
             try
             {
-                String url = "http://localhost:" + port1 + contextPath + servletMapping;
+                String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
 
                 // Create the session

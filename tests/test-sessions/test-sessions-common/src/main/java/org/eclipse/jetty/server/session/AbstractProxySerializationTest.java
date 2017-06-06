@@ -68,7 +68,7 @@ public abstract class AbstractProxySerializationTest extends AbstractTestBase
     @Test
     public void testProxySerialization() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int scavengePeriod = 10;
 
@@ -104,7 +104,7 @@ public abstract class AbstractProxySerializationTest extends AbstractTestBase
             client.start();
             try
             {
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
@@ -118,7 +118,7 @@ public abstract class AbstractProxySerializationTest extends AbstractTestBase
                 context.start();
                
                 // Make another request using the session id from before
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
+                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=test");
                 request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
