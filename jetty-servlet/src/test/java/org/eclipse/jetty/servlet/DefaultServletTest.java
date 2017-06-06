@@ -895,6 +895,10 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);   
+
+        String bad_etag_gzip = etag.substring(0,etag.length()-2)+"X--gzip\"";
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+bad_etag_gzip+"\r\n\r\n");
+        assertResponseNotContains("304 Not Modified", response);
         
         response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);
