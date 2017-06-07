@@ -64,15 +64,6 @@
                   <overWrite>true</overWrite>
                   <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
                 </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.orbit</groupId>
-                  <artifactId>javax.mail.glassfish</artifactId>
-                  <version>1.4.1.v201005082020</version>
-                  <type>jar</type>
-                  <includes>**</includes>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
-                </artifactItem>
               </artifactItems>
           </configuration>
           </execution>
