@@ -23,6 +23,9 @@ import java.lang.reflect.Method;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.ShutdownThread;
+
 /**
  * Client {@link ContainerProvider} implementation.
  * <p>
@@ -59,6 +62,28 @@ public class JettyClientContainerProvider extends ContainerProvider
         }
     }
     
+    public Object getContextHandler()
+    {
+        try
+        {
+            // Equiv of: ContextHandler.Context context = ContextHandler.getCurrentContext()
+            Class<?> clazzContextHandler = Class.forName("org.eclipse.jetty.server.handler.ContextHandler");
+            Method methodGetContext = clazzContextHandler.getMethod("getCurrentContext");
+            Object objContext = methodGetContext.invoke(null);
+            if (objContext == null)
+                return null;
+            
+            // Equiv of: ContextHandler handler = ContextHandler.getContextHandler(context);
+            Class<?> clazzContext = objContext.getClass();
+            Method methodGetContextHandler = clazzContextHandler.getMethod("getContextHandler", clazzContext);
+            return methodGetContextHandler.invoke(objContext);
+        }
+        catch (Throwable ignore)
+        {
+            return null;
+        }
+    }
+    
     /**
      * Used by {@link ContainerProvider#getWebSocketContainer()} to get a new instance
      * of the Client {@link WebSocketContainer}.
@@ -81,24 +106,38 @@ public class JettyClientContainerProvider extends ContainerProvider
             catch (Throwable ignore)
             {
             }
-    
+            
             if (INSTANCE == null)
             {
                 INSTANCE = new ClientContainer();
-            }
-        
-            if (!INSTANCE.isStarted())
-            {
-                try
+                
+                Object contextHandler = getContextHandler();
+                if (contextHandler != null && contextHandler instanceof ContainerLifeCycle)
                 {
-                    INSTANCE.start();
+                    // Add as bean to contextHandler
+                    // Allow startup to follow Jetty lifecycle
+                    ((ContainerLifeCycle) contextHandler).addBean(INSTANCE, true);
                 }
-                catch (Exception e)
+                else
                 {
-                    throw new RuntimeException("Unable to start Client Container", e);
+                    // Static Initialization
+                    // register JVM wide shutdown thread
+                    ShutdownThread.register(INSTANCE);
+                    
+                    if (!INSTANCE.isStarted())
+                    {
+                        try
+                        {
+                            INSTANCE.start();
+                        }
+                        catch (Exception e)
+                        {
+                            throw new RuntimeException("Unable to start Client Container", e);
+                        }
+                    }
                 }
             }
-        
+            
             return INSTANCE;
         }
     }
