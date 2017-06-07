@@ -95,6 +95,7 @@ public class MisbehavingClassTest
     public void testEndpointRuntimeOnOpen() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
         try (StacklessLogging logging = new StacklessLogging(EndpointRuntimeOnOpen.class, WebSocketSession.class))
@@ -117,6 +118,7 @@ public class MisbehavingClassTest
     public void testAnnotatedRuntimeOnOpen() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
         try (StacklessLogging logging = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
