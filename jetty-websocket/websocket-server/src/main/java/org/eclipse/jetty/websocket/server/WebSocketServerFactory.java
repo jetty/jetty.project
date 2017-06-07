@@ -141,23 +141,18 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, DecoratedObjectFactory objectFactory, Executor executor, ByteBufferPool bufferPool)
     {
         this.context = context;
+        this.defaultPolicy = policy;
         this.objectFactory = objectFactory;
         this.executor = executor;
-        
-        handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
-        
-        addBean(scheduler);
-        addBean(bufferPool);
-        
-        this.contextClassloader = Thread.currentThread().getContextClassLoader();
-        
-        this.defaultPolicy = policy;
-        this.eventDriverFactory = new EventDriverFactory(this);
         this.bufferPool = bufferPool;
-        this.extensionFactory = new WebSocketExtensionFactory(this);
         
-        this.sessionFactories.add(new WebSocketSessionFactory(this));
         this.creator = this;
+        this.contextClassloader = Thread.currentThread().getContextClassLoader();
+        this.eventDriverFactory = new EventDriverFactory(this);
+        this.extensionFactory = new WebSocketExtensionFactory(this);
+
+        this.handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
+        this.sessionFactories.add(new WebSocketSessionFactory(this));
         
         // Create supportedVersions
         List<Integer> versions = new ArrayList<>();
@@ -176,6 +171,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             rv.append(v);
         }
         supportedVersions = rv.toString();
+        
+        addBean(scheduler);
+        addBean(bufferPool);
     }
     
     public void addSessionListener(WebSocketSession.Listener listener)
