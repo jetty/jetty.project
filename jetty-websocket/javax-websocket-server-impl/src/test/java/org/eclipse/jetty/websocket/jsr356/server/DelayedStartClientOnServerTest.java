@@ -29,14 +29,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
@@ -54,10 +55,11 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
+import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.junit.Before;
 import org.junit.Test;
 
 public class DelayedStartClientOnServerTest
@@ -70,12 +72,6 @@ public class DelayedStartClientOnServerTest
         {
             return msg;
         }
-    }
-    
-    @Before
-    public void stopClientContainer() throws Exception
-    {
-        JettyClientContainerProvider.stop();
     }
     
     /**
@@ -220,11 +216,10 @@ public class DelayedStartClientOnServerTest
         Server server = new Server(0);
         ServletContextHandler contextHandler = new ServletContextHandler();
         server.setHandler(contextHandler);
-        WebSocketServerContainerInitializer.configureContext(contextHandler);
         try
         {
             server.start();
-            List<String> threadNames = getThreadNames();
+            List<String> threadNames = getThreadNames(server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
@@ -234,7 +229,6 @@ public class DelayedStartClientOnServerTest
             server.stop();
         }
     }
-    
     
     @Test
     public void testHttpClientThreads_AfterClientConnectTo() throws Exception
@@ -251,9 +245,9 @@ public class DelayedStartClientOnServerTest
             server.start();
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
-            List<String> threadNames = getThreadNames();
+            List<String> threadNames = getThreadNames(server);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("WebSocketClient@")));
+            assertThat("Threads", threadNames, hasItem(containsString("WebSocketContainer@")));
         }
         finally
         {
@@ -276,7 +270,7 @@ public class DelayedStartClientOnServerTest
             server.start();
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
-            List<String> threadNames = getThreadNames();
+            List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, hasItem(containsString("WebSocketClient@")));
         }
@@ -300,8 +294,8 @@ public class DelayedStartClientOnServerTest
         {
             server.start();
             String response = GET(server.getURI().resolve("/configure"));
-            assertThat("Response", response, startsWith("Configured " + ServerContainer.class.getName()));
-            List<String> threadNames = getThreadNames();
+            assertThat("Response", response, startsWith("Configured " + ClientContainer.class.getName()));
+            List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
@@ -327,7 +321,7 @@ public class DelayedStartClientOnServerTest
             server.start();
             String response = GET(server.getURI().resolve("/configure"));
             assertThat("Response", response, startsWith("Configured " + ServerContainer.class.getName()));
-            List<String> threadNames = getThreadNames();
+            List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
         }
@@ -350,15 +344,51 @@ public class DelayedStartClientOnServerTest
         }
     }
     
-    private List<String> getThreadNames()
+    public static List<String> getThreadNames(ContainerLifeCycle... containers)
     {
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        ThreadInfo[] threads = threadMXBean.dumpAllThreads(false, false);
-        List<String> ret = new ArrayList<>();
-        for (ThreadInfo info : threads)
+        List<String> threadNames = new ArrayList<>();
+        Set<Object> seen = new HashSet<>();
+        for (ContainerLifeCycle container : containers)
         {
-            ret.add(info.getThreadName());
+            if (container == null)
+            {
+                continue;
+            }
+            
+            findConfiguredThreadNames(seen, threadNames, container);
         }
-        return ret;
+        seen.clear();
+        // System.out.println("Threads: " + threadNames.stream().collect(Collectors.joining(", ", "[", "]")));
+        return threadNames;
+    }
+    
+    private static void findConfiguredThreadNames(Set<Object> seen, List<String> threadNames, ContainerLifeCycle container)
+    {
+        if (seen.contains(container))
+        {
+            // skip
+            return;
+        }
+        
+        seen.add(container);
+        
+        Collection<Executor> executors = container.getBeans(Executor.class);
+        for (Executor executor : executors)
+        {
+            if (executor instanceof QueuedThreadPool)
+            {
+                QueuedThreadPool qtp = (QueuedThreadPool) executor;
+                threadNames.add(qtp.getName());
+            }
+            else
+            {
+                System.err.println("### Executor: " + executor);
+            }
+        }
+        
+        for (ContainerLifeCycle child : container.getBeans(ContainerLifeCycle.class))
+        {
+            findConfiguredThreadNames(seen, threadNames, child);
+        }
     }
 }
