@@ -57,7 +57,7 @@ public abstract class AbstractClusteredLastAccessTimeTest extends AbstractTestBa
     @Test
     public void testLastAccessTime() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int maxInactivePeriod = 8; //session will timeout after 8 seconds
         int scavengePeriod = 2; //scavenging occurs every 2 seconds
@@ -97,7 +97,7 @@ public abstract class AbstractClusteredLastAccessTimeTest extends AbstractTestBa
                 try
                 {
                     // Perform one request to server1 to create a session
-                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     assertEquals("test", response1.getContentAsString());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
@@ -116,7 +116,7 @@ public abstract class AbstractClusteredLastAccessTimeTest extends AbstractTestBa
                     int requestInterval = 500;
                     for (int i = 0; i < maxInactivePeriod * (1000 / requestInterval); ++i)
                     {
-                        Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping);
+                        Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1));
                         request.header("Cookie", sessionCookie);
                         ContentResponse response2 = request.send();
                         assertEquals(HttpServletResponse.SC_OK , response2.getStatus());

@@ -105,4 +105,10 @@ public interface IStream extends Stream, Closeable
      * {@link #getIdleTimeout() idle timeout} is postponed.</p>
      */
     public void notIdle();
+
+    /**
+     * @return whether the stream is closed remotely.
+     * @see #isClosed()
+     */
+    boolean isRemotelyClosed();
 }

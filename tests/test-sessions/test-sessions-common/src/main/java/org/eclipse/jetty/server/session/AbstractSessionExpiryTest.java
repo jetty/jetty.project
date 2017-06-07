@@ -107,7 +107,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
     @Test
     public void testSessionExpiresWithListener() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 3;
         int scavengePeriod = 1;
@@ -134,7 +134,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         {
             HttpClient client = new HttpClient();
             client.start();
-            String url = "http://localhost:" + port1 + contextPath + servletMapping;
+            String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
             //make a request to set up a session on the server
             ContentResponse response1 = client.GET(url + "?action=init");
@@ -167,7 +167,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
     @Test
     public void testSessionNotExpired() throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 20;
         int scavengePeriod = 10;
@@ -190,7 +190,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             int port1 = server1.getPort();
 
             client.start();
-            String url = "http://localhost:" + port1 + contextPath + servletMapping;
+            String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url + "?action=init");
@@ -207,7 +207,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             //start the server again, before the session times out
             server1.start();
             port1 = server1.getPort();
-            url = "http://localhost:" + port1 + contextPath + servletMapping;
+            url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
             //make another request, the session should not have expired
             Request request = client.newRequest(url + "?action=notexpired");
@@ -234,7 +234,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
     {
      
         
-        String contextPath = "";
+        String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 4;
         int scavengePeriod = 1;
@@ -261,7 +261,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
         {
             HttpClient client = new HttpClient();
             client.start();
-            String url = "http://localhost:" + port1 + contextPath + servletMapping;
+            String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
             //make a request to set up a session on the server
             ContentResponse response1 = client.GET(url + "?action=init");
@@ -288,7 +288,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             pause(inactivePeriod+(scavengePeriod*2));
             
             port1 = server1.getPort();
-            url = "http://localhost:" + port1 + contextPath + servletMapping;
+            url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
             
             //make another request, the session should have expired
             Request request = client.newRequest(url + "?action=test");
@@ -310,7 +310,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
     @Test
     public void testRequestForSessionWithChangedTimeout () throws Exception
     {
-      String contextPath = "";
+      String contextPath = "/";
       String servletMapping = "/server";
       int inactivePeriod = 5;
       int scavengePeriod = 1;
@@ -337,7 +337,7 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
       {
           HttpClient client = new HttpClient();
           client.start();
-          String url = "http://localhost:" + port1 + contextPath + servletMapping;
+          String url = "http://localhost:" + port1 + contextPath + servletMapping.substring(1);
 
           //make a request to set up a session on the server with the session manager's inactive timeout
           ContentResponse response = client.GET(url + "?action=init");

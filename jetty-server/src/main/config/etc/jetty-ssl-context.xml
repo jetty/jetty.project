@@ -28,4 +28,26 @@
   <Set name="sslSessionTimeout"><Property name="jetty.sslContext.sslSessionTimeout" default="-1"/></Set>
   <Set name="RenegotiationAllowed"><Property name="jetty.sslContext.renegotiationAllowed" default="true"/></Set>
   <Set name="RenegotiationLimit"><Property name="jetty.sslContext.renegotiationLimit" default="5"/></Set>
+ 
+  <!-- Example of how to configure a PKIX Certificate Path revocation Checker
+  <Call id="pkixPreferCrls" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>PREFER_CRLS</Arg></Call>
+  <Call id="pkixSoftFail" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>SOFT_FAIL</Arg></Call>
+  <Call id="pkixNoFallback" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>NO_FALLBACK</Arg></Call>
+  <Call class="java.security.cert.CertPathBuilder" name="getInstance">
+    <Arg>PKIX</Arg>
+    <Call id="pkixRevocationChecker" name="getRevocationChecker">
+      <Call name="setOptions">
+        <Arg>
+          <Call class="java.util.EnumSet" name="of">
+            <Arg><Ref refid="pkixPreferCrls"/></Arg>
+            <Arg><Ref refid="pkixSoftFail"/></Arg>
+            <Arg><Ref refid="pkixNoFallback"/></Arg>
+          </Call>
+        </Arg>
+      </Call>
+    </Call>
+  </Call>
+  <Set name="PkixCertPathChecker"><Ref refid="pkixRevocationChecker"/></Set>
+  -->
+  
 </Configure>

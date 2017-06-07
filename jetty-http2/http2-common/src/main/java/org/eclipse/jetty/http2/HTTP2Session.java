@@ -243,6 +243,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         complete();
                     }
 
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return InvocationType.NON_BLOCKING;
+                    }
+
                     private void complete()
                     {
                         notIdle();
@@ -398,14 +404,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     /**
      * This method is called when receiving a GO_AWAY from the other peer.
      * We check the close state to act appropriately:
-     *
-     * * NOT_CLOSED: we move to REMOTELY_CLOSED and queue a disconnect, so
-     *   that the content of the queue is written, and then the connection
-     *   closed. We notify the application after being terminated.
-     *   See <code>HTTP2Session.ControlEntry#succeeded()</code>
-     *
-     * * In all other cases, we do nothing since other methods are already
-     *   performing their actions.
+     * <ul>
+     * <li>NOT_CLOSED: we move to REMOTELY_CLOSED and queue a disconnect, so
+     * that the content of the queue is written, and then the connection
+     * closed. We notify the application after being terminated.
+     * See <code>HTTP2Session.ControlEntry#succeeded()</code></li>
+     * <li>In all other cases, we do nothing since other methods are already
+     * performing their actions.</li>
+     * </ul>
      *
      * @param frame the GO_AWAY frame that has been received.
      * @see #close(int, String, Callback)
@@ -567,21 +573,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     /**
      * Invoked internally and by applications to send a GO_AWAY frame to the
      * other peer. We check the close state to act appropriately:
+     * <ul>
+     * <li>NOT_CLOSED: we move to LOCALLY_CLOSED and queue a GO_AWAY. When the
+     * GO_AWAY has been written, it will only cause the output to be shut
+     * down (not the connection closed), so that the application can still
+     * read frames arriving from the other peer.
+     * Ideally the other peer will notice the GO_AWAY and close the connection.
+     * When that happen, we close the connection from {@link #onShutdown()}.
+     * Otherwise, the idle timeout mechanism will close the connection, see
+     * {@link #onIdleTimeout()}.</li>
+     * <li>In all other cases, we do nothing since other methods are already
+     * performing their actions.</li>
+     * </ul>
      *
-     * * NOT_CLOSED: we move to LOCALLY_CLOSED and queue a GO_AWAY. When the
-     *   GO_AWAY has been written, it will only cause the output to be shut
-     *   down (not the connection closed), so that the application can still
-     *   read frames arriving from the other peer.
-     *   Ideally the other peer will notice the GO_AWAY and close the connection.
-     *   When that happen, we close the connection from {@link #onShutdown()}.
-     *   Otherwise, the idle timeout mechanism will close the connection, see
-     *   {@link #onIdleTimeout()}.
-     *
-     * * In all other cases, we do nothing since other methods are already
-     *   performing their actions.
-     *
-     * @param error the error code
-     * @param reason the reason
+     * @param error    the error code
+     * @param reason   the reason
      * @param callback the callback to invoke when the operation is complete
      * @see #onGoAway(GoAwayFrame)
      * @see #onShutdown()
@@ -841,19 +847,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      * A typical close by a remote peer involves a GO_AWAY frame followed by TCP FIN.
      * This method is invoked when the TCP FIN is received, or when an exception is
      * thrown while reading, and we check the close state to act appropriately:
-     *
-     * * NOT_CLOSED: means that the remote peer did not send a GO_AWAY (abrupt close)
-     *   or there was an exception while reading, and therefore we terminate.
-     *
-     * * LOCALLY_CLOSED: we have sent the GO_AWAY to the remote peer, which received
-     *   it and closed the connection; we queue a disconnect to close the connection
-     *   on the local side.
-     *   The GO_AWAY just shutdown the output, so we need this step to make sure the
-     *   connection is closed. See {@link #close(int, String, Callback)}.
-     *
-     * * REMOTELY_CLOSED: we received the GO_AWAY, and the TCP FIN afterwards, so we
-     *   do nothing since the handling of the GO_AWAY will take care of closing the
-     *   connection. See {@link #onGoAway(GoAwayFrame)}.
+     * <ul>
+     * <li>NOT_CLOSED: means that the remote peer did not send a GO_AWAY (abrupt close)
+     * or there was an exception while reading, and therefore we terminate.</li>
+     * <li>LOCALLY_CLOSED: we have sent the GO_AWAY to the remote peer, which received
+     * it and closed the connection; we queue a disconnect to close the connection
+     * on the local side.
+     * The GO_AWAY just shutdown the output, so we need this step to make sure the
+     * connection is closed. See {@link #close(int, String, Callback)}.</li>
+     * <li>REMOTELY_CLOSED: we received the GO_AWAY, and the TCP FIN afterwards, so we
+     * do nothing since the handling of the GO_AWAY will take care of closing the
+     * connection. See {@link #onGoAway(GoAwayFrame)}.</li>
+     * </ul>
      *
      * @see #onGoAway(GoAwayFrame)
      * @see #close(int, String, Callback)
@@ -898,18 +903,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     /**
      * This method is invoked when the idle timeout triggers. We check the close state
      * to act appropriately:
-     *
-     * * NOT_CLOSED: it's a real idle timeout, we just initiate a close, see
-     *   {@link #close(int, String, Callback)}.
-     *
-     * * LOCALLY_CLOSED: we have sent a GO_AWAY and only shutdown the output, but the
-     *   other peer did not close the connection so we never received the TCP FIN, and
-     *   therefore we terminate.
-     *
-     * * REMOTELY_CLOSED: the other peer sent us a GO_AWAY, we should have queued a
-     *   disconnect, but for some reason it was not processed (for example, queue was
-     *   stuck because of TCP congestion), therefore we terminate.
-     *   See {@link #onGoAway(GoAwayFrame)}.
+     * <ul>
+     * <li>NOT_CLOSED: it's a real idle timeout, we just initiate a close, see
+     * {@link #close(int, String, Callback)}.</li>
+     * <li>LOCALLY_CLOSED: we have sent a GO_AWAY and only shutdown the output, but the
+     * other peer did not close the connection so we never received the TCP FIN, and
+     * therefore we terminate.</li>
+     * <li>REMOTELY_CLOSED: the other peer sent us a GO_AWAY, we should have queued a
+     * disconnect, but for some reason it was not processed (for example, queue was
+     * stuck because of TCP congestion), therefore we terminate.
+     * See {@link #onGoAway(GoAwayFrame)}.</li>
+     * </ul>
      *
      * @return true if the session should be closed, false otherwise
      * @see #onGoAway(GoAwayFrame)

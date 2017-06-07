@@ -136,7 +136,7 @@ public class PostServletTest
         req.append("0\r\n");
         req.append("\r\n");
 
-        String resp = connector.getResponses(req.toString(),1,TimeUnit.SECONDS);
+        String resp = connector.getResponse(req.toString());
 
         assertThat("resp", resp, containsString("HTTP/1.1 200 OK"));
         assertThat("resp", resp, containsString("chunked"));

@@ -123,7 +123,7 @@ public class DispatcherForwardTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -173,7 +173,7 @@ public class DispatcherForwardTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -222,7 +222,7 @@ public class DispatcherForwardTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -278,7 +278,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 form;
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -335,7 +335,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 form;
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -391,7 +391,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 form;
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -450,7 +450,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 form;
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -497,7 +497,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 form;
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
@@ -547,7 +547,7 @@ public class DispatcherForwardTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 form;
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(response, response.startsWith("HTTP/1.1 200"));
     }
