@@ -240,33 +240,6 @@
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
           </execution>
-
-          <execution>
-            <id>copy-jta-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>javax.transaction</includeGroupIds>
-              <includeArtifactIds>javax.transaction-api</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-jndi-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.mail.glassfish</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
-            </configuration>
-          </execution>
           <execution>
             <id>copy-apache-jsp-deps</id>
             <phase>generate-resources</phase>
