@@ -100,7 +100,6 @@ public class TestJettyOSGiBootCore
         res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-osgi-servlet-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "javax.annotation" ).artifactId( "javax.annotation-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.apache.geronimo.specs" ).artifactId( "geronimo-jta_1.1_spec" ).version("1.1.1").noStart());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
 
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-util" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().noStart());
