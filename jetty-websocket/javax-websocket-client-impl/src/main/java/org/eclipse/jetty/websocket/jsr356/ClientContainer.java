@@ -149,8 +149,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
         this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
-    
-        ShutdownThread.register(this);
     }
     
     /**
