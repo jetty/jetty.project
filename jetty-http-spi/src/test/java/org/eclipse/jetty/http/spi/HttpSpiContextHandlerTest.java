@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Before;
 import org.junit.Test;
 import com.sun.net.httpserver.Authenticator;
@@ -175,13 +176,22 @@ public class HttpSpiContextHandlerTest
     {
         // given
         setUpAuthenticationException();
-        Log.getRootLogger().setDebugEnabled(true);
+        try
+        {
+            Log.getRootLogger().setDebugEnabled(true);
+            ((StdErrLog)Log.getLogger(HttpSpiContextHandler.class)).setHideStacks(true);
 
-        // when
-        httpSpiContextHandler.doScope("/test",baseRequest,req,resp);
+            // when
+            httpSpiContextHandler.doScope("/test", baseRequest, req, resp);
 
-        // then
-        verify(resp).setStatus(SpiConstants.FAILURE_STATUS);
+            // then
+            verify(resp).setStatus(SpiConstants.FAILURE_STATUS);
+        }
+        finally
+        {
+            Log.getRootLogger().setDebugEnabled(false);
+            ((StdErrLog)Log.getLogger(HttpSpiContextHandler.class)).setHideStacks(false);
+        }
     }
 
     @Test
@@ -213,7 +223,7 @@ public class HttpSpiContextHandlerTest
         when(baseRequest.getHttpChannel()).thenReturn(httpChannel);
         HttpConfiguration configuration = mock(HttpConfiguration.class);
         when(httpChannel.getHttpConfiguration()).thenReturn(configuration);
-        doThrow(new RuntimeException()).when(httpContext).getAuthenticator();
+        doThrow(new RuntimeException("Expected Test Exception")).when(httpContext).getAuthenticator();
     }
 
     private void setUpAuthentication(Result result) throws Exception
