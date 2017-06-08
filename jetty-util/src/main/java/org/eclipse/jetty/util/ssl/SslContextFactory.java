@@ -731,21 +731,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      *                 a keystore is set, then
      *                 the {@link #getPassword(String)} is used to
      *                 obtain a password either from the {@value #PASSWORD_PROPERTY}
-     *                 system property or by prompting for manual entry.
+     *                 system property.
      */
     public void setKeyStorePassword(String password)
     {
-        if (password == null)
-        {
-            if (_keyStoreResource != null)
-                _keyStorePassword = getPassword(PASSWORD_PROPERTY);
-            else
-                _keyStorePassword = null;
-        }
-        else
-        {
-            _keyStorePassword = newPassword(password);
-        }
+        _keyStorePassword = password==null?getPassword(PASSWORD_PROPERTY):newPassword(password);
     }
 
     /**
@@ -756,39 +746,18 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      */
     public void setKeyManagerPassword(String password)
     {
-        if (password == null)
-        {
-            if (System.getProperty(KEYPASSWORD_PROPERTY) != null)
-                _keyManagerPassword = getPassword(KEYPASSWORD_PROPERTY);
-            else
-                _keyManagerPassword = null;
-        }
-        else
-        {
-            _keyManagerPassword = newPassword(password);
-        }
+        _keyManagerPassword = password==null?getPassword(KEYPASSWORD_PROPERTY):newPassword(password);
     }
 
     /**
-     * @param password The password for the truststore. If null is passed and a truststore is set
-     *                 that is different from the keystore, then
+     * @param password The password for the truststore. If null is passed then
      *                 the {@link #getPassword(String)} is used to
-     *                 obtain a password either from the {@value #PASSWORD_PROPERTY}
-     *                 system property or by prompting for manual entry.
+     *                 obtain a password from the {@value #PASSWORD_PROPERTY}
+     *                 system property.
      */
     public void setTrustStorePassword(String password)
     {
-        if (password == null)
-        {
-            if (_trustStoreResource != null && !_trustStoreResource.equals(_keyStoreResource))
-                _trustStorePassword = getPassword(PASSWORD_PROPERTY);
-            else
-                _trustStorePassword = null;
-        }
-        else
-        {
-            _trustStorePassword = newPassword(password);
-        }
+        _trustStorePassword = password==null?getPassword(PASSWORD_PROPERTY):newPassword(password);
     }
 
     /**
@@ -1494,7 +1463,8 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      */
     protected Password getPassword(String realm)
     {
-        return Password.getPassword(realm, null, null);
+        String password = System.getProperty(realm);
+        return password==null?null:newPassword(password);
     }
 
     /**
