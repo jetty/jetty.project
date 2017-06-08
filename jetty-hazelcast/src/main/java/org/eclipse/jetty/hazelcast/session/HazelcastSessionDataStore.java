@@ -110,7 +110,7 @@ public class HazelcastSessionDataStore
     public void doStore( String id, SessionData data, long lastSaveTime )
         throws Exception
     {
-        this.sessionDataMap.put( getCacheKey( id ), data);
+        this.sessionDataMap.set( getCacheKey( id ), data);
     }
 
     @Override
