@@ -1,36 +1,26 @@
-[description]
-Enables session data store in a remote Hazelcast Map
-
-[tags]
-session
-
-[provides]
-session-store
+#
+#  Jetty Hazelcast module
+#
 
 [depend]
-sessions
+annotations
+webapp
 
 [files]
-maven://com.hazelcast/hazelcast/3.8.2|lib/hazelcast/hazelcast-3.8.2.jar
-maven://com.hazelcast/hazelcast-client/3.8.2|lib/hazelcast/hazelcast-client-3.8.2.jar
+maven://com.hazelcast/hazelcast-all/3.8.2|lib/hazelcast/hazelcast-all-3.8.2.jar
+maven://com.hazelcast/hazelcast-jetty9-sessionmanager/1.0.2|lib/hazelcast/hazelcast-jetty9-sessionmanager-1.0.2.jar
+maven://org.eclipse.jetty/jetty-nosql/${jetty.version}|lib/hazelcast/jetty-nosql-${jetty.version}.jar
 
 [xml]
-etc/sessions/hazelcast/remote.xml
+etc/sessions/hazelcast/default.xml
 
 [lib]
-lib/jetty-hazelcast-${jetty.version}.jar
 lib/hazelcast/*.jar
 
 [license]
 Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
-    https://hazelcast.org/
+https://hazelcast.org/
 http://www.apache.org/licenses/LICENSE-2.0.html
 
-
 [ini-template]
-jetty.session.hazelcast.mapName=jetty-distributed-session-map
-jetty.session.hazelcast.hazelcastInstanceName=JETTY_DISTRIBUTED_SESSION_INSTANCE
-jetty.session.hazelcast.onlyClient=true
 #jetty.session.hazelcast.configurationLocation=
-jetty.session.gracePeriod.seconds=3600
-jetty.session.savePeriod.seconds=0
