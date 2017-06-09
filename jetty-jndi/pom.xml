@@ -21,6 +21,16 @@
           <onlyAnalyze>org.eclipse.jetty.jndi.*</onlyAnalyze>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+           <configuration>
+              <instructions>
+               <Import-Package>javax.mail.*;resolution:=optional,*</Import-Package>
+              </instructions>
+            </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
