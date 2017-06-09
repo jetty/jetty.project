@@ -129,6 +129,7 @@ public class AnnotatedEndpointConfigTest
         // Connect client
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         socket = new AnnotatedEndpointClient();
 
         session = container.connectToServer(socket,serverUri);

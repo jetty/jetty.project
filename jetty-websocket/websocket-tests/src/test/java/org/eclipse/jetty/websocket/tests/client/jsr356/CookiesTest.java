@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 public class CookiesTest
@@ -73,12 +72,6 @@ public class CookiesTest
         server.stop();
     }
     
-    @Before
-    public void resetClientContainer() throws Exception
-    {
-        JettyClientContainerProvider.stop();
-    }
-
     @Test
     public void testCookiesAreSentToServer() throws Exception
     {
@@ -111,6 +104,7 @@ public class CookiesTest
         });
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow it to stop
 
         ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
         builder.configurator(new ClientEndpointConfig.Configurator()
@@ -154,6 +148,7 @@ public class CookiesTest
         });
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow it to stop
 
         ClientEndpointConfig.Builder builder = ClientEndpointConfig.Builder.create();
         builder.configurator(new ClientEndpointConfig.Configurator()

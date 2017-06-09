@@ -8,6 +8,7 @@ server
 security
 jndi
 webapp
+transactions
 
 [lib]
 lib/jetty-plus-${jetty.version}.jar

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+  <id>config</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <dependencySets>
+    <dependencySet>
+      <scope>provided</scope>
+      <outputDirectory>lib/transactions</outputDirectory>
+      <includes>
+        <include>javax.transaction:javax.transaction-api</include>
+      </includes>
+    </dependencySet>
+  </dependencySets>
+  <fileSets>
+    <fileSet>
+      <directory>src/main/plus-config</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
+

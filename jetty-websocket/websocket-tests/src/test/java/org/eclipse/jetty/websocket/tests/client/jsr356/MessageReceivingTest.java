@@ -41,8 +41,10 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -102,10 +104,16 @@ public class MessageReceivingTest {
     }
 
     @Before
-    public void configureTest() {
+    public void initClient() {
         container = ContainerProvider.getWebSocketContainer();
     }
-
+    
+    @After
+    public void stopClient() throws Exception
+    {
+        ((LifeCycle)container).stop();
+    }
+    
     /**
      * Method tests receiving of text messages at once.
      *

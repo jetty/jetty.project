@@ -23,43 +23,115 @@ import java.lang.reflect.Method;
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 
 /**
  * Client {@link ContainerProvider} implementation.
  * <p>
+ * <p>
  * Created by a {@link java.util.ServiceLoader} call in the
  * {@link javax.websocket.ContainerProvider#getWebSocketContainer()} call.
+ * </p>
  */
 public class JettyClientContainerProvider extends ContainerProvider
 {
-    private static Object lock = new Object();
-    private static ClientContainer INSTANCE;
+    private static final Logger LOG = Log.getLogger(JettyClientContainerProvider.class);
     
-    public static ClientContainer getInstance()
+    private static boolean useSingleton = false;
+    private static WebSocketContainer INSTANCE;
+    private static boolean useServerContainer = false;
+    
+    private static Object lock = new Object();
+    
+    /**
+     * Change calls to {@link ContainerProvider#getWebSocketContainer()} to always
+     * return a singleton instance of the same {@link WebSocketContainer}
+     *
+     * @param flag true to use a singleton instance of {@link WebSocketContainer} for all
+     * calls to {@link ContainerProvider#getWebSocketContainer()}
+     */
+    @SuppressWarnings("unused")
+    public static void useSingleton(boolean flag)
     {
-        return INSTANCE;
+        JettyClientContainerProvider.useSingleton = flag;
     }
     
-    public static void stop() throws Exception
+    /**
+     * Test if {@link ContainerProvider#getWebSocketContainer()} will always
+     * return a singleton instance of the same {@link WebSocketContainer}
+     *
+     * @return true if using a singleton instance of {@link WebSocketContainer} for all
+     * calls to {@link ContainerProvider#getWebSocketContainer()}
+     */
+    @SuppressWarnings("unused")
+    public static boolean willUseSingleton()
     {
-        synchronized (lock)
+        return useSingleton;
+    }
+    
+    /**
+     * Add ability of calls to {@link ContainerProvider#getWebSocketContainer()} to
+     * find and return the {@link javax.websocket.server.ServerContainer} from the
+     * active {@code javax.servlet.ServletContext}.
+     * <p>
+     * <p>
+     * This will only work if the call to {@link ContainerProvider#getWebSocketContainer()}
+     * occurs within a thread being processed by the Servlet container.
+     * </p>
+     *
+     * @param flag true to to use return the {@link javax.websocket.server.ServerContainer}
+     * from the active {@code javax.servlet.ServletContext} for all calls to
+     * {@link ContainerProvider#getWebSocketContainer()} from within a Servlet thread.
+     */
+    @SuppressWarnings("unused")
+    public static void useServerContainer(boolean flag)
+    {
+        JettyClientContainerProvider.useServerContainer = flag;
+    }
+    
+    /**
+     * Test if {@link ContainerProvider#getWebSocketContainer()} has the ability to
+     * find and return the {@link javax.websocket.server.ServerContainer} from the
+     * active {@code javax.servlet.ServletContext}, before creating a new client based
+     * {@link WebSocketContainer}.
+     *
+     * @return true if {@link WebSocketContainer} returned from
+     * calls to {@link ContainerProvider#getWebSocketContainer()} could be the
+     * {@link javax.websocket.server.ServerContainer}
+     * from the active {@code javax.servlet.ServletContext}
+     */
+    @SuppressWarnings("unused")
+    public static boolean willUseServerContainer()
+    {
+        return useServerContainer;
+    }
+    
+    public Object getContextHandler()
+    {
+        try
         {
-            if (INSTANCE == null)
-            {
-                return;
-            }
+            // Equiv of: ContextHandler.Context context = ContextHandler.getCurrentContext()
+            Class<?> clazzContextHandler = Class.forName("org.eclipse.jetty.server.handler.ContextHandler");
+            Method methodGetContext = clazzContextHandler.getMethod("getCurrentContext");
+            Object objContext = methodGetContext.invoke(null);
+            if (objContext == null)
+                return null;
             
-            try
-            {
-                INSTANCE.stop();
-            }
-            finally
-            {
-                INSTANCE = null;
-            }
+            // Equiv of: ContextHandler handler = ContextHandler.getContextHandler(context);
+            Class<?> clazzServletContext = Class.forName("javax.servlet.ServletContext");
+            Method methodGetContextHandler = clazzContextHandler.getMethod("getContextHandler", clazzServletContext);
+            return methodGetContextHandler.invoke(null, objContext);
+        }
+        catch (Throwable ignore)
+        {
+            LOG.ignore(ignore);
+            return null;
         }
     }
     
@@ -72,22 +144,43 @@ public class JettyClientContainerProvider extends ContainerProvider
     {
         synchronized (lock)
         {
-            try
+            WebSocketContainer webSocketContainer = null;
+            Object contextHandler = getContextHandler();
+            
+            if (useServerContainer && contextHandler != null)
             {
-                Class<?> clazzServerContainer = Class.forName("org.eclipse.jetty.websocket.jsr356.server.ServerContainer");
-                Method method = clazzServerContainer.getMethod("getWebSocketContainer");
-                WebSocketContainer container = (WebSocketContainer) method.invoke(null);
-                if (container != null)
+                try
                 {
-                    return container;
+                    // Attempt to use the ServerContainer attribute.
+                    Method methodGetServletContext = contextHandler.getClass().getMethod("getServletContext");
+                    Object objServletContext = methodGetServletContext.invoke(contextHandler);
+                    if (objServletContext != null)
+                    {
+                        Method methodGetAttribute = objServletContext.getClass().getMethod("getAttribute", String.class);
+                        Object objServerContainer = methodGetAttribute.invoke(objServletContext, "javax.websocket.server.ServerContainer");
+                        if (objServerContainer != null && objServerContainer instanceof WebSocketContainer)
+                        {
+                            webSocketContainer = (WebSocketContainer) objServerContainer;
+                        }
+                    }
+                    
+                }
+                catch (Throwable ignore)
+                {
+                    LOG.ignore(ignore);
+                    // continue, without server container
                 }
             }
-            catch (Throwable ignore)
+            
+            if (useSingleton && INSTANCE != null)
             {
+                return INSTANCE;
             }
-    
-            if (INSTANCE == null)
+            
+            // Still no instance?
+            if (webSocketContainer == null)
             {
+                // TODO: use cached Executor, ByteBufferPool, and HttpClient here
                 SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
                 QueuedThreadPool threadPool= new QueuedThreadPool();
                 String name = "Jsr356Client@" + hashCode();
@@ -95,23 +188,42 @@ public class JettyClientContainerProvider extends ContainerProvider
                 threadPool.setDaemon(true);
                 containerScope.setExecutor(threadPool);
                 containerScope.addBean(threadPool);
-                INSTANCE = new ClientContainer(containerScope);
+                ClientContainer clientContainer = new ClientContainer(containerScope);
+                
+                if (contextHandler != null && contextHandler instanceof ContainerLifeCycle)
+                {
+                    // Add as bean to contextHandler
+                    // Allow startup to follow Jetty lifecycle
+                    ((ContainerLifeCycle) contextHandler).addBean(clientContainer);
+                }
+                else
+                {
+                    // Static Initialization
+                    // register JVM wide shutdown thread
+                    ShutdownThread.register(clientContainer);
+                }
+    
+                if (!clientContainer.isStarted())
+                {
+                    try
+                    {
+                        clientContainer.start();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException("Unable to start Client Container", e);
+                    }
+                }
+                
+                webSocketContainer = clientContainer;
             }
-        
-            if (!INSTANCE.isStarted())
+            
+            if (useSingleton)
             {
-                try
-                {
-                    // We need to start this container properly.
-                    INSTANCE.start();
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException("Unable to start Client Container", e);
-                }
+                INSTANCE = webSocketContainer;
             }
-        
-            return INSTANCE;
+            
+            return webSocketContainer;
         }
     }
 }

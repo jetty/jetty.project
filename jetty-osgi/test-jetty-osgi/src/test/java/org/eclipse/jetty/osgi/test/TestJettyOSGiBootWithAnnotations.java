@@ -111,6 +111,7 @@ public class TestJettyOSGiBootWithAnnotations
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<Option>();
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-container-initializer").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
         //test webapp bundle
@@ -129,16 +130,7 @@ public class TestJettyOSGiBootWithAnnotations
         TestOSGiUtil.debugBundles(bundleContext);
     }
 
-    // at the moment can't run httpservice with jsp at the same time.
-    // that is a regression in jetty-9
-    @Ignore
-    @Test
-    public void testHttpService() throws Exception
-    {
-        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", TestJettyOSGiBootCore.DEFAULT_HTTP_PORT);
-    }
 
- 
 
     @Test
     public void testIndex() throws Exception
