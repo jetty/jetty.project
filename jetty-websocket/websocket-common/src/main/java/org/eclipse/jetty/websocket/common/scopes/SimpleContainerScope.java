@@ -34,31 +34,52 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     private final ByteBufferPool bufferPool;
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy policy;
-    private Executor executor;
+    private final Executor executor;
     private SslContextFactory sslContextFactory;
 
     public SimpleContainerScope(WebSocketPolicy policy)
     {
-        this(policy,new MappedByteBufferPool(),new DecoratedObjectFactory());
+        this(policy, new MappedByteBufferPool(), new DecoratedObjectFactory());
         this.sslContextFactory = new SslContextFactory();
     }
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        this(policy,bufferPool,new DecoratedObjectFactory());
+        this(policy, bufferPool, new DecoratedObjectFactory());
     }
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
+        this(policy, bufferPool, (Executor) null, objectFactory);
+    }
+    
+    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, DecoratedObjectFactory objectFactory)
+    {
         this.policy = policy;
         this.bufferPool = bufferPool;
-        this.objectFactory = objectFactory;
-
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        String name = "WebSocketContainer@" + hashCode();
-        threadPool.setName(name);
-        threadPool.setDaemon(true);
-        this.executor = threadPool;
+        
+        if (objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
+        }
+        else
+        {
+            this.objectFactory = objectFactory;
+        }
+        
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = "WebSocketContainer@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            this.executor = threadPool;
+            addBean(this.executor);
+        }
+        else
+        {
+            this.executor = executor;
+        }
     }
 
     @Override

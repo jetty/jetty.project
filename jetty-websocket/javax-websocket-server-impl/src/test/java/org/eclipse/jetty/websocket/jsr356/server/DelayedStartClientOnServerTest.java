@@ -247,7 +247,7 @@ public class DelayedStartClientOnServerTest
             assertThat("Response", response, startsWith("Connected to ws://"));
             List<String> threadNames = getThreadNames(server);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("WebSocketContainer@")));
+            assertThat("Threads", threadNames, hasItem(containsString("Jsr356Client@")));
         }
         finally
         {
