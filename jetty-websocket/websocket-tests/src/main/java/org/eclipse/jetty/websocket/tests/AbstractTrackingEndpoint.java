@@ -41,6 +41,7 @@ public abstract class AbstractTrackingEndpoint<T>
     
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
+    public CountDownLatch errorLatch = new CountDownLatch(1);
     public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
     
@@ -88,6 +89,11 @@ public abstract class AbstractTrackingEndpoint<T>
     {
         assertTrue(prefix + " onOpen event", openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
+
+    public void awaitErrorEvent(String prefix) throws InterruptedException
+    {
+        assertTrue(prefix + " onError event", errorLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    }
     
     protected void onWSOpen(T session)
     {
@@ -124,5 +130,6 @@ public abstract class AbstractTrackingEndpoint<T>
             LOG.warn("onError should only happen once - Extra/Excess Cause", cause);
             fail("onError should only happen once!");
         }
+        this.errorLatch.countDown();
     }
 }
