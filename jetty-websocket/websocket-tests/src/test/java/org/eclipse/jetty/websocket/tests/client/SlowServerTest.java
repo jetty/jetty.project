@@ -77,7 +77,6 @@ public class SlowServerTest
     }
     
     @Test
-    @Ignore("Not working yet")
     public void testServerSlowToRead() throws Exception
     {
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());
@@ -125,7 +124,6 @@ public class SlowServerTest
     }
     
     @Test
-    @Ignore("Not working yet")
     public void testServerSlowToSend() throws Exception
     {
         TrackingEndpoint clientEndpoint = new TrackingEndpoint(testname.getMethodName());

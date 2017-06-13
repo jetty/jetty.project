@@ -61,7 +61,6 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class DelayedStartClientOnServerTest
@@ -234,7 +233,6 @@ public class DelayedStartClientOnServerTest
     }
     
     @Test
-    @Ignore("Not working yet")
     public void testHttpClientThreads_AfterClientConnectTo() throws Exception
     {
         Server server = new Server(0);
