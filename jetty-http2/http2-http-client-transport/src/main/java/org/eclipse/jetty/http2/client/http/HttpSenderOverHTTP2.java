@@ -51,7 +51,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
     {
         Request request = exchange.getRequest();
         String path = relativize(request.getPath());
-        HttpURI uri = new HttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
+        HttpURI uri = HttpURI.createHttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
         HeadersFrame headersFrame = new HeadersFrame(metaData, null, !content.hasContent());
         HttpChannelOverHTTP2 channel = getHttpChannel();
