@@ -34,31 +34,51 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     private final ByteBufferPool bufferPool;
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy containerPolicy;
-    private Executor executor;
+    private final Executor executor;
     private SslContextFactory sslContextFactory;
 
-    public SimpleContainerScope(WebSocketPolicy containerPolicy)
+    public SimpleContainerScope(WebSocketPolicy policy)
     {
-        this(containerPolicy, new MappedByteBufferPool(), new DecoratedObjectFactory());
+        this(policy, new MappedByteBufferPool(), new DecoratedObjectFactory());
         this.sslContextFactory = new SslContextFactory();
     }
 
-    public SimpleContainerScope(WebSocketPolicy containerPolicy, ByteBufferPool bufferPool)
+    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        this(containerPolicy, bufferPool, new DecoratedObjectFactory());
+        this(policy, bufferPool, new DecoratedObjectFactory());
     }
 
-    public SimpleContainerScope(WebSocketPolicy containerPolicy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
+    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        this.containerPolicy = containerPolicy;
+        this(policy, bufferPool, null, objectFactory);
+    }
+
+    public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, DecoratedObjectFactory objectFactory)
+    {
+        this.containerPolicy = policy;
         this.bufferPool = bufferPool;
-        this.objectFactory = objectFactory;
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        String name = "WebSocketContainer@" + hashCode();
-        threadPool.setName(name);
-        threadPool.setDaemon(true);
-        this.executor = threadPool;
-        addBean(executor);
+        if (objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
+        }
+        else
+        {
+            this.objectFactory = objectFactory;
+        }
+
+        if (executor == null)
+        {
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            String name = "WebSocketContainer@" + hashCode();
+            threadPool.setName(name);
+            threadPool.setDaemon(true);
+            this.executor = threadPool;
+            addBean(this.executor);
+        }
+        else
+        {
+            this.executor = executor;
+        }
     }
 
     @Override
@@ -72,12 +92,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         return this.executor;
     }
-    
-    public void setExecutor(Executor executor)
-    {
-        this.executor = executor;
-    }
-    
+
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {

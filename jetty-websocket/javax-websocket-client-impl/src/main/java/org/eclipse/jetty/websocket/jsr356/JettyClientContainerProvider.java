@@ -19,10 +19,13 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.Executor;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,7 +49,9 @@ public class JettyClientContainerProvider extends ContainerProvider
     private static boolean useSingleton = false;
     private static WebSocketContainer INSTANCE;
     private static boolean useServerContainer = false;
-    
+    private static Executor commonExecutor;
+    private static ByteBufferPool commonBufferPool;
+
     private static Object lock = new Object();
     
     /**
@@ -180,14 +185,21 @@ public class JettyClientContainerProvider extends ContainerProvider
             // Still no instance?
             if (webSocketContainer == null)
             {
-                // TODO: use cached Executor, ByteBufferPool, and HttpClient here
-                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-                QueuedThreadPool threadPool= new QueuedThreadPool();
-                String name = "Jsr356Client@" + hashCode();
-                threadPool.setName(name);
-                threadPool.setDaemon(true);
-                containerScope.setExecutor(threadPool);
-                containerScope.addBean(threadPool);
+                if (commonExecutor == null)
+                {
+                    QueuedThreadPool threadPool = new QueuedThreadPool();
+                    String name = "Jsr356Client@" + hashCode();
+                    threadPool.setName(name);
+                    threadPool.setDaemon(true);
+                    commonExecutor = threadPool;
+                }
+
+                if (commonBufferPool == null)
+                {
+                    commonBufferPool = new MappedByteBufferPool();
+                }
+
+                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy(), commonBufferPool, commonExecutor, null);
                 ClientContainer clientContainer = new ClientContainer(containerScope);
                 
                 if (contextHandler != null && contextHandler instanceof ContainerLifeCycle)
@@ -202,7 +214,7 @@ public class JettyClientContainerProvider extends ContainerProvider
                     // register JVM wide shutdown thread
                     ShutdownThread.register(clientContainer);
                 }
-    
+
                 if (!clientContainer.isStarted())
                 {
                     try

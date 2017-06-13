@@ -81,6 +81,7 @@
     <module>jetty-infinispan</module>
     <module>jetty-gcloud</module>
     <module>jetty-memcached</module>
+    <module>jetty-hazelcast</module>
     <module>jetty-unixsocket</module>
     <module>tests</module>
     <module>examples</module>
