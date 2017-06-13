@@ -12,7 +12,7 @@ maven://com.hazelcast/hazelcast-jetty9-sessionmanager/1.0.2|lib/hazelcast/hazelc
 maven://org.eclipse.jetty/jetty-nosql/${jetty.version}|lib/hazelcast/jetty-nosql-${jetty.version}.jar
 
 [xml]
-etc/sessions/hazelcast/default.xml
+etc/sessions/hazelcast/remote.xml
 
 [lib]
 lib/hazelcast/*.jar
