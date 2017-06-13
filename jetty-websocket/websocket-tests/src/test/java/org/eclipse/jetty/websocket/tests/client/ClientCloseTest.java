@@ -51,12 +51,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.UntrustedWSConnection;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
@@ -166,6 +166,20 @@ public class ClientCloseTest
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
+        server.registerWebSocket("/noclose", (req, resp) -> new WebSocketAdapter()
+        {
+            @Override
+            public void onWebSocketClose(int statusCode, String reason)
+            {
+                try
+                {
+                    getSession().disconnect();
+                }
+                catch (IOException ignore)
+                {
+                }
+            }
+        });
         server.start();
     }
     
@@ -228,47 +242,6 @@ public class ClientCloseTest
         
         // Verify timeout error
         clientSocket.assertErrorEvent("Client", instanceOf(SocketTimeoutException.class), anything());
-    }
-    
-    @Test
-    @Ignore("Not working yet")
-    public void testServerNoCloseHandshake() throws Exception
-    {
-        // Set client timeout
-        final int timeout = 1000;
-        client.setMaxIdleTimeout(timeout);
-        
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
-        // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
-        UntrustedWSConnection serverConn = serverSession.getUntrustedConnection();
-        
-        // client confirms connection via echo
-        confirmConnection(clientSocket, clientConnectFuture, serverSession);
-        
-        // client sends close frame
-        final String origCloseReason = "Normal Close";
-        clientSocket.close(StatusCode.NORMAL, origCloseReason);
-        
-        // server receives close frame
-        serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
-        serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
-        
-        // client should not have received close message (yet)
-        clientSocket.assertNotClosed("Client");
-        
-        // server never sends close frame handshake
-        // server sits idle
-        
-        // client idle timeout triggers close event on client ws-endpoint
-        clientSocket.assertErrorEvent("Client", instanceOf(SocketTimeoutException.class), containsString("Timeout on Read"));
     }
     
     @Test(timeout = 5000L)

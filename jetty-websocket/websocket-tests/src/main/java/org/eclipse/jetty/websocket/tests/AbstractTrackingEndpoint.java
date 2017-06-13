@@ -72,7 +72,7 @@ public abstract class AbstractTrackingEndpoint<T>
     
     public void assertNotClosed(String prefix)
     {
-        assertTrue(prefix + " close event should not have occurred", closeLatch.getCount() > 0);
+        assertTrue(prefix + " close event should not have occurred: got " + closeInfo.get(), closeLatch.getCount() > 0);
     }
     
     public void assertNotOpened(String prefix)
