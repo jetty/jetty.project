@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for HazelcastSessionDataStore using               -->
+  <!-- an embedded Hazelcast Instance                                        -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+    <Arg>
+      <New id="sessionDataStoreFactory" class="org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory">
+        <Set name="mapName"><Property name="jetty.session.hazelcast.mapName" default="jetty-distributed-session-map" /></Set>
+        <Set name="hazelcastInstanceName"><Property name="jetty.session.hazelcast.hazelcastInstanceName" default="JETTY_DISTRIBUTED_SESSION_INSTANCE" /></Set>
+        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
+        <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure> 

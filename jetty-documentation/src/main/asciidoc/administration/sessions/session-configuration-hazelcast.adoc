@@ -1,0 +1,184 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-sessions-hazelcast]]
+
+=== Clustered Session Management: Hazelcast
+
+==== Enabling Hazelcast Sessions
+
+When using the Jetty distribution, you will first need to enable the `session-store-hazelcast-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --create-startd
+MKDIR : ${jetty.base}/start.d
+INFO  : Base directory was modified
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --add-to-start=session-store-hazelcast-remote
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: session-store-hazelcast-remote
+  + Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
+  + https://hazelcast.org/
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-hazelcast-remote initialized in ${jetty.base}/start.d/session-store-hazelcast-remote.ini
+MKDIR : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2
+DOWNLD: http://central.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
+MKDIR : ${jetty.base}/lib/hazelcast
+COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
+COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar
+INFO  : Base directory was modified
+----
+
+Doing this enables the remote Hazelcast Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+Because Hazelcast is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-hazelcast-remote` module as well as the `sessions` and `server` modules, which are required for Hazelcast session management to operate.
+It also downloaded the needed Hazelcast-specific jar files and created a directory named `${jetty.base}/lib/hazelcast/` to house them.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+==== Configuring Hazelcast Remote Properties
+
+Opening the `start.d/session-store-hazelcast-remote.ini` will show a list of all the configurable options for the Hazelcast module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-hazelcast-remote
+# Enables session data store in a remote Hazelcast Map
+# ---------------------------------------
+--module=session-store-hazelcast-remote
+
+#jetty.session.hazelcast.mapName=jetty_sessions
+#jetty.session.hazelcast.onlyClient=true
+#jetty.session.hazelcast.configurationLocation=
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
+----
+
+jetty.session.hazelcast.mapName::
+Name of the Map in Hazelcast where sessions will be stored.
+jetty.session.hazelcast.onlyClient::
+Hazelcast instance will be configured in client mode
+jetty.session.hazelcast.configurationLocation::
+Path to an an Hazelcast xml configuration file
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
+
+==== Configuring Embedded Hazelcast Clustering
+
+During testing, it can be helpful to run an in-process instance of Hazelcast.
+To enable this you will first need to enable the `session-store-hazelcast-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --create-startd
+MKDIR : ${jetty.base}/start.d
+INFO  : Base directory was modified
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --add-to-start=session-store-hazelcast-embedded
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: session-store-hazelcast-embedded
+  + Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
+  + https://hazelcast.org/
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-hazelcast-embedded initialized in ${jetty.base}/start.d/session-store-hazelcast-embedded.ini
+MKDIR : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2
+DOWNLD: http://central.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
+MKDIR : ${jetty.base}/lib/hazelcast
+COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
+COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar
+----
+
+Doing this enables the embedded Hazelcast Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+Because Hazelcast is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-hazelcast-embedded` module as well as the `sessions` and `server` modules, which are required for Hazelcast session management to operate.
+It also downloaded the needed Hazelcast-specific jar files and created a directory named `${jetty.base}/lib/hazelcast/` to house them.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+
+==== Configuring Hazelcast Embedded Properties
+
+Opening the `start.d/start.d/session-store-hazelcast-embedded.ini` will show a list of all the configurable options for the Hazelcast module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-hazelcast-embedded
+# Enables session data store in an embedded Hazelcast Map
+# ---------------------------------------
+--module=session-store-hazelcast-embedded
+
+#jetty.session.hazelcast.mapName=jetty_sessions
+#jetty.session.hazelcast.configurationLocation=
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
+----
+jetty.session.hazelcast.mapName::
+Name of the Map in Hazelcast where sessions will be stored.
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.hazelcast.configurationLocation::
+Path to an an Hazelcast xml configuration file
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
