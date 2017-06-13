@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -72,7 +73,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
      */
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
-    
+
     private final Logger LOG;
     private final ByteBufferPool bufferPool;
     private final Generator generator;
@@ -86,18 +87,18 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final List<LogicalConnection.Listener> listeners = new CopyOnWriteArrayList<>();
     private List<ExtensionConfig> extensions;
     private ByteBuffer networkBuffer;
-    
+
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {
         super(endp,executor);
-    
+
         Objects.requireNonNull(endp, "EndPoint");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(policy, "WebSocketPolicy");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
-    
+
         LOG = Log.getLogger(AbstractWebSocketConnection.class.getName() + "." + policy.getBehavior());
-        
+
         this.id = String.format("%s:%d->%s:%d",
                 endp.getLocalAddress().getAddress().getHostAddress(),
                 endp.getLocalAddress().getPort(),
@@ -106,7 +107,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.extensionStack = extensionStack;
-    
+
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy,bufferPool,this);
         this.extensions = new ArrayList<>();
@@ -114,12 +115,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.flusher = new Flusher(policy.getOutputBufferSize(),generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
-        
+
         this.extensionStack.setPolicy(this.policy);
         this.extensionStack.configure(this.parser);
         this.extensionStack.configure(this.generator);
     }
-    
+
     @Override
     public Executor getExecutor()
     {
@@ -131,14 +132,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnect()");
-        
+
         // close FrameFlusher, we cannot write anymore at this point.
         flusher.close();
-        
+
         closed.set(true);
         close();
     }
-    
+
     @Override
     public ByteBufferPool getBufferPool()
     {
@@ -184,12 +185,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         return parser;
     }
-    
+
     public WebSocketPolicy getPolicy()
     {
         return policy;
     }
-    
+
     @Override
     public InetSocketAddress getRemoteAddress()
     {
@@ -214,21 +215,31 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onClose()");
-        
+
         closed.set(true);
-        
+
         flusher.close();
         super.onClose();
+    }
+
+    @Override
+    public boolean onIdleExpired()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onIdleExpired()");
+
+        notifyError(new WebSocketTimeoutException("Connection Idle Timeout"));
+        return true;
     }
 
     @Override
     public boolean onFrame(Frame frame)
     {
         AtomicBoolean result = new AtomicBoolean(false);
-        
+
         if(LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
-        
+
         extensionStack.incomingFrame(frame, new FrameCallback()
         {
             @Override
@@ -236,7 +247,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             {
                 if(LOG.isDebugEnabled())
                     LOG.debug("onFrame({}).succeed()", frame);
-                
+
                 parser.release(frame);
                 if(!result.compareAndSet(false,true))
                 {
@@ -244,28 +255,28 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                     fillAndParse();
                 }
             }
-            
+
             @Override
             public void fail(Throwable cause)
             {
                 if(LOG.isDebugEnabled())
                     LOG.debug("onFrame("+ frame + ").fail()", cause);
                 parser.release(frame);
-                
+
                 // notify session & endpoint
                 notifyError(cause);
             }
         });
-        
+
         if(result.compareAndSet(false, true))
         {
             // callback hasn't been notified yet
             return false;
         }
-        
+
         return true;
     }
-    
+
     private ByteBuffer getNetworkBuffer()
     {
         synchronized (this)
@@ -277,7 +288,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return networkBuffer;
         }
     }
-    
+
     private void releaseNetworkBuffer(ByteBuffer buffer)
     {
         synchronized (this)
@@ -287,14 +298,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             networkBuffer = null;
         }
     }
-    
+
     @Override
     public void onFillable()
     {
         getNetworkBuffer();
         fillAndParse();
     }
-    
+
     private void fillAndParse()
     {
         try
@@ -305,25 +316,25 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     return;
                 }
-                
+
                 ByteBuffer nBuffer = getNetworkBuffer();
-    
+
                 if (!parser.parse(nBuffer)) return;
-                
+
                 // Shouldn't reach this point if buffer has un-parsed bytes
                 assert(!nBuffer.hasRemaining());
-    
+
                 int filled = getEndPoint().fill(nBuffer);
-                
+
                 if(LOG.isDebugEnabled())
                     LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
-    
+
                 if (filled < 0)
                 {
                     releaseNetworkBuffer(nBuffer);
                     return;
                 }
-    
+
                 if (filled == 0)
                 {
                     releaseNetworkBuffer(nBuffer);
@@ -337,8 +348,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             notifyError(t);
         }
     }
-    
-    
+
+
     /**
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
@@ -351,7 +362,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG.debug("set Initial Buffer - {}",BufferUtil.toDetailString(prefilled));
         }
-    
+
         if ((prefilled != null) && (prefilled.hasRemaining()))
         {
             networkBuffer = bufferPool.acquire(prefilled.remaining(), true);
@@ -367,7 +378,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG.warn("Unhandled Connection Error", cause);
         }
-    
+
         for (LogicalConnection.Listener listener : listeners)
         {
             try
@@ -381,7 +392,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             }
         }
     }
-    
+
     /**
      * Physical connection Open.
      */
@@ -416,7 +427,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         flusher.enqueue(frame,callback,batchMode);
     }
-    
+
     @Override
     public void resume()
     {
@@ -425,19 +436,19 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             fillAndParse();
         }
     }
-    
+
     public boolean addListener(LogicalConnection.Listener listener)
     {
         super.addListener(listener);
         return this.listeners.add(listener);
     }
-    
+
     public boolean removeListener(LogicalConnection.Listener listener)
     {
         super.removeListener(listener);
         return this.listeners.remove(listener);
     }
-    
+
     /**
      * Get the list of extensions in use.
      * <p>
@@ -469,7 +480,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             getEndPoint().setIdleTimeout(ms);
         }
     }
-    
+
     @Override
     public SuspendToken suspend()
     {
@@ -499,7 +510,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 generator,
                 parser);
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -549,7 +560,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         {
             LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(prefilled));
         }
-    
+
         setInitialBuffer(prefilled);
     }
 }

@@ -59,6 +59,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -696,6 +697,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             }
             
             close(ce.getStatusCode(), ce.getMessage(), callback);
+        }
+        else if (cause instanceof WebSocketTimeoutException)
+        {
+            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else
         {
