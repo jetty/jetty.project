@@ -590,7 +590,6 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    @Ignore("moving to branch to work out test issue on CI")
     public void testClient_ProtocolViolation_Received() throws Exception
     {
         // Set client timeout
