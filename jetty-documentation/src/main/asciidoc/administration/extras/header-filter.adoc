@@ -1,0 +1,115 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[header-filter]]
+=== Header Filter
+
+[[header-filter-metadata]]
+==== Info
+
+* Classname: `org.eclipse.jetty.servlets.HeaderFilter`
+* Maven Artifact: org.eclipse.jetty:jetty-servlets
+* Javadoc: {JDURL}/org/eclipse/jetty/servlets/HeaderFilter.html
+* Xref: {JXURL}/org/eclipse/jetty/servlets/HeaderFilter.html
+
+[[header-filter-usage]]
+==== Usage
+
+The header filter sets or adds headers to each response based on an optionally included/excluded list of path specs, mime types, and/or HTTP methods. 
+
+===== Required JARs
+
+To use the Header Filter, these JAR files must be available in WEB-INF/lib:
+
+* $JETTY_HOME/lib/jetty-http.jar
+* $JETTY_HOME/lib/jetty-servlets.jar
+* $JETTY_HOME/lib/jetty-util.jar
+
+===== Sample Configuration
+
+Place the configuration in a webapp's `web.xml` or `jetty-web.xml`.
+This filter will perform the following actions on each response:
+
+* Set the X-Frame-Options header to DENY.
+* Add a Cache-Control header containing no-cache, no-store, must-revalidate
+* Set the Expires header to approximately one year in the future.
+* Add a Date header with the current system time.
+
+____
+[NOTE]
+Each action must be separated by a comma.
+____
+
+[source, xml, subs="{sub-order}"]
+----
+<filter>
+   <filter-name>HeaderFilter</filter-name>
+   <filter-class>org.eclipse.jetty.servlets.HeaderFilter</filter-class>
+   <init-param>
+     <param-name>headerConfig</param-name>
+     <param-value>
+      set X-Frame-Options: DENY,
+      "add Cache-Control: no-cache, no-store, must-revalidate",
+      setDate Expires: 31540000000,
+      addDate Date: 0
+     </param-value>
+   </init-param>
+ </filter>
+----
+
+[[header-filter-init]]
+===== Configuring Header Filter Parameters
+
+The following `init` parameters control the behavior of the filter:
+
+includedPaths::
+Optional. CSV of included path specs.
+
+excludedPaths::
+Optional. CSV of excluded path specs.
+
+includedMimeTypes::
+Optional. CSV of included mime types.
+
+excludedMimeTypes::
+Optional. CSV of excluded mime types.
+
+includedHttpMethods::
+Optional. CSV of included http methods.
+
+excludedHttpMethods::
+Optional. CSV of excluded http methods.
+
+headerConfig::
+CSV of actions to perform on headers. The syntax for each action is `action headerName: headerValue`.
+
+Supported header actions:
+
+* `set` - causes set `setHeader` to be called on the response
+* `add` - causes set `addHeader` to be called on the response
+* `setDate` - causes `setDateHeader` to be called on the response.
+* `addDate` - causes `addDateHeader` to be called on the response.
+
+If `setDate` or `addDate` is used, `headerValue` should be the number of milliseconds to add to the current system time before writing the header value.
+
+If a property is both included and excluded by the filter configuration, then it will be considered excluded.
+
+Path spec rules:
+
+* If the spec starts with `^`, the spec is assumed to be a regex based path spec and will match with normal Java regex rules.
+* If the spec starts with `/`, the spec is assumed to be a Servlet url-pattern rules path spec for either an exact match or prefix based match.
+* If the spec starts with `*.`, the spec is assumed to be a Servlet url-pattern rules path spec for a suffix based match.
+* All other syntaxes are unsupported.
