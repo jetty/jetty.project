@@ -590,7 +590,6 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    @Ignore("Needs work")
     public void testClient_ProtocolViolation_Received() throws Exception
     {
         // Set client timeout
@@ -642,9 +641,9 @@ public class ClientCloseHandshakeTest
         // server disconnects
         serverSession.disconnect();
     
-        // client close event on ws-endpoint
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.PROTOCOL, allOf(containsString("Invalid control frame"), containsString("length")));
+        // client error event on ws-endpoint
+        clientSocket.awaitErrorEvent("Client");
+        clientSocket.assertErrorEvent("Client", instanceOf(ProtocolException.class), containsString("Invalid control frame"));
     }
     
     /**
