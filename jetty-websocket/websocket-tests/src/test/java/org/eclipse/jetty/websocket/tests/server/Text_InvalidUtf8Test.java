@@ -27,10 +27,10 @@ import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,7 +45,7 @@ public class Text_InvalidUtf8Test extends AbstractLocalServerCase
     @Parameters(name = "{0} - {1}")
     public static Collection<String[]> data()
     {
-        // The various Good UTF8 sequences as a String (hex form)
+        // The various Known Bad UTF8 sequences as a String (hex form)
         List<String[]> data = new ArrayList<>();
 
         // @formatter:off
@@ -159,7 +159,7 @@ public class Text_InvalidUtf8Test extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
     
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
