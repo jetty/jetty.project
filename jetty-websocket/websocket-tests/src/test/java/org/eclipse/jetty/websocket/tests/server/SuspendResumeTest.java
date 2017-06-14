@@ -115,7 +115,7 @@ public class SuspendResumeTest
     
     @Test
     @Ignore("Not working yet")
-    public void testSuspendResume() throws Exception
+    public void testSuspendResume_Bulk() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("echo1"));
@@ -151,6 +151,27 @@ public class SuspendResumeTest
         try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendSegmented(send, 2);
+            session.expect(expect);
+        }
+    }
+
+    @Test
+    @Ignore("Not working yet")
+    public void testSuspendResume_AsFrames() throws Exception
+    {
+        List<WebSocketFrame> send = new ArrayList<>();
+        send.add(new TextFrame().setPayload("echo1"));
+        send.add(new TextFrame().setPayload("echo2"));
+        send.add(new CloseFrame());
+
+        List<WebSocketFrame> expect = new ArrayList<>();
+        expect.add(new TextFrame().setPayload("echo1"));
+        expect.add(new TextFrame().setPayload("echo2"));
+        expect.add(new CloseFrame());
+
+        try (LocalFuzzer session = server.newLocalFuzzer())
+        {
+            session.sendFrames(send);
             session.expect(expect);
         }
     }
