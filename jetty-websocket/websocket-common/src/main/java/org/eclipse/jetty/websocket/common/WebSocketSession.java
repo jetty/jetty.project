@@ -913,10 +913,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         this.upgradeResponse = response;
     }
-    
+
     @Override
     public SuspendToken suspend()
     {
+        // TODO: limit ability to suspend to only when websocket calls application ?
+
         return connection.suspend();
     }
     
