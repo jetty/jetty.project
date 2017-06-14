@@ -53,7 +53,7 @@ node {
       withEnv(mvnEnv) {
         timeout(time: 90, unit: 'MINUTES') {
           // Run test phase / ignore test failures
-          sh "mvn -B install -Dmaven.test.failure.ignore=true"
+          sh "mvn -B install -Dmaven.test.failure.ignore=true -Dtest=ClientCloseHandshakeTest"
           // Report failures in the jenkins UI
           step([$class: 'JUnitResultArchiver', 
               testResults: '**/target/surefire-reports/TEST-*.xml'])
