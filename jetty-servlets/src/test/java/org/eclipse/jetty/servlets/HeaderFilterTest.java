@@ -131,6 +131,7 @@ public class HeaderFilterTest
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             resp.setStatus(HttpStatus.NO_CONTENT_204);
+            resp.flushBuffer();
         }
 
     }

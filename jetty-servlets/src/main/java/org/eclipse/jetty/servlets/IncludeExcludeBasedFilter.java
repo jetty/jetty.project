@@ -18,12 +18,19 @@
 
 package org.eclipse.jetty.servlets;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
@@ -37,12 +44,9 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Include Exclude Based Filter
  * <p>
- * This is an abstract filter which helps with filtering based on include/exclude of paths, mime types, and/or http methods.
+ * This is an abstract filter which helps with filtering based on include/exclude of paths, mime types, and/or http methods. Subclasses must implement
+ * {@link #applyFilter(HttpServletRequest, HttpServletResponse)}.
  * <p>
- * Use the {@link #shouldFilter(HttpServletRequest, HttpServletResponse)} method to determine if a request/response should be filtered. If mime types are used,
- * it should be called after {@link javax.servlet.FilterChain#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse)} since the mime type may not
- * be written until then.
- *
  * Supported init params:
  * <ul>
  * <li><code>includedPaths</code> - CSV of path specs to include</li>
@@ -110,8 +114,70 @@ public abstract class IncludeExcludeBasedFilter implements Filter
         }
     }
 
+    @Override
+    public final void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    {
+        HttpServletRequest http_request = (HttpServletRequest)request;
+        HttpServletResponse http_response = (HttpServletResponse)response;
+        // the mime type may not be available before the filter chain is invoked, so applying the filter may result in incorrect mime type logic if done
+        // before chain.doFilter
+        // the response may have been already committed after the filter chain is invoked, so applying the filter may not do anything if done after
+        // chain.doFilter
+        // thus we wrap the response to apply the filter immediately before it is committed
+        chain.doFilter(request,new HttpServletResponseWrapper(http_response)
+        {
+            @Override
+            public PrintWriter getWriter() throws IOException
+            {
+                return new PrintWriter(super.getWriter())
+                {
+                    @Override
+                    public void flush()
+                    {
+                        applyFilterConditionally(http_request,http_response);
+                        super.flush();
+                    }
+                };
+            }
+
+            @Override
+            public void flushBuffer() throws IOException
+            {
+                applyFilterConditionally(http_request,http_response);
+                super.flushBuffer();
+            }
+        });
+
+        if (!response.isCommitted())
+        {
+            applyFilterConditionally(http_request,http_response);
+        }
+    }
+
+    private void applyFilterConditionally(HttpServletRequest http_request, HttpServletResponse http_response)
+    {
+        if (shouldFilter(http_request,http_response))
+        {
+            applyFilter(http_request,http_response);
+        }
+    }
+
+    protected abstract void applyFilter(HttpServletRequest http_request, HttpServletResponse http_response);
+
+    // subclasses can override this if additional conditions should be met before applying the filter
+    protected boolean optionalAdditionalShouldFilter(HttpServletRequest http_request, HttpServletResponse http_response)
+    {
+        return true;
+    }
+
     protected boolean shouldFilter(HttpServletRequest http_request, HttpServletResponse http_response)
     {
+        if (!optionalAdditionalShouldFilter(http_request,http_response))
+        {
+            LOG.debug("should not apply filter because optional additional test returned false");
+            return false;
+        }
+
         String http_method = http_request.getMethod();
         LOG.debug("HTTP method is: {}",http_method);
         if (!_httpMethods.test(http_method))

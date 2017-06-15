@@ -18,15 +18,11 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -78,18 +74,8 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void applyFilter(HttpServletRequest http_request, HttpServletResponse http_response)
     {
-        chain.doFilter(request,response);
-
-        HttpServletRequest http_request = (HttpServletRequest)request;
-        HttpServletResponse http_response = (HttpServletResponse)response;
-
-        if (!super.shouldFilter(http_request,http_response))
-        {
-            return;
-        }
-
         for (ConfiguredHeader header : _configuredHeaders)
         {
             if (header.isDate())
