@@ -22,10 +22,7 @@ import java.io.IOException;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
-import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -315,20 +312,27 @@ public class IncludeExcludeBasedFilterTest
         Assert.assertFalse(response.contains("X-Custom-Value","1"));
     }
 
+    @Test
+    public void testIncludeExcludeFilterOnCommittedResponse() throws Exception
+    {
+        FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host","localhost");
+        request.setURI("/context/test/commit");
+
+        HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
+        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+    }
+
     public static class MockIncludeExcludeFilter extends IncludeExcludeBasedFilter
     {
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        protected void applyFilter(HttpServletRequest http_request, HttpServletResponse http_response)
         {
-            chain.doFilter(request,response);
-            HttpServletRequest http_request = (HttpServletRequest)request;
-            HttpServletResponse http_response = (HttpServletResponse)response;
-
-            if (!super.shouldFilter(http_request,http_response))
-            {
-                return;
-            }
-
             http_response.setHeader("X-Custom-Value","1");
         }
     }
@@ -338,6 +342,7 @@ public class IncludeExcludeBasedFilterTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
+            resp.setStatus(HttpStatus.NO_CONTENT_204);
             if (req.getPathInfo().equals("/json"))
             {
                 resp.setContentType("application/json");
@@ -346,8 +351,10 @@ public class IncludeExcludeBasedFilterTest
             {
                 resp.setContentType("application/json; charset=utf-8");
             }
-            resp.setStatus(HttpStatus.NO_CONTENT_204);
+            else if (req.getPathInfo().equals("/commit"))
+            {
+                resp.flushBuffer();
+            }
         }
-
     }
 }
