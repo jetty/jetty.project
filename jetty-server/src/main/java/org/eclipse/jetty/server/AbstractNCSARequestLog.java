@@ -19,12 +19,18 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Locale;
 
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -41,6 +47,8 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(AbstractNCSARequestLog.class);
+    public static final String BASIC_AUTHENTICATION = "Basic";
+    public static final String AUTHORIZATION_HEADER = "Authorization";
 
     private static ThreadLocal<StringBuilder> _buffers = new ThreadLocal<StringBuilder>()
     {
@@ -127,8 +135,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
             buf.append(addr);
             buf.append(" - ");
-            Authentication authentication = request.getAuthentication();
-            append(buf,(authentication instanceof Authentication.User)?((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName():null);
+            append(buf, extractUser(request));
 
             buf.append(" [");
             if (_logDateCache != null)
@@ -489,4 +496,58 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     {
         return _logTimeZone;
     }
+    
+
+    private String extractUser(Request request)
+    {
+        Authentication authentication = request.getAuthentication();
+        if (authentication instanceof Authentication.User)
+        {
+            return ((Authentication.User) authentication).getUserIdentity().getUserPrincipal().getName();
+        }
+
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        if (authorization == null)
+        {
+            return null;
+        }
+
+        int separator = authorization.indexOf(' ');
+        if (separator < 0)
+        {
+            LOG.debug("No separator in th the authorization http header field was found.");
+            return null;
+        }
+
+        String type = authorization.substring(0, separator);
+        String remaining = authorization.substring(separator + 1);
+        switch (type)
+        {
+            case BASIC_AUTHENTICATION:
+                return extractUsingBasicAuthentication(remaining);
+            default:
+                LOG.debug("Not supported type " + type);
+                return null;
+        }
+    }
+
+    private String extractUsingBasicAuthentication(String remaining) {
+        Base64.Decoder decoder = Base64.getDecoder();
+        String usernamePassword = new String(decoder.decode(remaining), StandardCharsets.UTF_8);
+
+        if (usernamePassword==null || usernamePassword.isEmpty()) {
+            LOG.debug("No username password was specified or it was empty");
+            return null;
+        }
+
+        String[] tokens = usernamePassword.split(":");
+        if (tokens.length!=2) {
+            LOG.debug("Expected only two tokens in in the authorization field but it was "
+                    + String.valueOf(tokens.length));
+            return null;
+        }
+
+        return tokens[0];
+    }
+
 }
