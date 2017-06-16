@@ -18,23 +18,28 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.StringUtils;
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  *  This goal is used in-situ on a Maven project without first requiring that the project 
@@ -154,18 +159,20 @@ public class JettyRunMojo extends AbstractJettyMojo
      * List of deps that are wars
      */
     protected List<Artifact> warArtifacts;
-    
-    
-    
-    
-    
-    
+
+    @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
+    private List<MavenProject> reactorProjects;
+
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
      */
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
+        if ( !"war".equals( project.getPackaging() ) || skip )
+        {
+            return;
+        }
         warPluginInfo = new WarPluginInfo(project);
         super.execute();
     }
@@ -273,7 +280,8 @@ public class JettyRunMojo extends AbstractJettyMojo
            webApp.setClasses (classesDirectory);
        if (useTestScope && (testClassesDirectory != null))
            webApp.setTestClasses (testClassesDirectory);
-       
+
+       webApp.getClassPathFiles().addAll( getDependencyProjects() );
        webApp.setWebInfLib (getDependencyFiles());
 
        //get copy of a list of war artifacts
@@ -556,15 +564,19 @@ public class JettyRunMojo extends AbstractJettyMojo
     /**
      * @return
      */
-    private List<File> getDependencyFiles ()
+    private List<File> getDependencyFiles()
     {
         List<File> dependencyFiles = new ArrayList<File>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
-            Artifact artifact = (Artifact) iter.next();
+            Artifact artifact = iter.next();
             
             // Include runtime and compile time libraries, and possibly test libs too
             if(artifact.getType().equals("war"))
+            {
+                continue;
+            }
+            if (getProjectReferences( artifact, project )!=null)
             {
                 continue;
             }
@@ -581,6 +593,57 @@ public class JettyRunMojo extends AbstractJettyMojo
               
         return dependencyFiles; 
     }
+
+    private List<File> getDependencyProjects()
+    {
+        List<File> dependencyFiles = new ArrayList<File>();
+        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+        {
+            Artifact artifact = iter.next();
+
+            // Include runtime and compile time libraries, and possibly test libs too
+            if(artifact.getType().equals("war"))
+            {
+                continue;
+            }
+
+            if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+                continue; //never add dependencies of scope=provided to the webapp's classpath (see also <useProvidedScope> param)
+
+            if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
+                continue; //only add dependencies of scope=test if explicitly required
+
+            MavenProject mavenProject = getProjectReferences( artifact, project );
+            if (mavenProject != null)
+            {
+                dependencyFiles.add( Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile() );
+                getLog().debug( "Adding project reference " + mavenProject.getBuild().getOutputDirectory()
+                                    + " for WEB-INF/classes " );
+            }
+        }
+
+        return dependencyFiles;
+    }
+
+
+    private MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    {
+        if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
+        {
+            return null;
+        }
+        Collection<MavenProject> mavenProjects = project.getProjectReferences().values();
+        for ( MavenProject mavenProject : mavenProjects )
+        {
+            if ( StringUtils.equals( mavenProject.getId(), artifact.getId() ) )
+            {
+                return mavenProject;
+            }
+        }
+        return null;
+    }
+
+
     
     
     
