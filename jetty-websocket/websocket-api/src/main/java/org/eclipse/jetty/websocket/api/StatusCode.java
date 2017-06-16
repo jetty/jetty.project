@@ -22,7 +22,7 @@ package org.eclipse.jetty.websocket.api;
  * The <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455 specified status codes</a> and <a
  * href="https://www.iana.org/assignments/websocket/websocket.xml#close-code-number-rules">IANA: WebSocket Close Code Number Registry</a>
  */
-public class StatusCode
+public final class StatusCode
 {
     /**
      * 1000 indicates a normal closure, meaning that the purpose for which the connection was established has been fulfilled.
@@ -138,10 +138,41 @@ public class StatusCode
     public final static int TRY_AGAIN_LATER = 1013;
 
     /**
+     * 1014 indicates that a gateway or proxy received and invalid upstream response.
+     * <p>
+     * See <a href="https://www.ietf.org/mail-archive/web/hybi/current/msg10748.html">[hybi] WebSocket Subprotocol Close Code: Bad Gateway</a>
+     */
+    public final static int INVALID_UPSTREAM_RESPONSE = 1014;
+
+    /**
      * 1015 is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint. It is designated for use in applications expecting
      * a status code to indicate that the connection was closed due to a failure to perform a TLS handshake (e.g., the server certificate can't be verified).
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455, Section 7.4.1 Defined Status Codes</a>.
      */
     public final static int FAILED_TLS_HANDSHAKE = 1015;
+
+    /**
+     * Test if provided status code can be sent/received on a WebSocket close.
+     * <p>
+     *     This honors the RFC6455 rules and IANA rules.
+     * </p>
+     * @param statusCode the statusCode to test
+     * @return true if transmittable
+     */
+    public static boolean isTransmittable(int statusCode)
+    {
+        return (statusCode == NORMAL) ||
+                (statusCode == SHUTDOWN) ||
+                (statusCode == PROTOCOL) ||
+                (statusCode == BAD_DATA) ||
+                (statusCode == BAD_PAYLOAD) ||
+                (statusCode == POLICY_VIOLATION) ||
+                (statusCode == MESSAGE_TOO_LARGE) ||
+                (statusCode == REQUIRED_EXTENSION) ||
+                (statusCode == SERVER_ERROR) ||
+                (statusCode == SERVICE_RESTART) ||
+                (statusCode == TRY_AGAIN_LATER) ||
+                (statusCode == INVALID_UPSTREAM_RESPONSE);
+    }
 }
