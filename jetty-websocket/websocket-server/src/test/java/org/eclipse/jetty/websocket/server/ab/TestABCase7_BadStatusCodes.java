@@ -45,7 +45,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
 {
     private static final Logger LOG = Log.getLogger(TestABCase7_GoodStatusCodes.class);
 
-    @Parameters
+    @Parameters(name = "{1} / {0}")
     public static Collection<Object[]> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
@@ -54,13 +54,13 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
         // @formatter:off
         data.add(new Object[] { "7.9.1", 0 });
         data.add(new Object[] { "7.9.2", 999 });
-        data.add(new Object[] { "7.9.3", 1004 });
-        data.add(new Object[] { "7.9.4", 1005 });
-        data.add(new Object[] { "7.9.5", 1006 });
-        data.add(new Object[] { "7.9.6", 1012 });
-        data.add(new Object[] { "7.9.7", 1013 });
-        data.add(new Object[] { "7.9.8", 1014 });
-        data.add(new Object[] { "7.9.9", 1015 });
+        data.add(new Object[] { "7.9.3", 1004 }); // RFC6455/UNDEFINED
+        data.add(new Object[] { "7.9.4", 1005 }); // RFC6455/Cannot Be Transmitted
+        data.add(new Object[] { "7.9.5", 1006 }); // RFC6455/Cannot Be Transmitted
+        // data.add(new Object[] { "7.9.6", 1012 }); - IANA Defined
+        // data.add(new Object[] { "7.9.7", 1013 }); - IANA Defined
+        // data.add(new Object[] { "7.9.8", 1014 }); - IANA Defined
+        data.add(new Object[] { "7.9.9", 1015 }); // RFC6455/Cannot Be Transmitted
         data.add(new Object[] { "7.9.10", 1016 });
         data.add(new Object[] { "7.9.11", 1100 });
         data.add(new Object[] { "7.9.12", 2000 });

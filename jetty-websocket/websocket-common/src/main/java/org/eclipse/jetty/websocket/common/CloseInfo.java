@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 
 public class CloseInfo
 {
-    private int statusCode;
+    private int statusCode = 0;
     private byte[] reasonBytes;
 
     public CloseInfo()
@@ -71,11 +71,7 @@ public class CloseInfo
 
             if (validate)
             {
-                if ((statusCode < StatusCode.NORMAL) || (statusCode == StatusCode.UNDEFINED) || (statusCode == StatusCode.NO_CLOSE)
-                        || (statusCode == StatusCode.NO_CODE) || ((statusCode > 1011) && (statusCode <= 2999)) || (statusCode >= 5000))
-                {
-                    throw new ProtocolException("Invalid close code: " + statusCode);
-                }
+                assertValidStatusCode(statusCode);
             }
 
             if (data.remaining() > 0)
@@ -142,6 +138,27 @@ public class CloseInfo
         }
     }
 
+    private void assertValidStatusCode(int statusCode)
+    {
+        // Status Codes outside of RFC6455 defined scope
+        if ((statusCode <= 999) || (statusCode >= 5000))
+        {
+            throw new ProtocolException("Out of range close status code: " + statusCode);
+        }
+
+        // Status Codes not allowed to exist in a Close frame (per RFC6455)
+        if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == StatusCode.FAILED_TLS_HANDSHAKE))
+        {
+            throw new ProtocolException("Frame forbidden close status code: " + statusCode);
+        }
+
+        // Status Code is in defined "reserved space" and is declared (all others are invalid)
+        if ((statusCode >= 1000) && (statusCode <= 2999) && !StatusCode.isTransmittable(statusCode))
+        {
+            throw new ProtocolException("RFC6455 and IANA Undefined close status code: " + statusCode);
+        }
+    }
+
     private ByteBuffer asByteBuffer()
     {
         if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == (-1)))
@@ -175,12 +192,10 @@ public class CloseInfo
     {
         CloseFrame frame = new CloseFrame();
         frame.setFin(true);
-        if ((statusCode >= 1000) && (statusCode != StatusCode.NO_CLOSE) && (statusCode != StatusCode.NO_CODE))
+        // Frame forbidden codes result in no status code (and no reason string)
+        if ((statusCode != StatusCode.NO_CLOSE) && (statusCode != StatusCode.NO_CODE) && (statusCode != StatusCode.FAILED_TLS_HANDSHAKE))
         {
-            if (statusCode == StatusCode.FAILED_TLS_HANDSHAKE)
-            {
-                throw new ProtocolException("Close Frame with status code " + statusCode + " not allowed (per RFC6455)");
-            }
+            assertValidStatusCode(statusCode);
             frame.setPayload(asByteBuffer());
         }
         return frame;
