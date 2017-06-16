@@ -69,10 +69,10 @@ public class JettyWebAppContext extends WebAppContext
     
     private File _classes = null;
     private File _testClasses = null;
-    private final List<File> _webInfClasses = new ArrayList<File>();
-    private final List<File> _webInfJars = new ArrayList<File>();
+    private final List<File> _webInfClasses = new ArrayList<>();
+    private final List<File> _webInfJars = new ArrayList<>();
     private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
-    private List<File> _classpathFiles;  //webInfClasses+testClasses+webInfJars
+    private List<File> _classpathFiles = new ArrayList<>();  //webInfClasses+testClasses+webInfJars
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
 
@@ -352,7 +352,6 @@ public class JettyWebAppContext extends WebAppContext
             _webInfClasses.add(_classes);
         
         // Set up the classpath
-        _classpathFiles = new ArrayList<File>();
         _classpathFiles.addAll(_webInfClasses);
         _classpathFiles.addAll(_webInfJars);
 
