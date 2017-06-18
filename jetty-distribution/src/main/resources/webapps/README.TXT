@@ -10,7 +10,7 @@ which case the context path is /. If the directory name ends with ".d"
 it is ignored (by may be used by explicit configuration).
 
 + A file called example.war will be deployed as a standard web application
-with the context path /example  (eg http://localhost:8080/example/). If the
+with the context path /example  (eg http://localhost:8080/example/). If xthe
 base name is root, then the context path is /. If example.war and example/
 exist, then only the WAR is deployed (which may use the directory as an
 unpack location).
