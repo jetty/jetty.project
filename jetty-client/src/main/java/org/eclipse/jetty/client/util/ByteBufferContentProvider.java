@@ -76,9 +76,8 @@ public class ByteBufferContentProvider extends AbstractTypedContentProvider
                 try
                 {
                     ByteBuffer buffer = buffers[index];
-                    buffers[index] = buffer.slice();
                     ++index;
-                    return buffer;
+                    return buffer.slice();
                 }
                 catch (ArrayIndexOutOfBoundsException x)
                 {
