@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -79,11 +80,12 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/path with spaces/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/servletPath2");
 
-
         ServletHolder testHolder = new ServletHolder(new TestServlet());
         testHolder.setInitParameter("dispatchPath", "/test2/something%2felse");
         _contextHandler.addServlet(testHolder, "/test/*");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/test2/*");
+
+        _contextHandler.addServlet(new ServletHolder(new SelfDispatchingServlet()), "/self/*");
 
         _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()), "/startthrow/*");
         _contextHandler.addServlet(new ServletHolder(new ForwardingServlet()), "/forward");
@@ -259,6 +261,24 @@ public class AsyncContextTest
     }
 
     @Test
+    @Ignore("See https://github.com/eclipse/jetty.project/issues/1618")
+    public void testDispatchAsyncContext_SelfEncodedUrl() throws Exception
+    {
+        String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
+
+        String responseBody = response.getContent();
+
+        assertThat("servlet request uri initial", responseBody, containsString("doGet:REQUEST.requestURI:/ctx/self/hello%2fthere"));
+        assertThat("servlet request uri async", responseBody, containsString("doGet:ASYNC.requestURI:/ctx/self/hello%2fthere"));
+    }
+
+    @Test
     public void testDispatchAsyncContextEncodedPathAndQueryString() throws Exception
     {
         String request = "GET /ctx/path%20with%20spaces/servletPath?dispatch=true&queryStringWithEncoding=space%20space HTTP/1.1\r\n" +
@@ -374,6 +394,28 @@ public class AsyncContextTest
             else
             {
                 request.getRequestDispatcher("/dispatchingServlet").forward(request, response);
+            }
+        }
+    }
+
+    private class SelfDispatchingServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+        {
+            DispatcherType dispatcherType = request.getDispatcherType();
+            response.getOutputStream().print("doGet." + dispatcherType.name() + ".requestURI:" + request.getRequestURI() + "\n");
+
+            if (dispatcherType == DispatcherType.ASYNC)
+            {
+                response.getOutputStream().print("Dispatched back to " + SelfDispatchingServlet.class.getSimpleName() + "\n");
+            }
+            else
+            {
+                final AsyncContext asyncContext = request.startAsync(request, response);
+                new Thread(() -> asyncContext.dispatch()).start();
             }
         }
     }
