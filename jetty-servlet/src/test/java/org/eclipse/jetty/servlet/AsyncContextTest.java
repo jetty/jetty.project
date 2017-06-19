@@ -47,9 +47,11 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -77,6 +79,13 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/path with spaces/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/servletPath2");
+
+
+        ServletHolder testHolder = new ServletHolder(new TestServlet());
+        testHolder.setInitParameter("dispatchPath", "/test2/something%2felse");
+        _contextHandler.addServlet(testHolder, "/test/*");
+        _contextHandler.addServlet(new ServletHolder(new TestServlet2()), "/test2/*");
+
         _contextHandler.addServlet(new ServletHolder(new TestStartThrowServlet()), "/startthrow/*");
         _contextHandler.addServlet(new ServletHolder(new ForwardingServlet()), "/forward");
         _contextHandler.addServlet(new ServletHolder(new AsyncDispatchingServlet()), "/dispatchingServlet");
@@ -215,6 +224,40 @@ public class AsyncContextTest
         assertThat("query string attr is correct", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("context path attr is correct", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("request uri attr is correct", responseBody, containsString("async:run:attr:requestURI:/ctx/servletPath"));
+    }
+
+    @Test
+    @Ignore("See https://github.com/eclipse/jetty.project/issues/1618")
+    public void testDispatchAsyncContext_EncodedUrl() throws Exception
+    {
+        String request = "GET /ctx/test/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
+
+        String responseBody = response.getContent();
+
+        // initial values
+        assertThat("servlet gets right path", responseBody, containsString("doGet:getServletPath:/test2"));
+        assertThat("request uri has correct encoding", responseBody, containsString("doGet:getRequestURI:/ctx/test2/something%2felse"));
+        assertThat("request url has correct encoding", responseBody, containsString("doGet:getRequestURL:http://localhost/ctx/test2/something%2felse"));
+        assertThat("path info has correct encoding", responseBody, containsString("doGet:getPathInfo:/something%2felse"));
+
+        // async values
+        assertThat("async servlet gets right path", responseBody, containsString("doGet:async:getServletPath:/test2"));
+        assertThat("async request uri has correct encoding", responseBody, containsString("doGet:async:getRequestURI:/ctx/test2/something%2felse"));
+        assertThat("async request url has correct encoding", responseBody, containsString("doGet:async:getRequestURL:http://localhost/ctx/test2/something%2felse"));
+        assertThat("async path info has correct encoding", responseBody, containsString("doGet:async:getPathInfo:/something%2felse"));
+
+        // async run attributes
+        assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/test"));
+        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello%2fthere"));
+        assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
+        assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
+        assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%2fthere"));
     }
 
     @Test
@@ -499,6 +542,17 @@ public class AsyncContextTest
     private class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
+        private String dispatchPath = "/servletPath2";
+
+        @Override
+        public void init() throws ServletException
+        {
+            String dispatchTo = getServletConfig().getInitParameter("dispatchPath");
+            if (StringUtil.isNotBlank(dispatchTo))
+            {
+                this.dispatchPath = dispatchTo;
+            }
+        }
 
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -506,13 +560,20 @@ public class AsyncContextTest
             if (request.getParameter("dispatch") != null)
             {
                 AsyncContext asyncContext = request.startAsync(request, response);
-                asyncContext.dispatch("/servletPath2");
+                asyncContext.dispatch(dispatchPath);
             }
             else
             {
                 response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath() + "\n");
+                response.getOutputStream().print("doGet:getRequestURI:" + request.getRequestURI() + "\n");
+                response.getOutputStream().print("doGet:getRequestURL:" + request.getRequestURL() + "\n");
+                response.getOutputStream().print("doGet:getPathInfo:" + request.getPathInfo() + "\n");
                 AsyncContext asyncContext = request.startAsync(request, response);
-                response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
+                HttpServletRequest asyncRequest = (HttpServletRequest)asyncContext.getRequest();
+                response.getOutputStream().print("doGet:async:getServletPath:" + asyncRequest.getServletPath() + "\n");
+                response.getOutputStream().print("doGet:async:getRequestURI:" + asyncRequest.getRequestURI() + "\n");
+                response.getOutputStream().print("doGet:async:getRequestURL:" + asyncRequest.getRequestURL() + "\n");
+                response.getOutputStream().print("doGet:async:getPathInfo:" + asyncRequest.getPathInfo() + "\n");
                 asyncContext.start(new AsyncRunnable(asyncContext));
 
             }
@@ -527,8 +588,15 @@ public class AsyncContextTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath() + "\n");
+            response.getOutputStream().print("doGet:getRequestURI:" + request.getRequestURI() + "\n");
+            response.getOutputStream().print("doGet:getRequestURL:" + request.getRequestURL() + "\n");
+            response.getOutputStream().print("doGet:getPathInfo:" + request.getPathInfo() + "\n");
             AsyncContext asyncContext = request.startAsync(request, response);
-            response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
+            HttpServletRequest asyncRequest = (HttpServletRequest)asyncContext.getRequest();
+            response.getOutputStream().print("doGet:async:getServletPath:" + asyncRequest.getServletPath() + "\n");
+            response.getOutputStream().print("doGet:async:getRequestURI:" + asyncRequest.getRequestURI() + "\n");
+            response.getOutputStream().print("doGet:async:getRequestURL:" + asyncRequest.getRequestURL() + "\n");
+            response.getOutputStream().print("doGet:async:getPathInfo:" + asyncRequest.getPathInfo() + "\n");
             asyncContext.start(new AsyncRunnable(asyncContext));
         }
     }
