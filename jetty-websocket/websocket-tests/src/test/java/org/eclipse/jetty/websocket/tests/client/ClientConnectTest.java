@@ -34,11 +34,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpResponseException;
-import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -53,10 +50,8 @@ import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.hamcrest.Matcher;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -93,23 +88,7 @@ public class ClientConnectTest
         assertThat("UpgradeException cause", actualCause, upgradeExceptionCauseMatcher);
         assertThat("UpgradeException message", actualCause.getMessage(), messageMatcher);
     }
-    
-    @BeforeClass
-    public static void silenceQTP()
-    {
-        Logger qtpLog = Log.getLogger(QueuedThreadPool.class);
-        StdErrLog qtpErrLog = (StdErrLog) qtpLog;
-        qtpErrLog.setLevel(AbstractLogger.LEVEL_OFF);
-    }
-    
-    @AfterClass
-    public static void giveVoiceToQTP()
-    {
-        Logger qtpLog = Log.getLogger(QueuedThreadPool.class);
-        StdErrLog qtpErrLog = (StdErrLog) qtpLog;
-        qtpErrLog.setLevel(AbstractLogger.LEVEL_WARN);
-    }
-    
+
     @Before
     public void startClient() throws Exception
     {
