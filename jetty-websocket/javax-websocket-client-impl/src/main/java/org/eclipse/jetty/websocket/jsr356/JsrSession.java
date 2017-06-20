@@ -337,11 +337,16 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
             getJsrEndpointFunctions().removeMessageHandler(handler);
         }
     }
-    
+
+    /**
+     * Maximum size of a whole BINARY message that this implementation can buffer.
+     *
+     * @param length the length in bytes
+     */
     @Override
     public void setMaxBinaryMessageBufferSize(int length)
     {
-        getPolicy().setMaxBinaryMessageBufferSize(length);
+        getPolicy().setMaxBinaryMessageSize(length);
     }
     
     @Override
@@ -350,11 +355,16 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         getPolicy().setIdleTimeout(milliseconds);
         super.setIdleTimeout(milliseconds);
     }
-    
+
+    /**
+     * Maximum size of a whole TEXT message that this implementation can buffer.
+     *
+     * @param length the length in bytes
+     */
     @Override
     public void setMaxTextMessageBufferSize(int length)
     {
-        getPolicy().setMaxTextMessageBufferSize(length);
+        getPolicy().setMaxTextMessageSize(length);
     }
     
     public void setPathParameters(Map<String, String> pathParams)
