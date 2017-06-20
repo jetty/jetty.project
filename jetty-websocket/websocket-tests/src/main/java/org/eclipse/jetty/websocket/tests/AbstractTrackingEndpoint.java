@@ -112,9 +112,13 @@ public abstract class AbstractTrackingEndpoint<T>
             LOG.debug("onWSClose({}, {})", statusCode, reason);
         }
         CloseInfo close = new CloseInfo(statusCode, reason);
-        boolean closeTracked = closeInfo.compareAndSet(null, close);
+        if (closeInfo.compareAndSet(null, close) == false)
+        {
+            LOG.warn("onClose should only happen once - Original Close: " + closeInfo.get());
+            LOG.warn("onClose should only happen once - Extra/Excess Close: " + close);
+            fail("onClose should only happen once!");
+        }
         this.closeLatch.countDown();
-        assertTrue("Close only happened once", closeTracked);
     }
     
     protected void onWSError(Throwable cause)
