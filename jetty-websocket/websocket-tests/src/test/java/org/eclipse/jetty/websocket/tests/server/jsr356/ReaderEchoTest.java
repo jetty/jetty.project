@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.tests.server.jsr356;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.websocket.OnError;
@@ -39,12 +38,10 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -124,30 +121,6 @@ public class ReaderEchoTest
         
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("Hello World"));
-        expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
-        {
-            session.sendBulk(send);
-            session.expect(expect);
-        }
-    }
-    
-    @Test
-    @Ignore("TODO: Need Encoder for Writer?")
-    public void testReaderSelfSocket() throws Exception
-    {
-        String requestPath = "/echo/reader-self";
-    
-        byte data[] = new byte[1024 * 1024];
-        Arrays.fill(data, (byte) 'x');
-        
-        List<WebSocketFrame> send = new ArrayList<>();
-        send.add(new TextFrame().setPayload(DataUtils.copyOf(data)));
-        send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
-        List<WebSocketFrame> expect = new ArrayList<>();
-        expect.add(new TextFrame().setPayload(DataUtils.copyOf(data)));
         expect.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         try (LocalFuzzer session = server.newLocalFuzzer(requestPath))
