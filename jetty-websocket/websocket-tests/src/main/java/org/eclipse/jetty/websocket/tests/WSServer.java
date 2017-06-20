@@ -155,7 +155,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         webapp.start();
         if (LOG.isDebugEnabled())
         {
-            webapp.dump(System.err);
+            LOG.debug("{}", webapp.dump());
         }
     }
     

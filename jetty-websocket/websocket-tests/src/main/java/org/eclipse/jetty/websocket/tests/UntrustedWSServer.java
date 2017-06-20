@@ -136,7 +136,7 @@ public class UntrustedWSServer extends ContainerLifeCycle implements UntrustedWS
         if (LOG.isDebugEnabled())
         {
             LOG.debug("WebSocket Server URI: " + wsUri.toASCIIString());
-            server.dump();
+            LOG.debug("{}", server.dump());
         }
 
         super.doStart();
