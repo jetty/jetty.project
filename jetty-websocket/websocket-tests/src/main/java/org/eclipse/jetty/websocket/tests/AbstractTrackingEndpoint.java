@@ -43,6 +43,7 @@ public abstract class AbstractTrackingEndpoint<T>
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
     public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
+    public AtomicReference<Throwable> closeStack = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
     
     public AbstractTrackingEndpoint(String id)
@@ -114,10 +115,11 @@ public abstract class AbstractTrackingEndpoint<T>
         CloseInfo close = new CloseInfo(statusCode, reason);
         if (closeInfo.compareAndSet(null, close) == false)
         {
-            LOG.warn("onClose should only happen once - Original Close: " + closeInfo.get());
-            LOG.warn("onClose should only happen once - Extra/Excess Close: " + close);
+            LOG.warn("onClose should only happen once - Original Close: " + closeInfo.get(), closeStack.get());
+            LOG.warn("onClose should only happen once - Extra/Excess Close: " + close, new Throwable("extra/excess"));
             fail("onClose should only happen once!");
         }
+        closeStack.compareAndSet(null, new Throwable("original"));
         this.closeLatch.countDown();
     }
     
