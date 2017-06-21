@@ -113,7 +113,7 @@ public class ServletContextResourcesTest
         req1.append("Connection: close\r\n");
         req1.append("\r\n");
 
-        String response = connector.getResponses(req1.toString());
+        String response = connector.getResponse(req1.toString());
         assertThat("Response", response, containsString("Resource '/': <null>"));
     }
 
@@ -128,7 +128,7 @@ public class ServletContextResourcesTest
         req1.append("Connection: close\r\n");
         req1.append("\r\n");
 
-        String response = connector.getResponses(req1.toString());
+        String response = connector.getResponse(req1.toString());
         assertThat("Response", response, containsString("Resource '/content.txt': content goes here"));
     }
 }

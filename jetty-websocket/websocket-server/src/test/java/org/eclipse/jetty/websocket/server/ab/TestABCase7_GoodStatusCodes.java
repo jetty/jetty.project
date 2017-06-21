@@ -43,7 +43,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
 {
     private static final Logger LOG = Log.getLogger(TestABCase7_GoodStatusCodes.class);
 
-    @Parameters
+    @Parameters(name = "{1} / {0}")
     public static Collection<Object[]> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
@@ -59,6 +59,9 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         data.add(new Object[] { "7.7.7", 1009 });
         data.add(new Object[] { "7.7.8", 1010 });
         data.add(new Object[] { "7.7.9", 1011 });
+        data.add(new Object[] { "IANA Assigned", 1012 });
+        data.add(new Object[] { "IANA Assigned", 1013 });
+        data.add(new Object[] { "IANA Assigned", 1014 });
         data.add(new Object[] { "7.7.10", 3000 });
         data.add(new Object[] { "7.7.11", 3999 });
         data.add(new Object[] { "7.7.12", 4000 });

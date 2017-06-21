@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,12 +34,11 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
 {
-    private final Set<HttpChannel> channels = new ConcurrentHashSet<>();
+    private final Set<HttpChannel> channels = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;

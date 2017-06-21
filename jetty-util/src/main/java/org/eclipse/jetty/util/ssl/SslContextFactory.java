@@ -31,6 +31,7 @@ import java.security.cert.CertStore;
 import java.security.cert.Certificate;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.PKIXCertPathChecker;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -167,6 +168,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private boolean _renegotiationAllowed = true;
     private int _renegotiationLimit = 5;
     private Factory _factory;
+    private PKIXCertPathChecker _pkixCertPathChecker;
 
     /**
      * Construct an instance of SslContextFactory
@@ -1005,6 +1007,16 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         _endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
     }
 
+    public PKIXCertPathChecker getPkixCertPathChecker()
+    {
+        return _pkixCertPathChecker;
+    }
+
+    public void setPkixCertPathChecker(PKIXCertPathChecker pkixCertPatchChecker)
+    {
+        _pkixCertPathChecker = pkixCertPatchChecker;
+    }
+
     /**
      * Override this method to provide alternate way to load a keystore.
      *
@@ -1105,36 +1117,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             // Revocation checking is only supported for PKIX algorithm
             if (isValidatePeerCerts() && "PKIX".equalsIgnoreCase(getTrustManagerFactoryAlgorithm()))
             {
-                PKIXBuilderParameters pbParams = new PKIXBuilderParameters(trustStore, new X509CertSelector());
-
-                // Set maximum certification path length
-                pbParams.setMaxPathLength(_maxCertPathLength);
-
-                // Make sure revocation checking is enabled
-                pbParams.setRevocationEnabled(true);
-
-                if (crls != null && !crls.isEmpty())
-                {
-                    pbParams.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls)));
-                }
-
-                if (_enableCRLDP)
-                {
-                    // Enable Certificate Revocation List Distribution Points (CRLDP) support
-                    System.setProperty("com.sun.security.enableCRLDP", "true");
-                }
-
-                if (_enableOCSP)
-                {
-                    // Enable On-Line Certificate Status Protocol (OCSP) support
-                    Security.setProperty("ocsp.enable", "true");
-
-                    if (_ocspResponderURL != null)
-                    {
-                        // Override location of OCSP Responder
-                        Security.setProperty("ocsp.responderURL", _ocspResponderURL);
-                    }
-                }
+                PKIXBuilderParameters pbParams = newPKIXBuilderParameters(trustStore, crls);
 
                 TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(_trustManagerFactoryAlgorithm);
                 trustManagerFactory.init(new CertPathTrustManagerParameters(pbParams));
@@ -1153,6 +1136,45 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         return managers;
     }
 
+    protected PKIXBuilderParameters newPKIXBuilderParameters(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
+    {
+        PKIXBuilderParameters pbParams = new PKIXBuilderParameters(trustStore, new X509CertSelector());
+
+        // Set maximum certification path length
+        pbParams.setMaxPathLength(_maxCertPathLength);
+
+        // Make sure revocation checking is enabled
+        pbParams.setRevocationEnabled(true);
+        
+        if (_pkixCertPathChecker!=null)
+        pbParams.addCertPathChecker(_pkixCertPathChecker);
+
+        if (crls != null && !crls.isEmpty())
+        {
+            pbParams.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls)));
+        }
+
+        if (_enableCRLDP)
+        {
+            // Enable Certificate Revocation List Distribution Points (CRLDP) support
+            System.setProperty("com.sun.security.enableCRLDP", "true");
+        }
+
+        if (_enableOCSP)
+        {
+            // Enable On-Line Certificate Status Protocol (OCSP) support
+            Security.setProperty("ocsp.enable", "true");
+
+            if (_ocspResponderURL != null)
+            {
+                // Override location of OCSP Responder
+                Security.setProperty("ocsp.responderURL", _ocspResponderURL);
+            }
+        }
+        
+        return pbParams;
+    }
+    
     /**
      * Select protocols to be used by the connector
      * based on configured inclusion and exclusion lists

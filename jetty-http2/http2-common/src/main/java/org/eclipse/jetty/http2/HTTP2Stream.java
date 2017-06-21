@@ -152,6 +152,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         return closeState.get() == CloseState.CLOSED;
     }
 
+    @Override
     public boolean isRemotelyClosed()
     {
         return closeState.get() == CloseState.REMOTELY_CLOSED;

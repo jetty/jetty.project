@@ -38,7 +38,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -47,10 +46,9 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
-import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 
 /**
  * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
@@ -76,8 +74,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _id = id;
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
-        _strategy = new EatWhatYouKill(producer,executor);            
-        addBean(_strategy);
+        _strategy = new EatWhatYouKill(producer,executor,_selectorManager.getBean(ReservedThreadExecutor.class));            
+        addBean(_strategy,true);
         setStopTimeout(5000);
     }
 
@@ -446,24 +444,26 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public String dump()
     {
+        super.dump();
         return ContainerLifeCycle.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_id)).append(System.lineSeparator());
-
         Selector selector = _selector;
-        if (selector != null && selector.isOpen())
+        if (selector == null || !selector.isOpen())
+            dumpBeans(out, indent);
+        else
         {
             final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
-
             DumpKeys dumpKeys = new DumpKeys(dump);
             submit(dumpKeys);
             dumpKeys.await(5, TimeUnit.SECONDS);
-
-            ContainerLifeCycle.dump(out, indent, dump);
+            if (dump.isEmpty())
+                dumpBeans(out, indent);
+            else
+                dumpBeans(out, indent, dump);
         }
     }
 

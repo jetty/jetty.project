@@ -88,6 +88,7 @@ public class EndpointEchoTest
     public void testBasicEchoInstance() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         EndpointEchoClient echoer = new EndpointEchoClient();
         Assert.assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
@@ -104,6 +105,7 @@ public class EndpointEchoTest
     public void testBasicEchoClassref() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         // Issue connect using class reference (class extends Endpoint)
         Session session = container.connectToServer(EndpointEchoClient.class,serverUri);
         if (LOG.isDebugEnabled())
@@ -119,6 +121,7 @@ public class EndpointEchoTest
     public void testAbstractEchoInstance() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         EchoStringEndpoint echoer = new EchoStringEndpoint();
         Assert.assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends abstract that extends Endpoint
@@ -135,6 +138,7 @@ public class EndpointEchoTest
     public void testAbstractEchoClassref() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         // Issue connect using class reference (class that extends abstract that extends Endpoint)
         Session session = container.connectToServer(EchoStringEndpoint.class,serverUri);
         if (LOG.isDebugEnabled())

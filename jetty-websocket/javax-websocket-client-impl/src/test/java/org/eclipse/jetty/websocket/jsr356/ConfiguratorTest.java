@@ -109,6 +109,7 @@ public class ConfiguratorTest
     public void testEndpointHandshakeInfo() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         EndpointEchoClient echoer = new EndpointEchoClient();
 
         // Build Config

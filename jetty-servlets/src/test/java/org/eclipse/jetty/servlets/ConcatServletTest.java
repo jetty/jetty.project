@@ -92,7 +92,7 @@ public class ConcatServletTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         try (BufferedReader reader = new BufferedReader(new StringReader(response)))
         {
             while (true)
@@ -140,7 +140,7 @@ public class ConcatServletTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String response = connector.getResponses(request);
+        String response = connector.getResponse(request);
         Assert.assertTrue(response.startsWith("HTTP/1.1 404 "));
 
         // Make sure ConcatServlet behaves well if it's case insensitive.
@@ -150,7 +150,7 @@ public class ConcatServletTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        response = connector.getResponses(request);
+        response = connector.getResponse(request);
         Assert.assertTrue(response.startsWith("HTTP/1.1 404 "));
 
         // Make sure ConcatServlet behaves well if encoded.
@@ -160,7 +160,7 @@ public class ConcatServletTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        response = connector.getResponses(request);
+        response = connector.getResponse(request);
         Assert.assertTrue(response.startsWith("HTTP/1.1 404 "));
 
         // Make sure ConcatServlet cannot see file system files.
@@ -170,7 +170,7 @@ public class ConcatServletTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        response = connector.getResponses(request);
+        response = connector.getResponse(request);
         Assert.assertTrue(response.startsWith("HTTP/1.1 404 "));
     }
 }

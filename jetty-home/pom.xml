@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.6-SNAPSHOT</version>
+    <version>9.4.7-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -238,33 +238,6 @@
               <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>copy-jta-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>javax.transaction</includeGroupIds>
-              <includeArtifactIds>javax.transaction-api</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-jndi-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.mail.glassfish</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -560,6 +533,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-infinispan</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-hazelcast</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

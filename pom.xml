@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.6-SNAPSHOT</version>
+  <version>9.4.7-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -79,6 +79,7 @@
     <module>jetty-infinispan</module>
     <module>jetty-gcloud</module>
     <module>jetty-memcached</module>
+    <module>jetty-hazelcast</module>
     <module>jetty-unixsocket</module>
     <module>tests</module>
     <module>examples</module>

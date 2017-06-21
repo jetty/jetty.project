@@ -39,6 +39,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
@@ -46,6 +47,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String CLIENT_CONTEXT_KEY = "http2.client";
     public static final String BYTE_BUFFER_POOL_CONTEXT_KEY = "http2.client.byteBufferPool";
     public static final String EXECUTOR_CONTEXT_KEY = "http2.client.executor";
+    public static final String PREALLOCATED_EXECUTOR_CONTEXT_KEY = "http2.client.preallocatedExecutor";
     public static final String SCHEDULER_CONTEXT_KEY = "http2.client.scheduler";
     public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
@@ -58,6 +60,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
         ByteBufferPool byteBufferPool = (ByteBufferPool)context.get(BYTE_BUFFER_POOL_CONTEXT_KEY);
         Executor executor = (Executor)context.get(EXECUTOR_CONTEXT_KEY);
+        ReservedThreadExecutor preallocatedExecutor = (ReservedThreadExecutor)context.get(PREALLOCATED_EXECUTOR_CONTEXT_KEY);
         Scheduler scheduler = (Scheduler)context.get(SCHEDULER_CONTEXT_KEY);
         Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
@@ -67,7 +70,33 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
+
+        if (preallocatedExecutor==null)
+        {
+            // TODO move this to non lazy construction
+            preallocatedExecutor=client.getBean(ReservedThreadExecutor.class);
+            if (preallocatedExecutor==null)
+            {
+                synchronized (this)
+                {
+                    if (preallocatedExecutor==null)
+                    {
+                        try
+                        {
+                            preallocatedExecutor = new ReservedThreadExecutor(executor,1); // TODO configure size
+                            preallocatedExecutor.start();
+                            client.addBean(preallocatedExecutor,true);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new RuntimeException(e);
+                        } 
+                    }
+                }
+            }
+        }
+        
+        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, preallocatedExecutor, endPoint,
                 parser, session, client.getInputBufferSize(), promise, listener);
         connection.addListener(connectionListener);
         return customize(connection, context);
@@ -79,7 +108,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, ReservedThreadExecutor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
             super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;

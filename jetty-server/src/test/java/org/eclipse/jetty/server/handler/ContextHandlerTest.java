@@ -90,7 +90,7 @@ public class ContextHandlerTest
         try
         {
             server.start();
-            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
 
             Assert.assertTrue(handlerA.isHandled());
             Assert.assertFalse(handlerB.isHandled());
@@ -100,7 +100,7 @@ public class ContextHandlerTest
             handlerB.reset();
             handlerC.reset();
 
-            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example2.com\n\n");
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example2.com\n\n");
 
             Assert.assertFalse(handlerA.isHandled());
             Assert.assertTrue(handlerB.isHandled());
@@ -147,7 +147,7 @@ public class ContextHandlerTest
         server.start();
         try
         {
-            connector.getResponses("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
             Assert.assertTrue(handlerA.isHandled());
             Assert.assertFalse(handlerB.isHandled());
             Assert.assertFalse(handlerC.isHandled());
@@ -155,7 +155,7 @@ public class ContextHandlerTest
             handlerB.reset();
             handlerC.reset();
 
-            connector.getResponses("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
             Assert.assertFalse(handlerA.isHandled());
             Assert.assertFalse(handlerB.isHandled());
             Assert.assertTrue(handlerC.isHandled());
@@ -163,7 +163,7 @@ public class ContextHandlerTest
             handlerB.reset();
             handlerC.reset();
 
-            connectorN.getResponses("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            connectorN.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
             Assert.assertTrue(handlerA.isHandled());
             Assert.assertFalse(handlerB.isHandled());
             Assert.assertFalse(handlerC.isHandled());
@@ -171,7 +171,7 @@ public class ContextHandlerTest
             handlerB.reset();
             handlerC.reset();
 
-            connectorN.getResponses("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            connectorN.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
             Assert.assertFalse(handlerA.isHandled());
             Assert.assertTrue(handlerB.isHandled());
             Assert.assertFalse(handlerC.isHandled());
@@ -237,39 +237,39 @@ public class ContextHandlerTest
 
         // check that all contexts start normally
         server.start();
-        Assert.assertThat(connector.getResponses("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
-        Assert.assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
-        Assert.assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
+        Assert.assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        Assert.assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
 
         // If we stop foobar, then requests will be handled by foo
         foobar.stop();
-        Assert.assertThat(connector.getResponses("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
-        Assert.assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
-        Assert.assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        Assert.assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        Assert.assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
 
         // If we shutdown foo then requests will be 503'd
         foo.shutdown().get();
-        Assert.assertThat(connector.getResponses("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
-        Assert.assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("503"));
-        Assert.assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("503"));
+        Assert.assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("503"));
+        Assert.assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("503"));
 
         // If we stop foo then requests will be handled by root
         foo.stop();
-        Assert.assertThat(connector.getResponses("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
-        Assert.assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
-        Assert.assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
 
         // If we start foo then foobar requests will be handled by foo
         foo.start();
-        Assert.assertThat(connector.getResponses("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
-        Assert.assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
-        Assert.assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        Assert.assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        Assert.assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
 
         // If we start foobar then foobar requests will be handled by foobar
         foobar.start();
-        Assert.assertThat(connector.getResponses("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
-        Assert.assertThat(connector.getResponses("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
-        Assert.assertThat(connector.getResponses("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
+        Assert.assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        Assert.assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        Assert.assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
     }
 
 

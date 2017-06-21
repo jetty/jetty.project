@@ -115,7 +115,7 @@ public class DispatcherTest
             "Content-Length: 0\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.0\n\n");
+        String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -131,7 +131,7 @@ public class DispatcherTest
             "Content-Type: text/html\r\n"+
             "Content-Length: 0\r\n"+
             "\r\n";
-        String responses = _connector.getResponses("GET /context/ForwardServlet?do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1 HTTP/1.0\n\n");
+        String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -152,7 +152,7 @@ public class DispatcherTest
             "/x x\r\n"+
             "/context/EchoURI/x%20x;a=1\r\n";
 
-        String responses = _connector.getResponses("GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.0\n\n");
+        String responses = _connector.getResponse("GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -167,7 +167,7 @@ public class DispatcherTest
             "HTTP/1.1 200 OK\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
+        String responses = _connector.getResponse("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -183,7 +183,7 @@ public class DispatcherTest
             "HTTP/1.1 200 OK\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.0\n\n");
+        String responses = _connector.getResponse("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -199,7 +199,7 @@ public class DispatcherTest
             "HTTP/1.1 200 OK\r\n"+
             "\r\n";
 
-        String responses = _connector.getResponses("GET /context/IncludeServlet/includepath?do=forward HTTP/1.0\n\n");
+        String responses = _connector.getResponse("GET /context/IncludeServlet/includepath?do=forward HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
     }
@@ -216,7 +216,7 @@ public class DispatcherTest
             "\r\n"+
             "Roger That!";
 
-        String responses = _connector.getResponses("GET /context/dispatch/test?forward=/roger/that HTTP/1.0\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponse("GET /context/dispatch/test?forward=/roger/that HTTP/1.0\n" + "Host: localhost\n\n");
 
         assertEquals(expected, responses);
     }
@@ -229,7 +229,7 @@ public class DispatcherTest
 
         String requests="GET /context/dispatch/test?forward=/%2e%2e/roger/that HTTP/1.0\n" + "Host: localhost\n\n";
 
-        String responses = _connector.getResponses(requests);
+        String responses = _connector.getResponse(requests);
 
         assertThat(responses,startsWith("HTTP/1.1 404 "));
     }
@@ -242,7 +242,7 @@ public class DispatcherTest
 
         String requests="GET /context/dispatch/test?forward=/%252e%252e/roger/that HTTP/1.0\n" + "Host: localhost\n\n";
 
-        String responses = _connector.getResponses(requests);
+        String responses = _connector.getResponse(requests);
 
         assertThat(responses,startsWith("HTTP/1.1 404 "));
     }
@@ -259,7 +259,7 @@ public class DispatcherTest
             "\r\n"+
             "Roger That!";
 
-        String responses = _connector.getResponses("GET /context/dispatch/test?include=/roger/that HTTP/1.0\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponse("GET /context/dispatch/test?include=/roger/that HTTP/1.0\n" + "Host: localhost\n\n");
 
         assertEquals(expected, responses);
     }
@@ -267,7 +267,7 @@ public class DispatcherTest
     @Test
     public void testWorkingResourceHandler() throws Exception
     {
-        String responses = _connector.getResponses("GET /resource/content.txt HTTP/1.0\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponse("GET /resource/content.txt HTTP/1.0\n" + "Host: localhost\n\n");
 
         assertTrue(responses.contains("content goes here")); // from inside the context.txt file
     }
@@ -277,7 +277,7 @@ public class DispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=include HTTP/1.0\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponse("GET /context/resourceServlet/content.txt?do=include HTTP/1.0\n" + "Host: localhost\n\n");
 
         // from inside the context.txt file
         Assert.assertNotNull(responses);
@@ -290,7 +290,7 @@ public class DispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=forward HTTP/1.0\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponse("GET /context/resourceServlet/content.txt?do=forward HTTP/1.0\n" + "Host: localhost\n\n");
 
         // from inside the context.txt file
         assertTrue(responses.contains("content goes here"));
@@ -301,7 +301,7 @@ public class DispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=include&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponse("GET /context/resourceServlet/content.txt?do=include&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");
 
         // from inside the context.txt file
         assertTrue(responses.contains("content goes here"));
@@ -312,7 +312,7 @@ public class DispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=forward&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");
+        String responses = _connector.getResponse("GET /context/resourceServlet/content.txt?do=forward&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");
 
         // from inside the context.txt file
         assertTrue(responses.contains("content goes here"));
@@ -326,11 +326,11 @@ public class DispatcherTest
         _contextHandler.addServlet(EchoServlet.class, "/echo/*");
         _contextHandler.addFilter(ForwardFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-        String rogerResponse = _connector.getResponses("GET /context/ HTTP/1.0\n" + "Host: localhost\n\n");
+        String rogerResponse = _connector.getResponse("GET /context/ HTTP/1.0\n" + "Host: localhost\n\n");
 
-        String echoResponse = _connector.getResponses("GET /context/foo?echo=echoText HTTP/1.0\n" + "Host: localhost\n\n");
+        String echoResponse = _connector.getResponse("GET /context/foo?echo=echoText HTTP/1.0\n" + "Host: localhost\n\n");
 
-        String rechoResponse = _connector.getResponses("GET /context/?echo=echoText HTTP/1.0\n" + "Host: localhost\n\n");
+        String rechoResponse = _connector.getResponse("GET /context/?echo=echoText HTTP/1.0\n" + "Host: localhost\n\n");
 
         assertTrue(rogerResponse.contains("Roger That!"));
         assertTrue(echoResponse.contains("echoText"));

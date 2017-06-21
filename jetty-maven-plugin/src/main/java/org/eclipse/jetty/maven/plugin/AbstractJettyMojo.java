@@ -349,7 +349,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         {
             try
             {
-                List<URL> provided = new ArrayList<URL>();
+                List<URL> provided = new ArrayList<>();
                 URL[] urls = null;
                
                 for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )

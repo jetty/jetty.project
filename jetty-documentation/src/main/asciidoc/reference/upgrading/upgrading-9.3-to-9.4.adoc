@@ -168,6 +168,12 @@ Here is a comparison of file formats, note that the file contents are listed in 
 | `maxInactive (long)` |
 |===
 
+____
+[NOTE]
+Session data is now only loaded when requested.
+Previous functionality such as `setLazyLoad` has been removed.
+____
+
 
 ===== JDBC Sessions
 

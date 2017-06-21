@@ -38,6 +38,7 @@ import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -173,6 +174,12 @@ public class DecoderReaderManySmallTest
     public void initClient()
     {
         client = ContainerProvider.getWebSocketContainer();
+    }
+    
+    @After
+    public void stopClient() throws Exception
+    {
+        ((LifeCycle)client).stop();
     }
 
     @Before

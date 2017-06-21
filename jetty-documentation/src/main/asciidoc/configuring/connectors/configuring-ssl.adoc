@@ -363,10 +363,15 @@ An example of this setup:
 [source, plain, subs="{sub-order}"]
 ----
 $ cd /path/to/mybase
+$ java -jar ../start.jar --create-startd
+MKDIR : ${jetty.base}/start.d
+INFO  : Base directory was modified
 $ java -jar /path/to/jetty-dist/start.jar --add-to-start=ssl
-INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
-INFO : Base directory was modified
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : ssl             initialized in ${jetty.base}/start.d/ssl.ini
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
+INFO  : Base directory was modified
 $ tree
 .
 ├── etc
@@ -394,44 +399,30 @@ jetty.sslContext.keyStorePassword::
 [[two-way-authentication]]
 ==== Two Way Authentication
 
-To enable two-way authentication, you first need to activate the ssl module as shown in the previous section.
+To enable two-way authentication both the `ssl` and `https` modules need to be activated.
+Once enabled, set the `jetty.sslContext.needClientAuth` property to `true`.
 
-First you need load the `ssl` module and `https` module.
 [source%nowrap,ini,linenums]
 .$JETTY_BASE/start.d/ssl.ini
 ----
 # Module: ssl
 --module=ssl
-
-jetty.ssl.host=0.0.0.0
-jetty.ssl.port=8583
-jetty.sslContext.keyStorePath=etc/keystore
-jetty.sslContext.trustStorePath=etc/keystore
-jetty.sslContext.keyStorePassword=OBF:
-jetty.sslContext.keyManagerPassword=OBF:
-jetty.sslContext.trustStorePassword=OBF:
-jetty.sslContext.trustStoreType=JKS
-# enable two way authentication
+...
+## whether client certificate authentication is required
 jetty.sslContext.needClientAuth=true
-----
-
-[source%nowrap,ini,linenums]
-.$JETTY_BASE/start.d/https.ini
-----
-# Module: https
---module=https
+...
 ----
 
 [[layout-of-keystore-and-truststore]]
-===== Layout of `keystore` and `truststore`
+==== Layout of keystore and truststore
 
-`keystore` only contains the server's private key and certificate.
+The server's private key and certificate are contained within the keystore.
 
 [[img-certificate-chain]]
 image::images/certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
 
 [literal]
-.The structure of KeyStore file
+.The structure of a KeyStore file
 ....
 ├── PrivateKeyEntry
 │   ├── PrivateKey
@@ -447,11 +438,7 @@ image::images/certificate-chain.png[title="Certificate chain", alt="Certificate 
 
 [TIP]
 ====
-└── PrivateKeyEntry +
-    └── Certificate chain +
-        ├── Intermediary CA certificate +
-        └── Root CA certificate +
-are optional
+`PrivateKeyEntry`, `Certificate chain`, `Intermediary CA certificate` and `Root CA certificate` are all optional values.
 ====
 
 [source%nowrap,plain,linenums]
@@ -709,9 +696,10 @@ KeyIdentifier [
 *******************************************
 ----
 
-In addition, you can split `$JETTY/etc/keystore` as two files.
-One is `$JETTY/etc/keystore` which only contains the server’s private key and certificate,
-the other is `$JETTY/etc/truststore` which contains intermediary CA and root CA.
+Additionally, you can split `$JETTY/etc/keystore` into two files.
+One being `$JETTY/etc/keystore` which only contains the server’s private key and certificate, while the other would be `$JETTY/etc/truststore` which contains intermediary CA and root CA.
+
+An example of this would look like the following:
 
 [literal]
 .The structure of `$JETTY/etc/keystore`
@@ -759,7 +747,7 @@ setKeyStorePath::
   The configured keystore to use for all SSL/TLS in configured Jetty Connector (or Client).
 ____
 [NOTE]
-As a keystore is vital security information, it can be desirable to locate the file in a directory with *very* restricted access.
+As the keystore is vital security information, it recommended the file is located in a directory with *very* restricted access.
 ____
 
 setKeyStorePassword::
@@ -784,7 +772,7 @@ ____
 
 ____
 [CAUTION]
-The keystore and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` `org.eclipse.jetty.ssl.password`.
+The keystore and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` and `org.eclipse.jetty.ssl.password`.
 This is _not_ a recommended usage.
 ____
 

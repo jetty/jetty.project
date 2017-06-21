@@ -59,6 +59,9 @@ public class QuotedCSV implements Iterable<String>
      */
     public void addValue(String value)
     {
+        if (value == null)
+            return;
+        
         StringBuffer buffer = new StringBuffer();
         
         int l=value.length();
@@ -172,6 +175,11 @@ public class QuotedCSV implements Iterable<String>
                             // It wasn't really a value, it was a param name
                             value_length=param_name=0;
                             buffer.setLength(nws_length); // trim following OWS
+                            String param = buffer.toString();
+                            buffer.setLength(0);
+                            parsedValue(buffer);
+                            value_length=buffer.length();
+                            buffer.append(param);
                             buffer.append(c);
                             last_length=++nws_length;
                             state=State.PARAM_VALUE;
@@ -313,5 +321,14 @@ public class QuotedCSV implements Iterable<String>
                 buffer.append(c);
         }
         return buffer.toString();
+    }
+    
+    @Override
+    public String toString()
+    {
+        List<String> list = new ArrayList<>();
+        for (String s : this)
+            list.add(s);
+        return list.toString();
     }
 }

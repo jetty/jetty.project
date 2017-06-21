@@ -392,23 +392,23 @@ public class DefaultServletTest
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
 
-        String response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
 
         createFile(index, "<h1>Hello Index</h1>");
-        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Location: http://0.0.0.0/context/dir/index.html", response);
 
         createFile(inde, "<h1>Hello Inde</h1>");
-        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Location: http://0.0.0.0/context/dir/index.html", response);
 
         assertTrue(index.delete());
-        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Location: http://0.0.0.0/context/dir/index.htm", response);
         
         assertTrue(inde.delete());
-        response = connector.getResponses("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403", response);
     }
 
@@ -895,6 +895,10 @@ public class DefaultServletTest
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
         assertResponseContains("ETag: ",response);   
+
+        String bad_etag_gzip = etag.substring(0,etag.length()-2)+"X--gzip\"";
+        response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+bad_etag_gzip+"\r\n\r\n");
+        assertResponseNotContains("304 Not Modified", response);
         
         response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: "+etag_gzip+"\r\n\r\n");
         assertResponseContains("304 Not Modified", response);

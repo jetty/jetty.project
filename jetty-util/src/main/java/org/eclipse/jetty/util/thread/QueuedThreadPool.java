@@ -24,14 +24,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -53,7 +54,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private final AtomicInteger _threadsStarted = new AtomicInteger();
     private final AtomicInteger _threadsIdle = new AtomicInteger();
     private final AtomicLong _lastShrink = new AtomicLong();
-    private final ConcurrentHashSet<Thread> _threads=new ConcurrentHashSet<>();
+    private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final Object _joinLock = new Object();
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
@@ -505,16 +506,22 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         for (final Thread thread : _threads)
         {
             final StackTraceElement[] trace = thread.getStackTrace();
-            boolean inIdleJobPoll = false;
+            String knownMethod = "";
             for (StackTraceElement t : trace)
             {
                 if ("idleJobPoll".equals(t.getMethodName()))
                 {
-                    inIdleJobPoll = true;
+                    knownMethod = "IDLE ";
+                    break;
+                }
+                
+                if ("preallocatedWait".equals(t.getMethodName()))
+                {
+                    knownMethod = "PREALLOCATED ";
                     break;
                 }
             }
-            final boolean idle = inIdleJobPoll;
+            final String known = knownMethod;
 
             if (isDetailedDump())
             {
@@ -523,11 +530,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     @Override
                     public void dump(Appendable out, String indent) throws IOException
                     {
-                        out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(thread.getState().toString()).append(idle ? " IDLE" : "");
+                        out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(known).append(thread.getState().toString());
                         if (thread.getPriority()!=Thread.NORM_PRIORITY)
                             out.append(" prio=").append(String.valueOf(thread.getPriority()));
                         out.append(System.lineSeparator());
-                        if (!idle)
+                        if (known.length()==0)
                             ContainerLifeCycle.dump(out, indent, Arrays.asList(trace));
                     }
 
@@ -541,7 +548,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             else
             {
                 int p=thread.getPriority();
-                threads.add(thread.getId() + " " + thread.getName() + " " + thread.getState() + " @ " + (trace.length > 0 ? trace[0] : "???") + (idle ? " IDLE" : "")+ (p==Thread.NORM_PRIORITY?"":(" prio="+p)));
+                threads.add(thread.getId() + " " + thread.getName() + " " + known + thread.getState() + " @ " + (trace.length > 0 ? trace[0] : "???") + (p==Thread.NORM_PRIORITY?"":(" prio="+p)));
             }
         }
 
@@ -556,7 +563,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     @Override
     public String toString()
     {
-        return String.format("%s{%s,%d<=%d<=%d,i=%d,q=%d}", _name, getState(), getMinThreads(), getThreads(), getMaxThreads(), getIdleThreads(), (_jobs == null ? -1 : _jobs.size()));
+        return String.format("org.eclipse.jetty.util.thread.QueuedThreadPool@%s{%s,%d<=%d<=%d,i=%d,q=%d}", _name, getState(), getMinThreads(), getThreads(), getMaxThreads(), getIdleThreads(), (_jobs == null ? -1 : _jobs.size()));
     }
 
     private Runnable idleJobPoll() throws InterruptedException

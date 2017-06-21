@@ -236,6 +236,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * @param managed whether to managed the lifecycle of the bean
      * @return true if the bean was added, false if it was already present
      */
+    @Override
     public boolean addBean(Object o, boolean managed)
     {
         if (o instanceof LifeCycle)
@@ -380,6 +381,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      *
      * @param bean The bean to manage (must already have been added).
      */
+    @Override
     public void manage(Object bean)
     {
         for (Bean b : _beans)
@@ -426,6 +428,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      *
      * @param bean The bean to unmanage (must already have been added).
      */
+    @Override
     public void unmanage(Object bean)
     {
         for (Bean b : _beans)

@@ -31,7 +31,7 @@ public final class WSURI
      * Convert to HTTP <code>http</code> or <code>https</code> scheme URIs.
      * <p>
      * Converting <code>ws</code> and <code>wss</code> URIs to their HTTP equivalent
-     * 
+     *
      * @param inputUri
      *            the input URI
      * @return the HTTP scheme URI for the input URI.
@@ -45,19 +45,19 @@ public final class WSURI
         if ("http".equalsIgnoreCase(wsScheme) || "https".equalsIgnoreCase(wsScheme))
         {
             // leave alone
-            return inputUri; // TODO should this be cloned?
+            return inputUri;
         }
         
         if ("ws".equalsIgnoreCase(wsScheme))
         {
             // convert to http
-            return new URI("http"+inputUri.toString().substring(2));
+            return new URI("http" + inputUri.toString().substring(wsScheme.length()));
         }
         
         if ("wss".equalsIgnoreCase(wsScheme))
         {
             // convert to https
-            return new URI("http"+inputUri.toString().substring(2));
+            return new URI("https" + inputUri.toString().substring(wsScheme.length()));
         }
         
         throw new URISyntaxException(inputUri.toString(),"Unrecognized WebSocket scheme");
@@ -67,7 +67,7 @@ public final class WSURI
      * Convert to WebSocket <code>ws</code> or <code>wss</code> scheme URIs
      * <p>
      * Converting <code>http</code> and <code>https</code> URIs to their WebSocket equivalent
-     * 
+     *
      * @param inputUrl
      *            the input URI
      * @return the WebSocket scheme URI for the input URI.
@@ -83,7 +83,7 @@ public final class WSURI
      * Convert to WebSocket <code>ws</code> or <code>wss</code> scheme URIs
      * <p>
      * Converting <code>http</code> and <code>https</code> URIs to their WebSocket equivalent
-     * 
+     *
      * @param inputUrl
      *            the input URI
      * @param query
@@ -103,10 +103,10 @@ public final class WSURI
 
     /**
      * Convert to WebSocket <code>ws</code> or <code>wss</code> scheme URIs
-     * 
+     *
      * <p>
      * Converting <code>http</code> and <code>https</code> URIs to their WebSocket equivalent
-     * 
+     *
      * @param inputUri
      *            the input URI
      * @return the WebSocket scheme URI for the input URI.
@@ -117,26 +117,24 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri,"Input URI must not be null");
         String httpScheme = inputUri.getScheme();
-        String wsScheme = null;
         if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
         {
             // keep as-is
-            wsScheme = httpScheme;
+            return inputUri;
         }
-        else if ("http".equalsIgnoreCase(httpScheme))
+        
+        if ("http".equalsIgnoreCase(httpScheme))
         {
             // convert to ws
-            wsScheme = "ws";
+            return new URI("ws" + inputUri.toString().substring(httpScheme.length()));
         }
-        else if ("https".equalsIgnoreCase(httpScheme))
+        
+        if ("https".equalsIgnoreCase(httpScheme))
         {
             // convert to wss
-            wsScheme = "wss";
+            return new URI("wss" + inputUri.toString().substring(httpScheme.length()));
         }
-        else
-        {
-            throw new URISyntaxException(inputUri.toString(),"Unrecognized HTTP scheme");
-        }
-        return new URI(wsScheme,inputUri.getUserInfo(),inputUri.getHost(),inputUri.getPort(),inputUri.getPath(),inputUri.getQuery(),inputUri.getFragment());
+        
+        throw new URISyntaxException(inputUri.toString(),"Unrecognized HTTP scheme");
     }
 }
