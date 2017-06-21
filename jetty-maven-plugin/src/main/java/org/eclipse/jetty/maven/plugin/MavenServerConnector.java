@@ -31,7 +31,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * be referenced in the pom.xml. This class wraps a ServerConnector, delaying setting the
  * server instance. Only a few of the setters from the ServerConnector class are supported.
  */
-public class MavenServerConnector extends AbstractLifeCycle implements Connector
+public class MavenServerConnector extends ContainerLifeCycle implements Connector
 {
     public static String PORT_SYSPROPERTY = "jetty.http.port";
     

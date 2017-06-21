@@ -158,7 +158,8 @@ public class ExecutionStrategyTest
             @Override
             public Runnable produce()
             {
-                if (tasks-->0)
+                final int id = --tasks;
+                if (id>=0)
                 {
                     try
                     {
@@ -171,6 +172,7 @@ public class ExecutionStrategyTest
                                 @Override
                                 public void run()
                                 {
+                                    // System.err.println("RUN "+id);
                                     latch.countDown();
                                 }
                             };

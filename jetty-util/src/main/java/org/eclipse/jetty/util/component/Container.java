@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.component;
 
 import java.util.Collection;
 
+
 /**
  * A Container
  */
@@ -75,6 +76,31 @@ public interface Container
      * @param listener the listener to remove
      */
     public void removeEventListener(Listener listener);
+
+    /**
+     * Unmanages a bean already contained by this aggregate, so that it is not started/stopped/destroyed with this
+     * aggregate.
+     *
+     * @param bean The bean to unmanage (must already have been added).
+     */
+    void unmanage(Object bean);
+
+    /**
+     * Manages a bean already contained by this aggregate, so that it is started/stopped/destroyed with this
+     * aggregate.
+     *
+     * @param bean The bean to manage (must already have been added).
+     */
+    void manage(Object bean);
+
+    /**
+     * Adds the given bean, explicitly managing it or not.
+     *
+     * @param o       The bean object to add
+     * @param managed whether to managed the lifecycle of the bean
+     * @return true if the bean was added, false if it was already present
+     */
+    boolean addBean(Object o, boolean managed);
 
     /**
      * A listener for Container events.
