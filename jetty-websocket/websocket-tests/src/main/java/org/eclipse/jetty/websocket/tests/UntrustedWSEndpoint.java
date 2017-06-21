@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.util.log.Log;
@@ -30,27 +31,29 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 
 public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketListener, WebSocketFrameListener
 {
     private static final Logger LOG = Log.getLogger(UntrustedWSEndpoint.class);
-    
+
     private UntrustedWSSession untrustedSession;
     private CompletableFuture<UntrustedWSSession> onOpenFuture;
-    
+
     private BiFunction<UntrustedWSSession, String, String> onTextFunction;
     private BiFunction<UntrustedWSSession, ByteBuffer, ByteBuffer> onBinaryFunction;
-    
+    private BiConsumer<UntrustedWSSession, CloseInfo> onCloseConsumer;
+
     public CompletableFuture<UntrustedWSSession> getOnOpenFuture()
     {
         return onOpenFuture;
     }
-    
+
     public UntrustedWSEndpoint(String id)
     {
         super(id);
     }
-    
+
     @Override
     public void onWebSocketConnect(Session session)
     {
@@ -60,10 +63,21 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
         {
             this.onOpenFuture.complete(this.untrustedSession);
         }
-        
+
         super.onWebSocketConnect(session);
     }
-    
+
+    @Override
+    public void onWebSocketClose(int statusCode, String reason)
+    {
+        super.onWebSocketClose(statusCode, reason);
+        if (this.onCloseConsumer != null)
+        {
+            CloseInfo closeInfo = new CloseInfo(statusCode, reason);
+            this.onCloseConsumer.accept(this.untrustedSession, closeInfo);
+        }
+    }
+
     @Override
     public void onWebSocketError(Throwable cause)
     {
@@ -72,15 +86,15 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
             // Always trip this, doesn't matter if if completed normally first.
             this.onOpenFuture.completeExceptionally(cause);
         }
-        
+
         super.onWebSocketError(cause);
     }
-    
+
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
         super.onWebSocketBinary(payload, offset, len);
-    
+
         if (onBinaryFunction != null)
         {
             try
@@ -98,12 +112,12 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
             }
         }
     }
-    
+
     @Override
     public void onWebSocketText(String text)
     {
         super.onWebSocketText(text);
-        
+
         if (onTextFunction != null)
         {
             try
@@ -120,17 +134,22 @@ public class UntrustedWSEndpoint extends TrackingEndpoint implements WebSocketLi
             }
         }
     }
-    
+
     public void setOnOpenFuture(CompletableFuture<UntrustedWSSession> future)
     {
         this.onOpenFuture = future;
     }
-    
+
+    public void setOnCloseConsumer(BiConsumer<UntrustedWSSession, CloseInfo> onCloseConsumer)
+    {
+        this.onCloseConsumer = onCloseConsumer;
+    }
+
     public void setOnBinaryFunction(BiFunction<UntrustedWSSession, ByteBuffer, ByteBuffer> onBinaryFunction)
     {
         this.onBinaryFunction = onBinaryFunction;
     }
-    
+
     public void setOnTextFunction(BiFunction<UntrustedWSSession, String, String> onTextFunction)
     {
         this.onTextFunction = onTextFunction;
