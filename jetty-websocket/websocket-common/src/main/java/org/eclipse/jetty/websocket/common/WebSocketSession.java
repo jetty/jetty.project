@@ -179,7 +179,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     
     private void close(CloseInfo closeInfo, FrameCallback callback)
     {
-        connectionState.onClosing(); // move to CLOSING state (always)
+        connectionState.onClosing(); // always move to (at least) the CLOSING state (might already be past it, which is ok)
         
         if (closeSent.compareAndSet(false, true))
         {
@@ -192,7 +192,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Close Frame Previously Sent: ignoring: {} [{}]", closeInfo, callback);
-            callback.succeed();
+            callback.fail(new WebSocketException("Already closed"));
         }
     }
     
