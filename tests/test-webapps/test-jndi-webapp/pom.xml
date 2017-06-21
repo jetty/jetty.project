@@ -51,30 +51,12 @@
           <execution>
             <phase>package</phase>
             <goals>
-              <goal>copy</goal>
+              <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.tests</groupId>
-                  <artifactId>test-mock-resources</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <includes>**</includes>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.orbit</groupId>
-                  <artifactId>javax.mail.glassfish</artifactId>
-                  <version>1.4.1.v201005082020</version>
-                  <type>jar</type>
-                  <includes>**</includes>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-          </configuration>
+              <includeArtifactIds>javax.transaction-api,javax.mail.glassfish,test-mock-resources</includeArtifactIds>
+              <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
+            </configuration>
           </execution>
         </executions>
        </plugin>
@@ -109,21 +91,27 @@
           </webAppConfig>
         </configuration>
         <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty.tests</groupId>
-            <artifactId>test-mock-resources</artifactId>
-            <version>${project.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.mail.glassfish</artifactId>
-            <version>1.4.1.v201005082020</version>
-          </dependency>
+            <dependency>
+              <groupId>org.eclipse.jetty.tests</groupId>
+              <artifactId>test-mock-resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.eclipse.jetty.orbit</groupId>
+              <artifactId>javax.mail.glassfish</artifactId>
+              <version>1.4.1.v201005082020</version>
+            </dependency>
         </dependencies>
       </plugin>
     </plugins>
   </build>
  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-mock-resources</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>javax.transaction</groupId>
       <artifactId>javax.transaction-api</artifactId>
@@ -139,6 +127,12 @@
       <artifactId>javax.mail.glassfish</artifactId>
       <version>1.4.1.v201005082020</version>
       <scope>provided</scope>
+      <exclusions>
+       <exclusion>
+         <groupId>org.eclipse.jetty.orbit</groupId>
+         <artifactId>javax.activation</artifactId>
+       </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>
