@@ -261,7 +261,6 @@ public class AsyncContextTest
     }
 
     @Test
-    @Ignore("See https://github.com/eclipse/jetty.project/issues/1618")
     public void testDispatchAsyncContext_SelfEncodedUrl() throws Exception
     {
         String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
@@ -274,8 +273,8 @@ public class AsyncContextTest
 
         String responseBody = response.getContent();
 
-        assertThat("servlet request uri initial", responseBody, containsString("doGet:REQUEST.requestURI:/ctx/self/hello%2fthere"));
-        assertThat("servlet request uri async", responseBody, containsString("doGet:ASYNC.requestURI:/ctx/self/hello%2fthere"));
+        assertThat("servlet request uri initial", responseBody, containsString("doGet.REQUEST.requestURI:/ctx/self/hello%2fthere"));
+        assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%2fthere"));
     }
 
     @Test
@@ -353,7 +352,6 @@ public class AsyncContextTest
             "\r\n";
 
         String responseString = _connector.getResponse(request);
-        System.err.println(responseString);
         HttpTester.Response response = HttpTester.parseResponse(responseString);
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
