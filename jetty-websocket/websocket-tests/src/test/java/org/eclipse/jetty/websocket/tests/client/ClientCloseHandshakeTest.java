@@ -24,32 +24,23 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
@@ -57,7 +48,6 @@ import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -65,81 +55,42 @@ import org.junit.rules.TestName;
 public class ClientCloseHandshakeTest
 {
     private static final Logger LOG = Log.getLogger(ClientCloseHandshakeTest.class);
-    
+
     @Rule
     public TestName testname = new TestName();
-    
+
     private UntrustedWSServer server;
     private WebSocketClient client;
-    
-    public static class TestClientTransportOverHTTP extends HttpClientTransportOverHTTP
-    {
-        @Override
-        protected SelectorManager newSelectorManager(HttpClient client)
-        {
-            return new ClientSelectorManager(client, 1)
-            {
-                @Override
-                protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
-                {
-                    ClientCloseTest.TestEndPoint endPoint = new ClientCloseTest.TestEndPoint(channel, selector, key, getScheduler());
-                    endPoint.setIdleTimeout(client.getIdleTimeout());
-                    return endPoint;
-                }
-            };
-        }
-    }
-    
-    public static class TestEndPoint extends SocketChannelEndPoint
-    {
-        public AtomicBoolean congestedFlush = new AtomicBoolean(false);
-        
-        public TestEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
-        {
-            super((SocketChannel) channel, selector, key, scheduler);
-        }
-        
-        @Override
-        public boolean flush(ByteBuffer... buffers) throws IOException
-        {
-            boolean flushed = super.flush(buffers);
-            congestedFlush.set(!flushed);
-            // TODO: if true, toss exception (different use case)
-            return flushed;
-        }
-    }
-    
+
     @Before
     public void startClient() throws Exception
     {
-        HttpClient httpClient = new HttpClient(new TestClientTransportOverHTTP(), null);
+        HttpClient httpClient = new HttpClient();
         client = new WebSocketClient(httpClient);
         client.addBean(httpClient);
         client.start();
     }
-    
+
     @Before
     public void startServer() throws Exception
     {
         server = new UntrustedWSServer();
-
         server.registerWebSocket("/badclose", (req, resp) -> new BadCloseSocket("SERVER"));
         server.start();
     }
-    
+
     @After
     public void stopClient() throws Exception
     {
         client.stop();
     }
-    
+
     @After
     public void stopServer() throws Exception
     {
         server.stop();
     }
-    
-    
+
     /**
      * Client Initiated - no data
      * <pre>
@@ -155,19 +106,55 @@ public class ClientCloseHandshakeTest
      *                             OnClose(normal)
      *                               exit onClose()
      *                           < send:Close/Normal
-     *     OnFrame(Close)          close.success(disconnect())
+     *     OnFrame(Close)
      *     OnClose(normal)
      *     disconnect()
      * </pre>
      */
     @Test
-    public void testClientInitiated_NoData()
+    public void testClientInitiated_NoData() throws Exception
     {
-    
+        // Set client timeout
+        final int timeout = 1000;
+        client.setMaxIdleTimeout(timeout);
+
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
+        server.registerOnOpenFuture(wsUri, serverSessionFut);
+
+        // Client connects
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
+
+        // Wait for client connect on via future
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        try (StacklessLogging ignored = new StacklessLogging(clientSocket.LOG))
+        {
+            clientSession.setIdleTimeout(1000);
+            clientSession.getRemote().setBatchMode(BatchMode.OFF);
+
+            // Wait for client connect via client websocket
+            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+
+            // client should not have received close message (yet)
+            clientSocket.assertNotClosed("Client");
+
+            // client initiates close
+            clientSession.close(StatusCode.NORMAL, "Normal");
+
+            // verify client close
+            clientSocket.awaitCloseEvent("Client");
+            clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, containsString("Normal"));
+        }
+        finally
+        {
+            clientSession.close();
+        }
     }
-    
+
     /**
-     * Client Initiated - no data - alternate close code
+     * Client Initiated - no data - server supplied alternate close code
      * <pre>
      *     Client                  Server
      *     ----------              ----------
@@ -189,154 +176,53 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    public void testClientInitiated_NoData_ChangeClose()
+    public void testClientInitiated_NoData_ChangeClose() throws Exception
     {
-    
+        // Set client timeout
+        final int timeout = 1000;
+        client.setMaxIdleTimeout(timeout);
+
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
+        server.registerOnOpenFuture(wsUri, serverSessionFut);
+
+        // Client connects
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
+
+        // Server accepts connect
+        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
+        // Establish server side onClose behavior
+        serverSession.getUntrustedEndpoint().setOnCloseConsumer((session, closeInfo) ->
+                session.close(StatusCode.SHUTDOWN, "Server Shutdown"));
+
+        // Wait for client connect on via future
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        try (StacklessLogging ignored = new StacklessLogging(clientSocket.LOG))
+        {
+            clientSession.setIdleTimeout(1000);
+            clientSession.getRemote().setBatchMode(BatchMode.OFF);
+
+            // Wait for client connect via client websocket
+            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+
+            // client should not have received close message (yet)
+            clientSocket.assertNotClosed("Client");
+
+            // client initiates close
+            clientSession.close(StatusCode.NORMAL, "Normal");
+
+            // verify client close
+            clientSocket.awaitCloseEvent("Client");
+            clientSocket.assertCloseInfo("Client", StatusCode.SHUTDOWN, containsString("Server Shutdown"));
+        }
+        finally
+        {
+            clientSession.close();
+        }
     }
 
-    /**
-     * Client Initiated - async send (complete message) during onClose
-     * <pre>
-     *     Client                  Server
-     *     ----------              ----------
-     *     TCP Connect             TCP Accept
-     *     WS Handshake Request >
-     *                           < WS Handshake Response
-     *     OnOpen()                OnOpen()
-     *     close(Normal)
-     *     send:Close/Normal >
-     *                             OnFrame(Close)
-     *                             OnClose(normal)
-     *                               sendAsync:Text (queued to extension stack)
-     *                               exit onClose()
-     *                           < send:Close/Normal (queued)
-     *     OnFrame(Close)          disconnect()
-     *     OnClose(normal)
-     *     disconnect()
-     * </pre>
-     */
-    @Test
-    public void testClientInitiated_AsyncDataDuringClose()
-    {
-    
-    }
-    
-    /**
-     * Client Initiated - partial send data during on close
-     * <pre>
-     *     Client                  Server
-     *     ----------              ----------
-     *     TCP Connect             TCP Accept
-     *     WS Handshake Request >
-     *                           < WS Handshake Response
-     *     OnOpen()                OnOpen()
-     *     close(Normal)
-     *     send:Close/Normal >
-     *                             OnFrame(Close)
-     *                             OnClose(normal)
-     *                               session.getRemote().writePartial(msg, fin=false)
-     *                               exit onClose()
-     *                           < send:Close/Normal (queued)
-     *     OnFrame(Close)          disconnect()
-     *     OnClose(normal)
-     *     disconnect()
-     * </pre>
-     */
-    @Test
-    public void testClientInitiated_PartialDataDuringClose()
-    {
-    
-    }
-
-    /**
-     * Client Initiated - async streaming during on close
-     * <pre>
-     *     Client                  Server
-     *     ----------              ----------
-     *     TCP Connect             TCP Accept
-     *     WS Handshake Request >
-     *                           < WS Handshake Response
-     *     OnOpen()                OnOpen()
-     *     close(Normal)
-     *     send:Close/Normal >
-     *                             OnFrame(Close)
-     *                             OnClose(normal)
-     *                               session.getRemote().getOutputStream()
-     *                               new Thread()
-     *                                   send movie to client
-     *                               exit onClose()
-     *                           < send:Close/Normal
-     *     OnFrame(Close)          disconnect()
-     *     OnClose(normal)
-     *     disconnect()
-     * </pre>
-     */
-    @Test
-    public void testClientInitiated_AsyncStreamingDuringClose()
-    {
-        // TODO: dubious
-    }
-    
-    /**
-     * Client Initiated - server is streaming data
-     * <pre>
-     *     Client                  Server                  Server Thread
-     *     ----------              ----------              --------------------
-     *     Connect                 Accept
-     *     Handshake Request >
-     *                           < Handshake Response
-     *     OnOpen                  OnOpen
-     *                             new Thread()            send(Text/!fin)
-     *                                                     send(Continuation/!fin)
-     *     close(Normal)
-     *     send(Close/Normal)    >
-     *                             OnFrame(Close)
-     *                             OnClose(normal)
-     *                               exit onClose()
-     *                                                     send(Continuation/!fin)
-     *                           < send(Close/Normal)
-     *                                                     send(Continuation/fin) - FAIL
-     *     OnFrame(Close)          disconnect()
-     *     disconnect()
-     * </pre>
-     */
-    @Test
-    public void testClientInitiated_ServerStreamingData()
-    {
-    
-    }
-
-    /**
-     * Client Initiated - client is streaming data
-     * <pre>
-     *     Client               Client Thread            Server
-     *     ----------           -------------            ----------
-     *     Connect                                       Accept
-     *     Handshake Request >
-     *                                                 < Handshake Response
-     *     OnOpen                                        OnOpen
-     *     new Thread()         send(Text/!fin)          - (streaming here)
-     *                          send(Continuation/!fin)
-     *     close(Normal)
-     *     send:Close/Normal
-     *                          send(Continuation/!fin) FAIL
-     *                          send(Continuation/fin)  FAIL - (whole here)
-     *                                                   OnFrame(Close)
-     *
-     *                                                   OnClose(normal)
-     *                                                      exit onClose()
-     *                                                   send:Close/Normal
-     *     OnFrame(Close)
-     *     OnClose(normal)                               disconnect()
-     *     disconnect()
-     * </pre>
-     */
-    @Test
-    public void testClientInitiated_ClientStreamingData()
-    {
-    
-    }
-    
     /**
      * Server Initiated - no data
      * <pre>
@@ -358,67 +244,50 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    public void testServerInitiated_NoData()
+    public void testServerInitiated_NoData() throws Exception
     {
-    
+        // Set client timeout
+        final int timeout = 1000;
+        client.setMaxIdleTimeout(timeout);
+
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
+        server.registerOnOpenFuture(wsUri, serverSessionFut);
+
+        // Client connects
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
+
+        // Wait for server connect
+        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
+
+        // Wait for client connect on via future
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        try (StacklessLogging ignored = new StacklessLogging(clientSocket.LOG))
+        {
+            clientSession.setIdleTimeout(1000);
+            clientSession.getRemote().setBatchMode(BatchMode.OFF);
+
+            // Wait for client connect via client websocket
+            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+
+            // client should not have received close message (yet)
+            clientSocket.assertNotClosed("Client");
+
+            // server initiates close
+            serverSession.close(StatusCode.NORMAL, "Server initiated");
+
+            // verify client close
+            clientSocket.awaitCloseEvent("Client");
+            clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, containsString("Server initiated"));
+        }
+        finally
+        {
+            clientSession.close();
+        }
     }
-    
-    /**
-     * Server Initiated - server is streaming data
-     * <pre>
-     *     Client                  Server                  Server Thread
-     *     ----------              ----------              --------------------
-     *     Connect                 Accept
-     *     Handshake Request >
-     *                           < Handshake Response
-     *     OnOpen                  OnOpen
-     *                             new Thread()            send(Text/!fin)
-     *                                                     send(Continuation/!fin)
-     *                             close(Normal)
-     *                                                     send(Continuation/!fin)
-     *                                                     send(Continuation/fin)
-     *                           < send(Close/Normal)
-     *     OnFrame(Close)
-     *     send(Close/Normal)    >
-     *     OnClose(normal)         OnFrame(Close)
-     *     disconnect()            OnClose(normal)
-     *                             disconnect()
-     * </pre>
-     */
-    @Test
-    public void testServerInitiated_ServerStreamingData()
-    {
-    
-    }
-    
-    /**
-     * Server Initiated - client is streaming data
-     * <pre>
-     *     Client               Client Thread            Server
-     *     ----------           -------------            ----------
-     *     Connect                                       Accept
-     *     Handshake Request >
-     *                                                 < Handshake Response
-     *     OnOpen                                        OnOpen
-     *     new Thread()         send(Text/!fin)
-     *                          send(Continuation/!fin)
-     *                                                   close(Normal)
-     *                                                   send(Close/Normal)
-     *     OnFrame(Close)
-     *                          send(Continuation/!fin)
-     *                          send(Continuation/fin)
-     *     send(Close/Normal)
-     *     OnClose(normal)                               OnFrame(Close)
-     *     disconnect()                                  OnClose(normal)
-     *                                                   disconnect()
-     * </pre>
-     */
-    @Test
-    public void testServerInitiated_ClientStreamingData()
-    {
-    
-    }
-    
+
     /**
      * Client Read IOException
      * <pre>
@@ -442,74 +311,7 @@ public class ClientCloseHandshakeTest
     @Test
     public void testClient_Read_IOException()
     {
-    
-    }
-    
-    /**
-     * Client Reads -1
-     * <pre>
-     *     Client                  Server
-     *     ----------              ----------
-     *     Connect                 Accept
-     *     Handshake Request >
-     *                           < Handshake Response
-     *     OnOpen                  OnOpen
-     *     ...(some time later)...
-     *     fillAndParse()          disconnect - (no-close-handshake)
-     *     read = -1
-     *     // no close frame received?
-     *     OnClose(ABNORMAL)
-     *     disconnect()
-     * </pre>
-     */
-    @Test
-    @Ignore("Needs work")
-    public void testClient_Read_Minus1() throws Exception
-    {
-        // Set client timeout
-        final int timeout = 1000;
-        client.setMaxIdleTimeout(timeout);
-    
-        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
-        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
-        server.registerOnOpenFuture(wsUri, serverSessionFut);
-    
-        // Client connects
-        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
-        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-    
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
-    
-        // Wait for client connect on via future
-        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        clientSession.getRemote().setBatchMode(BatchMode.OFF);
-    
-        // Wait for client connect via client websocket
-        assertThat("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), is(true));
-    
-        try (StacklessLogging ignored = new StacklessLogging(clientSocket.LOG))
-        {
-            // client sends close frame
-            final String origCloseReason = "Normal Close";
-            clientSocket.close(StatusCode.NORMAL, origCloseReason);
-        
-            // server receives close frame
-            serverSession.getUntrustedEndpoint().awaitCloseEvent("Server");
-            serverSession.getUntrustedEndpoint().assertCloseInfo("Server", StatusCode.NORMAL, is(origCloseReason));
-        
-            // client should not have received close message (yet)
-            clientSocket.assertNotClosed("Client");
-        
-            // server shuts down connection (no frame reply)
-            serverSession.disconnect();
-        
-            // client reads -1 (EOF)
-            clientSocket.assertErrorEvent("Client", instanceOf(IOException.class), containsString("EOF"));
-            // client triggers close event on client ws-endpoint
-            clientSocket.awaitCloseEvent("Client");
-            clientSocket.assertCloseInfo("Client", StatusCode.ABNORMAL, containsString("Disconnected"));
-        }
+        // TODO: somehow?
     }
 
     /**
@@ -535,37 +337,64 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
-    public void testClient_IdleTimeout()
+    public void testClient_IdleTimeout() throws Exception
     {
-    
+        // Set client timeout
+        final int timeout = 1000;
+        client.setMaxIdleTimeout(timeout);
+
+        URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
+        CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
+        server.registerOnOpenFuture(wsUri, serverSessionFut);
+
+        // Client connects
+        TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
+
+        // Server accepts connect
+        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
+
+        // Wait for client connect on via future
+        Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        try (StacklessLogging ignored = new StacklessLogging(clientSocket.LOG))
+        {
+            clientSession.setIdleTimeout(1000);
+            clientSession.getRemote().setBatchMode(BatchMode.OFF);
+
+            // Wait for client connect via client websocket
+            assertTrue("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+
+            // client should not have received close message (yet)
+            clientSocket.assertNotClosed("Client");
+
+            // server sends some data
+            int length = 30;
+            ByteBuffer partialFrame = ByteBuffer.allocate(length + 5);
+            partialFrame.put((byte) 0x82);
+            byte b = 0x00; // no masking
+            b |= length & 0x7F;
+            partialFrame.put(b);
+            partialFrame.flip();
+
+            serverSession.getUntrustedConnection().writeRaw(partialFrame);
+            // server shuts down connection)
+            serverSession.disconnect();
+
+            // client read timeout
+            clientSocket.awaitErrorEvent("Client");
+            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Idle Timeout"));
+
+            // TODO: should this also cause an onClose event?
+            // clientSocket.awaitCloseEvent("Client");
+            // clientSocket.assertCloseInfo("Client", StatusCode.ABNORMAL, containsString("Disconnected"));
+        }
+        finally
+        {
+            clientSession.close();
+        }
     }
-    
-    /**
-     * Client Idle Timeout
-     * <pre>
-     *     Client                  Server
-     *     ----------              ----------
-     *     Connect                 Accept
-     *     Handshake Request >
-     *                           < Handshake Response
-     *     OnOpen                  OnOpen
-     *     ...(some time later)...
-     *     close(Normal)
-     *     send:Close/Normal >
-     *                             (state unknown)
-     *     ...(some time later)...
-     *     onIdleTimeout()
-     *     conn.onError(TimeoutException)
-     *     OnClose(ABNORMAL/IdleTimeout)
-     *     disconnect()
-     * </pre>
-     */
-    @Test
-    public void testClient_IdleTimeout_Alt()
-    {
-    
-    }
-    
+
     /**
      * Client ProtocolViolation
      * <pre>
@@ -622,7 +451,7 @@ public class ClientCloseHandshakeTest
             clientSession.close();
         }
     }
-    
+
     /**
      * Client Exception during Write
      * <pre>
@@ -650,46 +479,37 @@ public class ClientCloseHandshakeTest
         // Set client timeout
         final int timeout = 1000;
         client.setMaxIdleTimeout(timeout);
-        
+
         TrackingEndpoint clientSocket = new TrackingEndpoint(testname.getMethodName());
         URI wsUri = server.getUntrustedWsUri(this.getClass(), testname);
         CompletableFuture<UntrustedWSSession> serverSessionFut = new CompletableFuture<>();
         server.registerOnOpenFuture(wsUri, serverSessionFut);
-        
+
         // Client connects
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
-        
-        // Server accepts connect
-        UntrustedWSSession serverSession = serverSessionFut.get(10, TimeUnit.SECONDS);
-        
+
         // client confirms connection via echo
         // Wait for client connect on via future
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         clientSession.getRemote().setBatchMode(BatchMode.OFF);
-    
+
         // Wait for client connect via client websocket
         assertThat("Client WebSocket is Open", clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS), is(true));
-        
+
         // setup client endpoint for write failure (test only)
         EndPoint endp = clientSocket.getJettyEndPoint();
         endp.shutdownOutput();
-        
+
         // client enqueue close frame
         // client write failure
         final String origCloseReason = "Normal Close";
         clientSocket.close(StatusCode.NORMAL, origCloseReason);
-        
+
         assertThat("OnError", clientSocket.error.get(), instanceOf(EofException.class));
-        
+
         // client triggers close event on client ws-endpoint
         // assert - close code==1006 (abnormal)
         // assert - close reason message contains (write failure)
         assertTrue("Client onClose not called", clientSocket.closeLatch.getCount() > 0);
-    }
-    
-    @Test
-    public void testDecoderError_CallsOnError()
-    {
-        // TODO: put in JSR specific layers of tests
     }
 }
