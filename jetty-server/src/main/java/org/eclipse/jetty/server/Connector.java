@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -37,7 +38,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * the machinery needed to handle such tasks.</p>
  */
 @ManagedObject("Connector Interface")
-public interface Connector extends LifeCycle, Graceful
+public interface Connector extends LifeCycle, Container, Graceful
 {
     /**
      * @return the {@link Server} instance associated with this {@link Connector}

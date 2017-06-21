@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 public class HTTP2Connection extends AbstractConnection
@@ -50,14 +51,14 @@ public class HTTP2Connection extends AbstractConnection
     private final int bufferSize;
     private final ExecutionStrategy strategy;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, ReservedThreadExecutor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
-        super(endPoint, executor);
+        super(endPoint, executor.getExecutor());
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.strategy = new EatWhatYouKill(producer, executor, 0);
+        this.strategy = new EatWhatYouKill(producer, executor.getExecutor(), executor);
         
         LifeCycle.start(strategy);
     }
@@ -147,7 +148,10 @@ public class HTTP2Connection extends AbstractConnection
     protected void offerTask(Runnable task, boolean dispatch)
     {
         offerTask(task);
-        strategy.dispatch();
+        if (dispatch)
+            strategy.dispatch();
+        else
+            strategy.produce();
     }
 
     @Override
@@ -180,7 +184,7 @@ public class HTTP2Connection extends AbstractConnection
         private ByteBuffer buffer;
 
         @Override
-        public synchronized Runnable produce()
+        public Runnable produce()
         {
             Runnable task = pollTask();
             if (LOG.isDebugEnabled())
