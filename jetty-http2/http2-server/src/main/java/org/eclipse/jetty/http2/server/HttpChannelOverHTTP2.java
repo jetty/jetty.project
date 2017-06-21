@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -46,7 +47,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannelOverHTTP2 extends HttpChannel
+public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
@@ -375,6 +376,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                     throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
         }
+    }
+
+    @Override
+    public void close()
+    {
+        abort(new IOException("Unexpected close"));
     }
 
     @Override

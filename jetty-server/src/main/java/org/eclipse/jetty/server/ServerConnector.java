@@ -378,6 +378,7 @@ public class ServerConnector extends AbstractNetworkConnector
         }
     }
 
+    @ManagedAttribute("The Selector Manager")
     public SelectorManager getSelectorManager()
     {
         return _manager;

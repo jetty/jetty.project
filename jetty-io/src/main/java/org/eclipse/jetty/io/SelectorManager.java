@@ -29,12 +29,15 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 /**
  * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
@@ -42,6 +45,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <p>{@link SelectorManager} subclasses implement methods to return protocol-specific
  * {@link EndPoint}s and {@link Connection}s.</p>
  */
+
+@ManagedObject("Manager of the NIO Selectors")
 public abstract class SelectorManager extends ContainerLifeCycle implements Dumpable
 {
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
@@ -52,6 +57,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
+    private int _reservedThreads = -2;
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
@@ -67,11 +73,13 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         _selectors = new ManagedSelector[selectors];
     }
 
+    @ManagedAttribute("The Executor")
     public Executor getExecutor()
     {
         return executor;
     }
 
+    @ManagedAttribute("The Scheduler")
     public Scheduler getScheduler()
     {
         return scheduler;
@@ -82,6 +90,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      *
      * @return the connect timeout (in milliseconds)
      */
+    @ManagedAttribute("The Connection timeout (ms)")
     public long getConnectTimeout()
     {
         return _connectTimeout;
@@ -98,6 +107,30 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
+     * Get the number of preallocated producing threads
+     * @see EatWhatYouKill
+     * @see ReservedThreadExecutor
+     * @return The number of threads preallocated to producing (default 1).
+     */
+    @ManagedAttribute("The number of preallocated producer threads")
+    public int getReservedThreads()
+    {
+        return _reservedThreads;
+    }
+    
+    /**
+     * Set the number of preallocated threads for high priority tasks
+     * @see EatWhatYouKill
+     * @see ReservedThreadExecutor
+     * @param threads  The number of producing threads to preallocate (default 1). 
+     * The EatWhatYouKill scheduler will be disabled with a value of 0.
+     */
+    public void setReservedThreads(int threads)
+    {
+        _reservedThreads = threads;
+    }
+    
+    /**
      * Executes the given task in a different thread.
      *
      * @param task the task to execute
@@ -110,6 +143,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     /**
      * @return the number of selectors in use
      */
+    @ManagedAttribute("The number of NIO Selectors")
     public int getSelectorCount()
     {
         return _selectors.length;
@@ -231,6 +265,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStart() throws Exception
     {
+        addBean(new ReservedThreadExecutor(getExecutor(),_reservedThreads==-2?_selectors.length:_reservedThreads),true);
         for (int i = 0; i < _selectors.length; i++)
         {
             ManagedSelector selector = newSelector(i);
@@ -373,4 +408,5 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @throws IOException if unable to create new connection
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
+
 }

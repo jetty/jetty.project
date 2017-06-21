@@ -2244,7 +2244,15 @@ public class Request implements HttpServletRequest
             _async=new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context,_async,state,this,servletRequest,servletResponse);
         event.setDispatchContext(getServletContext());
-        event.setDispatchPath(URIUtil.encodePath(URIUtil.addPaths(getServletPath(),getPathInfo())));
+        
+        String uri = ((HttpServletRequest)servletRequest).getRequestURI();
+        if (uri.startsWith(_contextPath))
+            uri = uri.substring(_contextPath.length());
+        else
+            // TODO probably need to strip encoded context from requestURI, but will do this for now:
+            uri = URIUtil.encodePath(URIUtil.addPaths(getServletPath(),getPathInfo()));  
+        
+        event.setDispatchPath(uri);
         state.startAsync(event);
         return _async;
     }
