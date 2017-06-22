@@ -224,7 +224,24 @@ public class IncludeExcludeBasedFilterTest
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
         request.setHeader("Host","localhost");
-        request.setURI("/context/test/json");
+        request.setURI("/context/test/json.json");
+
+        HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
+        Assert.assertTrue(response.contains("X-Custom-Value","1"));
+    }
+
+    @Test
+    public void testIncludeExcludeFilterIncludeMimeTypeMatchWithQueryString() throws Exception
+    {
+        FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
+        holder.setInitParameter("includedMimeTypes","application/json");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host","localhost");
+        request.setURI("/context/test/json.json?some=value");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
         Assert.assertTrue(response.contains("X-Custom-Value","1"));
@@ -241,7 +258,24 @@ public class IncludeExcludeBasedFilterTest
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
         request.setHeader("Host","localhost");
-        request.setURI("/context/test/json");
+        request.setURI("/context/test/json.json");
+
+        HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
+        Assert.assertFalse(response.contains("X-Custom-Value","1"));
+    }
+
+    @Test
+    public void testIncludeExcludeFilterIncludeMimeTypeNoMatchNoExtension() throws Exception
+    {
+        FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
+        holder.setInitParameter("includedMimeTypes","application/json");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host","localhost");
+        request.setURI("/context/test/abcdef");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
         Assert.assertFalse(response.contains("X-Custom-Value","1"));
@@ -258,7 +292,7 @@ public class IncludeExcludeBasedFilterTest
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
         request.setHeader("Host","localhost");
-        request.setURI("/context/test/json");
+        request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
         Assert.assertFalse(response.contains("X-Custom-Value","1"));
@@ -275,44 +309,10 @@ public class IncludeExcludeBasedFilterTest
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
         request.setHeader("Host","localhost");
-        request.setURI("/context/test/json");
+        request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
         Assert.assertTrue(response.contains("X-Custom-Value","1"));
-    }
-
-    @Test
-    public void testIncludeExcludeFilterIncludeMimeTypeSemicolonMatch() throws Exception
-    {
-        FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedMimeTypes","application/json");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
-
-        HttpTester.Request request = HttpTester.newRequest();
-        request.setMethod("GET");
-        request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
-        request.setURI("/context/test/json-utf8");
-
-        HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertTrue(response.contains("X-Custom-Value","1"));
-    }
-
-    @Test
-    public void testIncludeExcludeFilterIncludeMimeTypeSemicolonNoMatch() throws Exception
-    {
-        FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedMimeTypes","application/xml");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
-
-        HttpTester.Request request = HttpTester.newRequest();
-        request.setMethod("GET");
-        request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
-        request.setURI("/context/test/json-utf8");
-
-        HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        Assert.assertFalse(response.contains("X-Custom-Value","1"));
     }
 
     public static class MockIncludeExcludeFilter extends IncludeExcludeBasedFilter
@@ -320,16 +320,15 @@ public class IncludeExcludeBasedFilterTest
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            chain.doFilter(request,response);
             HttpServletRequest http_request = (HttpServletRequest)request;
             HttpServletResponse http_response = (HttpServletResponse)response;
 
-            if (!super.shouldFilter(http_request,http_response))
+            if (super.shouldFilter(http_request,http_response))
             {
-                return;
+                http_response.setHeader("X-Custom-Value","1");
             }
 
-            http_response.setHeader("X-Custom-Value","1");
+            chain.doFilter(request,response);
         }
     }
 
@@ -338,15 +337,8 @@ public class IncludeExcludeBasedFilterTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            if (req.getPathInfo().equals("/json"))
-            {
-                resp.setContentType("application/json");
-            }
-            else if (req.getPathInfo().equals("/json-utf8"))
-            {
-                resp.setContentType("application/json; charset=utf-8");
-            }
             resp.setStatus(HttpStatus.NO_CONTENT_204);
+            resp.flushBuffer();
         }
 
     }
