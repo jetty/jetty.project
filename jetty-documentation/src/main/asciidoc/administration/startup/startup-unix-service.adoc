@@ -136,7 +136,7 @@ jetty-distribution-{VERSION}/
 ....
 
 It might seem strange or undesirable to unpack the first portion of the jetty-distribution directory name too.
-But starting with Jetty 9.1 the split between `${jetty.home}` and `${jetty.base}` allows for easier upgrades of Jetty itself while isolating your webapp specific configuration.
+But starting with Jetty 9 the split between `${jetty.home}` and `${jetty.base}` allows for easier upgrades of Jetty itself while isolating your webapp specific configuration.
 For more information on the Jetty home and base concepts see the section on managing a Jetty installation <<startup-base-and-home, earlier in this Chapter.>>
 
 The `/opt/jetty/temp` directory is created as a durable place for Jetty to use for temp and working directories.
@@ -156,16 +156,17 @@ While this is still supported, we encourage you to setup a proper `${jetty.base}
 # cd /opt/web/mybase/
 [/opt/web/mybase]# ls
 [/opt/web/mybase]# java -jar /opt/jetty/jetty-distribution-{VERSION}/start.jar \
-   --add-to-start=deploy,http,logging
-WARNING: deploy          initialised in ${jetty.base}/start.ini (appended)
-WARNING: deploy          enabled in     ${jetty.base}/start.ini
-WARNING: server          initialised in ${jetty.base}/start.ini (appended)
-WARNING: server          enabled in     ${jetty.base}/start.ini
-WARNING: http            initialised in ${jetty.base}/start.ini (appended)
-WARNING: http            enabled in     ${jetty.base}/start.ini
-WARNING: server          enabled in     ${jetty.base}/start.ini
-WARNING: logging         initialised in ${jetty.base}/start.ini (appended)
-WARNING: logging         enabled in     ${jetty.base}/start.ini
+   --add-to-start=deploy,http,console-capture
+   INFO  : webapp          transitively enabled, ini template available with --add-to-start=webapp
+   INFO  : server          transitively enabled, ini template available with --add-to-start=server
+   INFO  : security        transitively enabled
+   INFO  : servlet         transitively enabled
+   INFO  : console-capture initialized in ${jetty.base}/start.ini
+   INFO  : http            initialized in ${jetty.base}/start.ini
+   INFO  : deploy          initialized in ${jetty.base}/start.ini
+   MKDIR : ${jetty.base}/logs
+   MKDIR : ${jetty.base}/webapps
+   INFO  : Base directory was modified
 [/opt/web/mybase]# ls -F
 start.ini  webapps/
 ....
@@ -178,9 +179,11 @@ http::
 This sets up a single Connector that listens for basic HTTP requests.
 +
 See the created `start.ini` for configuring this connector.
-logging::
+console-capture::
 When running Jetty as a service it is very important to have logging enabled.
 This module will enable the basic STDOUT and STDERR capture logging to the `/opt/web/mybase/logs/` directory.
+
+Additionally, the `webapp`, `server`, `security` and `servlet` modules were enabled as they are dependencies for other modules.
 
 See xref:start-jar[] for more details and options on setting up and configuring a `${jetty.base}` directory.
 
@@ -238,7 +241,7 @@ JAVA_OPTIONS   =  -Djetty.state=/opt/web/mybase/jetty.state
        -Djetty.home=/opt/jetty/jetty-distribution-{VERSION}
        -Djetty.base=/opt/web/mybase
        -Djava.io.tmpdir=/opt/jetty/temp
-JETTY_ARGS     =  jetty-logging.xml jetty-started.xml
+JETTY_ARGS     =  console-capture.xml jetty-started.xml
 RUN_CMD        =  /usr/bin/java
        -Djetty.state=/opt/web/mybase/jetty.state
        -Djetty.logs=/opt/web/mybase/logs
@@ -246,11 +249,11 @@ RUN_CMD        =  /usr/bin/java
        -Djetty.base=/opt/web/mybase
        -Djava.io.tmpdir=/opt/jetty/temp
        -jar /opt/jetty/jetty-distribution-{VERSION}/start.jar
-       jetty-logging.xml
+       console-capture.xml
        jetty-started.xml
 ....
 
-You now have a configured `${jetty.base}` in `/opt/web/mybase` and a jetty-distribution in `/opt/jetty/jetty-distribution-{VERSION}`, along with the service level files necessary to start the service.
+You now have a configured `${jetty.base}` in `/opt/web/mybase` and a `${jetty.home}` in `/opt/jetty/jetty-distribution-{VERSION}`, along with the service level files necessary to start the service.
 
 Test the service to make sure it starts up and runs successfully.
 
@@ -268,4 +271,4 @@ USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
 jetty     2958  5.3  0.1 11179176 53984 ?      Sl   12:46   0:00 /usr/bin/java -Djetty...
 ....
 
-You should now have your server running. Try it out
+You should now have your server running.
