@@ -222,7 +222,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             getLog().info("Reload Mechanic: " + reload );
         }
-
+        getLog().info( "nonBlocking:" + nonBlocking );
 
         // check the classes to form a classpath with
         try
@@ -566,7 +566,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      */
     private List<File> getDependencyFiles()
     {
-        List<File> dependencyFiles = new ArrayList<File>();
+        List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
@@ -596,7 +596,7 @@ public class JettyRunMojo extends AbstractJettyMojo
 
     private List<File> getDependencyProjects()
     {
-        List<File> dependencyFiles = new ArrayList<File>();
+        List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
@@ -656,10 +656,10 @@ public class JettyRunMojo extends AbstractJettyMojo
         if (warArtifacts != null)
             return warArtifacts;       
         
-        warArtifacts = new ArrayList<Artifact>();
+        warArtifacts = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
-            Artifact artifact = (Artifact) iter.next(); 
+            Artifact artifact = iter.next();
             if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
             {
                 try
