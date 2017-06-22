@@ -10,8 +10,9 @@
   <name>Jetty :: Jetty Maven Plugin</name>
   <description>Jetty maven plugins</description>
   <properties>
-    <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>3.4</pluginToolsVersion>
+    <mavenVersion>3.5.0</mavenVersion>
+    <resolverVersion>1.0.3</resolverVersion>
+    <pluginToolsVersion>3.5</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
   </properties>
   <build>
@@ -76,6 +77,16 @@
       <artifactId>maven-plugin-annotations</artifactId>
       <version>${pluginToolsVersion}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-api</artifactId>
+      <version>${resolverVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-util</artifactId>
+      <version>${resolverVersion}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

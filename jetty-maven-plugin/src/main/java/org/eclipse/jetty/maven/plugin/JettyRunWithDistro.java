@@ -29,8 +29,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.resource.JarResource;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * JettyRunWithDistro
@@ -38,10 +48,13 @@ import org.eclipse.jetty.util.TypeUtil;
  * @goal run-distro
  * @requiresDependencyResolution test
  * @execute phase="test-compile"
- * @description Runs unassembled webapp in a local jetty distro
+ * @description Runs unassembled webapp in a locally installed jetty distro
  */
 public class JettyRunWithDistro extends JettyRunMojo
 {
+    
+    public static final String JETTY_HOME_GROUPID = "org.eclipse.jetty";
+    public static final String JETTY_HOME_ARTIFACTID = "jetty-home";
     /**
      * The target directory
      * 
@@ -55,7 +68,6 @@ public class JettyRunWithDistro extends JettyRunMojo
     /**
      * 
      * @parameter
-     * @required
      */
     private File jettyHome;
     
@@ -80,12 +92,45 @@ public class JettyRunWithDistro extends JettyRunMojo
      */
     private String[] properties;
     
+    
+    
+    
+    /**
+     * The entry point to Maven Artifact Resolver, i.e. the component doing all the work.
+     * 
+     * @component
+     */
+    private RepositorySystem repoSystem;
+
+    /**
+     * The current repository/network configuration of Maven.
+     * 
+     * @parameter default-value="${repositorySystemSession}"
+     * @readonly
+     */
+    private RepositorySystemSession repoSession;
+
+    /**
+     * The project's remote repositories to use for the resolution.
+     * 
+     * @parameter default-value="${project.remoteProjectRepositories}"
+     * @readonly
+     */
+    private List<RemoteRepository> remoteRepos;
+    
+    
+    /**
+     * @parameter default-value="${plugin.version}"
+     * @readonly
+     */
+    private String pluginVersion;
+    
+    
  
     private File targetBase;
     
     
     // IDEAS:
-    // 1. if no jetty-home, download jetty-home.zip from repo and install in target
     // 2. put out a warning if pluginDependencies are configured (use a jetty-home and configure)
     // 3. don't copy existing jetty-base/webapps because a context.xml will confuse the deployer - or
     //    do copy webapps but if the contextXml file matches a file in webapps, don't copy that over
@@ -104,6 +149,9 @@ public class JettyRunWithDistro extends JettyRunMojo
         try
         {
             printSystemProperties();
+            
+            //download and install jetty-home if necessary
+            configureJettyHome();
 
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
@@ -120,6 +168,38 @@ public class JettyRunWithDistro extends JettyRunMojo
             throw new MojoExecutionException("Failed to start Jetty", e);
         }
 
+    }
+    
+
+    /**
+     * If jetty home does not exist, download it and
+     * unpack to build dir.
+     * 
+     * @throws Exception
+     */
+    public void configureJettyHome() throws Exception
+    {
+        if (jettyHome == null)
+        {
+            //no jetty home, download from repo and unpack it. Get the same version as the plugin
+            Artifact artifact = new DefaultArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, "zip", pluginVersion);
+
+            ArtifactRequest request = new ArtifactRequest();
+            request.setArtifact(artifact);
+            request.setRepositories(remoteRepos);  
+            ArtifactResult result = repoSystem.resolveArtifact(repoSession, request);        
+            JarResource res = (JarResource) JarResource.newJarResource(Resource.newResource(result.getArtifact().getFile()));
+            res.copyTo(target);
+            //zip will unpack to target/jetty-home-<VERSION>
+            jettyHome = new File (target, JETTY_HOME_ARTIFACTID+"-"+pluginVersion);
+        }
+        else
+        {
+            if  (!jettyHome.exists())
+                throw new IllegalStateException(jettyHome.getAbsolutePath()+" does not exist");
+        }
+        
+        getLog().info("jetty.home = "+jettyHome.getAbsolutePath());
     }
 
 
@@ -221,7 +301,11 @@ public class JettyRunWithDistro extends JettyRunMojo
                 tmp.append(","+m);
         }
         tmp.append(",maven");
+   
+        
         cmd.add(tmp.toString());
+        
+        
         if (properties != null)
         {
             tmp.delete(0, tmp.length());

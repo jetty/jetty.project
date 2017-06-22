@@ -4,7 +4,7 @@
 <Configure  class="org.eclipse.jetty.maven.plugin.WebAppStarter">
 
   <Call class="org.eclipse.jetty.webapp.Configuration$ClassList" name="setServerDefault">
-    <Arg><Ref refid="Server" /></Arg>
+    <Arg><Ref id="Server" /></Arg>
     <Call name="replace">
       <Arg>org.eclipse.jetty.webapp.WebInfConfiguration</Arg>
       <Arg>org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration</Arg>
