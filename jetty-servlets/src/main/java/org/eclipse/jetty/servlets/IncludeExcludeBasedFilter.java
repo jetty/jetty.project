@@ -110,6 +110,33 @@ public abstract class IncludeExcludeBasedFilter implements Filter
         }
     }
 
+    protected String guessMimeType(HttpServletRequest http_request, HttpServletResponse http_response)
+    {
+        String content_type = http_response.getContentType();
+        LOG.debug("Content Type is: {}",content_type);
+
+        String mime_type = "";
+        if (content_type != null)
+        {
+            mime_type = MimeTypes.getContentTypeWithoutCharset(content_type);
+            LOG.debug("Mime Type is: {}",mime_type);
+        }
+        else
+        {
+            String request_url = http_request.getPathInfo();
+            mime_type = MimeTypes.getDefaultMimeByExtension(request_url);
+
+            if (mime_type == null)
+            {
+                mime_type = "";
+            }
+
+            LOG.debug("Guessed mime type is {}",mime_type);
+        }
+
+        return mime_type;
+    }
+
     protected boolean shouldFilter(HttpServletRequest http_request, HttpServletResponse http_response)
     {
         String http_method = http_request.getMethod();
@@ -120,12 +147,8 @@ public abstract class IncludeExcludeBasedFilter implements Filter
             return false;
         }
 
-        String content_type = http_response.getContentType();
-        LOG.debug("Content Type is: {}",content_type);
-        content_type = (content_type == null)?"":content_type;
-        String mime_type = MimeTypes.getContentTypeWithoutCharset(content_type);
+        String mime_type = guessMimeType(http_request,http_response);
 
-        LOG.debug("Mime Type is: {}",content_type);
         if (!_mimeTypes.test(mime_type))
         {
             LOG.debug("should not apply filter because mime type does not match");

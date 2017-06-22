@@ -28,7 +28,8 @@
 [[header-filter-usage]]
 ==== Usage
 
-The header filter sets or adds headers to each response based on an optionally included/excluded list of path specs, mime types, and/or HTTP methods. 
+The header filter sets or adds headers to each response based on an optionally included/excluded list of path specs, mime types, and/or HTTP methods.
+This filter processes its configured headers before calling `doFilter` in the filter chain. Some of the headers configured in this filter may get overwritten by other filters and/or the servlet processing the request.
 
 ===== Required JARs
 
@@ -76,25 +77,25 @@ ____
 The following `init` parameters control the behavior of the filter:
 
 includedPaths::
-Optional. CSV of included path specs.
+Optional. Comma separated values of included path specs.
 
 excludedPaths::
-Optional. CSV of excluded path specs.
+Optional. Comma separated values of excluded path specs.
 
 includedMimeTypes::
-Optional. CSV of included mime types.
+Optional. Comma separated values of included mime types. The mime type will be guessed from the extension at the end of the request URL if the content type has not been set on the response.
 
 excludedMimeTypes::
-Optional. CSV of excluded mime types.
+Optional. Comma separated values of excluded mime types. The mime type will be guessed from the extension at the end of the request URL if the content type has not been set on the response.
 
 includedHttpMethods::
-Optional. CSV of included http methods.
+Optional. Comma separated values of included http methods.
 
 excludedHttpMethods::
-Optional. CSV of excluded http methods.
+Optional. Comma separated values of excluded http methods.
 
 headerConfig::
-CSV of actions to perform on headers. The syntax for each action is `action headerName: headerValue`.
+Comma separated values of actions to perform on headers. The syntax for each action is `action headerName: headerValue`.
 
 Supported header actions:
 
