@@ -40,6 +40,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  *  This goal is used in-situ on a Maven project without first requiring that the project 
@@ -281,13 +283,17 @@ public class JettyRunMojo extends AbstractJettyMojo
        if (useTestScope && (testClassesDirectory != null))
            webApp.setTestClasses (testClassesDirectory);
 
-       webApp.getClassPathFiles().addAll( getDependencyProjects() );
+       List<File> dependencyProjects = getDependencyProjects();
+       webApp.getClassPathFiles().addAll( dependencyProjects );
+       List<Resource> dependencyResources = //
+           dependencyProjects.stream() //
+               .map( file -> Resource.newResource( file ) ) //
+               .collect( Collectors.toList() );
+       webApp.getMetaData().getContainerResources().addAll( dependencyResources );
        webApp.setWebInfLib (getDependencyFiles());
 
        //get copy of a list of war artifacts
        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
-
-
 
        //process any overlays and the war type artifacts
        List<Overlay> overlays = new ArrayList<Overlay>();
