@@ -291,7 +291,11 @@ public class JettyRunMojo extends AbstractJettyMojo
                .collect( Collectors.toList() );
        webApp.getMetaData().getContainerResources().addAll( dependencyResources );
        webApp.setWebInfLib (getDependencyFiles());
-
+//       webApp.getWebInfLib().addAll( dependencyResources //
+//                                         .stream() //
+//                                         .map( resource -> toFile(resource) ) //
+//                                         .collect( Collectors.toList() ) );
+        webApp.getDependentProjects().addAll( dependencyResources );
        //get copy of a list of war artifacts
        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
 
@@ -373,7 +377,17 @@ public class JettyRunMojo extends AbstractJettyMojo
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
     
-    
+    private static File toFile(Resource resource)
+    {
+        try
+        {
+            return resource.getFile();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e.getMessage(), e );
+        }
+    }
 
     
     /** 
