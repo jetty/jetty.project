@@ -14,6 +14,7 @@
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <it.debug>false</it.debug>
     <jetty.stopKey>FOOBEER</jetty.stopKey>
+    <jetty.jvmArgs></jetty.jvmArgs>
   </properties>
   <build>
     <plugins>
@@ -195,7 +196,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-invoker-plugin</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.1-SNAPSHOT</version>
             <executions>
               <execution>
                 <id>integration-test</id>
@@ -214,14 +215,12 @@
               <pomIncludes>
                 <pomInclude>*/pom.xml</pomInclude>
               </pomIncludes>
-              <preBuildHookScript>setup</preBuildHookScript>
-              <postBuildHookScript>verify</postBuildHookScript>
               <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
               <settingsFile>src/it/settings.xml</settingsFile>
               <scriptVariables>
-                <jetty.stopKey>${jetty.stopKey}</jetty.stopKey>
-                <jetty.stopPort>${jetty.stopPort}</jetty.stopPort>
-                <jetty.runPort>${jetty.runPort}</jetty.runPort>
+                <jettyStopKey>${jetty.stopKey}</jettyStopKey>
+                <jettyStopPort>${jetty.stopPort}</jettyStopPort>
+                <jettyRunPort>${jetty.runPort}</jettyRunPort>
               </scriptVariables>
               <goals>
                 <goal>clean</goal>
