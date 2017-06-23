@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package com.webtide.jetty.its.jetty_run_mojo_it;
 
 import org.eclipse.jetty.client.HttpClient;

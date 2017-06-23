@@ -13,6 +13,7 @@
     <pluginToolsVersion>3.4</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <it.debug>false</it.debug>
+    <jetty.stopKey>FOOBEER</jetty.stopKey>
   </properties>
   <build>
     <plugins>
@@ -217,10 +218,35 @@
               <postBuildHookScript>verify</postBuildHookScript>
               <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
               <settingsFile>src/it/settings.xml</settingsFile>
+              <scriptVariables>
+                <jetty.stopKey>${jetty.stopKey}</jetty.stopKey>
+                <jetty.stopPort>${jetty.stopPort}</jetty.stopPort>
+                <jetty.runPort>${jetty.runPort}</jetty.runPort>
+              </scriptVariables>
               <goals>
                 <goal>clean</goal>
               </goals>
             </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.0.0</version>
+            <executions>
+              <execution>
+                <id>reserve-ports</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>reserve-network-port</goal>
+                </goals>
+                <configuration>
+                  <portNames>
+                    <portName>jetty.stopPort</portName>
+                    <portName>jetty.runPort</portName>
+                  </portNames>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

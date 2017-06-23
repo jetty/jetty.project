@@ -626,7 +626,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     }
 
 
-    private MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
     {
         if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
         {

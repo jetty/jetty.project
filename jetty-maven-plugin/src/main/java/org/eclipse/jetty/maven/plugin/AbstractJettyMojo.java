@@ -280,14 +280,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     
     protected ServerSupport serverSupport;
 
-
-    /**
-     * Will dump port in a properties file with key port.
-     * If empty no file generated
-     * @parameter
-     */
-    protected String propertiesPortFilePath;
-    
     /**
      * <p>
      * Determines whether or not the server blocks when started. The default
@@ -444,10 +436,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             {
 
                 // check that its port was set
-                if (httpConnector.getPort() < 0)
+                if (httpConnector.getPort() <= 0)
                 {
                     //use any jetty.http.port settings provided
-                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY,
+                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, //
                                                     System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }  
@@ -474,25 +466,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             // start Jetty
             this.server.start();
 
-            if (httpConnector != null)
-            {
-                int port = httpConnector.getLocalPort();
-                getLog().info( "Started Jetty Server on port: " + port );
-                if (propertiesPortFilePath != null)
-                {
-                    Path propertiesPath = Paths.get( propertiesPortFilePath);
-                    Files.deleteIfExists(propertiesPath);
-                    try(OutputStream outputStream = Files.newOutputStream( propertiesPath ))
-                    {
-                        Properties properties = new Properties(  );
-                        properties.put( "port", Integer.toString( port ) );
-                        properties.store( outputStream, "Eclipse Jetty Maven Plugin port used" );
-                    }
-                }
-            } else
-            {
-                getLog().info( "Started Jetty Server" );
-            }
+            getLog().info( "Started Jetty Server" );
 
             if ( dumpOnStart )
             {
