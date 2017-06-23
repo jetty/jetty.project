@@ -16,6 +16,7 @@
 
   <properties>
     <jetty.runPort>@jetty.runPort@</jetty.runPort>
+    <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
   </properties>
 
   <dependencies>
@@ -89,8 +90,10 @@
               <nonBlocking>true</nonBlocking>
               <waitForChild>false</waitForChild>
               <jettyXml>${project.build.directory}/config/jetty.xml</jettyXml>
+              <jvmArgs>${jetty.jvmArgs}</jvmArgs>
             </configuration>
           </execution>
+          <!--
           <execution>
             <id>stop-jetty</id>
             <phase>test</phase>
@@ -98,6 +101,7 @@
               <goal>stop</goal>
             </goals>
           </execution>
+          -->
         </executions>
       </plugin>
       <plugin>

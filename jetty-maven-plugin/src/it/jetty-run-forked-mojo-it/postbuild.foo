@@ -1,8 +1,0 @@
-
-Socket s=new Socket(InetAddress.getByName("127.0.0.1"),Integer.getInteger( "jetty.runPort" ));
-s.setSoLinger(false, 0);
-
-OutputStream out=s.getOutputStream();
-out.write((System.getProperty( "jetty.stopKey" )+"\r\n"+command+"\r\n").getBytes());
-out.flush();
-s.close()
