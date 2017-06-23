@@ -246,7 +246,7 @@ public class Starter
         Set<Artifact> matchedWars = new HashSet<Artifact>();
         
         //process any overlays and the war type artifacts
-        List<Overlay> overlays = new ArrayList<Overlay>();
+        List<Overlay> overlays = new ArrayList<>();
         for (OverlayConfig config:orderedConfigs.values())
         {
             //overlays can be individually skipped
@@ -302,7 +302,7 @@ public class Starter
 
 
         // - the equivalent of web-inf lib
-        str = (String)props.getProperty("lib.jars");
+        str = props.getProperty("lib.jars");
         if (str != null && !"".equals(str.trim()))
         {
             List<File> jars = new ArrayList<File>();

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.webtide.jetty.its.jetty-run-mojo-it</groupId>
+    <groupId>com.webtide.jetty.its.jetty-run-forked-mojo-it</groupId>
     <artifactId>jetty-simple-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
@@ -14,10 +14,14 @@
 
   <name>Jetty :: Simple :: Webapp</name>
 
+  <properties>
+    <jetty.runPort>@jetty.runPort@</jetty.runPort>
+  </properties>
+
   <dependencies>
 
     <dependency>
-      <groupId>com.webtide.jetty.its.jetty-run-mojo-it</groupId>
+      <groupId>com.webtide.jetty.its.jetty-run-forked-mojo-it</groupId>
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
 
@@ -70,18 +74,54 @@
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
+        <configuration>
+          <stopPort>@jetty.stopPort@</stopPort>
+          <stopKey>@jetty.stopKey@</stopKey>
+        </configuration>
         <executions>
           <execution>
             <id>start-jetty</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>run</goal>
+              <goal>run-forked</goal>
             </goals>
             <configuration>
               <nonBlocking>true</nonBlocking>
-              <httpConnector>
-                <port>@jetty.runPort@</port>
-              </httpConnector>
+              <waitForChild>false</waitForChild>
+              <jettyXml>${project.build.directory}/config/jetty.xml</jettyXml>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stop-jetty</id>
+            <phase>test</phase>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.0.2</version>
+        <executions>
+          <execution>
+            <id>copy-resources-jetty</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/config</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${basedir}/src/config/</directory>
+                  <filtering>true</filtering>
+                  <includes>
+                    <include>**/**</include>
+                  </includes>
+                </resource>
+              </resources>
             </configuration>
           </execution>
         </executions>

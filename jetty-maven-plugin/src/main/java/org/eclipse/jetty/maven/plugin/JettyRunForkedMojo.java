@@ -44,6 +44,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.apache.maven.project.MavenProject;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
@@ -169,10 +170,18 @@ public class JettyRunForkedMojo extends JettyRunMojo
             }
         }
     }
-    
 
-    
-    
+
+    @Override
+    /**
+     * we o
+     */
+    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    {
+
+        return null;
+    }
+
     /**
      * ConsoleStreamer
      * 
@@ -349,7 +358,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             builder.directory(project.getBasedir());
             
             if (PluginLog.getLog().isDebugEnabled())
-                PluginLog.getLog().debug(Arrays.toString(cmd.toArray()));
+                PluginLog.getLog().debug("Forked cli:"+Arrays.toString(cmd.toArray()));
             
             PluginLog.getLog().info("Forked process starting");
             
