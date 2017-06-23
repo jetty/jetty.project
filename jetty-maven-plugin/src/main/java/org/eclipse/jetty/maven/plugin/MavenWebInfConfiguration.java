@@ -93,6 +93,8 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     public void preConfigure(WebAppContext context) throws Exception
     {
         super.preConfigure(context);
+        ((JettyWebAppContext)context).getDependentProjects()
+            .stream().forEach( resource ->  context.getMetaData().addWebInfJar( resource ) );
 
     }
     
