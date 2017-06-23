@@ -44,6 +44,12 @@ public class TestHelloServlet
             System.out.println( "httpResponse:" + response );
 
             Assert.assertEquals( "hello beer", response.trim() );
+
+            response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
+
+            System.out.println( "httpResponse:" + response );
+
+            Assert.assertEquals( "pong beer", response.trim() );
         }
         finally
         {
