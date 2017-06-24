@@ -61,6 +61,10 @@ public class JettyRunWarMojo extends AbstractJettyMojo
      */
     public void execute() throws MojoExecutionException, MojoFailureException
     {
+        if ( !"war".equals( project.getPackaging() ) || skip )
+        {
+            return;
+        }
         super.execute();  
     }
 
