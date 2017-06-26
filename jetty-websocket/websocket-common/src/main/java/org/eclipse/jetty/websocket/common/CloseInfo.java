@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 
 public class CloseInfo
 {
-    private int statusCode;
+    private int statusCode = 0;
     private String reason;
 
     public CloseInfo()
@@ -124,7 +124,28 @@ public class CloseInfo
         this.statusCode = statusCode;
         this.reason = reason;
     }
-    
+
+    private void assertValidStatusCode(int statusCode)
+    {
+        // Status Codes outside of RFC6455 defined scope
+        if ((statusCode <= 999) || (statusCode >= 5000))
+        {
+            throw new ProtocolException("Out of range close status code: " + statusCode);
+        }
+
+        // Status Codes not allowed to exist in a Close frame (per RFC6455)
+        if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == StatusCode.FAILED_TLS_HANDSHAKE))
+        {
+            throw new ProtocolException("Frame forbidden close status code: " + statusCode);
+        }
+
+        // Status Code is in defined "reserved space" and is declared (all others are invalid)
+        if ((statusCode >= 1000) && (statusCode <= 2999) && !StatusCode.isTransmittable(statusCode))
+        {
+            throw new ProtocolException("RFC6455 and IANA Undefined close status code: " + statusCode);
+        }
+    }
+
     /**
      * Convert a raw status code and reason into a WebSocket Close frame payload buffer.
      *
@@ -139,11 +160,11 @@ public class CloseInfo
             // codes that are not allowed to be used in endpoint.
             return null;
         }
-    
+
         int len = 2; // status code
-    
+
         byte reasonBytes[] = null;
-    
+
         if (reason != null)
         {
             byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
@@ -156,24 +177,24 @@ public class CloseInfo
             {
                 reasonBytes = utf8Bytes;
             }
-        
+
             if ((reasonBytes != null) && (reasonBytes.length > 0))
             {
                 len += reasonBytes.length;
             }
         }
-    
+
         ByteBuffer buf = BufferUtil.allocate(len);
         BufferUtil.flipToFill(buf);
         buf.put((byte) ((statusCode >>> 8) & 0xFF));
         buf.put((byte) ((statusCode >>> 0) & 0xFF));
-    
+
         if ((reasonBytes != null) && (reasonBytes.length > 0))
         {
             buf.put(reasonBytes, 0, reasonBytes.length);
         }
         BufferUtil.flipToFlush(buf, 0);
-    
+
         return buf;
     }
 
@@ -194,7 +215,7 @@ public class CloseInfo
         }
         return frame;
     }
-    
+
     public String getReason()
     {
         return this.reason;

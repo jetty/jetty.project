@@ -42,42 +42,25 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri,"Input URI must not be null");
         String wsScheme = inputUri.getScheme();
-        String httpScheme;
-        //noinspection UnusedAssignment
-        int port = -1;
-        if ("http".equalsIgnoreCase(wsScheme))
+        if ("http".equalsIgnoreCase(wsScheme) || "https".equalsIgnoreCase(wsScheme))
         {
             // leave alone
-            httpScheme = wsScheme;
-        }
-        else if ("https".equalsIgnoreCase(wsScheme))
-        {
-            // leave alone
-            httpScheme = wsScheme;
+            return inputUri;
         }
         
         if ("ws".equalsIgnoreCase(wsScheme))
         {
             // convert to http
-            httpScheme = "http";
+            return new URI("http" + inputUri.toString().substring(wsScheme.length()));
         }
         
         if ("wss".equalsIgnoreCase(wsScheme))
         {
             // convert to https
-            httpScheme = "https";
+            return new URI("https" + inputUri.toString().substring(wsScheme.length()));
         }
-        else
-        {
-            throw new URISyntaxException(inputUri.toString(),"Unrecognized WebSocket scheme");
-        }
-    
-        if (inputUri.getPort() > 0)
-        {
-            port = inputUri.getPort();
-        }
-
-        return new URI(httpScheme,inputUri.getUserInfo(),inputUri.getHost(),port,inputUri.getPath(),inputUri.getQuery(),inputUri.getFragment());
+        
+        throw new URISyntaxException(inputUri.toString(),"Unrecognized WebSocket scheme");
     }
 
     /**
@@ -134,40 +117,24 @@ public final class WSURI
     {
         Objects.requireNonNull(inputUri,"Input URI must not be null");
         String httpScheme = inputUri.getScheme();
-        String wsScheme;
-        //noinspection UnusedAssignment
-        int port = -1;
-        if ("ws".equalsIgnoreCase(httpScheme))
+        if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
         {
             // keep as-is
-            wsScheme = httpScheme;
-        }
-        else if ("wss".equalsIgnoreCase(httpScheme))
-        {
-            // keep as-is
-            wsScheme = httpScheme;
+            return inputUri;
         }
         
         if ("http".equalsIgnoreCase(httpScheme))
         {
             // convert to ws
-            wsScheme = "ws";
+            return new URI("ws" + inputUri.toString().substring(httpScheme.length()));
         }
         
         if ("https".equalsIgnoreCase(httpScheme))
         {
             // convert to wss
-            wsScheme = "wss";
-        }
-        else
-        {
-            throw new URISyntaxException(inputUri.toString(),"Unrecognized HTTP scheme");
+            return new URI("wss" + inputUri.toString().substring(httpScheme.length()));
         }
         
-        if (inputUri.getPort() > 0)
-        {
-            port = inputUri.getPort();
-        }
-        return new URI(wsScheme,inputUri.getUserInfo(),inputUri.getHost(),port,inputUri.getPath(),inputUri.getQuery(),inputUri.getFragment());
+        throw new URISyntaxException(inputUri.toString(),"Unrecognized HTTP scheme");
     }
 }

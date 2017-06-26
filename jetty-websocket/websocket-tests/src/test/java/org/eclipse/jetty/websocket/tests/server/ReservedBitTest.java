@@ -53,7 +53,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
@@ -80,7 +80,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
@@ -107,7 +107,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
@@ -134,7 +134,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
@@ -161,7 +161,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
@@ -188,7 +188,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
@@ -216,7 +216,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
 
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
-    
+
         try (StacklessLogging ignored = new StacklessLogging(Parser.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {

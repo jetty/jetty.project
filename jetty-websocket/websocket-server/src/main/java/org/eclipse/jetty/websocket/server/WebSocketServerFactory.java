@@ -120,21 +120,31 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
-
-        addBean(scheduler);
-        addBean(bufferPool);
-
-        this.contextClassloader = Thread.currentThread().getContextClassLoader();
-
-        this.registeredSocketClasses = new ArrayList<>();
-
+        this(Objects.requireNonNull(context, ServletContext.class.getName()), policy, null, null, bufferPool);
+    }
+    
+    /**
+     * Protected entry point for {@link WebSocketHandler}
+     *
+     * @param policy the policy to use
+     * @param executor the executor to use
+     * @param bufferPool the buffer pool to use
+     */
+    protected WebSocketServerFactory(WebSocketPolicy policy, Executor executor, ByteBufferPool bufferPool)
+    {
+        this(null, policy, new DecoratedObjectFactory(), executor, bufferPool);
+    }
+    
+    private WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, DecoratedObjectFactory objectFactory, Executor executor, ByteBufferPool bufferPool)
+    {
+        this.context = context;
         this.containerPolicy = policy;
+        this.objectFactory = objectFactory;
+        this.executor = executor;
         this.bufferPool = bufferPool;
-        
+
         this.creator = this;
         this.contextClassloader = Thread.currentThread().getContextClassLoader();
-        this.eventDriverFactory = new EventDriverFactory(this);
         this.extensionFactory = new WebSocketExtensionFactory(this);
 
         this.handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
@@ -241,25 +251,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
         this.sessionFactories.clear();
         this.sessionFactories.addAll(Arrays.asList(factories));
-    }
-
-    @Override
-    public void cleanup()
-    {
-        try
-        {
-            this.stop();
-        }
-        catch (Exception e)
-        {
-            LOG.warn(e);
-        }
-    }
-
-    @Override
-    public WebSocketServletFactory createFactory(WebSocketPolicy policy)
-    {
-        return new WebSocketServerFactory(policy, bufferPool);
     }
 
     private WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection)
@@ -493,11 +484,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * connection.
      * </p>
      *
-     * @param http      the raw http connection
-     * @param request   the request to upgrade
-     * @param response  the response to upgrade
-     * @param websocket the websocket endpoint instance
-     * @throws IOException if unable to upgrade
+     * @param http the raw http connection
+     * @param request The request to upgrade
+     * @param response The response to upgrade
      */
     private boolean upgrade(HttpConnection http, ServletUpgradeRequest request, ServletUpgradeResponse response, Object websocket) throws IOException
     {

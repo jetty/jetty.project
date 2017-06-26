@@ -47,9 +47,6 @@ public class AltFilterTest
     @Rule
     public TestingDir testdir = new TestingDir();
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
-
     @Test
     public void testEcho() throws Exception
     {

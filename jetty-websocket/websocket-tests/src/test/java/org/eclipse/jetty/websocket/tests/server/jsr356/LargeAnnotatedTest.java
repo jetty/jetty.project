@@ -42,7 +42,6 @@ import org.junit.Test;
 /**
  * Test Echo of Large messages, targeting the {@link javax.websocket.Session#setMaxTextMessageBufferSize(int)} functionality
  */
-@Ignore
 public class LargeAnnotatedTest
 {
     @ServerEndpoint(value = "/echo/large")

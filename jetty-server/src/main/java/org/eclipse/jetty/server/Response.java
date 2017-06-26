@@ -108,7 +108,7 @@ public class Response implements HttpServletResponse
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
     private long _contentLength = -1;
-    private Supplier<HttpFields> _trailers;
+    private Supplier<HttpFields> trailers;
 
     private enum EncodingFrom { NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING }
     private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET,EncodingFrom.INFERRED);
@@ -1314,27 +1314,12 @@ public class Response implements HttpServletResponse
 
     public void setTrailers(Supplier<HttpFields> trailers)
     {
-        this._trailers = trailers;
-    }
-
-    @Override
-    public void setTrailerFields(Supplier<Map<String,String>> trailers)
-    {
-        // TODO new for 4.0 - avoid transient supplier?
-        this._trailers = new HttpFieldsSupplier(trailers);
+        this.trailers = trailers;
     }
 
     public Supplier<HttpFields> getTrailers()
     {
-        return _trailers;
-    }
-
-    @Override
-    public Supplier<Map<String,String>> getTrailerFields()
-    {
-        if (_trailers instanceof HttpFieldsSupplier)
-            ((HttpFieldsSupplier)_trailers).getSupplier();
-        return null;
+        return trailers;
     }
 
     protected MetaData.Response newResponseMetaData()
@@ -1500,35 +1485,6 @@ public class Response implements HttpServletResponse
             String et=content.getETagValue();
             if (et!=null)
                 response.setHeader(HttpHeader.ETAG.asString(),et);
-        }
-    }
-
-    private static class HttpFieldsSupplier implements Supplier<HttpFields>
-    {
-        private final Supplier<Map<String, String>> _supplier;
-
-        public HttpFieldsSupplier(Supplier<Map<String, String>> trailers)
-        {
-            _supplier = trailers;
-        }
-
-        @Override
-        public HttpFields get()
-        {
-            Map<String,String> t = _supplier.get();
-            if (t==null)
-                return null;
-            HttpFields fields = new HttpFields();
-            for (Map.Entry<String,String> e : t.entrySet())
-            {
-                fields.add(e.getKey(),e.getValue());
-            }
-            return fields;
-        }
-
-        public Supplier<Map<String, String>> getSupplier()
-        {
-            return _supplier;
         }
     }
 }

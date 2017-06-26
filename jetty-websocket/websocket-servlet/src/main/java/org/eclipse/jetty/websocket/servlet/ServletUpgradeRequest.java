@@ -244,12 +244,8 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return new InetSocketAddress(getLocalAddress(), getLocalPort());
     }
 
-    /**
-     * Equivalent to {@link HttpServletRequest#getLocale()}
-     *
-     * @return the preferred {@code Locale} for the client
-     */
-    public Locale getLocale()
+    @Override
+    public String getMethod()
     {
         return request.getMethod();
     }
@@ -290,7 +286,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
     public String getProtocolVersion()
     {
         String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
-        if(version == null) 
+        if(version == null)
         {
             return Integer.toString(WebSocketConstants.SPEC_VERSION);
         }

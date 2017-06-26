@@ -26,6 +26,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.common.DuplicateAnnotationException;
 
 public class ReflectUtils
 {

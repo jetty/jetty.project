@@ -54,6 +54,7 @@ public class AnnotatedEchoTest
     public void testEcho() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        server.addBean(container); // allow to shutdown with server
         Session session = null;
         try
         {

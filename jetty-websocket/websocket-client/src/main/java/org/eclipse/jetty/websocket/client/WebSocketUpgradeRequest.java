@@ -67,7 +67,6 @@ import org.eclipse.jetty.websocket.client.io.WebSocketClientConnection;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
 public class WebSocketUpgradeRequest extends HttpRequest implements CompleteListener, HttpConnectionUpgrader
@@ -353,8 +352,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
     }
 
     private final WebSocketClient wsClient;
-    private final EventDriver localEndpoint;
     private final CompletableFuture<Session> fut;
+    private final Object localEndpoint;
     /** WebSocket API UpgradeRequest Facade to HttpClient HttpRequest */
     private final ClientUpgradeRequestFacade apiRequestFacade;
     private UpgradeListener upgradeListener;
@@ -526,7 +525,6 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
     private void handleException(Throwable failure)
     {
-        localEndpoint.incomingError(failure);
         fut.completeExceptionally(failure);
     }
 

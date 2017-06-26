@@ -43,40 +43,43 @@ import org.junit.runners.Parameterized.Parameters;
 public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
 {
     private static final Logger LOG = Log.getLogger(CloseHandling_GoodStatusCodesTest.class);
-    
+
     @Parameters(name = "{0} {1}")
     public static Collection<Object[]> data()
     {
         // The various Good UTF8 sequences as a String (hex form)
         List<Object[]> data = new ArrayList<>();
-        
+
         // @formatter:off
-        data.add(new Object[]{"7.7.1", 1000});
-        data.add(new Object[]{"7.7.2", 1001});
-        data.add(new Object[]{"7.7.3", 1002});
-        data.add(new Object[]{"7.7.4", 1003});
-        data.add(new Object[]{"7.7.5", 1007});
-        data.add(new Object[]{"7.7.6", 1008});
-        data.add(new Object[]{"7.7.7", 1009});
-        data.add(new Object[]{"7.7.8", 1010});
-        data.add(new Object[]{"7.7.9", 1011});
-        data.add(new Object[]{"7.7.10", 3000});
-        data.add(new Object[]{"7.7.11", 3999});
-        data.add(new Object[]{"7.7.12", 4000});
-        data.add(new Object[]{"7.7.13", 4999});
+        data.add(new Object[] { "7.7.1", 1000 });
+        data.add(new Object[] { "7.7.2", 1001 });
+        data.add(new Object[] { "7.7.3", 1002 });
+        data.add(new Object[] { "7.7.4", 1003 });
+        data.add(new Object[] { "7.7.5", 1007 });
+        data.add(new Object[] { "7.7.6", 1008 });
+        data.add(new Object[] { "7.7.7", 1009 });
+        data.add(new Object[] { "7.7.8", 1010 });
+        data.add(new Object[] { "7.7.9", 1011 });
+        data.add(new Object[] { "IANA Assigned", 1012 });
+        data.add(new Object[] { "IANA Assigned", 1013 });
+        data.add(new Object[] { "IANA Assigned", 1014 });
+        data.add(new Object[] { "7.7.10", 3000 });
+        data.add(new Object[] { "7.7.11", 3999 });
+        data.add(new Object[] { "7.7.12", 4000 });
+        data.add(new Object[] { "7.7.13", 4999 });
         // @formatter:on
-        
+
         return data;
     }
-    
+
     private final int statusCode;
-    
+
     public CloseHandling_GoodStatusCodesTest(String testId, int statusCode)
     {
         LOG.debug("Test ID: {}", testId);
         this.statusCode = statusCode;
     }
-    
+
     /**
      * just the close code, no reason
      *
@@ -89,20 +92,20 @@ public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
         BufferUtil.clearToFill(payload);
         payload.putChar((char) statusCode);
         BufferUtil.flipToFlush(payload, 0);
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(payload.slice()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(DataUtils.copyOf(payload)));
-    
+
         try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
         }
     }
-    
+
     /**
      * the good close code, with reason
      *
@@ -115,13 +118,13 @@ public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
         payload.putChar((char) statusCode);
         payload.put(StringUtil.getBytes("Reason"));
         payload.flip();
-        
+
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(payload.slice()));
-        
+
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(DataUtils.copyOf(payload)));
-    
+
         try (LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);

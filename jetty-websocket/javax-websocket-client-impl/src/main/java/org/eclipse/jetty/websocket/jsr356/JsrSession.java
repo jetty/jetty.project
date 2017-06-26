@@ -42,7 +42,6 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.EndpointFunctions;

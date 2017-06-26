@@ -37,6 +37,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.server.MappedWebSocketCreator;
+import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 
 @ManagedObject("JSR356 Server Container")
@@ -54,18 +55,47 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 {
     private static final Logger LOG = Log.getLogger(ServerContainer.class);
     
-    private final MappedWebSocketCreator mappedCreator;
-    private final WebSocketServerFactory webSocketServerFactory;
+    /**
+     * Get the WebSocketContainer out of the current ThreadLocal reference
+     * of the active ContextHandler.
+     *
+     * @return the WebSocketContainer if found, null if not found.
+     */
+    public static WebSocketContainer getWebSocketContainer()
+    {
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        if (context == null)
+            return null;
+        
+        ContextHandler handler = ContextHandler.getContextHandler(context);
+        if (handler == null)
+            return null;
+        
+        if (!(handler instanceof ServletContextHandler))
+            return null;
+        
+        return (javax.websocket.WebSocketContainer) handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
+    }
+    
+    private final NativeWebSocketConfiguration configuration;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
     
-    public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
+    /**
+     * @deprecated use {@code ServerContainer(NativeWebSocketConfiguration, HttpClient)} instead
+     */
+    @Deprecated
+    public ServerContainer(NativeWebSocketConfiguration configuration, Executor executor)
     {
-        super(factory);
-        this.mappedCreator = creator;
-        this.webSocketServerFactory = factory;
-        this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this));
-        addBean(webSocketServerFactory);
+        this(configuration, (HttpClient) null);
+    }
+    
+    public ServerContainer(NativeWebSocketConfiguration configuration, HttpClient httpClient)
+    {
+        super(configuration.getFactory(), httpClient);
+        this.configuration = configuration;
+        this.configuration.getFactory().addSessionFactory(new JsrSessionFactory(this));
+        addBean(this.configuration);
     }
     
     @Override
@@ -123,7 +153,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             deferredEndpointClasses.add(endpointClass);
         }
     }
-    
+
     /**
      * Register a ServerEndpointConfig to the server
      *
@@ -161,8 +191,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     {
         assertIsValidEndpoint(config);
         
-        JsrCreator creator = new JsrCreator(this, config, webSocketServerFactory.getExtensionFactory());
-        mappedCreator.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
+        JsrCreator creator = new JsrCreator(this, config, this.configuration.getFactory().getExtensionFactory());
+        this.configuration.addMapping(new UriTemplatePathSpec(config.getPath()), creator);
     }
     
     private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException

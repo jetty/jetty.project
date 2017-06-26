@@ -91,7 +91,6 @@ public class EndpointEchoTest
     public void testEchoClassRef() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        server.addBean(container); // allow to shutdown with server
         // Issue connect using class reference (class extends Endpoint)
         Session session = container.connectToServer(ClientEndpoint.class, server.getServerUri());
         session.getBasicRemote().sendText("Echo");

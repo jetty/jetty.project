@@ -82,34 +82,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         }
     }
     
-    
-    
-    /**
-     * Jetty Native approach.
-     * <p>
-     * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
-     * 
-     * @param context the servlet context handler
-     * @return the created websocket server container
-     * @throws ServletException if unable to create the websocket server container
-     */
-    @SuppressWarnings("Duplicates")
-    public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
-    {
-        // Create Filter
-        WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
-        filter.getFactory().init(context);
-
-        // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),context.getServer().getThreadPool());
-        context.addBean(jettyContainer, true);
-
-        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
-        context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
-        return jettyContainer;
-    }
-
     /**
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for
      * true or false setting that determines if the specified feature is enabled (or not).
@@ -119,24 +91,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * @param defValue the default value, if the value is not specified in the context
      * @return the value for the feature key
      */
-    @SuppressWarnings("Duplicates")
-    public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
-    {
-        // Create Filter
-        WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
-        filter.getFactory().init(context);
-
-        // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),jettyContext.getServer().getThreadPool());
-        jettyContext.addBean(jettyContainer, true);
-
-        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
-        context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
-        return jettyContainer;
-    }
-    
-    private boolean isEnabled(Set<Class<?>> c, ServletContext context)
+    public static boolean isEnabledViaContext(ServletContext context, String keyName, boolean defValue)
     {
         // Try context parameters first
         String cp = context.getInitParameter(keyName);
@@ -176,7 +131,13 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     }
     
     /**
-     * Embedded Jetty approach for non-bytecode scanning.
+     * Jetty Native approach.
+     * <p>
+     * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
+     *
+     * @param context the servlet context handler
+     * @return the created websocket server container
+     * @throws ServletException if unable to create the websocket server container
      */
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
@@ -248,7 +209,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
             // Create the Jetty ServerContainer implementation
-            ServerContainer jettyContainer = configureContext(context,jettyContext);
+            ServerContainer jettyContainer = configureContext(jettyContext);
             context.addListener(new ContextDestroyListener()); // make sure context is cleaned up when the context stops
             
             if (LOG.isDebugEnabled())

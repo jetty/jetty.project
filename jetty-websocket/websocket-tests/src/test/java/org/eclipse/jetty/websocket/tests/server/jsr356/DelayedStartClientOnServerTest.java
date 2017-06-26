@@ -59,7 +59,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.Test;
@@ -217,12 +216,11 @@ public class DelayedStartClientOnServerTest
         Server server = new Server(0);
         ServletContextHandler contextHandler = new ServletContextHandler();
         server.setHandler(contextHandler);
+        WebSocketServerContainerInitializer.configureContext(contextHandler);
         try
         {
             server.start();
-            
             List<String> threadNames = getThreadNames(server);
-            
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
@@ -250,9 +248,9 @@ public class DelayedStartClientOnServerTest
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
             
-            List<String> threadNames = getThreadNames(server, JettyClientContainerProvider.getInstance());
+            List<String> threadNames = getThreadNames(server, (ContainerLifeCycle)container);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("WebSocketClient@")));
+            assertThat("Threads", threadNames, hasItem(containsString("Jsr356Client@")));
         }
         finally
         {
@@ -275,8 +273,7 @@ public class DelayedStartClientOnServerTest
             server.start();
             String response = GET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
-            
-            List<String> threadNames = getThreadNames(server, JettyClientContainerProvider.getInstance());
+            List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, hasItem(containsString("WebSocketClient@")));
         }
@@ -301,8 +298,7 @@ public class DelayedStartClientOnServerTest
             server.start();
             String response = GET(server.getURI().resolve("/configure"));
             assertThat("Response", response, startsWith("Configured " + ClientContainer.class.getName()));
-            
-            List<String> threadNames = getThreadNames(server, JettyClientContainerProvider.getInstance());
+            List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketClient@"))));
@@ -329,8 +325,7 @@ public class DelayedStartClientOnServerTest
             server.start();
             String response = GET(server.getURI().resolve("/configure"));
             assertThat("Response", response, startsWith("Configured " + ServerContainer.class.getName()));
-            
-            List<String> threadNames = getThreadNames(server, JettyClientContainerProvider.getInstance());
+            List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
             assertThat("Threads", threadNames, not(hasItem(containsString("WebSocketContainer@"))));
             assertThat("Threads", threadNames, not(hasItem(containsString("Jsr356Client@"))));
