@@ -11,7 +11,6 @@
   <description>Jetty maven plugins</description>
   <properties>
     <mavenVersion>3.5.0</mavenVersion>
-    <resolverVersion>1.0.3</resolverVersion>
     <pluginToolsVersion>3.5</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
   </properties>
@@ -79,14 +78,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-api</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-util</artifactId>
-      <version>${resolverVersion}</version>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-artifact-transfer</artifactId>
+      <version>0.9.1</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

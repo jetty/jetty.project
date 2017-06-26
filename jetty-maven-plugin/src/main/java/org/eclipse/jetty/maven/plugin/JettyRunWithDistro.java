@@ -28,15 +28,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.artifact.DefaultArtifactCoordinate;
+import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -91,33 +90,28 @@ public class JettyRunWithDistro extends JettyRunMojo
      * @parameter
      */
     private String[] properties;
-    
-    
-    
-    
-    /**
-     * The entry point to Maven Artifact Resolver, i.e. the component doing all the work.
-     * 
-     * @component
-     */
-    private RepositorySystem repoSystem;
 
     /**
-     * The current repository/network configuration of Maven.
-     * 
-     * @parameter default-value="${repositorySystemSession}"
+     * @parameter default-value="${session}"
+     * @required
      * @readonly
      */
-    private RepositorySystemSession repoSession;
+    private MavenSession session;
 
     /**
      * The project's remote repositories to use for the resolution.
-     * 
-     * @parameter default-value="${project.remoteProjectRepositories}"
+     *
+     * @parameter default-value="${project.remoteArtifactRepositories}"
+     * @required
      * @readonly
      */
-    private List<RemoteRepository> remoteRepos;
-    
+    private List<ArtifactRepository> remoteRepositories;
+
+    /**
+     * @component
+     */
+    private ArtifactResolver artifactResolver;
+
     
     /**
      * @parameter default-value="${plugin.version}"
@@ -182,13 +176,20 @@ public class JettyRunWithDistro extends JettyRunMojo
         if (jettyHome == null)
         {
             //no jetty home, download from repo and unpack it. Get the same version as the plugin
-            Artifact artifact = new DefaultArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, "zip", pluginVersion);
+            DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
+            coordinate.setGroupId( JETTY_HOME_GROUPID );
+            coordinate.setArtifactId( JETTY_HOME_ARTIFACTID );
+            coordinate.setVersion( pluginVersion );
+            coordinate.setExtension( "zip" );
 
-            ArtifactRequest request = new ArtifactRequest();
-            request.setArtifact(artifact);
-            request.setRepositories(remoteRepos);  
-            ArtifactResult result = repoSystem.resolveArtifact(repoSession, request);        
-            JarResource res = (JarResource) JarResource.newJarResource(Resource.newResource(result.getArtifact().getFile()));
+            ProjectBuildingRequest buildingRequest =
+                new DefaultProjectBuildingRequest( session.getProjectBuildingRequest() );
+
+            buildingRequest.setRemoteRepositories( remoteRepositories );
+
+            Artifact jettyHomeArtifact = artifactResolver.resolveArtifact( buildingRequest, coordinate ).getArtifact();
+
+            JarResource res = (JarResource) JarResource.newJarResource(Resource.newResource(jettyHomeArtifact.getFile()));
             res.copyTo(target);
             //zip will unpack to target/jetty-home-<VERSION>
             jettyHome = new File (target, JETTY_HOME_ARTIFACTID+"-"+pluginVersion);
