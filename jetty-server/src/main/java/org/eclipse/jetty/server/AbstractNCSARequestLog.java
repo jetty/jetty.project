@@ -26,6 +26,8 @@ import javax.servlet.http.Cookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.ncsalogging.AuthenticationBasedUserExtractor;
+import org.eclipse.jetty.server.ncsalogging.UserExtractor;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -51,6 +53,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
         }
     };
 
+    private final UserExtractor userExtractor;
 
     private String[] _ignorePaths;
     private boolean _extended;
@@ -63,6 +66,15 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     private String _logDateFormat = "dd/MMM/yyyy:HH:mm:ss Z";
     private Locale _logLocale = Locale.getDefault();
     private String _logTimeZone = "GMT";
+
+
+    public AbstractNCSARequestLog() {
+        this(new AuthenticationBasedUserExtractor());
+    }
+    
+    public AbstractNCSARequestLog(UserExtractor userExtractor) {
+        this.userExtractor = userExtractor;
+    }
 
     /* ------------------------------------------------------------ */
 
@@ -127,8 +139,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
             buf.append(addr);
             buf.append(" - ");
-            Authentication authentication = request.getAuthentication();
-            append(buf,(authentication instanceof Authentication.User)?((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName():null);
+            append(buf, userExtractor.extract(request));
 
             buf.append(" [");
             if (_logDateCache != null)
