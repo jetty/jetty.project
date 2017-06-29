@@ -19,6 +19,12 @@
 package org.eclipse.jetty.util;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -34,12 +40,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class BufferUtilTest
 {
@@ -346,7 +346,7 @@ public class BufferUtilTest
         String data="Now is the time for all good men to come to the aid of the party";
         File file = File.createTempFile("test",".txt");
         file.deleteOnExit();
-        try(FileWriter out = new FileWriter(file);)
+        try(FileWriter out = new FileWriter(file))
         {
             out.write(data);
         }
