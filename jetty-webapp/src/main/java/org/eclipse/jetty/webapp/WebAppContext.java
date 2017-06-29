@@ -702,6 +702,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated Use {@link #getServerClasspathPattern()}.{@link ClasspathPattern#add(String)}
+     * @param classOrPackageOrLocation pattern (see {@link ClasspathPattern}
+     */
     @Deprecated
     public void addServerClass(String classOrPackageOrLocation)
     {
@@ -713,13 +717,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Prepend to the list of Server classes.
-     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
-     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
-     * or package has '-' it is excluded from the server classes and order is thus
-     * important when added system class patterns. This argument may also be a comma 
-     * separated list of classOrPackage patterns.
+     * @param classOrPackage A pattern.
      * @see #setServerClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
+     * @deprecated Use {@link #getServerClasspathPattern()}.{@link ClasspathPattern#add(String)}
      */
     @Deprecated
     public void prependServerClass(String classOrPackage)
@@ -757,6 +758,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * 
+     * @param classOrPackage pattern
+     * @deprecated Use {@link #getSystemClasspathPattern()}.{@link ClasspathPattern#add(String)}
+     */
     @Deprecated
     public void addSystemClass(String classOrPackage)
     {
@@ -769,13 +775,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /** Prepend to the list of System classes.
-     * @param classOrPackage A fully qualified class name (eg com.foo.MyClass) 
-     * or a qualified package name ending with '.' (eg com.foo.).  If the class 
-     * or package has '-' it is excluded from the system classes and order is thus
-     * important when added system class patterns.This argument may also be a comma 
-     * separated list of classOrPackage patterns.
+     * @param classOrPackage A pattern.
      * @see #setSystemClasses(String[])
      * @see <a href="http://www.eclipse.org/jetty/documentation/current/jetty-classloading.html">Jetty Documentation: Classloading</a>
+     * @deprecated Use {@link #getSystemClasspathPattern()}.{@link ClasspathPattern#add(String)}
      */
     @Deprecated
     public void prependSystemClass(String classOrPackage)
@@ -787,6 +790,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @param name class name
+     * @return true if matched by {@link #getServerClasspathPattern()}
+     * @deprecated Use {@link #getServerClasspathPattern()}.{@link ClasspathPattern#match(String)}
+     */
     @Deprecated
     public boolean isServerClass(String name)
     {
@@ -797,6 +805,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param name class name
+     * @return true if matched by {@link #getServerClasspathPattern()}
+     * @deprecated Use {@link #getSystemClasspathPattern()}.{@link ClasspathPattern#match(String)}
+     */
     @Deprecated
     public boolean isSystemClass(String name)
     {
