@@ -35,7 +35,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -166,7 +166,7 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testFileHandling() throws Exception
     {
-        File testDir = testingDir.getEmptyPathDir().toFile();
+        File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testFileHandling");
         Path testPath = testDir.toPath();
         FS.ensureEmpty(testDir);
     
@@ -277,7 +277,7 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testRollover() throws Exception
     {
-        File testDir = testingDir.getEmptyPathDir().toFile();
+        File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testRollover");
         FS.ensureEmpty(testDir);
     
         TimeZone zone = toZoneId("Australia/Sydney");

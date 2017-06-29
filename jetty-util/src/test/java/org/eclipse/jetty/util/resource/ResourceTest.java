@@ -196,8 +196,9 @@ public class ResourceTest
         
         File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
         FS.ensureEmpty(testDir);
-        File tmpFile = File.createTempFile("test",null,testDir);
-        
+        File tmpFile = new File(testDir, "test.tmp");
+        FS.touch(tmpFile);
+
         cases.addCase(new Data(tmpFile.toString(),EXISTS,!DIR));
         
         // Some resource references.
