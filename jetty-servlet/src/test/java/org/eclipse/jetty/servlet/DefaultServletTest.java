@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -231,10 +232,7 @@ public class DefaultServletTest
         createFile(index, "<h1>Hello Index</h1>");
 
         File wackyDir = new File(resBase, "dir?");
-        if (!OS.IS_WINDOWS)
-        {
-            FS.ensureDirExists(wackyDir);
-        }
+        assumeTrue("FileSystem should support question dirs", wackyDir.mkdirs());
 
         wackyDir = new File(resBase, "dir;");
         assertTrue(wackyDir.mkdirs());
@@ -266,13 +264,8 @@ public class DefaultServletTest
         response = connector.getResponse("GET /context/dir?/ HTTP/1.0\r\n\r\n");
         assertResponseContains("404", response);
 
-        if (!OS.IS_WINDOWS)
-        {
-            response = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
-            assertResponseContains("Directory: /context/dir?/<", response);
-        }
-        else
-            assertResponseContains("404", response);
+        response = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("Directory: /context/dir?/<", response);
 
         response = connector.getResponse("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index", response);
@@ -421,7 +414,8 @@ public class DefaultServletTest
         context.setBaseResource(Resource.newResource(resBase));
 
         File dir = new File(resBase, "dir?");
-        assertTrue(dir.mkdirs());
+        assumeTrue("FileSystem should support question dirs", dir.mkdirs());
+
         File index = new File(dir, "index.html");
         createFile(index, "<h1>Hello Index</h1>");
 
@@ -437,7 +431,6 @@ public class DefaultServletTest
         response = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Location: http://0.0.0.0/context/dir%3F/index.html", response);
     }
-    
 
     @Test
     public void testWelcomeServlet() throws Exception
