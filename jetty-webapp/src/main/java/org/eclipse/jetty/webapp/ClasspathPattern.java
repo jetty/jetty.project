@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Classpath classes list performs sequential pattern matching of a class name 
+ * Classpath classes list performs pattern matching of a class name 
  * against an internal array of classpath pattern entries.
  * A class pattern is a string of one of the forms:<ul>
  * <li>'org.package.SomeClass' will match a specific class
