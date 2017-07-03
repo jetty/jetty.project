@@ -266,7 +266,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * <p>Use it with xinetd/inetd, to launch an instance of Jetty on demand. The port
      * used to access pages on the Jetty instance is the same as the port used to
      * launch Jetty.</p>
-     *
+     * @see ServerConnector#openAcceptChannel()
      * @param inheritChannel whether this connector uses a channel inherited from the JVM.
      */
     public void setInheritChannel(boolean inheritChannel)
@@ -274,18 +274,22 @@ public class ServerConnector extends AbstractNetworkConnector
         _inheritChannel = inheritChannel;
     }
 
-
-    public ServerSocketChannel getAcceptChannel()
-    {
-        return _acceptChannel;
-    }
-
-    public void setAcceptChannel(ServerSocketChannel acceptChannel)
+    /**
+     * Open the connector using the passed ServerSocketChannel.
+     * This open method can be called before starting the connector to pass it a ServerSocketChannel
+     * that will be used instead of one returned from {@link #openAcceptChannel()}
+     * @param acceptChannel the channel to use
+     * @throws IOException
+     */
+    public void open(ServerSocketChannel acceptChannel) throws IOException
     {
         if (isStarted())
             throw new IllegalStateException(getState());
         updateBean(_acceptChannel,acceptChannel);
         _acceptChannel = acceptChannel;
+        _localPort = _acceptChannel.socket().getLocalPort();
+        if (_localPort <= 0)
+            throw new IOException("Server channel not bound");
     }
     
     @Override
@@ -301,7 +305,6 @@ public class ServerConnector extends AbstractNetworkConnector
             addBean(_acceptChannel);
         }
     }
-
 
     /**
      * Called by {@link #open()} to obtain the accepting channel.
