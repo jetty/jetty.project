@@ -258,6 +258,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <td>HttpClient's default</td>
      * <td>The response buffer size, see {@link HttpClient#setResponseBufferSize(int)}</td>
      * </tr>
+     * <tr>
+     * <td>selectors</td>
+     * <td>cores / 2</td>
+     * <td>The number of NIO selectors used by {@link HttpClient}</td>
+     * </tr>
      * </tbody>
      * </table>
      * @see #newHttpClient()
@@ -347,7 +352,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected HttpClient newHttpClient()
     {
-        int selectors = (Runtime.getRuntime().availableProcessors() + 1) / 2;
+        int selectors = Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
