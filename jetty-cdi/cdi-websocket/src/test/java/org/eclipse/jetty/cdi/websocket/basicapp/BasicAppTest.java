@@ -106,13 +106,13 @@ public class BasicAppTest
             CheckSocket socket = new CheckSocket();
             client.connect(socket,serverWebsocketURI.resolve("/echo"));
 
-            socket.awaitOpen(2,TimeUnit.SECONDS);
+            socket.awaitOpen(5,TimeUnit.SECONDS);
             socket.sendText("Hello World");
             socket.close(StatusCode.NORMAL,"Test complete");
-            socket.awaitClose(2,TimeUnit.SECONDS);
+            socket.awaitClose(5,TimeUnit.SECONDS);
 
             assertThat("Messages received",socket.getTextMessages().size(),is(1));
-            String response = socket.getTextMessages().poll();
+            String response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
 
             assertThat("Message[0]",response,is("Hello World"));
         }
