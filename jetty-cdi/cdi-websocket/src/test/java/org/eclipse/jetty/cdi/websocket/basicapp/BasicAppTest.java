@@ -111,9 +111,7 @@ public class BasicAppTest
             socket.close(StatusCode.NORMAL,"Test complete");
             socket.awaitClose(5,TimeUnit.SECONDS);
 
-            assertThat("Messages received",socket.getTextMessages().size(),is(1));
             String response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
-
             assertThat("Message[0]",response,is("Hello World"));
         }
         finally
