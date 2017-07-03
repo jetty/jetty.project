@@ -293,6 +293,20 @@ public class ServerConnector extends AbstractNetworkConnector
         _inheritChannel = inheritChannel;
     }
 
+
+    public ServerSocketChannel getAcceptChannel()
+    {
+        return _acceptChannel;
+    }
+
+    public void setAcceptChannel(ServerSocketChannel acceptChannel)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        updateBean(_acceptChannel,acceptChannel);
+        _acceptChannel = acceptChannel;
+    }
+    
     @Override
     public void open() throws IOException
     {
@@ -306,6 +320,7 @@ public class ServerConnector extends AbstractNetworkConnector
             addBean(_acceptChannel);
         }
     }
+
 
     /**
      * Called by {@link #open()} to obtain the accepting channel.
