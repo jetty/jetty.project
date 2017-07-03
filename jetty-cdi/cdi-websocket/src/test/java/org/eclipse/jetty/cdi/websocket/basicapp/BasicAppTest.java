@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
@@ -78,14 +79,8 @@ public class BasicAppTest
 
         server.start();
 
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverHttpURI = new URI(String.format("http://%s:%d/",host,port));
-        serverWebsocketURI = new URI(String.format("ws://%s:%d/",host,port));
+        serverHttpURI = server.getURI().resolve("/");
+        serverWebsocketURI = WSURI.toWebsocket(serverHttpURI);
     }
 
     @AfterClass
@@ -118,7 +113,6 @@ public class BasicAppTest
 
             assertThat("Messages received",socket.getTextMessages().size(),is(1));
             String response = socket.getTextMessages().poll();
-            System.err.println(response);
 
             assertThat("Message[0]",response,is("Hello World"));
         }

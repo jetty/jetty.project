@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.cdi.websocket;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -26,92 +28,76 @@ import javax.enterprise.inject.spi.CDI;
 
 import org.eclipse.jetty.cdi.core.AnyLiteral;
 import org.eclipse.jetty.cdi.core.ScopedInstance;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
-public class WebSocketCdiListener extends AbstractContainerListener
+public class WebSocketCdiListener extends AbstractContainerListener implements WebSocketSession.Listener
 {
     static final Logger LOG = Log.getLogger(WebSocketCdiListener.class);
 
+    private Map<String, ScopedInstance<WebSocketScopeContext>> instances = new ConcurrentHashMap<>();
+
     @SuppressWarnings(
-    { "rawtypes", "unchecked" })
+            {"rawtypes", "unchecked"})
     public static <T> ScopedInstance<T> newInstance(Class<T> clazz)
     {
         BeanManager bm = CDI.current().getBeanManager();
 
         ScopedInstance sbean = new ScopedInstance();
-        Set<Bean<?>> beans = bm.getBeans(clazz,AnyLiteral.INSTANCE);
+        Set<Bean<?>> beans = bm.getBeans(clazz, AnyLiteral.INSTANCE);
         if (beans.size() > 0)
         {
             sbean.bean = beans.iterator().next();
             sbean.creationalContext = bm.createCreationalContext(sbean.bean);
-            sbean.instance = bm.getReference(sbean.bean,clazz,sbean.creationalContext);
+            sbean.instance = bm.getReference(sbean.bean, clazz, sbean.creationalContext);
             return sbean;
         }
         else
         {
-            throw new RuntimeException(String.format("Can't find class %s",clazz));
+            throw new RuntimeException(String.format("Can't find class %s", clazz));
         }
     }
 
-    public static class ContainerListener extends AbstractContainerListener
+    @Override
+    public void onCreated(WebSocketSession session)
     {
-        private static final Logger LOG = Log.getLogger(WebSocketCdiListener.ContainerListener.class);
-        private final WebSocketContainerScope container;
-        private final ScopedInstance<WebSocketScopeContext> wsScope;
+        String id = toId(session);
 
-        public ContainerListener(WebSocketContainerScope container)
-        {
-            this.container = container;
-            this.wsScope = newInstance(WebSocketScopeContext.class);
-            this.wsScope.instance.create();
-        }
+        ScopedInstance<WebSocketScopeContext> wsScope = newInstance(WebSocketScopeContext.class);
+        wsScope.instance.create();
+        wsScope.instance.begin();
+        wsScope.instance.setSession(session);
 
-        @Override
-        public void lifeCycleStarted(LifeCycle event)
-        {
-            if (event == container)
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("starting websocket container [{}]",event);
-                }
-                wsScope.instance.begin();
-                return;
-            }
-            
-            if (event instanceof WebSocketSessionScope)
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("starting websocket session [{}]",event);
-                }
-                wsScope.instance.setSession((Session)event);
-                return;
-            }
-        }
+        instances.put(id, wsScope);
+    }
 
-        @Override
-        public void lifeCycleStopped(LifeCycle event)
+    @Override
+    public void onOpened(WebSocketSession session)
+    {
+        // do nothing
+    }
+
+    @Override
+    public void onClosed(WebSocketSession session)
+    {
+        String id = toId(session);
+        ScopedInstance<WebSocketScopeContext> wsScope = instances.remove(id);
+        if (wsScope != null)
         {
-            if (event == container)
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("stopped websocket container [{}]",event);
-                }
-                this.wsScope.instance.end();
-                this.wsScope.instance.destroy();
-                this.wsScope.destroy();
-            }
+            wsScope.instance.end();
+            wsScope.instance.destroy();
+            wsScope.destroy();
         }
     }
-    
+
+    private String toId(WebSocketSession session)
+    {
+        return session.getRemoteAddress().toString() + ">" + session.getLocalAddress().toString();
+    }
+
     @Override
     public void lifeCycleStarting(LifeCycle event)
     {
@@ -119,19 +105,11 @@ public class WebSocketCdiListener extends AbstractContainerListener
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("started websocket container [{}]",event);
+                LOG.debug("started websocket container [{}]", event);
             }
-            ContainerListener listener = new ContainerListener((WebSocketContainerScope)event);
-            if (event instanceof ContainerLifeCycle)
-            {
-                ContainerLifeCycle container = (ContainerLifeCycle)event;
-                container.addLifeCycleListener(listener);
-                container.addEventListener(listener);
-            }
-            else
-            {
-                throw new RuntimeException("Unable to setup CDI against non-container: " + event.getClass().getName());
-            }
+
+            WebSocketContainerScope webSocketContainerScope = (WebSocketContainerScope) event;
+            webSocketContainerScope.addSessionListener(this);
         }
     }
 }

@@ -112,16 +112,8 @@ public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycl
     @Override
     protected void doStart() throws Exception
     {
-        LOG.info("Starting");
         discoverEndpointFunctions(this.endpoint);
         super.doStart();
-    }
-    
-    @Override
-    protected void doStop() throws Exception
-    {
-        LOG.info("Stopping");
-        super.doStop();
     }
     
     protected void discoverEndpointFunctions(Object endpoint)

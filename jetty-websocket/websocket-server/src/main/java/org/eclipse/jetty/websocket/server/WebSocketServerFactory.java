@@ -171,15 +171,17 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         addBean(scheduler);
         addBean(bufferPool);
     }
-    
+
+    @Override
     public void addSessionListener(WebSocketSession.Listener listener)
     {
         listeners.add(listener);
     }
-    
-    public void removeSessionListener(WebSocketSession.Listener listener)
+
+    @Override
+    public boolean removeSessionListener(WebSocketSession.Listener listener)
     {
-        listeners.remove(listener);
+        return listeners.remove(listener);
     }
     
     @Override
@@ -214,9 +216,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 sockresp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Endpoint Creation Failed");
                 return false;
             }
-            
-            // Allow Decorators to do their thing
-            websocketPojo = getObjectFactory().decorate(websocketPojo);
             
             // Get the original HTTPConnection
             HttpConnection connection = (HttpConnection) request.getAttribute("org.eclipse.jetty.server.HttpConnection");
@@ -266,7 +265,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             {
                 try
                 {
-                    return impl.createSession(requestURI, websocket, connection);
+                    WebSocketSession session = impl.createSession(requestURI, websocket, connection);
+                    notifySessionListeners((listener -> listener.onCreated(session)));
+                    return session;
                 }
                 catch (Throwable e)
                 {

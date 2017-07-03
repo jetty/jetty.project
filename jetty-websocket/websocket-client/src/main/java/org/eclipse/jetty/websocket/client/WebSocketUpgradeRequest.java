@@ -596,7 +596,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         URI requestURI = this.getURI();
 
-        WebSocketSession session = getSessionFactory().createSession(requestURI,localEndpoint,connection);
+        WebSocketSession session = getSessionFactory().createSession(requestURI, localEndpoint, connection);
+        wsClient.notifySessionListeners((listener -> listener.onCreated(session)));
         session.setUpgradeRequest(new ClientUpgradeRequest(this));
         session.setUpgradeResponse(new ClientUpgradeResponse(response));
         connection.addListener(session);

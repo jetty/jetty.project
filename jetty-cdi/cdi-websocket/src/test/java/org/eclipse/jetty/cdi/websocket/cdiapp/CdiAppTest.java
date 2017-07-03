@@ -141,7 +141,6 @@ public class CdiAppTest
 
             assertThat("Messages received",socket.getTextMessages().size(),is(1));
             String response = socket.getTextMessages().poll();
-            System.err.println(response);
 
             assertThat("Message[0]",response,
                     allOf(
@@ -173,9 +172,7 @@ public class CdiAppTest
 
             assertThat("Messages received",socket.getTextMessages().size(),is(2));
             String response = socket.getTextMessages().poll();
-            System.out.println("[0]" + response);
             assertThat("Message[0]",response,containsString("Hello there stuff"));
-            System.out.println("[1]" + socket.getTextMessages().poll());
         }
         finally
         {
