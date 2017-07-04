@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -50,7 +49,11 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
     @Override
     protected void startClient() throws Exception
     {
-        startClient(new ValidatingHttpClientTransportOverHTTP(1000));
+        long timeout = 1000;
+        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(1);
+        transport.setConnectionPoolFactory(destination ->
+                new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
+        startClient(transport);
     }
 
     @Test
@@ -176,29 +179,5 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
         ContentResponse response2 = listener2.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(200, response2.getStatus());
-    }
-
-    private static class ValidatingHttpClientTransportOverHTTP extends HttpClientTransportOverHTTP
-    {
-        private final long timeout;
-
-        public ValidatingHttpClientTransportOverHTTP(long timeout)
-        {
-            super(1);
-            this.timeout = timeout;
-        }
-
-        @Override
-        public HttpDestination newHttpDestination(Origin origin)
-        {
-            return new HttpDestinationOverHTTP(getHttpClient(), origin)
-            {
-                @Override
-                protected DuplexConnectionPool newConnectionPool(HttpClient client)
-                {
-                    return new ValidatingConnectionPool(this, client.getMaxConnectionsPerDestination(), this, client.getScheduler(), timeout);
-                }
-            };
-        }
     }
 }

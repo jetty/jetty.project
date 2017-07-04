@@ -34,20 +34,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.ConnectionPool;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
-import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
-import org.eclipse.jetty.fcgi.client.http.HttpDestinationOverFCGI;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -97,55 +91,31 @@ public class HttpClientLoadTest extends AbstractTest
             case HTTP:
             case HTTPS:
             {
-                return new HttpClientTransportOverHTTP(1)
+                HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(1);
+                clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                 {
                     @Override
-                    public HttpDestination newHttpDestination(Origin origin)
+                    protected void leaked(LeakDetector.LeakInfo leakInfo)
                     {
-                        return new HttpDestinationOverHTTP(getHttpClient(), origin)
-                        {
-                            @Override
-                            protected ConnectionPool newConnectionPool(HttpClient client)
-                            {
-                                return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
-                                {
-                                    @Override
-                                    protected void leaked(LeakDetector.LeakInfo leakInfo)
-                                    {
-                                        super.leaked(leakInfo);
-                                        connectionLeaks.incrementAndGet();
-                                    }
-                                };
-                            }
-                        };
+                        super.leaked(leakInfo);
+                        connectionLeaks.incrementAndGet();
                     }
-                };
+                });
+                return clientTransport;
             }
             case FCGI:
             {
-                return new HttpClientTransportOverFCGI(1, false, "")
+                HttpClientTransport clientTransport = new HttpClientTransportOverFCGI(1, false, "");
+                clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                 {
                     @Override
-                    public HttpDestination newHttpDestination(Origin origin)
+                    protected void leaked(LeakDetector.LeakInfo leakInfo)
                     {
-                        return new HttpDestinationOverFCGI(getHttpClient(), origin)
-                        {
-                            @Override
-                            protected ConnectionPool newConnectionPool(HttpClient client)
-                            {
-                                return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
-                                {
-                                    @Override
-                                    protected void leaked(LeakDetector.LeakInfo leakInfo)
-                                    {
-                                        super.leaked(leakInfo);
-                                        connectionLeaks.incrementAndGet();
-                                    }
-                                };
-                            }
-                        };
+                        super.leaked(leakInfo);
+                        connectionLeaks.incrementAndGet();
                     }
-                };
+                });
+                return clientTransport;
             }
             default:
             {
