@@ -108,11 +108,12 @@ public class BasicAppTest
 
             socket.awaitOpen(5,TimeUnit.SECONDS);
             socket.sendText("Hello World");
-            socket.close(StatusCode.NORMAL,"Test complete");
-            socket.awaitClose(5,TimeUnit.SECONDS);
 
             String response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
             assertThat("Message[0]",response,is("Hello World"));
+
+            socket.close(StatusCode.NORMAL,"Test complete");
+            socket.awaitClose(5,TimeUnit.SECONDS);
         }
         finally
         {
