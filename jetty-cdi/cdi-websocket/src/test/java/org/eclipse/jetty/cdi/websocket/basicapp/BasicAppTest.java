@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.net.URI;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.server.ServerContainer;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.log.JettyLogHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -102,10 +104,10 @@ public class BasicAppTest
         {
             client.start();
             CheckSocket socket = new CheckSocket();
-            client.connect(socket,serverWebsocketURI.resolve("/echo"));
+            Future<Session> futureSession = client.connect(socket,serverWebsocketURI.resolve("/echo"));
 
-            socket.awaitOpen(5,TimeUnit.SECONDS);
-            socket.sendText("Hello World");
+            Session session = futureSession.get(5, TimeUnit.SECONDS);
+            session.getRemote().sendString("Hello World");
 
             String response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
             assertThat("Message[0]",response,is("Hello World"));
