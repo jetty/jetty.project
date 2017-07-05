@@ -20,7 +20,6 @@ package org.eclipse.jetty.cdi.websocket.cdiapp;
 
 import javax.inject.Inject;
 
-import org.eclipse.jetty.cdi.websocket.annotation.WebSocketScope;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -30,8 +29,7 @@ public class DataMaker
     private static final Logger LOG = Log.getLogger(DataMaker.class);
     
     @Inject
-    @WebSocketScope
-    private Session session;
+    public Session session;
 
     public void processMessage(String msg) 
     {

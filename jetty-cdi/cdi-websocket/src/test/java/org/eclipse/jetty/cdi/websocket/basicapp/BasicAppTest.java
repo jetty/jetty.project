@@ -29,7 +29,6 @@ import javax.websocket.server.ServerContainer;
 
 import org.eclipse.jetty.cdi.servlet.EmbeddedCdiHandler;
 import org.eclipse.jetty.cdi.websocket.CheckSocket;
-import org.eclipse.jetty.cdi.websocket.cdiapp.InfoSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -75,7 +74,6 @@ public class BasicAppTest
         // Add some websockets
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
         container.addEndpoint(EchoSocket.class);
-        container.addEndpoint(InfoSocket.class);
 
         server.start();
 

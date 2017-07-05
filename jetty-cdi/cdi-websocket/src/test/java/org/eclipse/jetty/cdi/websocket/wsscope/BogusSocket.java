@@ -20,14 +20,12 @@ package org.eclipse.jetty.cdi.websocket.wsscope;
 
 import javax.inject.Inject;
 
-import org.eclipse.jetty.cdi.websocket.annotation.WebSocketScope;
 import org.eclipse.jetty.websocket.api.Session;
 
 public class BogusSocket
 {
     @Inject
-    @WebSocketScope
-    private Session session;
+    public Session session;
     
     public Session getSession()
     {
