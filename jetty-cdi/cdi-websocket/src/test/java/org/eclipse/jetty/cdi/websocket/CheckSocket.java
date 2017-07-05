@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.util.TextUtil;
 
 @WebSocket
 public class CheckSocket extends WebSocketAdapter
@@ -90,6 +91,11 @@ public class CheckSocket extends WebSocketAdapter
         if (isConnected())
         {
             getRemote().sendString(msg);
+        }
+        else
+        {
+            LOG.warn("Not connected, cannot send {}", TextUtil.quote(msg));
+            LOG.debug("Session: {}", getSession());
         }
     }
 
