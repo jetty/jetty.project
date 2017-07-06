@@ -85,6 +85,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final String id;
     private final ExtensionStack extensionStack;
     private final List<LogicalConnection.Listener> listeners = new CopyOnWriteArrayList<>();
+    private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
     private List<ExtensionConfig> extensions;
     private ByteBuffer networkBuffer;
 
@@ -310,6 +311,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         try
         {
+            fillAndParseScope.set(true);
             while (isOpen())
             {
                 if (suspendToken.get())
@@ -322,11 +324,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 if (!parser.parse(nBuffer)) return;
 
                 // Shouldn't reach this point if buffer has un-parsed bytes
-                assert(!nBuffer.hasRemaining());
+                assert (!nBuffer.hasRemaining());
 
                 int filled = getEndPoint().fill(nBuffer);
 
-                if(LOG.isDebugEnabled())
+                if (LOG.isDebugEnabled())
                     LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
 
                 if (filled < 0)
@@ -346,6 +348,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         catch (Throwable t)
         {
             notifyError(t);
+        }
+        finally
+        {
+            fillAndParseScope.set(false);
         }
     }
 
@@ -431,9 +437,18 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void resume()
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("resume()");
+        }
+
         if (suspendToken.compareAndSet(true, false))
         {
-            fillAndParse();
+            // Do not fillAndParse again, if we are actively in a fillAndParse
+            if (!fillAndParseScope.get())
+            {
+                fillAndParse();
+            }
         }
     }
 
@@ -484,6 +499,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public SuspendToken suspend()
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("suspend()");
+        }
+
         suspendToken.set(true);
         return this;
     }

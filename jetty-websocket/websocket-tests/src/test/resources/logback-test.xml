@@ -21,9 +21,9 @@
 
   <!--<logger name="org.eclipse.jetty.websocket.tests.client.jsr356" level="debug" />-->
 
-  <!--<logger name="org.eclipse.jetty.websocket" level="debug" additivity="false">
+  <logger name="org.eclipse.jetty.websocket" level="debug" additivity="false">
     <appender-ref ref="FILE" />
-  </logger>-->
+  </logger>
 
   <root level="warn">
     <appender-ref ref="STDOUT" />
