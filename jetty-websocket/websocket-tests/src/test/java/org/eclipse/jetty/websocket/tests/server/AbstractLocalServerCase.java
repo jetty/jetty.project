@@ -39,6 +39,7 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitGenerator;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
@@ -52,6 +53,13 @@ import org.junit.rules.TestName;
  */
 public abstract class AbstractLocalServerCase
 {
+    public class ParsedResponse
+    {
+        public ByteBuffer responseBuffer;
+        public HttpTester.Response testerResponse;
+        public ByteBuffer remainingBuffer;
+    }
+
     @SuppressWarnings("SpellCheckingInspection")
     protected static final int KBYTE = 1024;
     @SuppressWarnings("SpellCheckingInspection")
@@ -140,16 +148,18 @@ public abstract class AbstractLocalServerCase
         return new Parser(WebSocketPolicy.newClientPolicy(), new MappedByteBufferPool(), parserHandler);
     }
     
-    public HttpTester.Response performUpgrade(LocalConnector.LocalEndPoint endPoint, ByteBuffer buf) throws Exception
+    public ParsedResponse performUpgrade(LocalConnector.LocalEndPoint endPoint, ByteBuffer buf) throws Exception
     {
         endPoint.addInput(buf);
         
         // Get response
-        ByteBuffer response = endPoint.waitForResponse(false, 1, TimeUnit.SECONDS);
-        HttpTester.Response parsedResponse = HttpTester.parseResponse(response);
-        
-        assertThat("Is Switching Protocols", parsedResponse.getStatus(), is(101));
-        assertThat("Is WebSocket Upgrade", parsedResponse.get("Upgrade"), is("WebSocket"));
-        return parsedResponse;
+        ParsedResponse response = new ParsedResponse();
+        response.responseBuffer = endPoint.waitForResponse(false, 1, TimeUnit.SECONDS);
+        response.remainingBuffer = DataUtils.copyOf(endPoint.getResponseData());
+        response.testerResponse = HttpTester.parseResponse(response.responseBuffer);
+
+        assertThat("Is Switching Protocols", response.testerResponse.getStatus(), is(101));
+        assertThat("Is WebSocket Upgrade", response.testerResponse.get("Upgrade"), is("WebSocket"));
+        return response;
     }
 }

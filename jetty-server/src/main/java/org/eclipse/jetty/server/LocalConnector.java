@@ -378,6 +378,16 @@ public class LocalConnector extends AbstractConnector
                 }
             }
         }
+
+        /**
+         * Remaining output ByteBuffer after calls to {@link #getResponse()} or {@link #waitForResponse(boolean, long, TimeUnit)}
+         *
+         * @return the remaining response data buffer
+         */
+        public ByteBuffer getResponseData()
+        {
+            return _responseData;
+        }
         
         /** 
          * Wait for a response using a parser to detect the end of message
@@ -515,7 +525,7 @@ public class LocalConnector extends AbstractConnector
                         }
                     }
                 }
-            
+
                 if (bout.getCount()==0 && isOutputShutdown())
                     return null;
                 return ByteBuffer.wrap(bout.getBuf(),0,bout.getCount()); 

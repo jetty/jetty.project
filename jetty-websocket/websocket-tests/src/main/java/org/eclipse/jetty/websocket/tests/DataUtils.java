@@ -34,6 +34,9 @@ public final class DataUtils
      */
     public static ByteBuffer copyOf(ByteBuffer payload)
     {
+        if (payload == null)
+            return null;
+
         ByteBuffer copy = ByteBuffer.allocate(payload.remaining());
         copy.put(payload.slice());
         copy.flip();

@@ -35,16 +35,14 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.common.Parser;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
-    private static final Logger LOG = Log.getLogger(LocalServer.class);
     private final ByteBufferPool bufferPool = new MappedByteBufferPool();
     private final WebSocketPolicy serverPolicy = WebSocketPolicy.newServerPolicy();
     private Server server;
@@ -135,7 +133,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     {
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setName("qtp-LocalServer");
-        
+
         // Configure Server
         server = new Server(threadPool);
         if (ssl)
@@ -149,7 +147,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             http_config.setResponseHeaderSize(8192);
             http_config.setSendServerVersion(true);
             http_config.setSendDateHeader(false);
-            
+
             sslContextFactory = new SslContextFactory();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
@@ -157,11 +155,11 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA", "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
                     "SSL_RSA_EXPORT_WITH_RC4_40_MD5", "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA", "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-            
+
             // SSL HTTP Configuration
             HttpConfiguration https_config = new HttpConfiguration(http_config);
             https_config.addCustomizer(new SecureRequestCustomizer());
-            
+
             // SSL Connector
             connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(https_config));
             connector.setPort(0);
@@ -174,32 +172,20 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         }
         // Add network connector
         server.addConnector(connector);
-        
+
         // Add Local Connector
         localConnector = new LocalConnector(server);
         server.addConnector(localConnector);
-        
+
         Handler rootHandler = createRootHandler(server);
         server.setHandler(rootHandler);
-        
+
         // Start Server
         addBean(server);
-        
+
         super.doStart();
-        
-        // Establish the Server URI
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverUri = new URI(String.format("%s://%s:%d/", ssl ? "wss" : "ws", host, port));
-        
-        // Some debugging
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug(server.dump());
-        }
+
+        // Establish the WebSocket Server URI
+        serverUri = WSURI.toWebsocket(server.getURI().resolve("/"));
     }
 }
