@@ -83,17 +83,17 @@ public abstract class AbstractTrackingEndpoint<T>
     
     public void awaitCloseEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onClose event", closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(prefix + " onClose event should have occurred", closeLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
     
     public void awaitOpenEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onOpen event", openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(prefix + " onOpen event should have occurred", openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     public void awaitErrorEvent(String prefix) throws InterruptedException
     {
-        assertTrue(prefix + " onError event", errorLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(prefix + " onError event should have occurred", errorLatch.await(Defaults.CLOSE_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
     
     protected void onWSOpen(T session)

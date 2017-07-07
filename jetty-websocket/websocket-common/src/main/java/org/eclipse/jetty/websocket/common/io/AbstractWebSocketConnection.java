@@ -307,6 +307,21 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         fillAndParse();
     }
 
+    @Override
+    public void fillInterested()
+    {
+        // Handle situation where prefill buffer (from upgrade) has created network buffer,
+        // but there is no actual read interest (yet)
+        if (BufferUtil.hasContent(networkBuffer))
+        {
+            fillAndParse();
+        }
+        else
+        {
+            super.fillInterested();
+        }
+    }
+
     private void fillAndParse()
     {
         try

@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -265,21 +265,16 @@ public class ManyConnectionsCleanupTest
     public void testOpenSessionCleanup() throws Exception
     {
         int iterationCount = 100;
-        
-        StdErrLog.getLogger(FastFailSocket.class).setLevel(StdErrLog.LEVEL_OFF);
-        
-        StdErrLog sessLog = StdErrLog.getLogger(WebSocketSession.class);
-        int oldLevel = sessLog.getLevel();
-        sessLog.setLevel(StdErrLog.LEVEL_OFF);
-        
-        for (int requests = 0; requests < iterationCount; requests++)
+
+        try(StacklessLogging ignore = new StacklessLogging(FastFailSocket.class, WebSocketSession.class))
         {
-            fastFail();
-            fastClose();
-            dropConnection();
+            for (int requests = 0; requests < iterationCount; requests++)
+            {
+                fastFail();
+                fastClose();
+                dropConnection();
+            }
         }
-        
-        sessLog.setLevel(oldLevel);
         
         URI wsUri = server.getServerUri();
         
@@ -316,7 +311,7 @@ public class ManyConnectionsCleanupTest
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri, upgradeRequest);
         
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        
+
         clientSocket.awaitCloseEvent("Client");
         clientSocket.assertCloseInfo("Client", StatusCode.NORMAL, anything());
         
