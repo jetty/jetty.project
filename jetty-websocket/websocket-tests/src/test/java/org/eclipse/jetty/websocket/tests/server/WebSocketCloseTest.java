@@ -54,13 +54,11 @@ import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests various close scenarios
  */
-@Ignore
 public class WebSocketCloseTest
 {
     /**

@@ -53,7 +53,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -61,7 +60,6 @@ import org.junit.rules.TestName;
 /**
  * Tests various close scenarios that should result in Open Session cleanup
  */
-@Ignore
 public class ManyConnectionsCleanupTest
 {
     static class AbstractCloseSocket extends WebSocketAdapter
