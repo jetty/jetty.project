@@ -40,6 +40,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  *  This goal is used in-situ on a Maven project without first requiring that the project 
@@ -222,7 +224,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             getLog().info("Reload Mechanic: " + reload );
         }
-
+        getLog().info( "nonBlocking:" + nonBlocking );
 
         // check the classes to form a classpath with
         try
@@ -281,13 +283,21 @@ public class JettyRunMojo extends AbstractJettyMojo
        if (useTestScope && (testClassesDirectory != null))
            webApp.setTestClasses (testClassesDirectory);
 
-       webApp.getClassPathFiles().addAll( getDependencyProjects() );
+       List<File> dependencyProjects = getDependencyProjects();
+       webApp.getClassPathFiles().addAll( dependencyProjects );
+       List<Resource> dependencyResources = //
+           dependencyProjects.stream() //
+               .map( file -> Resource.newResource( file ) ) //
+               .collect( Collectors.toList() );
+       webApp.getMetaData().getContainerResources().addAll( dependencyResources );
        webApp.setWebInfLib (getDependencyFiles());
-
+//       webApp.getWebInfLib().addAll( dependencyResources //
+//                                         .stream() //
+//                                         .map( resource -> toFile(resource) ) //
+//                                         .collect( Collectors.toList() ) );
+        webApp.getDependentProjects().addAll( dependencyResources );
        //get copy of a list of war artifacts
        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
-
-
 
        //process any overlays and the war type artifacts
        List<Overlay> overlays = new ArrayList<Overlay>();
@@ -367,7 +377,17 @@ public class JettyRunMojo extends AbstractJettyMojo
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
     
-    
+    private static File toFile(Resource resource)
+    {
+        try
+        {
+            return resource.getFile();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e.getMessage(), e );
+        }
+    }
 
     
     /** 
@@ -566,7 +586,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      */
     private List<File> getDependencyFiles()
     {
-        List<File> dependencyFiles = new ArrayList<File>();
+        List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
@@ -596,7 +616,7 @@ public class JettyRunMojo extends AbstractJettyMojo
 
     private List<File> getDependencyProjects()
     {
-        List<File> dependencyFiles = new ArrayList<File>();
+        List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
@@ -626,7 +646,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     }
 
 
-    private MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
     {
         if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
         {
@@ -656,10 +676,10 @@ public class JettyRunMojo extends AbstractJettyMojo
         if (warArtifacts != null)
             return warArtifacts;       
         
-        warArtifacts = new ArrayList<Artifact>();
+        warArtifacts = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
-            Artifact artifact = (Artifact) iter.next(); 
+            Artifact artifact = iter.next();
             if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
             {
                 try

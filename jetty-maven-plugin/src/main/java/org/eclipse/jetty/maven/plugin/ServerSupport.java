@@ -164,7 +164,7 @@ public class ServerSupport
         if (server == null)
             return null;
 
-        return (ContextHandlerCollection)server.getChildHandlerByClass(ContextHandlerCollection.class);
+        return server.getChildHandlerByClass(ContextHandlerCollection.class);
     }
 
 

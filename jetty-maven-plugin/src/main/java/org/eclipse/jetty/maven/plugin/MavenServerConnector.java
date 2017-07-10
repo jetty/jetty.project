@@ -270,6 +270,11 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     {
         return this.name;
     }
+
+    public int getLocalPort()
+    {
+        return this.delegate.getLocalPort();
+    }
     
     private void checkDelegate() throws IllegalStateException
     {

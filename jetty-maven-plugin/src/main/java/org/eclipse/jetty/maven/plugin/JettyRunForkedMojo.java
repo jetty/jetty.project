@@ -18,6 +18,17 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,17 +50,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /**
@@ -169,10 +169,17 @@ public class JettyRunForkedMojo extends JettyRunMojo
             }
         }
     }
-    
 
-    
-    
+
+    /**
+     * we o
+     */
+//    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+//    {
+//
+//        return null;
+//    }
+
     /**
      * ConsoleStreamer
      * 
@@ -349,7 +356,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             builder.directory(project.getBasedir());
             
             if (PluginLog.getLog().isDebugEnabled())
-                PluginLog.getLog().debug(Arrays.toString(cmd.toArray()));
+                PluginLog.getLog().debug("Forked cli:"+Arrays.toString(cmd.toArray()));
             
             PluginLog.getLog().info("Forked process starting");
             
@@ -510,6 +517,19 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 props.put("testClasses.dir", webApp.getTestClasses().getAbsolutePath());
             }
 
+            if ( !webApp.getClassPathFiles().isEmpty() )
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                for ( File dependency : webApp.getClassPathFiles() )
+                {
+                    if (dependency.isDirectory())
+                    {
+                        stringBuilder.append( dependency.getCanonicalPath() ).append( '|' );
+                    }
+                }
+                props.put( "projects.classes.dir", stringBuilder.toString() );
+            }
+
             //web-inf lib
             List<File> deps = webApp.getWebInfLib();
             StringBuffer strbuff = new StringBuffer();
@@ -578,7 +598,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
         List<Artifact> warArtifacts = new ArrayList<Artifact>();
         for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
         {
-            Artifact artifact = (Artifact) iter.next();  
+            Artifact artifact = iter.next();
             
             if (artifact.getType().equals("war"))
                 warArtifacts.add(artifact);
