@@ -72,7 +72,19 @@ public class DelegatedContainerScope implements WebSocketContainerScope
     {
         return this.delegate.isRunning();
     }
-    
+
+    @Override
+    public void addSessionListener(WebSocketSession.Listener listener)
+    {
+        this.delegate.addSessionListener(listener);
+    }
+
+    @Override
+    public boolean removeSessionListener(WebSocketSession.Listener listener)
+    {
+        return this.delegate.removeSessionListener(listener);
+    }
+
     @Override
     public void onSessionOpened(WebSocketSession session)
     {

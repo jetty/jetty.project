@@ -501,7 +501,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Add the known server class inclusions for all known configurations
         for (Configuration configuration : Configurations.getKnown())
             _serverClasses.include(configuration.getServerClasses().getInclusions());
-        
+
         // Setup Configuration classes for this webapp!
         loadConfigurations();
         _configurations.sort();
@@ -510,7 +510,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _systemClasses.add(configuration.getSystemClasses().getPatterns());
             _serverClasses.exclude(configuration.getServerClasses().getExclusions());
         }
-        
+
         // Configure classloader
         _ownClassLoader=false;
         if (getClassLoader()==null)
@@ -756,7 +756,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return _systemClasses;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return The ClasspathPattern used to match Server (hidden) classes
@@ -1047,7 +1047,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 return (T)configuration;
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * The default descriptor is a web.xml format file that is applied to the context before the standard WEB-INF/web.xml
@@ -1440,7 +1440,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _unavailableException=null;
         }
     }
-    
+
     /* ------------------------------------------------------------ */    
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)

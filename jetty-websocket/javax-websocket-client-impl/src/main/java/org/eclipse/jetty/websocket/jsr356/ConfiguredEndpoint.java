@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.common.ManagedEndpoint;
 public class ConfiguredEndpoint implements ManagedEndpoint
 {
     /** The instance of the Endpoint */
-    private final Object endpoint;
+    private Object endpoint;
     /** The optional instance specific configuration for the Endpoint */
     private final EndpointConfig config;
 
@@ -43,14 +43,15 @@ public class ConfiguredEndpoint implements ManagedEndpoint
         return config;
     }
 
-    public Object getEndpoint()
+    @Override
+    public Object getRawEndpoint()
     {
         return endpoint;
     }
 
     @Override
-    public Object getRawEndpoint()
+    public void setRawEndpoint(Object rawEndpoint)
     {
-        return endpoint;
+        this.endpoint = rawEndpoint;
     }
 }

@@ -20,13 +20,10 @@ package org.eclipse.jetty.fcgi.server;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
-import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
-import org.eclipse.jetty.fcgi.client.http.HttpDestinationOverFCGI;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -72,28 +69,16 @@ public abstract class AbstractHttpClientServerTest
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName(executor.getName() + "-client");
 
-        client = new HttpClient(new HttpClientTransportOverFCGI(1, false, "")
+        HttpClientTransport transport = new HttpClientTransportOverFCGI(1, false, "");
+        transport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
         {
             @Override
-            public HttpDestination newHttpDestination(Origin origin)
+            protected void leaked(LeakDetector.LeakInfo leakInfo)
             {
-                return new HttpDestinationOverFCGI(client, origin)
-                {
-                    @Override
-                    protected DuplexConnectionPool newConnectionPool(HttpClient client)
-                    {
-                        return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
-                        {
-                            @Override
-                            protected void leaked(LeakDetector.LeakInfo leakInfo)
-                            {
-                                connectionLeaks.incrementAndGet();
-                            }
-                        };
-                    }
-                };
+                connectionLeaks.incrementAndGet();
             }
-        }, null);
+        });
+        client = new HttpClient(transport, null);
         client.setExecutor(executor);
         clientBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         client.setByteBufferPool(clientBufferPool);

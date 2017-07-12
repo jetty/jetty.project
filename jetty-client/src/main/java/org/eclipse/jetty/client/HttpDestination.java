@@ -114,7 +114,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         removeBean(connectionPool);
     }
 
-    protected abstract ConnectionPool newConnectionPool(HttpClient client);
+    protected ConnectionPool newConnectionPool(HttpClient client)
+    {
+        return client.getTransport().getConnectionPoolFactory().newConnectionPool(this);
+    }
 
     protected Queue<HttpExchange> newExchangeQueue(HttpClient client)
     {

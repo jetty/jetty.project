@@ -24,4 +24,6 @@ package org.eclipse.jetty.websocket.common;
 public interface ManagedEndpoint
 {
     Object getRawEndpoint();
+
+    void setRawEndpoint(Object rawEndpoint);
 }

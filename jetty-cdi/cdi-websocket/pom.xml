@@ -10,7 +10,6 @@
   <url>http://www.eclipse.org/jetty</url>
   <packaging>jar</packaging>
   <properties>
-    <weld.version>2.2.9.Final</weld.version>
     <bundle-symbolic-name>${project.groupId}.websocket</bundle-symbolic-name>
   </properties>
 

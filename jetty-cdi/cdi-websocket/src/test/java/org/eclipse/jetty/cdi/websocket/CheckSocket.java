@@ -21,15 +21,17 @@ package org.eclipse.jetty.cdi.websocket;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.util.TextUtil;
 
 @WebSocket
 public class CheckSocket extends WebSocketAdapter
@@ -37,7 +39,7 @@ public class CheckSocket extends WebSocketAdapter
     private static final Logger LOG = Log.getLogger(CheckSocket.class);
     private CountDownLatch closeLatch = new CountDownLatch(1);
     private CountDownLatch openLatch = new CountDownLatch(1);
-    private EventQueue<String> textMessages = new EventQueue<>();
+    private BlockingQueue<String> textMessages = new LinkedBlockingDeque<>();
 
     public void awaitClose(int timeout, TimeUnit timeunit) throws InterruptedException
     {
@@ -49,7 +51,7 @@ public class CheckSocket extends WebSocketAdapter
         assertTrue("Timeout waiting for open",openLatch.await(timeout,timeunit));
     }
 
-    public EventQueue<String> getTextMessages()
+    public BlockingQueue<String> getTextMessages()
     {
         return textMessages;
     }
@@ -81,7 +83,7 @@ public class CheckSocket extends WebSocketAdapter
     public void onWebSocketText(String message)
     {
         LOG.debug("TEXT: {}",message);
-        textMessages.add(message);
+        textMessages.offer(message);
     }
 
     public void sendText(String msg) throws IOException
@@ -89,6 +91,11 @@ public class CheckSocket extends WebSocketAdapter
         if (isConnected())
         {
             getRemote().sendString(msg);
+        }
+        else
+        {
+            LOG.warn("Not connected, cannot send {}", TextUtil.quote(msg));
+            LOG.debug("Session: {}", getSession());
         }
     }
 

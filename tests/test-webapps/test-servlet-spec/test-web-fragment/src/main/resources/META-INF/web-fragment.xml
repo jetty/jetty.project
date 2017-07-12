@@ -32,7 +32,6 @@
     <servlet-name>Fragment</servlet-name>
     <url-pattern>/fragment/*</url-pattern>
   </servlet-mapping>
-  
 
 </web-fragment>
 

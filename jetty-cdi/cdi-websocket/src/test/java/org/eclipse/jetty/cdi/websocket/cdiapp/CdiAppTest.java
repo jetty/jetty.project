@@ -21,6 +21,7 @@ package org.eclipse.jetty.cdi.websocket.cdiapp;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
@@ -141,9 +142,7 @@ public class CdiAppTest
             socket.close(StatusCode.NORMAL,"Test complete");
             socket.awaitClose(2,TimeUnit.SECONDS);
 
-            assertThat("Messages received",socket.getTextMessages().size(),is(1));
-            String response = socket.getTextMessages().poll();
-            System.err.println(response);
+            String response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
 
             assertThat("Message[0]",response,
                     allOf(
@@ -170,14 +169,14 @@ public class CdiAppTest
 
             socket.awaitOpen(2,TimeUnit.SECONDS);
             socket.sendText("data|stuff");
+
+            String response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
+            assertThat("Message[0]",response,containsString("Hello there stuff"));
+            response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
+            assertThat("Message[1]",response,notNullValue());
+
             socket.close(StatusCode.NORMAL,"Test complete");
             socket.awaitClose(2,TimeUnit.SECONDS);
-
-            assertThat("Messages received",socket.getTextMessages().size(),is(2));
-            String response = socket.getTextMessages().poll();
-            System.out.println("[0]" + response);
-            assertThat("Message[0]",response,containsString("Hello there stuff"));
-            System.out.println("[1]" + socket.getTextMessages().poll());
         }
         finally
         {

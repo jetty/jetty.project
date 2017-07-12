@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
@@ -52,52 +53,58 @@ import org.junit.Test;
  */
 public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
 {
-    @Test
+    @Test(timeout = 10000)
     public void testUpgradeWithSmallFrames() throws Exception
     {
         ByteBuffer buf = ByteBuffer.allocate(4096);
-        
+
         // Create Upgrade Request Header
         String upgradeRequest = UpgradeUtils.generateUpgradeRequest("/");
         ByteBuffer upgradeRequestBytes = BufferUtil.toBuffer(upgradeRequest.toString(), StandardCharsets.UTF_8);
         BufferUtil.put(upgradeRequestBytes, buf);
-        
+
         // Create A few WebSocket Frames
         List<WebSocketFrame> frames = new ArrayList<>();
         frames.add(new TextFrame().setPayload("Hello 1"));
         frames.add(new TextFrame().setPayload("Hello 2"));
         frames.add(new CloseInfo(StatusCode.NORMAL).asFrame());
-        
+
         generator.generate(buf, frames);
-        
+
         // Send this buffer to the server
         LocalConnector.LocalEndPoint endPoint = server.newLocalConnection();
-    
-        BufferUtil.flipToFlush(buf,0);
-        performUpgrade(endPoint, buf);
-        
-        // Let server know that client is done sending
-        endPoint.addInputEOF();
-        
-        // Wait for server to close
-        endPoint.waitUntilClosed();
-        
-        // Get the server send echo bytes
-        ByteBuffer wsIncoming = endPoint.getOutput();
-        
-        // Parse those bytes into frames
+
+        BufferUtil.flipToFlush(buf, 0);
+        ParsedResponse response = performUpgrade(endPoint, buf);
+
+        // Parse received bytes
         ParserCapture capture = new ParserCapture();
         Parser parser = newClientParser(capture);
-        parser.parse(wsIncoming);
-        
+
+        if (BufferUtil.hasContent(response.remainingBuffer))
+        {
+            parser.parse(response.remainingBuffer);
+        }
+
+        // parse bytes seen till close
+        do
+        {
+            ByteBuffer wsIncoming = endPoint.takeOutput();
+            if(wsIncoming.hasRemaining())
+            {
+                parser.parse(wsIncoming);
+            }
+        } while (!capture.closed);
+
         // Validate echoed frames
         WebSocketFrame incomingFrame;
         incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Incoming Frame.op", incomingFrame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Incoming Frame.payload", incomingFrame.getPayloadAsUTF8(), is("Hello 1"));
+        assertThat("Incoming Frame[0]", incomingFrame, notNullValue());
+        assertThat("Incoming Frame[0].op", incomingFrame.getOpCode(), is(OpCode.TEXT));
+        assertThat("Incoming Frame[0].payload", incomingFrame.getPayloadAsUTF8(), is("Hello 1"));
         incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Incoming Frame.op", incomingFrame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Incoming Frame.payload", incomingFrame.getPayloadAsUTF8(), is("Hello 2"));
+        assertThat("Incoming Frame[1]", incomingFrame, notNullValue());
+        assertThat("Incoming Frame[1].op", incomingFrame.getOpCode(), is(OpCode.TEXT));
+        assertThat("Incoming Frame[1].payload", incomingFrame.getPayloadAsUTF8(), is("Hello 2"));
     }
-    
 }

@@ -24,9 +24,4 @@ public abstract class PoolingHttpDestination extends HttpDestination
     {
         super(client, origin);
     }
-
-    protected ConnectionPool newConnectionPool(HttpClient client)
-    {
-        return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
-    }
 }

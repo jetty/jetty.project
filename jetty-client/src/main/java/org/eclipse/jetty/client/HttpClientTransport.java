@@ -68,4 +68,14 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param context the context information to establish the connection
      */
     public void connect(InetSocketAddress address, Map<String, Object> context);
+
+    /**
+     * @return the factory for ConnectionPool instances
+     */
+    public ConnectionPool.Factory getConnectionPoolFactory();
+
+    /**
+     * @param factory the factory for ConnectionPool instances
+     */
+    public void setConnectionPoolFactory(ConnectionPool.Factory factory);
 }

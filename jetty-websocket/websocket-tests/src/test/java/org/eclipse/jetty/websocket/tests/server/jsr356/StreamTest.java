@@ -58,6 +58,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
@@ -139,7 +140,7 @@ public class StreamTest
         upload("larger.png");
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testUploadLargest() throws Exception
     {
         upload("largest.jpg");
@@ -150,14 +151,21 @@ public class StreamTest
         File inputFile = MavenTestingUtils.getTestResourceFile("data/" + filename);
 
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
-        ClientSocket socket = new ClientSocket();
-        URI uri = serverUri.resolve("/upload/" + filename);
-        client.connectToServer(socket,uri);
-        socket.uploadFile(inputFile);
-        socket.awaitClose();
+        try
+        {
+            ClientSocket socket = new ClientSocket();
+            URI uri = serverUri.resolve("/upload/" + filename);
+            client.connectToServer(socket, uri);
+            socket.uploadFile(inputFile);
+            socket.awaitClose();
 
-        File sha1File = MavenTestingUtils.getTestResourceFile("data/" + filename + ".sha");
-        assertFileUpload(new File(outputDir,filename),sha1File);
+            File sha1File = MavenTestingUtils.getTestResourceFile("data/" + filename + ".sha");
+            assertFileUpload(new File(outputDir, filename), sha1File);
+        }
+        finally
+        {
+            JettyClientContainerProvider.stop(client);
+        }
     }
 
     /**
@@ -215,9 +223,10 @@ public class StreamTest
 
         public void uploadFile(File inputFile) throws IOException
         {
-            try (OutputStream out = session.getBasicRemote().getSendStream(); FileInputStream in = new FileInputStream(inputFile))
+            try (FileInputStream in = new FileInputStream(inputFile);
+                 OutputStream out = session.getBasicRemote().getSendStream())
             {
-                IO.copy(in,out);
+                IO.copy(in, out);
             }
         }
     }

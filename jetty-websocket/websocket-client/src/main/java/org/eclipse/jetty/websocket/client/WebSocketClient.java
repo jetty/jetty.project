@@ -24,11 +24,14 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -67,10 +70,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     // From HttpClient
     private final HttpClient httpClient;
     
-    //
+    // The container
     private final WebSocketContainerScope containerScope;
     private final WebSocketExtensionFactory extensionRegistry;
     private SessionFactory sessionFactory;
+    private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
     
     private final int id = ThreadLocalRandom.current().nextInt();
 
@@ -555,6 +559,33 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         {
             ShutdownThread.register(this);
         }
+    }
+
+    protected void notifySessionListeners(Consumer<WebSocketSession.Listener> consumer)
+    {
+        for (WebSocketSession.Listener listener : listeners)
+        {
+            try
+            {
+                consumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    @Override
+    public void addSessionListener(WebSocketSession.Listener listener)
+    {
+        this.listeners.add(listener);
+    }
+
+    @Override
+    public boolean removeSessionListener(WebSocketSession.Listener listener)
+    {
+        return this.listeners.remove(listener);
     }
 
     @Override

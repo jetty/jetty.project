@@ -86,3 +86,33 @@ public class GoogleOnlyCookieStore extends HttpCookieStore
 ----
 
 The example above will retain only cookies that come from the `google.com` domain or sub-domains.
+
+==== Special Characters in Cookies
+Jetty is compliant with link:https://tools.ietf.org/html/rfc6265[RFC6265], and as such care must be taken when setting a cookie value that includes special characters such as `;`.
+
+Previously, Version=1 cookies defined in link:https://tools.ietf.org/html/rfc2109[RFC2109] (and continued in link:https://tools.ietf.org/html/rfc2965[RFC2965]) allowed for special/reserved characters to be enclosed within double quotes when declared in a `Set-Cookie` response header:
+
+[source, java, subs="{sub-order}"]
+----
+Set-Cookie: foo="bar;baz";Version=1;Path="/secur"
+----
+
+This was added to the HTTP Response header as follows:
+
+[source, java, subs="{sub-order}"]
+----
+Cookie cookie = new Cookie("foo", "bar;baz");
+cookie.setPath("/secur");
+response.addCookie(cookie);
+----
+
+The introduction of RFC6265 has rendered this approach no longer possible; users are now required to encode cookie values that use these special characters.
+This can be done utilizing `javax.servlet.http.Cookie` as follows:
+
+[source, java, subs="{sub-order}"]
+----
+Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", "utf-8"));
+----
+
+Jetty validates all cookie names and values being added to the `HttpServletResponse` via the `addCookie(Cookie)` method.
+If an illegal value is discovered Jetty will throw an `IllegalArgumentException` with the details.

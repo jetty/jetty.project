@@ -21,7 +21,8 @@ package org.eclipse.jetty.client.http;
 import java.io.IOException;
 import java.util.Map;
 
-import org.eclipse.jetty.client.AbstractHttpClientTransport;
+import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
+import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("The HTTP/1.1 client transport")
-public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
+public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTransport
 {
     public HttpClientTransportOverHTTP()
     {
@@ -40,6 +41,7 @@ public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
     public HttpClientTransportOverHTTP(int selectors)
     {
         super(selectors);
+        setConnectionPoolFactory(destination -> new DuplexConnectionPool(destination, getHttpClient().getMaxConnectionsPerDestination(), destination));
     }
 
     @Override

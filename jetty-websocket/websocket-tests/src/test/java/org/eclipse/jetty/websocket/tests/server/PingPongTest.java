@@ -35,6 +35,7 @@ import org.eclipse.jetty.websocket.common.frames.PongFrame;
 import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
 import org.junit.Test;
 
 public class PingPongTest extends AbstractLocalServerCase
@@ -208,7 +209,7 @@ public class PingPongTest extends AbstractLocalServerCase
     @Test
     public void testPing_OverSizedPayload() throws Exception
     {
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignored = new StacklessLogging(Parser.class, EchoSocket.class))
         {
             byte payload[] = new byte[126]; // intentionally too big
             Arrays.fill(payload, (byte) '5');

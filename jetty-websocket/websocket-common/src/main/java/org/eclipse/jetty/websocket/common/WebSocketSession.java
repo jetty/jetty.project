@@ -89,8 +89,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     
-    // The websocket endpoint object itself
-    private final Object endpoint;
+    /* The websocket endpoint object itself.
+     * Not declared final, as it can be decorated by other libraries (like CDI)
+     */
+    private Object endpoint;
     
     // Callbacks
     private FrameCallback onDisconnectCallback = new CompletionCallback()
@@ -225,12 +227,26 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         
         if (LOG.isDebugEnabled())
             LOG.debug("Using RemoteEndpointFactory: {}", remoteEndpointFactory);
-        
+
+        // Start WebSocketSession before decorating the endpoint (CDI requirement)
+        super.doStart();
+
+        // Decorate endpoint only after WebSocketSession has been started (CDI requirement)
+        if(this.endpoint instanceof ManagedEndpoint)
+        {
+            ManagedEndpoint managedEndpoint = (ManagedEndpoint) this.endpoint;
+            Object rawEndpoint = managedEndpoint.getRawEndpoint();
+            rawEndpoint = this.containerScope.getObjectFactory().decorate(rawEndpoint);
+            managedEndpoint.setRawEndpoint(rawEndpoint);
+        }
+        else
+        {
+            this.endpoint = this.containerScope.getObjectFactory().decorate(this.endpoint);
+        }
+
         this.endpointFunctions = newEndpointFunctions(this.endpoint);
         addManaged(this.endpointFunctions);
-        
-        super.doStart();
-        
+
         connection.setMaxIdleTimeout(this.policy.getIdleTimeout());
         
         Throwable fastFail;
@@ -963,6 +979,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     
     public interface Listener
     {
+        @SuppressWarnings("unused")
+        default void onCreated(WebSocketSession session) { }
+
         void onOpened(WebSocketSession session);
         
         void onClosed(WebSocketSession session);

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -35,6 +37,7 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy containerPolicy;
     private final Executor executor;
+    protected final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
     private SslContextFactory sslContextFactory;
 
     public SimpleContainerScope(WebSocketPolicy policy)
@@ -115,7 +118,19 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         this.sslContextFactory = sslContextFactory;
     }
-    
+
+    @Override
+    public void addSessionListener(WebSocketSession.Listener listener)
+    {
+        this.listeners.add(listener);
+    }
+
+    @Override
+    public boolean removeSessionListener(WebSocketSession.Listener listener)
+    {
+        return this.listeners.remove(listener);
+    }
+
     @Override
     public void onSessionOpened(WebSocketSession session)
     {

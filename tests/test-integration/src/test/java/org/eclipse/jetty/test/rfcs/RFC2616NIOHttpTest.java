@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import org.eclipse.jetty.cdi.websocket.WebSocketCdiInitializer;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;

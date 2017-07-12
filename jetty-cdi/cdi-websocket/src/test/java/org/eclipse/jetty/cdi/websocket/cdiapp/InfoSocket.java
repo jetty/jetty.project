@@ -22,7 +22,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Level;
 
-import javax.enterprise.context.SessionScoped;
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -38,15 +37,14 @@ public class InfoSocket
 {
     private static final java.util.logging.Logger LOG = java.util.logging.Logger.getLogger(InfoSocket.class.getName());
 
-    @SessionScoped
     @Inject
-    private HttpSession httpSession;
+    public HttpSession httpSession;
 
     @Inject
-    private ServletContext servletContext;
+    public ServletContext servletContext;
     
     @Inject
-    private DataMaker dataMaker;
+    public DataMaker dataMaker;
 
     private Session session;
     

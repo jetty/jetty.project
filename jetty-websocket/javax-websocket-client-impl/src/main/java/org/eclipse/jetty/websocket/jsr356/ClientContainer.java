@@ -401,6 +401,18 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
         return config;
     }
+
+    @Override
+    public void addSessionListener(WebSocketSession.Listener listener)
+    {
+        this.scopeDelegate.addSessionListener(listener);
+    }
+
+    @Override
+    public boolean removeSessionListener(WebSocketSession.Listener listener)
+    {
+        return this.scopeDelegate.removeSessionListener(listener);
+    }
     
     @Override
     public void onSessionClosed(WebSocketSession session)

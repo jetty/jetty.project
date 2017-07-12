@@ -21,8 +21,11 @@ package org.eclipse.jetty.fcgi.client.http;
 import java.io.IOException;
 import java.util.Map;
 
-import org.eclipse.jetty.client.AbstractHttpClientTransport;
+import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
+import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
@@ -34,7 +37,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("The FastCGI/1.0 client transport")
-public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
+public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTransport
 {
     private final boolean multiplexed;
     private final String scriptRoot;
@@ -49,6 +52,14 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
         super(selectors);
         this.multiplexed = multiplexed;
         this.scriptRoot = scriptRoot;
+        setConnectionPoolFactory(destination ->
+        {
+            HttpClient httpClient = getHttpClient();
+            int maxConnections = httpClient.getMaxConnectionsPerDestination();
+            return isMultiplexed() ?
+                    new MultiplexConnectionPool(destination, maxConnections, destination, httpClient.getMaxRequestsQueuedPerDestination()) :
+                    new DuplexConnectionPool(destination, maxConnections, destination);
+        });
     }
 
     public boolean isMultiplexed()

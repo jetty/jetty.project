@@ -23,13 +23,13 @@ import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.net.URI;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.websocket.server.ServerContainer;
 
 import org.eclipse.jetty.cdi.servlet.EmbeddedCdiHandler;
 import org.eclipse.jetty.cdi.websocket.CheckSocket;
-import org.eclipse.jetty.cdi.websocket.cdiapp.InfoSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -37,7 +37,9 @@ import org.eclipse.jetty.util.log.JettyLogHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
@@ -76,18 +78,11 @@ public class BasicAppTest
         // Add some websockets
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
         container.addEndpoint(EchoSocket.class);
-        container.addEndpoint(InfoSocket.class);
 
         server.start();
 
-        String host = connector.getHost();
-        if (host == null)
-        {
-            host = "localhost";
-        }
-        int port = connector.getLocalPort();
-        serverHttpURI = new URI(String.format("http://%s:%d/",host,port));
-        serverWebsocketURI = new URI(String.format("ws://%s:%d/",host,port));
+        serverHttpURI = server.getURI().resolve("/");
+        serverWebsocketURI = WSURI.toWebsocket(serverHttpURI);
     }
 
     @AfterClass
@@ -111,18 +106,16 @@ public class BasicAppTest
         {
             client.start();
             CheckSocket socket = new CheckSocket();
-            client.connect(socket,serverWebsocketURI.resolve("/echo"));
+            Future<Session> futureSession = client.connect(socket,serverWebsocketURI.resolve("/echo"));
 
-            socket.awaitOpen(2,TimeUnit.SECONDS);
-            socket.sendText("Hello World");
-            socket.close(StatusCode.NORMAL,"Test complete");
-            socket.awaitClose(2,TimeUnit.SECONDS);
+            Session session = futureSession.get(5, TimeUnit.SECONDS);
+            session.getRemote().sendString("Hello World");
 
-            assertThat("Messages received",socket.getTextMessages().size(),is(1));
-            String response = socket.getTextMessages().poll();
-            System.err.println(response);
-
+            String response = socket.getTextMessages().poll(5, TimeUnit.SECONDS);
             assertThat("Message[0]",response,is("Hello World"));
+
+            socket.close(StatusCode.NORMAL,"Test complete");
+            socket.awaitClose(5,TimeUnit.SECONDS);
         }
         finally
         {

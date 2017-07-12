@@ -66,7 +66,7 @@ public class JettyWebAppContext extends WebAppContext
     private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
-    
+
     private File _classes = null;
     private File _testClasses = null;
     private final List<File> _webInfClasses = new ArrayList<>();
@@ -294,7 +294,7 @@ public class JettyWebAppContext extends WebAppContext
     {
         return _webInfJars;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setGenerateQuickStart (boolean quickStart)
     {
@@ -307,7 +307,7 @@ public class JettyWebAppContext extends WebAppContext
         return _isGenerateQuickStart;
     }
     
-   
+
 
     /* ------------------------------------------------------------ */
     @Override
@@ -380,7 +380,7 @@ public class JettyWebAppContext extends WebAppContext
         
         try
         {
-            //inject configurations with config from maven plugin    
+            //inject configurations with config from maven plugin
             for (Configuration c:getWebAppConfigurations())
             {
                 if (c instanceof EnvConfiguration && getJettyEnvXml() != null)

@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -257,9 +258,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <td>HttpClient's default</td>
      * <td>The response buffer size, see {@link HttpClient#setResponseBufferSize(int)}</td>
      * </tr>
+     * <tr>
+     * <td>selectors</td>
+     * <td>cores / 2</td>
+     * <td>The number of NIO selectors used by {@link HttpClient}</td>
+     * </tr>
      * </tbody>
      * </table>
-     *
+     * @see #newHttpClient()
      * @return a {@link HttpClient} configured from the {@link #getServletConfig() servlet configuration}
      * @throws ServletException if the {@link HttpClient} cannot be created
      */
@@ -340,11 +346,17 @@ public abstract class AbstractProxyServlet extends HttpServlet
     }
 
     /**
+     * The servlet init parameter 'selectors' can be set for the number of
+     * selector threads to be used by the HttpClient.
      * @return a new HttpClient instance
      */
     protected HttpClient newHttpClient()
     {
-        return new HttpClient();
+        int selectors = Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+        String value = getServletConfig().getInitParameter("selectors");
+        if (value != null)
+            selectors = Integer.parseInt(value);
+        return new HttpClient(new HttpClientTransportOverHTTP(selectors),null);
     }
 
     protected HttpClient getHttpClient()

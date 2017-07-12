@@ -59,7 +59,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     {
         return WebInfConfiguration.class;
     }
-    
+
     /** 
      * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -70,21 +70,25 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         //put the classes dir and all dependencies into the classpath
         if (jwac.getClassPathFiles() != null && context.getClassLoader() instanceof WebAppClassLoader)
         {
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("Setting up classpath ...");
             WebAppClassLoader loader=(WebAppClassLoader)context.getClassLoader();
             for (File classpath:jwac.getClassPathFiles())
                 loader.addClassPath(classpath.getCanonicalPath());
         }
-        
+
         super.configure(context);
     }
+
+
+
+
 
     
     
     
-    
-    
+
+
     
     
     /** 

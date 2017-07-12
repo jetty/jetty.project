@@ -44,7 +44,7 @@ public class JettyStartMojo extends JettyRunMojo
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        nonblocking = true; //ensure that starting jetty won't hold up the thread
+        nonBlocking = true; //ensure that starting jetty won't hold up the thread
         super.execute();
     }
     

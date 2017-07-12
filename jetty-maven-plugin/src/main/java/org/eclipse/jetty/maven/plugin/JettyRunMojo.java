@@ -18,17 +18,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.StringUtils;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -40,6 +29,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.StringUtils;
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  *  This goal is used in-situ on a Maven project without first requiring that the project 
@@ -222,7 +222,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             getLog().info("Reload Mechanic: " + reload );
         }
-
+        getLog().info( "nonBlocking:" + nonBlocking );
 
         // check the classes to form a classpath with
         try
@@ -286,8 +286,6 @@ public class JettyRunMojo extends AbstractJettyMojo
 
        //get copy of a list of war artifacts
        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
-
-
 
        //process any overlays and the war type artifacts
        List<Overlay> overlays = new ArrayList<Overlay>();
@@ -367,7 +365,17 @@ public class JettyRunMojo extends AbstractJettyMojo
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
     
-    
+    private static File toFile(Resource resource)
+    {
+        try
+        {
+            return resource.getFile();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e.getMessage(), e );
+        }
+    }
 
     
     /** 
@@ -566,7 +574,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      */
     private List<File> getDependencyFiles()
     {
-        List<File> dependencyFiles = new ArrayList<File>();
+        List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
@@ -596,7 +604,7 @@ public class JettyRunMojo extends AbstractJettyMojo
 
     private List<File> getDependencyProjects()
     {
-        List<File> dependencyFiles = new ArrayList<File>();
+        List<File> dependencyFiles = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
@@ -626,7 +634,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     }
 
 
-    private MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
     {
         if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
         {
@@ -656,10 +664,10 @@ public class JettyRunMojo extends AbstractJettyMojo
         if (warArtifacts != null)
             return warArtifacts;       
         
-        warArtifacts = new ArrayList<Artifact>();
+        warArtifacts = new ArrayList<>();
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
-            Artifact artifact = (Artifact) iter.next(); 
+            Artifact artifact = iter.next();
             if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
             {
                 try
