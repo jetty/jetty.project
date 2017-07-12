@@ -45,23 +45,23 @@ import org.eclipse.jetty.proxy.AsyncProxyServlet;
  * Specific implementation of {@link org.eclipse.jetty.proxy.AsyncProxyServlet.Transparent} for FastCGI.
  * <p>
  * This servlet accepts a HTTP request and transforms it into a FastCGI request
- * that is sent to the FastCGI server specified in the <code>proxyTo</code>
+ * that is sent to the FastCGI server specified in the {@code proxyTo}
  * init-param.
  * <p>
  * This servlet accepts two additional init-params:
  * <ul>
- *     <li><code>scriptRoot</code>, mandatory, that must be set to the directory where
+ *     <li>{@code scriptRoot}, mandatory, that must be set to the directory where
  *     the application that must be served via FastCGI is installed and corresponds to
  *     the FastCGI DOCUMENT_ROOT parameter</li>
- *     <li><code>scriptPattern</code>, optional, defaults to <code>(.+?\.php)</code>,
+ *     <li>{@code scriptPattern}, optional, defaults to {@code (.+?\.php)},
  *     that specifies a regular expression with at least 1 and at most 2 groups that specify
  *     respectively:
  *     <ul>
  *         <li>the FastCGI SCRIPT_NAME parameter</li>
  *         <li>the FastCGI PATH_INFO parameter</li>
  *     </ul></li>
- *     <li><code>fastCGI.HTTPS</code>, optional, defaults to false, that specifies whether
- *     to force the FastCGI <code>HTTPS</code> parameter to the value <code>on</code></li>
+ *     <li>{@code fastCGI.HTTPS}, optional, defaults to false, that specifies whether
+ *     to force the FastCGI {@code HTTPS} parameter to the value {@code on}</li>
  * </ul>
  *
  * @see TryFilesFilter
@@ -111,7 +111,11 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         String scriptRoot = config.getInitParameter(SCRIPT_ROOT_INIT_PARAM);
         if (scriptRoot == null)
             throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
-        return new HttpClient(new ProxyHttpClientTransportOverFCGI(scriptRoot), null);
+        int selectors = Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+        String value = config.getInitParameter("selectors");
+        if (value != null)
+            selectors = Integer.parseInt(value);
+        return new HttpClient(new ProxyHttpClientTransportOverFCGI(selectors, scriptRoot), null);
     }
 
     @Override
@@ -238,9 +242,9 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
     private class ProxyHttpClientTransportOverFCGI extends HttpClientTransportOverFCGI
     {
-        public ProxyHttpClientTransportOverFCGI(String scriptRoot)
+        private ProxyHttpClientTransportOverFCGI(int selectors, String scriptRoot)
         {
-            super(scriptRoot);
+            super(selectors, false, scriptRoot);
         }
 
         @Override

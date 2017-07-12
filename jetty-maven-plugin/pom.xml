@@ -13,6 +13,9 @@
     <mavenVersion>3.0.3</mavenVersion>
     <pluginToolsVersion>3.4</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
+    <it.debug>false</it.debug>
+    <jetty.stopKey>FOOBEER</jetty.stopKey>
+    <jetty.jvmArgs></jetty.jvmArgs>
   </properties>
   <build>
     <plugins>
@@ -153,6 +156,12 @@
        <artifactId>javax.transaction-api</artifactId>
        <scope>compile</scope>
      </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <reporting>
     <plugins>
@@ -177,4 +186,79 @@
       </plugin>
     </plugins>
   </reporting>
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <version>3.0.1-SNAPSHOT</version>
+            <executions>
+              <execution>
+                <id>integration-test</id>
+                <goals>
+                  <goal>install</goal>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <debug>${it.debug}</debug>
+              <addTestClassPath>true</addTestClassPath>
+              <projectsDirectory>src/it</projectsDirectory>
+              <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+              <pomIncludes>
+                <pomInclude>*/pom.xml</pomInclude>
+              </pomIncludes>
+              <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+              <settingsFile>src/it/settings.xml</settingsFile>
+              <scriptVariables>
+                <jettyStopKey>${jetty.stopKey}</jettyStopKey>
+                <jettyStopPort>${jetty.stopPort}</jettyStopPort>
+                <jettyRunPort>${jetty.runPort}</jettyRunPort>
+              </scriptVariables>
+              <goals>
+                <goal>clean</goal>
+              </goals>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.0.0</version>
+            <executions>
+              <execution>
+                <id>reserve-ports</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>reserve-network-port</goal>
+                </goals>
+                <configuration>
+                  <portNames>
+                    <portName>jetty.stopPort</portName>
+                    <portName>jetty.runPort</portName>
+                  </portNames>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>apache.snaphots</id>
+          <url>https://repository.apache.org/content/repositories/snapshots</url>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
 </project>

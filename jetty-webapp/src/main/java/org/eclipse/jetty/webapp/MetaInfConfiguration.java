@@ -276,8 +276,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (LOG.isDebugEnabled()) LOG.debug(jar+" META-INF/web-fragment.xml checked");
             if (jar.isDirectory())
             {
-                //TODO   ????
-                webFrag = jar.addPath("/META-INF/web-fragment.xml");
+                webFrag = Resource.newResource( new File (jar.getFile(),"/META-INF/web-fragment.xml"));
             }
             else
             {

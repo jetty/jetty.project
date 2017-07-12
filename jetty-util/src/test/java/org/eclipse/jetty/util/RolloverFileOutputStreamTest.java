@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.ResourceTest;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -182,9 +181,9 @@ public class RolloverFileOutputStreamTest
     }
     
     @Test
-    public void testFilehandling() throws Exception
+    public void testFileHandling() throws Exception
     {
-        File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
+        File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testFileHandling");
         Path testPath = testDir.toPath();
         FS.ensureEmpty(testDir);
 
@@ -290,7 +289,7 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testRollover() throws Exception
     {
-        File testDir = MavenTestingUtils.getTargetTestingDir(ResourceTest.class.getName());
+        File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testRollover");
         FS.ensureEmpty(testDir);
 
         ZoneId zone = toZoneId("Australia/Sydney");

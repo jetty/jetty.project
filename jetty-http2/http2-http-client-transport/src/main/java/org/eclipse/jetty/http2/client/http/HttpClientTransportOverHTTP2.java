@@ -24,9 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
+import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Connection;
@@ -42,20 +43,23 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 @ManagedObject("The HTTP/2 client transport")
-public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements HttpClientTransport
+public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 {
     private final HTTP2Client client;
     private ClientConnectionFactory connectionFactory;
-    private HttpClient httpClient;
     private boolean useALPN = true;
 
     public HttpClientTransportOverHTTP2(HTTP2Client client)
     {
         this.client = client;
+        setConnectionPoolFactory(destination ->
+        {
+            HttpClient httpClient = getHttpClient();
+            return new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), destination, httpClient.getMaxRequestsQueuedPerDestination());
+        });
     }
 
     @ManagedAttribute(value = "The number of selectors", readonly = true)
@@ -79,6 +83,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     {
         if (!client.isStarted())
         {
+            HttpClient httpClient = getHttpClient();
             client.setExecutor(httpClient.getExecutor());
             client.setScheduler(httpClient.getScheduler());
             client.setByteBufferPool(httpClient.getByteBufferPool());
@@ -104,34 +109,23 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         removeBean(client);
     }
 
-    protected HttpClient getHttpClient()
-    {
-        return httpClient;
-    }
-
-    @Override
-    public void setHttpClient(HttpClient client)
-    {
-        httpClient = client;
-    }
-
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new HttpDestinationOverHTTP2(httpClient, origin);
+        return new HttpDestinationOverHTTP2(getHttpClient(), origin);
     }
 
     @Override
     public void connect(InetSocketAddress address, Map<String, Object> context)
     {
-        client.setConnectTimeout(httpClient.getConnectTimeout());
+        client.setConnectTimeout(getHttpClient().getConnectTimeout());
 
         SessionListenerPromise listenerPromise = new SessionListenerPromise(context);
 
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         SslContextFactory sslContextFactory = null;
         if (HttpScheme.HTTPS.is(destination.getScheme()))
-            sslContextFactory = httpClient.getSslContextFactory();
+            sslContextFactory = getHttpClient().getSslContextFactory();
 
         client.connect(sslContextFactory, address, listenerPromise, listenerPromise, context);
     }
@@ -139,7 +133,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        endPoint.setIdleTimeout(httpClient.getIdleTimeout());
+        endPoint.setIdleTimeout(getHttpClient().getIdleTimeout());
 
         ClientConnectionFactory factory = connectionFactory;
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)context.get(HTTP_DESTINATION_CONTEXT_KEY);

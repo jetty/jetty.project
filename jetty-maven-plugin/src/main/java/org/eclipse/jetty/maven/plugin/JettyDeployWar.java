@@ -61,7 +61,7 @@ public class JettyDeployWar extends JettyRunWarMojo
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        nonblocking = daemon; 
+        nonBlocking = daemon;
         super.execute();
     }
     
@@ -72,7 +72,7 @@ public class JettyDeployWar extends JettyRunWarMojo
     {
         super.finishConfigurationBeforeStart();
         //only stop the server at shutdown if we are blocking
-        server.setStopAtShutdown(!nonblocking); 
+        server.setStopAtShutdown(!nonBlocking );
     }
 
 }
