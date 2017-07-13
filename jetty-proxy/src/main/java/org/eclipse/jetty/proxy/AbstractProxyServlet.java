@@ -645,8 +645,6 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         try
         {
-            System.err.println("sendError "+status+" "+proxyResponse.isCommitted());
-            new Throwable().printStackTrace();
             if (!proxyResponse.isCommitted())
             {
                 proxyResponse.resetBuffer();
@@ -656,7 +654,6 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             _log.ignore(e);
         }
         finally
