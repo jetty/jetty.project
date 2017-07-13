@@ -134,8 +134,21 @@ public class InetAddressSetTest
         
         set.add("0.0.0.0/0");
         assertTrue(set.test(InetAddress.getByName("10.11.0.0")));
+        
+        // test #1664
+        set.add("2.144.0.0/14");
+        set.add("2.176.0.0/12");
+        set.add("5.22.0.0/17");
+        set.add("5.22.192.0/19");
+        assertTrue(set.test(InetAddress.getByName("2.144.0.1")));
+        assertTrue(set.test(InetAddress.getByName("2.176.0.1")));
+        assertTrue(set.test(InetAddress.getByName("5.22.0.1")));
+        assertTrue(set.test(InetAddress.getByName("5.22.192.1")));
     }
 
+
+    
+    
     @Test
     public void testBadCIDR() throws Exception
     {
