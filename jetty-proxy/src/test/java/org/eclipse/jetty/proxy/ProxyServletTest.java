@@ -1074,10 +1074,10 @@ public class ProxyServletTest
         Response response = listener.get(5, TimeUnit.SECONDS);
         Assert.assertEquals(504, response.getStatus());
 
-        // Make sure there is no content, as the proxy-to-client response has been reset.
+        // Make sure there is error page content, as the proxy-to-client response has been reset.
         InputStream input = listener.getInputStream();
-        Assert.assertEquals(-1, input.read());
-
+        String body = IO.toString(input);
+        Assert.assertThat(body,Matchers.containsString("HTTP ERROR: 504"));
         chunk1Latch.countDown();
 
         // Result succeeds because a 504 is a valid HTTP response.
