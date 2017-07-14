@@ -19,6 +19,16 @@
 
 This document provides an overview of how to configure SSL and TLS for Jetty.
 
+[[configuring-jetty-for-ssl]]
+===== Configuring Jetty for SSL
+
+To configure Jetty for SSL, complete the tasks in the following sections:
+
+* xref:generating-key-pairs-and-certificates[]
+* xref:requesting-trusted-certificate[]
+* xref:loading-keys-and-certificates[]
+* xref:configuring-sslcontextfactory[]
+
 [[tls-and-ssl-versions]]
 ==== TLS and SSL versions
 
@@ -77,16 +87,6 @@ You can also use the OpenSSL tools to generate keys and certificates, or to conv
 Since Apache and other servers commonly use the OpenSSL tool suite to generate and manipulate keys and certificates, you might already have some keys and certificates created by OpenSSL, or you might also prefer the formats OpenSSL produces.
 
 If you want the option of using the same certificate with Jetty or a web server such as Apache not written in Java, you might prefer to generate your private key and certificate with OpenSSL.
-
-[[configuring-jetty-for-ssl]]
-===== Configuring Jetty for SSL
-
-To configure Jetty for SSL, complete the tasks in the following sections:
-
-* xref:generating-key-pairs-and-certificates[]
-* xref:requesting-trusted-certificate[]
-* xref:loading-keys-and-certificates[]
-* xref:configuring-sslcontextfactory[]
 
 [[generating-key-pairs-and-certificates]]
 ===== Generating Key Pairs and Certificates
@@ -354,75 +354,16 @@ $ keytool -importkeystore -srckeystore jetty.pkcs12 -srcstoretype PKCS12 -destke
 If you are updating your configuration to use a newer certificate, as when the old one is expiring, just load the newer certificate as described in the section, xref:loading-keys-and-certificates[].
 If you imported the key and certificate originally using the PKCS12 method, use an alias of "1" rather than "jetty", because that is the alias the PKCS12 process enters into the keystore.
 
-==== Configuring SSL in Jetty Distribution
-
-For those of you using the Jetty Distribution, enabling SSL support is as easy as activating the `ssl` module.
-
-An example of this setup:
-
-[source, plain, subs="{sub-order}"]
-----
-$ cd /path/to/mybase
-$ java -jar ../start.jar --create-startd
-MKDIR : ${jetty.base}/start.d
-INFO  : Base directory was modified
-$ java -jar /path/to/jetty-dist/start.jar --add-to-start=ssl
-INFO  : server          transitively enabled, ini template available with --add-to-start=server
-INFO  : ssl             initialized in ${jetty.base}/start.d/ssl.ini
-MKDIR : ${jetty.base}/etc
-COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
-INFO  : Base directory was modified
-$ tree
-.
-├── etc
-│   └── keystore
-└── start.d
-    ├── server.ini
-    └── ssl.ini
-----
-
-When you open `start.d/ssl.ini`, you will see many commented properties ready for you to configure the `SslContextFactory` basics.
-
-To highlight some of the more commonly used properties:
-
-jetty.ssl.host::
-  Configures which interfaces the SSL/TLS Connector should listen on.
-jetty.ssl.port::
-  Configures which port the SSL/TLS Connector should listen on.
-jetty.httpConfig.securePort::
-  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
-jetty.sslContext.keyStorePath::
-  Sets the location of the `keystore` that you configured with your certificates.
-jetty.sslContext.keyStorePassword::
-  Sets the Password for the `keystore`.
-
-[[two-way-authentication]]
-==== Two Way Authentication
-
-To enable two-way authentication both the `ssl` and `https` modules need to be activated.
-Once enabled, set the `jetty.sslContext.needClientAuth` property to `true`.
-
-[source%nowrap,ini,linenums]
-.$JETTY_BASE/start.d/ssl.ini
-----
-# Module: ssl
---module=ssl
-...
-## whether client certificate authentication is required
-jetty.sslContext.needClientAuth=true
-...
-----
-
 [[layout-of-keystore-and-truststore]]
-==== Layout of keystore and truststore
+===== Layout of keystore and truststore
 
-The server's private key and certificate are contained within the keystore.
+The `keystore` only contains the server's private key and certificate.
 
 [[img-certificate-chain]]
 image::images/certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
 
 [literal]
-.The structure of a KeyStore file
+.The structure of KeyStore file:
 ....
 ├── PrivateKeyEntry
 │   ├── PrivateKey
@@ -436,10 +377,10 @@ image::images/certificate-chain.png[title="Certificate chain", alt="Certificate 
     └── Root CA certificate
 ....
 
-[TIP]
-====
-`PrivateKeyEntry`, `Certificate chain`, `Intermediary CA certificate` and `Root CA certificate` are all optional values.
-====
+____
+[NOTE]
+Both the `Intermediary CA certificate` and `Root CA certificate` are optional.
+____
 
 [source%nowrap,plain,linenums]
 ----
@@ -779,8 +720,84 @@ ____
 ==== Configuring SNI
 
 From Java 8, the JVM contains support for the http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name Indicator (SNI)] extension, which allows a SSL connection handshake to indicate one or more DNS names that it applies to.
-To support this, the `ExtendedSslContextFactory` is used that will look for multiple X509 certificates within the keystore, each of which may have multiple DNS names (including wildcards) associated with the http://en.wikipedia.org/wiki/SubjectAltName[Subject Alternate Name] extension.
-When using the `ExtendedSSlContextFactory`, the correct certificate is automatically selected if the SNI extension is present in the handshake.
+
+To support this, the `SslContextFactory` is used.
+The `SslContextFactory` will look for multiple X509 certificates within the keystore, each of which may have multiple DNS names (including wildcards) associated with the http://en.wikipedia.org/wiki/SubjectAltName[Subject Alternate Name] extension.
+When using the `SslContextFactory`, the correct certificate is automatically selected if the SNI extension is present in the handshake.
+
+
+==== Configuring SSL in Jetty Distribution
+
+For those of you using the Jetty Distribution, enabling SSL support is as easy as activating the `ssl` module.
+
+An example of this setup:
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd /path/to/mybase
+$ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
+INFO : Base directory was modified
+$ tree
+.
+├── etc
+│   └── keystore
+└── start.d
+    ├── server.ini
+    └── ssl.ini
+----
+
+When you open `start.d/ssl.ini`, you will see several commented properties ready for use when configuring `SslContextFactory` basics.
+
+To highlight some of the more commonly used properties:
+
+jetty.ssl.host::
+  Configures which interfaces the SSL/TLS Connector should listen on.
+jetty.ssl.port::
+  Configures which port the SSL/TLS Connector should listen on.
+jetty.httpConfig.securePort::
+  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
+jetty.sslContext.keyStorePath::
+  Sets the location of the `keystore` that you configured with your certificates.
+jetty.sslContext.keyStorePassword::
+  Sets the Password for the `keystore`.
+
+[[two-way-authentication]]
+==== Two Way Authentication
+
+To enable two-way authentication in the Jetty Distribution, you need to enable the both the `ssl` and `https` modules.
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd /path/to/mybase
+$ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl,https
+----
+
+[source%nowrap,ini,linenums]
+.$JETTY_BASE/start.d/ssl.ini
+----
+# Module: ssl
+--module=ssl
+
+jetty.ssl.host=0.0.0.0
+jetty.ssl.port=8583
+jetty.sslContext.keyStorePath=etc/keystore
+jetty.sslContext.trustStorePath=etc/keystore
+jetty.sslContext.keyStorePassword=OBF:
+jetty.sslContext.keyManagerPassword=OBF:
+jetty.sslContext.trustStorePassword=OBF:
+jetty.sslContext.trustStoreType=JKS
+# enable two way authentication
+jetty.sslContext.needClientAuth=true
+----
+
+[source%nowrap,ini,linenums]
+.$JETTY_BASE/start.d/https.ini
+----
+# Module: https
+--module=https
+----
 
 [[configuring-sslcontextfactory-cipherSuites]]
 ==== Disabling/Enabling Specific Cipher Suites
@@ -796,7 +813,7 @@ Tools like ssllabs.com might report slightly different names which will be ignor
 ____
 
 ____
-[NOTE]
+[IMPORTANT]
 It's recommended to install the Java Cryptography Extension (JCE) Unlimited Strength policy files in your JRE to get full strength ciphers such as AES-256.
 The files can be found on the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java download page].
 Just overwrite the two present JAR files in `<JRE_HOME>/lib/security/`.
@@ -849,7 +866,7 @@ ____
 [NOTE]
 The default `SslContextFactory` implementation applies the latest SSL/TLS recommendations surrounding vulnerabilities in SSL/TLS.
 Check the release notes (the `VERSION.txt` found in the root of the Jetty Distribution, or the http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.jetty%22%20AND%20a%3A%22jetty-project%22[alternate (classified 'version') artifacts for the `jetty-project` component]on Maven Central) for updates.
-The Java JVM is also applying exclusions at the JVM level and as such if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in BOTH the Java JVM and the Jetty configuration.
+The Java JVM also applies exclusions at the JVM level and, as such, if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in *both* the Java JVM and your Jetty configuration.
 ____
 
 ____
