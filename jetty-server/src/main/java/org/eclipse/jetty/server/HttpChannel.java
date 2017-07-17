@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -75,9 +76,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
+    private final Supplier<HttpFields> _trailerSupplier = new Supplier<HttpFields>()
+    {
+        @Override
+        public HttpFields get()
+        {
+            return _trailers;
+        }
+    };
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
+    private HttpFields _trailers;
 
     /** Bytes written after interception (eg after compression) */
     private long _written;
@@ -581,6 +591,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO>=0 && _oldIdleTimeout!=idleTO)
             setIdleTimeout(idleTO);
 
+        request.setTrailerSupplier(_trailerSupplier);
         _request.setMetaData(request);
 
         if (LOG.isDebugEnabled())
@@ -608,7 +619,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onTrailers {}", this, trailers);
-        _request.setTrailers(trailers);
+        _trailers = trailers;
     }
 
     public boolean onRequestComplete()
