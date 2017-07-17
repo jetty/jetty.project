@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.is;
 import java.net.URI;
 import java.util.Arrays;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -42,9 +41,6 @@ import org.junit.rules.TestName;
 public class MessageWriterTest
 {
     private static final Logger LOG = Log.getLogger(MessageWriterTest.class);
-
-    @Rule
-    public TestTracker testtracker = new TestTracker();
 
     @Rule
     public TestName testname = new TestName();

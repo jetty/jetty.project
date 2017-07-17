@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,9 +45,6 @@ import org.junit.rules.TestName;
 public class MessageOutputStreamTest
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStreamTest.class);
-    
-    @Rule
-    public TestTracker testtracker = new TestTracker();
     
     @Rule
     public TestName testname = new TestName();

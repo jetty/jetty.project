@@ -132,10 +132,6 @@ public class MemoryUsageTest
         long heapUsed = heapAfter.getUsed() - heapBefore.getUsed();
         long nonHeapUsed = nonHeapAfter.getUsed() - nonHeapBefore.getUsed();
 
-        System.out.println("heapUsed = " + heapUsed);
-        System.out.println("nonHeapUsed = " + nonHeapUsed);
-//        new CountDownLatch(1).await();
-
         // Assume no more than 25 KiB per session pair (client and server).
         long expected = 25 * 1024 * sessionCount;
         Assert.assertThat("heap used", heapUsed,lessThan(expected));

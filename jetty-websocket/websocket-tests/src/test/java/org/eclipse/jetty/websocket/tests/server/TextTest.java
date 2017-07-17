@@ -32,13 +32,13 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.DataFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
 import org.junit.Test;
 
 /**
@@ -465,7 +465,8 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
     
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
             session.expect(expect);
@@ -483,7 +484,7 @@ public class TextTest extends AbstractLocalServerCase
     public void testText_BadUtf8_ByteWise() throws Exception
     {
         // Disable Long Stacks from Parser (we know this test will throw an exception)
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class))
         {
             ByteBuffer payload = ByteBuffer.allocate(64);
             BufferUtil.clearToFill(payload);
@@ -554,7 +555,8 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
     
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
@@ -592,7 +594,8 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
     
-        try (LocalFuzzer session = server.newLocalFuzzer())
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
+             LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendFrames(send);
             session.expect(expect);
@@ -618,7 +621,7 @@ public class TextTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
     
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             ByteBuffer net = session.asNetworkBuffer(send);

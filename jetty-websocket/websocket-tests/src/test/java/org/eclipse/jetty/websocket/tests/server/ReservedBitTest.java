@@ -25,12 +25,12 @@ import java.util.List;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.PingFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
 import org.junit.Test;
 
 /**
@@ -54,7 +54,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
@@ -81,7 +81,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
@@ -108,7 +108,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendFrames(send);
@@ -135,7 +135,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendSegmented(send, 1);
@@ -162,7 +162,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
@@ -189,7 +189,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
@@ -217,7 +217,7 @@ public class ReservedBitTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);

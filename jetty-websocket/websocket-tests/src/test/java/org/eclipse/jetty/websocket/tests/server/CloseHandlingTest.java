@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
+import org.eclipse.jetty.websocket.tests.servlets.EchoSocket;
 import org.junit.Test;
 
 /**
@@ -66,7 +66,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
     
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
@@ -98,7 +98,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
     
-        try (StacklessLogging ignored = new StacklessLogging(Parser.class,CloseInfo.class);
+        try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);

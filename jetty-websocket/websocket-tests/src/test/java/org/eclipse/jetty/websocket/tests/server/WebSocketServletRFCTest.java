@@ -28,10 +28,10 @@ import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -39,6 +39,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
@@ -58,12 +59,10 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
  */
-@RunWith(AdvancedRunner.class)
 public class WebSocketServletRFCTest
 {
     private static SimpleServletServer server;
@@ -220,10 +219,16 @@ public class WebSocketServletRFCTest
         
         UntrustedWSSession clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         UntrustedWSEndpoint clientSocket = clientSession.getUntrustedEndpoint();
-        
-        clientSession.getRemote().sendString("CRASH");
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.SERVER_ERROR, anything());
+
+        try (StacklessLogging ignored = new StacklessLogging(
+                Log.getLogger(WebSocketSession.class.getName() + ".SERVER"),
+                Log.getLogger(RFC6455Socket.class)))
+        {
+            clientSession.getRemote().sendString("CRASH");
+
+            clientSocket.awaitCloseEvent("Client");
+            clientSocket.assertCloseInfo("Client", StatusCode.SERVER_ERROR, anything());
+        }
     }
     
     /**
@@ -314,15 +319,18 @@ public class WebSocketServletRFCTest
         byte buf[] = new byte[]{(byte) 0xC2, (byte) 0xC3};
         
         Generator generator = new Generator(WebSocketPolicy.newServerPolicy(), client.getBufferPool(), false);
-        
-        WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
-        txt.setMask(Hex.asByteArray("11223344"));
-        ByteBuffer bbHeader = generator.generateHeaderBytes(txt);
-        
-        clientConnection.writeRaw(bbHeader);
-        clientConnection.writeRaw(txt.getPayload());
-        
-        clientSocket.awaitCloseEvent("Client");
-        clientSocket.assertCloseInfo("Client", StatusCode.BAD_PAYLOAD, anything());
+
+        try (StacklessLogging ignored = new StacklessLogging(RFC6455Socket.class))
+        {
+            WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
+            txt.setMask(Hex.asByteArray("11223344"));
+            ByteBuffer bbHeader = generator.generateHeaderBytes(txt);
+
+            clientConnection.writeRaw(bbHeader);
+            clientConnection.writeRaw(txt.getPayload());
+
+            clientSocket.awaitCloseEvent("Client");
+            clientSocket.assertCloseInfo("Client", StatusCode.BAD_PAYLOAD, anything());
+        }
     }
 }
