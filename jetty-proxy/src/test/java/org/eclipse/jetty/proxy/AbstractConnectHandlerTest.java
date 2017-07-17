@@ -66,12 +66,6 @@ public abstract class AbstractConnectHandlerTest
         proxy.stop();
     }
 
-    protected HttpTester.Response readResponse(InputStream inputStream) throws IOException
-    {
-        HttpTester.Input input = HttpTester.from(inputStream);
-        return HttpTester.parseResponse(input);
-    }
-
     protected Socket newSocket() throws IOException
     {
         Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
