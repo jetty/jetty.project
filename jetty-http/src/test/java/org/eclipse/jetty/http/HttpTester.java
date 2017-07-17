@@ -121,11 +121,11 @@ public class HttpTester
     
     public abstract static class Input
     {
-        final ByteBuffer _buffer;
-        boolean _eof=false;
-        HttpParser _parser;
+        protected final ByteBuffer _buffer;
+        protected boolean _eof=false;
+        protected HttpParser _parser;
 
-        Input()
+        public Input()
         {
             this(BufferUtil.allocate(8192));
         }
