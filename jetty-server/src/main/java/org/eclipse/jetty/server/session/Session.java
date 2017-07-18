@@ -905,7 +905,7 @@ public class Session implements SessionHandler.SessionIf
                 }
                 default:
                 {
-                    LOG.info("Session {} already being invalidated", _sessionData.getId());
+                    if (LOG.isDebugEnabled()) LOG.debug("Session {} already being invalidated", _sessionData.getId());
                 }
             }
         }
