@@ -37,7 +37,6 @@ import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.util.TextUtil;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.WSServer;
@@ -56,7 +55,6 @@ public class LargeContainerTest
         public void echo(javax.websocket.Session session, String msg)
         {
             // reply with echo
-            System.err.printf("echo(%s)%n", TextUtil.hint(msg));
             session.getAsyncRemote().sendText(msg);
         }
     }

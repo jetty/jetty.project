@@ -82,7 +82,6 @@ public class WebSocketOverSSLTest
 
             TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
             URI requestUri = server.getServerUri();
-            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
@@ -124,7 +123,6 @@ public class WebSocketOverSSLTest
     
             TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
             URI requestUri = server.getServerUri();
-            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect
@@ -165,7 +163,6 @@ public class WebSocketOverSSLTest
     
             TrackingEndpoint clientSocket = new TrackingEndpoint("Client");
             URI requestUri = server.getServerUri().resolve("/deep?a=b");
-            System.err.printf("Request URI: %s%n",requestUri.toASCIIString());
             Future<Session> fut = client.connect(clientSocket,requestUri);
 
             // wait for connect

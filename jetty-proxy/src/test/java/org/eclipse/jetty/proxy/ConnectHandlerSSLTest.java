@@ -81,7 +81,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            HttpTester.Response response = readResponse(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
             Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
@@ -96,7 +96,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
-                response = readResponse(sslSocket.getInputStream());
+                response = HttpTester.parseResponse(HttpTester.from(sslSocket.getInputStream()));
                 Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
                 Assert.assertEquals("GET /echo", response.getContent());
             }
@@ -119,7 +119,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            HttpTester.Response response = readResponse(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
             Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
 
             // Upgrade the socket to SSL
@@ -138,7 +138,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
-                    response = readResponse(sslSocket.getInputStream());
+                    response = HttpTester.parseResponse(HttpTester.from(sslSocket.getInputStream()));
                     Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
                     Assert.assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getContent());
                 }

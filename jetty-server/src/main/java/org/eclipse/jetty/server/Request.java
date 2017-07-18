@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.servlet.AsyncContext;
@@ -206,7 +207,6 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
-    private HttpFields _trailers;
 
     /* ------------------------------------------------------------ */
     public Request(HttpChannel channel, HttpInput input)
@@ -240,7 +240,9 @@ public class Request implements HttpServletRequest
 
     public HttpFields getTrailerHttpFields()
     {
-        return _trailers;
+        MetaData.Request metadata=_metaData;
+        Supplier<HttpFields> trailers =  metadata==null?null:metadata.getTrailerSupplier();
+        return trailers==null?null:trailers.get();
     }
 
     /* ------------------------------------------------------------ */
@@ -1844,7 +1846,6 @@ public class Request implements HttpServletRequest
         _multiPartInputStream = null;
         _remote=null;
         _input.recycle();
-        _trailers = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -2212,11 +2213,6 @@ public class Request implements HttpServletRequest
     public void setUserIdentityScope(UserIdentity.Scope scope)
     {
         _scope = scope;
-    }
-
-    public void setTrailers(HttpFields trailers)
-    {
-        _trailers = trailers;
     }
 
     /* ------------------------------------------------------------ */

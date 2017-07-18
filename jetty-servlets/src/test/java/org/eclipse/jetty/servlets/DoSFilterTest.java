@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.servlets;
 
+import javax.servlet.ServletContext;
+
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -36,7 +39,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     public void testRateIsRateExceeded() throws InterruptedException
     {
         DoSFilter doSFilter = new DoSFilter();
-
+        doSFilter.setName("foo");
         boolean exceeded = hitRateTracker(doSFilter,0);
         Assert.assertTrue("Last hit should have exceeded",exceeded);
 
@@ -49,6 +52,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     public void testWhitelist() throws Exception
     {
         DoSFilter filter = new DoSFilter();
+        filter.setName("foo");
         filter.setWhitelist("192.168.0.1/32,10.0.0.0/8,4d8:0:a:1234:ABc:1F:b18:17,4d8:0:a:1234:ABc:1F:0:0/96");
         Assert.assertTrue(filter.checkWhitelist("192.168.0.1"));
         Assert.assertFalse(filter.checkWhitelist("192.168.0.2"));
@@ -72,7 +76,8 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException
     {
         boolean exceeded = false;
-        RateTracker rateTracker = doSFilter.new RateTracker("test2",0,4);
+        ServletContext context = new ContextHandler.StaticContext();
+        RateTracker rateTracker = new RateTracker(context, doSFilter.getName(), "test2",0,4);
 
         for (int i = 0; i < 5; i++)
         {
