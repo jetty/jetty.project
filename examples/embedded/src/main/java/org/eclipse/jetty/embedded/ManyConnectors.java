@@ -43,7 +43,7 @@ public class ManyConnectors
         // to get access to a keystore that we use in many unit tests and should
         // probably be a direct path to your own keystore.
 
-        String jettyDistKeystore = "../../jetty-distribution/target/distribution/demo-base/etc/keystore";
+        String jettyDistKeystore = "../../jetty-distribution/target/distribution/demo-base/etc/test-keystore";
         String keystorePath = System.getProperty(
                 "example.keystore", jettyDistKeystore);
         File keystoreFile = new File(keystorePath);

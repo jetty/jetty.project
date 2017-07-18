@@ -23,7 +23,7 @@ import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
-import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -112,7 +112,7 @@ public class FilterMapping implements Dumpable
         if (appliesTo(type))
         {
             for (int i=0;i<_pathSpecs.length;i++)
-                if (_pathSpecs[i]!=null &&  PathMap.match(_pathSpecs[i], path,true))
+                if (_pathSpecs[i]!=null && ServletPathSpec.match(_pathSpecs[i], path, true))
                     return true;
         }
 

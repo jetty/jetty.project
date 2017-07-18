@@ -113,7 +113,6 @@ public class ServletHandler extends ScopedHandler
     private MultiMap<FilterMapping> _filterNameMappings;
 
     private final Map<String,ServletHolder> _servletNameMap=new HashMap<>();
-    // private PathMap<ServletHolder> _servletPathMap;
     private PathMappings<ServletHolder> _servletPathMap;
     
     private ListenerHolder[] _listeners=new ListenerHolder[0];

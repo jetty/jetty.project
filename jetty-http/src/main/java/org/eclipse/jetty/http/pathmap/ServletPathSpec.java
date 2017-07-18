@@ -36,7 +36,146 @@ public class ServletPathSpec extends PathSpec
             return "/" + pathSpec;
         return pathSpec;
     }
-    
+
+
+    /**
+     * @param pathSpec the path spec
+     * @param path the path
+     * @return true if match.
+     */
+    public static boolean match(String pathSpec, String path)
+    {
+        return match(pathSpec, path, false);
+    }
+
+    /**
+     * @param pathSpec the path spec
+     * @param path the path
+     * @param noDefault true to not handle the default path "/" special, false to allow matcher rules to run
+     * @return true if match.
+     */
+    public static boolean match(String pathSpec, String path, boolean noDefault)
+    {
+        if (pathSpec.length()==0)
+            return "/".equals(path);
+
+        char c = pathSpec.charAt(0);
+        if (c=='/')
+        {
+            if (!noDefault && pathSpec.length()==1 || pathSpec.equals(path))
+                return true;
+
+            if(isPathWildcardMatch(pathSpec, path))
+                return true;
+        }
+        else if (c=='*')
+            return path.regionMatches(path.length()-pathSpec.length()+1,
+                                      pathSpec,1,pathSpec.length()-1);
+        return false;
+    }
+
+    private static boolean isPathWildcardMatch(String pathSpec, String path)
+    {
+        // For a spec of "/foo/*" match "/foo" , "/foo/..." but not "/foobar"
+        int cpl=pathSpec.length()-2;
+        if (pathSpec.endsWith("/*") && path.regionMatches(0,pathSpec,0,cpl))
+        {
+            if (path.length()==cpl || '/'==path.charAt(cpl))
+                return true;
+        }
+        return false;
+    }
+
+    /** Return the portion of a path that matches a path spec.
+     * @param pathSpec the path spec
+     * @param path the path
+     * @return null if no match at all.
+     */
+    public static String pathMatch(String pathSpec, String path)
+    {
+        char c = pathSpec.charAt(0);
+
+        if (c=='/')
+        {
+            if (pathSpec.length()==1)
+                return path;
+
+            if (pathSpec.equals(path))
+                return path;
+
+            if (isPathWildcardMatch(pathSpec, path))
+                return path.substring(0,pathSpec.length()-2);
+        }
+        else if (c=='*')
+        {
+            if (path.regionMatches(path.length()-(pathSpec.length()-1),
+                                   pathSpec,1,pathSpec.length()-1))
+                return path;
+        }
+        return null;
+    }
+
+    /** Return the portion of a path that is after a path spec.
+     * @param pathSpec the path spec
+     * @param path the path
+     * @return The path info string
+     */
+    public static String pathInfo(String pathSpec, String path)
+    {
+        if ("".equals(pathSpec))
+            return path; //servlet 3 spec sec 12.2 will be '/'
+
+        char c = pathSpec.charAt(0);
+
+        if (c=='/')
+        {
+            if (pathSpec.length()==1)
+                return null;
+
+            boolean wildcard = isPathWildcardMatch(pathSpec, path);
+
+            // handle the case where pathSpec uses a wildcard and path info is "/*"
+            if (pathSpec.equals(path) && !wildcard)
+                return null;
+
+            if (wildcard)
+            {
+                if (path.length()==pathSpec.length()-2)
+                    return null;
+                return path.substring(pathSpec.length()-2);
+            }
+        }
+        return null;
+    }
+
+
+    /** Relative path.
+     * @param base The base the path is relative to.
+     * @param pathSpec The spec of the path segment to ignore.
+     * @param path the additional path
+     * @return base plus path with pathspec removed
+     */
+    public static String relativePath(String base,
+                                      String pathSpec,
+                                      String path )
+    {
+        String info = pathInfo(pathSpec, path);
+        if (info == null)
+            info = path;
+
+        if (info.startsWith("./"))
+            info = info.substring(2);
+        if (base.endsWith(URIUtil.SLASH))
+            if (info.startsWith(URIUtil.SLASH))
+                path = base + info.substring(1);
+            else
+                path = base + info;
+        else if (info.startsWith(URIUtil.SLASH))
+            path = base + info;
+        else
+            path = base + URIUtil.SLASH + info;
+        return path;
+    }
     
     public ServletPathSpec(String servletPathSpec)
     {
