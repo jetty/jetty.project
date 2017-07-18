@@ -2446,8 +2446,7 @@ public class Request implements HttpServletRequest
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
     }
-    
-    
+
     public void setPathSpec(PathSpec pathSpec)
     {
         _pathSpec = pathSpec;
@@ -2457,10 +2456,9 @@ public class Request implements HttpServletRequest
     {
         return _pathSpec;
     }
-    
 
-    // TODO replace with overriden version from API
-    public HttpServletMapping getMapping()
+    @Override
+    public HttpServletMapping getHttpServletMapping()
     {
         final PathSpec pathSpec = _pathSpec;
         final MappingMatch match;
@@ -2479,7 +2477,7 @@ public class Request implements HttpServletRequest
                     break;
                 case EXACT:
                     match = MappingMatch.EXACT;
-                    mapping = _servletPath;
+                    mapping = _servletPath.startsWith("/")?_servletPath.substring(1):_servletPath;
                     break;
                 case SUFFIX_GLOB:
                     match = MappingMatch.EXTENSION;
