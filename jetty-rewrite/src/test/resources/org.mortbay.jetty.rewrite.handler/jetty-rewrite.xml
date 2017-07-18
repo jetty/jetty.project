@@ -32,10 +32,6 @@
     <!-- =========================================================== -->
     <!-- One of each type!                                           -->
     <!-- =========================================================== -->
-
-    <!-- Use this connector for many frequently idle connections
-         and for threadless continuations.
-    -->
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.ServerConnector">

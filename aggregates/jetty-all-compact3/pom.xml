@@ -57,8 +57,6 @@
               <includes>**/*</includes>
               <excludes>
                 META-INF/**,
-                **/Servlet3Continuation*,
-                **/Jetty6Continuation*,
                 **/AppContextLeakPreventer*.java,
                 **/AWTLeakPreventer*.java,
                 **/IntrospectorCleaner*.java,

@@ -1367,7 +1367,6 @@ public class ServletHandler extends ScopedHandler
         else
         {
             PathMappings<ServletHolder> pm = new PathMappings<>();
-            Map<String,ServletMapping> servletPathMappings = new HashMap<>();
 
             //create a map of paths to set of ServletMappings that define that mapping
             HashMap<String, List<ServletMapping>> sms = new HashMap<>();
@@ -1445,7 +1444,6 @@ public class ServletHandler extends ScopedHandler
                               finalMapping.getServletName(),
                               _servletNameMap.get(finalMapping.getServletName()).getSource());
 
-                servletPathMappings.put(pathSpec, finalMapping);
                 pm.put(new ServletPathSpec(pathSpec),_servletNameMap.get(finalMapping.getServletName()));
             }
      

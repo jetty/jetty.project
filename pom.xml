@@ -51,7 +51,6 @@
     <module>jetty-io</module>
     <module>jetty-http</module>
     <module>jetty-http2</module>
-    <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>

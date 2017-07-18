@@ -27,11 +27,6 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-continuation</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
       <version>${project.version}</version>
     </dependency>

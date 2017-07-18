@@ -39,7 +39,7 @@
             <configuration>
               <classifier>sources</classifier>
               <includes>**/*</includes>
-              <excludes>META-INF/**,**/Servlet3Continuation*,**/Jetty6Continuation*</excludes>
+              <excludes>META-INF/**</excludes>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
               <excludeArtifactIds>javax</excludeArtifactIds>
               <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.mortbay.jetty.alpn</excludeGroupIds>
