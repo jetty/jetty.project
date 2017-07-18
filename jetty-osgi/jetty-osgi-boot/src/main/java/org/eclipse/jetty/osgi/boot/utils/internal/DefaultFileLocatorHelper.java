@@ -98,7 +98,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         if (url.getProtocol().equals("file"))
         {
             // some osgi frameworks do use the file protocol directly in some
-            // situations. Do use the FileResource to transform the URL into a
+            // situations. Do use the PathResource to transform the URL into a
             // File: URL#toURI is broken
             return new PathResource(url).getFile().getParentFile().getParentFile();
         }

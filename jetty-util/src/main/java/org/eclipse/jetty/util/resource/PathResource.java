@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * Java NIO Path equivalent of FileResource.
+ * Java NIO Path Resource.
  */
 public class PathResource extends Resource
 {
@@ -388,10 +388,6 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        /* Mimic behavior from old FileResource class and its
-         * usage of java.io.FileInputStream(File) which will trigger
-         * an IOException on construction if the path is a directory
-         */
         if (Files.isDirectory(path))
             throw new IOException(path + " is a directory");
 

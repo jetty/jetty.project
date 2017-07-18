@@ -82,7 +82,6 @@ public class FileSystemResourceTest
     public static Collection<Object[]> data()
     {
         List<Object[]> data = new ArrayList<>();
-        data.add(new Class<?>[]{FileResource.class});
         data.add(new Class<?>[]{PathResource.class});
         return data;
     }
@@ -591,10 +590,6 @@ public class FileSystemResourceTest
         
         try (Resource base = newResource(dir.toFile()))
         {
-            if (OS.IS_WINDOWS && base instanceof FileResource)
-                // FileResource doesn't handle symlinks of Windows
-                return;
-                
             Resource resFoo = base.addPath("foo");
             Resource resBar = base.addPath("bar");
             
@@ -635,9 +630,6 @@ public class FileSystemResourceTest
         
         try (Resource base = newResource(dir.toFile()))
         {
-            // FileResource does not pass this test!
-            assumeFalse(base instanceof FileResource);
-            
             Resource resFoo = base.addPath("foo");
             Resource resBar = base.addPath("bar");
             
@@ -927,9 +919,6 @@ public class FileSystemResourceTest
 
         try (Resource base = newResource(dir.toFile()))
         {
-            // FileResource does not pass this test!
-            assumeFalse(base instanceof FileResource);
-
             Resource res = base.addPath("foo` bar");
             assertThat("Alias: " + res,res.getAlias(),nullValue());
         }
@@ -982,9 +971,6 @@ public class FileSystemResourceTest
 
         try (Resource base = newResource(dir.toFile()))
         {
-            // FileResource does not pass this test!
-            assumeFalse(base instanceof FileResource);
-
             Resource res = base.addPath("foo.{bar}.txt");
             assertThat("Alias: " + res,res.getAlias(),nullValue());
         }
@@ -1011,9 +997,6 @@ public class FileSystemResourceTest
 
         try (Resource base = newResource(dir.toFile()))
         {
-            // FileResource does not pass this test!
-            assumeFalse(base instanceof FileResource);
-
             Resource res = base.addPath("foo^3.txt");
             assertThat("Alias: " + res,res.getAlias(),nullValue());
         }
@@ -1040,9 +1023,6 @@ public class FileSystemResourceTest
 
         try (Resource base = newResource(dir.toFile()))
         {
-            // FileResource does not pass this test!
-            assumeFalse(base instanceof FileResource);
-
             Resource res = base.addPath("foo|bar.txt");
             assertThat("Alias: " + res,res.getAlias(),nullValue());
         }
@@ -1084,9 +1064,6 @@ public class FileSystemResourceTest
 
         try (Resource fileres = newResource(refQuoted))
         {
-            // This test does not pass on FileResource
-            assumeFalse(fileres instanceof FileResource);
-            
             assertThat("Exists: " + refQuoted,fileres.exists(),is(true));
             assertThat("Alias: " + refQuoted,fileres,hasNoAlias());
         }
@@ -1402,8 +1379,7 @@ public class FileSystemResourceTest
     public void testUncPath() throws Exception
     {
         assumeTrue("Only windows supports UNC paths", OS.IS_WINDOWS);
-        assumeFalse("FileResource does not support this test", _class.equals(FileResource.class));
-        
+
         try (Resource base = newResource(URI.create("file:////127.0.0.1/path")))
         {
             Resource resource = base.addPath("WEB-INF/");
