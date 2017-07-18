@@ -762,7 +762,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 _sessionDataStore.delete(oldId);  //delete the session data with the old id
                 _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
             }
-            LOG.info("Session id {} swapped for new id {}", oldId, newId);
+            if (LOG.isDebugEnabled())
+                LOG.debug ("Session id {} swapped for new id {}", oldId, newId);
             return session;
         }
     }
