@@ -223,13 +223,14 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    // TODO @Override
+    @Override
     public Map<String,String> getTrailerFields()
     {
-        if (_trailers==null)
+        HttpFields trailersFields = getTrailerHttpFields();
+        if (trailersFields==null)
             return Collections.emptyMap();
         Map<String,String> trailers = new HashMap<>();
-        for (HttpField field : _trailers)
+        for (HttpField field : trailersFields)
         {
             String key = field.getName().toLowerCase();
             String value = trailers.get(key);
@@ -238,6 +239,7 @@ public class Request implements HttpServletRequest
         return trailers;
     }
 
+    /* ------------------------------------------------------------ */
     public HttpFields getTrailerHttpFields()
     {
         MetaData.Request metadata=_metaData;
