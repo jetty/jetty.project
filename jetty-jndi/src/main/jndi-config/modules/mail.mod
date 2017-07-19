@@ -1,7 +1,7 @@
 [description]
 Adds the javax.mail implementation to the classpath.
 
-[name]
+[provides]
 mail
 
 [lib]
