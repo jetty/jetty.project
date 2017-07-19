@@ -10,12 +10,12 @@
     <Arg>
       <New class="org.eclipse.jetty.server.LowResourceMonitor">
         <Arg name="server"><Ref refid='Server'/></Arg>
-        <Set name="period"><Property name="jetty.lowresources.period" deprecated="lowresources.period" default="1000"/></Set>
-        <Set name="lowResourcesIdleTimeout"><Property name="jetty.lowresources.idleTimeout" deprecated="lowresources.lowResourcesIdleTimeout" default="1000"/></Set>
-        <Set name="monitorThreads"><Property name="jetty.lowresources.monitorThreads" deprecated="lowresources.monitorThreads" default="true"/></Set>
-        <Set name="maxConnections"><Property name="jetty.lowresources.maxConnections" deprecated="lowresources.maxConnections" default="0"/></Set>
-        <Set name="maxMemory"><Property name="jetty.lowresources.maxMemory" deprecated="lowresources.maxMemory" default="0"/></Set>
-        <Set name="maxLowResourcesTime"><Property name="jetty.lowresources.maxLowResourcesTime" deprecated="lowresources.maxLowResourcesTime" default="5000"/></Set>
+        <Set name="period"><Property name="jetty.lowresources.period" default="1000"/></Set>
+        <Set name="lowResourcesIdleTimeout"><Property name="jetty.lowresources.idleTimeout" default="1000"/></Set>
+        <Set name="monitorThreads"><Property name="jetty.lowresources.monitorThreads" default="true"/></Set>
+        <Set name="maxConnections"><Property name="jetty.lowresources.maxConnections" default="0"/></Set>
+        <Set name="maxMemory"><Property name="jetty.lowresources.maxMemory" default="0"/></Set>
+        <Set name="maxLowResourcesTime"><Property name="jetty.lowresources.maxLowResourcesTime" default="5000"/></Set>
       </New>
     </Arg>
   </Call>

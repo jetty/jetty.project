@@ -9,9 +9,9 @@
   <Call name="insertHandler">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-	<Set name="rewriteRequestURI"><Property name="jetty.rewrite.rewriteRequestURI" deprecated="rewrite.rewriteRequestURI" default="true"/></Set>
-	<Set name="rewritePathInfo"><Property name="jetty.rewrite.rewritePathInfo" deprecated="rewrite.rewritePathInfo" default="false"/></Set>
-	<Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" deprecated="rewrite.originalPathAttribute" default="requestedPath"/></Set>
+	<Set name="rewriteRequestURI"><Property name="jetty.rewrite.rewriteRequestURI" default="true"/></Set>
+	<Set name="rewritePathInfo"><Property name="jetty.rewrite.rewritePathInfo" default="false"/></Set>
+	<Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" default="requestedPath"/></Set>
      
 	<!-- Set DispatcherTypes  -->
 	<Set name="dispatcherTypes">
