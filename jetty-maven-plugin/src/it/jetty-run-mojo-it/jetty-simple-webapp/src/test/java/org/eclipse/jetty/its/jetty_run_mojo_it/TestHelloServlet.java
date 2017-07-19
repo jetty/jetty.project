@@ -41,13 +41,13 @@ public class TestHelloServlet
 
             String response = httpClient.GET( "http://localhost:" + port + "/hello?name=beer" ).getContentAsString();
 
-            System.out.println( "httpResponse:" + response );
+            System.out.println( "httpResponse hello annotation servlet:" + response );
 
             Assert.assertEquals( "hello beer", response.trim() );
 
             response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
 
-            System.out.println( "httpResponse:" + response );
+            System.out.println( "httpResponse ping fragment servlet:" + response );
 
             Assert.assertEquals( "pong beer", response.trim() );
         }
