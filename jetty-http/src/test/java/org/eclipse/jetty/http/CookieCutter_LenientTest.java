@@ -16,16 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.http;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.http.Cookie;
-
+import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.CookieCutter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -165,17 +166,40 @@ public class CookieCutter_LenientTest
     @Test
     public void testLenientBehavior()
     {
-        CookieCutter cutter = new CookieCutter();
-        cutter.addCookieField(rawHeader);
-        Cookie[] cookies = cutter.getCookies();
+        TestCutter cutter = new TestCutter();
+        cutter.parseField(rawHeader);
+
         if (expectedName==null)
-            assertThat("Cookies.length", cookies.length, is(0));
+            assertThat("Cookies.length", cutter.names.size(), is(0));
         else
         {
-            assertThat("Cookies.length", cookies.length, is(1));
-            assertThat("Cookie.name", cookies[0].getName(), is(expectedName));
-            assertThat("Cookie.value", cookies[0].getValue(), is(expectedValue));
+            assertThat("Cookies.length", cutter.names.size(), is(1));
+            assertThat("Cookie.name", cutter.names.get(0), is(expectedName));
+            assertThat("Cookie.value", cutter.values.get(0), is(expectedValue));
         }
     }
-    
+
+
+    class TestCutter extends CookieCutter
+    {
+        List<String> names = new ArrayList<>();
+        List<String> values = new ArrayList<>();
+
+        protected TestCutter()
+        {
+            super(CookieCompliance.RFC6265);
+        }
+
+        @Override
+        protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
+        {
+            names.add(cookieName);
+            values.add(cookieValue);
+        }
+
+        public void parseField(String field)
+        {
+            super.parseFields(Collections.singletonList(field));
+        }
+    };
 }

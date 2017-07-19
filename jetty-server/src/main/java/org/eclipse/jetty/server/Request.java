@@ -190,7 +190,7 @@ public class Request implements HttpServletRequest
     private Authentication _authentication;
     private String _characterEncoding;
     private ContextHandler.Context _context;
-    private CookieCutter _cookies;
+    private Cookies _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = __NONE;
     private MultiMap<String> _queryParameters;
@@ -755,7 +755,7 @@ public class Request implements HttpServletRequest
         for (String c : metadata.getFields().getValuesList(HttpHeader.COOKIE))
         {
             if (_cookies == null)
-                _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getCookieCompliance());
+                _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
             _cookies.addCookieField(c);
         }
 
@@ -2030,7 +2030,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies == null)
-            _cookies = new CookieCutter(getHttpChannel().getHttpConfiguration().getCookieCompliance());
+            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getCookieCompliance());
         _cookies.setCookies(cookies);
     }
 

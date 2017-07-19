@@ -190,7 +190,7 @@ public class PushBuilderImpl implements PushBuilder
             if (_request.isRequestedSessionIdFromURL())
                 param="jsessionid="+_sessionId;
             // TODO else
-            //      _fields.add("Cookie","JSESSIONID="+_sessionId);
+            //      _rawFields.add("Cookie","JSESSIONID="+_sessionId);
         }
 
         HttpURI uri = HttpURI.createHttpURI(_request.getScheme(),_request.getServerName(),_request.getServerPort(),path,param,query,null);

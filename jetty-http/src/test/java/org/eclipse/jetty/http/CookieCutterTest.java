@@ -16,27 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.http;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
-import javax.servlet.http.Cookie;
-
-import org.eclipse.jetty.http.CookieCompliance;
-import org.junit.Ignore;
-import org.junit.Test;
 
 public class CookieCutterTest
 {
     private Cookie[] parseCookieHeaders(CookieCompliance compliance,String... headers)
     {
-        CookieCutter cutter = new CookieCutter(compliance);
+        TestCutter cutter = new TestCutter(compliance);
         for (String header : headers)
         {
-            cutter.addCookieField(header);
+            cutter.parseFields(header);
         }
-        return cutter.getCookies();
+        return cutter.cookies.toArray(new Cookie[cutter.cookies.size()]);
     }
     
     private void assertCookie(String prefix, Cookie cookie,
@@ -207,4 +209,81 @@ public class CookieCutterTest
         
         assertThat("Cookies.length", cookies.length, is(0));
     }
+
+
+    static class Cookie
+    {
+        String name;
+        String value;
+        String domain;
+        String path;
+        int version;
+        String comment;
+
+        public Cookie(String name, String value, String domain, String path, int version, String comment)
+        {
+            this.name = name;
+            this.value = value;
+            this.domain = domain;
+            this.path = path;
+            this.version = version;
+            this.comment = comment;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        public String getDomain()
+        {
+            return domain;
+        }
+
+        public String getPath()
+        {
+            return path;
+        }
+
+        public int getVersion()
+        {
+            return version;
+        }
+
+        public String getComment()
+        {
+            return comment;
+        }
+    }
+
+    class TestCutter extends CookieCutter
+    {
+        List<Cookie> cookies = new ArrayList<>();
+
+        protected TestCutter()
+        {
+            this(CookieCompliance.RFC6265);
+        }
+
+        public TestCutter(CookieCompliance compliance)
+        {
+            super(compliance);
+        }
+
+        @Override
+        protected void addCookie(String cookieName, String cookieValue, String cookieDomain, String cookiePath, int cookieVersion, String cookieComment)
+        {
+            cookies.add(new Cookie(cookieName,cookieValue,cookieDomain,cookiePath,cookieVersion,cookieComment));
+        }
+
+        public void parseFields(String... fields)
+        {
+            super.parseFields(Arrays.asList(fields));
+        }
+    };
 }
