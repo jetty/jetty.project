@@ -1,7 +1,7 @@
 [description]
 Puts javax.transaction api on the classpath  
 
-[name]
+[provides]
 transactions
 
 [lib]
