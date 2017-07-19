@@ -186,7 +186,6 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void testExposedClassDeprecated() throws Exception
     {
@@ -194,7 +193,7 @@ public class WebAppClassLoaderTest
         String[] newSC=new String[oldSC.length+1];
         newSC[0]="-org.eclipse.jetty.webapp.Configuration";
         System.arraycopy(oldSC,0,newSC,1,oldSC.length);
-        _context.setServerClasses(newSC);
+        _context.setServerClasspathPattern(new ClasspathPattern(newSC));
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
@@ -225,13 +224,14 @@ public class WebAppClassLoaderTest
         String[] newServC=new String[oldServC.length+1];
         newServC[0]="org.eclipse.jetty.webapp.Configuration";
         System.arraycopy(oldServC,0,newServC,1,oldServC.length);
-        _context.setServerClasses(newServC);
-        
+
+        _context.setServerClasspathPattern(new ClasspathPattern(newServC));
+
         String[] oldSysC=_context.getSystemClasses();
         String[] newSysC=new String[oldSysC.length+1];
         newSysC[0]="org.eclipse.jetty.webapp.";
         System.arraycopy(oldSysC,0,newSysC,1,oldSysC.length);
-        _context.setSystemClasses(newSysC);
+        _context.setSystemClasspathPattern(new ClasspathPattern(newSysC));
         
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
@@ -243,16 +243,16 @@ public class WebAppClassLoaderTest
         newSysC=new String[oldSysC.length+1];
         newSysC[0]="org.acme.webapp.ClassInJarA";
         System.arraycopy(oldSysC,0,newSysC,1,oldSysC.length);
-        _context.setSystemClasses(newSysC);
+        _context.setSystemClasspathPattern(new ClasspathPattern(newSysC));
 
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
-        _context.setSystemClasses(oldSysC);
+        _context.setSystemClasspathPattern(new ClasspathPattern(oldSysC));
 
         oldServC=_context.getServerClasses();
         newServC=new String[oldServC.length+1];
         newServC[0]="org.acme.webapp.ClassInJarA";
         System.arraycopy(oldServC,0,newServC,1,oldServC.length);
-        _context.setServerClasses(newServC);
+        _context.setServerClasspathPattern(new ClasspathPattern(newServC));
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
     }
     
@@ -323,7 +323,7 @@ public class WebAppClassLoaderTest
         String[] newServC=new String[oldServC.length+1];
         newServC[0]="org.acme.";
         System.arraycopy(oldServC,0,newServC,1,oldServC.length);
-        _context.setServerClasses(newServC);
+        _context.setServerClasspathPattern(new ClasspathPattern(newServC));
 
         _context.setParentLoaderPriority(true);
         // dump(_context);
@@ -340,12 +340,12 @@ public class WebAppClassLoaderTest
 //        assertEquals(0,resources.get(0).toString().indexOf("jar:file:"));
 //        assertEquals(0,resources.get(1).toString().indexOf("file:"));
 
-        _context.setServerClasses(oldServC);
+        _context.setServerClasspathPattern(new ClasspathPattern(oldServC));
         String[] oldSysC=_context.getSystemClasses();
         String[] newSysC=new String[oldSysC.length+1];
         newSysC[0]="org.acme.";
         System.arraycopy(oldSysC,0,newSysC,1,oldSysC.length);
-        _context.setSystemClasses(newSysC);
+        _context.setSystemClasspathPattern(new ClasspathPattern(newSysC));
 
         _context.setParentLoaderPriority(true);
         // dump(_context);

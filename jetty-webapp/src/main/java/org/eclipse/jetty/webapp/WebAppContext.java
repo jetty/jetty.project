@@ -641,18 +641,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the configurations.
-     * @deprecated
-     */
-    public Configuration[] getConfigurations()
-    {
-        if (_configurations.size()==0)
-            loadConfigurations();
-        return _configurations.getConfigurations().toArray(new Configuration[_configurations.size()]);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the configurations.
      */
     public Configurations getWebAppConfigurations()
     {
@@ -774,28 +762,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see #setServerClasses(String[])
-     * @return Returns the serverClasses.
-     */
     @ManagedAttribute(value="classes and packages hidden by the context classloader", readonly=true)
     public String[] getServerClasses()
     {
         return _serverClasses.getPatterns();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void addSystemClass(String clazz)
-    {
-        _systemClasses.add(clazz);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void addServerClass(String clazz)
-    {
-        _serverClasses.add(clazz);
     }
 
     /* ------------------------------------------------------------ */
@@ -1228,38 +1198,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setContextWhiteList(String... contextWhiteList)
     {
         _contextWhiteList = contextWhiteList;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the server classes patterns.
-     * <p>
-     * Server classes/packages are classes used to implement the server and are hidden
-     * from the context.  If the context needs to load these classes, it must have its
-     * own copy of them in WEB-INF/lib or WEB-INF/classes.
-     * A {@link ClasspathPattern} is used to match the server classes.
-     * @deprecated use {@link #setServerClasspathPattern(ClasspathPattern)} or {@link Configuration}s
-     * @param serverClasses The serverClasses to set.
-     */
-    public void setServerClasses(String... serverClasses)
-    {
-        setServerClasspathPattern(new ClasspathPattern(serverClasses));
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the system classes patterns.
-     * <p>
-     * System classes/packages are classes provided by the JVM and that
-     * cannot be replaced by classes of the same name from WEB-INF,
-     * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
-     * A {@link ClasspathPattern} is used to match the system classes.
-     * @deprecated use {@link #setSystemClasspathPattern(ClasspathPattern)} or {@link Configuration}s
-     * @param systemClasses The systemClasses to set.
-     */
-    public void setSystemClasses(String... systemClasses)
-    {
-        setSystemClasspathPattern(new ClasspathPattern(systemClasses));
     }
 
 

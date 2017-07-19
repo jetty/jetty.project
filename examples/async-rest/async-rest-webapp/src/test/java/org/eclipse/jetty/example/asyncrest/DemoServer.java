@@ -19,6 +19,7 @@
 package org.eclipse.jetty.example.asyncrest;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.ClasspathPattern;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class DemoServer
@@ -34,7 +35,7 @@ public class DemoServer
         webapp.setContextPath("/");
         webapp.setWar(jetty_home+"/target/async-rest/");
         webapp.setParentLoaderPriority(true);
-        webapp.setServerClasses(new String[]{});
+        webapp.setServerClasspathPattern(new ClasspathPattern());
         server.setHandler(webapp);
         
         server.start();
