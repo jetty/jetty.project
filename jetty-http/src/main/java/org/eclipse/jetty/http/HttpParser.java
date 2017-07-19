@@ -81,7 +81,7 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
  * <dl>
  * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
  * <dt>RFC2616</dt><dd>Wrapped headers and HTTP/0.9 supported</dd>
- * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for
+ * <dt>LEGACY</dt><dd>Adherence to Servlet Specification requirement for
  * exact case of header names, bypassing the header caches, which are case insensitive,
  * otherwise equivalent to RFC2616</dd>
  * </dl>
@@ -90,8 +90,6 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
 public class HttpParser
 {
     public static final Logger LOG = Log.getLogger(HttpParser.class);
-    @Deprecated
-    public final static String __STRICT="org.eclipse.jetty.http.HttpParser.STRICT";
     public final static int INITIAL_URI_LENGTH=256;
 
     /**
@@ -236,8 +234,7 @@ public class HttpParser
 
     private static HttpCompliance compliance()
     {
-        Boolean strict = Boolean.getBoolean(__STRICT);
-        return strict?HttpCompliance.LEGACY:HttpCompliance.RFC7230;
+        return HttpCompliance.RFC7230;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -262,20 +259,6 @@ public class HttpParser
     public HttpParser(ResponseHandler handler,int maxHeaderBytes)
     {
         this(handler,maxHeaderBytes,compliance());
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Deprecated
-    public HttpParser(RequestHandler handler,int maxHeaderBytes,boolean strict)
-    {
-        this(handler,maxHeaderBytes,strict?HttpCompliance.LEGACY:compliance());
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Deprecated
-    public HttpParser(ResponseHandler handler,int maxHeaderBytes,boolean strict)
-    {
-        this(handler,maxHeaderBytes,strict?HttpCompliance.LEGACY:compliance());
     }
 
     /* ------------------------------------------------------------------------------- */
