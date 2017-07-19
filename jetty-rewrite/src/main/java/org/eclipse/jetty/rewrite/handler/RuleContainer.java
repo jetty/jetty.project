@@ -163,7 +163,7 @@ public class RuleContainer extends Rule
         
         if (_rules==null)
             return target;
-        
+
         for (Rule rule : _rules)
         {
             String applied=rule.matchAndApply(target,request, response);
@@ -179,26 +179,29 @@ public class RuleContainer extends Rule
                     String query = request.getQueryString();
                     if (query != null)
                         request.setAttribute(_originalQueryStringAttribute,query);
-                }     
+                }
+
+                // Ugly hack, we should just pass baseRequest into the API from RewriteHandler itself.
+                Request baseRequest = Request.getBaseRequest(request);
 
                 if (_rewriteRequestURI)
                 {
                     String encoded=URIUtil.encodePath(applied);
                     if (rule instanceof Rule.ApplyURI)
-                        ((Rule.ApplyURI)rule).applyURI((Request)request,((Request)request).getRequestURI(), encoded);
+                        ((Rule.ApplyURI)rule).applyURI(baseRequest, baseRequest.getRequestURI(), encoded);
                     else
-                        ((Request)request).setURIPathQuery(encoded);
+                        baseRequest.setURIPathQuery(encoded);
                 }
 
                 if (_rewritePathInfo)
-                    ((Request)request).setPathInfo(applied);
+                    baseRequest.setPathInfo(applied);
 
                 target=applied;
                 
                 if (rule.isHandling())
                 {
                     LOG.debug("handling {}",rule);
-                    Request.getBaseRequest(request).setHandled(true);
+                    baseRequest.setHandled(true);
                 }
 
                 if (rule.isTerminating())
