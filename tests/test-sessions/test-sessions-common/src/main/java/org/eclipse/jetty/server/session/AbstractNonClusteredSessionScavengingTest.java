@@ -96,8 +96,6 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 // Let's wait for the scavenger to run
                 pause(maxInactivePeriod + scavengePeriod);
@@ -107,7 +105,6 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
                 // The session should not be there anymore, but we present an old cookie
                 // The server should create a new session.
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=old-create");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }
@@ -154,8 +151,6 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 // Let's wait for the scavenger to run
                 pause(2*scavengePeriod);
@@ -164,7 +159,6 @@ public abstract class AbstractNonClusteredSessionScavengingTest extends Abstract
 
                 // Test that the session is still there
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=old-test");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }

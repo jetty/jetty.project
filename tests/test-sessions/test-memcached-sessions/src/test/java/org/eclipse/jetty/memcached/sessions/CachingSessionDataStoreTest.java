@@ -83,8 +83,6 @@ public class CachingSessionDataStoreTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                 String id = TestServer.extractSessionId(sessionCookie);
                 
                 //check that the memcache contains the session, and the session data store contains the session
@@ -102,7 +100,6 @@ public class CachingSessionDataStoreTest
                 //
                 ((MockDataStore)persistentStore).zeroLoadCount();
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=update");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 assertEquals(0, ((MockDataStore)persistentStore).getLoadCount());

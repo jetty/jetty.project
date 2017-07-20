@@ -96,8 +96,6 @@ public class ImmortalSessionTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 String resp = response.getContentAsString();
                 assertEquals(resp.trim(),String.valueOf(value));
@@ -107,7 +105,6 @@ public class ImmortalSessionTest
 
                 // Be sure the session is still there
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=get");
-                request.header("Cookie", sessionCookie);
 
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());

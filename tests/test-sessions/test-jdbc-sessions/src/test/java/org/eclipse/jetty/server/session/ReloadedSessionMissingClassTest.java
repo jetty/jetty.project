@@ -114,8 +114,6 @@ public class ReloadedSessionMissingClassTest
                 assertTrue(sessionCookie != null);
                 String sessionId = (String)webApp.getServletContext().getAttribute("foo");
                 assertNotNull(sessionId);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                 
                 //Stop the webapp
                 webApp.stop();
@@ -126,7 +124,6 @@ public class ReloadedSessionMissingClassTest
                 webApp.start();
 
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + "/bar?action=get");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());  
                 
