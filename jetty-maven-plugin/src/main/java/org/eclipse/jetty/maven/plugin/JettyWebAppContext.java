@@ -104,7 +104,6 @@ public class JettyWebAppContext extends WebAppContext
     private Resource _quickStartWebXml;
     private String _originAttribute;
     private boolean _generateOrigin;
-    private List<Resource> dependentProjects = new ArrayList<>();
     
     /**
      * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
@@ -320,9 +319,9 @@ public class JettyWebAppContext extends WebAppContext
         return _webInfJars;
     }
 
-    public List<Resource> getDependentProjects()
+    public List<File> getWebInfClasses()
     {
-        return dependentProjects;
+        return _webInfClasses;
     }
     
     /* ------------------------------------------------------------ */
@@ -336,7 +335,7 @@ public class JettyWebAppContext extends WebAppContext
     {
         return _isGenerateQuickStart;
     }
-    
+
    
     
     /* ------------------------------------------------------------ */

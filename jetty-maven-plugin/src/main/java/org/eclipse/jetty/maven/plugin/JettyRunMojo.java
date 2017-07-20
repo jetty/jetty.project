@@ -32,6 +32,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -588,7 +589,9 @@ public class JettyRunMojo extends AbstractJettyMojo
             MavenProject mavenProject = getProjectReferences( artifact, project );
             if (mavenProject != null)
             {
-                dependencyFiles.add( Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile() );
+                File projectPath = Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
+                getLog().debug( "Adding project directory " + projectPath.toString() );
+                dependencyFiles.add( projectPath );
                 continue;
             }
 
