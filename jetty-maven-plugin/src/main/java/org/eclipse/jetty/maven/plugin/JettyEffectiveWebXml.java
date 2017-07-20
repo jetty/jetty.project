@@ -151,7 +151,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
                 //just show the result in the log
                 getLog().info(IO.toString(webApp.getQuickStartWebDescriptor().getInputStream()));
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                throw new MojoExecutionException("Unable to output effective web.xml", e);
             }

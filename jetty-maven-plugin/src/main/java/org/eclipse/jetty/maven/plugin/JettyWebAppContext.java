@@ -266,8 +266,15 @@ public class JettyWebAppContext extends WebAppContext
     
     /* ------------------------------------------------------------ */
     public Resource getQuickStartWebDescriptor ()
+    throws Exception
     {
-        return (Resource)getAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML);
+        Object o = getAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML);
+        if (o == null)
+            return null;
+        else if (o instanceof Resource)
+            return (Resource)o;
+        else
+            return Resource.newResource((String)o);
     }
     
     /* ------------------------------------------------------------ */
@@ -296,6 +303,12 @@ public class JettyWebAppContext extends WebAppContext
     }
 
     /* ------------------------------------------------------------ */
+    public List<File> getWebInfClasses()
+    {
+        return _webInfClasses;
+    }
+
+    /* ------------------------------------------------------------ */
     public void setGenerateQuickStart (boolean quickStart)
     {
         _isGenerateQuickStart = quickStart;
@@ -306,7 +319,7 @@ public class JettyWebAppContext extends WebAppContext
     {
         return _isGenerateQuickStart;
     }
-    
+
 
 
     /* ------------------------------------------------------------ */
@@ -385,6 +398,8 @@ public class JettyWebAppContext extends WebAppContext
             {
                 if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
                     ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
+                else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
+                    ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());
             }
         }
         catch(Exception e)

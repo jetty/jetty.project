@@ -21,6 +21,7 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -281,14 +282,13 @@ public class JettyRunMojo extends AbstractJettyMojo
        if (useTestScope && (testClassesDirectory != null))
            webApp.setTestClasses (testClassesDirectory);
 
-       webApp.getClassPathFiles().addAll( getDependencyProjects() );
-       webApp.setWebInfLib (getDependencyFiles());
+       webApp.setWebInfLib(getDependencyFiles());
 
        //get copy of a list of war artifacts
        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
 
        //process any overlays and the war type artifacts
-       List<Overlay> overlays = new ArrayList<Overlay>();
+       List<Overlay> overlays = new ArrayList<>();
        for (OverlayConfig config:warPluginInfo.getMavenWarOverlayConfigs())
        {
            //overlays can be individually skipped
@@ -584,8 +584,12 @@ public class JettyRunMojo extends AbstractJettyMojo
             {
                 continue;
             }
-            if (getProjectReferences( artifact, project )!=null)
+            MavenProject mavenProject = getProjectReferences( artifact, project );
+            if (mavenProject != null)
             {
+                File projectPath = Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
+                getLog().debug( "Adding project directory " + projectPath.toString() );
+                dependencyFiles.add( projectPath );
                 continue;
             }
 
@@ -601,38 +605,6 @@ public class JettyRunMojo extends AbstractJettyMojo
               
         return dependencyFiles; 
     }
-
-    private List<File> getDependencyProjects()
-    {
-        List<File> dependencyFiles = new ArrayList<>();
-        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
-        {
-            Artifact artifact = iter.next();
-
-            // Include runtime and compile time libraries, and possibly test libs too
-            if(artifact.getType().equals("war"))
-            {
-                continue;
-            }
-
-            if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
-                continue; //never add dependencies of scope=provided to the webapp's classpath (see also <useProvidedScope> param)
-
-            if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
-                continue; //only add dependencies of scope=test if explicitly required
-
-            MavenProject mavenProject = getProjectReferences( artifact, project );
-            if (mavenProject != null)
-            {
-                dependencyFiles.add( Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile() );
-                getLog().debug( "Adding project reference " + mavenProject.getBuild().getOutputDirectory()
-                                    + " for WEB-INF/classes " );
-            }
-        }
-
-        return dependencyFiles;
-    }
-
 
     protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
     {

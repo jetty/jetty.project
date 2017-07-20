@@ -84,10 +84,6 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
 
 
 
-    
-    
-    
-
 
     
     
@@ -163,6 +159,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         
         jwac.setAttribute(RESOURCE_BASES_POST_OVERLAY, jwac.getBaseResource());
     }
+
 
 
     protected  Resource unpackOverlay (WebAppContext context, Overlay overlay)

@@ -295,7 +295,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             //leave everything unpacked for the forked process to use
             webApp.setPersistTempDirectory(true);
             
-            webApp.start(); //just enough to generate the quickstart           
+            webApp.start(); //just enough to generate the quickstart
            
             //save config of the webapp BEFORE we stop
             File props = prepareConfiguration();
@@ -424,7 +424,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         {
             if (forkedProcess != null && waitForChild)
                 forkedProcess.destroy();
-            
             throw new MojoExecutionException("Failed to create Jetty process", ex);
         }
     }
@@ -458,7 +457,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
     public File prepareConfiguration() throws MojoExecutionException
     {
         try
-        {   
+        {
             //work out the configuration based on what is configured in the pom
             File propsFile = new File (target, "fork.props");
             if (propsFile.exists())
@@ -468,8 +467,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
             //propsFile.deleteOnExit();
 
             Properties props = new Properties();
-
-
             //web.xml
             if (webApp.getDescriptor() != null)
             {
@@ -484,7 +481,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             //sort out the context path
             if (webApp.getContextPath() != null)
             {
-                props.put("context.path", webApp.getContextPath());       
+                props.put("context.path", webApp.getContextPath());
             }
 
             //tmp dir
@@ -504,7 +501,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 props.put("base.dirs", toCSV(((ResourceCollection)postOverlayResources).getResources()));
             else
                 props.put("base.dirs", postOverlayResources.toString());
-        
             
             //web-inf classes
             if (webApp.getClasses() != null)
