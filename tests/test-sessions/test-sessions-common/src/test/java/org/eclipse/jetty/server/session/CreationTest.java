@@ -107,8 +107,6 @@ public class CreationTest
             
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            // Mangle the cookie, replacing Path with $Path, etc.
-            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
             //session should now be evicted from the cache
             String id = TestServer.extractSessionId(sessionCookie);
@@ -118,7 +116,6 @@ public class CreationTest
             
             //make another request for the same session
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
-            request.header("Cookie", sessionCookie);
             response = request.send();
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             

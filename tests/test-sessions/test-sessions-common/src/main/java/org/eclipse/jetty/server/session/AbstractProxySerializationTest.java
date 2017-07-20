@@ -108,8 +108,6 @@ public abstract class AbstractProxySerializationTest extends AbstractTestBase
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 //stop the context to be sure the sesssion will be passivated
                 context.stop();
@@ -119,7 +117,6 @@ public abstract class AbstractProxySerializationTest extends AbstractTestBase
                
                 // Make another request using the session id from before
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=test");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }

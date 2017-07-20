@@ -105,8 +105,6 @@ public class IdleSessionTest
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            // Mangle the cookie, replacing Path with $Path, etc.
-            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //and wait until the session should be idled out
             pause(evictionSec*3);
@@ -118,7 +116,6 @@ public class IdleSessionTest
 
             //make another request to de-idle the session
             Request request = client.newRequest(url + "?action=test");
-            request.getHeaders().add("Cookie", sessionCookie);
             ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
@@ -140,7 +137,6 @@ public class IdleSessionTest
 
             //make a request
             request = client.newRequest(url + "?action=testfail");
-            request.getHeaders().add("Cookie", sessionCookie);
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
             
@@ -150,8 +146,6 @@ public class IdleSessionTest
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            // Mangle the cookie, replacing Path with $Path, etc.
-            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             id = TestServer.extractSessionId(sessionCookie);
             
             //and wait until the session should be idled out
@@ -170,7 +164,6 @@ public class IdleSessionTest
 
             //make another request to de-idle the session
             request = client.newRequest(url + "?action=testfail");
-            request.getHeaders().add("Cookie", sessionCookie);
             response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
             
