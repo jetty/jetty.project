@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
@@ -289,13 +288,13 @@ public class DeploymentManager extends ContainerLifeCycle
 
     public Collection<AppEntry> getAppEntries()
     {
-        return _apps;
+        return Collections.unmodifiableCollection(_apps);
     }
 
     @ManagedAttribute("Deployed Apps")
     public Collection<App> getApps()
     {
-        List<App> ret = new ArrayList<App>();
+        List<App> ret = new ArrayList<  >();
         for (AppEntry entry : _apps)
         {
             ret.add(entry.app);
@@ -594,38 +593,11 @@ public class DeploymentManager extends ContainerLifeCycle
         return _lifecycle.getNodes();
     }
 
-    @SuppressWarnings("unused")
-    @ManagedOperation(value="list nodes that are tracked by DeploymentManager", impact="INFO")
-    public Collection<String> getNodeNames()
-    {
-        return _lifecycle.getNodes().stream().map(Node::getName).collect(Collectors.toList());
-    }
-    
-    public Collection<App> getApps(@Name("nodeName") String nodeName)
+    public Collection<App> getApps(String nodeName)
     {
         return getApps(_lifecycle.getNodeByName(nodeName));
     }
 
-    @SuppressWarnings("unused")
-    @ManagedOperation(value="list apps that are located at specified App LifeCycle nodes", impact="ACTION")
-    public Collection<String> getAppNames(@Name("nodeName") String nodeName)
-    {
-        Node node = _lifecycle.getNodeByName(nodeName);
-        if(node == null)
-        {
-            throw new IllegalArgumentException("Unable to find node [" + nodeName + "]");
-        }
-
-        List<String> ret = new ArrayList<>();
-        for (AppEntry entry : _apps)
-        {
-            if (entry.lifecyleNode == node)
-            {
-                ret.add(String.format("contextPath=%s,originId=%s,appProvider=%s", entry.app.getContextPath(), entry.app.getOriginId(), entry.app.getAppProvider().getClass().getName()));
-            }
-        }
-        return ret;
-    }
 
     public void scope(XmlConfiguration xmlc, Resource webapp)
         throws IOException
