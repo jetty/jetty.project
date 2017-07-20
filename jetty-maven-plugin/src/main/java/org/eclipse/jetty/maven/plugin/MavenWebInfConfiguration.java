@@ -84,23 +84,6 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         context.setServerClasses( newServerClasses ); 
     }
 
-    
-    
-
-    /** 
-     * @see org.eclipse.jetty.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
-     */
-    public void preConfigure(WebAppContext context) throws Exception
-    {
-        super.preConfigure(context);
-        ((JettyWebAppContext)context).getDependentProjects()
-            .stream().forEach( resource ->  context.getMetaData().addWebInfJar( resource ) );
-
-    }
-    
-    
-    
-    
     /** 
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#postConfigure(org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -197,24 +180,26 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     protected List<Resource> findJars (WebAppContext context)
     throws Exception
     {
-        List<Resource> list = new ArrayList<Resource>();
+        List<Resource> list = new ArrayList<>();
         JettyWebAppContext jwac = (JettyWebAppContext)context;
-        if (jwac.getClassPathFiles() != null)
+        List<File> files = jwac.getWebInfLib();
+        if (files != null)
         {
-            for (File f: jwac.getClassPathFiles())
-            {
-                if (f.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
+            files.forEach( file -> {
+                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")
+                    || file.isDirectory())
                 {
                     try
                     {
-                        list.add(Resource.newResource(f.toURI()));
+                        LOG.debug( " add  resource to resources to examine {}", file );
+                        list.add(Resource.newResource(file.toURI()));
                     }
                     catch (Exception e)
                     {
                         LOG.warn("Bad url ", e);
                     }
                 }
-            }
+            } );
         }
 
         List<Resource> superList = super.findJars(context);
@@ -234,25 +219,26 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     @Override
     protected List<Resource> findClassDirs(WebAppContext context) throws Exception
     {
-        List<Resource> list = new ArrayList<Resource>();
+        List<Resource> list = new ArrayList<>();
         
         JettyWebAppContext jwac = (JettyWebAppContext)context;
-        if (jwac.getClassPathFiles() != null)
+        List<File> files = jwac.getWebInfClasses();
+        if (files != null)
         {
-            for (File f: jwac.getClassPathFiles())
-            {
-                if (f.exists() && f.isDirectory())
+            files.forEach( file -> {
+                if (file.exists() && file.isDirectory())
                 {
                     try
                     {
-                        list.add(Resource.newResource(f.toURI()));
+                        list.add(Resource.newResource(file.toURI()));
                     }
                     catch (Exception e)
                     {
                         LOG.warn("Bad url ", e);
                     }
                 }
-            }
+            } );
+
         }
         
         List<Resource> classesDirs = super.findClassDirs(context);
