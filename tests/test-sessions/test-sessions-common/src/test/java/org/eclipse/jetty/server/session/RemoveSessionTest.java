@@ -80,8 +80,7 @@ public class RemoveSessionTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+
                 //ensure sessionCreated listener is called
                 assertTrue (testListener.isCreated());
                 assertEquals(1, m.getSessionsCreated());
@@ -90,7 +89,6 @@ public class RemoveSessionTest
                 
                 //now delete the session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=delete");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 //ensure sessionDestroyed listener is called
@@ -104,7 +102,6 @@ public class RemoveSessionTest
 
                 // The session is not there anymore, even if we present an old cookie
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 assertEquals(0, ((DefaultSessionCache)m.getSessionCache()).getSessionsCurrent());

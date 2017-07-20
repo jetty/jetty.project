@@ -112,12 +112,9 @@ public class DirtyAttributeTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                
+
                 //do another request to change the session attribute
                 Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=setA");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
 
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -128,7 +125,6 @@ public class DirtyAttributeTest
                 
                 //do another request using the cookie to try changing the session attribute to the same value again              
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=setA");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 A_VALUE.assertPassivatesEquals(2);
@@ -138,7 +134,6 @@ public class DirtyAttributeTest
                 
                 //do another request using the cookie and change to a different value             
                 request= client.newRequest("http://localhost:" + port + "/mod/test?action=setB");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 B_VALUE.assertPassivatesEquals(1);

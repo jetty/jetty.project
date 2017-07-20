@@ -159,11 +159,8 @@ public class SaveOptimizeTest
                 //make a few requests to access the session but not change it
                 for (int i=0;i<5; i++)
                 {
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
                     // Perform a request to contextB with the same session cookie
                     Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=noop");
-                    request.header("Cookie", sessionCookie);
                     response = request.send();
 
                     //check session is unchanged
@@ -237,9 +234,7 @@ public class SaveOptimizeTest
 
 
                 // Perform a request to do nothing with the same session cookie
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=noop");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
 
                 //check session not saved
@@ -249,7 +244,6 @@ public class SaveOptimizeTest
 
                 // Perform a request to mutate the session
                 request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=mutate");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
 
                 //check session is saved
@@ -316,11 +310,9 @@ public class SaveOptimizeTest
                 long lastSaved = data.getLastSaved();
 
                 //make another request, session should not change
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 // Perform a request to do nothing with the same session cookie
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=noop");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
 
                 //check session not saved
@@ -333,7 +325,6 @@ public class SaveOptimizeTest
 
                 // Perform a request to do nothing with the same session cookie
                 request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=noop");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
 
                 //check session is saved
@@ -401,12 +392,8 @@ public class SaveOptimizeTest
                 long lastSaved = data.getLastSaved();
                 assertTrue(lastSaved > 0); //check session created was saved
 
-
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
                 // Perform a request to do nothing with the same session cookie, check the session object is different
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=noop&check=diff");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
 
                 //check session not saved
@@ -476,12 +463,8 @@ public class SaveOptimizeTest
                 long lastSaved = data.getLastSaved();
                 assertTrue(lastSaved > 0); //check session created was saved
 
-
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
                 // Perform a request to change maxInactive on session
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping+"?action=max&value=60");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
 
                 //check session is saved, even though the save optimisation interval has not passed

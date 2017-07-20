@@ -135,7 +135,6 @@ public class SessionRenewTest
 
             //make a request to change the sessionid
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
-            request.header("Cookie", sessionCookie);
             ContentResponse renewResponse = request.send();
 
             assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());

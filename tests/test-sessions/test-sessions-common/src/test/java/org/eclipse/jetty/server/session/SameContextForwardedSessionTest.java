@@ -93,8 +93,6 @@ public class SameContextForwardedSessionTest
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 //wait until all of the request handling has finished 
                 _synchronizer.await();
@@ -105,7 +103,6 @@ public class SameContextForwardedSessionTest
        
                 //Make a fresh request
                 Request request = client.newRequest("http://localhost:" + serverPort + "/context/four");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 
