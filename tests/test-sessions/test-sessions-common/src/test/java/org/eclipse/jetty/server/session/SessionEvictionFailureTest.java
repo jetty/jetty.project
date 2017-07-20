@@ -237,9 +237,7 @@ public class SessionEvictionFailureTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                
+              
                 //Wait for the eviction period to expire - save on evict should fail but session
                 //should remain in the cache
                 pause(evictionPeriod+(int)(evictionPeriod*0.5));
@@ -248,7 +246,6 @@ public class SessionEvictionFailureTest
                 // Make another request to see if the session is still in the cache and can be used,
                 //allow it to be saved this time
                 Request request = client.newRequest(url + "?action=test");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 assertNull(response.getHeaders().get("Set-Cookie")); //check that the cookie wasn't reset
@@ -259,7 +256,6 @@ public class SessionEvictionFailureTest
 
                 
                 request = client.newRequest(url + "?action=test");
-                request.header("Cookie", sessionCookie);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             }

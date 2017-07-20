@@ -141,8 +141,6 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
             String sessionCookie = response1.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            // Mangle the cookie, replacing Path with $Path, etc.
-            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
             String sessionId = TestServer.extractSessionId(sessionCookie);     
 
@@ -197,8 +195,6 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            // Mangle the cookie, replacing Path with $Path, etc.
-            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
             //now stop the server
             server1.stop();
@@ -211,7 +207,6 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
 
             //make another request, the session should not have expired
             Request request = client.newRequest(url + "?action=notexpired");
-            request.getHeaders().add("Cookie", sessionCookie);
             ContentResponse response2 = request.send();
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
 
@@ -268,8 +263,6 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
             String sessionCookie = response1.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            // Mangle the cookie, replacing Path with $Path, etc.
-            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
             
             String sessionId = TestServer.extractSessionId(sessionCookie);     
 
@@ -292,7 +285,6 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
             
             //make another request, the session should have expired
             Request request = client.newRequest(url + "?action=test");
-            request.getHeaders().add("Cookie", sessionCookie);
             ContentResponse response2 = request.send();
 
             assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
@@ -343,15 +335,11 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
           ContentResponse response = client.GET(url + "?action=init");
           assertEquals(HttpServletResponse.SC_OK,response.getStatus());
           String sessionCookie = response.getHeaders().get("Set-Cookie");
-          assertTrue(sessionCookie != null);
-          // Mangle the cookie, replacing Path with $Path, etc.
-          sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-             
+          assertTrue(sessionCookie != null);             
          
           //make another request to change the session timeout to a larger value
           int newInactivePeriod = 100;
           Request request = client.newRequest(url + "?action=change&val="+newInactivePeriod);
-          request.getHeaders().add("Cookie", sessionCookie);
           response = request.send();
           assertEquals(HttpServletResponse.SC_OK,response.getStatus());
           
@@ -364,7 +352,6 @@ public abstract class AbstractSessionExpiryTest extends AbstractTestBase
           pause(inactivePeriod);
 
           request = client.newRequest(url + "?action=check");
-          request.getHeaders().add("Cookie", sessionCookie);
           response = request.send();
           assertEquals(HttpServletResponse.SC_OK,response.getStatus());
           String sessionCookie2 = response.getHeaders().get("Set-Cookie");

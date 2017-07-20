@@ -83,8 +83,6 @@ public class SameNodeLoadTest
                 assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 //simulate 10 clients making 100 requests each
                 ExecutorService executor = Executors.newCachedThreadPool();
@@ -110,7 +108,6 @@ public class SameNodeLoadTest
 
                 // Perform one request to get the result
                 Request request = client.newRequest( url + "?action=result" );
-                request.header("Cookie", sessionCookie);
                 ContentResponse response2 = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 String response = response2.getContentAsString();
@@ -174,7 +171,6 @@ public class SameNodeLoadTest
                         Thread.currentThread().sleep(pauseMsec);
                     }
                     Request request = client.newRequest(url + "?action=increment");
-                    request.header("Cookie", sessionCookie);
                     ContentResponse response = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 }
