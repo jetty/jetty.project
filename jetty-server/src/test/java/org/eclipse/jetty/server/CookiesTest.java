@@ -156,4 +156,26 @@ public class CookiesTest
         assertThat(cookiesX, Matchers.not(Matchers.sameInstance(cookiesY)));
     }
 
+    @Test
+    public void testSet()
+    {
+        Cookies cutter = new Cookies();
+        cutter.setCookies(new Cookie[]
+        {
+            new Cookie("nameA0","A0"),
+            new Cookie("nameA1","A1"),
+            new Cookie("nameB0","B0"),
+            new Cookie("nameB1","B1"),
+        });
+
+        Cookie[] cookiesX = cutter.getCookies();
+        assertThat(cookiesX.length,is(4));
+        assertThat(cookiesX[0].getName(),is("nameA0"));
+        assertThat(cookiesX[3].getValue(),is("B1"));
+        
+        cutter.reset();
+
+        assertThat(cutter.getCookies().length,is(0));
+    }
+
 }

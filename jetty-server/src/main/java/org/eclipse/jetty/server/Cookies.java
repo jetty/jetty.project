@@ -57,9 +57,11 @@ public class Cookies extends CookieCutter
         super(compliance);
     }
 
-
     public void addCookieField(String rawField)
     {
+        if (_set)
+            throw new IllegalStateException();
+
         if (rawField==null)
             return;
         rawField=rawField.trim();
@@ -83,6 +85,9 @@ public class Cookies extends CookieCutter
 
     public Cookie[] getCookies()
     {
+        if (_set)
+            return _cookies;
+
         while (_rawFields.size() > _addedFields)
         {
             _rawFields.remove(_addedFields);
