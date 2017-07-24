@@ -1466,6 +1466,18 @@
         <alpn.version>8.1.11.v20170118</alpn.version>
       </properties>
     </profile>
+    <profile>
+      <id>8u141</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_141</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.11.v20170118</alpn.version>
+      </properties>
+    </profile>
   </profiles>
 
   <issueManagement>
