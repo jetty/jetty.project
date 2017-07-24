@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -176,6 +176,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             Runnable task = channel.onRequestContent(frame, callback);
             if (task != null)
                 offerTask(task, false);
+        }
+        else
+        {
+            callback.failed(new IOException("channel_not_found"));
         }
     }
 
