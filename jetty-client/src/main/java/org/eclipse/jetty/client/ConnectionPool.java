@@ -58,7 +58,7 @@ public interface ConnectionPool extends Closeable
      *
      * @param connection the connection to release
      * @return true if the connection has been released, false if the connection
-     * was not obtained from the this ConnectionPool
+     * should be closed
      */
     boolean release(Connection connection);
 
