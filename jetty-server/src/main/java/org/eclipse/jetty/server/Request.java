@@ -243,7 +243,7 @@ public class Request implements HttpServletRequest
     public HttpFields getTrailerHttpFields()
     {
         MetaData.Request metadata=_metaData;
-        Supplier<HttpFields> trailers =  metadata==null?null:metadata.getTrailerSupplier();
+        Supplier<HttpFields> trailers = metadata==null?null:metadata.getTrailerSupplier();
         return trailers==null?null:trailers.get();
     }
 

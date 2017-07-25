@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the
  * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to
  * HttpTransport.completed().
- *
  */
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
@@ -76,18 +75,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private final Supplier<HttpFields> _trailerSupplier = new Supplier<HttpFields>()
-    {
-        @Override
-        public HttpFields get()
-        {
-            return _trailers;
-        }
-    };
+    private HttpFields _trailers;
+    private final Supplier<HttpFields> _trailerSupplier = () -> _trailers;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
-    private HttpFields _trailers;
 
     /** Bytes written after interception (eg after compression) */
     private long _written;
@@ -262,6 +254,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committedMetaData=null;
         _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
         _written=0;
+        _trailers=null;
+        _oldIdleTimeout=0;
     }
 
     public void asyncReadFillInterested()
