@@ -88,6 +88,17 @@
 					<groupId>org.eclipse.jetty</groupId>
 					<artifactId>jetty-maven-plugin</artifactId>
           <version>${jetty.version}</version>
+					<configuration>
+						<scanIntervalSeconds>5</scanIntervalSeconds>
+						<nonBlocking>true</nonBlocking>
+						<httpConnector>
+							<port>@jetty.runPort@</port>
+						</httpConnector>
+						<scanTargets>
+							<scanTarget>${basedir}/pom.xml</scanTarget>
+							<scanTarget>${basedir}/touch.txt</scanTarget>
+						</scanTargets>
+					</configuration>
 				</plugin>
 			</plugins>
 		</pluginManagement>

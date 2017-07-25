@@ -19,15 +19,26 @@
 
 package org.eclipse.jetty.its.jetty_run_mojo_it;
 
+import java.io.File;
+import java.util.*;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import org.eclipse.jetty.toolchain.perf.PlatformTimer;
+import java.util.concurrent.*;
 
 /**
  *
  */
 public class TestHelloServlet
 {
+
+    private final PlatformTimer timer = PlatformTimer.detect();
+
     @Test
     public void hello_servlet()
         throws Exception
@@ -50,6 +61,29 @@ public class TestHelloServlet
             System.out.println( "httpResponse ping fragment servlet:" + response );
 
             Assert.assertEquals( "pong beer", response.trim() );
+
+            new File("pom.xml").setLastModified( new Date( ).getTime() );
+
+            new File("target/classes/touch.txt").setLastModified( new Date( ).getTime() );
+            Files.write( Paths.get("target/classes/touch.txt"), "foo".getBytes());
+
+            System.out.println( "touch pom.xml touch.txt");
+
+            //Thread.sleep(7000);
+            timer.sleep(TimeUnit.SECONDS.toMicros(7));
+
+            response = httpClient.GET( "http://localhost:" + port + "/hello?name=beer" ).getContentAsString();
+
+            System.out.println( "httpResponse hello annotation servlet:" + response );
+
+            Assert.assertEquals( "hello beer", response.trim() );
+
+            response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
+
+            System.out.println( "httpResponse ping fragment servlet:" + response );
+
+            Assert.assertEquals( "pong beer", response.trim() );
+
         }
         finally
         {

@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
@@ -477,7 +478,9 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             if (isScanningEnabled())
             {
                 scanner = new PathWatcher();
-                configureScanner ();
+                getLog().info( "scanning enabled with interval: " + scanIntervalSeconds + " s" );
+                scanner.setUpdateQuietTime( scanIntervalSeconds, TimeUnit.SECONDS );
+                configureScanner();
                 startScanner();
             }
 
