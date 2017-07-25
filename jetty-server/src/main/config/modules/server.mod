@@ -8,7 +8,7 @@ resources
 logging
 
 [lib]
-lib/servlet-api-3.1.jar
+lib/servlet-api-4.0.jar
 lib/jetty-schemas-3.1.jar
 lib/jetty-http-${jetty.version}.jar
 lib/jetty-server-${jetty.version}.jar
