@@ -18,8 +18,8 @@
 === webdefault.xml
 
 The `webdefault.xml` file saves web applications from having to define a lot of house-keeping and container-specific elements in their own `web.xml` files.
-For example, you can use it to set up mime-type mappings and JSP servlet-mappings.
-Jetty applies `webdefault.xml` to a web application _before_ the application's own `WEB-INF/web.xml`, which means that it cannot override values inside the webapp's `web.xml`.
+For example, you can use it to set up MIME-type mappings and JSP servlet-mappings.
+Jetty applies `webdefault.xml` to a web application _before_ the application's own `WEB-INF/web.xml`, which means that it *cannot* override values inside the webapp's `web.xml`.
 It uses the xref:jetty-xml-config[] syntax.
 Generally, it is convenient for all webapps in a Jetty instance to share the same `webdefault.xml` file.
 However, it is certainly possible to provide differentiated ` webdefault.xml` files for individual web applications.
@@ -35,6 +35,22 @@ ____
 [NOTE]
 To ensure your `webdefault.xml` files are validated, you will need to set the `validateXml` attribute to true as described link:#jetty-xml-dtd[here.]
 ____
+
+The `webdefault.xml` link:{GITBROWSURL}/jetty-webapp/src/main/config/etc/webdefault.xml[included with the Jetty Distribution] contains several configuration options, such as init params and servlet mappings, and is separated into sections for easy navigation.
+Some of the more common options include, but are not limited to:
+
+dirAllowed::
+If true, directory listings are returned if no welcome file is found.
+Otherwise 403 Forbidden displays.
+precompressed::
+If set to a comma separated list of file extensions, these indicate compressed formats that are known to map to a MIME-type that may be listed in a requests Accept-Encoding header.
+If set to a boolean True, then a default set of compressed formats will be used, otherwise no pre-compressed formats.
+maxCacheSize::
+Maximum total size of the cache or 0 for no cache.
+maxCachedFileSize::
+Maximum size of a file to cache.
+maxCachedFiles::
+Maximum number of files to cache.
 
 [[creating-custom-webdefault-xml-one-webapp]]
 ===== Creating a Custom webdefault.xml for One WebApp
