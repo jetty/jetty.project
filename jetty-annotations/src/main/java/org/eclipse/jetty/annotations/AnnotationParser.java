@@ -1016,9 +1016,16 @@ public class AnnotationParser
             return false;
 
         //skip anything that is not a class file
-        if (!name.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+        String lc = name.toLowerCase(Locale.ENGLISH);
+        if (!lc.endsWith(".class"))
         {
             if (LOG.isDebugEnabled()) LOG.debug("Not a class: {}",name);
+            return false;
+        }
+        
+        if (lc.equals("module-info.class"))
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("Skipping module-info.class");
             return false;
         }
 
@@ -1028,7 +1035,7 @@ public class AnnotationParser
         c0 = (ldir > -1 ? ldir+1 : c0);
         if (!Character.isJavaIdentifierStart(name.charAt(c0)))
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Not a java identifier: {}"+name);
+            if (LOG.isDebugEnabled()) LOG.debug("Not a java identifier: {}",name);
             return false;
         }
    
