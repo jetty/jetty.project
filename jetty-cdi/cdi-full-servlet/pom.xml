@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.cdi</groupId>
     <artifactId>jetty-cdi-parent</artifactId>
-    <version>9.3.21-SNAPSHOT</version>
+    <version>9.3.21.M0</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cdi-full-servlet</artifactId>

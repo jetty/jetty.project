@@ -1,4 +1,23 @@
-jetty-9.3.21-SNAPSHOT
+jetty-9.3.21.M0 - 01 August 2017
+ + 1357 RolloverFileOutputStream: No rollout performed at midnight
+ + 1469 RolloverFileOutputStream: IllegalStateException Task already scheduled
+ + 1507 RolloverFileOutputStream: Negative delay Timer.schedule exception
+ + 1513 RolloverFileOutputStream: can't handle multiple instances
+ + 1655 Improve extensibility of ServerConnector
+ + 1661 AbstractProxyServlet onProxyResponseFailure Error
+ + 1664 IPAccessHandler CIDR IP range check is incorrect
+ + 1685 Update ALPN support for Java 8u141
+ + 1687 HTTP2: Correcting missing callback notification when channel not found
+ + 1702 Update ALPN support for Java 8u144
+ + 1703 Improve HttpInput failure logging
+
+jetty-9.3.20.v20170531 - 31 May 2017
+ + 523 TLS close behaviour breaking session resumption
+ + 1108 Please improve logging in SslContextFactory when there are no approved
+   cipher suites
+ + 1527 Jetty BOM should not depend on jetty-parent
+ + 1556 A timing channel in Password.java
+ + 1567 XmlConfiguration will start the same object multiple times
 
 jetty-9.2.22.v20170606 - 06 June 2017
  + 920 no main manifest attribute, in jetty-runner-9.2.19.v20160908.jar
@@ -12,14 +31,6 @@ jetty-9.2.22.v20170606 - 06 June 2017
  + 1523 Update ALPN support for Java 8u131
  + 1556 A timing channel in Password.java
  + 1590 RolloverFileOutputStream not functioning in Jetty 9.2.21+
-
-jetty-9.3.20.v20170531 - 31 May 2017
- + 523 TLS close behaviour breaking session resumption
- + 1108 Please improve logging in SslContextFactory when there are no approved
-   cipher suites
- + 1527 Jetty BOM should not depend on jetty-parent
- + 1556 A timing channel in Password.java
- + 1567 XmlConfiguration will start the same object multiple times
 
 jetty-9.3.19.v20170502 - 02 May 2017
  + 877 Programmatic servlet mappings cannot override mappings from
