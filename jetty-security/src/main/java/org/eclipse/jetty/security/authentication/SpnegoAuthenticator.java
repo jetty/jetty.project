@@ -72,31 +72,8 @@ public class SpnegoAuthenticator extends LoginAuthenticator
             return new DeferredAuthentication(this);
         }
 
-        final boolean hasNegotiateHeader = header == null ? false : header.startsWith(HttpHeader.NEGOTIATE.asString());
-        // check to see if we have authorization headers required to continue
-        // A challenge should be sent if:
-        //   1. There was not Authorization header provided
-        //   2. There was an Authorization header for a type other than Negotiate
-        if (header == null || (header != null && !hasNegotiateHeader))
-        {
-            try
-            {
-                 if (DeferredAuthentication.isDeferred(res))
-                 {
-                     return Authentication.UNAUTHENTICATED;
-                 }
-
-                LOG.debug("SpengoAuthenticator: sending challenge");
-                res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HttpHeader.NEGOTIATE.asString());
-                res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                return Authentication.SEND_CONTINUE;
-            }
-            catch (IOException ioe)
-            {
-                throw new ServerAuthException(ioe);
-            }
-        }
-        else if (hasNegotiateHeader)
+        // The client has responded to the challenge we sent previously
+        if (header != null && header.startsWith(HttpHeader.NEGOTIATE.asString().toLowerCase()))
         {
             String spnegoToken = header.substring(10);
 
@@ -108,7 +85,25 @@ public class SpnegoAuthenticator extends LoginAuthenticator
             }
         }
 
-        return Authentication.UNAUTHENTICATED;
+        // A challenge should be sent if any of the following cases are true:
+        //   1. There was no Authorization header provided
+        //   2. There was an Authorization header for a type other than Negotiate
+        try
+        {
+             if (DeferredAuthentication.isDeferred(res))
+             {
+                 return Authentication.UNAUTHENTICATED;
+             }
+
+            LOG.debug("SpengoAuthenticator: sending challenge");
+            res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HttpHeader.NEGOTIATE.asString());
+            res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return Authentication.SEND_CONTINUE;
+        }
+        catch (IOException ioe)
+        {
+            throw new ServerAuthException(ioe);
+        }
     }
 
     @Override
