@@ -72,7 +72,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
             return new DeferredAuthentication(this);
         }
 
-        final boolean hasNegotiateHeader = header == null ? false : header.startsWith(HttpHeader.NEGOTIATE.asString();
+        final boolean hasNegotiateHeader = header == null ? false : header.startsWith(HttpHeader.NEGOTIATE.asString());
         // check to see if we have authorization headers required to continue
         // A challenge should be sent if:
         //   1. There was not Authorization header provided
