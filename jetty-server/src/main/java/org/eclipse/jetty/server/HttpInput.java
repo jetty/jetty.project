@@ -794,14 +794,15 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             if (_state instanceof ErrorState)
             {
-                Throwable failure = new Throwable(_state.getError());
-                failure.addSuppressed(new Throwable(x));
+                IOException failure = new IOException(x);
                 LOG.warn(failure);
+                _state.getError().addSuppressed(failure);
             }
             else
             {
-                // Retain the current stack trace by wrapping the failure.
-                _state = new ErrorState(new Throwable(x));
+                // Add a suppressed throwable to capture this stack trace
+                x.addSuppressed(new IOException("HttpInput failed"));
+                _state = new ErrorState(x);
             }
 
             if (_listener == null)
