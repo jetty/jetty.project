@@ -100,7 +100,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             // some osgi frameworks do use the file protocol directly in some
             // situations. Do use the PathResource to transform the URL into a
             // File: URL#toURI is broken
-            return new PathResource(url).getFile().getParentFile().getParentFile();
+            return new PathResource(url).getFile().getParentFile().getParentFile().getCanonicalFile();
         }
         else if (url.getProtocol().equals("bundleentry"))
         {
@@ -131,7 +131,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                     FILE_FIELD.setAccessible(true);
                 }
                 File f = (File) FILE_FIELD.get(bundleEntry);
-                return f.getParentFile().getParentFile();
+                return f.getParentFile().getParentFile().getCanonicalFile();
             }
             else if (match(bundleEntry.getClass().getName(), ZIP_BUNDLE_ENTRY_CLASSES))
             {
@@ -173,7 +173,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             if (location.startsWith("file:/"))
             {
                 URI uri = new URI(URIUtil.encodePath(location));
-                return new File(uri);
+                return new File(uri).getCanonicalFile();
             }
             else if (location.startsWith("file:"))
             {
@@ -199,7 +199,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             else if (location.startsWith("reference:file:"))
             {
                 location = URLDecoder.decode(location.substring("reference:".length()), "UTF-8");
-                File file = new File(location.substring("file:".length()));
+                File file = new File(location.substring("file:".length())).getCanonicalFile();
                 return file;
             }
         }
