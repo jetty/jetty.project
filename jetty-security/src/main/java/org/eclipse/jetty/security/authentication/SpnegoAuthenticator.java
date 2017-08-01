@@ -72,8 +72,12 @@ public class SpnegoAuthenticator extends LoginAuthenticator
             return new DeferredAuthentication(this);
         }
 
+        final boolean hasNegotiateHeader = header == null ? false : header.startsWith(HttpHeader.NEGOTIATE.asString();
         // check to see if we have authorization headers required to continue
-        if ( header == null )
+        // A challenge should be sent if:
+        //   1. There was not Authorization header provided
+        //   2. There was an Authorization header for a type other than Negotiate
+        if (header == null || (header != null && !hasNegotiateHeader))
         {
             try
             {
@@ -92,7 +96,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
                 throw new ServerAuthException(ioe);
             }
         }
-        else if (header != null && header.startsWith(HttpHeader.NEGOTIATE.asString()))
+        else if (hasNegotiateHeader)
         {
             String spnegoToken = header.substring(10);
 
