@@ -626,9 +626,20 @@ public class HttpInput extends ServletInputStream implements Runnable
         synchronized (_inputQ)
         {
             if (_state instanceof ErrorState)
-                LOG.warn(x);
+            {
+                // Log both the original and current failure
+                // without modifying the original failure.
+                Throwable failure = new Throwable(((ErrorState)_state).getError());
+                failure.addSuppressed(x);
+                LOG.warn(failure);
+            }
             else
+            {
+                // Add a suppressed throwable to capture this stack
+                // trace without wrapping/hiding the original failure.
+                x.addSuppressed(new Throwable("HttpInput failure"));
                 _state = new ErrorState(x);
+            }
 
             if (_listener == null)
                 _inputQ.notify();
