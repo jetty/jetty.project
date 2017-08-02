@@ -63,6 +63,9 @@ basehome:modules/ssl/keystore|etc/keystore
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
 
+## SSL JSSE Provider
+# jetty.sslContext.provider=
+
 ## Keystore file path (relative to $jetty.base)
 # jetty.sslContext.keyStorePath=etc/keystore
 
