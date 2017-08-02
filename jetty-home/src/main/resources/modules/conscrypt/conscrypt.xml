@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Conscrypt" class="org.conscrypt.OpenSSLProvider">
+  <Call class="java.security.Security" name="addProvider">
+    <Arg><Ref refid="Conscrypt"/></Arg>
+  </Call>
+</Configure>
