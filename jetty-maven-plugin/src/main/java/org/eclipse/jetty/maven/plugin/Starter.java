@@ -314,16 +314,6 @@ public class Starter
                 jars.add(new File(names[j].trim()));
             webApp.setWebInfLib(jars);
         }
-
-        str = props.getProperty( "projects.classes.dir" );
-        if (str != null && !"".equals(str.trim()))
-        {
-            List<File> classesDirectories = //
-                Arrays.stream(str.split( Pattern.quote("|") )) //
-                    .map( s -> Paths.get( s).toFile() ).collect( Collectors.toList() );
-            webApp.getWebInfLib().addAll( classesDirectories );
-        }
-        
     }
 
     public void getConfiguration (String[] args)
