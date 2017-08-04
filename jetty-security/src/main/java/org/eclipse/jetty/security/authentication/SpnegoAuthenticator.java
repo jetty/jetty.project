@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.security.Constraint;
 public class SpnegoAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(SpnegoAuthenticator.class);
+    private static final String __NEGOTIATE_LC_TEXT = HttpHeader.NEGOTIATE.asString().toLowerCase();
     private String _authMethod = Constraint.__SPNEGO_AUTH;
 
     public SpnegoAuthenticator()
@@ -66,6 +67,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         HttpServletResponse res = (HttpServletResponse)response;
 
         String header = req.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String authScheme = getAuthSchemeFromHeader(header);
 
         if (!mandatory)
         {
@@ -73,7 +75,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         }
 
         // The client has responded to the challenge we sent previously
-        if (header != null && header.startsWith(HttpHeader.NEGOTIATE.asString().toLowerCase()))
+        if (header != null && isAuthSchemeNegotiate(authScheme))
         {
             String spnegoToken = header.substring(10);
 
@@ -104,6 +106,47 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(ioe);
         }
+    }
+
+    /**
+     * Extracts the auth_scheme from the HTTP Authorization header, {@code Authorization: <auth_scheme> <token>}.
+     *
+     * @param header The HTTP Authorization header or null.
+     * @return The parsed auth scheme from the header, or the empty string.
+     */
+    String getAuthSchemeFromHeader(String header)
+    {
+        // No header provided, return the empty string
+        if (header == null || header.isEmpty())
+        {
+            return "";
+        }
+        // Trim any leading whitespace
+        String trimmed_header = header.trim();
+        // Find the first space, all characters prior should be the auth_scheme
+        int index = trimmed_header.indexOf(' ');
+        if (index > 0) {
+            return trimmed_header.substring(0, index);
+        }
+        // If we don't find a space, this is likely malformed, just return the entire value
+        return trimmed_header;
+    }
+
+    /**
+     * Determines if provided auth scheme text from the Authorization header is case-insensitively
+     * equal to {@code negotiate}.
+     *
+     * @param authScheme The auth scheme component of the Authorization header
+     * @return True if the auth scheme component is case-insensitively equal to {@code negotiate}, False otherwise.
+     */
+    boolean isAuthSchemeNegotiate(String authScheme)
+    {
+        if (authScheme == null || authScheme.isEmpty())
+        {
+            return false;
+        }
+        // Headers should be treated case-insensitively, so we have to jump through some extra hoops.
+        return authScheme.toLowerCase().startsWith(__NEGOTIATE_LC_TEXT);
     }
 
     @Override

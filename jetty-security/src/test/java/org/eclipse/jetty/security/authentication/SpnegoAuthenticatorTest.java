@@ -19,6 +19,8 @@
 package org.eclipse.jetty.security.authentication;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -109,5 +111,33 @@ public class SpnegoAuthenticatorTest {
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
+    }
+
+    @Test
+    public void testCaseInsensitiveHeaderParsing()
+    {
+        assertFalse(_authenticator.isAuthSchemeNegotiate(null));
+        assertFalse(_authenticator.isAuthSchemeNegotiate(""));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("Basic"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("Basic foobar"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("Digest foobar"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("LotsandLotsandLots of nonsense"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("Negotiat asdfasdf"));
+
+        assertTrue(_authenticator.isAuthSchemeNegotiate("Negotiate"));
+        assertTrue(_authenticator.isAuthSchemeNegotiate("Negotiate "));
+        assertTrue(_authenticator.isAuthSchemeNegotiate("Negotiate asdfasdf"));
+    }
+
+    @Test
+    public void testExtractAuthScheme()
+    {
+        assertEquals("", _authenticator.getAuthSchemeFromHeader(null));
+        assertEquals("", _authenticator.getAuthSchemeFromHeader(""));
+        assertEquals("", _authenticator.getAuthSchemeFromHeader("   "));
+        assertEquals("Basic", _authenticator.getAuthSchemeFromHeader(" Basic asdfasdf"));
+        assertEquals("Basicasdf", _authenticator.getAuthSchemeFromHeader("Basicasdf asdfasdf"));
+        assertEquals("basic", _authenticator.getAuthSchemeFromHeader(" basic asdfasdf "));
+        assertEquals("Negotiate", _authenticator.getAuthSchemeFromHeader("Negotiate asdfasdf"));
     }
 }
