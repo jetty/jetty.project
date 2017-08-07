@@ -372,7 +372,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform Error Dispatch because the response is already committed, aborting");
-                            _transport.abort(ex);
+                            abort(ex);
                         }
                         else
                         {
@@ -858,14 +858,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void failed(Throwable th)
                     {
-                        _transport.abort(x);
+                        abort(x);
                         super.failed(x);
                     }
                 });
             }
             else
             {
-                _transport.abort(x);
+                abort(x);
                 super.failed(x);
             }
         }
