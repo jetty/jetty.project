@@ -53,7 +53,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     private boolean _expect100Continue;
     private boolean _delayedUntilContent;
-    private boolean _handled;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
@@ -121,7 +120,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
                     !endStream && !_expect100Continue;
-            _handled = !_delayedUntilContent;
 
             if (LOG.isDebugEnabled())
             {
@@ -190,7 +188,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     {
         _expect100Continue = false;
         _delayedUntilContent = false;
-        _handled = false;
         super.recycle();
         getHttpTransport().recycle();
     }
@@ -277,19 +274,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         boolean wasDelayed = _delayedUntilContent;
         _delayedUntilContent = false;
-        if (wasDelayed)
-            _handled = true;
         return handle || wasDelayed ? this : null;
     }
 
     public boolean isRequestHandled()
     {
-        return _handled;
+        return !getState().isIdle();
     }
 
     public boolean onStreamTimeout(Throwable failure)
     {
-        if (!_handled)
+        if (!isRequestHandled())
             return true;
 
         HttpInput input = getRequest().getHttpInput();
