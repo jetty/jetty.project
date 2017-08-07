@@ -119,14 +119,16 @@ public class SpnegoAuthenticatorTest {
         assertFalse(_authenticator.isAuthSchemeNegotiate(null));
         assertFalse(_authenticator.isAuthSchemeNegotiate(""));
         assertFalse(_authenticator.isAuthSchemeNegotiate("Basic"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("Basic foobar"));
-        assertFalse(_authenticator.isAuthSchemeNegotiate("Digest foobar"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("basic"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("Digest"));
         assertFalse(_authenticator.isAuthSchemeNegotiate("LotsandLotsandLots of nonsense"));
         assertFalse(_authenticator.isAuthSchemeNegotiate("Negotiat asdfasdf"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("Negotiated"));
+        assertFalse(_authenticator.isAuthSchemeNegotiate("Negotiate-and-more"));
 
         assertTrue(_authenticator.isAuthSchemeNegotiate("Negotiate"));
-        assertTrue(_authenticator.isAuthSchemeNegotiate("Negotiate "));
-        assertTrue(_authenticator.isAuthSchemeNegotiate("Negotiate asdfasdf"));
+        assertTrue(_authenticator.isAuthSchemeNegotiate("negotiate"));
+        assertTrue(_authenticator.isAuthSchemeNegotiate("negOtiAte"));
     }
 
     @Test
@@ -139,5 +141,8 @@ public class SpnegoAuthenticatorTest {
         assertEquals("Basicasdf", _authenticator.getAuthSchemeFromHeader("Basicasdf asdfasdf"));
         assertEquals("basic", _authenticator.getAuthSchemeFromHeader(" basic asdfasdf "));
         assertEquals("Negotiate", _authenticator.getAuthSchemeFromHeader("Negotiate asdfasdf"));
+        assertEquals("negotiate", _authenticator.getAuthSchemeFromHeader("negotiate asdfasdf"));
+        assertEquals("negotiate", _authenticator.getAuthSchemeFromHeader(" negotiate  asdfasdf"));
+        assertEquals("negotiated", _authenticator.getAuthSchemeFromHeader(" negotiated  asdfasdf"));
     }
 }

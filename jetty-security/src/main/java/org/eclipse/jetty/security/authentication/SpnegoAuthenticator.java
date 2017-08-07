@@ -38,7 +38,6 @@ import org.eclipse.jetty.util.security.Constraint;
 public class SpnegoAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(SpnegoAuthenticator.class);
-    private static final String __NEGOTIATE_LC_TEXT = HttpHeader.NEGOTIATE.asString().toLowerCase();
     private String _authMethod = Constraint.__SPNEGO_AUTH;
 
     public SpnegoAuthenticator()
@@ -141,12 +140,12 @@ public class SpnegoAuthenticator extends LoginAuthenticator
      */
     boolean isAuthSchemeNegotiate(String authScheme)
     {
-        if (authScheme == null || authScheme.isEmpty())
+        if (authScheme == null || authScheme.length() != HttpHeader.NEGOTIATE.asString().length())
         {
             return false;
         }
         // Headers should be treated case-insensitively, so we have to jump through some extra hoops.
-        return authScheme.toLowerCase().startsWith(__NEGOTIATE_LC_TEXT);
+        return authScheme.equalsIgnoreCase(HttpHeader.NEGOTIATE.asString());
     }
 
     @Override
