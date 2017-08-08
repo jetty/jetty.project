@@ -1,17 +1,29 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.2.23-SNAPSHOT</version>
+    <version>9.4.7-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-parent</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: ALPN :: Parent</name>
-  <description>Jetty ALPN services parent</description>
-  <url>http://www.eclipse.org/jetty</url>
   <modules>
     <module>jetty-alpn-server</module>
     <module>jetty-alpn-client</module>
   </modules>
+  <profiles>
+    <profile>
+      <id>jdk9</id>
+      <activation>
+        <jdk>[1.9,)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-alpn-java-client</module>
+        <module>jetty-alpn-java-server</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

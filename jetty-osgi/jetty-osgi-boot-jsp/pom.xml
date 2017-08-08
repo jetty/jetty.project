@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.2.23-SNAPSHOT</version>
+    <version>9.4.7-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot-jsp</artifactId>
@@ -42,67 +42,14 @@
       <artifactId>apache-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet.jsp.jstl</artifactId>
-    </dependency>
-   <dependency>
-       <groupId>org.glassfish.web</groupId>
-       <artifactId>javax.servlet.jsp.jstl</artifactId>
-    </dependency>
-   <dependency>
-       <groupId>org.mortbay.jasper</groupId>
-       <artifactId>apache-el</artifactId>
-       <version>8.0.9.M3</version>
-    </dependency>
   </dependencies>
-<!--
-   <dependency>
-       <groupId>javax.el</groupId>
-       <artifactId>javax.el-api</artifactId>
-       <version>3.0.0</version>
-    </dependency>
-  </dependencies>
--->
 
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>artifact-jar</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-jar</id>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <archive>
-            <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <extensions>true</extensions>
-          <executions>
-              <execution>
-                  <id>bundle-manifest</id>
-                  <phase>process-classes</phase>
-                  <goals>
-                      <goal>manifest</goal>
-                  </goals>
-              </execution>
-          </executions>
           <configuration>
               <instructions>
                 <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
@@ -110,6 +57,7 @@
                 <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
                 <Export-Package>!org.eclipse.jetty.osgi.boot.*</Export-Package>
                 <Import-Package>org.eclipse.jdt.*;resolution:=optional,
+                                org.eclipse.jdt.core.compiler.*;resolution:=optional,
                 com.sun.el;resolution:=optional,
  com.sun.el.lang;resolution:=optional,
  com.sun.el.parser;resolution:=optional,
@@ -125,20 +73,20 @@
  javax.servlet.jsp.jstl.fmt;version="1.2";resolution:=optional,
  javax.servlet.jsp.jstl.sql;version="1.2";resolution:=optional,
  javax.servlet.jsp.jstl.tlv;version="1.2";resolution:=optional,
- org.apache.el;version="[8.0.9,9)";resolution:=optional,
- org.apache.el.lang;version="[8.0.9,9)";resolution:=optional,
- org.apache.el.stream;version="[8.0.9,9)";resolution:=optional,
- org.apache.el.util;version="[8.0.9,9)";resolution:=optional,
- org.apache.el.parser;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.compiler;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.compiler.tagplugin;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.runtime;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.security;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.servlet;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.tagplugins.jstl;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.util;version="[8.0.9,9)";resolution:=optional,
- org.apache.jasper.xmlparser;version="[8.0.9,9)";resolution:=optional,
+ org.apache.el;version="[8.0.23,9)";resolution:=optional,
+ org.apache.el.lang;version="[8.0.23,9)";resolution:=optional,
+ org.apache.el.stream;version="[8.0.23,9)";resolution:=optional,
+ org.apache.el.util;version="[8.0.23,9)";resolution:=optional,
+ org.apache.el.parser;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.compiler;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.compiler.tagplugin;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.runtime;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.security;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.servlet;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.tagplugins.jstl;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.util;version="[8.0.23,9)";resolution:=optional,
+ org.apache.jasper.xmlparser;version="[8.0.23,9)";resolution:=optional,
  org.apache.taglibs.standard;version="1.2";resolution:=optional,
  org.apache.taglibs.standard.extra.spath;version="1.2";resolution:=optional,
  org.apache.taglibs.standard.functions;version="1.2";resolution:=optional,
@@ -162,8 +110,8 @@
  org.apache.taglibs.standard.tag.rt.xml;version="1.2";resolution:=optional,
  org.apache.taglibs.standard.tei;version="1.2";resolution:=optional,
  org.apache.taglibs.standard.tlv;version="1.2";resolution:=optional,
- org.apache.tomcat;version="[8.0.9,9)";resolution:=optional,
- org.eclipse.jetty.jsp;version="[9.2,10)";resolution:=optional,
+ org.apache.tomcat;version="[8.0.23,9)";resolution:=optional,
+ org.eclipse.jetty.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
  org.osgi.*,
  org.xml.*;resolution:=optional,
  org.xml.sax.*;resolution:=optional,
@@ -172,8 +120,7 @@
  org.w3c.dom.ls;resolution:=optional,
  javax.xml.parser;resolution:=optional
  </Import-Package>
-               <_nouses>true</_nouses>
-               <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="9.2.6",org.apache.jasper.*;version="8.0.9",org.apache.el.*;version="8.0.9"</DynamicImport-Package>
+               <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",org.apache.jasper.*;version="8.0.23",org.apache.el.*;version="8.0.23"</DynamicImport-Package>
               </instructions>
           </configuration>
       </plugin>

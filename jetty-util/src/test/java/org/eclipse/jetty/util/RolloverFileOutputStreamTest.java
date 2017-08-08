@@ -26,70 +26,87 @@ import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class RolloverFileOutputStreamTest
 {
-    @Rule
-    public TestingDir testingDir = new TestingDir();
-    
-    private static TimeZone toZoneId(String timezoneId)
+    private static ZoneId toZoneId(String timezoneId)
     {
-        TimeZone zone = TimeZone.getTimeZone(timezoneId);
-        // System.err.printf("toZoneId('%s'): displayName=%s, id=%s%n", timezoneId, zone.getDisplayName(), zone.getID());
+        ZoneId zone = TimeZone.getTimeZone(timezoneId).toZoneId();
+        // System.out.printf(".toZoneId(\"%s\") = [id=%s,normalized=%s]%n", timezoneId, zone.getId(), zone.normalized());
         return zone;
     }
     
-    private static Calendar toDateTime(String timendate, TimeZone zone) throws ParseException
+    private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
     {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy.MM.dd-hh:mm:ss.S a z");
-        formatter.setTimeZone(zone);
-        Date parsed = formatter.parse(timendate);
-        Calendar cal = Calendar.getInstance(zone);
-        cal.setTime(parsed);
-        return cal;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
+                .withZone(zone);
+        return ZonedDateTime.parse(timendate, formatter);
     }
     
-    private static String toString(Calendar date)
+    private static String toString(TemporalAccessor date)
     {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy.MM.dd-hh:mm:ss.S a z");
-        formatter.setTimeZone(date.getTimeZone());
-        return formatter.format(date.getTime());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z");
+        return formatter.format(date);
     }
     
-    private void assertSequence(Calendar midnight, Object[][] expected)
+    private void assertSequence(ZonedDateTime midnight, Object[][] expected)
     {
-        Calendar nextEvent = midnight;
+        ZonedDateTime nextEvent = midnight;
         
         for (int i = 0; i < expected.length; i++)
         {
-            long lastMs = nextEvent.getTimeInMillis();
-            nextEvent = RolloverFileOutputStream.toMidnight(nextEvent);
+            long currentMillis = nextEvent.toInstant().toEpochMilli();
+            nextEvent = nextEvent.toLocalDate().plus(1, ChronoUnit.DAYS).atStartOfDay(nextEvent.getZone());                
             assertThat("Next Event", toString(nextEvent), is(expected[i][0]));
-            long duration = (nextEvent.getTimeInMillis() - lastMs);
+            long duration = (nextEvent.toInstant().toEpochMilli() - currentMillis);
             assertThat("Duration to next event", duration, is((long) expected[i][1]));
         }
     }
     
+    /**
+     * <a href="Issue #1507">https://github.com/eclipse/jetty.project/issues/1507</a>
+     */
     @Test
-    public void testMidnightRolloverCalc_PST_DST_Start() throws ParseException
+    public void testMidnightRolloverCalc_PDT_Issue1507()
     {
-        TimeZone zone = toZoneId("PST");
-        Calendar initialDate = toDateTime("2016.03.10-01:23:45.0 PM PST", zone);
+        ZoneId zone = toZoneId("PST");
+        ZonedDateTime initialDate = toDateTime("2017.04.26-08:00:00.0 PM PDT", zone);
         
-        Calendar midnight = RolloverFileOutputStream.toMidnight(initialDate);
+        ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
+        assertThat("Midnight", toString(midnight), is("2017.04.27-12:00:00.0 AM PDT"));
+        
+        Object expected[][] = {
+                {"2017.04.27-12:00:00.0 AM PDT", 14_400_000L}, 
+                {"2017.04.28-12:00:00.0 AM PDT", 86_400_000L}, 
+                {"2017.04.29-12:00:00.0 AM PDT", 86_400_000L},
+                {"2017.04.30-12:00:00.0 AM PDT", 86_400_000L},
+                {"2017.05.01-12:00:00.0 AM PDT", 86_400_000L},
+                {"2017.05.02-12:00:00.0 AM PDT", 86_400_000L},
+        };
+        
+        assertSequence(initialDate, expected);
+    }
+
+    @Test
+    public void testMidnightRolloverCalc_PST_DST_Start()
+    {
+        ZoneId zone = toZoneId("PST");
+        ZonedDateTime initialDate = toDateTime("2016.03.10-01:23:45.0 PM PST", zone);
+        
+        ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.03.11-12:00:00.0 AM PST"));
         
         Object expected[][] = {
@@ -104,12 +121,12 @@ public class RolloverFileOutputStreamTest
     }
     
     @Test
-    public void testMidnightRolloverCalc_PST_DST_End() throws ParseException
+    public void testMidnightRolloverCalc_PST_DST_End()
     {
-        TimeZone zone = toZoneId("PST");
-        Calendar initialDate = toDateTime("2016.11.03-11:22:33.0 AM PDT", zone);
+        ZoneId zone = toZoneId("PST");
+        ZonedDateTime initialDate = toDateTime("2016.11.03-11:22:33.0 AM PDT", zone);
     
-        Calendar midnight = RolloverFileOutputStream.toMidnight(initialDate);
+        ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.11.04-12:00:00.0 AM PDT"));
     
         Object expected[][] = {
@@ -124,12 +141,12 @@ public class RolloverFileOutputStreamTest
     }
     
     @Test
-    public void testMidnightRolloverCalc_Sydney_DST_Start() throws ParseException
+    public void testMidnightRolloverCalc_Sydney_DST_Start()
     {
-        TimeZone zone = toZoneId("Australia/Sydney");
-        Calendar initialDate = toDateTime("2016.09.30-01:23:45.0 PM AEST", zone);
+        ZoneId zone = toZoneId("Australia/Sydney");
+        ZonedDateTime initialDate = toDateTime("2016.09.31-01:23:45.0 PM AEST", zone);
     
-        Calendar midnight = RolloverFileOutputStream.toMidnight(initialDate);
+        ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.10.01-12:00:00.0 AM AEST"));
     
         Object expected[][] = {
@@ -144,12 +161,12 @@ public class RolloverFileOutputStreamTest
     }
     
     @Test
-    public void testMidnightRolloverCalc_Sydney_DST_End() throws ParseException
+    public void testMidnightRolloverCalc_Sydney_DST_End()
     {
-        TimeZone zone = toZoneId("Australia/Sydney");
-        Calendar initialDate = toDateTime("2016.04.01-11:22:33.0 AM AEDT", zone);
+        ZoneId zone = toZoneId("Australia/Sydney");
+        ZonedDateTime initialDate = toDateTime("2016.04.01-11:22:33.0 AM AEDT", zone);
     
-        Calendar midnight = RolloverFileOutputStream.toMidnight(initialDate);
+        ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.04.02-12:00:00.0 AM AEDT"));
     
         Object expected[][] = {
@@ -169,23 +186,23 @@ public class RolloverFileOutputStreamTest
         File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testFileHandling");
         Path testPath = testDir.toPath();
         FS.ensureEmpty(testDir);
-    
-        TimeZone zone = toZoneId("Australia/Sydney");
-        Calendar now = toDateTime("2016.04.10-08:30:12.3 AM AEST", zone);
+
+        ZoneId zone = toZoneId("Australia/Sydney");
+        ZonedDateTime now = toDateTime("2016.04.10-08:30:12.3 AM AEDT", zone);
         
         File template = new File(testDir,"test-rofos-yyyy_mm_dd.log");
 
         try (RolloverFileOutputStream rofos = 
-            new RolloverFileOutputStream(template.getAbsolutePath(),false,3,zone,null,null,now))
+            new RolloverFileOutputStream(template.getAbsolutePath(),false,3,TimeZone.getTimeZone(zone),null,null,now))
         {
             rofos.write("TICK".getBytes());
             rofos.flush();
         }
         
-        now.add(Calendar.MINUTE, 5);
+        now = now.plus(5,ChronoUnit.MINUTES);
         
         try (RolloverFileOutputStream rofos = 
-            new RolloverFileOutputStream(template.getAbsolutePath(),false,3,zone,null,null,now))
+            new RolloverFileOutputStream(template.getAbsolutePath(),false,3,TimeZone.getTimeZone(zone),null,null,now))
         {
             rofos.write("TOCK".getBytes());
             rofos.flush();
@@ -200,37 +217,32 @@ public class RolloverFileOutputStreamTest
             
             assertThat(Arrays.asList(ls),Matchers.containsInAnyOrder(backup,"test-rofos-2016_04_10.log"));
             
-            Files.setLastModifiedTime(testPath.resolve(backup),FileTime.fromMillis(now.getTimeInMillis()));
-            Files.setLastModifiedTime(testPath.resolve("test-rofos-2016_04_10.log"),FileTime.fromMillis(now.getTimeInMillis()));
+            Files.setLastModifiedTime(testPath.resolve(backup),FileTime.from(now.toInstant()));
+            Files.setLastModifiedTime(testPath.resolve("test-rofos-2016_04_10.log"),FileTime.from(now.toInstant()));
 
-            // Copy calendar (don't want to change "now")
-            Calendar time = Calendar.getInstance();
-            time.setTimeZone(now.getTimeZone());
-            time.setTime(now.getTime());
-            time.add(Calendar.DAY_OF_MONTH, -1);
-            
+            ZonedDateTime time = now.minus(1,ChronoUnit.DAYS);
             for (int i=10;i-->5;)
             {
                 String file = "test-rofos-2016_04_0"+i+".log";
                 Path path = testPath.resolve(file);
                 FS.touch(path);
-                Files.setLastModifiedTime(path,FileTime.fromMillis(time.getTimeInMillis()));
+                Files.setLastModifiedTime(path,FileTime.from(time.toInstant()));
                 
                 if (i%2==0)
                 {
                     file = "test-rofos-2016_04_0"+i+".log.083512300";
                     path = testPath.resolve(file);
                     FS.touch(path);
-                    Files.setLastModifiedTime(path,FileTime.fromMillis(time.getTimeInMillis()));
-                    time.add(Calendar.DAY_OF_MONTH, -1);
+                    Files.setLastModifiedTime(path,FileTime.from(time.toInstant()));
+                    time = time.minus(1,ChronoUnit.DAYS);
                 }
 
                 file = "unrelated-"+i;
                 path = testPath.resolve(file);
                 FS.touch(path);
-                Files.setLastModifiedTime(path,FileTime.fromMillis(time.getTimeInMillis()));
-    
-                time.add(Calendar.DAY_OF_MONTH, -1);
+                Files.setLastModifiedTime(path,FileTime.from(time.toInstant()));
+                
+                time = time.minus(1,ChronoUnit.DAYS);
             }
 
             ls = testDir.list();
@@ -242,9 +254,9 @@ public class RolloverFileOutputStreamTest
                 "test-rofos-2016_04_08.log", 
                 "test-rofos-2016_04_09.log",
                 "test-rofos-2016_04_10.log",
-                "test-rofos-2016_04_06.log.083512300",
-                "test-rofos-2016_04_08.log.083512300",
-                "test-rofos-2016_04_10.log.083512003",
+                "test-rofos-2016_04_06.log.083512300", 
+                "test-rofos-2016_04_08.log.083512300", 
+                "test-rofos-2016_04_10.log.083512300",
                 "unrelated-9",
                 "unrelated-8",
                 "unrelated-7",
@@ -260,7 +272,7 @@ public class RolloverFileOutputStreamTest
                 "test-rofos-2016_04_09.log",
                 "test-rofos-2016_04_10.log",
                 "test-rofos-2016_04_08.log.083512300", 
-                "test-rofos-2016_04_10.log.083512003",
+                "test-rofos-2016_04_10.log.083512300",
                 "unrelated-9",
                 "unrelated-8",
                 "unrelated-7",
@@ -279,14 +291,14 @@ public class RolloverFileOutputStreamTest
     {
         File testDir = MavenTestingUtils.getTargetTestingDir(RolloverFileOutputStreamTest.class.getName() + "_testRollover");
         FS.ensureEmpty(testDir);
-    
-        TimeZone zone = toZoneId("Australia/Sydney");
-        Calendar now = toDateTime("2016.04.10-11:59:58.0 PM AEST", zone);
+
+        ZoneId zone = toZoneId("Australia/Sydney");
+        ZonedDateTime now = toDateTime("2016.04.10-11:59:55.0 PM AEDT", zone);
         
         File template = new File(testDir,"test-rofos-yyyy_mm_dd.log");
         
         try (RolloverFileOutputStream rofos = 
-            new RolloverFileOutputStream(template.getAbsolutePath(),false,0,zone,null,null,now))
+            new RolloverFileOutputStream(template.getAbsolutePath(),false,0,TimeZone.getTimeZone(zone),null,null,now))
         {
             rofos.write("BEFORE".getBytes());
             rofos.flush();
@@ -294,7 +306,7 @@ public class RolloverFileOutputStreamTest
             assertThat(ls.length,is(1));
             assertThat(ls[0],is("test-rofos-2016_04_10.log"));
 
-            TimeUnit.SECONDS.sleep(5);
+            TimeUnit.SECONDS.sleep(10);
             rofos.write("AFTER".getBytes());
             ls = testDir.list();
             assertThat(ls.length,is(2));

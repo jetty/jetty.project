@@ -238,6 +238,7 @@ public class ConfigurationAssert
         
     }
     
+    @SuppressWarnings("Duplicates")
     public static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
     {
         try

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -1581,62 +1582,86 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testCONNECTWithHTTP10() throws Exception
+    public void testCopyRequest() throws Exception
     {
-        try (ServerSocket server = new ServerSocket(0))
+        startClient();
+
+        assertCopyRequest(client.newRequest("http://example.com/some/url")
+                .method(HttpMethod.HEAD)
+                .version(HttpVersion.HTTP_2)
+                .content(new StringContentProvider("some string"))
+                .timeout(321, TimeUnit.SECONDS)
+                .idleTimeout(2221, TimeUnit.SECONDS)
+                .followRedirects(true)
+                .header(HttpHeader.CONTENT_TYPE, "application/json")
+                .header("X-Some-Custom-Header", "some-value"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .method(HttpMethod.POST)
+                .version(HttpVersion.HTTP_1_0)
+                .content(new StringContentProvider("some other string"))
+                .timeout(123231, TimeUnit.SECONDS)
+                .idleTimeout(232342, TimeUnit.SECONDS)
+                .followRedirects(false)
+                .header(HttpHeader.ACCEPT, "application/json")
+                .header("X-Some-Other-Custom-Header", "some-other-value"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header(HttpHeader.ACCEPT, "application/json")
+                .header(HttpHeader.ACCEPT, "application/xml")
+                .header("x-same-name", "value1")
+                .header("x-same-name", "value2"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header(HttpHeader.ACCEPT, "application/json")
+                .header(HttpHeader.CONTENT_TYPE, "application/json"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header("X-Custom-Header-1", "value1")
+                .header("X-Custom-Header-2", "value2"));
+
+        assertCopyRequest(client.newRequest("https://example.com")
+                .header("X-Custom-Header-1", "value")
+                .header("X-Custom-Header-2", "value"));
+    }
+
+    @Test
+    public void testHostWithHTTP10() throws Exception
+    {
+        start(new AbstractHandler()
         {
-            startClient();
-
-            String host = "localhost";
-            int port = server.getLocalPort();
-
-            Request request = client.newRequest(host, port)
-                    .method(HttpMethod.CONNECT)
-                    .version(HttpVersion.HTTP_1_0);
-            FuturePromise<Connection> promise = new FuturePromise<>();
-            client.getDestination("http", host, port).newConnection(promise);
-            Connection connection = promise.get(5, TimeUnit.SECONDS);
-            FutureResponseListener listener = new FutureResponseListener(request);
-            connection.send(request, listener);
-
-            try (Socket socket = server.accept())
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                InputStream input = socket.getInputStream();
-                consume(input, false);
-
-                // HTTP/1.0 response, the client must not close the connection.
-                String httpResponse = "" +
-                        "HTTP/1.0 200 OK\r\n" +
-                        "\r\n";
-                OutputStream output = socket.getOutputStream();
-                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-
-                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-                Assert.assertEquals(200, response.getStatus());
-
-                // Because the tunnel was successful, this connection will be
-                // upgraded to an SslConnection, so it will not be fill interested.
-                // This test doesn't upgrade, so it needs to restore the fill interest.
-                ((AbstractConnection)connection).fillInterested();
-
-                // Test that I can send another request on the same connection.
-                request = client.newRequest(host, port);
-                listener = new FutureResponseListener(request);
-                connection.send(request, listener);
-
-                consume(input, false);
-
-                httpResponse = "" +
-                        "HTTP/1.1 200 OK\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n";
-                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-
-                listener.get(5, TimeUnit.SECONDS);
+                baseRequest.setHandled(true);
+                Assert.assertThat(request.getHeader("Host"), Matchers.notNullValue());
             }
-        }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .version(HttpVersion.HTTP_1_0)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    private void assertCopyRequest(Request original)
+    {
+        Request copy = client.copyRequest((HttpRequest) original, original.getURI());
+        Assert.assertEquals(original.getURI(), copy.getURI());
+        Assert.assertEquals(original.getMethod(), copy.getMethod());
+        Assert.assertEquals(original.getVersion(), copy.getVersion());
+        Assert.assertEquals(original.getContent(), copy.getContent());
+        Assert.assertEquals(original.getIdleTimeout(), copy.getIdleTimeout());
+        Assert.assertEquals(original.getTimeout(), copy.getTimeout());
+        Assert.assertEquals(original.isFollowRedirects(), copy.isFollowRedirects());
+        Assert.assertEquals(original.getHeaders(), copy.getHeaders());
     }
 
     private void consume(InputStream input, boolean eof) throws IOException

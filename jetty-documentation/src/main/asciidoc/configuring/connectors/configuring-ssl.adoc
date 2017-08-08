@@ -637,10 +637,9 @@ KeyIdentifier [
 *******************************************
 ----
 
-Additionally, you can split `$JETTY/etc/keystore` into two files.
-One being `$JETTY/etc/keystore` which only contains the server’s private key and certificate, while the other would be `$JETTY/etc/truststore` which contains intermediary CA and root CA.
-
-An example of this would look like the following:
+In addition, you can split `$JETTY/etc/keystore` as two files.
+One is `$JETTY/etc/keystore` which only contains the server’s private key and certificate,
+the other is `$JETTY/etc/truststore` which contains intermediary CA and root CA.
 
 [literal]
 .The structure of `$JETTY/etc/keystore`
@@ -688,7 +687,7 @@ setKeyStorePath::
   The configured keystore to use for all SSL/TLS in configured Jetty Connector (or Client).
 ____
 [NOTE]
-As the keystore is vital security information, it recommended the file is located in a directory with *very* restricted access.
+As a keystore is vital security information, it can be desirable to locate the file in a directory with *very* restricted access.
 ____
 
 setKeyStorePassword::
@@ -713,7 +712,7 @@ ____
 
 ____
 [CAUTION]
-The keystore and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` and `org.eclipse.jetty.ssl.password`.
+The keystore and truststore passwords may also be set using the system properties: `org.eclipse.jetty.ssl.keypassword` `org.eclipse.jetty.ssl.password`.
 This is _not_ a recommended usage.
 ____
 
@@ -802,8 +801,7 @@ jetty.sslContext.needClientAuth=true
 [[configuring-sslcontextfactory-cipherSuites]]
 ==== Disabling/Enabling Specific Cipher Suites
 
-To avoid specific attacks it is often necessary to configure a specific set of cipher suites to include or exclude.
-This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
+As an example, to avoid the BEAST attack it is necessary to configure a specific set of cipher suites. This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
 
 ____
 [NOTE]

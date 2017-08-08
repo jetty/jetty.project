@@ -3,12 +3,15 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.2.23-SNAPSHOT</version>
+    <version>9.4.7-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: WebApp :: Servlet Spec :: Fragment Jar</name>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>test-web-fragment</artifactId>
   <packaging>jar</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.fragment</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -17,46 +20,6 @@
           <verbose>false</verbose>
         </configuration>
       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-            <execution>
-                <id>artifact-jar</id>
-                <goals>
-                    <goal>jar</goal>
-                </goals>
-            </execution>
-        </executions>
-        <configuration>
-            <archive>
-                <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
-            </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <executions>
-              <execution>
-                  <id>bundle-manifest</id>
-                  <phase>process-classes</phase>
-                  <goals>
-                      <goal>manifest</goal>
-                  </goals>
-              </execution>
-          </executions>
-          <configuration>
-              <instructions>
-                  <Bundle-SymbolicName>org.eclipse.jetty.tests.test-web-fragment;singleton:=true</Bundle-SymbolicName>
-                  <Bundle-Description>A bundle containing web fragment for testing</Bundle-Description>
-                  <Export-Package>com.acme.fragment;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-                  <_nouses>true</_nouses>
-              </instructions>
-          </configuration>
-      </plugin>
-
     </plugins>
   </build>
   <dependencies>
@@ -64,5 +27,12 @@
          <groupId>javax.servlet</groupId>
          <artifactId>javax.servlet-api</artifactId>
       </dependency>
+
+<!--
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
+    </dependency>
+-->
   </dependencies>
 </project>
