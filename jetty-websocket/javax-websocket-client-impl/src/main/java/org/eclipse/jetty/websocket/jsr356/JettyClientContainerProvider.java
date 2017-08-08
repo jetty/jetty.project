@@ -82,7 +82,7 @@ public class JettyClientContainerProvider extends ContainerProvider
     
     /**
      * Add ability of calls to {@link ContainerProvider#getWebSocketContainer()} to
-     * find and return the {@link javax.websocket.server.ServerContainer} from the
+     * find and return the {@code javax.websocket.server.ServerContainer} from the
      * active {@code javax.servlet.ServletContext}.
      * <p>
      * <p>
@@ -90,7 +90,7 @@ public class JettyClientContainerProvider extends ContainerProvider
      * occurs within a thread being processed by the Servlet container.
      * </p>
      *
-     * @param flag true to to use return the {@link javax.websocket.server.ServerContainer}
+     * @param flag true to to use return the {@code javax.websocket.server.ServerContainer}
      * from the active {@code javax.servlet.ServletContext} for all calls to
      * {@link ContainerProvider#getWebSocketContainer()} from within a Servlet thread.
      */
@@ -102,13 +102,13 @@ public class JettyClientContainerProvider extends ContainerProvider
     
     /**
      * Test if {@link ContainerProvider#getWebSocketContainer()} has the ability to
-     * find and return the {@link javax.websocket.server.ServerContainer} from the
+     * find and return the {@code javax.websocket.server.ServerContainer} from the
      * active {@code javax.servlet.ServletContext}, before creating a new client based
      * {@link WebSocketContainer}.
      *
      * @return true if {@link WebSocketContainer} returned from
      * calls to {@link ContainerProvider#getWebSocketContainer()} could be the
-     * {@link javax.websocket.server.ServerContainer}
+     * {@code javax.websocket.server.ServerContainer}
      * from the active {@code javax.servlet.ServletContext}
      */
     @SuppressWarnings("unused")
