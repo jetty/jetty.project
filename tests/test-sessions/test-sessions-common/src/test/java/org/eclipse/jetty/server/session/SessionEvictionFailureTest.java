@@ -23,13 +23,12 @@ package org.eclipse.jetty.server.session;
 
 
 
-import java.io.IOException;
-import java.util.Set;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+
+import java.io.IOException;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -215,7 +214,8 @@ public class SessionEvictionFailureTest
         TestServer server = new TestServer (0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         context.getSessionHandler().getSessionCache().setSaveOnInactiveEviction(true);
-        MockSessionDataStore ds = new MockSessionDataStore(new boolean[] {true, false, true, false, true});
+        //test values: allow first save, fail evict save, allow save, fail evict save, allow save, allow save on shutdown
+        MockSessionDataStore ds = new MockSessionDataStore(new boolean[] {true, false, true, false, true, true});
         context.getSessionHandler().getSessionCache().setSessionDataStore(ds);
         
         TestServlet servlet = new TestServlet();
@@ -242,7 +242,6 @@ public class SessionEvictionFailureTest
                 //should remain in the cache
                 pause(evictionPeriod+(int)(evictionPeriod*0.5));
                 
-                
                 // Make another request to see if the session is still in the cache and can be used,
                 //allow it to be saved this time
                 Request request = client.newRequest(url + "?action=test");
@@ -250,11 +249,9 @@ public class SessionEvictionFailureTest
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
                 assertNull(response.getHeaders().get("Set-Cookie")); //check that the cookie wasn't reset
 
-
                 //Wait for the eviction period to expire again
                 pause(evictionPeriod+(int)(evictionPeriod*0.5));
 
-                
                 request = client.newRequest(url + "?action=test");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK,response.getStatus());
