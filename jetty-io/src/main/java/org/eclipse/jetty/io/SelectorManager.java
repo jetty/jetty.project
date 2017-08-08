@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 /**
@@ -59,15 +60,33 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private long _selectorIndex;
     private int _reservedThreads = -2;
 
+    public static int defaultSchedulers(Executor executor)
+    {
+        if (executor instanceof ThreadPool)
+        {
+            int threads = ((ThreadPool)executor).getThreads();
+            int cpus = Runtime.getRuntime().availableProcessors();
+            return Math.max(1,Math.min(cpus/2,threads/16));
+        }
+        
+        return Math.max(1,Runtime.getRuntime().availableProcessors()/2);
+    }
+    
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
-        this(executor, scheduler, (Runtime.getRuntime().availableProcessors() + 1) / 2);
+        this(executor, scheduler, -1);
     }
 
+    /**
+     * @param executor The executor to use for handling selected {@link EndPoint}s
+     * @param scheduler The scheduler to use for timing events
+     * @param selectors The number of selectors to use, or -1 for a default derived
+     * from a heuristic over available CPUs and thread pool size. 
+     */
     protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {
         if (selectors <= 0)
-            throw new IllegalArgumentException("No selectors");
+            selectors = defaultSchedulers(executor);
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
