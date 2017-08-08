@@ -40,8 +40,8 @@ etc/jetty-http.xml
 ## Thread priority delta to give to acceptor threads
 # jetty.http.acceptorPriorityDelta=0
 
-## Reserve threads for high priority tasks (-2 use number of selectors,-1 use number of CPUs, 0 no reserved threads)
-# jetty.http.reservedThreads=-2
+## Reserve threads for high priority tasks (-1 use a heuristic, 0 no reserved threads)
+# jetty.http.reservedThreads=-1
 
 ## Connect Timeout in milliseconds
 # jetty.http.connectTimeout=15000

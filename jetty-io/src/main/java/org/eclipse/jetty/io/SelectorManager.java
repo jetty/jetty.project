@@ -58,7 +58,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
-    private int _reservedThreads = -2;
+    private int _reservedThreads = -1;
 
     public static int defaultSchedulers(Executor executor)
     {
@@ -129,20 +129,27 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * Get the number of preallocated producing threads
      * @see EatWhatYouKill
      * @see ReservedThreadExecutor
-     * @return The number of threads preallocated to producing (default 1).
+     * @return The number of threads preallocated to producing (default -1).
      */
-    @ManagedAttribute("The number of preallocated producer threads")
+    @ManagedAttribute("The number of reserved producer threads")
     public int getReservedThreads()
     {
         return _reservedThreads;
     }
     
     /**
-     * Set the number of preallocated threads for high priority tasks
+     * Set the number of reserved threads for high priority tasks.
+     * <p>Reserved threads are used to take over producing duties, so that a 
+     * producer thread may immediately consume a task it has produced (EatWhatYouKill
+     * scheduling). If a reserved thread is not available, then produced tasks must
+     * be submitted to an executor to be executed by a different thread.
      * @see EatWhatYouKill
      * @see ReservedThreadExecutor
-     * @param threads  The number of producing threads to preallocate (default 1). 
-     * The EatWhatYouKill scheduler will be disabled with a value of 0.
+     * @param threads  The number of producing threads to preallocate. If 
+     * less that 0 (the default), then a heuristic based on the number of CPUs and
+     * the thread pool size is used to select the number of threads. If 0, no 
+     * threads are preallocated and the EatWhatYouKill scheduler will be 
+     * disabled and all produced tasks will be executed in a separate thread. 
      */
     public void setReservedThreads(int threads)
     {
@@ -284,7 +291,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStart() throws Exception
     {
-        addBean(new ReservedThreadExecutor(getExecutor(),_reservedThreads==-2?_selectors.length:_reservedThreads),true);
+        addBean(new ReservedThreadExecutor(getExecutor(),_reservedThreads),true);
         for (int i = 0; i < _selectors.length; i++)
         {
             ManagedSelector selector = newSelector(i);
