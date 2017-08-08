@@ -60,24 +60,6 @@
                     </archive>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>clirr-maven-plugin</artifactId>
-                <version>2.5</version>
-                <executions>
-                    <execution>
-                        <id>compare-api</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>clirr</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <minSeverity>info</minSeverity>
-                    <comparisonVersion>9.1.0.v20131115</comparisonVersion>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>

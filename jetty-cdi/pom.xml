@@ -5,45 +5,23 @@
     <version>9.4.7-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-cdi</artifactId>
-  <name>Jetty :: CDI Configurations</name>
+  <groupId>org.eclipse.jetty.cdi</groupId>
+  <artifactId>jetty-cdi-parent</artifactId>
+  <name>Jetty :: CDI :: Parent</name>
   <url>http://www.eclipse.org/jetty</url>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.${project.artifactId}</bundle-symbolic-name>
+    <weld.version>2.4.3.Final</weld.version>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptorRefs>
-                <descriptorRef>config</descriptorRef>
-              </descriptorRefs>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-deploy</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>cdi-core</module>
+    <module>cdi-servlet</module>
+    <module>cdi-full-servlet</module>
+    <module>cdi-websocket</module>
+    <module>test-cdi-webapp</module>
+    <!-- needs to be fixed still 
+    <module>test-cdi-it</module>
+     -->
+  </modules>
 </project>
