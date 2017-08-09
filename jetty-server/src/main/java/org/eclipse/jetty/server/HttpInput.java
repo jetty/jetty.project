@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.EOFException;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -63,6 +63,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     private long _contentArrived;
     private long _contentConsumed;
     private long _blockUntil;
+    private boolean _waitingForContent;
 
     public HttpInput(HttpChannelState state)
     {
@@ -382,59 +383,39 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try
         {
+            _waitingForContent = true;
+            _channelState.getHttpChannel().onBlockWaitForContent();
+
+            boolean loop = false;
             long timeout = 0;
-            if (_blockUntil != 0)
+            while (true)
             {
-                timeout = TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime());
-                if (timeout <= 0)
-                    throw new TimeoutException();
+                if (_blockUntil != 0)
+                {
+                    timeout = TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime());
+                    if (timeout <= 0)
+                        throw new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout()));
+                }
+
+                // This method is called from a loop, so we just
+                // need to check the timeout before and after waiting.
+                if (loop)
+                    break;
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} blocking for content timeout={}", this, timeout);
+                if (timeout > 0)
+                    _inputQ.wait(timeout);
+                else
+                    _inputQ.wait();
+
+                loop = true;
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} blocking for content timeout={}", this, timeout);
-            if (timeout > 0)
-                _inputQ.wait(timeout);
-            else
-                _inputQ.wait();
-
-            // TODO: cannot return unless there is content or timeout,
-            // TODO: so spurious wakeups are not handled correctly.
-
-            if (_blockUntil != 0 && TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime()) <= 0)
-                throw new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout()));
         }
-        catch (Throwable e)
+        catch (Throwable x)
         {
-            throw (IOException)new InterruptedIOException().initCause(e);
+            _channelState.getHttpChannel().onBlockWaitForContentFailure(x);
         }
-    }
-
-    /**
-     * Adds some content to the start of this input stream.
-     * <p>Typically used to push back content that has
-     * been read, perhaps mutated.  The bytes prepended are
-     * deducted for the contentConsumed total</p>
-     *
-     * @param item the content to add
-     * @return true if content channel woken for read
-     */
-    public boolean prependContent(Content item)
-    {
-        boolean woken = false;
-        synchronized (_inputQ)
-        {
-            _inputQ.push(item);
-            _contentConsumed -= item.remaining();
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} prependContent {}", this, item);
-
-            if (_listener == null)
-                _inputQ.notify();
-            else
-                woken = _channelState.onReadPossible();
-        }
-
-        return woken;
     }
 
     /**
@@ -445,23 +426,26 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public boolean addContent(Content item)
     {
-        boolean woken = false;
         synchronized (_inputQ)
         {
+            _waitingForContent = false;
             if (_firstByteTimeStamp == -1)
                 _firstByteTimeStamp = System.nanoTime();
-            _contentArrived += item.remaining();
-            _inputQ.offer(item);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} addContent {}", this, item);
-
-            if (_listener == null)
-                _inputQ.notify();
+            if (isFinished())
+            {
+                Throwable failure = isError() ? ((ErrorState)_state).getError() : new EOFException("Content after EOF");
+                item.failed(failure);
+                return false;
+            }
             else
-                woken = _channelState.onReadPossible();
+            {
+                _contentArrived += item.remaining();
+                _inputQ.offer(item);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addContent {}", this, item);
+                return wakeup();
+            }
         }
-
-        return woken;
     }
 
     public boolean hasContent()
@@ -519,7 +503,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             try
             {
-                while (!isFinished())
+                while (true)
                 {
                     Content item = nextContent();
                     if (item == null)
@@ -575,8 +559,8 @@ public class HttpInput extends ServletInputStream implements Runnable
                     return true;
                 if (nextReadable() != null)
                     return true;
-
                 _channelState.onReadUnready();
+                _waitingForContent = true;
             }
             return false;
         }
@@ -606,9 +590,14 @@ public class HttpInput extends ServletInputStream implements Runnable
                 boolean content = nextContent() != null;
 
                 if (content)
+                {
                     woken = _channelState.onReadReady();
+                }
                 else
+                {
                     _channelState.onReadUnready();
+                    _waitingForContent = true;
+                }
             }
         }
         catch (IOException e)
@@ -620,18 +609,36 @@ public class HttpInput extends ServletInputStream implements Runnable
             wake();
     }
 
-    public boolean failed(Throwable x)
+    public boolean onIdleTimeout(Throwable x)
     {
-        boolean woken = false;
         synchronized (_inputQ)
         {
-            if (_state instanceof ErrorState)
+            if (_waitingForContent && !isError())
             {
-                // Log both the original and current failure
-                // without modifying the original failure.
-                Throwable failure = new Throwable(((ErrorState)_state).getError());
-                failure.addSuppressed(x);
-                LOG.warn(failure);
+                x.addSuppressed(new Throwable("HttpInput idle timeout"));
+                _state = new ErrorState(x);
+                return wakeup();
+            }
+            return false;
+        }
+    }
+
+    public boolean failed(Throwable x)
+    {
+        synchronized (_inputQ)
+        {
+            // Errors may be reported multiple times, for example
+            // a local idle timeout and a remote I/O failure.
+            if (isError())
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    // Log both the original and current failure
+                    // without modifying the original failure.
+                    Throwable failure = new Throwable(((ErrorState)_state).getError());
+                    failure.addSuppressed(x);
+                    LOG.debug(failure);
+                }
             }
             else
             {
@@ -640,14 +647,16 @@ public class HttpInput extends ServletInputStream implements Runnable
                 x.addSuppressed(new Throwable("HttpInput failure"));
                 _state = new ErrorState(x);
             }
-
-            if (_listener == null)
-                _inputQ.notify();
-            else
-                woken = _channelState.onReadPossible();
+            return wakeup();
         }
+    }
 
-        return woken;
+    private boolean wakeup()
+    {
+        if (_listener != null)
+            return _channelState.onReadPossible();
+        _inputQ.notify();
+        return false;
     }
 
     /*
