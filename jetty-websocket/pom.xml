@@ -14,12 +14,16 @@
     <url>http://www.eclipse.org/jetty</url>
 
     <modules>
-        <module>websocket-common</module>
-        <module>websocket-api</module>
-        <module>websocket-client</module>
-        <module>websocket-server</module>
-        <module>websocket-servlet</module>
+        <module>websocket-core</module>
         <module>websocket-tests</module>
+        <!-- Jetty Native WebSocket Implementation -->
+        <module>jetty-websocket-common</module>
+        <module>jetty-websocket-api</module>
+        <module>jetty-websocket-client-api</module>
+        <module>jetty-websocket-client-impl</module>
+        <module>jetty-websocket-server-impl</module>
+        <module>jetty-websocket-server-api</module>
+        <!-- JSR356 Implementation -->
         <module>javax-websocket-client-impl</module>
         <module>javax-websocket-server-impl</module>
     </modules>

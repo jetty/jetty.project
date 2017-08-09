@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
@@ -7,29 +9,18 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>websocket-common</artifactId>
-  <name>Jetty :: Websocket :: Common</name>
+  <artifactId>jetty-websocket-api</artifactId>
+  <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: API</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+    <!-- NOTE: For WebAppClassLoader configuration reasons, It is important that this API
+               module NOT depend on any other (internal, impl, or server) jetty classes.
+               - Joakim
+      -->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
