@@ -22,7 +22,7 @@ import java.net.URI;
 
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
 
 public class JsrSessionFactory implements SessionFactory
 {

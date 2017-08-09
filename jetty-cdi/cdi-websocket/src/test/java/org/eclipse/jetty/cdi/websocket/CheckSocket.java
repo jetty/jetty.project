@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.common.util.TextUtil;
+import org.eclipse.jetty.websocket.core.util.TextUtil;
 
 @WebSocket
 public class CheckSocket extends WebSocketAdapter

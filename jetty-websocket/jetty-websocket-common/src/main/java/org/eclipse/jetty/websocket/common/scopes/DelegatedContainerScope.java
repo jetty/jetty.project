@@ -24,7 +24,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
 
 public class DelegatedContainerScope implements WebSocketContainerScope
 {

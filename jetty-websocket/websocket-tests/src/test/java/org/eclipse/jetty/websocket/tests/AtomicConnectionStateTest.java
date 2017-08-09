@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.tests;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import org.eclipse.jetty.websocket.common.AtomicConnectionState;
+import org.eclipse.jetty.websocket.core.AtomicConnectionState;
 import org.junit.Test;
 
 public class AtomicConnectionStateTest

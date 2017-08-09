@@ -29,7 +29,7 @@ import javax.websocket.OnClose;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.TrackingSocket;
 import org.junit.Test;

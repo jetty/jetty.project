@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
-import org.eclipse.jetty.websocket.common.util.TextUtil;
+import org.eclipse.jetty.websocket.core.util.TextUtil;
 
 public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.Basic
 {

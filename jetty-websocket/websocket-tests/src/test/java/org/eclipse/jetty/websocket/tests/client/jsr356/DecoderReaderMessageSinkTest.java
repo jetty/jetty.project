@@ -34,9 +34,9 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.EndpointFunctions;
 import org.eclipse.jetty.websocket.common.io.CompletableFutureFrameCallback;
 import org.eclipse.jetty.websocket.common.io.FutureFrameCallback;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;

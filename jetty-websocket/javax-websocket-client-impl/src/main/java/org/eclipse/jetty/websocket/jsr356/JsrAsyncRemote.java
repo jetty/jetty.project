@@ -31,12 +31,12 @@ import javax.websocket.SendResult;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
-import org.eclipse.jetty.websocket.common.util.TextUtil;
+import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.jsr356.messages.SendHandlerWriteCallback;
 
 public class JsrAsyncRemote extends AbstractJsrRemote implements RemoteEndpoint.Async

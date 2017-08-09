@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.tests.sockets.annotations.AnnotatedBinaryArraySocket;
 import org.eclipse.jetty.websocket.tests.sockets.annotations.AnnotatedBinaryStreamSocket;
 import org.eclipse.jetty.websocket.tests.sockets.annotations.AnnotatedTextSocket;

@@ -20,6 +20,8 @@ package org.eclipse.jetty.websocket.common;
 
 import java.net.URI;
 
+import org.eclipse.jetty.websocket.core.WebSocketSession;
+
 /**
  * Interface for creating jetty {@link WebSocketSession} objects.
  */

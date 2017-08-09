@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 

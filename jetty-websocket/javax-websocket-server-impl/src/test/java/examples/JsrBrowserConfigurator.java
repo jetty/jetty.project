@@ -26,7 +26,7 @@ import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator
 {

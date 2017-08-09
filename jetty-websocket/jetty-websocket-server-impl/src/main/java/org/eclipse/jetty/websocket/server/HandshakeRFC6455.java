@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.common.AcceptHash;
+import org.eclipse.jetty.websocket.core.AcceptHash;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 

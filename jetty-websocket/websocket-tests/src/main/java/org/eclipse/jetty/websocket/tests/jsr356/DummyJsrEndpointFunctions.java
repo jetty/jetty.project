@@ -25,8 +25,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.CloseInfo;
-import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.CloseInfo;
+import org.eclipse.jetty.websocket.core.EndpointFunctions;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 public class DummyJsrEndpointFunctions extends AbstractLifeCycle implements EndpointFunctions<JsrSession>

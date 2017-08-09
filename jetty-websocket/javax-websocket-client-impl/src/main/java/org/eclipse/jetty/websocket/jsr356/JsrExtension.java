@@ -25,7 +25,7 @@ import java.util.Map;
 import javax.websocket.Extension;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class JsrExtension implements Extension
 {

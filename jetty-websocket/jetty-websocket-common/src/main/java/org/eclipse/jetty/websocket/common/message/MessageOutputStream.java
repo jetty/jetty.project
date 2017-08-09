@@ -31,8 +31,8 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback.WriteBlocker;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 
 /**
  * Support for writing a single WebSocket BINARY message via a {@link OutputStream}

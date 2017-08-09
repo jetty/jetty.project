@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class UpgradeResponseAdapter implements UpgradeResponse
 {

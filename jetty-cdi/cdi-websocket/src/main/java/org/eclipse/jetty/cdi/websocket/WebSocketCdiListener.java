@@ -31,8 +31,8 @@ import org.eclipse.jetty.cdi.core.ScopedInstance;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
 
 public class WebSocketCdiListener extends AbstractContainerListener implements WebSocketSession.Listener
 {

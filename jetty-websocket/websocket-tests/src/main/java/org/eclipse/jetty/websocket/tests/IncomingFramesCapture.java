@@ -27,7 +27,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.WebSocketFrame;
 
 public class IncomingFramesCapture implements IncomingFrames
 {

@@ -21,9 +21,9 @@ package org.eclipse.jetty.websocket.tests;
 import java.net.URI;
 
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
 
 public class UntrustedWSSession extends WebSocketSession implements AutoCloseable
 {

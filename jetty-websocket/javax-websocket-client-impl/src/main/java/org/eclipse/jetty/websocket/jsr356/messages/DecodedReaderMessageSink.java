@@ -29,7 +29,7 @@ import javax.websocket.EncodeException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.EndpointFunctions;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 

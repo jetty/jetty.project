@@ -22,6 +22,7 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.core.MessageSink;
 
 public class PartialBinaryMessageSink implements MessageSink
 {

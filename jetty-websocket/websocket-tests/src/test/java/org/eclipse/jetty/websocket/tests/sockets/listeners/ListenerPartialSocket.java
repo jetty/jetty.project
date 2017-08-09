@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.common.util.TextUtil;
+import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.tests.EventQueue;
 
 public class ListenerPartialSocket implements WebSocketPartialListener

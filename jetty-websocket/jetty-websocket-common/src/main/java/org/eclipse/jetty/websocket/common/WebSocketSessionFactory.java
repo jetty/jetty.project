@@ -22,7 +22,8 @@ import java.net.URI;
 
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
 
 /**
  * Default Session factory, creating WebSocketSession objects.

@@ -33,7 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.tests.client.jsr356.misbehaving.AnnotatedRuntimeOnOpen;
 import org.eclipse.jetty.websocket.tests.client.jsr356.misbehaving.EndpointRuntimeOnOpen;
 import org.junit.AfterClass;

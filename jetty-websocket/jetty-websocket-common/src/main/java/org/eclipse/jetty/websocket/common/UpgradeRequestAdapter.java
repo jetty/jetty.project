@@ -30,7 +30,7 @@ import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.util.QuoteUtil;
+import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class UpgradeRequestAdapter implements UpgradeRequest
 {
