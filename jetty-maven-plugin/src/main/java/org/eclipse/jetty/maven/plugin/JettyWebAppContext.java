@@ -76,6 +76,10 @@ public class JettyWebAppContext extends WebAppContext
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
 
+   
+    
+ 
+    
     /**
      * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
      * container classpath to scan. This is analogous to the WebAppContext.setAttribute() call.
@@ -319,6 +323,9 @@ public class JettyWebAppContext extends WebAppContext
     {
         return _isGenerateQuickStart;
     }
+    
+   
+    
 
 
 

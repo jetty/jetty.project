@@ -115,6 +115,55 @@ public class XmlConfiguration
         return parser;
     }
 
+    /** 
+     * Set the standard IDs and properties expected in a jetty XML file:
+     * <ul>
+     * <li>RefId Server</li>
+     * <li>Property jetty.home</li>
+     * <li>Property jetty.home.uri</li>
+     * <li>Property jetty.base</li>
+     * <li>Property jetty.base.uri</li>
+     * <li>Property jetty.webapps</li>
+     * <li>Property jetty.webapps.uri</li>
+     * </ul>
+     * @param server The Server object to set
+     * @param webapp The webapps Resource
+     */
+    public void setJettyStandardIdsAndProperties(Object server, Resource webapp)
+    {
+        try
+        {
+            if (server!=null)
+                getIdMap().put("Server", server);
+            
+            Resource home = Resource.newResource(System.getProperty("jetty.home","."));
+            getProperties().put("jetty.home",home.toString());
+            getProperties().put("jetty.home.uri",normalizeURI(home.getURI().toString()));
+
+            Resource base = Resource.newResource(System.getProperty("jetty.base",home.toString()));
+            getProperties().put("jetty.base",base.toString());
+            getProperties().put("jetty.base.uri",normalizeURI(base.getURI().toString()));
+
+            if (webapp!=null)
+            {
+                getProperties().put("jetty.webapp",webapp.toString());
+                getProperties().put("jetty.webapps",webapp.getFile().toPath().getParent().toString());
+                getProperties().put("jetty.webapps.uri",normalizeURI(webapp.getURI().toString()));
+            }
+        }
+        catch(Exception e)
+        {
+            LOG.warn(e);
+        }
+    }
+    
+    public static String normalizeURI(String uri)
+    {
+        if (uri.endsWith("/"))
+            return uri.substring(0,uri.length()-1);
+        return uri;
+    }
+    
     private final Map<String, Object> _idMap = new HashMap<>();
     private final Map<String, String> _propertyMap = new HashMap<>();
     private final URL _url;

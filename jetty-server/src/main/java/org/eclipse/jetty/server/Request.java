@@ -57,6 +57,7 @@ import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -64,7 +65,6 @@ import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.MappingMatch;
 import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
-import javax.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -1369,7 +1369,7 @@ public class Request implements HttpServletRequest
     {
         MetaData.Request metadata = _metaData;
         String name = metadata==null?null:metadata.getURI().getHost();
-        
+
         // Return already determined host
         if (name != null)
             return name;
@@ -1566,7 +1566,7 @@ public class Request implements HttpServletRequest
     {
         return _originalUri;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param uri the URI to set
@@ -1734,10 +1734,10 @@ public class Request implements HttpServletRequest
         _originalUri = uri.isAbsolute() && request.getHttpVersion()!=HttpVersion.HTTP_2
             ? uri.toString()
             : uri.getPathQuery();
-        
+
         if (uri.getScheme()==null)
             uri.setScheme("http");
-        
+
         if (!uri.hasAuthority())
         {
             HttpField field = getHttpFields().getField(HttpHeader.HOST);
@@ -1747,7 +1747,7 @@ public class Request implements HttpServletRequest
                 uri.setAuthority(authority.getHost(),authority.getPort());
             }
         }
-        
+
         String encoded = uri.getPath();
         String path;
         if (encoded==null)
@@ -2242,14 +2242,14 @@ public class Request implements HttpServletRequest
             _async=new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(_context,_async,state,this,servletRequest,servletResponse);
         event.setDispatchContext(getServletContext());
-        
+
         String uri = ((HttpServletRequest)servletRequest).getRequestURI();
         if (uri.startsWith(_contextPath))
             uri = uri.substring(_contextPath.length());
         else
             // TODO probably need to strip encoded context from requestURI, but will do this for now:
-            uri = URIUtil.encodePath(URIUtil.addPaths(getServletPath(),getPathInfo()));  
-        
+            uri = URIUtil.encodePath(URIUtil.addPaths(getServletPath(),getPathInfo()));
+
         event.setDispatchPath(uri);
         state.startAsync(event);
         return _async;
@@ -2499,12 +2499,12 @@ public class Request implements HttpServletRequest
             match = null;
             mapping = _servletPath;
         }
-        
+
         return new HttpServletMapping()
         {
             @Override
             public String getMatchValue()
-            {   
+            {
                 return mapping;
             }
 
