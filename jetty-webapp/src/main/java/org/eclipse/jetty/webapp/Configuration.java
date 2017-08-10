@@ -197,5 +197,24 @@ public interface Configuration
             throw new IllegalArgumentException("beforeClass '"+beforeClass+"' not found in "+this);
         }
         
+        public void replace(@Name("replaceClass") String replaceClass, @Name("configClass") String configClass)
+        {
+            if (replaceClass!=null && configClass!=null)
+            {
+                ListIterator<String> iter = listIterator();
+                while (iter.hasNext())
+                {
+                    
+                    String cc=iter.next();
+                    if (replaceClass.equals(cc))
+                    {
+                        iter.set(configClass);
+                        return;
+                    }
+                }
+            }
+            throw new IllegalArgumentException("replaceClass '"+replaceClass+"' not found in "+this);
+        }
+        
     }
 }

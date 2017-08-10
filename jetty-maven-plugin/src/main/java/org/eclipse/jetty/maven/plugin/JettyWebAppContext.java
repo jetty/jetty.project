@@ -31,9 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.quickstart.PreconfigureDescriptorProcessor;
 import org.eclipse.jetty.quickstart.QuickStartDescriptorGenerator;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -47,12 +45,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
 /**
  * JettyWebAppContext
@@ -73,7 +67,14 @@ public class JettyWebAppContext extends WebAppContext
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
     
-    
+
+    public static final String[] MINIMUM_CONFIGURATION_CLASSES = {
+                                                                  "org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration",
+                                                                  "org.eclipse.jetty.webapp.WebXmlConfiguration",
+                                                                  "org.eclipse.jetty.webapp.MetaInfConfiguration",
+                                                                  "org.eclipse.jetty.webapp.FragmentConfiguration",
+                                                                  "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+                                                                 }; 
     public  static final String[] DEFAULT_CONFIGURATION_CLASSES = {
                                                            "org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration",
                                                            "org.eclipse.jetty.webapp.WebXmlConfiguration",
@@ -86,7 +87,7 @@ public class JettyWebAppContext extends WebAppContext
                                                            };
 
 
-    private final String[] QUICKSTART_CONFIGURATION_CLASSES = {
+    public static final String[] QUICKSTART_CONFIGURATION_CLASSES = {
                                                                 "org.eclipse.jetty.maven.plugin.MavenQuickStartConfiguration",
                                                                 "org.eclipse.jetty.plus.webapp.EnvConfiguration",
                                                                 "org.eclipse.jetty.plus.webapp.PlusConfiguration",
@@ -375,18 +376,11 @@ public class JettyWebAppContext extends WebAppContext
     @Override
     public void doStart () throws Exception
     {
-        //choose if this will be a quickstart or normal start
-        if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
+
+        if (isGenerateQuickStart())
         {
-            setConfigurationClasses(QUICKSTART_CONFIGURATION_CLASSES);
-        }
-        else
-        { 
-            if (isGenerateQuickStart())
-            {
-                _preconfigProcessor = new PreconfigureDescriptorProcessor();
-                getMetaData().addDescriptorProcessor(_preconfigProcessor);
-            }
+            _preconfigProcessor = new PreconfigureDescriptorProcessor();
+            getMetaData().addDescriptorProcessor(_preconfigProcessor);
         }
 
         //Set up the pattern that tells us where the jars are that need scanning
@@ -444,9 +438,7 @@ public class JettyWebAppContext extends WebAppContext
         for (Configuration c:getConfigurations())
         {
             if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
-                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());         
+                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));       
         }
     }
 
