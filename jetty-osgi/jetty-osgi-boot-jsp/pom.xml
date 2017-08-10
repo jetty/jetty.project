@@ -31,12 +31,12 @@
       <groupId>org.eclipse.osgi</groupId>
       <artifactId>org.eclipse.osgi.services</artifactId>
     </dependency>
-    <!-- Orbit Servlet Deps -->
+    <!-- Servlet Deps -->
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
     </dependency>
-    <!-- Orbit JSP Deps -->
+    <!-- JSP Deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>apache-jsp</artifactId>

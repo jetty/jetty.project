@@ -171,7 +171,7 @@ public class LikeJettyXml
         deployer.setContexts(contexts);
         deployer.setContextAttribute(
                 "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/servlet-api-[^/]*\\.jar$");
+                ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
 
         WebAppProvider webapp_provider = new WebAppProvider();
         webapp_provider.setMonitoredDirName(jetty_base + "/webapps");
@@ -184,10 +184,15 @@ public class LikeJettyXml
         server.addBean(deployer);
         
         // === setup jetty plus ==
-        Configuration.ClassList.setServerDefault(server).addAfter(
+        Configuration.ClassList classlist = Configuration.ClassList
+                .setServerDefault( server );
+        classlist.addAfter(
                 "org.eclipse.jetty.webapp.FragmentConfiguration",
                 "org.eclipse.jetty.plus.webapp.EnvConfiguration",
                 "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+        
+        classlist.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+                            "org.eclipse.jetty.annotations.AnnotationConfiguration");
 
         // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();
