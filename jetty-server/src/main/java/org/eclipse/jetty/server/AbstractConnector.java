@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,7 +34,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -50,7 +48,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -140,10 +137,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
 {
     protected final Logger LOG = Log.getLogger(AbstractConnector.class);
-
-    private final Locker _locker = new Locker();
-    private final Condition _setAccepting = _locker.newCondition();
-    private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>(); // Order is important on server side, so we use a LinkedHashMap
+    // Order is important on server side, so we use a LinkedHashMap
+    private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>();
     private final Server _server;
     private final Executor _executor;
     private final Scheduler _scheduler;
@@ -151,13 +146,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
-    private CountDownLatch _stopping;
+    private volatile CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
     private String _name;
     private int _acceptorPriorityDelta=-2;
-    private boolean _accepting = true;
 
 
     /**
@@ -289,7 +283,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     protected void interruptAcceptors()
     {
-        try (Locker.Lock lock = _locker.lockIfNotHeld())
+        synchronized (this)
         {
             for (Thread thread : _acceptors)
             {
@@ -333,7 +327,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void join(long timeout) throws InterruptedException
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (this)
         {
             for (Thread thread : _acceptors)
                 if (thread != null)
@@ -348,31 +342,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     /**
      * @return Is the connector accepting new connections
      */
-    public boolean isAccepting()
+    protected boolean isAccepting()
     {
-        try (Locker.Lock lock = _locker.lock())
-        {
-            return _accepting;
-        }
+        return isRunning();
     }
-
-    public void setAccepting(boolean accepting)
-    {
-        try (Locker.Lock lock = _locker.lock())
-        {
-            _accepting=accepting;
-            if (accepting)
-                _setAccepting.signalAll();
-            else
-                interruptAcceptors();
-        }
-    }
-    
 
     @Override
     public ConnectionFactory getConnectionFactory(String protocol)
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             return _factories.get(StringUtil.asciiToLowerCase(protocol));
         }
@@ -381,7 +359,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public <T> T getConnectionFactory(Class<T> factoryType)
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             for (ConnectionFactory f : _factories.values())
                 if (factoryType.isAssignableFrom(f.getClass()))
@@ -392,7 +370,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void addConnectionFactory(ConnectionFactory factory)
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             Set<ConnectionFactory> to_remove = new HashSet<>();
             for (String key:factory.getProtocols())
@@ -431,7 +409,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void addFirstConnectionFactory(ConnectionFactory factory)
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             List<ConnectionFactory> existings = new ArrayList<>(_factories.values());
             _factories.clear();
@@ -444,7 +422,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void addIfAbsentConnectionFactory(ConnectionFactory factory)
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             String key=StringUtil.asciiToLowerCase(factory.getProtocol());
             if (_factories.containsKey(key))
@@ -466,7 +444,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public ConnectionFactory removeConnectionFactory(String protocol)
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             ConnectionFactory factory= _factories.remove(StringUtil.asciiToLowerCase(protocol));
             removeBean(factory);
@@ -477,7 +455,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public Collection<ConnectionFactory> getConnectionFactories()
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             return _factories.values();
         }
@@ -485,7 +463,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setConnectionFactories(Collection<ConnectionFactory> factories)
     {
-        try (Locker.Lock lock = _locker.lock())
+        synchronized (_factories)
         {
             List<ConnectionFactory> existing = new ArrayList<>(_factories.values());
             for (ConnectionFactory factory: existing)
@@ -560,23 +538,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         return getConnectionFactory(_defaultProtocol);
     }
 
-    protected boolean handleAcceptFailure(Throwable ex)
+    protected boolean handleAcceptFailure(Throwable previous, Throwable current)
     {
-        if (isRunning())
+        if (isAccepting())
         {
-            if (ex instanceof InterruptedException)
-            {
-                LOG.debug(ex);
-                return true;
-            }
-
-            if (ex instanceof ClosedByInterruptException)
-            {
-                LOG.debug(ex);
-                return false;
-            }
-            
-            LOG.warn(ex);
+            if (previous == null)
+                LOG.warn(current);
+            else
+                LOG.debug(current);
             try
             {
                 // Arbitrary sleep to avoid spin looping.
@@ -587,13 +556,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                return false;
             }
-            return false;
         }
         else
         {
-            LOG.ignore(ex);
+            LOG.ignore(current);
             return false;
         }
     }
@@ -627,28 +595,19 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
             try
             {
-                while (isRunning())
+                Throwable exception = null;
+                while (isAccepting())
                 {
-                    try (Locker.Lock lock = _locker.lock())
-                    {
-                        if (!_accepting)
-                        {
-                            _setAccepting.await();
-                            continue;
-                        }
-                    }
-                    catch (InterruptedException e) 
-                    {
-                        continue;
-                    }
-                    
                     try
                     {
                         accept(_id);
+                        exception = null;
                     }
                     catch (Throwable x)
                     {
-                        if (!handleAcceptFailure(x))
+                        if (handleAcceptFailure(exception, x))
+                            exception = x;
+                        else
                             break;
                     }
                 }

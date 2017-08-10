@@ -344,14 +344,14 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     public void close()
     {
-        super.close();
-        
         ServerSocketChannel serverChannel = _acceptChannel;
         _acceptChannel = null;
+
         if (serverChannel != null)
         {
             removeBean(serverChannel);
 
+            // If the interrupt did not close it, we should close it
             if (serverChannel.isOpen())
             {
                 try
@@ -364,6 +364,7 @@ public class ServerConnector extends AbstractNetworkConnector
                 }
             }
         }
+        // super.close();
         _localPort = -2;
     }
 
