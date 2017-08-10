@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 @ManagedObject("Identity Extension")
 public class IdentityExtension extends AbstractExtension
@@ -43,14 +41,14 @@ public class IdentityExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame, FrameCallback callback)
+    public void incomingFrame(Frame frame, Callback callback)
     {
         // pass through
         nextIncomingFrame(frame, callback);
     }
 
     @Override
-    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         // pass through
         nextOutgoingFrame(frame,callback, batchMode);

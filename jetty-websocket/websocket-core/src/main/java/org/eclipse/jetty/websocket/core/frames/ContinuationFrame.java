@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.core.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.OpCode;
 
 public class ContinuationFrame extends DataFrame
 {

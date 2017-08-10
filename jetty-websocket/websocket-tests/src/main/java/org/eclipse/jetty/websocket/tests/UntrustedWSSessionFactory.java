@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public class UntrustedWSSessionFactory implements SessionFactory
 {

@@ -56,7 +56,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
-import org.eclipse.jetty.websocket.core.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.reflect.Arg;

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 
 /**
  * Collect up 1 or more byte arrays for later transfer to a single {@link ByteBuffer}.

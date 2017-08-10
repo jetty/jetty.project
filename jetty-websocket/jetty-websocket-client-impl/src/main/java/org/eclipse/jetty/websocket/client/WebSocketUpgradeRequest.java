@@ -64,10 +64,10 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.client.io.WebSocketClientConnection;
-import org.eclipse.jetty.websocket.core.AcceptHash;
+import org.eclipse.jetty.websocket.core.handshake.AcceptHash;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
-import org.eclipse.jetty.websocket.core.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 
 public class WebSocketUpgradeRequest extends HttpRequest implements CompleteListener, HttpConnectionUpgrader
 {

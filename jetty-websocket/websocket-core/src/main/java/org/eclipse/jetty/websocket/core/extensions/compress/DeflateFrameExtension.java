@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.core.extensions.compress;
 
 import java.util.zip.DataFormatException;
 
-import org.eclipse.jetty.websocket.api.BadPayloadException;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.BadPayloadException;
+import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * Implementation of the
@@ -50,7 +50,7 @@ public class DeflateFrameExtension extends CompressExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame, FrameCallback callback)
+    public void incomingFrame(Frame frame, Callback callback)
     {
         // Incoming frames are always non concurrent because
         // they are read and parsed with a single thread, and

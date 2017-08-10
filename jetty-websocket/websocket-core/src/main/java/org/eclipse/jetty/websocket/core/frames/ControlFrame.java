@@ -22,8 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 
 public abstract class ControlFrame extends WebSocketFrame
 {

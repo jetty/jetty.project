@@ -38,9 +38,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConstants;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.Parser;
+import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.parser.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.hamcrest.Matchers;
 

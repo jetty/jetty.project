@@ -30,13 +30,13 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.ExtensionStack;
-import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.io.WSConnection;
 
 /**
  * Client side WebSocket physical connection.
  */
-public class WebSocketClientConnection extends AbstractWebSocketConnection
+public class WebSocketClientConnection extends WSConnection
 {
     private final Masker masker;
 

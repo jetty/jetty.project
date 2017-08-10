@@ -23,7 +23,7 @@ import java.util.function.Function;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
-import org.eclipse.jetty.websocket.core.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSink;
 
 public class PartialTextMessageSink implements MessageSink
 {

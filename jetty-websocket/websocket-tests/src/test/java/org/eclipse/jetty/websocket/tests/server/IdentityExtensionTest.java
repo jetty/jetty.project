@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.WebSocketConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;

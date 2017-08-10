@@ -41,7 +41,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.client.io.WebSocketClientConnection;
-import org.eclipse.jetty.websocket.core.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.compress.DeflateFrameExtension;
 import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;

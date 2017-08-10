@@ -66,10 +66,10 @@ import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
-import org.eclipse.jetty.websocket.core.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -561,7 +561,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         ByteBufferPool bufferPool = connector.getByteBufferPool();
         
         // Setup websocket connection
-        AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, getPolicy().clonePolicy(), bufferPool, extensionStack);
+        WSConnection wsConnection = new WebSocketServerConnection(endp, executor, getPolicy().clonePolicy(), bufferPool, extensionStack);
 
         extensionStack.setPolicy(wsConnection.getPolicy());
         extensionStack.configure(wsConnection.getParser());

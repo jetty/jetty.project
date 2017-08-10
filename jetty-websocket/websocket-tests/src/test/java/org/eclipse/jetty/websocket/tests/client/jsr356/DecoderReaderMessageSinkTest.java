@@ -34,9 +34,9 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.EndpointFunctions;
 import org.eclipse.jetty.websocket.common.io.CompletableFutureFrameCallback;
 import org.eclipse.jetty.websocket.common.io.FutureFrameCallback;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
@@ -89,7 +89,7 @@ public class DecoderReaderMessageSinkTest
         }
     }
     
-    private EndpointFunctions<JsrSession> dummyFunctions = new DummyEndpointFunctions();
+    private WSLocalEndpoint<JsrSession> dummyFunctions = new DummyEndpointFunctions();
     
     @Test
     public void testDecoderReader() throws Exception

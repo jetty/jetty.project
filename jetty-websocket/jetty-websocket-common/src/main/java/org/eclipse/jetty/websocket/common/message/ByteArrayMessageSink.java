@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSink;
 
 public class ByteArrayMessageSink implements MessageSink
 {

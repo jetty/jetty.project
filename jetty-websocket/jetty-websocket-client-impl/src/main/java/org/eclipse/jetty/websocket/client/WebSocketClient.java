@@ -58,7 +58,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.

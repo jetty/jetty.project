@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;

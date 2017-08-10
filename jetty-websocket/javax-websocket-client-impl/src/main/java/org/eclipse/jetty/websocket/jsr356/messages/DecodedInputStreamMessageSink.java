@@ -27,13 +27,13 @@ import javax.websocket.Decoder;
 import javax.websocket.EncodeException;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 public class DecodedInputStreamMessageSink extends InputStreamMessageSink
 {
-    public DecodedInputStreamMessageSink(EndpointFunctions<JsrSession> endpointFunctions,
+    public DecodedInputStreamMessageSink(WSLocalEndpoint<JsrSession> endpointFunctions,
                                          Executor executor,
                                          Decoder.BinaryStream decoder,
                                          Function<Object, Object> onMessageFunction)

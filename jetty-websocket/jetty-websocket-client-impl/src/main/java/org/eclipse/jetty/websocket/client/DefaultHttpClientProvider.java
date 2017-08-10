@@ -23,7 +23,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 class DefaultHttpClientProvider
 {

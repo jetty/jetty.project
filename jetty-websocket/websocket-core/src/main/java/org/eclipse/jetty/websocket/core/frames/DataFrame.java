@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.frames;
 
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * A Data Frame

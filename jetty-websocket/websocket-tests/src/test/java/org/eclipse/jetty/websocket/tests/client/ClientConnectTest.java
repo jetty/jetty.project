@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketUpgradeRequest;
-import org.eclipse.jetty.websocket.core.AcceptHash;
+import org.eclipse.jetty.websocket.core.handshake.AcceptHash;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;

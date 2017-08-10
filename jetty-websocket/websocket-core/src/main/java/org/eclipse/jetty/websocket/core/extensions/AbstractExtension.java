@@ -29,15 +29,11 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BatchMode;
-import org.eclipse.jetty.websocket.core.Extension;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.IncomingFrames;
-import org.eclipse.jetty.websocket.core.LogicalConnection;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
+import org.eclipse.jetty.websocket.core.io.IncomingFrames;
+import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 
 @ManagedObject("Abstract Extension")
 public abstract class AbstractExtension extends AbstractLifeCycle implements Dumpable, Extension
@@ -46,7 +42,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
     private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
-    private LogicalConnection connection;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
 
@@ -72,13 +67,10 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
     {
         out.append(indent).append(" +- ");
         out.append(heading).append(" : ");
-        out.append(bean.toString());
-    }
-    
-    @Deprecated
-    public void init(WebSocketContainerScope container)
-    {
-        init(container.getPolicy(),container.getBufferPool());
+        if(bean == null)
+            out.append("<null>");
+        else
+            out.append(bean.toString());
     }
     
     public void init(WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -96,11 +88,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
     public ExtensionConfig getConfig()
     {
         return config;
-    }
-
-    public LogicalConnection getConnection()
-    {
-        return connection;
     }
 
     @Override
@@ -187,11 +174,6 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         this.config = config;
     }
 
-    public void setConnection(LogicalConnection connection)
-    {
-        this.connection = connection;
-    }
-    
     @Override
     public void setNextIncomingFrames(IncomingFrames nextIncoming)
     {

@@ -51,7 +51,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;

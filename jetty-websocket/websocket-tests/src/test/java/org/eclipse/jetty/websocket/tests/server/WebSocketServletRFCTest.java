@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.generator.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;

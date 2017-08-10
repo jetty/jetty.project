@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
  * This is not a general purpose websocket client.

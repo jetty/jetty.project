@@ -21,14 +21,14 @@ package org.eclipse.jetty.websocket.core.extensions.compress;
 import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.BadPayloadException;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.BadPayloadException;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -52,7 +52,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame, FrameCallback callback)
+    public void incomingFrame(Frame frame, Callback callback)
     {
         // Incoming frames are always non concurrent because
         // they are read and parsed with a single thread, and
@@ -94,7 +94,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    protected void nextIncomingFrame(Frame frame, FrameCallback callback)
+    protected void nextIncomingFrame(Frame frame, Callback callback)
     {
         if (frame.isFin() && !incomingContextTakeover)
         {
@@ -106,7 +106,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     }
 
     @Override
-    protected void nextOutgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
+    protected void nextOutgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         if (frame.isFin() && !outgoingContextTakeover)
         {

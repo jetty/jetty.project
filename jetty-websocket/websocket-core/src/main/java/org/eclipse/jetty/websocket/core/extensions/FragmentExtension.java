@@ -23,15 +23,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.frames.DataFrame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
  * Fragment Extension
@@ -51,13 +50,13 @@ public class FragmentExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame, FrameCallback callback)
+    public void incomingFrame(Frame frame, Callback callback)
     {
         nextIncomingFrame(frame, callback);
     }
 
     @Override
-    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         ByteBuffer payload = frame.getPayload();
         int length = payload != null ? payload.remaining() : 0;
@@ -100,10 +99,10 @@ public class FragmentExtension extends AbstractExtension
     private static class FrameEntry
     {
         private final Frame frame;
-        private final FrameCallback callback;
+        private final Callback callback;
         private final BatchMode batchMode;
 
-        private FrameEntry(Frame frame, FrameCallback callback, BatchMode batchMode)
+        private FrameEntry(Frame frame, Callback callback, BatchMode batchMode)
         {
             this.frame = frame;
             this.callback = callback;
@@ -117,7 +116,7 @@ public class FragmentExtension extends AbstractExtension
         }
     }
 
-    private class Flusher extends IteratingCallback implements FrameCallback
+    private class Flusher extends IteratingCallback implements Callback
     {
         private FrameEntry current;
         private boolean finished = true;
@@ -179,18 +178,18 @@ public class FragmentExtension extends AbstractExtension
             // The callback are those provided by WriteCallback (implemented
             // below) and even in case of writeFailed() we call succeeded().
         }
-    
+
         @Override
-        public void succeed()
+        public void succeeded()
         {
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
             notifyCallbackSuccess(current.callback);
-            succeeded();
+            super.succeeded();
         }
     
         @Override
-        public void fail(Throwable cause)
+        public void failed(Throwable cause)
         {
             // Notify first, the call succeeded() to drain the queue.
             // We don't want to call failed(x) because that will put
@@ -201,12 +200,12 @@ public class FragmentExtension extends AbstractExtension
             succeeded();
         }
 
-        private void notifyCallbackSuccess(FrameCallback callback)
+        private void notifyCallbackSuccess(Callback callback)
         {
             try
             {
                 if (callback != null)
-                    callback.succeed();
+                    callback.succeeded();
             }
             catch (Throwable x)
             {
@@ -215,12 +214,12 @@ public class FragmentExtension extends AbstractExtension
             }
         }
 
-        private void notifyCallbackFailure(FrameCallback callback, Throwable failure)
+        private void notifyCallbackFailure(Callback callback, Throwable failure)
         {
             try
             {
                 if (callback != null)
-                    callback.fail(failure);
+                    callback.failed(failure);
             }
             catch (Throwable x)
             {

@@ -54,10 +54,10 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
-import org.eclipse.jetty.websocket.core.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
@@ -149,12 +149,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.internalClient = false;
     }
     
-    public EndpointFunctions newJsrEndpointFunction(Object endpoint,
-                                                    WebSocketPolicy sessionPolicy,
-                                                    AvailableEncoders availableEncoders,
-                                                    AvailableDecoders availableDecoders,
-                                                    Map<String, String> pathParameters,
-                                                    EndpointConfig config)
+    public WSLocalEndpoint newJsrEndpointFunction(Object endpoint,
+                                                  WebSocketPolicy sessionPolicy,
+                                                  AvailableEncoders availableEncoders,
+                                                  AvailableDecoders availableDecoders,
+                                                  Map<String, String> pathParameters,
+                                                  EndpointConfig config)
     {
         return new JsrEndpointFunctions(endpoint,
                 sessionPolicy,

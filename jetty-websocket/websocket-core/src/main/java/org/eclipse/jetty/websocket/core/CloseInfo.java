@@ -147,7 +147,9 @@ public class CloseInfo
      * @param statusCode the status code
      * @param reason the optional reason string
      * @return the payload buffer if valid. null if invalid status code for payload buffer.
+     * @deprecated moved to {@link CloseFrame}
      */
+    @Deprecated
     public static ByteBuffer asPayloadBuffer(int statusCode, String reason)
     {
         if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == (-1)))
@@ -198,6 +200,10 @@ public class CloseInfo
         return asPayloadBuffer(statusCode, reason);
     }
 
+    /**
+     * @deprecated moved to {@link CloseFrame}
+     */
+    @Deprecated
     public CloseFrame asFrame()
     {
         CloseFrame frame = new CloseFrame();

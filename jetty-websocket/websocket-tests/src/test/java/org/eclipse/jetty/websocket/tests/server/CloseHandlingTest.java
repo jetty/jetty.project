@@ -29,13 +29,13 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.core.io.WSConnection;
 import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
@@ -149,7 +149,7 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.NORMAL,reason).asFrame());
     
-        try (StacklessLogging ignored = new StacklessLogging(AbstractWebSocketConnection.class);
+        try (StacklessLogging ignored = new StacklessLogging(WSConnection.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);

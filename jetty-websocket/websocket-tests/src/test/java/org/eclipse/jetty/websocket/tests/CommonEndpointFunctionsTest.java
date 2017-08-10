@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;

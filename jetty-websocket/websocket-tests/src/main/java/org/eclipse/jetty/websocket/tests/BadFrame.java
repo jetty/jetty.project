@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 
 /**

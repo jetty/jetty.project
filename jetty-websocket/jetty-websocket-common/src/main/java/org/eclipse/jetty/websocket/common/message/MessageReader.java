@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSink;
 
 /**
  * Support class for reading a (single) WebSocket TEXT message via a Reader.

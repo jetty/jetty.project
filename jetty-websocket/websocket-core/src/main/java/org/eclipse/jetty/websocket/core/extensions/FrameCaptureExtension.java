@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import static java.nio.file.StandardOpenOption.*;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,17 +30,16 @@ import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class FrameCaptureExtension extends AbstractExtension
 {
@@ -65,7 +65,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void incomingFrame(Frame frame, FrameCallback callback)
+    public void incomingFrame(Frame frame, Callback callback)
     {
         saveFrame(frame,false);
         try
@@ -81,7 +81,7 @@ public class FrameCaptureExtension extends AbstractExtension
     }
 
     @Override
-    public void outgoingFrame(Frame frame, FrameCallback callback, BatchMode batchMode)
+    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         saveFrame(frame,true);
         try

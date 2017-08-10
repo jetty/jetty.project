@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.generator.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;

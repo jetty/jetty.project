@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.rules.TestName;
 
 public class CloseableLocalWebSocketSession extends LocalWebSocketSession implements AutoCloseable

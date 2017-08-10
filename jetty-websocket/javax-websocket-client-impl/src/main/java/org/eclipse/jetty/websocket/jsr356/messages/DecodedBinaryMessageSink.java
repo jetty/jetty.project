@@ -27,13 +27,13 @@ import javax.websocket.EncodeException;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 public class DecodedBinaryMessageSink extends ByteBufferMessageSink
 {
-    public DecodedBinaryMessageSink(WebSocketPolicy policy, EndpointFunctions<JsrSession> endpointFunctions, Decoder.Binary decoder, Function<Object, Object> onMessageFunction)
+    public DecodedBinaryMessageSink(WebSocketPolicy policy, WSLocalEndpoint<JsrSession> endpointFunctions, Decoder.Binary decoder, Function<Object, Object> onMessageFunction)
     {
         super(policy, (byteBuf) ->
         {

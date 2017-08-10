@@ -25,10 +25,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.ExtensionStack;
-import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.io.WSConnection;
 
-public class WebSocketServerConnection extends AbstractWebSocketConnection implements Connection.UpgradeTo
+public class WebSocketServerConnection extends WSConnection implements Connection.UpgradeTo
 {
     public WebSocketServerConnection(EndPoint endp, Executor executor, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack)
     {

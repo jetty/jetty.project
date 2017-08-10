@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.OpCode;
 
 public class TextFrame extends DataFrame
 {

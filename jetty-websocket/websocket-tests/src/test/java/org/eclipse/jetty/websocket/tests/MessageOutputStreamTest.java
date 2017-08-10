@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
-import org.eclipse.jetty.websocket.core.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

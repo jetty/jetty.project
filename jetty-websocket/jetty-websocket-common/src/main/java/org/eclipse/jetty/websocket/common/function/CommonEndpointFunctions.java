@@ -57,8 +57,8 @@ import org.eclipse.jetty.websocket.common.frames.ReadOnlyDelegatedFrame;
 import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.core.EndpointFunctions;
-import org.eclipse.jetty.websocket.core.MessageSink;
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.common.MessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
 import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
@@ -68,11 +68,11 @@ import org.eclipse.jetty.websocket.common.reflect.UnorderedSignature;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
- * The Common Implementation of EndpointFunctions
+ * The Common Implementation of WSLocalEndpoint
  *
  * @param <T> the Session object
  */
-public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycle implements EndpointFunctions<T>
+public class CommonEndpointFunctions<T extends Session> extends AbstractLifeCycle implements WSLocalEndpoint<T>
 {
     private static final Logger LOG = Log.getLogger(CommonEndpointFunctions.class);
     

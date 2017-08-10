@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.generator.Generator;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 
 /**

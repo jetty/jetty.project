@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
-import org.eclipse.jetty.websocket.core.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
@@ -93,7 +93,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     }
     
     @Override
-    public EndpointFunctions newEndpointFunctions(Object endpoint)
+    public WSLocalEndpoint newEndpointFunctions(Object endpoint)
     {
         // Delegate to container to obtain correct version of JsrEndpointFunctions
         // Could be a Client version, or a Server version
