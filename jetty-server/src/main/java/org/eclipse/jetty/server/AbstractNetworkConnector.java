@@ -96,8 +96,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     @Override
     public void close()
     {
-        // Interrupting is often sufficient to close the channel
-        interruptAcceptors();
+        setAccepting(false);
     }
     
 
@@ -107,13 +106,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
         close();
         return super.shutdown();
     }
-
-    @Override
-    protected boolean isAccepting()
-    {
-        return super.isAccepting() && isOpen();
-    }
-
+    
     @Override
     public String toString()
     {
