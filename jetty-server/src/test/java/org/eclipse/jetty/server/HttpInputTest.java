@@ -26,13 +26,16 @@ import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class HttpInputTest
 {
     private final Queue<String> _history = new LinkedBlockingQueue<>();

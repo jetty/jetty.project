@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -34,17 +35,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class LocalAsyncContextTest
 {
     private final AtomicReference<Throwable> _completed0 = new AtomicReference<>();
     private final AtomicReference<Throwable> _completed1 = new AtomicReference<>();
+    private final AtomicBoolean _broken = new AtomicBoolean(false);
     protected Server _server;
     protected SuspendHandler _handler;
     protected Connector _connector;
@@ -82,6 +86,8 @@ public class LocalAsyncContextTest
     {
         _server.stop();
         _server.join();
+        if (_broken.get())
+            Assert.fail();
     }
 
     @Test
@@ -482,11 +488,12 @@ public class LocalAsyncContextTest
             Throwable complete = new Throwable();
             if (!_completed0.compareAndSet(null, complete))
             {
-              System.err.println("First onCompleted:");
+              System.err.println("First onCompleted0:");
               _completed0.get().printStackTrace();
-              System.err.println("First onCompleted:");
+              System.err.println("Second onCompleted0:");
               complete.printStackTrace();
               _completed0.set(null);
+              _broken.set(true);
               throw new IllegalStateException();
             }
         }
@@ -497,11 +504,12 @@ public class LocalAsyncContextTest
           Throwable complete = new Throwable();
           if (!_completed0.compareAndSet(null, complete))
           {
-            System.err.println("First onCompleted:");
+            System.err.println("First onError0:");
             _completed0.get().printStackTrace();
-            System.err.println("First onCompleted:");
+            System.err.println("Second onError0:");
             complete.printStackTrace();
             _completed0.set(null);
+            _broken.set(true);
             throw new IllegalStateException();
           }
         }
@@ -529,9 +537,12 @@ public class LocalAsyncContextTest
             Throwable complete = new Throwable();
             if (!_completed1.compareAndSet(null, complete))
             {
+                System.err.println("First onCompleted1:");
                 _completed1.get().printStackTrace();
+                System.err.println("Second onCompleted1:");
                 complete.printStackTrace();
                 _completed1.set(null);
+                _broken.set(true);
                 throw new IllegalStateException();
             }
         }
@@ -542,9 +553,12 @@ public class LocalAsyncContextTest
             Throwable complete = new Throwable();
             if (!_completed1.compareAndSet(null, complete))
             {
+                System.err.println("First onError1:");
                 _completed1.get().printStackTrace();
+                System.err.println("Second onError1:");
                 complete.printStackTrace();
                 _completed1.set(null);
+                _broken.set(true);
                 throw new IllegalStateException();
             }
         }

@@ -35,6 +35,7 @@ import javax.servlet.ReadListener;
 
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.HttpInput.Content;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -42,6 +43,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 
 /**
@@ -49,6 +51,7 @@ import org.junit.Test;
  */
 
 
+@RunWith(AdvancedRunner.class)
 public class HttpInputAsyncStateTest
 {
 

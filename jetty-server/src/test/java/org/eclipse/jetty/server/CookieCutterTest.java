@@ -24,9 +24,12 @@ import static org.junit.Assert.assertThat;
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class CookieCutterTest
 {
     private Cookie[] parseCookieHeaders(CookieCompliance compliance,String... headers)

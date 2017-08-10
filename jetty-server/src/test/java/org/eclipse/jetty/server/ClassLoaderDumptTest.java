@@ -27,8 +27,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 import org.eclipse.jetty.util.component.Dumpable;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class ClassLoaderDumptTest
@@ -185,7 +183,7 @@ public class ClassLoaderDumptTest
         StringBuilder out = new StringBuilder();
         server.dump(out);
         String dump = out.toString();
-        System.err.println(dump);
+        // System.err.println(dump);
         assertThat(dump,containsString("+- TopLoader"));
         assertThat(dump,containsString("|   +- file:/ONE"));
         assertThat(dump,containsString("|   +- file:/TWO"));
