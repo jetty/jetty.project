@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 
 import org.eclipse.jetty.toolchain.test.JDK;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class TypeUtilTest
@@ -130,7 +131,10 @@ public class TypeUtilTest
     @Test
     public void testGetLocationOfClass() throws Exception
     {
-        Path mavenRepoPath = Paths.get( System.getProperty( "mavenRepoPath" ) );
+        String mavenRepoPathProperty = System.getProperty( "mavenRepoPath");
+        Assume.assumeNotNull(mavenRepoPathProperty);
+        Path mavenRepoPath = Paths.get( mavenRepoPathProperty );
+
         String mavenRepo = mavenRepoPath.toFile().getPath().replaceAll("\\\\", "/");
 
         // Classes from maven dependencies
