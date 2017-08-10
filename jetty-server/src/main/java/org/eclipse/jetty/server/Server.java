@@ -356,6 +356,7 @@ public class Server extends HandlerWrapper implements Attributes
             setErrorHandler(new ErrorHandler());
         if (_errorHandler instanceof ErrorHandler.ErrorPageMapper)
             LOG.warn("ErrorPageMapper not supported for Server level Error Handling");
+        _errorHandler.setServer(this);
         
         //If the Server should be stopped when the jvm exits, register
         //with the shutdown handler thread.

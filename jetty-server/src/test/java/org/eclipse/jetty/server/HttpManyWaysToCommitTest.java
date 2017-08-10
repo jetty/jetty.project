@@ -428,7 +428,6 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         server.start();
         
         HttpTester.Response response = executeRequest();
-        System.out.println(response.toString());
         assertThat("response code", response.getStatus(), is(200));
         assertHeader(response, "content-length", "6");
         byte content[] = response.getContentBytes();
