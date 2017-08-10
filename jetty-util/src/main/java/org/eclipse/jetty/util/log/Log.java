@@ -171,7 +171,7 @@ public class Log
 
             try
             {
-                Class<?> log_class = __logClass==null?null:Loader.loadClass(__logClass);
+                Class<?> log_class = __logClass==null?null:Loader.loadClass(Log.class,__logClass);
                 if (LOG == null || (log_class!=null && !LOG.getClass().equals(log_class)))
                 {
                     LOG = (Logger)log_class.newInstance();
