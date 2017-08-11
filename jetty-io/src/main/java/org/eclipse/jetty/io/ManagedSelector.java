@@ -328,6 +328,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (attachment instanceof Selectable)
                 ((Selectable)attachment).updateKey();
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        }
     }
     
     private abstract static class NonBlockingAction implements Runnable, Invocable

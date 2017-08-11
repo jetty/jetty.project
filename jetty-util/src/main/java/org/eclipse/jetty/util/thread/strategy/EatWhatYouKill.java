@@ -56,7 +56,6 @@ import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
  * the task and immediately continue producing.  When operating in this pattern, the
  * sub-strategy is called ProduceExecuteConsume (PEC).
  * </p>
- * 
  */
 public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrategy, Runnable
 {
@@ -66,7 +65,6 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     
     private final Locker _locker = new Locker();
     private State _state = State.IDLE;
-    private final Runnable _runProduce = new RunProduce();
     private final Producer _producer;
     private final Executor _executor;
     private final ReservedThreadExecutor _producers;
@@ -87,6 +85,8 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         _executor = executor;
         _producers = producers;
         addBean(_producer);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} created", this);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         if (LOG.isDebugEnabled())
             LOG.debug("{} dispatch {}", this, execute);
         if (execute)
-            _executor.execute(_runProduce);
+            _executor.execute(this);
     }
 
     @Override
@@ -126,6 +126,8 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @Override
     public void produce()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} produce", this);
         boolean reproduce = true;
         while(isRunning() && tryProduce(reproduce) && doProduce())
             reproduce = false;
@@ -294,14 +296,5 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         builder.append(_state);
         builder.append('/');
         builder.append(_producers);
-    }
-
-    private class RunProduce implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            produce();
-        }
     }
 }
