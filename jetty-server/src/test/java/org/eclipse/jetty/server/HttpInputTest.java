@@ -93,9 +93,9 @@ public class HttpInputTest
         _in = new HttpInput(new HttpChannelState(new HttpChannel(null, new HttpConfiguration(), null, null)
         {
             @Override
-            public void asyncReadFillInterested()
+            public void onAsyncWaitForContent()
             {
-                _history.add("asyncReadFillInterested");
+                _history.add("asyncReadInterested");
             }
         })
         {
@@ -214,81 +214,20 @@ public class HttpInputTest
     }
 
     @Test
-    public void testReRead() throws Exception
-    {
-        _in.addContent(new TContent("AB"));
-        _in.addContent(new TContent("CD"));
-        _fillAndParseSimulate.offer("EF");
-        _fillAndParseSimulate.offer("GH");
-        Assert.assertThat(_in.available(), Matchers.equalTo(2));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(0L));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(1L));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'B'));
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(2L));
-
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded AB"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'C'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'D'));
-
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded CD"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'E'));
-
-        _in.prependContent(new HttpInput.Content(BufferUtil.toBuffer("abcde")));
-
-        Assert.assertThat(_in.available(), Matchers.equalTo(5));
-        Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
-        Assert.assertThat(_in.isReady(), Matchers.equalTo(true));
-
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(0L));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'a'));
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(1L));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'b'));
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(2L));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'c'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'d'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'e'));
-
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'F'));
-
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 2"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded EF"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'G'));
-        Assert.assertThat(_in.read(), Matchers.equalTo((int)'H'));
-
-        Assert.assertThat(_history.poll(), Matchers.equalTo("Content succeeded GH"));
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-
-        Assert.assertThat(_in.getContentConsumed(), Matchers.equalTo(8L));
-
-        Assert.assertThat(_history.poll(), Matchers.nullValue());
-    }
-
-    @Test
     public void testBlockingRead() throws Exception
     {
-        new Thread()
+        new Thread(() ->
         {
-            public void run()
+            try
             {
-                try
-                {
-                    Thread.sleep(500);
-                    _in.addContent(new TContent("AB"));
-                }
-                catch (Throwable th)
-                {
-                    th.printStackTrace();
-                }
+                Thread.sleep(500);
+                _in.addContent(new TContent("AB"));
             }
-        }.start();
+            catch (Throwable th)
+            {
+                th.printStackTrace();
+            }
+        }).start();
 
         Assert.assertThat(_in.read(), Matchers.equalTo((int)'A'));
 
@@ -367,21 +306,18 @@ public class HttpInputTest
     @Test
     public void testBlockingEOF() throws Exception
     {
-        new Thread()
+        new Thread(() ->
         {
-            public void run()
+            try
             {
-                try
-                {
-                    Thread.sleep(500);
-                    _in.eof();
-                }
-                catch (Throwable th)
-                {
-                    th.printStackTrace();
-                }
+                Thread.sleep(500);
+                _in.eof();
             }
-        }.start();
+            catch (Throwable th)
+            {
+                th.printStackTrace();
+            }
+        }).start();
 
         Assert.assertThat(_in.isFinished(), Matchers.equalTo(false));
         Assert.assertThat(_in.read(), Matchers.equalTo(-1));

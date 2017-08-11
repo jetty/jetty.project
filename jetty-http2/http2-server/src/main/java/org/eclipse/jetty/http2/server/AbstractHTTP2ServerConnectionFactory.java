@@ -49,7 +49,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
-    private int reservedThreads = -1;
+    private int reservedThreads;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -154,7 +154,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     public void setReservedThreads(int threads)
     {
-        this.reservedThreads = threads;
+        // TODO: currently disabled since the only value that works is 0.
+//        this.reservedThreads = threads;
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -193,7 +194,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
                     try
                     {
-                        executor = new ReservedThreadExecutor(connector.getExecutor(),getReservedThreads());
+                        executor = new ReservedThreadExecutor(connector.getExecutor(), getReservedThreads());
                         executor.start();
                         connector.addBean(executor,true);
                     }

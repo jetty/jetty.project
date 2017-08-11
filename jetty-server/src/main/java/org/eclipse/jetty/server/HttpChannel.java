@@ -99,7 +99,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _requestLog = connector == null ? null : connector.getServer().getRequestLog();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
+            LOG.debug("new {} -> {},{},{}",
+                    this,
+                    _endPoint,
+                    _endPoint==null?null:_endPoint.getConnection(),
+                    _state);
     }
 
     protected HttpInput newHttpInput(HttpChannelState state)
@@ -258,8 +262,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _oldIdleTimeout=0;
     }
 
-    public void asyncReadFillInterested()
+    public void onAsyncWaitForContent()
     {
+    }
+
+    public void onBlockWaitForContent()
+    {
+    }
+
+    public void onBlockWaitForContentFailure(Throwable failure)
+    {
+        getRequest().getHttpInput().failed(failure);
     }
 
     @Override
@@ -433,7 +446,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (hasContent && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
                             {
                                 if (isCommitted())
-                                    _transport.abort(new IOException("insufficient content written"));
+                                    abort(new IOException("insufficient content written"));
                                 else
                                     _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500,"insufficient content written");
                             }
@@ -546,7 +559,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         catch (Throwable x)
         {
             failure.addSuppressed(x);
-            _transport.abort(failure);
+            abort(failure);
         }
     }
 
@@ -843,14 +856,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void failed(Throwable th)
                     {
-                        _transport.abort(x);
+                        abort(x);
                         super.failed(x);
                     }
                 });
             }
             else
             {
-                _transport.abort(x);
+                abort(x);
                 super.failed(x);
             }
         }
