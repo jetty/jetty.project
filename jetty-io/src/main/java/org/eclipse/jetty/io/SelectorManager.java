@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -267,11 +268,14 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * overridden by a derivation of this class to handle the accepted channel
      *
      * @param server the server channel to register
+     * @return A Closable that allows the acceptor to be cancelled
      */
-    public void acceptor(SelectableChannel server)
+    public Closeable acceptor(SelectableChannel server)
     {
         final ManagedSelector selector = chooseSelector(null);
-        selector.submit(selector.new Acceptor(server));
+        ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
+        selector.submit(acceptor);
+        return acceptor;
     }
 
     /**
@@ -434,5 +438,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @throws IOException if unable to create new connection
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
+
 
 }

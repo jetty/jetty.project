@@ -53,12 +53,19 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         connector.setIdleTimeout(MAX_IDLE_TIME);
         startServer(connector);
     }
+    
+    @Test(timeout=60000)
+    public void testStartStopStart() throws Exception
+    {
+        _server.stop();
+        _server.start();
+    }
 
     @Test(timeout=60000)
     public void testIdleTimeoutAfterSuspend() throws Exception
     {
-        SuspendHandler _handler = new SuspendHandler();
         _server.stop();
+        SuspendHandler _handler = new SuspendHandler();
         SessionHandler session = new SessionHandler();
         session.setHandler(_handler);
         _server.setHandler(session);
