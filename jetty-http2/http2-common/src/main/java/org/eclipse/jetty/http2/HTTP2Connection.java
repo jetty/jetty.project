@@ -272,7 +272,7 @@ public class HTTP2Connection extends AbstractConnection
         @Override
         public InvocationType getInvocationType()
         {
-            return InvocationType.EITHER;
+            return InvocationType.NON_BLOCKING;
         }
     }
 }
