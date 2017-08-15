@@ -173,6 +173,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
     private ClassLoader _classLoader;
+    private boolean _contextPathDefault = true;
     private String _contextPath = "/";
     private String _contextPathEncoded = "/";
 
@@ -753,7 +754,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
-    
+
         if (_logger == null)
         {
             _logger = Log.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
@@ -1478,6 +1479,29 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
+    /** Set the default context path.
+     * A default context path may be overriden by a default-context-path element
+     * in a web.xml
+     * @param contextPath
+     *            The _contextPath to set.
+     */
+    public void setDefaultContextPath(String contextPath)
+    {
+        setContextPath(contextPath);
+        _contextPathDefault = true;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     *
+     * @return True if the current contextPath is from default settings
+     */
+    public boolean isContextPathDefault()
+    {
+        return _contextPathDefault;
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * @param contextPath
      *            The _contextPath to set.
@@ -1506,6 +1530,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         _contextPath = contextPath;
         _contextPathEncoded = URIUtil.encodePath(contextPath);
+        _contextPathDefault = false;
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
         {

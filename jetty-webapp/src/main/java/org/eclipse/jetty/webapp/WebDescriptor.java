@@ -98,12 +98,15 @@ public class WebDescriptor extends Descriptor
                 URL webapp25xsd=Loader.getResource("javax/servlet/resources/web-app_2_5.xsd");
                 URL webapp30xsd=Loader.getResource("javax/servlet/resources/web-app_3_0.xsd");
                 URL webapp31xsd=Loader.getResource("javax/servlet/resources/web-app_3_1.xsd");
+                URL webapp40xsd=Loader.getResource("javax/servlet/resources/web-app_4_0.xsd");
                 
                 URL webcommon30xsd=Loader.getResource("javax/servlet/resources/web-common_3_0.xsd");
                 URL webcommon31xsd=Loader.getResource("javax/servlet/resources/web-common_3_1.xsd");
+                URL webcommon40xsd=Loader.getResource("javax/servlet/resources/web-common_4_0.xsd");
             
                 URL webfragment30xsd=Loader.getResource("javax/servlet/resources/web-fragment_3_0.xsd");
                 URL webfragment31xsd=Loader.getResource("javax/servlet/resources/web-fragment_3_1.xsd");
+                URL webfragment40xsd=Loader.getResource("javax/servlet/resources/web-fragment_4_0.xsd");
                 
                 URL schemadtd=Loader.getResource("javax/servlet/resources/XMLSchema.dtd");
                 URL xmlxsd=Loader.getResource("javax/servlet/resources/xml.xsd");
@@ -165,6 +168,8 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd",webcommon30xsd);
                 redirectEntity("web-common_3_1.xsd",webcommon31xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd",webcommon31xsd);
+                redirectEntity("web-common_4_0.xsd",webcommon40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_4_0.xsd",webcommon40xsd);
                 
                 redirectEntity("web-app_2_4.xsd",webapp24xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd",webapp24xsd);
@@ -174,11 +179,15 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd",webapp30xsd);
                 redirectEntity("web-app_3_1.xsd",webapp31xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd",webapp31xsd);
+                redirectEntity("web-app_4_0.xsd",webapp40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd",webapp40xsd);
                 
                 redirectEntity("web-fragment_3_0.xsd",webfragment30xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd",webfragment30xsd);
                 redirectEntity("web-fragment_3_1.xsd",webfragment31xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd",webfragment31xsd);
+                redirectEntity("web-fragment_4_0.xsd",webfragment40xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_4_0.xsd",webfragment40xsd);
                 
                 redirectEntity("xml.xsd",xmlxsd);
                 redirectEntity("http://www.w3.org/2001/xml.xsd",xmlxsd);

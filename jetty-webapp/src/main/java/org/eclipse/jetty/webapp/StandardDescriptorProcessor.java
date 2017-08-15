@@ -98,6 +98,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             registerVisitor("listener", this.getClass().getMethod("visitListener",  __signature));
             registerVisitor("distributable", this.getClass().getMethod("visitDistributable",  __signature));
             registerVisitor("deny-uncovered-http-methods", this.getClass().getMethod("visitDenyUncoveredHttpMethods", __signature));
+            registerVisitor("default-context-path", this.getClass().getMethod("visitDefaultContextPath", __signature));
+            registerVisitor("request-encoding", this.getClass().getMethod("visitRequestEncoding", __signature));
+            registerVisitor("response-encoding", this.getClass().getMethod("visitResponseEncoding", __signature));
+
         }
         catch (Exception e)
         {
@@ -1939,6 +1943,58 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         ((ConstraintAware)context.getSecurityHandler()).setDenyUncoveredHttpMethods(true);
     }
+
+    /**
+     * When specified, this element provides a default context path
+     * of the web application. The default context path starts
+     * with a / character. If it is not rooted at the root of the
+     * server's name space, the path does not end with a / character.
+     * @since Servlet 4.0
+     * @param context the of the processing
+     * @param descriptor the descriptor
+     * @param node the xml node
+     */
+    public void visitDefaultContextPath(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        if (!(descriptor instanceof FragmentDescriptor))
+        {
+            if (context.isContextPathDefault())
+            {
+                context.setContextPath(node.toString(false, true));
+                context.getMetaData().setOrigin("default-context-path", descriptor);
+            }
+        }
+    }
+
+    /**
+     * When specified, this element provides a default request
+     * encoding of the web application.
+     * @since Servlet 4.0
+     * @param context the of the processing
+     * @param descriptor the descriptor
+     * @param node the xml node
+     */
+    public void visitRequestEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        // TODO
+        LOG.warn("Not implemented {}",node);
+        // TODO
+    }
+
+    /**
+     * When specified, this element provides a default response
+     * encoding of the web application.
+     * @since Servlet 4.0
+     * @param context the of the processing
+     * @param descriptor the descriptor
+     * @param node the xml node
+     */
+    public void visitResponseEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    {
+        // TODO
+        LOG.warn("Not implemented {}",node);
+    }
+
 
     public EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz, Descriptor descriptor) throws Exception
     {

@@ -77,7 +77,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         if (path.endsWith("/") && path.length() > 0)
             path = path.substring(0,path.length() - 1);
 
-        context.setContextPath(path);
+        context.setDefaultContextPath(path);
         
         return context;
     }
