@@ -30,11 +30,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class LocalConnectorTest
 {
     private Server _server;

@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-public class InsufficientThreadsDetectionTest {
+@RunWith(AdvancedRunner.class)
+public class InsufficientThreadsDetectionTest 
+{
 
     private Server _server;
 

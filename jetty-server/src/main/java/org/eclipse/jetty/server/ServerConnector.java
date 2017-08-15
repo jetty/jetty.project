@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -31,6 +32,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
@@ -79,6 +81,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class ServerConnector extends AbstractNetworkConnector
 {
     private final SelectorManager _manager;
+    private final AtomicReference<Closeable> _acceptor = new AtomicReference<>();
     private volatile ServerSocketChannel _acceptChannel;
     private volatile boolean _inheritChannel = false;
     private volatile int _localPort = -1;
@@ -237,7 +240,7 @@ public class ServerConnector extends AbstractNetworkConnector
         if (getAcceptors()==0)
         {
             _acceptChannel.configureBlocking(false);
-            _manager.acceptor(_acceptChannel);
+            _acceptor.set(_manager.acceptor(_acceptChannel));
         }
     }
 
@@ -344,14 +347,14 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     public void close()
     {
+        super.close();
+        
         ServerSocketChannel serverChannel = _acceptChannel;
         _acceptChannel = null;
-
         if (serverChannel != null)
         {
             removeBean(serverChannel);
 
-            // If the interrupt did not close it, we should close it
             if (serverChannel.isOpen())
             {
                 try
@@ -364,7 +367,6 @@ public class ServerConnector extends AbstractNetworkConnector
                 }
             }
         }
-        // super.close();
         _localPort = -2;
     }
 
@@ -481,6 +483,38 @@ public class ServerConnector extends AbstractNetworkConnector
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+   
+    @Override
+    public void setAccepting(boolean accepting)
+    {
+        super.setAccepting(accepting);
+        if (getAcceptors()>0)
+            return;
+        
+        try
+        {
+            if (accepting)
+            {
+                if (_acceptor.get()==null)
+                {
+                    Closeable acceptor = _manager.acceptor(_acceptChannel);
+                    if (!_acceptor.compareAndSet(null,acceptor))
+                        acceptor.close();
+                }
+            }
+            else
+            {
+                Closeable acceptor = _acceptor.get();
+                if (acceptor!=null && _acceptor.compareAndSet(acceptor,null))
+                    acceptor.close();
+            }
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        } 
     }
 
     protected class ServerConnectorManager extends SelectorManager

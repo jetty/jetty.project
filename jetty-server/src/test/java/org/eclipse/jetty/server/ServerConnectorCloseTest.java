@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.runner.RunWith;
 
 
 /* ------------------------------------------------------------ */
+@RunWith(AdvancedRunner.class)
 public class ServerConnectorCloseTest extends ConnectorCloseTestBase
 {
     

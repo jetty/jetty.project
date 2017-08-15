@@ -25,8 +25,11 @@ import static org.junit.Assert.assertNull;
 import java.util.List;
 import java.util.Vector;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class InclusiveByteRangeTest
 {
     @SuppressWarnings("unchecked")

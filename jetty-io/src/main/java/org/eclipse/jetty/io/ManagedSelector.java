@@ -281,10 +281,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                             if (task != null)
                                 return task;
                         }
-                        else if (key.isAcceptable())
-                        {
-                            processAccept(key);
-                        }
                         else
                         {
                             throw new IllegalStateException("key=" + key + ", att=" + attachment + ", iOps=" + key.interestOps() + ", rOps=" + key.readyOps());
@@ -327,6 +323,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             Object attachment = key.attachment();
             if (attachment instanceof Selectable)
                 ((Selectable)attachment).updateKey();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
         }
     }
     
@@ -377,27 +379,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             connect.failed(x);
             return null;
-        }
-    }
-
-    private void processAccept(SelectionKey key)
-    {
-        SelectableChannel server = key.channel();
-        SelectableChannel channel = null;
-        try
-        {
-            while(true)
-            {
-                channel = _selectorManager.doAccept(server);
-                if (channel==null)
-                    break;
-                _selectorManager.accepted(channel);
-            }
-        }
-        catch (Throwable x)
-        {
-            closeNoExceptions(channel);
-            LOG.warn("Accept failed for channel " + channel, x);
         }
     }
 
@@ -524,9 +505,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Acceptor extends NonBlockingAction
+    class Acceptor extends NonBlockingAction implements Selectable, Closeable
     {
         private final SelectableChannel _channel;
+        private SelectionKey _key;
 
         public Acceptor(SelectableChannel channel)
         {
@@ -538,15 +520,58 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             try
             {
-                SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, "Acceptor");
+                if (_key==null)
+                {
+                    _key = _channel.register(_selector, SelectionKey.OP_ACCEPT, this);
+                }
+                
+
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} acceptor={}", this, key);
+                    LOG.debug("{} acceptor={}", this, _key);
             }
             catch (Throwable x)
             {
                 closeNoExceptions(_channel);
                 LOG.warn(x);
             }
+        }
+
+        @Override
+        public Runnable onSelected()
+        {
+            SelectableChannel server = _key.channel();
+            SelectableChannel channel = null;
+            try
+            {
+                while(true)
+                {
+                    channel = _selectorManager.doAccept(server);
+                    if (channel==null)
+                        break;
+                    _selectorManager.accepted(channel);
+                }
+            }
+            catch (Throwable x)
+            {
+                closeNoExceptions(channel);
+                LOG.warn("Accept failed for channel " + channel, x);
+            }
+            
+            return null;
+        }
+
+        @Override
+        public void updateKey()
+        {
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            SelectionKey key = _key;
+            _key = null;
+            if (key!=null && key.isValid())
+                key.cancel();
         }
     }
 

@@ -34,13 +34,16 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
 {
     @Before
@@ -50,12 +53,19 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         connector.setIdleTimeout(MAX_IDLE_TIME);
         startServer(connector);
     }
+    
+    @Test(timeout=60000)
+    public void testStartStopStart() throws Exception
+    {
+        _server.stop();
+        _server.start();
+    }
 
     @Test(timeout=60000)
     public void testIdleTimeoutAfterSuspend() throws Exception
     {
-        SuspendHandler _handler = new SuspendHandler();
         _server.stop();
+        SuspendHandler _handler = new SuspendHandler();
         SessionHandler session = new SessionHandler();
         session.setHandler(_handler);
         _server.setHandler(session);
