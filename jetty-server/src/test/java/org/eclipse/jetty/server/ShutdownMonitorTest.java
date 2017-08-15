@@ -26,14 +26,17 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(AdvancedRunner.class)
 public class ShutdownMonitorTest
 {
     @After
@@ -46,7 +49,7 @@ public class ShutdownMonitorTest
     public void testStatus() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setDebug(true);
+        // monitor.setDebug(true);
         monitor.setPort(0);
         monitor.setExitVm(false);
         monitor.start();
@@ -87,7 +90,7 @@ public class ShutdownMonitorTest
     private void testStartStop(boolean reusePort) throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setDebug(true);
+        // monitor.setDebug(true);
         monitor.setPort(0);
         monitor.setExitVm(false);
         monitor.start();
@@ -121,7 +124,7 @@ public class ShutdownMonitorTest
     public void testForceStopCommand() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setDebug(true);
+        // monitor.setDebug(true);
         monitor.setPort(0);
         monitor.setExitVm(false);
         monitor.start();
@@ -152,7 +155,7 @@ public class ShutdownMonitorTest
     public void testOldStopCommandWithStopOnShutdownTrue() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setDebug(true);
+        // monitor.setDebug(true);
         monitor.setPort(0);
         monitor.setExitVm(false);
         monitor.start();
@@ -184,7 +187,7 @@ public class ShutdownMonitorTest
     public void testOldStopCommandWithStopOnShutdownFalse() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setDebug(true);
+        // monitor.setDebug(true);
         monitor.setPort(0);
         monitor.setExitVm(false);
         monitor.start();
@@ -213,7 +216,7 @@ public class ShutdownMonitorTest
 
     public void stop(String command, int port, String key, boolean check) throws Exception
     {
-        System.out.printf("Attempting to send " + command + " to localhost:%d (%b)%n", port, check);
+        // System.out.printf("Attempting to send " + command + " to localhost:%d (%b)%n", port, check);
         try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), port))
         {
             // send stop command

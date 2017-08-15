@@ -246,9 +246,21 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         return handle;
     }
 
-    public void asyncReadFillInterested()
+    public void onAsyncWaitForContent()
     {
         _httpConnection.asyncReadFillInterested();
+    }
+
+    @Override
+    public void onBlockWaitForContent()
+    {
+        _httpConnection.blockingReadFillInterested();
+    }
+
+    @Override
+    public void onBlockWaitForContentFailure(Throwable failure)
+    {
+        _httpConnection.blockingReadFailure(failure);
     }
 
     @Override

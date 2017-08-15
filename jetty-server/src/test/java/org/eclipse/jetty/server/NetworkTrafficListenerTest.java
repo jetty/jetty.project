@@ -39,10 +39,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class NetworkTrafficListenerTest
 {
     private static final byte END_OF_CONTENT = '~';

@@ -481,7 +481,7 @@ public class HttpGenerator
                 }
                 catch(BufferOverflowException e)
                 {
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500,"Request header too large",e);
+                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500,"Response header too large",e);
                 }
                 catch(Exception e)
                 {

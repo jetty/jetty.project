@@ -55,7 +55,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
 
     private boolean _expect100Continue;
     private boolean _delayedUntilContent;
-    private boolean _handled;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
@@ -123,7 +122,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
 
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
                     !endStream && !_expect100Continue;
-            _handled = !_delayedUntilContent;
 
             if (LOG.isDebugEnabled())
             {
@@ -192,7 +190,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
     {
         _expect100Continue = false;
         _delayedUntilContent = false;
-        _handled = false;
         super.recycle();
         getHttpTransport().recycle();
     }
@@ -279,8 +276,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
 
         boolean wasDelayed = _delayedUntilContent;
         _delayedUntilContent = false;
-        if (wasDelayed)
-            _handled = true;
         return handle || wasDelayed ? this : null;
     }
 
@@ -302,35 +297,31 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
 
         boolean wasDelayed = _delayedUntilContent;
         _delayedUntilContent = false;
-        if (wasDelayed)
-            _handled = true;
         return handle || wasDelayed ? this : null;
     }
 
-    public boolean isRequestHandled()
+    public boolean isRequestExecuting()
     {
-        return _handled;
+        return !getState().isIdle();
     }
 
     public boolean onStreamTimeout(Throwable failure)
     {
-        if (!_handled)
-            return true;
-
-        HttpInput input = getRequest().getHttpInput();
-        boolean readFailed = input.failed(failure);
-        if (readFailed)
+        getHttpTransport().onStreamTimeout(failure);
+        if (getRequest().getHttpInput().onIdleTimeout(failure))
             handle();
 
-        boolean writeFailed = getHttpTransport().onStreamTimeout(failure);
+        if (isRequestExecuting())
+            return false;
 
-        return readFailed || writeFailed;
+        consumeInput();
+        return true;
     }
 
     public void onFailure(Throwable failure)
     {
         getHttpTransport().onStreamFailure(failure);
-        if (onEarlyEOF())
+        if (getRequest().getHttpInput().failed(failure))
         {
             ContextHandler handler = getState().getContextHandler();
             if (handler != null)
@@ -342,6 +333,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
         {
             getState().asyncError(failure);
         }
+        consumeInput();
     }
 
     protected void consumeInput()

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.parser.Parser;
@@ -248,6 +247,12 @@ public class HTTP2Connection extends AbstractConnection
                 buffer = null;
             }
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        }
     }
 
     private class FillableCallback implements Callback
@@ -267,7 +272,7 @@ public class HTTP2Connection extends AbstractConnection
         @Override
         public InvocationType getInvocationType()
         {
-            return InvocationType.EITHER;
+            return InvocationType.NON_BLOCKING;
         }
     }
 }

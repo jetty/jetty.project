@@ -382,7 +382,7 @@ public class HttpChannelState
 
     /**
      * Signal that the HttpConnection has finished handling the request.
-     * For blocking connectors,this call may block if the request has
+     * For blocking connectors, this call may block if the request has
      * been suspended (startAsync called).
      * @return next actions
      * be handled again (eg because of a resume that happened before unhandle was called)
@@ -498,7 +498,7 @@ public class HttpChannelState
         finally
         {
             if (read_interested)
-                _channel.asyncReadFillInterested();
+                _channel.onAsyncWaitForContent();
         }
     }
 
@@ -1129,8 +1129,8 @@ public class HttpChannelState
     /**
      * Called to signal async read isReady() has returned false.
      * This indicates that there is no content available to be consumed
-     * and that once the channel enteres the ASYNC_WAIT state it will
-     * register for read interest by calling {@link HttpChannel#asyncReadFillInterested()}
+     * and that once the channel enters the ASYNC_WAIT state it will
+     * register for read interest by calling {@link HttpChannel#onAsyncWaitForContent()}
      * either from this method or from a subsequent call to {@link #unhandle()}.
      */
     public void onReadUnready()
@@ -1165,7 +1165,7 @@ public class HttpChannelState
         }
 
         if (interested)
-            _channel.asyncReadFillInterested();
+            _channel.onAsyncWaitForContent();
     }
 
     /**

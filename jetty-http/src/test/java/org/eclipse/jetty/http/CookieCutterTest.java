@@ -23,12 +23,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+@RunWith(AdvancedRunner.class)
 public class CookieCutterTest
 {
     private Cookie[] parseCookieHeaders(CookieCompliance compliance,String... headers)
