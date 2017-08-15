@@ -1,18 +1,5 @@
 jetty-10.0.0-SNAPSHOT
 
-jetty-9.2.22.v20170606 - 06 June 2017
- + 920 no main manifest attribute, in jetty-runner-9.2.19.v20160908.jar
- + 1108 Please improve logging in SslContextFactory when there are no approved
-   cipher suites
- + 1357 RolloverFileOutputStream: No rollout performed at midnight
- + 1469 IllegalStateException in RolloverFileOutputStream
- + 1507 Negative delay Timer.schedule exception due to mismatched local and
-   _logTimeZone values
- + 1532 RolloverFileOutputStream can't handle multiple instances
- + 1523 Update ALPN support for Java 8u131
- + 1556 A timing channel in Password.java
- + 1590 RolloverFileOutputStream not functioning in Jetty 9.2.21+
-
 jetty-9.4.6.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
  + 1108 Please improve logging in SslContextFactory when there are no approved
@@ -40,6 +27,19 @@ jetty-9.4.6.v20170531 - 31 May 2017
    by re-escaping them
  + 1569 Allow setting of maxBinaryMessageSize to 0 in WebSocketPolicy
  + 1579 NPE in Quoted Quality CSV
+
+jetty-9.2.22.v20170606 - 06 June 2017
+ + 920 no main manifest attribute, in jetty-runner-9.2.19.v20160908.jar
+ + 1108 Please improve logging in SslContextFactory when there are no approved
+   cipher suites
+ + 1357 RolloverFileOutputStream: No rollout performed at midnight
+ + 1469 IllegalStateException in RolloverFileOutputStream
+ + 1507 Negative delay Timer.schedule exception due to mismatched local and
+   _logTimeZone values
+ + 1532 RolloverFileOutputStream can't handle multiple instances
+ + 1523 Update ALPN support for Java 8u131
+ + 1556 A timing channel in Password.java
+ + 1590 RolloverFileOutputStream not functioning in Jetty 9.2.21+
 
 jetty-9.3.20.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
