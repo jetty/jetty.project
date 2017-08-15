@@ -240,7 +240,6 @@ public class HttpChannelState
                             return Action.READ_CALLBACK;
                         case REGISTER:
                         case PRODUCING:
-                            throw new IllegalStateException(toStringLocked());
                         case IDLE:
                         case REGISTERED:
                             break;
@@ -268,7 +267,7 @@ public class HttpChannelState
                             _async=Async.NOT_ASYNC;
                             return Action.ERROR_DISPATCH;
                         case STARTED:
-                            case EXPIRING:
+                        case EXPIRING:
                         case ERRORING:
                             return Action.WAIT;
                         case NOT_ASYNC:
