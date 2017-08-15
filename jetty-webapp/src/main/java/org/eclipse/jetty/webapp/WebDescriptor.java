@@ -146,6 +146,7 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("XMLSchema.dtd",schemadtd);
                 redirectEntity("http://www.w3.org/2001/XMLSchema.dtd",schemadtd);
                 redirectEntity("-//W3C//DTD XMLSCHEMA 200102//EN",schemadtd);
+                
                 redirectEntity("jsp_2_0.xsd",jsp20xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/jsp_2_0.xsd",jsp20xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_1.xsd",jsp21xsd);
@@ -153,32 +154,37 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://java.sun.com/xml/ns/javaee/jsp_2_2.xsd",jsp22xsd);
                 redirectEntity("jsp_2_3.xsd",jsp23xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/jsp_2_3.xsd",jsp23xsd);
+                
                 redirectEntity("j2ee_1_4.xsd",j2ee14xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd",j2ee14xsd);
                 redirectEntity( "http://java.sun.com/xml/ns/javaee/javaee_5.xsd",javaee5);
                 redirectEntity( "http://java.sun.com/xml/ns/javaee/javaee_6.xsd",javaee6);
                 redirectEntity( "http://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd",javaee7);
+                
+                redirectEntity("web-common_3_0.xsd",webcommon30xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd",webcommon30xsd);
+                redirectEntity("web-common_3_1.xsd",webcommon31xsd);
+                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd",webcommon31xsd);
+                
                 redirectEntity("web-app_2_4.xsd",webapp24xsd);
                 redirectEntity("http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd",webapp24xsd);
                 redirectEntity("web-app_2_5.xsd",webapp25xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd",webapp25xsd);
                 redirectEntity("web-app_3_0.xsd",webapp30xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd",webapp30xsd);
-                redirectEntity("web-common_3_0.xsd",webcommon30xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd",webcommon30xsd);
-                redirectEntity("web-fragment_3_0.xsd",webfragment30xsd);
-                redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd",webfragment30xsd);
                 redirectEntity("web-app_3_1.xsd",webapp31xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd",webapp31xsd);
                 
-                redirectEntity("web-common_3_1.xsd",webcommon30xsd);
-                redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-common_3_1.xsd",webcommon31xsd);
-                redirectEntity("web-fragment_3_1.xsd",webfragment30xsd);
+                redirectEntity("web-fragment_3_0.xsd",webfragment30xsd);
+                redirectEntity("http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd",webfragment30xsd);
+                redirectEntity("web-fragment_3_1.xsd",webfragment31xsd);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd",webfragment31xsd);
+                
                 redirectEntity("xml.xsd",xmlxsd);
                 redirectEntity("http://www.w3.org/2001/xml.xsd",xmlxsd);
                 redirectEntity("datatypes.dtd",datatypesdtd);
                 redirectEntity("http://www.w3.org/2001/datatypes.dtd",datatypesdtd);
+                
                 redirectEntity("j2ee_web_services_client_1_1.xsd",webservice11xsd);
                 redirectEntity("http://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd",webservice11xsd);
                 redirectEntity("javaee_web_services_client_1_2.xsd",webservice12xsd);   
