@@ -337,13 +337,9 @@ public class HttpInputTest
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
     }
 
@@ -356,8 +352,6 @@ public class HttpInputTest
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.addContent(new TContent("AB"));
@@ -424,8 +418,6 @@ public class HttpInputTest
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.addContent(new TContent("AB"));
@@ -471,8 +463,6 @@ public class HttpInputTest
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         Assert.assertThat(_in.isReady(), Matchers.equalTo(false));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("produceContent 0"));
-        Assert.assertThat(_history.poll(), Matchers.equalTo("s.onReadUnready"));
         Assert.assertThat(_history.poll(), Matchers.nullValue());
 
         _in.failed(new TimeoutException());
