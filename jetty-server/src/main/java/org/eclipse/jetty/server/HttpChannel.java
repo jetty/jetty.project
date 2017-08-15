@@ -404,7 +404,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case READ_PRODUCE:
                     {
-                        _request.getHttpInput().produceContent();
+                        _request.getHttpInput().asyncReadProduce();
                         break;
                     }
                     

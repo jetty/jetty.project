@@ -330,6 +330,18 @@ public class HttpInput extends ServletInputStream implements Runnable
     protected void produceContent() throws IOException
     {
     }
+    
+    /**
+     * Called by channel when asynchronous IO needs to produce more content
+     * @throws IOException
+     */
+    public void asyncReadProduce() throws IOException
+    {
+        synchronized (_inputQ)
+        {
+            produceContent();
+        }
+    }
 
     /**
      * Get the next content from the inputQ, calling {@link #produceContent()} if need be. EOF is processed and state changed.
@@ -707,6 +719,8 @@ public class HttpInput extends ServletInputStream implements Runnable
                     return true;
                 if (_state instanceof EOFState)
                     return true;
+                if (_waitingForContent)
+                    return false;
                 if (produceNextContext() != null)
                     return true;
                 _channelState.onReadUnready();

@@ -39,7 +39,6 @@ public abstract class FillInterest
 {
     private final static Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
-    private Throwable _lastSet;
 
     protected FillInterest()
     {
@@ -58,8 +57,6 @@ public abstract class FillInterest
         if (!tryRegister(callback))
         {
             LOG.warn("Read pending for {} prevented {}", _interested, callback);
-            if (LOG.isDebugEnabled())
-                LOG.warn("callback set at ",_lastSet);
             throw new ReadPendingException();
         }   
     }
@@ -81,10 +78,7 @@ public abstract class FillInterest
             return false;
 
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("{} register {}",this,callback);
-            _lastSet=new Throwable(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()) + ":" + Thread.currentThread().getName());
-        }
+            LOG.debug("interested {}",this);
         
         try
         {
@@ -103,9 +97,9 @@ public abstract class FillInterest
      */
     public void fillable()
     {
-        Callback callback = _interested.get();
         if (LOG.isDebugEnabled())
-            LOG.debug("{} fillable {}",this,callback);
+            LOG.debug("fillable {}",this);
+        Callback callback = _interested.get();
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.succeeded();
         else if (LOG.isDebugEnabled())
@@ -134,6 +128,8 @@ public abstract class FillInterest
      */
     public boolean onFail(Throwable cause)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFail {} {}",this,cause);
         Callback callback = _interested.get();
         if (callback != null && _interested.compareAndSet(callback, null))
         {
@@ -145,9 +141,9 @@ public abstract class FillInterest
 
     public void onClose()
     {
-        Callback callback = _interested.get();
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onClose {}",this,callback);
+            LOG.debug("onClose {}",this);
+        Callback callback = _interested.get();
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.failed(new ClosedChannelException());
     }
@@ -155,7 +151,7 @@ public abstract class FillInterest
     @Override
     public String toString()
     {
-        return String.format("FillInterest@%x{%b,%s}", hashCode(), _interested.get()!=null, _interested.get());
+        return String.format("FillInterest@%x{%s}", hashCode(), _interested.get());
     }
 
     
