@@ -11,7 +11,6 @@
     </Call>
   </Call>
 
-
   <Call class="org.eclipse.jetty.maven.plugin.WebAppPropertyConverter" name="fromProperties">
     <Arg><Ref id="wac"/></Arg>
     <Arg><Property name="jetty.base" default="."/>/etc/maven.props</Arg>

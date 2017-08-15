@@ -24,6 +24,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
@@ -36,6 +39,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -50,6 +56,7 @@ import org.apache.maven.shared.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
 import org.apache.maven.shared.artifact.resolve.ArtifactResolverException;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -108,6 +115,11 @@ public class JettyRunDistro extends JettyRunMojo
      */
     private String[] modules;
     
+    /**
+     * Arbitrary jvm args to pass to the forked process
+     * @parameter property="jetty.jvmArgs"
+     */
+    private String jvmArgs;
     
     /**
      * Optional list of jetty properties to put on the command line
@@ -145,16 +157,34 @@ public class JettyRunDistro extends JettyRunMojo
     
     
     /**
+     * Whether to wait for the child to finish or not.
      * @parameter default-value="true"
      */
     private boolean waitForChild;
     
+    /**
+     * How many times to check to see if the
+     * child has started successfully.
+     * 
+     * @parameter default-value="10"
+     */
+    private int maxChildChecks;
+    
+    /**
+     * How long to wait between each
+     * poll of the child startup state.
+     * 
+     * @parameter default-value="100"
+     */
+    private long maxChildCheckInterval;
  
     private File targetBase;
     
     private List<Dependency> libExtJars;
     
+    private Random random;
     
+    private Path tokenFile;
     
     
     // IDEAS:
@@ -167,6 +197,7 @@ public class JettyRunDistro extends JettyRunMojo
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
+        random = new Random();
         List<Dependency> pdeps = plugin.getPlugin().getDependencies();
         if (pdeps != null && !pdeps.isEmpty())
         {
@@ -218,7 +249,6 @@ public class JettyRunDistro extends JettyRunMojo
 
             //create the command to run the new process
             ProcessBuilder command = configureCommand();
- 
 
             if (waitForChild)
             {
@@ -226,14 +256,28 @@ public class JettyRunDistro extends JettyRunMojo
             }
             else
             {
-                command.redirectErrorStream(true);
                 command.redirectOutput(new File(target, "jetty.out"));
+                command.redirectErrorStream(true);
             }
             
             Process process = command.start();
             
             if (waitForChild)
+                //keep executing until the child dies
                 process.waitFor();
+            else
+            {
+                //just wait until the child has started successfully
+                int attempts = maxChildChecks;
+                while (!Files.exists(tokenFile) && attempts > 0)
+                {
+                    Thread.currentThread().sleep(maxChildCheckInterval);
+                    --attempts;
+                }
+                if (attempts <=0 )
+                    getLog().info("Couldn't verify success of child startup");
+            }
+            
         }
         catch (Exception e)
         {
@@ -389,6 +433,13 @@ public class JettyRunDistro extends JettyRunMojo
             IO.copy(mavenModStream, fileStream);
         }
         
+        //copy in the jetty-maven.xml file
+        try (InputStream jettyMavenStream = getClass().getClassLoader().getResourceAsStream("jetty-maven.xml");
+                FileOutputStream fileStream = new FileOutputStream(etcPath.resolve("jetty-maven.xml").toFile()))
+        {
+            IO.copy(jettyMavenStream, fileStream);
+        }
+        
         //if there were plugin dependencies, copy them into lib/ext
         if (libExtJars != null && !libExtJars.isEmpty())
         {
@@ -429,14 +480,26 @@ public class JettyRunDistro extends JettyRunMojo
      * @return
      */
     public ProcessBuilder configureCommand()
+    throws Exception
     {
         List<String> cmd = new ArrayList<>();
         cmd.add("java");
         cmd.add("-jar");
         cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
+        
         cmd.add("-DSTOP.PORT="+stopPort);
         if (stopKey != null)
             cmd.add("-DSTOP.KEY="+stopKey);
+        
+        if (jvmArgs != null)
+        {
+            String[] args = jvmArgs.split(" ");
+            for (String a:args)
+            {
+                if (!StringUtil.isBlank(a))
+                    cmd.add(a.trim());
+            }
+        }
         
         StringBuilder tmp = new StringBuilder();
         tmp.append("--module=");
@@ -446,24 +509,23 @@ public class JettyRunDistro extends JettyRunMojo
             for (String m:modules)
             {
                 if (tmp.indexOf(m) < 0)
-                tmp.append(","+m);
+                    tmp.append(","+m);
             }
         }
         if (libExtJars != null && !libExtJars.isEmpty() && tmp.indexOf("ext") < 0)
             tmp.append(",ext");
         tmp.append(",maven");
-         
+
         cmd.add(tmp.toString());
-        
         
         if (properties != null)
         {
-            tmp.delete(0, tmp.length());
             for (String p:properties)
-                tmp.append(" "+p);
-            cmd.add(tmp.toString());
-            
+                cmd.add(p);
         }
+        
+        tokenFile = target.toPath().resolve(createToken()+".txt");
+        cmd.add("jetty.token.file="+tokenFile.toAbsolutePath().toString());
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.directory(targetBase);
@@ -510,5 +572,11 @@ public class JettyRunDistro extends JettyRunMojo
     {
         //do nothing
     }
+    
+    private String createToken ()
+    {
+        return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
+    }
+    
 
 }

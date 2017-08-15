@@ -8,3 +8,6 @@ annotations
 
 [lib]
 lib/maven/**.jar
+
+[xml]
+etc/jetty-maven.xml
