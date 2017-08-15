@@ -22,10 +22,11 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
 
 public class DummyLocalEndpoint implements WSLocalEndpoint
 {
+    private boolean open = false;
+
     @Override
     public Logger getLog()
     {
@@ -33,9 +34,15 @@ public class DummyLocalEndpoint implements WSLocalEndpoint
     }
 
     @Override
-    public void onOpen(WSConnection connection)
+    public boolean isOpen()
     {
+        return open;
+    }
 
+    @Override
+    public void onOpen()
+    {
+        open = true;
     }
 
     @Override
@@ -82,66 +89,6 @@ public class DummyLocalEndpoint implements WSLocalEndpoint
 
     @Override
     public void onPong(ByteBuffer payload)
-    {
-
-    }
-
-    @Override
-    public void start() throws Exception
-    {
-
-    }
-
-    @Override
-    public void stop() throws Exception
-    {
-
-    }
-
-    @Override
-    public boolean isRunning()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isStarted()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isStarting()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isStopping()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isStopped()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isFailed()
-    {
-        return false;
-    }
-
-    @Override
-    public void addLifeCycleListener(Listener listener)
-    {
-
-    }
-
-    @Override
-    public void removeLifeCycleListener(Listener listener)
     {
 
     }

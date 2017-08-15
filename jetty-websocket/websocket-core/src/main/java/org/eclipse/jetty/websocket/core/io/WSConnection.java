@@ -409,7 +409,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     {
         synchronized (pendingError)
         {
-            if (!localEndpoint.isStarted())
+            if (!localEndpoint.isOpen())
             {
                 // this is a *really* fast fail, before the Session has even started.
                 pendingError.compareAndSet(null, t);
@@ -515,7 +515,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                 try
                 {
                     // Open WebSocket
-                    localEndpoint.onOpen(this);
+                    localEndpoint.onOpen();
 
                     // Open connection
                     if (connectionState.onOpen())
@@ -571,7 +571,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
             if (connectionState.get() != WSConnectionState.State.CLOSED)
             {
                 // For endpoints that want to see raw frames.
-                // These are immutable.
                 localEndpoint.onFrame(frame);
 
                 byte opcode = frame.getOpCode();
@@ -604,9 +603,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                                 LOG.debug("ConnectionState: {} - Close Frame Received", connectionState);
                         }
 
-                        // let fill/parse continue
                         callback.succeeded();
-
                         return;
                     }
                     case OpCode.PING:
@@ -652,16 +649,19 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                     case OpCode.BINARY:
                     {
                         localEndpoint.onBinary(frame, callback);
+                        // Let endpoint method handle callback
                         return;
                     }
                     case OpCode.TEXT:
                     {
                         localEndpoint.onText(frame, callback);
+                        // Let endpoint method handle callback
                         return;
                     }
                     case OpCode.CONTINUATION:
                     {
                         localEndpoint.onContinuation(frame, callback);
+                        // Let endpoint method handle callback
                         return;
                     }
                     default:

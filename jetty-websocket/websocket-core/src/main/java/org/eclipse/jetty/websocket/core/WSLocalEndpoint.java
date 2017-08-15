@@ -29,6 +29,8 @@ import org.eclipse.jetty.util.log.Logger;
 public interface WSLocalEndpoint
 {
     Logger getLog();
+
+    boolean isOpen();
     
     void onOpen();
 
