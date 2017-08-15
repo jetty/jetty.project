@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.sockets.adapters;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 
 /**
  * Example EchoSocket using Listener.

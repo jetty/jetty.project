@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseException;
-import org.eclipse.jetty.websocket.core.CloseInfo;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.StatusCode;
@@ -115,7 +115,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final WSRemoteEndpoint remoteEndpoint;
     private final OutgoingFrames outgoingFrames;
     private final IncomingFrames incomingFrames;
-    private final AtomicConnectionState connectionState = new AtomicConnectionState();
+    private final WSConnectionState connectionState = new WSConnectionState();
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     private final DecoratedObjectFactory objectFactory;
@@ -198,10 +198,10 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
 
     private void close(int statusCode, String reason, Callback callback)
     {
-        close(new CloseInfo(statusCode, reason), callback);
+        close(new CloseStatus(statusCode, reason), callback);
     }
 
-    private void close(CloseInfo closeInfo, Callback callback)
+    private void close(CloseStatus closeStatus, Callback callback)
     {
         connectionState.onClosing(); // always move to (at least) the CLOSING state (might already be past it, which is ok)
 
@@ -209,13 +209,13 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Sending Close Frame");
-            CloseFrame closeFrame = closeInfo.asFrame();
+            CloseFrame closeFrame = new CloseFrame().setPayload(closeStatus);
             outgoingFrames.outgoingFrame(closeFrame, callback, BatchMode.OFF);
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Close Frame Previously Sent: ignoring: {} [{}]", closeInfo, callback);
+                LOG.debug("Close Frame Previously Sent: ignoring: {} [{}]", closeStatus, callback);
             callback.failed(new WebSocketException("Already closed"));
         }
     }
@@ -383,17 +383,17 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         return "wss".equalsIgnoreCase(requestURI.getScheme());
     }
 
-    public void notifyClose(CloseInfo closeInfo)
+    public void notifyClose(CloseStatus closeStatus)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("notifyClose({}) closeNotified={}", closeInfo, closeNotified.get());
+            LOG.debug("notifyClose({}) closeNotified={}", closeStatus, closeNotified.get());
         }
 
         // only notify once
         if (closeNotified.compareAndSet(false, true))
         {
-            localEndpoint.onClose(closeInfo);
+            localEndpoint.onClose(closeStatus);
         }
     }
 
@@ -568,7 +568,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                 LOG.debug("incomingFrame({}, {}) - connectionState={}, localEndpoint={}",
                         frame, callback, connectionState.get(), localEndpoint);
             }
-            if (connectionState.get() != AtomicConnectionState.State.CLOSED)
+            if (connectionState.get() != WSConnectionState.State.CLOSED)
             {
                 // For endpoints that want to see raw frames.
                 // These are immutable.
@@ -585,17 +585,17 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ConnectionState: Transition to CLOSING");
                             CloseFrame closeframe = (CloseFrame) frame;
-                            CloseInfo closeInfo = new CloseInfo(closeframe, true);
-                            notifyClose(closeInfo);
-                            close(closeInfo, onDisconnectCallback);
+                            CloseStatus closeStatus = closeframe.getCloseStatus();
+                            notifyClose(closeStatus);
+                            close(closeStatus, onDisconnectCallback);
                         }
                         else if (connectionState.onClosed())
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ConnectionState: Transition to CLOSED");
                             CloseFrame closeframe = (CloseFrame) frame;
-                            CloseInfo closeInfo = new CloseInfo(closeframe, true);
-                            notifyClose(closeInfo);
+                            CloseStatus closeStatus = closeframe.getCloseStatus();
+                            notifyClose(closeStatus);
                             disconnect();
                         }
                         else

@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.tests.sockets.listeners;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.tests.EventQueue;
 

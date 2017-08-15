@@ -31,7 +31,7 @@ import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.InvalidSignatureException;
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.InitException;
 
 public class AvailableEncoders implements Predicate<Class<?>>

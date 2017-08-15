@@ -20,10 +20,10 @@ package org.eclipse.jetty.websocket.common.message;
 
 import java.util.function.Function;
 
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
+import org.eclipse.jetty.websocket.core.Frame;
 
 public class PartialTextMessageSink implements MessageSink
 {
@@ -37,17 +37,17 @@ public class PartialTextMessageSink implements MessageSink
     }
 
     @Override
-    public void accept(Frame frame, FrameCallback callback)
+    public void accept(Frame frame, Callback callback)
     {
         String partialText = utf8Partial.toPartialString(frame.getPayload());
         try
         {
             onTextFunction.apply(new PartialTextMessage(partialText,frame.isFin()));
-            callback.succeed();
+            callback.succeeded();
         }
         catch(Throwable t)
         {
-            callback.fail(t);
+            callback.failed(t);
         }
         finally
         {

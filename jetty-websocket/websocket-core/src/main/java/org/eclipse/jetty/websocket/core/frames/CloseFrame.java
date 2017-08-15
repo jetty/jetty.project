@@ -22,6 +22,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.StatusCode;
@@ -32,22 +35,97 @@ public class CloseFrame extends ControlFrame
     {
         super(OpCode.CLOSE);
     }
-    
+
     @Override
     public Type getType()
     {
         return Type.CLOSE;
     }
 
-    public WebSocketFrame setPayload(int statusCode, String reason)
+    public CloseFrame setPayload(int statusCode)
     {
-        // No code? don't generate a payload.
-        if(statusCode > 0)
+        return setPayload(statusCode, null);
+    }
+
+    public CloseFrame setPayload(int statusCode, String reason)
+    {
+        // Don't generate a payload for status codes that cannot be transmitted
+        if (StatusCode.isTransmittable(statusCode))
         {
             setPayload(asPayloadBuffer(statusCode, reason));
         }
 
         return this;
+    }
+
+    public CloseFrame setPayload(CloseStatus closeStatus)
+    {
+        return setPayload(closeStatus.getCode(), closeStatus.getReason());
+    }
+
+    /**
+     * Parse the Payload Buffer into a CloseStatus object
+     *
+     * @return the close status
+     * @throws BadPayloadException if the reason phrase is not valid UTF-8
+     * @throws ProtocolException if the payload is an invalid length for CLOSE frames
+     */
+    public CloseStatus getCloseStatus()
+    {
+        return toCloseStatus(getPayload());
+    }
+
+    public static CloseStatus toCloseStatus(ByteBuffer payload)
+    {
+        int statusCode = StatusCode.NO_CODE;
+
+        if ((payload == null) || (payload.remaining() == 0))
+        {
+            return new CloseStatus(statusCode, null); // nothing to do
+        }
+
+        ByteBuffer data = payload.slice();
+        if (data.remaining() == 1)
+        {
+            throw new ProtocolException("Invalid 1 byte payload");
+        }
+
+        if (data.remaining() > ControlFrame.MAX_CONTROL_PAYLOAD)
+        {
+            throw new ProtocolException("Invalid control frame length of " + data.remaining() + " bytes");
+        }
+
+        if (data.remaining() >= 2)
+        {
+            // Status Code
+            statusCode = 0; // start with 0
+            statusCode |= (data.get() & 0xFF) << 8;
+            statusCode |= (data.get() & 0xFF);
+
+            if (data.remaining() > 0)
+            {
+                // Reason (trimmed to max reason size)
+                int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
+                byte reasonBytes[] = new byte[len];
+                data.get(reasonBytes, 0, len);
+
+                // Spec Requirement : throw BadPayloadException on invalid UTF8
+                try
+                {
+                    Utf8StringBuilder utf = new Utf8StringBuilder();
+                    // if this throws, we know we have bad UTF8
+                    utf.append(reasonBytes, 0, reasonBytes.length);
+                    String reason = utf.toString();
+                    return new CloseStatus(statusCode, reason);
+                }
+                catch (Utf8Appendable.NotUtf8Exception e)
+                {
+                    throw new BadPayloadException("Invalid Close Reason", e);
+                }
+            }
+        }
+
+        return new CloseStatus(statusCode, null);
     }
 
     public static ByteBuffer asPayloadBuffer(int statusCode, String reason)
@@ -111,4 +189,5 @@ public class CloseFrame extends ControlFrame
             throw new ProtocolException("RFC6455 and IANA Undefined close status code: " + statusCode);
         }
     }
+
 }

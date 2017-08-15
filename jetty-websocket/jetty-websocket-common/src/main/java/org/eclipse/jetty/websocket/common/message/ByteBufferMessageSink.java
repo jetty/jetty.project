@@ -18,20 +18,80 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.function.Function;
+import java.util.Objects;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
-public class ByteBufferMessageSink extends ByteArrayMessageSink
+public class ByteBufferMessageSink implements MessageSink
 {
-    public ByteBufferMessageSink(WebSocketPolicy policy, Function<ByteBuffer, Void> onMessageFunction)
+    private static final int BUFFER_SIZE = 65535;
+    private final WebSocketPolicy policy;
+    private final MethodHandle onMessageMethod;
+    private ByteArrayOutputStream out;
+    private int size;
+
+    public ByteBufferMessageSink(WebSocketPolicy policy, MethodHandle methodHandle)
     {
-        super(policy, (byteArray) ->
+        // Validate onMessageMethod
+        Objects.requireNonNull(methodHandle, "MethodHandle");
+        MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
+        if (methodHandle.type() != onMessageType)
         {
-            ByteBuffer bbuf = ByteBuffer.wrap(byteArray);
-            onMessageFunction.apply(bbuf);
-            return null;
-        });
+            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
+        }
+
+        this.onMessageMethod = methodHandle;
+        this.policy = policy;
+    }
+
+    @Override
+    public void accept(Frame frame, Callback callback)
+    {
+        try
+        {
+            if (frame.hasPayload())
+            {
+                ByteBuffer payload = frame.getPayload();
+                policy.assertValidBinaryMessageSize(size + payload.remaining());
+                size += payload.remaining();
+
+                if (out == null)
+                    out = new ByteArrayOutputStream(BUFFER_SIZE);
+
+                BufferUtil.writeTo(payload, out);
+            }
+
+            if (frame.isFin())
+            {
+                if (out != null)
+                    onMessageMethod.invoke(ByteBuffer.wrap(out.toByteArray()));
+                else
+                    onMessageMethod.invoke(BufferUtil.EMPTY_BUFFER);
+            }
+
+            callback.succeeded();
+        }
+        catch (Throwable t)
+        {
+            callback.failed(t);
+        }
+        finally
+        {
+            if (frame.isFin())
+            {
+                // reset
+                out = null;
+                size = 0;
+            }
+        }
     }
 }

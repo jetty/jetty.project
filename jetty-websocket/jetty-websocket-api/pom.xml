@@ -17,10 +17,11 @@
   </properties>
 
   <dependencies>
-    <!-- NOTE: For WebAppClassLoader configuration reasons, It is important that this API
-               module NOT depend on any other (internal, impl, or server) jetty classes.
-               - Joakim
-      -->
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>

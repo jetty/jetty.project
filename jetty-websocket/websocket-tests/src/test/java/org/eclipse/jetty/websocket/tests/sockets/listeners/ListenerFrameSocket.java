@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.tests.sockets.listeners;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.tests.EventQueue;

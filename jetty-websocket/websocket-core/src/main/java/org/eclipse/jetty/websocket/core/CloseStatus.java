@@ -20,17 +20,20 @@ package org.eclipse.jetty.websocket.core;
 
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.websocket.core.frames.ControlFrame;
+
+/**
+ * Representation of a WebSocket Close (status code &amp; reason)
+ */
 public class CloseStatus
 {
-    private static final int MAX_CONTROL_PAYLOAD = 125;
-    public static final int MAX_REASON_PHRASE = MAX_CONTROL_PAYLOAD - 2;
+    public static final int MAX_REASON_PHRASE = ControlFrame.MAX_CONTROL_PAYLOAD - 2;
 
     /**
-     * Convenience method for trimming a long reason phrase at the maximum reason phrase length of 123 UTF-8 bytes (per WebSocket spec).
-     * 
-     * @param reason
-     *            the proposed reason phrase
-     * @return the reason phrase (trimmed if needed)
+     * Convenience method for trimming a long reason reason at the maximum reason reason length of 123 UTF-8 bytes (per WebSocket spec).
+     *
+     * @param reason the proposed reason reason
+     * @return the reason reason (trimmed if needed)
      * @deprecated use of this method is strongly discouraged, as it creates too many new objects that are just thrown away to accomplish its goals.
      */
     @Deprecated
@@ -45,30 +48,47 @@ public class CloseStatus
         if (reasonBytes.length > MAX_REASON_PHRASE)
         {
             byte[] trimmed = new byte[MAX_REASON_PHRASE];
-            System.arraycopy(reasonBytes,0,trimmed,0,MAX_REASON_PHRASE);
-            return new String(trimmed,StandardCharsets.UTF_8);
+            System.arraycopy(reasonBytes, 0, trimmed, 0, MAX_REASON_PHRASE);
+            return new String(trimmed, StandardCharsets.UTF_8);
         }
-        
+
         return reason;
     }
 
     private int code;
-    private String phrase;
+    private String reason;
 
     /**
-     * Creates a reason for closing a web socket connection with the given code and reason phrase.
-     * 
-     * @param closeCode
-     *            the close code
-     * @param reasonPhrase
-     *            the reason phrase
+     * Creates a reason for closing a web socket connection with the no given status code.
+     */
+    public CloseStatus()
+    {
+        this(StatusCode.NO_CODE);
+    }
+
+    /**
+     * Creates a reason for closing a web socket connection with the given status code and no reason phrase.
+     *
+     * @param statusCode the close code
      * @see StatusCode
      */
-    public CloseStatus(int closeCode, String reasonPhrase)
+    public CloseStatus(int statusCode)
     {
-        this.code = closeCode;
-        this.phrase = reasonPhrase;
-        if (reasonPhrase.length() > MAX_REASON_PHRASE)
+        this(statusCode, null);
+    }
+
+    /**
+     * Creates a reason for closing a web socket connection with the given status code and reason phrase.
+     *
+     * @param statusCode the close code
+     * @param reasonPhrase the reason phrase
+     * @see StatusCode
+     */
+    public CloseStatus(int statusCode, String reasonPhrase)
+    {
+        this.code = statusCode;
+        this.reason = reasonPhrase;
+        if (reasonPhrase != null && reasonPhrase.length() > MAX_REASON_PHRASE)
         {
             throw new IllegalArgumentException("Phrase exceeds maximum length of " + MAX_REASON_PHRASE);
         }
@@ -79,8 +99,8 @@ public class CloseStatus
         return code;
     }
 
-    public String getPhrase()
+    public String getReason()
     {
-        return phrase;
+        return reason;
     }
 }

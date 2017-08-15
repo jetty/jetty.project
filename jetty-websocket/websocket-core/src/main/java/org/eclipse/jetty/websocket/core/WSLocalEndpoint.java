@@ -21,22 +21,18 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
 
 /**
  * The interface a WSConnection has to the local WebSocket Endpoint.
- *
- * @param <T> the WSConnection object
  */
-public interface WSLocalEndpoint<T extends WSConnection> extends LifeCycle
+public interface WSLocalEndpoint
 {
     Logger getLog();
     
-    void onOpen(T connection);
+    void onOpen();
 
-    void onClose(CloseInfo close);
+    void onClose(CloseStatus close);
 
     void onFrame(Frame frame);
 

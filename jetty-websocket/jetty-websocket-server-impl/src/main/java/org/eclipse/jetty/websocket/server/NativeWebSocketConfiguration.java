@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -148,7 +149,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      * @param pathSpec the pathspec to respond on
      * @param endpointClass the endpoint class to use for new upgrade requests on the provided
      * pathspec (can be an {@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated
-     * POJO, or implementing {@link org.eclipse.jetty.websocket.api.WebSocketListener})
+     * POJO, or implementing {@link WebSocketListener})
      */
     public void addMapping(PathSpec pathSpec, final Class<?> endpointClass)
     {
@@ -230,7 +231,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
      * @param rawspec the pathspec to map to (see {@link MappedWebSocketCreator#addMapping(String, WebSocketCreator)} for syntax details)
      * @param endpointClass the endpoint class to use for new upgrade requests on the provided
      * pathspec (can be an {@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated
-     * POJO, or implementing {@link org.eclipse.jetty.websocket.api.WebSocketListener})
+     * POJO, or implementing {@link WebSocketListener})
      */
     public void addMapping(String rawspec, final Class<?> endpointClass)
     {

@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.api.util.WSURI;
+import org.eclipse.jetty.websocket.api.WSURI;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.tests.servlets.BiConsumerServiceServlet;
 import org.junit.rules.TestName;

@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.tests;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.websocket.api.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class UpgradeUtils
 {

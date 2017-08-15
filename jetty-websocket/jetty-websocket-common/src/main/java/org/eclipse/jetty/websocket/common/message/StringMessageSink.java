@@ -18,37 +18,47 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.function.Function;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
 public class StringMessageSink implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
     private WebSocketPolicy policy;
-    private final Function<String, Void> onMessageFunction;
+    private final MethodHandle onMessageHandle;
     private Utf8StringBuilder utf;
     private int size = 0;
 
-    public StringMessageSink(WebSocketPolicy policy, Function<String, Void> onMessageFunction)
+    public StringMessageSink(WebSocketPolicy policy, MethodHandle methodHandle) throws InvalidSignatureException
     {
-        assert (onMessageFunction != null);
+        // Validate onMessageMethod
+        Objects.requireNonNull(methodHandle, "MethodHandle");
+        MethodType onMessageType = MethodType.methodType(Void.TYPE, String.class);
+        if (methodHandle.type() != onMessageType)
+        {
+            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
+        }
+
         this.policy = policy;
-        this.onMessageFunction = onMessageFunction;
+        this.onMessageHandle = methodHandle;
         this.size = 0;
     }
-    
+
     @SuppressWarnings("Duplicates")
     @Override
-    public void accept(Frame frame, FrameCallback callback)
+    public void accept(Frame frame, Callback callback)
     {
         try
         {
@@ -57,35 +67,35 @@ public class StringMessageSink implements MessageSink
                 ByteBuffer payload = frame.getPayload();
                 policy.assertValidTextMessageSize(size + payload.remaining());
                 size += payload.remaining();
-        
+
                 if (utf == null)
                     utf = new Utf8StringBuilder(1024);
-        
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("Raw Payload {}", BufferUtil.toDetailString(payload));
-        
+
                 // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)
                 utf.append(payload);
             }
-    
+
             if (frame.isFin())
             {
                 // notify event
                 if (utf != null)
-                    onMessageFunction.apply(utf.toString());
+                    onMessageHandle.invoke(utf.toString());
                 else
-                    onMessageFunction.apply("");
-        
+                    onMessageHandle.invoke("");
+
                 // reset
                 size = 0;
                 utf = null;
             }
-    
-            callback.succeed();
+
+            callback.succeeded();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
-            callback.fail(t);
+            callback.failed(t);
         }
     }
 }

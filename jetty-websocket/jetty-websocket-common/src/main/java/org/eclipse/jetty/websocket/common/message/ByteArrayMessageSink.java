@@ -19,32 +19,43 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.function.Function;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
 public class ByteArrayMessageSink implements MessageSink
 {
     private static final byte EMPTY_BUFFER[] = new byte[0];
     private static final int BUFFER_SIZE = 65535;
     private final WebSocketPolicy policy;
-    private final Function<byte[], Void> onMessageFunction;
+    private final MethodHandle onMessageMethod;
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteArrayMessageSink(WebSocketPolicy policy, Function<byte[], Void> onMessageFunction)
+    public ByteArrayMessageSink(WebSocketPolicy policy, MethodHandle methodHandle)
     {
+        Objects.requireNonNull(methodHandle, "MethodHandle");
+        // byte[] buf, int offset, int length
+        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
+        if (methodHandle.type() != onMessageType)
+        {
+            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
+        }
+
+        this.onMessageMethod = methodHandle;
         this.policy = policy;
-        this.onMessageFunction = onMessageFunction;
     }
 
     @Override
-    public void accept(Frame frame, FrameCallback callback)
+    public void accept(Frame frame, Callback callback)
     {
         try
         {
@@ -59,20 +70,23 @@ public class ByteArrayMessageSink implements MessageSink
 
                 BufferUtil.writeTo(payload, out);
             }
-    
+
             if (frame.isFin())
             {
                 if (out != null)
-                    notifyOnMessage(out.toByteArray());
+                {
+                    byte buf[] = out.toByteArray();
+                    onMessageMethod.invoke(buf, 0, buf.length);
+                }
                 else
-                    notifyOnMessage(EMPTY_BUFFER);
+                    onMessageMethod.invoke(EMPTY_BUFFER, 0, 0);
             }
-    
-            callback.succeed();
+
+            callback.succeeded();
         }
         catch (Throwable t)
         {
-            callback.fail(t);
+            callback.failed(t);
         }
         finally
         {
@@ -83,10 +97,5 @@ public class ByteArrayMessageSink implements MessageSink
                 size = 0;
             }
         }
-    }
-
-    private Object notifyOnMessage(byte buf[])
-    {
-        return onMessageFunction.apply(buf);
     }
 }

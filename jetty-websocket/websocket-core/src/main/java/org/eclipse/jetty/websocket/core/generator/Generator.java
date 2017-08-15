@@ -23,13 +23,13 @@ import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.Extension;
+import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
  * Generating a frame in WebSocket land.
@@ -176,16 +176,11 @@ public class Generator
             /*
              * RFC 6455 Section 5.5.1
              * 
-             * close frame payload is specially formatted which is checked in CloseInfo
+             * close frame payload is specially formatted which is checked in CloseStatus
              */
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-
-                ByteBuffer payload = frame.getPayload();
-                if (payload != null)
-                {
-                    new CloseInfo(payload,true);
-                }
+                CloseFrame.toCloseStatus(frame.getPayload());
             }
         }
     }

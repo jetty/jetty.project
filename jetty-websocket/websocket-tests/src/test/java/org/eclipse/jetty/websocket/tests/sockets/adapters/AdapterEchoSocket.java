@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.tests.sockets.adapters;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 
 /**
  * Example EchoSocket using Adapter.

@@ -39,7 +39,7 @@ public class DummyLocalEndpoint implements WSLocalEndpoint
     }
 
     @Override
-    public void onClose(CloseInfo close)
+    public void onClose(CloseStatus close)
     {
 
     }

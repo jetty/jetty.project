@@ -25,9 +25,9 @@ import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
@@ -56,10 +56,10 @@ public class GeneratorFrameFlagsTest
         data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
         data.add(new WebSocketFrame[]{new PongFrame().setRsv2(true)});
         data.add(new WebSocketFrame[]{new PongFrame().setRsv3(true)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setFin(false)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv1(true)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv2(true)});
-        data.add(new WebSocketFrame[]{new CloseInfo().asFrame().setRsv3(true)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setFin(false)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setRsv1(true)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setRsv2(true)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setRsv3(true)});
         return data;
     }
     

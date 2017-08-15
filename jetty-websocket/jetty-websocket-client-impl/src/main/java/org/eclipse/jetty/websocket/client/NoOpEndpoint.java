@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 
 /**
  * WebSocket endpoint that does nothing.

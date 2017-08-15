@@ -22,16 +22,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * Centralized logic for Dispatched Message Handling.
  * <p>
- * A Dispatched MessageSink can consist of 1 or more {@link #accept(Frame, FrameCallback)} calls.
+ * A Dispatched MessageSink can consist of 1 or more {@link #accept(Frame, Callback)} calls.
  * <p>
- * The first {@link #accept(Frame, FrameCallback)} in a message will trigger a dispatch to the
+ * The first {@link #accept(Frame, Callback)} in a message will trigger a dispatch to the
  * function specified in the constructor.
  * <p>
  * The completion of the dispatched function call is the sign that the next message is suitable
@@ -113,7 +113,7 @@ public abstract class DispatchedMessageSink<T, R> implements MessageSink
     
     public abstract MessageSink newSink(Frame frame);
     
-    public void accept(Frame frame, final FrameCallback callback)
+    public void accept(Frame frame, final Callback callback)
     {
         if (typeSink == null)
         {
@@ -127,21 +127,21 @@ public abstract class DispatchedMessageSink<T, R> implements MessageSink
             }, executor);
         }
         
-        final FrameCallback frameCallback;
+        final Callback frameCallback;
         
         if (frame.isFin())
         {
             CompletableFuture<Void> finComplete = new CompletableFuture<>();
-            frameCallback = new FrameCallback()
+            frameCallback = new Callback()
             {
                 @Override
-                public void fail(Throwable cause)
+                public void failed(Throwable cause)
                 {
                     finComplete.completeExceptionally(cause);
                 }
                 
                 @Override
-                public void succeed()
+                public void succeeded()
                 {
                     finComplete.complete(null);
                 }
@@ -152,9 +152,9 @@ public abstract class DispatchedMessageSink<T, R> implements MessageSink
                         typeSink = null;
                         dispatchComplete = null;
                         if (throwable != null)
-                            callback.fail(throwable);
+                            callback.failed(throwable);
                         else
-                            callback.succeed();
+                            callback.succeeded();
                     });
         }
         else
