@@ -19,7 +19,6 @@
 package org.eclipse.jetty.session.infinispan;
 
 import java.io.IOException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,9 +40,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.infinispan.Cache;
 import org.infinispan.commons.api.BasicCache;
-import org.omg.CORBA._IDLTypeStub;
 
 /**
  * InfinispanSessionManager
