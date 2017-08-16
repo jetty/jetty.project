@@ -64,6 +64,8 @@ public class DefaultServletTest
     @Rule
     public TestingDir testdir = new TestingDir();
 
+    public File docRoot;
+
     private Server server;
     private LocalConnector connector;
     private ServletContextHandler context;
@@ -71,12 +73,16 @@ public class DefaultServletTest
     @Before
     public void init() throws Exception
     {
+        testdir.ensureEmpty();
+        docRoot = testdir.getPathFile("docroot").toAbsolutePath().toFile();
+        
         server = new Server();
 
         connector = new LocalConnector(server);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
 
         context = new ServletContextHandler();
+        context.setBaseResource(Resource.newResource(docRoot));
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
 
@@ -101,23 +107,17 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
 
-        testdir.ensureEmpty();
-
         /* create some content in the docroot */
-        File resBase = testdir.getPathFile("docroot").toFile();
-        assertTrue(resBase.mkdirs());
-        assertTrue(new File(resBase, "one").mkdir());
-        assertTrue(new File(resBase, "two").mkdir());
-        assertTrue(new File(resBase, "three").mkdir());
-
-        String resBasePath = resBase.getAbsolutePath();
-        defholder.setInitParameter("resourceBase", resBasePath);
+        assertTrue(docRoot.mkdirs());
+        assertTrue(new File(docRoot, "one").mkdir());
+        assertTrue(new File(docRoot, "two").mkdir());
+        assertTrue(new File(docRoot, "three").mkdir());
 
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /context/;JSESSIONID=1234567890 HTTP/1.0\n\n");
 
         String response = connector.getResponse(req1.toString());
-
+        
         assertResponseContains("/one/;JSESSIONID=1234567890", response);
         assertResponseContains("/two/;JSESSIONID=1234567890", response);
         assertResponseContains("/three/;JSESSIONID=1234567890", response);
@@ -133,21 +133,15 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
 
-        testdir.ensureEmpty();
-
         /* create some content in the docroot */
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        assertTrue(new File(resBase, "one").mkdir());
-        assertTrue(new File(resBase, "two").mkdir());
-        assertTrue(new File(resBase, "three").mkdir());
+        FS.ensureDirExists(docRoot);
+        assertTrue(new File(docRoot, "one").mkdir());
+        assertTrue(new File(docRoot, "two").mkdir());
+        assertTrue(new File(docRoot, "three").mkdir());
         if (!OS.IS_WINDOWS)
         {
-            assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
+            assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(docRoot, "f??r").mkdir());
         }
-
-        String resBasePath = resBase.getAbsolutePath();
-        defholder.setInitParameter("resourceBase", resBasePath);
 
         StringBuffer req1 = new StringBuffer();
         /*
@@ -170,12 +164,10 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
 
-        testdir.ensureEmpty();
-
         /* create some content in the docroot */
-        File resBase = testdir.getPathFile("docroot").toFile();
-        assertTrue(resBase.mkdirs());
-        File wackyDir = new File(resBase, "dir;"); // this should not be double-encoded.
+        
+        assertTrue(docRoot.mkdirs());
+        File wackyDir = new File(docRoot, "dir;"); // this should not be double-encoded.
         assertTrue(wackyDir.mkdirs());
 
         assertTrue(new File(wackyDir, "four").mkdir());
@@ -191,8 +183,6 @@ public class DefaultServletTest
          *         `-- six
          */
 
-        String resBasePath = resBase.getAbsolutePath();
-        defholder.setInitParameter("resourceBase", resBasePath);
 
         // First send request in improper, unencoded way.
         String response = connector.getResponse("GET /context/dir;/ HTTP/1.0\r\n\r\n");
@@ -222,19 +212,17 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip", "false");
         defholder.setInitParameter("aliases", "true");
 
-        testdir.ensureEmpty();
-
         /* create some content in the docroot */
-        File resBase = testdir.getPathFile("docroot").toFile();
-        assertTrue(resBase.mkdirs());
+        
+        assertTrue(docRoot.mkdirs());
 
-        File index = new File(resBase, "index.html");
+        File index = new File(docRoot, "index.html");
         createFile(index, "<h1>Hello Index</h1>");
 
-        File wackyDir = new File(resBase, "dir?");
+        File wackyDir = new File(docRoot, "dir?");
         assumeTrue("FileSystem should support question dirs", wackyDir.mkdirs());
 
-        wackyDir = new File(resBase, "dir;");
+        wackyDir = new File(docRoot, "dir;");
         assertTrue(wackyDir.mkdirs());
 
         /* create some content outside of the docroot */
@@ -253,8 +241,8 @@ public class DefaultServletTest
          *     `-- pass
          */
 
-        String resBasePath = resBase.getAbsolutePath();
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
+        
 
         String response;
         
@@ -316,22 +304,19 @@ public class DefaultServletTest
     @Test
     public void testWelcome() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
+        FS.ensureDirExists(docRoot);
 
-        File dir = new File(resBase, "dir");
+        File dir = new File(docRoot, "dir");
         assertTrue(dir.mkdirs());
         File inde = new File(dir, "index.htm");
         File index = new File(dir, "index.html");
-
-        String resBasePath = resBase.getAbsolutePath();
+        
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
         defholder.setInitParameter("maxCacheSize", "1024000");
         defholder.setInitParameter("maxCachedFileSize", "512000");
         defholder.setInitParameter("maxCachedFiles", "100");
@@ -360,24 +345,106 @@ public class DefaultServletTest
     }
     
     @Test
+    public void testWelcomeMultipleBasesBase() throws Exception
+    {
+        FS.ensureDirExists(docRoot);
+
+        File dir = new File(docRoot, "dir");
+        assertTrue(dir.mkdirs());
+        File inde = new File(dir, "index.htm");
+        File index = new File(dir, "index.html");
+        
+        
+        File altRoot = testdir.getPathFile("altroot").toAbsolutePath().toFile();
+        File altDir = new File(altRoot, "dir");
+        assertTrue(altDir.mkdirs());
+        File altInde = new File(altDir, "index.htm");
+        File altIndex = new File(altDir, "index.html");
+        
+        ServletHolder altholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        altholder.setInitParameter("resourceBase",altRoot.toPath().toUri().toASCIIString());
+        altholder.setInitParameter("pathInfoOnly", "true");
+        altholder.setInitParameter("dirAllowed", "false");
+        altholder.setInitParameter("redirectWelcome", "false");
+        altholder.setInitParameter("welcomeServlets", "false");
+        altholder.setInitParameter("gzip", "false");
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+                
+        @SuppressWarnings("unused")
+        ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
+        String response;
+
+        
+        // Test alt default
+        response = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("403", response);
+
+        createFile(altIndex, "<h1>Alt Index</h1>");
+        response = connector.getResponse("GET /context/alt/dir/index.html HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Alt Index</h1>", response);
+        
+        response = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Alt Index</h1>", response);
+
+        createFile(altInde, "<h1>Alt Inde</h1>");
+        response = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Alt Index</h1>", response);
+
+        assertTrue(altIndex.delete());
+        response = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Alt Inde</h1>", response);
+
+        assertTrue(altInde.delete());
+        response = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("403", response);
+   
+
+        // Test normal default
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("403", response);
+
+        createFile(index, "<h1>Hello Index</h1>");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Hello Index</h1>", response);
+
+        createFile(inde, "<h1>Hello Inde</h1>");
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Hello Index</h1>", response);
+
+        assertTrue(index.delete());
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Hello Inde</h1>", response);
+
+        assertTrue(inde.delete());
+        response = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("403", response);
+    }
+    
+    
+    @Test
     public void testWelcomeRedirect() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
+        
+        
+        FS.ensureDirExists(docRoot);
 
-        File dir = new File(resBase, "dir");
+        File dir = new File(docRoot, "dir");
         assertTrue(dir.mkdirs());
         File inde = new File(dir, "index.htm");
         File index = new File(dir, "index.html");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "true");
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
         defholder.setInitParameter("maxCacheSize", "1024000");
         defholder.setInitParameter("maxCachedFileSize", "512000");
         defholder.setInitParameter("maxCachedFiles", "100");
@@ -408,12 +475,12 @@ public class DefaultServletTest
     @Test
     public void testWelcomeDirWithQuestion() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        context.setBaseResource(Resource.newResource(resBase));
+        
+        
+        FS.ensureDirExists(docRoot);
+        context.setBaseResource(Resource.newResource(docRoot));
 
-        File dir = new File(resBase, "dir?");
+        File dir = new File(docRoot, "dir?");
         assumeTrue("FileSystem should support question dirs", dir.mkdirs());
 
         File index = new File(dir, "index.html");
@@ -435,20 +502,20 @@ public class DefaultServletTest
     @Test
     public void testWelcomeServlet() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File inde = new File(resBase, "index.htm");
-        File index = new File(resBase, "index.html");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File inde = new File(docRoot, "index.htm");
+        File index = new File(docRoot, "index.html");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "true");
         defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
 
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
@@ -483,22 +550,22 @@ public class DefaultServletTest
     @Test
     public void testSymLinks() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File dir = new File(resBase,"dir");
-        File dirLink = new File(resBase,"dirlink");
-        File dirRLink = new File(resBase,"dirrlink");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File dir = new File(docRoot,"dir");
+        File dirLink = new File(docRoot,"dirlink");
+        File dirRLink = new File(docRoot,"dirrlink");
         FS.ensureDirExists(dir);
         File foobar = new File(dir, "foobar.txt");
         File link = new File(dir, "link.txt");
         File rLink = new File(dir,"rlink.txt");
         createFile(foobar, "Foo Bar");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
         defholder.setInitParameter("gzip", "false");
 
         String response;
@@ -547,20 +614,20 @@ public class DefaultServletTest
     @Test
     public void testWelcomeExactServlet() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File inde = new File(resBase, "index.htm");
-        File index = new File(resBase, "index.html");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File inde = new File(docRoot, "index.htm");
+        File index = new File(docRoot, "index.html");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "exact");
         defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
 
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
         context.addServlet(jspholder, "/index.jsp");
@@ -598,12 +665,12 @@ public class DefaultServletTest
         if (!OS.IS_LINUX)
             return;
         
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        context.setBaseResource(Resource.newResource(resBase));
         
-        File index = new File(resBase, "index.html");
+        
+        FS.ensureDirExists(docRoot);
+        context.setBaseResource(Resource.newResource(docRoot));
+        
+        File index = new File(docRoot, "index.html");
         createFile(index, "<h1>Hello World</h1>");
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
@@ -634,12 +701,12 @@ public class DefaultServletTest
     @Test
     public void testRangeRequests() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File data = new File(resBase, "data.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File data = new File(docRoot, "data.txt");
         createFile(data, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -647,7 +714,7 @@ public class DefaultServletTest
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "false");
         defholder.setInitParameter("acceptRanges", "true");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
 
         String response = connector.getResponse("GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -722,7 +789,7 @@ public class DefaultServletTest
 
         //test a range request with a file with no suffix, therefore no mimetype
 
-        File nofilesuffix = new File(resBase, "nofilesuffix");
+        File nofilesuffix = new File(docRoot, "nofilesuffix");
         createFile(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
         response = connector.getResponse("GET /context/nofilesuffix HTTP/1.1\r\n" +
@@ -779,22 +846,22 @@ public class DefaultServletTest
     @Test
     public void testFiltered() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file0 = new File(resBase, "data0.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File file0 = new File(docRoot, "data0.txt");
         createFile(file0, "Hello Text 0");
-        File image = new File(resBase, "image.jpg");
+        File image = new File(docRoot, "image.jpg");
         createFile(image, "not an image");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
 
         String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
@@ -834,15 +901,15 @@ public class DefaultServletTest
     @Test
     public void testGzip() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file0 = new File(resBase, "data0.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File file0 = new File(docRoot, "data0.txt");
         createFile(file0, "Hello Text 0");
-        File file0gz = new File(resBase, "data0.txt.gz");
+        File file0gz = new File(docRoot, "data0.txt.gz");
         createFile(file0gz, "fake gzip");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -850,7 +917,7 @@ public class DefaultServletTest
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "true");
         defholder.setInitParameter("etags", "true");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
 
         String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
@@ -914,15 +981,15 @@ public class DefaultServletTest
     @Test
     public void testCachedGzip() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();                
-        FS.ensureDirExists(resBase);
-        File file0 = new File(resBase, "data0.txt");
+        
+                        
+        FS.ensureDirExists(docRoot);
+        File file0 = new File(docRoot, "data0.txt");
         createFile(file0, "Hello Text 0");
-        File file0gz = new File(resBase, "data0.txt.gz");
+        File file0gz = new File(docRoot, "data0.txt.gz");
         createFile(file0gz, "fake gzip");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -930,7 +997,7 @@ public class DefaultServletTest
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "true");
         defholder.setInitParameter("etags", "true");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
         defholder.setInitParameter("maxCachedFiles", "1024");
         defholder.setInitParameter("maxCachedFileSize", "200000000");
         defholder.setInitParameter("maxCacheSize", "256000000"); 
@@ -958,7 +1025,6 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
         assertResponseContains("Content-Type: application/gzip",response);
-        System.err.println(response);
         assertResponseNotContains("Vary: Accept-Encoding",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
         assertResponseNotContains("ETag: "+etag_gzip,response);
@@ -984,15 +1050,15 @@ public class DefaultServletTest
     @Test
     public void testBrotli() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file0 = new File(resBase, "data0.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File file0 = new File(docRoot, "data0.txt");
         createFile(file0, "Hello Text 0");
-        File file0br = new File(resBase, "data0.txt.br");
+        File file0br = new File(docRoot, "data0.txt.br");
         createFile(file0br, "fake brotli");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1000,7 +1066,7 @@ public class DefaultServletTest
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("precompressed", "true");
         defholder.setInitParameter("etags", "true");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
 
         String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
@@ -1059,15 +1125,15 @@ public class DefaultServletTest
     @Test
     public void testCachedBrotli() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file0 = new File(resBase, "data0.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File file0 = new File(docRoot, "data0.txt");
         createFile(file0, "Hello Text 0");
-        File file0br = new File(resBase, "data0.txt.br");
+        File file0br = new File(docRoot, "data0.txt.br");
         createFile(file0br, "fake brotli");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
@@ -1075,7 +1141,7 @@ public class DefaultServletTest
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("precompressed", "true");
         defholder.setInitParameter("etags", "true");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
         defholder.setInitParameter("maxCachedFiles", "1024");
         defholder.setInitParameter("maxCachedFileSize", "200000000");
         defholder.setInitParameter("maxCacheSize", "256000000");
@@ -1128,19 +1194,19 @@ public class DefaultServletTest
     @Test
     public void testDefaultBrotliOverGzip() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file0 = new File(resBase, "data0.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File file0 = new File(docRoot, "data0.txt");
         createFile(file0, "Hello Text 0");
-        File file0br = new File(resBase, "data0.txt.br");
+        File file0br = new File(docRoot, "data0.txt.br");
         createFile(file0br, "fake brotli");
-        File file0gz = new File(resBase, "data0.txt.gz");
+        File file0gz = new File(docRoot, "data0.txt.gz");
         createFile(file0gz, "fake gzip");
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("precompressed", "true");
-        defholder.setInitParameter("resourceBase", resBase.getAbsolutePath());
+        defholder.setInitParameter("resourceBase", docRoot.getAbsolutePath());
 
         String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br\r\n\r\n");
         assertResponseContains("Content-Length: 11", response);
@@ -1160,19 +1226,19 @@ public class DefaultServletTest
     @Test
     public void testCustomCompressionFormats() throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file0 = new File(resBase, "data0.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File file0 = new File(docRoot, "data0.txt");
         createFile(file0, "Hello Text 0");
-        File file0br = new File(resBase, "data0.txt.br");
+        File file0br = new File(docRoot, "data0.txt.br");
         createFile(file0br, "fake brotli");
-        File file0gz = new File(resBase, "data0.txt.gz");
+        File file0gz = new File(docRoot, "data0.txt.gz");
         createFile(file0gz, "fake gzip");
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
-        defholder.setInitParameter("resourceBase", resBase.getAbsolutePath());
+        defholder.setInitParameter("resourceBase", docRoot.getAbsolutePath());
 
         String response = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:bzip2, br, gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
@@ -1196,15 +1262,15 @@ public class DefaultServletTest
 
     public void testIfModified(String content) throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file = new File(resBase, "file.txt");
+        
+        
+        FS.ensureDirExists(docRoot);
+        File file = new File(docRoot, "file.txt");
 
-        String resBasePath = resBase.getAbsolutePath();
+        
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
         defholder.setInitParameter("maxCacheSize", "4096");
         defholder.setInitParameter("maxCachedFileSize", "25");
         defholder.setInitParameter("maxCachedFiles", "100");
@@ -1249,15 +1315,11 @@ public class DefaultServletTest
 
     public void testIfETag(String content) throws Exception
     {
-        testdir.ensureEmpty();
-        File resBase = testdir.getPathFile("docroot").toFile();
-        FS.ensureDirExists(resBase);
-        File file = new File(resBase, "file.txt");
-
-        String resBasePath = resBase.getAbsolutePath();
+        FS.ensureDirExists(docRoot);
+        File file = new File(docRoot, "file.txt"); 
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        
         defholder.setInitParameter("maxCacheSize", "4096");
         defholder.setInitParameter("maxCachedFileSize", "25");
         defholder.setInitParameter("maxCachedFiles", "100");
