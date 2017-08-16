@@ -1,4 +1,7 @@
-jetty-9.3.22-SNAPSHOT
+jetty-9.3.21.RC0 - 16 August 2017
+ + 487 JDK 9 build compatibility
+ + 1719 Improve handling of HTTP/2 queued requests
+ + 1741 Java 9 javadoc failure in build
 
 jetty-9.3.21.M0 - 01 August 2017
  + 1357 RolloverFileOutputStream: No rollout performed at midnight
