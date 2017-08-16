@@ -23,6 +23,7 @@
                 <configuration>
                     <source>1.9</source>
                     <target>1.9</target>
+                    <release>9</release>
                 </configuration>
             </plugin>
         </plugins>
