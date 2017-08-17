@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.server.handler.ShutdownHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
 * Javadoc: {JDURL}/org/eclipse/jetty/server/handler/ShutdownHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/ShutdownHandler.html
 
 [[shutdown-handler-usage]]
 ==== Usage

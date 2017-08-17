@@ -22,10 +22,7 @@
 
 * Classname: `org.eclipse.jetty.server.handler.MovedContextHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
-* Javadoc:
-{JDURL}/org/eclipse/jetty/server/handler/MovedContextHandler.html
-* Xref:
-{JXURL}/org/eclipse/jetty/server/handler/MovedContextHandler.html
+* Javadoc: {JDURL}/org/eclipse/jetty/server/handler/MovedContextHandler.html
 
 [[moved-context-handler-usage]]
 ==== Usage

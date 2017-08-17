@@ -7,33 +7,15 @@
    version="3.0"> 
 
   <display-name>Transparent Proxy WebApp</display-name>
- 
-  <servlet>
-    <servlet-name>XrefTransparentProxy</servlet-name>
-    <servlet-class>org.eclipse.jetty.proxy.ProxyServlet$Transparent</servlet-class>
-    <init-param>
-      <param-name>proxyTo</param-name><param-value>http://download.eclipse.org/jetty/stable-9</param-value>
-    </init-param>
-    <init-param>
-      <param-name>hostHeader</param-name><param-value>download.eclipse.org</param-value>
-    </init-param>
-    <load-on-startup>1</load-on-startup>
-    <async-supported>true</async-supported>
-  </servlet>
-  
-  <servlet-mapping>
-    <servlet-name>XrefTransparentProxy</servlet-name>
-    <url-pattern>/xref/*</url-pattern>
-  </servlet-mapping>
-  
+
   <servlet>
     <servlet-name>JavadocTransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.proxy.ProxyServlet$Transparent</servlet-class>
     <init-param>
-      <param-name>proxyTo</param-name><param-value>http://download.eclipse.org/jetty/stable-9</param-value>
+      <param-name>proxyTo</param-name><param-value>http://www.eclipse.org/jetty/javadoc/</param-value>
     </init-param>
     <init-param>
-      <param-name>hostHeader</param-name><param-value>download.eclipse.org</param-value>
+      <param-name>hostHeader</param-name><param-value>eclipse.org</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
@@ -41,7 +23,7 @@
   
   <servlet-mapping>
     <servlet-name>JavadocTransparentProxy</servlet-name>
-    <url-pattern>/apidocs/*</url-pattern>
+    <url-pattern>/current/*</url-pattern>
   </servlet-mapping>
 
 </web-app>

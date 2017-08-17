@@ -17,18 +17,18 @@
 [[quickstart-deploying-webapps]]
 === Deploying Web Applications
 
-Jetty server instances that configure the deploy module will have a web application deployer that link:#hot-deployment[hot deploys] files found in the `webapps` directory. 
+Jetty server instances that configure the deploy module will have a web application deployer that link:#hot-deployment[hot deploys] files found in the `webapps` directory.
 Standard WAR files and Jetty configuration files that are placed in the `webapps` directory are hot deployed to the server with the following conventions:
 
-* A directory called `example/` is deployed as a standard web application if it contains a `WEB-INF/` subdirectory, otherwise it is deployed as context of static content. 
-The context path is `/example` (that is, `http://localhost:8080/example/`) unless the base name is ROOT (case insensitive), in which case the context path is /. 
+* A directory called `example/` is deployed as a standard web application if it contains a `WEB-INF/` subdirectory, otherwise it is deployed as context of static content.
+The context path is `/example` (that is, `http://localhost:8080/example/`) unless the base name is ROOT (case insensitive), in which case the context path is /.
 If the directory name ends with ".d" it is ignored (but may be used by explicit configuration).
 * A file called `example.war` is deployed as a standard web application with the context path `/example` (that is,
-`http://localhost:8080/example/`). 
-If the base name is `ROOT` (case insensitive), the context path is `/`. 
+`http://localhost:8080/example/`).
+If the base name is `ROOT` (case insensitive), the context path is `/`.
 If `example.war` and `example/` exist, only the WAR is deployed (which may use the directory as an unpack location).
-* An XML file like `example.xml` is deployed as a context whose configuration is defined by the XML. 
-The configuration itself must set the context path. 
+* An XML file like `example.xml` is deployed as a context whose configuration is defined by the XML.
+The configuration itself must set the context path.
 If `example.xml` and `example.war` exists, only the XML is deployed (which may use the WAR in its configuration).
 
 If you have a standard web application, you can hot deploy it into Jetty by copying it into the `webapps` directory.
@@ -38,10 +38,10 @@ If you have a standard web application, you can hot deploy it into Jetty by copy
 The demo-base/webapps directory contains the following deployable and auxiliary files:
 
 `ROOT/`::
-  A directory of static content that is deployed to the root context / due to it's name. 
+  A directory of static content that is deployed to the root context / due to it's name.
   Contains the Jetty demo welcome page.
 `test.d`::
-  A directory containing additional configuration files used by `test.xml` to inject extra configuration into `test.war`.  
+  A directory containing additional configuration files used by `test.xml` to inject extra configuration into `test.war`.
 `test.xml`::
   A context configuration file that configures and deploys `test.war.`
   The additional configuration includes the context path as well as setting additional descriptors found in the `test.d` directory.
@@ -57,14 +57,14 @@ The demo-base/webapps directory contains the following deployable and auxiliary 
 `test-jndi.war`::
   A demonstration web application showing the use of link:#jndi[JNDI].
 `test-jndi.xml`::
-  A context configuration file that configures `test-jndi.war`. 
+  A context configuration file that configures `test-jndi.war`.
   Additional configuration includes defining objects in the naming space that can be referenced from the webapp.
 `test-spec.war`::
   A demonstration web application that shows the use of annotations, fragments, `ServletContainerInitializers` and other Servlet Specification 3.0/3.1 features.
 `test-spec.xml`::
-  A context configuration file that configures `test-spec.war`. 
+  A context configuration file that configures `test-spec.war`.
   Additional configuration includes setting up some objects in the naming space that can be referenced by annotations.
-`xref-proxy.war`::
-  A demonstration web application that uses a transparent proxy to serve the Jetty source link:{JXURL}/[xref] from the http://www.eclipse.org/jetty[Eclipse Jetty website].
+`javadoc-proxy.war`::
+  A demonstration web application that uses a transparent proxy to serve the Jetty source link:{JDURL}/[Javadoc] from the http://www.eclipse.org/jetty[Eclipse Jetty website].
 `example-moved.xml`::
   A demonstration context configuration file that shows how to use the link:#moved-context-handler[`MovedContextHandler`] to redirect from one path to another.

@@ -30,8 +30,6 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
-import sun.security.provider.Sun;
-
 public class ClasspathPatternTest
 {
     private final ClasspathPattern _pattern = new ClasspathPattern();
@@ -134,7 +132,6 @@ public class ClasspathPatternTest
         ClasspathPattern pattern = new ClasspathPattern();
         pattern.include("something");
         Assert.assertThat(pattern.match(String.class), Matchers.is(false));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
@@ -146,15 +143,12 @@ public class ClasspathPatternTest
         pattern.include(loc_junit.toString(), loc_test.toString());
 
         Assert.assertThat(pattern.match(String.class), Matchers.is(true));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(true));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
 
-        // exclude by package name still works 
-        pattern.add("-sun.security.provider.Sun");
-        Assert.assertThat(pattern.match(String.class), Matchers.is(true));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
+        pattern.add("-java.lang.String");
+        Assert.assertThat(pattern.match(String.class), Matchers.is(false));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
@@ -184,7 +178,6 @@ public class ClasspathPatternTest
         pattern.include(".");
 
         Assert.assertThat(pattern.match(String.class), Matchers.is(true));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(true));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
@@ -196,7 +189,6 @@ public class ClasspathPatternTest
         pattern.exclude(loc_junit.toString(), loc_test.toString());
 
         Assert.assertThat(pattern.match(String.class), Matchers.is(false));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));

@@ -5,23 +5,15 @@
     <artifactId>test-servlet-spec-parent</artifactId>
     <version>9.4.7-SNAPSHOT</version>
   </parent>
+
   <name>Jetty Tests :: WebApp :: Servlet Spec :: Fragment Jar</name>
-  <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>test-web-fragment</artifactId>
   <packaging>jar</packaging>
+
   <properties>
     <bundle-symbolic-name>${project.groupId}.fragment</bundle-symbolic-name>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <verbose>false</verbose>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+
   <dependencies>
       <dependency>
          <groupId>javax.servlet</groupId>

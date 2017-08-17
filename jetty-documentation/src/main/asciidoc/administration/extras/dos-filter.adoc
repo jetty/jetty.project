@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.servlets.DoSFilter`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/DoSFilter.html
-* Xref: {JXURL}/org/eclipse/jetty/servlets/DoSFilter.html
 
 [[dos-filter-usage]]
 ==== Usage
