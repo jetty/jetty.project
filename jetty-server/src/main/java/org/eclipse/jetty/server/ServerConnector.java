@@ -285,7 +285,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * <p>Use it with xinetd/inetd, to launch an instance of Jetty on demand. The port
      * used to access pages on the Jetty instance is the same as the port used to
      * launch Jetty.</p>
-     *
+     * @see ServerConnector#openAcceptChannel()
      * @param inheritChannel whether this connector uses a channel inherited from the JVM.
      */
     public void setInheritChannel(boolean inheritChannel)
@@ -293,41 +293,67 @@ public class ServerConnector extends AbstractNetworkConnector
         _inheritChannel = inheritChannel;
     }
 
+    /**
+     * Open the connector using the passed ServerSocketChannel.
+     * This open method can be called before starting the connector to pass it a ServerSocketChannel
+     * that will be used instead of one returned from {@link #openAcceptChannel()}
+     * @param acceptChannel the channel to use
+     * @throws IOException
+     */
+    public void open(ServerSocketChannel acceptChannel) throws IOException
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        updateBean(_acceptChannel,acceptChannel);
+        _acceptChannel = acceptChannel;
+        _localPort = _acceptChannel.socket().getLocalPort();
+        if (_localPort <= 0)
+            throw new IOException("Server channel not bound");
+    }
+    
     @Override
     public void open() throws IOException
     {
         if (_acceptChannel == null)
         {
-            ServerSocketChannel serverChannel = null;
-            if (isInheritChannel())
-            {
-                Channel channel = System.inheritedChannel();
-                if (channel instanceof ServerSocketChannel)
-                    serverChannel = (ServerSocketChannel)channel;
-                else
-                    LOG.warn("Unable to use System.inheritedChannel() [{}]. Trying a new ServerSocketChannel at {}:{}", channel, getHost(), getPort());
-            }
-
-            if (serverChannel == null)
-            {
-                serverChannel = ServerSocketChannel.open();
-
-                InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
-                serverChannel.socket().setReuseAddress(getReuseAddress());
-                serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
-
-                _localPort = serverChannel.socket().getLocalPort();
-                if (_localPort <= 0)
-                    throw new IOException("Server channel not bound");
-            }
-
-            serverChannel.configureBlocking(true);
-            addBean(serverChannel);
-
-            _acceptChannel = serverChannel;
+            _acceptChannel = openAcceptChannel();
+            _acceptChannel.configureBlocking(true);
+            _localPort = _acceptChannel.socket().getLocalPort();
+            if (_localPort <= 0)
+                throw new IOException("Server channel not bound");
+            addBean(_acceptChannel);
         }
     }
 
+    /**
+     * Called by {@link #open()} to obtain the accepting channel.
+     * @return ServerSocketChannel used to accept connections.
+     * @throws IOException
+     */
+    protected ServerSocketChannel openAcceptChannel() throws IOException
+    {
+        ServerSocketChannel serverChannel = null;
+        if (isInheritChannel())
+        {
+            Channel channel = System.inheritedChannel();
+            if (channel instanceof ServerSocketChannel)
+                serverChannel = (ServerSocketChannel)channel;
+            else
+                LOG.warn("Unable to use System.inheritedChannel() [{}]. Trying a new ServerSocketChannel at {}:{}", channel, getHost(), getPort());
+        }
+
+        if (serverChannel == null)
+        {
+            serverChannel = ServerSocketChannel.open();
+
+            InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
+            serverChannel.socket().setReuseAddress(getReuseAddress());
+            serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+        }
+
+        return serverChannel;
+    }
+    
     @Override
     public Future<Void> shutdown()
     {

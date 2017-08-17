@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Configure a SessionIdManager with the Hazelcast IdManager.            -->
+  <!-- ===================================================================== -->
+  <Set name="sessionIdManager">
+    <New id="hazelcastIdMgr" class="com.hazelcast.session.HazelcastSessionIdManager">
+      <Arg>
+        <Ref refid="Server"/>
+      </Arg>
+      <Set name="configLocation"><Property name="jetty.session.hazelcast.configurationLocation"/></Set>
+      <Set name="clientOnly">false</Set>
+    </New>
+  </Set>
+
+</Configure>

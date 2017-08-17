@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.3.20-SNAPSHOT</version>
+    <version>9.3.22-SNAPSHOT</version>
   </parent>
   <artifactId>test-container-initializer</artifactId>
   <packaging>jar</packaging>
@@ -13,12 +13,6 @@
   </properties>
   <build>
     <plugins>
-       <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <verbose>false</verbose>
-        </configuration>
-       </plugin>
        <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

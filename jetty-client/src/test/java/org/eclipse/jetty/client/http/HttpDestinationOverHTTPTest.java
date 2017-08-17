@@ -59,6 +59,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void test_FirstAcquire_WithEmptyQueue() throws Exception
     {
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
+        destination.start();
         Connection connection = destination.acquire();
         if (connection == null)
         {
@@ -72,6 +73,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void test_SecondAcquire_AfterFirstAcquire_WithEmptyQueue_ReturnsSameConnection() throws Exception
     {
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
+        destination.start();
         Connection connection1 = destination.acquire();
         if (connection1 == null)
         {
@@ -118,6 +120,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                 };
             }
         };
+        destination.start();
         Connection connection1 = destination.acquire();
 
         // Make sure we entered idleCreated().
@@ -145,6 +148,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection() throws Exception
     {
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
+        destination.start();
         HttpConnectionOverHTTP connection1 = destination.acquire();
 
         long start = System.nanoTime();
@@ -172,6 +176,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         client.setIdleTimeout(idleTimeout);
 
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()));
+        destination.start();
         Connection connection1 = destination.acquire();
         if (connection1 == null)
         {

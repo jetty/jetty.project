@@ -1,0 +1,134 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[configuring-sessions-hazelcast]]
+
+=== Clustered Session Management: Hazelcast
+
+==== Enabling Hazelcast Sessions
+
+When using the Jetty distribution, you will first need to enable the `session-store-hazelcast-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --create-startd
+MKDIR : ${jetty.base}/start.d
+INFO  : Base directory was modified
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --add-to-start=hazelcast-remote-sessions
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: hazelcast-remote-sessions
+  + Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
+  + https://hazelcast.org/
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO: hazelcast-remote-sessions initialised in ${jetty.base}/start.ini
+COPY: /Users/olamy/repository/com/hazelcast/hazelcast-all/3.8.2/hazelcast-all-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-all-3.8.2.jar
+COPY: /Users/olamy/repository/com/hazelcast/hazelcast-jetty9-sessionmanager/1.0.2/hazelcast-jetty9-sessionmanager-1.0.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-jetty9-sessionmanager-1.0.2.jar
+COPY: /Users/olamy/repository/org/eclipse/jetty/jetty-nosql/9.3.21-SNAPSHOT/jetty-nosql-9.3.21-SNAPSHOT.jar to ${jetty.base}/lib/hazelcast/jetty-nosql-9.3.21-SNAPSHOT.jar
+INFO: Base directory was modified
+----
+
+Doing this enables the remote Hazelcast Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+Because Hazelcast is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-hazelcast-remote` module as well as the `sessions` and `server` modules, which are required for Hazelcast session management to operate.
+It also downloaded the needed Hazelcast-specific jar files and created a directory named `${jetty.base}/lib/hazelcast/` to house them.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+==== Configuring Hazelcast Remote Properties
+
+Opening the `start.ini` will show a list of all the configurable options for the Hazelcast module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-hazelcast-remote
+--module=session-store-hazelcast-remote
+
+#jetty.session.hazelcast.configurationLocation=
+----
+
+jetty.session.hazelcast.configurationLocation::
+Path to an an Hazelcast xml configuration file
+
+==== Configuring Embedded Hazelcast Clustering
+
+During testing, it can be helpful to run an in-process instance of Hazelcast.
+To enable this you will first need to enable the `session-store-hazelcast-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --create-startd
+MKDIR : ${jetty.base}/start.d
+INFO  : Base directory was modified
+mb-olamy:tmp-base olamy$ java -jar ../start.jar --add-to-start=hazelcast-embedded-sessions
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: hazelcast-embedded-sessions
+  + Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
+  + https://hazelcast.org/
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO: hazelcast-embedded-sessions initialised in ${jetty.base}/start.ini
+COPY: /Users/olamy/repository/com/hazelcast/hazelcast-all/3.8.2/hazelcast-all-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-all-3.8.2.jar
+COPY: /Users/olamy/repository/com/hazelcast/hazelcast-jetty9-sessionmanager/1.0.2/hazelcast-jetty9-sessionmanager-1.0.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-jetty9-sessionmanager-1.0.2.jar
+COPY: /Users/olamy/repository/org/eclipse/jetty/jetty-nosql/9.3.21-SNAPSHOT/jetty-nosql-9.3.21-SNAPSHOT.jar to ${jetty.base}/lib/hazelcast/jetty-nosql-9.3.21-SNAPSHOT.jar
+INFO: Base directory was modified
+----
+
+Doing this enables the embedded Hazelcast Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+Because Hazelcast is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-hazelcast-embedded` module as well as the `sessions` and `server` modules, which are required for Hazelcast session management to operate.
+It also downloaded the needed Hazelcast-specific jar files and created a directory named `${jetty.base}/lib/hazelcast/` to house them.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+
+==== Configuring Hazelcast Embedded Properties
+
+Opening the `start.ini` will show a list of all the configurable options for the Hazelcast module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: hazelcast-embedded-sessions
+--module=hazelcast-embedded-sessions
+
+#jetty.session.hazelcast.configurationLocation=
+----
+jetty.session.hazelcast.configurationLocation::
+Path to an an Hazelcast xml configuration file

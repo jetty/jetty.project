@@ -100,7 +100,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _requestLog = connector == null ? null : connector.getServer().getRequestLog();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
+            LOG.debug("new {} -> {},{},{}",
+                    this,
+                    _endPoint,
+                    _endPoint==null?null:_endPoint.getConnection(),
+                    _state);
     }
 
     protected HttpInput newHttpInput(HttpChannelState state)
@@ -257,8 +261,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written=0;
     }
 
-    public void asyncReadFillInterested()
+    public void onAsyncWaitForContent()
     {
+    }
+
+    public void onBlockWaitForContent()
+    {
+    }
+
+    public void onBlockWaitForContentFailure(Throwable failure)
+    {
+        getRequest().getHttpInput().failed(failure);
     }
 
     @Override
@@ -372,7 +385,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform Error Dispatch because the response is already committed, aborting");
-                            _transport.abort(ex);
+                            abort(ex);
                         }
                         else
                         {
@@ -858,14 +871,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void failed(Throwable th)
                     {
-                        _transport.abort(x);
+                        abort(x);
                         super.failed(x);
                     }
                 });
             }
             else
             {
-                _transport.abort(x);
+                abort(x);
                 super.failed(x);
             }
         }

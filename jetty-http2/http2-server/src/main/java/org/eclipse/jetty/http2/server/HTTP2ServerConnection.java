@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -146,6 +147,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (task != null)
                 offerTask(task, false);
         }
+        else
+        {
+            callback.failed(new IOException("channel_not_found"));
+        }
     }
 
     public boolean onStreamTimeout(IStream stream, Throwable failure)
@@ -174,7 +179,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
             if (channel != null)
-                result &= !channel.isRequestHandled();
+                result &= !channel.isRequestExecuting();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);

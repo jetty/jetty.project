@@ -555,7 +555,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         getEndPoint().fillInterested(_blockingReadCallback);
     }
 
-    public void blockingReadException(Throwable e)
+    public void blockingReadFailure(Throwable e)
     {
         _blockingReadCallback.failed(e);
     }

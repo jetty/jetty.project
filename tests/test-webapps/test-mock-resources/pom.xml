@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.3.20-SNAPSHOT</version>
+    <version>9.3.22-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: WebApp :: Mock Resources</name>
   <artifactId>test-mock-resources</artifactId>
@@ -13,12 +13,6 @@
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <verbose>false</verbose>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>

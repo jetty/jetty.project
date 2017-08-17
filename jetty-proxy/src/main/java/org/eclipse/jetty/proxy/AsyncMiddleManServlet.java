@@ -139,16 +139,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     protected DeferredContentProvider newProxyContentProvider(final HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest) throws IOException
     {
-        return new DeferredContentProvider()
-        {
-            @Override
-            public boolean offer(ByteBuffer buffer, Callback callback)
-            {
-                if (_log.isDebugEnabled())
-                    _log.debug("{} proxying content to upstream: {} bytes", getRequestId(clientRequest), buffer.remaining());
-                return super.offer(buffer, callback);
-            }
-        };
+        return new ProxyDeferredContentProvider(clientRequest);
     }
 
     protected ReadListener newProxyReadListener(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest, DeferredContentProvider provider)
@@ -821,6 +812,24 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             byte[] gzipBytes = out.toByteArray();
             out.reset();
             return ByteBuffer.wrap(gzipBytes);
+        }
+    }
+
+    private class ProxyDeferredContentProvider extends DeferredContentProvider
+    {
+        private final HttpServletRequest clientRequest;
+
+        public ProxyDeferredContentProvider(HttpServletRequest clientRequest)
+        {
+            this.clientRequest = clientRequest;
+        }
+
+        @Override
+        public boolean offer(ByteBuffer buffer, Callback callback)
+        {
+            if (_log.isDebugEnabled())
+                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(clientRequest), buffer.remaining());
+            return super.offer(buffer, callback);
         }
     }
 }

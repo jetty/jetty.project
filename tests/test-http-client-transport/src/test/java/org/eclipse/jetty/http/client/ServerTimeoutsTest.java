@@ -19,7 +19,9 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -32,9 +34,12 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
@@ -43,6 +48,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.Assert;
 import org.junit.Test;
@@ -675,6 +681,59 @@ public class ServerTimeoutsTest extends AbstractTest
         // Complete the request.
         contentProvider.close();
         Assert.assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testIdleTimeoutBeforeReadIsIgnored() throws Exception
+    {
+        long idleTimeout = 1000;
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                try
+                {
+                    Thread.sleep(2 * idleTimeout);
+                    IO.copy(request.getInputStream(), response.getOutputStream());
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+        setServerIdleTimeout(idleTimeout);
+
+        byte[] data = new byte[1024];
+        new Random().nextBytes(data);
+        byte[] data1 = new byte[data.length / 2];
+        System.arraycopy(data, 0, data1, 0, data1.length);
+        byte[] data2 = new byte[data.length - data1.length];
+        System.arraycopy(data, data1.length, data2, 0, data2.length);
+        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(data1));
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(newURI())
+                .path(servletPath)
+                .content(content)
+                .send(new BufferingResponseListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isSucceeded());
+                        Assert.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                        Assert.assertArrayEquals(data, getContent());
+                        latch.countDown();
+                    }
+                });
+
+        // Wait for the server application to block reading.
+        Thread.sleep(3 * idleTimeout);
+        content.offer(ByteBuffer.wrap(data2));
+        content.close();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private static class BlockingReadHandler extends AbstractHandler

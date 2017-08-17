@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-project</artifactId>
-  <version>9.3.20-SNAPSHOT</version>
+  <version>9.3.22-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -35,17 +35,6 @@
   <build>
     <defaultGoal>install</defaultGoal>
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.3</version>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-          <testSource>1.8</testSource>
-          <testTarget>1.8</testTarget>
-          <verbose>false</verbose>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <version>2.5</version>
@@ -128,7 +117,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>1.1</version>
         <executions>
           <execution>
             <id>enforce-java</id>
@@ -336,6 +324,15 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.6.2</version>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.0.0</version>
         </plugin>
@@ -349,8 +346,8 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.1</version>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.0.0-M1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -369,7 +366,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.10.4</version>
+          <version>3.0.0-M1</version>
           <configuration>
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
@@ -469,6 +466,11 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
           <version>3.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -601,6 +603,7 @@
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
     <module>jetty-infinispan</module>
+    <module>jetty-hazelcast</module>
     <module>jetty-gcloud</module>
     <module>tests</module>
     <module>examples</module>
@@ -797,17 +800,6 @@
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <source>1.8</source>
-              <target>1.8</target>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>ci</id>
@@ -1226,6 +1218,46 @@
       <properties>
         <alpn.version>8.1.11.v20170118</alpn.version>
       </properties>
+    </profile>
+    <profile>
+      <id>8u141</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_141</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.11.v20170118</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u144</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_144</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.11.v20170118</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>jdk9</id>
+      <activation>
+        <jdk>[1.9,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <release>8</release>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

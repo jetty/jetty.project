@@ -19,6 +19,16 @@
 
 This document provides an overview of how to configure SSL and TLS for Jetty.
 
+[[configuring-jetty-for-ssl]]
+===== Configuring Jetty for SSL
+
+To configure Jetty for SSL, complete the tasks in the following sections:
+
+* xref:generating-key-pairs-and-certificates[]
+* xref:requesting-trusted-certificate[]
+* xref:loading-keys-and-certificates[]
+* xref:configuring-sslcontextfactory[]
+
 [[tls-and-ssl-versions]]
 ==== TLS and SSL versions
 
@@ -77,16 +87,6 @@ You can also use the OpenSSL tools to generate keys and certificates, or to conv
 Since Apache and other servers commonly use the OpenSSL tool suite to generate and manipulate keys and certificates, you might already have some keys and certificates created by OpenSSL, or you might also prefer the formats OpenSSL produces.
 
 If you want the option of using the same certificate with Jetty or a web server such as Apache not written in Java, you might prefer to generate your private key and certificate with OpenSSL.
-
-[[configuring-jetty-for-ssl]]
-===== Configuring Jetty for SSL
-
-To configure Jetty for SSL, complete the tasks in the following sections:
-
-* xref:generating-key-pairs-and-certificates[]
-* xref:requesting-trusted-certificate[]
-* xref:loading-keys-and-certificates[]
-* xref:configuring-sslcontextfactory[]
 
 [[generating-key-pairs-and-certificates]]
 ===== Generating Key Pairs and Certificates
@@ -354,84 +354,16 @@ $ keytool -importkeystore -srckeystore jetty.pkcs12 -srcstoretype PKCS12 -destke
 If you are updating your configuration to use a newer certificate, as when the old one is expiring, just load the newer certificate as described in the section, xref:loading-keys-and-certificates[].
 If you imported the key and certificate originally using the PKCS12 method, use an alias of "1" rather than "jetty", because that is the alias the PKCS12 process enters into the keystore.
 
-==== Configuring SSL in Jetty Distribution
-
-For those of you using the Jetty Distribution, enabling SSL support is as easy as activating the `ssl` module.
-
-An example of this setup:
-
-[source, plain, subs="{sub-order}"]
-----
-$ cd /path/to/mybase
-$ java -jar /path/to/jetty-dist/start.jar --add-to-start=ssl
-INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
-INFO : Base directory was modified
-$ tree
-.
-├── etc
-│   └── keystore
-└── start.d
-    ├── server.ini
-    └── ssl.ini
-----
-
-When you open `start.d/ssl.ini`, you will see many commented properties ready for you to configure the `SslContextFactory` basics.
-
-To highlight some of the more commonly used properties:
-
-jetty.ssl.host::
-  Configures which interfaces the SSL/TLS Connector should listen on.
-jetty.ssl.port::
-  Configures which port the SSL/TLS Connector should listen on.
-jetty.httpConfig.securePort::
-  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
-jetty.sslContext.keyStorePath::
-  Sets the location of the `keystore` that you configured with your certificates.
-jetty.sslContext.keyStorePassword::
-  Sets the Password for the `keystore`.
-
-[[two-way-authentication]]
-==== Two Way Authentication
-
-To enable two-way authentication, you first need to activate the ssl module as shown in the previous section.
-
-First you need load the `ssl` module and `https` module.
-[source%nowrap,ini,linenums]
-.$JETTY_BASE/start.d/ssl.ini
-----
-# Module: ssl
---module=ssl
-
-jetty.ssl.host=0.0.0.0
-jetty.ssl.port=8583
-jetty.sslContext.keyStorePath=etc/keystore
-jetty.sslContext.trustStorePath=etc/keystore
-jetty.sslContext.keyStorePassword=OBF:
-jetty.sslContext.keyManagerPassword=OBF:
-jetty.sslContext.trustStorePassword=OBF:
-jetty.sslContext.trustStoreType=JKS
-# enable two way authentication
-jetty.sslContext.needClientAuth=true
-----
-
-[source%nowrap,ini,linenums]
-.$JETTY_BASE/start.d/https.ini
-----
-# Module: https
---module=https
-----
-
 [[layout-of-keystore-and-truststore]]
-===== Layout of `keystore` and `truststore`
+===== Layout of keystore and truststore
 
-`keystore` only contains the server's private key and certificate.
+The `keystore` only contains the server's private key and certificate.
 
 [[img-certificate-chain]]
 image::images/certificate-chain.png[title="Certificate chain", alt="Certificate chain"]
 
 [literal]
-.The structure of KeyStore file
+.The structure of KeyStore file:
 ....
 ├── PrivateKeyEntry
 │   ├── PrivateKey
@@ -445,14 +377,10 @@ image::images/certificate-chain.png[title="Certificate chain", alt="Certificate 
     └── Root CA certificate
 ....
 
-[TIP]
-====
-└── PrivateKeyEntry +
-    └── Certificate chain +
-        ├── Intermediary CA certificate +
-        └── Root CA certificate +
-are optional
-====
+____
+[NOTE]
+Both the `Intermediary CA certificate` and `Root CA certificate` are optional.
+____
 
 [source%nowrap,plain,linenums]
 ----
@@ -529,7 +457,7 @@ Certificate fingerprints:
 	 Signature algorithm name: SHA256withRSA
 	 Version: 3
 
-Extensions: 
+Extensions:
 
 #1: ObjectId: 2.5.29.35 Criticality=false
 AuthorityKeyIdentifier [
@@ -571,7 +499,7 @@ Certificate fingerprints:
 	 Signature algorithm name: SHA256withRSA
 	 Version: 3
 
-Extensions: 
+Extensions:
 
 #1: ObjectId: 2.5.29.35 Criticality=false
 AuthorityKeyIdentifier [
@@ -791,8 +719,84 @@ ____
 ==== Configuring SNI
 
 From Java 8, the JVM contains support for the http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name Indicator (SNI)] extension, which allows a SSL connection handshake to indicate one or more DNS names that it applies to.
-To support this, the `ExtendedSslContextFactory` is used that will look for multiple X509 certificates within the keystore, each of which may have multiple DNS names (including wildcards) associated with the http://en.wikipedia.org/wiki/SubjectAltName[Subject Alternate Name] extension.
-When using the `ExtendedSSlContextFactory`, the correct certificate is automatically selected if the SNI extension is present in the handshake.
+
+To support this, the `SslContextFactory` is used.
+The `SslContextFactory` will look for multiple X509 certificates within the keystore, each of which may have multiple DNS names (including wildcards) associated with the http://en.wikipedia.org/wiki/SubjectAltName[Subject Alternate Name] extension.
+When using the `SslContextFactory`, the correct certificate is automatically selected if the SNI extension is present in the handshake.
+
+
+==== Configuring SSL in Jetty Distribution
+
+For those of you using the Jetty Distribution, enabling SSL support is as easy as activating the `ssl` module.
+
+An example of this setup:
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd /path/to/mybase
+$ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
+INFO : Base directory was modified
+$ tree
+.
+├── etc
+│   └── keystore
+└── start.d
+    ├── server.ini
+    └── ssl.ini
+----
+
+When you open `start.d/ssl.ini`, you will see several commented properties ready for use when configuring `SslContextFactory` basics.
+
+To highlight some of the more commonly used properties:
+
+jetty.ssl.host::
+  Configures which interfaces the SSL/TLS Connector should listen on.
+jetty.ssl.port::
+  Configures which port the SSL/TLS Connector should listen on.
+jetty.httpConfig.securePort::
+  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
+jetty.sslContext.keyStorePath::
+  Sets the location of the `keystore` that you configured with your certificates.
+jetty.sslContext.keyStorePassword::
+  Sets the Password for the `keystore`.
+
+[[two-way-authentication]]
+==== Two Way Authentication
+
+To enable two-way authentication in the Jetty Distribution, you need to enable the both the `ssl` and `https` modules.
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd /path/to/mybase
+$ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl,https
+----
+
+[source%nowrap,ini,linenums]
+.$JETTY_BASE/start.d/ssl.ini
+----
+# Module: ssl
+--module=ssl
+
+jetty.ssl.host=0.0.0.0
+jetty.ssl.port=8583
+jetty.sslContext.keyStorePath=etc/keystore
+jetty.sslContext.trustStorePath=etc/keystore
+jetty.sslContext.keyStorePassword=OBF:
+jetty.sslContext.keyManagerPassword=OBF:
+jetty.sslContext.trustStorePassword=OBF:
+jetty.sslContext.trustStoreType=JKS
+# enable two way authentication
+jetty.sslContext.needClientAuth=true
+----
+
+[source%nowrap,ini,linenums]
+.$JETTY_BASE/start.d/https.ini
+----
+# Module: https
+--module=https
+----
 
 [[configuring-sslcontextfactory-cipherSuites]]
 ==== Disabling/Enabling Specific Cipher Suites
@@ -807,7 +811,7 @@ Tools like ssllabs.com might report slightly different names which will be ignor
 ____
 
 ____
-[NOTE]
+[IMPORTANT]
 It's recommended to install the Java Cryptography Extension (JCE) Unlimited Strength policy files in your JRE to get full strength ciphers such as AES-256.
 The files can be found on the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java download page].
 Just overwrite the two present JAR files in `<JRE_HOME>/lib/security/`.
@@ -815,7 +819,7 @@ ____
 
 Both `setIncludeCipherSuites` and `setExcludeCipherSuites` can be fed by the exact cipher suite name used in the JDK or by using regular expressions.
 
-If you have a need to adjust the Includes or Excludes, then this is best done with a custom blow-in XML that configures the `SslContextFactory` to suit your needs.
+If you have a need to adjust the Includes or Excludes, then this is best done with a custom XML that configures the `SslContextFactory` to suit your needs.
 
 To do this, first create a new `${jetty.base}/etc/tweak-ssl.xml` file (this can be any name, just avoid prefixing it with "jetty-").
 
@@ -860,7 +864,7 @@ ____
 [NOTE]
 The default `SslContextFactory` implementation applies the latest SSL/TLS recommendations surrounding vulnerabilities in SSL/TLS.
 Check the release notes (the `VERSION.txt` found in the root of the Jetty Distribution, or the http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.eclipse.jetty%22%20AND%20a%3A%22jetty-project%22[alternate (classified 'version') artifacts for the `jetty-project` component]on Maven Central) for updates.
-The Java JVM is also applying exclusions at the JVM level and as such if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in BOTH the Java JVM and the Jetty configuration.
+The Java JVM also applies exclusions at the JVM level and, as such, if you have a need to enable something that is generally accepted by the industry as being insecure or vulnerable you will likely have to enable it in *both* the Java JVM and your Jetty configuration.
 ____
 
 ____
@@ -930,3 +934,97 @@ ____
 ----
   <Set name="renegotiationAllowed">FALSE</Set>
 ----
+
+[[ssl-dump-ciphers]]
+
+You can view what cipher suites are enabled and disabled by performing a server dump.
+
+To perform a server dump upon server startup, add `jetty.server.dumpAfterStart=true` to the command line when starting the server.
+You can also dump the server when shutting down the server instance by adding `jetty.server.dumpBeforeStop`.
+
+Specifically, you will want to look for the `SslConnectionFactory` portion of the dump.
+
+[source, screen, subs="{sub-order}"]
+----
+[my-base]$ java -jar ${JETTY_HOME}/start.jar jetty.server.dumpAfterStart=true
+
+...
+|   += SslConnectionFactory@18be83e4{SSL->http/1.1} - STARTED
+|   |   += SslContextFactory@42530531(null,null) trustAll=false
+|   |       +- Protocol Selections
+|   |       |   +- Enabled (size=3)
+|   |       |   |   +- TLSv1
+|   |       |   |   +- TLSv1.1
+|   |       |   |   +- TLSv1.2
+|   |       |   +- Disabled (size=2)
+|   |       |       +- SSLv2Hello - ConfigExcluded:'SSLv2Hello'
+|   |       |       +- SSLv3 - JreDisabled:java.security, ConfigExcluded:'SSLv3'
+|   |       +- Cipher Suite Selections
+|   |           +- Enabled (size=15)
+|   |           |   +- TLS_DHE_DSS_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_DHE_DSS_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_DHE_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256
+|   |           |   +- TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+|   |           |   +- TLS_RSA_WITH_AES_128_CBC_SHA256
+|   |           |   +- TLS_RSA_WITH_AES_128_GCM_SHA256
+|   |           +- Disabled (size=42)
+|   |               +- SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_DSS_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DHE_RSA_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_DH_anon_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_EXPORT_WITH_DES40_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_NULL_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- SSL_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DHE_DSS_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DHE_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DH_anon_WITH_AES_128_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_DH_anon_WITH_AES_128_CBC_SHA256 - JreDisabled:java.security
+|   |               +- TLS_DH_anon_WITH_AES_128_GCM_SHA256 - JreDisabled:java.security
+|   |               +- TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_ECDSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDHE_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_ECDSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_RSA_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_AES_128_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_ECDH_anon_WITH_NULL_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_3DES_EDE_CBC_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_3DES_EDE_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_DES_CBC_MD5 - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_KRB5_WITH_DES_CBC_SHA - JreDisabled:java.security, ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_RSA_WITH_AES_128_CBC_SHA - ConfigExcluded:'^.*_(MD5|SHA|SHA1)$'
+|   |               +- TLS_RSA_WITH_NULL_SHA256 - JreDisabled:java.security
+...
+----
+
+In the example above you can see both the enabled/disabled protocols and included/excluded ciper suites.
+For disabled or excluded protocols and ciphers, the reason they are disabled is given - either due to JVM restrictions, configuration or both.
+As a reminder, when configuring your includes/excludes, *excludes always win*.
+
+Dumps can be configured as part of the `jetty.xml` configuration for your server.
+Please see the documentation on the link:#jetty-dump-tool[Jetty Dump Tool] for more information.
