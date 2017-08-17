@@ -18,15 +18,11 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.util.Collections;
-
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject
@@ -37,11 +33,6 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     public PoolingHttpDestination(HttpClient client, Origin origin)
     {
         super(client, origin);
-        this.connectionPool = newConnectionPool(client);
-        addBean(connectionPool);
-        Sweeper sweeper = client.getBean(Sweeper.class);
-        if (sweeper != null)
-            sweeper.offer(connectionPool);
     }
 
     @Override
