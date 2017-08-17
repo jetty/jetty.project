@@ -116,7 +116,7 @@ public class JettyWebAppContext extends WebAppContext
         // Turn off copyWebInf option as it is not applicable for plugin.
         super.setCopyWebInf(false);
         addConfiguration(new MavenWebInfConfiguration());
-        addConfiguration(new MavenMetaInfConfiguration());
+        addConfiguration(new MavenMetaInfConfiguration()); //TODO - why is this necessary? Removed in jetty-9.4
         addConfiguration(new EnvConfiguration());
         addConfiguration(new PlusConfiguration());
         addConfiguration(new AnnotationConfiguration());
@@ -385,35 +385,28 @@ public class JettyWebAppContext extends WebAppContext
             if (fileName.endsWith(".jar"))
                 _webInfJarMap.put(fileName, file);
         }
-        
+
         //check for CDI
         initCDI();
-        
+
         // CHECK setShutdown(false);
         super.doStart();
     }
-    
-    
+
+
     @Override
-    protected void loadConfigurations()
+    public void preConfigure() throws Exception
     {
-        super.loadConfigurations();
-        
-        try
+        //inject configurations with config from maven plugin
+        for (Configuration c:getWebAppConfigurations())
         {
-            //inject configurations with config from maven plugin
-            for (Configuration c:getWebAppConfigurations())
-            {
-                if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                    ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-                else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
-                    ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());
-            }
+            if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
+                ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
+            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
+                ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());
         }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+
+        super.preConfigure();
     }
 
 
