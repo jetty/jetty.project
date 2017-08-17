@@ -90,6 +90,9 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 #   no effect if start-stop-daemon exists.  Useful when JETTY_USER does not
 #   have shell access, e.g. /bin/false
 #
+# JETTY_START_TIMEOUT
+#   Time spent waiting to see if startup was successful/failed. Defaults to 60 seconds
+#
 
 usage()
 {
@@ -129,7 +132,7 @@ running()
 started()
 {
   # wait for 60s to see "STARTED" in PID file, needs jetty-started.xml as argument
-  for (( T = 1; T <= 15; T++ ))
+  for ((T = 0; T < $(($3 / 4)); T++))
   do
     sleep 4
     [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
@@ -152,20 +155,21 @@ readConfig()
 
 dumpEnv()
 {
-    echo "JAVA           =  $JAVA"
-    echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
-    echo "JETTY_HOME     =  $JETTY_HOME"
-    echo "JETTY_BASE     =  $JETTY_BASE"
-    echo "START_D        =  $START_D"
-    echo "START_INI      =  $START_INI"
-    echo "JETTY_START    =  $JETTY_START"
-    echo "JETTY_CONF     =  $JETTY_CONF"
-    echo "JETTY_ARGS     =  ${JETTY_ARGS[*]}"
-    echo "JETTY_RUN      =  $JETTY_RUN"
-    echo "JETTY_PID      =  $JETTY_PID"
-    echo "JETTY_START_LOG=  $JETTY_START_LOG"
-    echo "JETTY_STATE    =  $JETTY_STATE"
-    echo "RUN_CMD        =  ${RUN_CMD[*]}"
+    echo "JAVA                  =  $JAVA"
+    echo "JAVA_OPTIONS          =  ${JAVA_OPTIONS[*]}"
+    echo "JETTY_HOME            =  $JETTY_HOME"
+    echo "JETTY_BASE            =  $JETTY_BASE"
+    echo "START_D               =  $START_D"
+    echo "START_INI             =  $START_INI"
+    echo "JETTY_START           =  $JETTY_START"
+    echo "JETTY_CONF            =  $JETTY_CONF"
+    echo "JETTY_ARGS            =  ${JETTY_ARGS[*]}"
+    echo "JETTY_RUN             =  $JETTY_RUN"
+    echo "JETTY_PID             =  $JETTY_PID"
+    echo "JETTY_START_LOG       =  $JETTY_START_LOG"
+    echo "JETTY_STATE           =  $JETTY_STATE"
+    echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
+    echo "RUN_CMD               =  ${RUN_CMD[*]}"
 }
 
 
@@ -379,6 +383,14 @@ then
 fi
 
 #####################################################
+# Set STARTED timeout
+#####################################################
+if [ -z "$JETTY_START_TIMEOUT"]
+then
+  JETTY_START_TIMEOUT=60
+fi
+
+#####################################################
 # Are we running on Windows? Could be, with Cygwin/NT.
 #####################################################
 case "`uname`" in
@@ -486,7 +498,7 @@ case "$ACTION" in
 
     if expr "${JETTY_ARGS[*]}" : '.*jetty-started.xml.*' >/dev/null
     then
-      if started "$JETTY_STATE" "$JETTY_PID"
+      if started "$JETTY_STATE" "$JETTY_PID" "$JETTY_START_TIMEOUT"
       then
         echo "OK `date`"
       else
