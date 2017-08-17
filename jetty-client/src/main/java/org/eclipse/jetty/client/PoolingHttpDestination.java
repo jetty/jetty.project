@@ -250,13 +250,6 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     }
 
     @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        super.dump(out, indent);
-        ContainerLifeCycle.dump(out, indent, Collections.singletonList(connectionPool));
-    }
-
-    @Override
     public String toString()
     {
         return String.format("%s,pool=%s", super.toString(), connectionPool);

@@ -269,15 +269,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     }
 
     @Override
-    public String dump()
-    {
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this);
+        super.dump(out, indent);
         ContainerLifeCycle.dump(out, indent, Collections.singleton(new DumpableCollection("exchanges", exchanges)));
     }
 
