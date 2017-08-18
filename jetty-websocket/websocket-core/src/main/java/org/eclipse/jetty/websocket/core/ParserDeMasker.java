@@ -20,15 +20,12 @@ package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.core.Frame;
-
-public class ParserDeMasker implements ParserPayloadProcessor
+public class ParserDeMasker
 {
     private byte[] maskBytes;
     private int maskInt;
     private int maskOffset;
 
-    @Override
     public void process(ByteBuffer payload)
     {
         if (maskBytes == null)
@@ -72,7 +69,6 @@ public class ParserDeMasker implements ParserPayloadProcessor
         this.maskOffset = 0;
     }
 
-    @Override
     public void reset(Frame frame)
     {
         reset(frame.getMask());

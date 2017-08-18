@@ -37,12 +37,13 @@ import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.common.StatusCode;
-import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.WSBehavior;
+import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -52,7 +53,6 @@ import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WSFrame;
-import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.generator.UnitGenerator;
 import org.eclipse.jetty.websocket.core.util.MaskedByteBuffer;
 import org.hamcrest.CoreMatchers;
@@ -471,7 +471,7 @@ public class ParserTest
         send.add(new ContinuationFrame().setPayload("fragment2").setFin(true));
         send.add(new ContinuationFrame().setPayload("fragment3").setFin(false)); // bad frame
         send.add(new TextFrame().setPayload("fragment4").setFin(true));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
+        send.add(new CloseFrame().setPayload(WSConstants.NORMAL));
     
         WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
@@ -519,7 +519,7 @@ public class ParserTest
             send.add(frame);
             continuation = true;
         }
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
+        send.add(new CloseFrame().setPayload(WSConstants.NORMAL));
     
         WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -549,7 +549,7 @@ public class ParserTest
         send.add(new ContinuationFrame().setPayload(",f4").setFin(false));
         send.add(new PingFrame().setPayload("ping-2"));
         send.add(new ContinuationFrame().setPayload(",f5").setFin(true));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
+        send.add(new CloseFrame().setPayload(WSConstants.NORMAL));
     
         WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -842,7 +842,7 @@ public class ParserTest
         List<WSFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("ping"));
         send.add(new TextFrame().setPayload("hello, world"));
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
+        send.add(new CloseFrame().setPayload(WSConstants.NORMAL));
 
         WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
@@ -1342,7 +1342,7 @@ public class ParserTest
         List<WSFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
         send.add(new TextFrame().setPayload("fragment2").setFin(true)); // bad frame, must be continuation
-        send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
+        send.add(new CloseFrame().setPayload(WSConstants.NORMAL));
 
         WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
@@ -1442,7 +1442,7 @@ public class ParserTest
         text.setPayload(ByteBuffer.wrap(payload));
         text.setMask(Hex.asByteArray("11223344"));
         frames.add(text);
-        frames.add(new CloseFrame().setPayload(StatusCode.NORMAL));
+        frames.add(new CloseFrame().setPayload(WSConstants.NORMAL));
     
         WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
         WSPolicy clientPolicy = new WSPolicy(WSBehavior.CLIENT);

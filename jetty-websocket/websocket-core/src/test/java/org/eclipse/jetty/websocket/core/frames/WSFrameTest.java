@@ -25,19 +25,19 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
-import org.eclipse.jetty.websocket.common.StatusCode;
-import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class WebSocketFrameTest
+public class WSFrameTest
 {
     @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule(WebSocketFrameTest.class);
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule(WSFrameTest.class);
 
     private Generator strictGenerator;
     private Generator laxGenerator;
@@ -85,7 +85,7 @@ public class WebSocketFrameTest
     @Test
     public void testStrictValidClose()
     {
-        CloseFrame frame = new CloseFrame().setPayload(StatusCode.NORMAL);
+        CloseFrame frame = new CloseFrame().setPayload(WSConstants.NORMAL);
         ByteBuffer actual = generateWholeFrame(strictGenerator,frame);
         String expected = "880203E8";
         assertFrameHex("Strict Valid Close Frame",expected,actual);

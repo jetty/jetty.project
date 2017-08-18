@@ -31,6 +31,7 @@ public final class WSConstants
     public static final int POLICY_VIOLATION = 1008;
     public static final int MESSAGE_TOO_LARGE = 1009;
     public static final int SERVER_ERROR = 1011;
+    public static final int FAILED_TLS_HANDSHAKE = 1015;
 
     // Request / Response Header Names
     public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";

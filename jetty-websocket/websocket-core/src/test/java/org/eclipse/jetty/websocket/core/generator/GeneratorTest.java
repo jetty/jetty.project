@@ -36,10 +36,11 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.common.StatusCode;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WSConstants;
 import org.eclipse.jetty.websocket.core.WSException;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.frames.WSFrame;
-import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.parser.ParserCapture;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
@@ -372,7 +372,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Close_CodeNoReason()
     {
-        CloseStatus close = new CloseStatus(StatusCode.NORMAL);
+        CloseStatus close = new CloseStatus(WSConstants.NORMAL);
         // 2 byte payload (2 bytes for status code)
         assertGeneratedBytes("880203E8", new CloseFrame().setPayload(close));
     }
@@ -380,7 +380,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Close_CodeOkReason()
     {
-        CloseStatus close = new CloseStatus(StatusCode.NORMAL, "OK");
+        CloseStatus close = new CloseStatus(WSConstants.NORMAL, "OK");
         // 4 byte payload (2 bytes for status code, 2 more for "OK")
         assertGeneratedBytes("880403E84F4B", new CloseFrame().setPayload(close));
     }
@@ -519,7 +519,7 @@ public class GeneratorTest
         {
             frames[i] = new PingFrame().setPayload(String.format("ping-%d", i));
         }
-        frames[pingCount] = new CloseFrame().setPayload(new CloseStatus(StatusCode.NORMAL));
+        frames[pingCount] = new CloseFrame().setPayload(new CloseStatus(WSConstants.NORMAL));
 
         // Mask All Frames
         byte maskingKey[] = Hex.asByteArray("11223344");

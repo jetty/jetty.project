@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.io;
 
-import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
@@ -27,7 +26,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WSExtensionFactory;
@@ -49,8 +47,6 @@ public class DummyConnection extends WSConnection
         private ExtensionStack extensionStack;
         private UpgradeRequest upgradeRequest;
         private UpgradeResponse upgradeResponse;
-        private Object wsEndpoint;
-        private WSLocalEndpoint wsLocalEndpoint;
 
         public Builder ioEndpoint(EndPoint endp)
         {
@@ -100,23 +96,8 @@ public class DummyConnection extends WSConnection
             return this;
         }
 
-        public Builder wsEndpoint(Object endpoint)
-        {
-            this.wsEndpoint = endpoint;
-            return this;
-        }
-
-        public Builder wsLocalEndpoint(WSLocalEndpoint localEndpoint)
-        {
-            this.wsLocalEndpoint = localEndpoint;
-            return this;
-        }
-
         public DummyConnection build()
         {
-            Objects.requireNonNull(wsEndpoint, "WebSocket Endpoint Instance");
-            Objects.requireNonNull(wsLocalEndpoint, "WebSocket LocalEndpoint Instance");
-
             if (endp == null) endp = new ByteArrayEndPoint();
             if (executor == null) executor = new QueuedThreadPool();
             if (bufferPool == null) bufferPool = new MappedByteBufferPool();
@@ -127,16 +108,15 @@ public class DummyConnection extends WSConnection
             if (upgradeRequest == null) upgradeRequest = new DummyUpgradeRequest();
             if (upgradeResponse == null) upgradeResponse = new DummyUpgradeResponse();
 
-            return new DummyConnection(endp, executor, bufferPool, objectFactory, policy, extensionStack, upgradeRequest, upgradeResponse, wsEndpoint, wsLocalEndpoint);
+            return new DummyConnection(endp, executor, bufferPool, objectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);
         }
     }
 
     public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                            DecoratedObjectFactory decoratedObjectFactory,
                            WSPolicy policy, ExtensionStack extensionStack,
-                           UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
-                           Object wsEndpoint, WSLocalEndpoint localEndpoint)
+                           UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
-        super(endp, executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse, wsEndpoint, localEndpoint);
+        super(endp, executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);
     }
 }

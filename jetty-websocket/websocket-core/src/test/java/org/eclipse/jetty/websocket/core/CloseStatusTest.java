@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.common.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.hamcrest.Matchers;
@@ -41,7 +40,7 @@ public class CloseStatusTest
     public void testAnonymousClose()
     {
         CloseStatus close = new CloseStatus();
-        assertThat("close.code",close.getCode(), Matchers.is(StatusCode.NO_CODE));
+        assertThat("close.code",close.getCode(), Matchers.is(WSConstants.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         CloseFrame frame = new CloseFrame().setPayload(close);
@@ -57,8 +56,8 @@ public class CloseStatusTest
     @Test
     public void testNoCode()
     {
-        CloseStatus close = new CloseStatus(StatusCode.NO_CODE);
-        assertThat("close.code",close.getCode(), Matchers.is(StatusCode.NO_CODE));
+        CloseStatus close = new CloseStatus(WSConstants.NO_CODE);
+        assertThat("close.code",close.getCode(), Matchers.is(WSConstants.NO_CODE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         CloseFrame frame = new CloseFrame().setPayload(close);
@@ -74,8 +73,8 @@ public class CloseStatusTest
     @Test
     public void testNoClose()
     {
-        CloseStatus close = new CloseStatus(StatusCode.NO_CLOSE);
-        assertThat("close.code",close.getCode(), Matchers.is(StatusCode.NO_CLOSE));
+        CloseStatus close = new CloseStatus(WSConstants.NO_CLOSE);
+        assertThat("close.code",close.getCode(), Matchers.is(WSConstants.NO_CLOSE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         CloseFrame frame = new CloseFrame().setPayload(close);
@@ -91,8 +90,8 @@ public class CloseStatusTest
     @Test
     public void testFailedTlsHandshake()
     {
-        CloseStatus close = new CloseStatus(StatusCode.FAILED_TLS_HANDSHAKE);
-        assertThat("close.code",close.getCode(), Matchers.is(StatusCode.FAILED_TLS_HANDSHAKE));
+        CloseStatus close = new CloseStatus(WSConstants.FAILED_TLS_HANDSHAKE);
+        assertThat("close.code",close.getCode(), Matchers.is(WSConstants.FAILED_TLS_HANDSHAKE));
         assertThat("close.reason",close.getReason(),nullValue());
 
         CloseFrame frame = new CloseFrame().setPayload(close);
@@ -108,8 +107,8 @@ public class CloseStatusTest
     @Test
     public void testNormal()
     {
-        CloseStatus close = new CloseStatus(StatusCode.NORMAL);
-        assertThat("close.code",close.getCode(), Matchers.is(StatusCode.NORMAL));
+        CloseStatus close = new CloseStatus(WSConstants.NORMAL);
+        assertThat("close.code",close.getCode(), Matchers.is(WSConstants.NORMAL));
         assertThat("close.reason",close.getReason(),nullValue());
 
         CloseFrame frame = new CloseFrame().setPayload(close);
@@ -144,14 +143,14 @@ public class CloseStatusTest
     @Test
     public void testFromFrame()
     {
-        ByteBuffer payload = asByteBuffer(StatusCode.NORMAL,null);
+        ByteBuffer payload = asByteBuffer(WSConstants.NORMAL,null);
         assertThat("payload length", payload.remaining(), is(2));
         CloseFrame frame = new CloseFrame();
         frame.setPayload(payload);
         
         // create from frame
         CloseStatus close = frame.getCloseStatus();
-        assertThat("close.code",close.getCode(), Matchers.is(StatusCode.NORMAL));
+        assertThat("close.code",close.getCode(), Matchers.is(WSConstants.NORMAL));
         assertThat("close.reason",close.getReason(),nullValue());
 
         // and back again

@@ -20,14 +20,12 @@ package org.eclipse.jetty.websocket.core.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -36,31 +34,24 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WSConstants;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
-import org.eclipse.jetty.websocket.core.WSBehavior;
+import org.eclipse.jetty.websocket.core.WSCoreSession;
 import org.eclipse.jetty.websocket.core.WSException;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.WSTimeoutException;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.util.CompletionCallback;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -77,24 +68,9 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         @Override
         protected void onFailure(Throwable x)
         {
-            notifyError(x);
+            session.onError(x);
         }
     }
-
-    // Callbacks
-    private Callback onDisconnectCallback = new CompletionCallback()
-    {
-        @Override
-        public void complete()
-        {
-            if (connectionState.onClosed())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ConnectionState: Transition to CLOSED");
-                WSConnection.this.disconnect();
-            }
-        }
-    };
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
@@ -105,6 +81,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
+    // Connection level policy (before the session and local endpoint has been created)
     private final WSPolicy policy;
     private final AtomicBoolean suspendToken;
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -117,23 +94,12 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final IncomingFrames incomingFrames;
     private final WSConnectionState connectionState = new WSConnectionState();
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
-    private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     private final DecoratedObjectFactory objectFactory;
 
+    private WSCoreSession session;
     // Read / Parse variables
     private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
     private ByteBuffer networkBuffer;
-
-    // Holder for errors during open that are reported in doStart later
-    private AtomicReference<Throwable> pendingError = new AtomicReference<>();
-
-    /**
-     * The websocket endpoint objects and endpoints
-     * Not declared final, as they can be decorated later by other libraries (CDI)
-     */
-    private Object wsEndpoint;
-    private WSLocalEndpoint localEndpoint;
-    private WSRemoteEndpoint remoteEndpoint;
 
     /**
      * Create a WSConnection.
@@ -191,19 +157,18 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         this.incomingFrames = extensionStack;
     }
 
-    public void setWebSocketEndpoint(Object endpoint, WSLocalEndpoint localEndpoint, WSRemoteEndpoint remoteEndpoint)
+    protected void setSession(WSCoreSession session)
     {
-        this.wsEndpoint = endpoint;
-        this.localEndpoint = localEndpoint;
-        this.remoteEndpoint = remoteEndpoint;
+        this.session = session;
     }
 
-    private void close(int statusCode, String reason, Callback callback)
+    @Override
+    public Executor getExecutor()
     {
-        close(new CloseStatus(statusCode, reason), callback);
+        return super.getExecutor();
     }
 
-    private void close(CloseStatus closeStatus, Callback callback)
+    public void close(CloseStatus closeStatus, Callback callback)
     {
         connectionState.onClosing(); // always move to (at least) the CLOSING state (might already be past it, which is ok)
 
@@ -289,11 +254,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         return upgradeResponse;
     }
 
-    public WSRemoteEndpoint getRemoteEndpoint()
-    {
-        return remoteEndpoint;
-    }
-
     public boolean isOpen()
     {
         if (LOG.isDebugEnabled())
@@ -324,7 +284,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
 
-        notifyError(new WSTimeoutException("Connection Idle Timeout"));
+        session.onError(new WSTimeoutException("Connection Idle Timeout"));
         return true;
     }
 
@@ -360,7 +320,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                 parser.release(frame);
 
                 // notify session & endpoint
-                notifyError(cause);
+                session.onError(cause);
             }
         });
 
@@ -385,176 +345,9 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         return "wss".equalsIgnoreCase(requestURI.getScheme());
     }
 
-    public void notifyClose(CloseStatus closeStatus)
+    public WSConnectionState getState()
     {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("notifyClose({}) closeNotified={}", closeStatus, closeNotified.get());
-        }
-
-        // only notify once
-        if (closeNotified.compareAndSet(false, true))
-        {
-            localEndpoint.onClose(closeStatus);
-        }
-    }
-
-    /**
-     * Error Event.
-     * <p>
-     * Can be seen from Session and Connection.
-     * </p>
-     *
-     * @param t the raw cause
-     */
-    public void onError(Throwable t)
-    {
-        synchronized (pendingError)
-        {
-            if (!localEndpoint.isOpen())
-            {
-                // this is a *really* fast fail, before the Session has even started.
-                pendingError.compareAndSet(null, t);
-                return;
-            }
-        }
-
-        Throwable cause = getInvokedCause(t);
-
-        // Forward Errors to User WebSocket Object
-        localEndpoint.onError(cause);
-
-        if (cause instanceof Utf8Appendable.NotUtf8Exception)
-        {
-            close(WSConstants.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
-        }
-        else if (cause instanceof SocketTimeoutException)
-        {
-            // A path often seen in Windows
-            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
-        }
-        else if (cause instanceof IOException)
-        {
-            close(WSConstants.PROTOCOL, cause.getMessage(), onDisconnectCallback);
-        }
-        else if (cause instanceof SocketException)
-        {
-            // A path unique to Unix
-            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
-        }
-        else if (cause instanceof CloseException)
-        {
-            CloseException ce = (CloseException) cause;
-            Callback callback = Callback.NOOP;
-
-            // Force disconnect for protocol breaking status codes
-            switch (ce.getStatusCode())
-            {
-                case WSConstants.PROTOCOL:
-                case WSConstants.BAD_DATA:
-                case WSConstants.BAD_PAYLOAD:
-                case WSConstants.MESSAGE_TOO_LARGE:
-                case WSConstants.POLICY_VIOLATION:
-                case WSConstants.SERVER_ERROR:
-                {
-                    callback = onDisconnectCallback;
-                }
-            }
-
-            close(ce.getStatusCode(), ce.getMessage(), callback);
-        }
-        else if (cause instanceof WSTimeoutException)
-        {
-            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
-        }
-        else
-        {
-            LOG.warn("Unhandled Error (closing connection)", cause);
-
-            // Exception on end-user WS-Endpoint.
-            // Fast-fail & close connection with reason.
-            int statusCode = WSConstants.SERVER_ERROR;
-            if (getPolicy().getBehavior() == WSBehavior.CLIENT)
-            {
-                statusCode = WSConstants.POLICY_VIOLATION;
-            }
-            close(statusCode, cause.getMessage(), Callback.NOOP);
-        }
-    }
-
-    protected Throwable getInvokedCause(Throwable t)
-    {
-        // Unwrap any invoker exceptions here.
-        return t;
-    }
-
-    /**
-     * Open/Activate the session
-     */
-    public void open()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{}.open()", this.getClass().getSimpleName());
-
-        if (remoteEndpoint != null)
-        {
-            // already opened
-            return;
-        }
-
-        try
-        {
-            // Upgrade success
-            if (connectionState.onConnected())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ConnectionState: Transition to CONNECTED");
-
-                // Connect remoteEndpoint
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}.open() remoteEndpoint={}", this.getClass().getSimpleName(), remoteEndpoint);
-
-                try
-                {
-                    // Open WebSocket
-                    localEndpoint.onOpen();
-
-                    // Open connection
-                    if (connectionState.onOpen())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("ConnectionState: Transition to OPEN");
-                    }
-                }
-                catch (Throwable t)
-                {
-                    localEndpoint.getLog().warn("Error during OPEN", t);
-                    onError(new CloseException(WSConstants.SERVER_ERROR, t));
-                }
-
-                /* Perform fillInterested outside of onConnected / onOpen.
-                 *
-                 * This is to allow for 2 specific scenarios.
-                 *
-                 * 1) Fast Close
-                 *    When an end users WSEndpoint.onOpen() calls
-                 *    the Session.close() method.
-                 *    This is a state transition of CONNECTING -> CONNECTED -> CLOSING
-                 * 2) Fast Fail
-                 *    When an end users WSEndpoint.onOpen() throws an Exception.
-                 */
-                fillInterested();
-            }
-            else
-            {
-                throw new IllegalStateException("Unexpected state [" + connectionState.get() + "] when attempting to transition to CONNECTED");
-            }
-        }
-        catch (Throwable t)
-        {
-            LOG.warn(t);
-            onError(t);
-        }
+        return connectionState;
     }
 
     /**
@@ -563,126 +356,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     @Override
     public void incomingFrame(Frame frame, Callback callback)
     {
-        try
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("incomingFrame({}, {}) - connectionState={}, localEndpoint={}",
-                        frame, callback, connectionState.get(), localEndpoint);
-            }
-            if (connectionState.get() != WSConnectionState.State.CLOSED)
-            {
-                // For endpoints that want to see raw frames.
-                localEndpoint.onFrame(frame);
-
-                byte opcode = frame.getOpCode();
-                switch (opcode)
-                {
-                    case OpCode.CLOSE:
-                    {
-
-                        if (connectionState.onClosing())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ConnectionState: Transition to CLOSING");
-                            CloseFrame closeframe = (CloseFrame) frame;
-                            CloseStatus closeStatus = closeframe.getCloseStatus();
-                            notifyClose(closeStatus);
-                            close(closeStatus, onDisconnectCallback);
-                        }
-                        else if (connectionState.onClosed())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ConnectionState: Transition to CLOSED");
-                            CloseFrame closeframe = (CloseFrame) frame;
-                            CloseStatus closeStatus = closeframe.getCloseStatus();
-                            notifyClose(closeStatus);
-                            disconnect();
-                        }
-                        else
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ConnectionState: {} - Close Frame Received", connectionState);
-                        }
-
-                        callback.succeeded();
-                        return;
-                    }
-                    case OpCode.PING:
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
-
-                        ByteBuffer pongBuf;
-                        if (frame.hasPayload())
-                        {
-                            pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
-                            BufferUtil.put(frame.getPayload().slice(), pongBuf);
-                            BufferUtil.flipToFlush(pongBuf, 0);
-                        }
-                        else
-                        {
-                            pongBuf = ByteBuffer.allocate(0);
-                        }
-
-                        localEndpoint.onPing(frame.getPayload());
-                        callback.succeeded();
-
-                        try
-                        {
-                            getRemoteEndpoint().sendPong(pongBuf, Callback.NOOP);
-                        }
-                        catch (Throwable t)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Unable to send pong", t);
-                        }
-                        break;
-                    }
-                    case OpCode.PONG:
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
-
-                        localEndpoint.onPong(frame.getPayload());
-                        callback.succeeded();
-                        break;
-                    }
-                    case OpCode.BINARY:
-                    {
-                        localEndpoint.onBinary(frame, callback);
-                        // Let endpoint method handle callback
-                        return;
-                    }
-                    case OpCode.TEXT:
-                    {
-                        localEndpoint.onText(frame, callback);
-                        // Let endpoint method handle callback
-                        return;
-                    }
-                    case OpCode.CONTINUATION:
-                    {
-                        localEndpoint.onContinuation(frame, callback);
-                        // Let endpoint method handle callback
-                        return;
-                    }
-                    default:
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Unhandled OpCode: {}", opcode);
-                    }
-                }
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Discarding post EOF frame - {}", frame);
-            }
-        }
-        catch (Throwable t)
-        {
-            callback.failed(t);
-        }
     }
 
     private ByteBuffer getNetworkBuffer()
@@ -769,7 +442,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         }
         catch (Throwable t)
         {
-            notifyError(t);
+            session.onError(t);
         }
         finally
         {
@@ -801,11 +474,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         }
     }
 
-    private void notifyError(Throwable cause)
-    {
-        // TODO: notify endpoint
-    }
-
     /**
      * Physical connection Open.
      */
@@ -823,7 +491,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     @Override
     protected boolean onReadTimeout()
     {
-        notifyError(new SocketTimeoutException("Timeout on Read"));
+        session.onError(new SocketTimeoutException("Timeout on Read"));
         return false;
     }
 
@@ -906,7 +574,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                 getClass().getSimpleName(),
                 hashCode(),
                 getPolicy().getBehavior(),
-                isOpen()?"OPEN":"CLOSED",
+                isOpen() ? "OPEN" : "CLOSED",
                 flusher,
                 generator,
                 parser);

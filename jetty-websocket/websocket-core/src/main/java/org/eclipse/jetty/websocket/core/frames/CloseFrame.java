@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.common.StatusCode;
+import org.eclipse.jetty.websocket.core.WSConstants;
 
 public class CloseFrame extends ControlFrame
 {
@@ -50,7 +50,7 @@ public class CloseFrame extends ControlFrame
     public CloseFrame setPayload(int statusCode, String reason)
     {
         // Don't generate a payload for status codes that cannot be transmitted
-        if (StatusCode.isTransmittable(statusCode))
+        if (isTransmittableStatusCode(statusCode))
         {
             setPayload(asPayloadBuffer(statusCode, reason));
         }
@@ -77,7 +77,7 @@ public class CloseFrame extends ControlFrame
 
     public static CloseStatus toCloseStatus(ByteBuffer payload)
     {
-        int statusCode = StatusCode.NO_CODE;
+        int statusCode = WSConstants.NO_CODE;
 
         if ((payload == null) || (payload.remaining() == 0))
         {
@@ -178,16 +178,42 @@ public class CloseFrame extends ControlFrame
         }
 
         // Status Codes not allowed to exist in a Close frame (per RFC6455)
-        if ((statusCode == StatusCode.NO_CLOSE) || (statusCode == StatusCode.NO_CODE) || (statusCode == StatusCode.FAILED_TLS_HANDSHAKE))
+        if ((statusCode == WSConstants.NO_CLOSE) || (statusCode == WSConstants.NO_CODE) || (statusCode == WSConstants.FAILED_TLS_HANDSHAKE))
         {
             throw new ProtocolException("Frame forbidden close status code: " + statusCode);
         }
 
         // Status Code is in defined "reserved space" and is declared (all others are invalid)
-        if ((statusCode >= 1000) && (statusCode <= 2999) && !StatusCode.isTransmittable(statusCode))
+        if ((statusCode >= 1000) && (statusCode <= 2999) && !isTransmittableStatusCode(statusCode))
         {
             throw new ProtocolException("RFC6455 and IANA Undefined close status code: " + statusCode);
         }
     }
 
+
+    /**
+     * Test if provided status code can be sent/received on a WebSocket close.
+     * <p>
+     *     This honors the RFC6455 rules and IANA rules.
+     * </p>
+     * @param statusCode the statusCode to test
+     * @return true if transmittable
+     */
+    public static boolean isTransmittableStatusCode(int statusCode)
+    {
+        // Outside of range?
+        if ((statusCode <= 999) || (statusCode >= 5000))
+        {
+            return false;
+        }
+
+        // Specifically called out as not-transmittable?
+        if ((statusCode == WSConstants.NO_CLOSE) || (statusCode == WSConstants.NO_CODE) || (statusCode == WSConstants.FAILED_TLS_HANDSHAKE))
+        {
+            return false;
+        }
+
+        // All others are allowed
+        return true;
+    }
 }

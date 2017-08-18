@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.websocket.common.StatusCode;
-
 /**
  * Settings for WebSocket operations.
  */
@@ -38,9 +36,9 @@ public class WSPolicy
     }
     
     /**
-     * The maximum size of a text message during parsing/generating.
+     * The maximum size of a text message during parsing.
      * <p>
-     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Text messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      * <p>
      * Default: 65536 (64 K)
      */
@@ -56,9 +54,9 @@ public class WSPolicy
     private int maxTextMessageBufferSize = 32 * KB;
 
     /**
-     * The maximum size of a binary message during parsing/generating.
+     * The maximum size of a binary message during parsing.
      * <p>
-     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Binary messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      * <p>
      * Default: 65536 (64 K)
      */
@@ -230,11 +228,11 @@ public class WSPolicy
     }
     
     /**
-     * The maximum allowed frame size.
+     * The maximum allowed frame size during parsing.
      * <p>
      *     This is used to manage frame payload memory allocation concerns.
      *     If an excessively large frame payload size is received, then this
-     *     will short circuit the parsing step and trigger a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     will short circuit the parsing step and trigger a close code 1009 (MESSAGE_TOO_LARGE)
      *     for that endpoint before the allocation of the memory for that payload is even made.
      * </p>
      *
@@ -255,9 +253,9 @@ public class WSPolicy
     }
 
     /**
-     * Get the maximum size of a binary message during parsing/generating.
+     * Get the maximum size of a binary message during parsing.
      * <p>
-     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Binary messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      * 
      * @return the maximum size of a binary message
      */
@@ -277,9 +275,9 @@ public class WSPolicy
     }
 
     /**
-     * Get the maximum size of a text message during parsing/generating.
+     * Get the maximum size of a text message during parsing.
      * <p>
-     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Text messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      * 
      * @return the maximum size of a text message.
      */
@@ -345,11 +343,11 @@ public class WSPolicy
     }
     
     /**
-     * The maximum supported size of an individual frame.
+     * The maximum supported size of an individual frame during parsing.
      * <p>
      *     This is used to manage frame payload memory allocation concerns.
      *     If an excessively large frame payload size is received, then this
-     *     will short circuit the parsing step and trigger a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     will short circuit the parsing step and trigger a close code 1009 (MESSAGE_TOO_LARGE)
      *     for that endpoint before the allocation of the memory for that payload is even made.
      * </p>
      *
@@ -380,9 +378,9 @@ public class WSPolicy
     }
     
     /**
-     * The maximum size of a binary message during parsing/generating.
+     * The maximum size of a binary message during parsing.
      * <p>
-     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Binary messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      * </p>
      *
      * @param size
@@ -398,9 +396,9 @@ public class WSPolicy
     }
     
     /**
-     * The maximum size of a binary message during parsing/generating.
+     * The maximum size of a binary message during parsing.
      * <p>
-     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Binary messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      * 
      * @param size
      *            the maximum allowed size of a binary message.
@@ -428,9 +426,9 @@ public class WSPolicy
     }
     
     /**
-     * The maximum size of a text message during parsing/generating.
+     * The maximum size of a text message during parsing.
      * <p>
-     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Text messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      *
      * @param size
      *            the maximum allowed size of a text message.
@@ -445,9 +443,9 @@ public class WSPolicy
     }
     
     /**
-     * The maximum size of a text message during parsing/generating.
+     * The maximum size of a text message during parsing.
      * <p>
-     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Text messages over this maximum will result in a close code 1009 (MESSAGE_TOO_LARGE)
      * 
      * @param size
      *            the maximum allowed size of a text message.
