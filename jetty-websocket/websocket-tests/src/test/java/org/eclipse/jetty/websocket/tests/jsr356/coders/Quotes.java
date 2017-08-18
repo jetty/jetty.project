@@ -25,22 +25,22 @@ public class Quotes
 {
     private String author;
     private List<String> quotes = new ArrayList<>();
-    
+
     public void addQuote(String quote)
     {
         quotes.add(quote);
     }
-    
+
     public String getAuthor()
     {
         return author;
     }
-    
+
     public void setAuthor(String author)
     {
         this.author = author;
     }
-    
+
     public List<String> getQuotes()
     {
         return quotes;
