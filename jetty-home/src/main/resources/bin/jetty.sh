@@ -385,7 +385,7 @@ fi
 #####################################################
 # Set STARTED timeout
 #####################################################
-if [ -z "$JETTY_START_TIMEOUT"]
+if [ -z "$JETTY_START_TIMEOUT" ]
 then
   JETTY_START_TIMEOUT=60
 fi
