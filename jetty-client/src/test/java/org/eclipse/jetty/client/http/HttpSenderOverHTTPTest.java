@@ -67,6 +67,7 @@ public class HttpSenderOverHTTPTest
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch headersLatch = new CountDownLatch(1);
@@ -100,6 +101,7 @@ public class HttpSenderOverHTTPTest
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         connection.send(request, null);
@@ -129,6 +131,7 @@ public class HttpSenderOverHTTPTest
         // Shutdown output to trigger the exception on write
         endPoint.shutdownOutput();
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
@@ -158,6 +161,7 @@ public class HttpSenderOverHTTPTest
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
@@ -193,6 +197,7 @@ public class HttpSenderOverHTTPTest
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content = "abcdef";
@@ -227,6 +232,7 @@ public class HttpSenderOverHTTPTest
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
@@ -262,6 +268,7 @@ public class HttpSenderOverHTTPTest
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination.start();
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
