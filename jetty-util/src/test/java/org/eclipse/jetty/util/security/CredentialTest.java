@@ -76,4 +76,22 @@ public class CredentialTest
         
         assertTrue (p1.equals(p2));
     }
+    
+    @Test
+    public void testStringEquals()
+    {
+        assertTrue(Credential.stringEquals("foo","foo"));
+        assertFalse(Credential.stringEquals("foo","fooo"));
+        assertFalse(Credential.stringEquals("foo","fo"));
+        assertFalse(Credential.stringEquals("foo","bar"));
+    }
+    
+    @Test
+    public void testBytesEquals()
+    {
+        assertTrue(Credential.byteEquals("foo".getBytes(),"foo".getBytes()));
+        assertFalse(Credential.byteEquals("foo".getBytes(),"fooo".getBytes()));
+        assertFalse(Credential.byteEquals("foo".getBytes(),"fo".getBytes()));
+        assertFalse(Credential.byteEquals("foo".getBytes(),"bar".getBytes()));
+    }
 }

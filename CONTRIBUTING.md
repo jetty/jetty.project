@@ -1,12 +1,12 @@
 Contributing to Jetty
 =====================
-Thanks for your interest in this project.
+Thank you for your interest in this project!
 
 Project description
 --------------------
 Jetty is a lightweight highly scalable java based web server and servlet engine.
 Our goal is to support web protocols like HTTP, HTTP/2, and WebSocket in a high
-volume low latency way that provides maximum performance while retaining the ease
+volume, low latency way that provides maximum performance while retaining the ease
 of use and compatibility with years of servlet development.
 Jetty is a modern fully async web server that has a long history as a component
 oriented technology easily embedded into applications while still offering a solid
@@ -20,18 +20,17 @@ Information regarding source code management, builds, coding standards, and more
 
 - [https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html](https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html)
 
-The canonical Jetty git repository is located at GitHub.  Providing you have
+The canonical Jetty git repository is located at [GitHub.](https://github.com/eclipse/jetty.project) Providing you have
 completed the contributors agreement mentioned below we will endeavor to pull
 your commit into Jetty proper.
 
-Contributor License Agreement
+Eclipse Contributor Agreement
 ------------------------------
-Before your contribution can be accepted by the project, you need to create and electronically sign the
-Eclipse Foundation [Contributor License Agreement](https://www.eclipse.org/legal/CLA.php) (CLA):
+Before your contribution can be accepted by the project, you need to create and electronically sign a [Eclipse Contributor Agreement (ECA)](http://www.eclipse.org/legal/ecafaq.php):
 
-1. Log in to the [Eclipse projects forge](https://projects.eclipse.org/user/login/sso). You will need to
+1. Log in to the [Eclipse foundation website](https://accounts.eclipse.org/user/login/). You will need to
    create an account with the Eclipse Foundation if you have not already done so.
-2. Click on "Contributor License Agreement", and complete the form.
+2. Click on "Eclipse ECA", and complete the form.
 
 Be sure to use the same email address in your Eclipse account that you intend to use when you commit to Git.
 

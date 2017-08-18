@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.proxy.ProxyServlet`
 * Maven Artifact: org.eclipse.jetty:jetty-proxy
 * Javadoc: {JDURL}/org/eclipse/jetty/proxy/ProxyServlet.html
-* Xref: {JXURL}/org/eclipse/jetty/proxy/ProxyServlet.html
 
 [[proxy-servlet-usage]]
 ==== Usage

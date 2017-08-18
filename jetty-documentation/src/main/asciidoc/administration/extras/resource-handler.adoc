@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.server.handler.ResourceHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
 * Javadoc: {JDURL}/org/eclipse/jetty/server/handler/ResourceHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/ResourceHandler.html
 
 [[resource-handler-usage]]
 ==== Usage

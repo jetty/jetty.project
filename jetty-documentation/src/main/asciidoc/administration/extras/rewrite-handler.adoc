@@ -26,7 +26,6 @@ The most common use is to rewrite request URIs, but it is capable of much more: 
 * Classname: org.eclipse.jetty.rewrite.handler.RewriteHandler
 * Maven artifact: org.eclipse.jetty:jetty-rewrite
 * Javadoc: {JDURL}/org/eclipse/jetty/rewrite/handler/RewriteHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/rewrite/handler/RewriteHandler.html
 
 The standard Jetty distribution bundle contains the `jetty-rewrite` link:#startup-modules[module], so all you need to do is to enable it using one of the link:#start-jar[module commands], eg:
 
@@ -98,24 +97,24 @@ There are several types of rules that are written extending useful base rule cla
 
 Matches against the request URI using the servlet pattern syntax.
 
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/CookiePatternRule.html[CookiePatternRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/CookiePatternRule.html[CookiePatternRule]::
 Adds a cookie to the response.
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/HeaderPatternRule.html[HeaderPatternRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/HeaderPatternRule.html[HeaderPatternRule]::
 Adds/modifies a header in the response.
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/RedirectPatternRule.html[RedirectPatternRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/RedirectPatternRule.html[RedirectPatternRule]::
 Redirects the response.
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/ResponsePatternRule.html[ResponsePatternRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/ResponsePatternRule.html[ResponsePatternRule]::
 Sends the response code (status or error).
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/RewritePatternRule.html[RewritePatternRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/RewritePatternRule.html[RewritePatternRule]::
 Rewrite the URI by replacing the matched request path with a fixed string.
 
 ===== RegexRule
 
 Matches against the request URI using regular expressions.
 
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/RedirectRegexRule.html[RedirectRegexRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/RedirectRegexRule.html[RedirectRegexRule]::
 Redirect the response.
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/RewriteRegexRule.html[RewriteRegexRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/RewriteRegexRule.html[RewriteRegexRule]::
 Rewrite the URI by matching with a regular expression.
 (The replacement string may use `Template:$n` to replace the nth capture group.)
 
@@ -123,16 +122,16 @@ Rewrite the URI by matching with a regular expression.
 
 Match against request headers. Match either on a header name and specific value, or on the presence of a header (with any value).
 
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/ForwardedSchemeHeaderRule.html[ForwardedSchemaHeaderRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/ForwardedSchemeHeaderRule.html[ForwardedSchemaHeaderRule]::
 Set the scheme on the request (defaulting to HTTPS).
 
 ===== Others
 
 Extra rules that defy standard classification.
 
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/MsieSslRule.html[MsieSslRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/MsieSslRule.html[MsieSslRule]::
 Disables the keep alive for SSL from IE5 or IE6.
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/LegacyRule.html[LegacyRule]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/LegacyRule.html[LegacyRule]::
 Implements the legacy API of RewriteHandler
 
 ===== RuleContainer
@@ -140,5 +139,5 @@ Implements the legacy API of RewriteHandler
 Groups rules together.
 The contained rules will only be processed if the conditions for the `RuleContainer` evaluate to true.
 
-link:{JXURL}/org/eclipse/jetty/rewrite/handler/VirtualHostRuleContainer.html[VirtualHostRuleContainer]::
+link:{JDURL}/org/eclipse/jetty/rewrite/handler/VirtualHostRuleContainer.html[VirtualHostRuleContainer]::
 Groups rules that apply only to a specific virtual host or a set of virtual hosts

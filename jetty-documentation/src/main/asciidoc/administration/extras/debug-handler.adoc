@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.server.handler.DebugHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
 * Javadoc: {JDURL}/org/eclipse/jetty/server/handler/DebugHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/DebugHandler.html
 
 [[debug-handler-usage]]
 ==== Usage

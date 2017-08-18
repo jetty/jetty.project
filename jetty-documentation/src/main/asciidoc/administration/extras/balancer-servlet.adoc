@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.proxy.BalancerServlet`
 * Maven Artifact: org.eclipse.jetty:jetty-proxy
 * Javadoc: {JDURL}/org/eclipse/jetty/proxy/BalancerServlet.html
-* Xref: {JXURL}/org/eclipse/jetty/proxy/BalancerServlet.html
 
 [[balancer-servlet-usage]]
 ==== Usage
