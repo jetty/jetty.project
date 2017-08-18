@@ -27,13 +27,13 @@ import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WSConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class UpgradeResponseAdapter implements UpgradeResponse
 {
-    public static final String SEC_WEBSOCKET_PROTOCOL = WebSocketConstants.SEC_WEBSOCKET_PROTOCOL;
+    public static final String SEC_WEBSOCKET_PROTOCOL = WSConstants.SEC_WEBSOCKET_PROTOCOL;
     private int statusCode;
     private String statusReason;
     private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);

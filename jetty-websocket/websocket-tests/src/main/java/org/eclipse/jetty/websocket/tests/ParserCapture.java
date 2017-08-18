@@ -26,7 +26,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.parser.Parser;
+import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 
 public class ParserCapture implements Parser.Handler

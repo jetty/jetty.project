@@ -36,9 +36,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class FrameCaptureExtension extends AbstractExtension
@@ -115,7 +115,7 @@ public class FrameCaptureExtension extends AbstractExtension
 
         try
         {
-            WebSocketFrame f = WebSocketFrame.copy(frame);
+            WSFrame f = WSFrame.copy(frame);
             f.setMasked(false);
             generator.generateHeaderBytes(f,buf);
             channel.write(buf);
@@ -176,7 +176,7 @@ public class FrameCaptureExtension extends AbstractExtension
                 incomingChannel = Files.newByteChannel(incomingFramesPath,CREATE,WRITE);
                 outgoingChannel = Files.newByteChannel(outgoingFramesPath,CREATE,WRITE);
 
-                this.generator = new Generator(WebSocketPolicy.newServerPolicy(),getBufferPool(),false,true);
+                this.generator = new Generator(WSPolicy.newServerPolicy(),getBufferPool(),false,true);
             }
             catch (IOException e)
             {

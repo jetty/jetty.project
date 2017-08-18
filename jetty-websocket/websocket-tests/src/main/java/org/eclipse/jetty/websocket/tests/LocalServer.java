@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.parser.Parser;
+import org.eclipse.jetty.websocket.core.Parser;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {

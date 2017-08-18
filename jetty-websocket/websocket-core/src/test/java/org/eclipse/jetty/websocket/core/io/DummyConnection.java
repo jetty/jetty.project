@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WSExtensionFactory;
 import org.eclipse.jetty.websocket.core.handshake.DummyUpgradeRequest;
@@ -44,7 +44,7 @@ public class DummyConnection extends WSConnection
         private Executor executor;
         private ByteBufferPool bufferPool;
         private DecoratedObjectFactory objectFactory;
-        private WebSocketPolicy policy;
+        private WSPolicy policy;
         private WSExtensionFactory extensionFactory;
         private ExtensionStack extensionStack;
         private UpgradeRequest upgradeRequest;
@@ -76,7 +76,7 @@ public class DummyConnection extends WSConnection
             return this;
         }
 
-        public Builder policy(WebSocketPolicy policy)
+        public Builder policy(WSPolicy policy)
         {
             this.policy = policy;
             return this;
@@ -121,7 +121,7 @@ public class DummyConnection extends WSConnection
             if (executor == null) executor = new QueuedThreadPool();
             if (bufferPool == null) bufferPool = new MappedByteBufferPool();
             if (objectFactory == null) objectFactory = new DecoratedObjectFactory();
-            if (policy == null) policy = WebSocketPolicy.newServerPolicy();
+            if (policy == null) policy = WSPolicy.newServerPolicy();
             if (extensionStack == null)
                 extensionStack = new ExtensionStack(new WSExtensionFactory());
             if (upgradeRequest == null) upgradeRequest = new DummyUpgradeRequest();
@@ -133,7 +133,7 @@ public class DummyConnection extends WSConnection
 
     public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                            DecoratedObjectFactory decoratedObjectFactory,
-                           WebSocketPolicy policy, ExtensionStack extensionStack,
+                           WSPolicy policy, ExtensionStack extensionStack,
                            UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
                            Object wsEndpoint, WSLocalEndpoint localEndpoint)
     {

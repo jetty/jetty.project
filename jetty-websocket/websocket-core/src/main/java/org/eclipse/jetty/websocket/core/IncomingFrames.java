@@ -18,25 +18,23 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.Frame;
+
 /**
- * Exception thrown to indicate a connection I/O timeout.
+ * Interface for dealing with Incoming Frames.
  */
-public class WebSocketTimeoutException extends WebSocketException
+public interface IncomingFrames
 {
-    private static final long serialVersionUID = -6145098200250676673L;
-
-    public WebSocketTimeoutException(String message)
-    {
-        super(message);
-    }
-
-    public WebSocketTimeoutException(String message, Throwable cause)
-    {
-        super(message,cause);
-    }
-
-    public WebSocketTimeoutException(Throwable cause)
-    {
-        super(cause);
-    }
+    /**
+     * Process the incoming frame.
+     * <p>
+     * Note: if you need to hang onto any information from the frame, be sure
+     * to copy it, as the information contained in the Frame will be released
+     * and/or reused by the implementation.
+     *
+     * @param frame the frame to process
+     * @param callback the read completion
+     */
+    void incomingFrame(Frame frame, Callback callback);
 }

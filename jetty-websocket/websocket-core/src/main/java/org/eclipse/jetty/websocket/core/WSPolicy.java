@@ -18,21 +18,23 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.websocket.common.StatusCode;
+
 /**
  * Settings for WebSocket operations.
  */
-public class WebSocketPolicy
+public class WSPolicy
 {
     private static final int KB = 1024;
 
-    public static WebSocketPolicy newClientPolicy()
+    public static WSPolicy newClientPolicy()
     {
-        return new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        return new WSPolicy(WSBehavior.CLIENT);
     }
 
-    public static WebSocketPolicy newServerPolicy()
+    public static WSPolicy newServerPolicy()
     {
-        return new WebSocketPolicy(WebSocketBehavior.SERVER);
+        return new WSPolicy(WSBehavior.SERVER);
     }
     
     /**
@@ -112,9 +114,9 @@ public class WebSocketPolicy
     /**
      * Behavior of the websockets
      */
-    private final WebSocketBehavior behavior;
+    private final WSBehavior behavior;
     
-    public WebSocketPolicy(WebSocketBehavior behavior)
+    public WSPolicy(WSBehavior behavior)
     {
         this.behavior = behavior;
     }
@@ -159,9 +161,9 @@ public class WebSocketPolicy
         }
     }
 
-    public WebSocketPolicy clonePolicy()
+    public WSPolicy clonePolicy()
     {
-        WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
+        WSPolicy clone = new WSPolicy(this.behavior);
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
@@ -186,7 +188,7 @@ public class WebSocketPolicy
         return asyncWriteTimeout;
     }
 
-    public WebSocketBehavior getBehavior()
+    public WSBehavior getBehavior()
     {
         return behavior;
     }
@@ -462,7 +464,7 @@ public class WebSocketPolicy
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("WebSocketPolicy@").append(Integer.toHexString(hashCode()));
+        builder.append("WSPolicy@").append(Integer.toHexString(hashCode()));
         builder.append("[").append(behavior);
         builder.append(",textSize=").append(maxTextMessageSize);
         builder.append(",binarySize=").append(maxBinaryMessageSize);

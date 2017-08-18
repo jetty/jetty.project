@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -187,10 +187,10 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append parts of message
-            WebSocketFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
+            WSFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
             // what is being tested (an empty payload)
-            WebSocketFrame msg2 = new ContinuationFrame().setPayload(new byte[0]).setFin(false);
-            WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
+            WSFrame msg2 = new ContinuationFrame().setPayload(new byte[0]).setFin(false);
+            WSFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
             
             stream.accept(msg1, Callback.NOOP);
             stream.accept(msg2, Callback.NOOP);
@@ -211,11 +211,11 @@ public class MessageInputStreamTest
         try (MessageInputStream stream = new MessageInputStream())
         {
             // Append parts of message
-            WebSocketFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
+            WSFrame msg1 = new BinaryFrame().setPayload("Hello ").setFin(false);
             // what is being tested (a null payload)
             ByteBuffer nilPayload = null;
-            WebSocketFrame msg2 = new ContinuationFrame().setPayload(nilPayload).setFin(false);
-            WebSocketFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
+            WSFrame msg2 = new ContinuationFrame().setPayload(nilPayload).setFin(false);
+            WSFrame msg3 = new ContinuationFrame().setPayload("World").setFin(true);
             
             stream.accept(msg1, Callback.NOOP);
             stream.accept(msg2, Callback.NOOP);

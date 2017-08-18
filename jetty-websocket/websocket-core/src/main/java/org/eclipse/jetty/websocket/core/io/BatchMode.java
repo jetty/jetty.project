@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.io;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 
 /**
  * The possible batch modes when invoking {@link OutgoingFrames#outgoingFrame(Frame, Callback, BatchMode)}.

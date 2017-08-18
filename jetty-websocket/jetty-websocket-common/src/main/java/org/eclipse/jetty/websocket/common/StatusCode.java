@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.common;
 
 /**
  * The <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455 specified status codes</a> and <a

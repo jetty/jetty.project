@@ -26,16 +26,17 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 
 public class IncomingFramesCapture implements IncomingFrames
 {
-    public BlockingQueue<WebSocketFrame> frames = new LinkedBlockingDeque<>();
+    public BlockingQueue<WSFrame> frames = new LinkedBlockingDeque<>();
     
     @Override
     public void incomingFrame(Frame frame, Callback callback)
     {
-        WebSocketFrame copy = WebSocketFrame.copy(frame);
+        WSFrame copy = WSFrame.copy(frame);
         frames.offer(copy);
         callback.succeeded();
     }
@@ -53,7 +54,7 @@ public class IncomingFramesCapture implements IncomingFrames
     public int getFrameCount(byte op)
     {
         int count = 0;
-        for (WebSocketFrame frame : frames)
+        for (WSFrame frame : frames)
         {
             if (frame.getOpCode() == op)
             {

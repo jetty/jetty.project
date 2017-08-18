@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.parser;
+package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -25,12 +25,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
@@ -40,7 +34,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -69,7 +63,7 @@ public class Parser
     }
 
     private final Logger LOG;
-    private final WebSocketPolicy policy;
+    private final WSPolicy policy;
     private final ByteBufferPool bufferPool;
     private final Parser.Handler parserHandler;
 
@@ -77,12 +71,12 @@ public class Parser
     private State state = State.START;
     private int cursor = 0;
     // Frame
-    private WebSocketFrame frame;
+    private WSFrame frame;
     private boolean priorDataFrame;
     // payload specific
     private ByteBuffer payload;
     private int payloadLength;
-    private PayloadProcessor maskProcessor = new DeMaskProcessor();
+    private ParserDeMasker deMasker = new ParserDeMasker();
 
     /** 
      * Is there an extension using RSV flag?
@@ -96,7 +90,7 @@ public class Parser
      */
     private byte flagsInUse=0x00;
     
-    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool, Parser.Handler parserHandler)
+    public Parser(WSPolicy wspolicy, ByteBufferPool bufferPool, Parser.Handler parserHandler)
     {
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
@@ -147,7 +141,7 @@ public class Parser
         }
     }
 
-    public WebSocketPolicy getPolicy()
+    public WSPolicy getPolicy()
     {
         return policy;
     }
@@ -174,9 +168,9 @@ public class Parser
      * @return true if parsing of entire buffer was successful,
      * false if parsing was interrupted by {@link Handler}.  If false, cease parsing the remaining
      * buffer until such time its allowed again (this is important for read backpressure scenarios)
-     * @throws WebSocketException if unable to parse properly
+     * @throws WSException if unable to parse properly
      */
-    public boolean parse(ByteBuffer buffer) throws WebSocketException
+    public boolean parse(ByteBuffer buffer) throws WSException
     {
         // quick fail, nothing left to parse
         if (!buffer.hasRemaining())
@@ -222,11 +216,11 @@ public class Parser
             buffer.position(buffer.limit()); // consume remaining
             
             // let session know
-            WebSocketException wse;
-            if(t instanceof WebSocketException)
-                wse = (WebSocketException) t;
+            WSException wse;
+            if(t instanceof WSException)
+                wse = (WSException) t;
             else
-                wse = new WebSocketException(t);
+                wse = new WSException(t);
                 
             throw wse;
         }
@@ -234,7 +228,7 @@ public class Parser
     
     private void assertBehavior()
     {
-        if (policy.getBehavior() == WebSocketBehavior.SERVER)
+        if (policy.getBehavior() == WSBehavior.SERVER)
         {
             /* Parsing on server.
              *
@@ -251,7 +245,7 @@ public class Parser
                 throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
             }
         }
-        else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+        else if(policy.getBehavior() == WSBehavior.CLIENT)
         {
             // Required by RFC-6455 / Section 5.1
             if (frame.isMasked())
@@ -460,7 +454,7 @@ public class Parser
                             return true;
                         }
 
-                        maskProcessor.reset(frame);
+                        deMasker.reset(frame);
                         state = State.PAYLOAD;
                     }
 
@@ -488,7 +482,7 @@ public class Parser
                                 return true;
                             }
 
-                            maskProcessor.reset(frame);
+                            deMasker.reset(frame);
                             state = State.PAYLOAD;
                         }
                     }
@@ -509,7 +503,7 @@ public class Parser
                             return true;
                         }
 
-                        maskProcessor.reset(frame);
+                        deMasker.reset(frame);
                         state = State.PAYLOAD;
                     }
                     else
@@ -534,7 +528,7 @@ public class Parser
                             return true;
                         }
 
-                        maskProcessor.reset(frame);
+                        deMasker.reset(frame);
                         state = State.PAYLOAD;
                     }
                     break;
@@ -597,7 +591,7 @@ public class Parser
                 LOG.debug("Raw Payload: {}",BufferUtil.toDetailString(window));
             }
 
-            maskProcessor.process(window);
+            deMasker.process(window);
 
             if (payload == null)
             {

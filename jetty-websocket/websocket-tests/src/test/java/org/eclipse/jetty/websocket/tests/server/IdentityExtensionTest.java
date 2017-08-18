@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WSConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.core.CloseInfo;
@@ -76,11 +76,11 @@ public class IdentityExtensionTest
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
         
         Map<String, String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
-        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS, "identity;param=0, identity;param=1, identity ; param = '2' ; other = ' some = value '");
+        upgradeHeaders.put(WSConstants.SEC_WEBSOCKET_EXTENSIONS, "identity;param=0, identity;param=1, identity ; param = '2' ; other = ' some = value '");
         
         try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
         {
-            String negotiatedExtensions = session.upgradeResponse.get(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS);
+            String negotiatedExtensions = session.upgradeResponse.get(WSConstants.SEC_WEBSOCKET_EXTENSIONS);
             
             List<ExtensionConfig> extensionConfigList = ExtensionConfig.parseList(negotiatedExtensions);
             assertThat("Client Upgrade Response.Extensions", extensionConfigList.size(), is(3));

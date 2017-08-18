@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 
 /**
  * Support for writing a single WebSocket TEXT message via a {@link Writer}

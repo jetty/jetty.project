@@ -35,14 +35,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.Generator;
 
 /**
  * Interface for working with bytes destined for {@link EndPoint#write(org.eclipse.jetty.util.Callback, ByteBuffer...)}
  */
-public class FrameFlusher
+public class FrameFlusher implements OutgoingFrames
 {
     private class Flusher extends IteratingCallback
     {
@@ -342,7 +343,8 @@ public class FrameFlusher
         }
     }
 
-    public void enqueue(Frame frame, Callback callback, BatchMode batchMode)
+    @Override
+    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
         Throwable failed = null;

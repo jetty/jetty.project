@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.common;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 
 public class FramePipes
 {

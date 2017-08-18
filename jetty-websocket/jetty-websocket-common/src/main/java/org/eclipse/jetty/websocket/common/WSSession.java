@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
@@ -52,7 +52,7 @@ public class WSSession extends WSConnection implements Session
      */
     public WSSession(EndPoint jettyEndpoint, Executor executor, ByteBufferPool bufferPool,
                      DecoratedObjectFactory objectFactory,
-                     WebSocketPolicy policy, ExtensionStack extensionStack,
+                     WSPolicy policy, ExtensionStack extensionStack,
                      UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(jettyEndpoint, executor, bufferPool, objectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);

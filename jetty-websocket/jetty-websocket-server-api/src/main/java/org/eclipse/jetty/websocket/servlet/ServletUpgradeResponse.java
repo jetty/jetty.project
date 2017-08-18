@@ -30,7 +30,7 @@ import java.util.TreeMap;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WSConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
@@ -123,7 +123,7 @@ public class ServletUpgradeResponse implements UpgradeResponse
     @Override
     public String getAcceptedSubProtocol()
     {
-        return getHeader(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL);
+        return getHeader(WSConstants.SEC_WEBSOCKET_PROTOCOL);
     }
     
     @Override
@@ -237,7 +237,7 @@ public class ServletUpgradeResponse implements UpgradeResponse
     @Override
     public void setAcceptedSubProtocol(String protocol)
     {
-        response.setHeader(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, protocol);
+        response.setHeader(WSConstants.SEC_WEBSOCKET_PROTOCOL, protocol);
         subprotocolNegotiated = true;
     }
     
@@ -247,7 +247,7 @@ public class ServletUpgradeResponse implements UpgradeResponse
         this.extensions.clear();
         this.extensions.addAll(configs);
         String value = ExtensionConfig.toHeaderValue(configs);
-        response.setHeader(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS, value);
+        response.setHeader(WSConstants.SEC_WEBSOCKET_EXTENSIONS, value);
         extensionsNegotiated = true;
     }
     

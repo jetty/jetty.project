@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WSConstants;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
@@ -189,7 +189,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             String ver = getHttpFields().get(HttpHeader.SEC_WEBSOCKET_VERSION);
             if (ver == null)
             {
-                return Integer.toString(WebSocketConstants.SPEC_VERSION);
+                return Integer.toString(WSConstants.SPEC_VERSION);
             }
             return ver;
         }

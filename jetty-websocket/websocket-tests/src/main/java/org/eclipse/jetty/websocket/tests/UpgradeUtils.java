@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.tests;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WSConstants;
 
 public class UpgradeUtils
 {
@@ -53,10 +53,10 @@ public class UpgradeUtils
         headers.put("Host", "local");
         headers.put("Connection", "Upgrade");
         headers.put("Upgrade", "WebSocket");
-        headers.put(WebSocketConstants.SEC_WEBSOCKET_KEY, "dGhlIHNhbXBsZSBub25jZQ==");
-        headers.put(WebSocketConstants.SEC_WEBSOCKET_ORIGIN, "ws://local/");
-        // headers.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "echo");
-        headers.put(WebSocketConstants.SEC_WEBSOCKET_VERSION, "13");
+        headers.put(WSConstants.SEC_WEBSOCKET_KEY, "dGhlIHNhbXBsZSBub25jZQ==");
+        headers.put(WSConstants.SEC_WEBSOCKET_ORIGIN, "ws://local/");
+        // headers.put(WSConstants.SEC_WEBSOCKET_PROTOCOL, "echo");
+        headers.put(WSConstants.SEC_WEBSOCKET_VERSION, "13");
         return headers;
     }
 }

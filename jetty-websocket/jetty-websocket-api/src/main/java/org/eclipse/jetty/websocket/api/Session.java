@@ -25,8 +25,8 @@ import java.net.InetSocketAddress;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.StatusCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.StatusCode;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
@@ -116,11 +116,11 @@ public interface Session extends Closeable
     InetSocketAddress getLocalAddress();
 
     /**
-     * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
+     * Access the (now read-only) {@link WSPolicy} in use for this connection.
      * 
      * @return the policy in use
      */
-    WebSocketPolicy getPolicy();
+    WSPolicy getPolicy();
 
     /**
      * Returns the version of the websocket protocol currently being used. This is taken as the value of the Sec-WebSocket-Version header used in the opening

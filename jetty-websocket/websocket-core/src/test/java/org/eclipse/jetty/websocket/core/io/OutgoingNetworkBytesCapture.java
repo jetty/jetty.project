@@ -30,7 +30,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.junit.Assert;
 
 /**

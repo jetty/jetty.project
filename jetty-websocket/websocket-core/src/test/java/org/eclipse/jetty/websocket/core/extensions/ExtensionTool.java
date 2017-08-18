@@ -32,11 +32,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.core.parser.Parser;
+import org.eclipse.jetty.websocket.core.Parser;
 import org.hamcrest.Matchers;
 
 public class ExtensionTool
@@ -107,7 +107,7 @@ public class ExtensionTool
 
             for (int i = 0; i < expectedCount; i++)
             {
-                WebSocketFrame actual = capture.frames.poll();
+                WSFrame actual = capture.frames.poll();
 
                 String prefix = String.format("frame[%d]",i);
                 assertThat(prefix + ".opcode",actual.getOpCode(), Matchers.is(expectedFrames[i].getOpCode()));
@@ -124,11 +124,11 @@ public class ExtensionTool
     }
 
     private final DecoratedObjectFactory objectFactory;
-    private final WebSocketPolicy policy;
+    private final WSPolicy policy;
     private final ByteBufferPool bufferPool;
     private final WSExtensionFactory factory;
 
-    public ExtensionTool(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public ExtensionTool(WSPolicy policy, ByteBufferPool bufferPool)
     {
         this.objectFactory = new DecoratedObjectFactory();
         this.policy = policy;

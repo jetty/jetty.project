@@ -38,10 +38,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.StatusCode;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.StatusCode;
+import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WSBehavior;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -50,8 +51,8 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.generator.UnitGenerator;
 import org.eclipse.jetty.websocket.core.util.MaskedByteBuffer;
 import org.hamcrest.CoreMatchers;
@@ -65,7 +66,7 @@ public class ParserTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     
-    private ParserCapture parse(WebSocketPolicy policy, ByteBuffer buffer)
+    private ParserCapture parse(WSPolicy policy, ByteBuffer buffer)
     {
         ParserCapture capture = new ParserCapture();
         Parser parser = new Parser(policy, new MappedByteBufferPool(), capture);
@@ -96,7 +97,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         BinaryFrame pActual = (BinaryFrame) capture.framesQueue.poll(1, TimeUnit.SECONDS);
@@ -127,7 +128,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.BINARY,1);
@@ -161,7 +162,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         BinaryFrame pActual = (BinaryFrame) capture.framesQueue.poll(1, TimeUnit.SECONDS);
@@ -193,7 +194,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.BINARY,1);
@@ -226,7 +227,7 @@ public class ParserTest
         
         expected.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         policy.setMaxBinaryMessageSize(length);
         ParserCapture capture = parse(policy, expected);
         
@@ -260,7 +261,7 @@ public class ParserTest
         
         expected.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         policy.setMaxBinaryMessageSize(length);
         ParserCapture capture = parse(policy, expected);
     
@@ -284,7 +285,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.BINARY,1);
@@ -301,7 +302,7 @@ public class ParserTest
     {
         ByteBuffer expected = Hex.asByteBuffer("880100");
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         expectedException.expect(ProtocolException.class);
         expectedException.expectMessage(CoreMatchers.containsString("Invalid close frame payload length"));
         parse(policy, expected);
@@ -320,7 +321,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.CLOSE,1);
@@ -363,7 +364,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         expectedException.expect(ProtocolException.class);
         expectedException.expectMessage(CoreMatchers.containsString("Invalid control frame payload length"));
         parse(policy, expected);
@@ -382,7 +383,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.CLOSE,1);
@@ -418,7 +419,7 @@ public class ParserTest
         expected.put(messageBytes);
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.CLOSE,1);
@@ -447,7 +448,7 @@ public class ParserTest
         expected.put(messageBytes); // status reason
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.CLOSE,1);
@@ -465,14 +466,14 @@ public class ParserTest
     @Test
     public void testParse_Continuation_BadFinState()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<WSFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
         send.add(new ContinuationFrame().setPayload("fragment2").setFin(true));
         send.add(new ContinuationFrame().setPayload("fragment3").setFin(false)); // bad frame
         send.add(new TextFrame().setPayload("fragment4").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
         
         expectedException.expect(ProtocolException.class);
@@ -491,7 +492,7 @@ public class ParserTest
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
         byte msg[] = StringUtil.getUtf8Bytes(utf8);
 
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<WSFrame> send = new ArrayList<>();
         int textCount = 0;
         int continuationCount = 0;
         int len = msg.length;
@@ -520,10 +521,10 @@ public class ParserTest
         }
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
     
-        WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
     
-        WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy clientPolicy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(clientPolicy, completeBuf);
     
         capture.assertHasFrame(OpCode.TEXT,textCount);
@@ -540,7 +541,7 @@ public class ParserTest
     @Test
     public void testParse_Interleaved_PingFrames()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<WSFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("f1").setFin(false));
         send.add(new ContinuationFrame().setPayload(",f2").setFin(false));
         send.add(new PingFrame().setPayload("ping-1"));
@@ -550,10 +551,10 @@ public class ParserTest
         send.add(new ContinuationFrame().setPayload(",f5").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
     
-        WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
     
-        WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy clientPolicy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(clientPolicy, completeBuf);
     
     
@@ -570,7 +571,7 @@ public class ParserTest
         // Put nothing in the buffer.
         buf.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ParserCapture capture = parse(policy, buf);
     
         assertThat("Frame Count",capture.framesQueue.size(),is(0));
@@ -588,7 +589,7 @@ public class ParserTest
         
         expected.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
     
         expectedException.expect(ProtocolException.class);
         expectedException.expectMessage(containsString("Unknown opcode: 11"));
@@ -607,7 +608,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         
         expectedException.expect(ProtocolException.class);
         expectedException.expectMessage(containsString("Unknown opcode: 12"));
@@ -626,7 +627,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         
         expectedException.expect(ProtocolException.class);
         expectedException.expectMessage(containsString("Unknown opcode: 3"));
@@ -645,7 +646,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         
         expectedException.expect(ProtocolException.class);
         expectedException.expectMessage(containsString("Unknown opcode: 4"));
@@ -677,7 +678,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.PING,1);
@@ -696,7 +697,7 @@ public class ParserTest
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         BufferUtil.flipToFlush(buf,0);
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.PING,1);
@@ -726,7 +727,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.PING,1);
@@ -749,7 +750,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.PING,1);
@@ -780,7 +781,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.PING,1);
@@ -823,7 +824,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         
         expectedException.expect(ProtocolException.class);
         parse(policy, expected);
@@ -838,15 +839,15 @@ public class ParserTest
     @Test
     public void testParse_PongTextClose()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<WSFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("ping"));
         send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
 
-        WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(serverPolicy).asBuffer(send);
         
-        WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy clientPolicy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(clientPolicy, completeBuf);
     
         capture.assertHasFrame(OpCode.TEXT,1);
@@ -887,7 +888,7 @@ public class ParserTest
         
         expected.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         
         expectedException.expect(ProtocolException.class);
         parse(policy, expected);
@@ -902,7 +903,7 @@ public class ParserTest
     @Test
     public void testParse_RFC6455_FragmentedUnmaskedTextMessage() throws InterruptedException
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = new ParserCapture();
         Parser parser = new Parser(policy, new MappedByteBufferPool(), capture);
         
@@ -930,7 +931,7 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
     
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         String actual = BufferUtil.toUTF8String(txt.getPayload());
         assertThat("TextFrame[0].data", actual, is("Hel"));
         txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
@@ -954,12 +955,12 @@ public class ParserTest
                 { (byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.PONG,1);
         
-        WebSocketFrame pong = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame pong = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         String actual = BufferUtil.toUTF8String(pong.getPayload());
         assertThat("PongFrame.payload",actual,is("Hello"));
     }
@@ -980,12 +981,12 @@ public class ParserTest
                 { (byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58 });
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
         
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         String actual = BufferUtil.toUTF8String(txt.getPayload());
         assertThat("TextFrame.payload",actual,is("Hello"));
     }
@@ -1013,7 +1014,7 @@ public class ParserTest
         }
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.BINARY,1);
@@ -1054,7 +1055,7 @@ public class ParserTest
         }
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = new ParserCapture();
         Parser parser = new Parser(policy, new MappedByteBufferPool(),capture);
         assertThat(parser.parse(buf), is(true));
@@ -1089,12 +1090,12 @@ public class ParserTest
                 { (byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.PING,1);
         
-        WebSocketFrame ping = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame ping = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         String actual = BufferUtil.toUTF8String(ping.getPayload());
         assertThat("PingFrame.payload",actual,is("Hello"));
     }
@@ -1115,12 +1116,12 @@ public class ParserTest
                 { (byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f });
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
         
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         String actual = BufferUtil.toUTF8String(txt.getPayload());
         assertThat("TextFrame.payload",actual,is("Hello"));
     }
@@ -1148,7 +1149,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.TEXT,1);
@@ -1182,7 +1183,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.TEXT,1);
@@ -1216,7 +1217,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.TEXT,1);
@@ -1250,7 +1251,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.TEXT,1);
@@ -1284,7 +1285,7 @@ public class ParserTest
         }
         
         expected.flip();
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         policy.setMaxTextMessageSize(length);
         ParserCapture capture = parse(policy, expected);
         
@@ -1319,7 +1320,7 @@ public class ParserTest
         
         expected.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         policy.setMaxTextMessageSize(length);
         ParserCapture capture = parse(policy, expected);
         
@@ -1338,12 +1339,12 @@ public class ParserTest
     @Test
     public void testParse_Text_BadFinState()
     {
-        List<WebSocketFrame> send = new ArrayList<>();
+        List<WSFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
         send.add(new TextFrame().setPayload("fragment2").setFin(true)); // bad frame, must be continuation
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL));
 
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ByteBuffer completeBuf = new UnitGenerator(policy).asBuffer(send);
         
         expectedException.expect(ProtocolException.class);
@@ -1363,7 +1364,7 @@ public class ParserTest
         
         expected.flip();
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ParserCapture capture = parse(policy, expected);
         
         capture.assertHasFrame(OpCode.TEXT,1);
@@ -1375,7 +1376,7 @@ public class ParserTest
     @Test
     public void testParse_Text_FrameTooLargeDueToPolicy() throws Exception
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         // Artificially small buffer/payload
         policy.setInputBufferSize(1024); // read buffer
         policy.setMaxAllowedFrameSize(1024); // streaming buffer (not used in this test)
@@ -1420,12 +1421,12 @@ public class ParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
         
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WSPolicy policy = WSPolicy.newServerPolicy();
         policy.setMaxTextMessageSize(100000);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
@@ -1436,15 +1437,15 @@ public class ParserTest
         byte payload[] = new byte[65536];
         Arrays.fill(payload,(byte)'*');
 
-        List<WebSocketFrame> frames = new ArrayList<>();
+        List<WSFrame> frames = new ArrayList<>();
         TextFrame text = new TextFrame();
         text.setPayload(ByteBuffer.wrap(payload));
         text.setMask(Hex.asByteArray("11223344"));
         frames.add(text);
         frames.add(new CloseFrame().setPayload(StatusCode.NORMAL));
     
-        WebSocketPolicy serverPolicy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        WebSocketPolicy clientPolicy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy serverPolicy = new WSPolicy(WSBehavior.SERVER);
+        WSPolicy clientPolicy = new WSPolicy(WSBehavior.CLIENT);
         
         // Build up raw (network bytes) buffer
         ByteBuffer networkBytes = new UnitGenerator(clientPolicy).asBuffer(frames);
@@ -1463,7 +1464,7 @@ public class ParserTest
         }
 
         assertThat("Frame Count",capture.framesQueue.size(),is(2));
-        WebSocketFrame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
         ByteBuffer actualPayload = frame.getPayload();
         assertThat("Frame[0].payload.length",actualPayload.remaining(),is(payload.length));
@@ -1497,11 +1498,11 @@ public class ParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
@@ -1518,11 +1519,11 @@ public class ParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
@@ -1551,12 +1552,12 @@ public class ParserTest
         
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("TextFrame[0].data",txt.getPayloadAsUTF8(),is(part1));
         txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("TextFrame[1].data",txt.getPayloadAsUTF8(),is(part2));
@@ -1576,11 +1577,11 @@ public class ParserTest
         MaskedByteBuffer.putPayload(buf,utf);
         buf.flip();
         
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
         ParserCapture capture = parse(policy, buf);
         
         capture.assertHasFrame(OpCode.TEXT,1);
-        WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
     }
 }

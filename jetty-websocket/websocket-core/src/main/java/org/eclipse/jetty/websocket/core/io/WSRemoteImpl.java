@@ -28,8 +28,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WSException;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -37,12 +38,12 @@ import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 
 /**
  * Represents the remote websocket endpoint, with facilities to send WebSocketFrames
  */
-public class WSRemote implements Closeable, WSRemoteEndpoint
+public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
 {
     private enum MsgType
     {
@@ -62,7 +63,7 @@ public class WSRemote implements Closeable, WSRemoteEndpoint
     private AtomicBoolean open = new AtomicBoolean(false);
     private volatile BatchMode batchMode = BatchMode.AUTO;
 
-    public WSRemote(OutgoingFrames outgoing)
+    public WSRemoteImpl(OutgoingFrames outgoing)
     {
         this.outgoing = outgoing;
     }
@@ -274,7 +275,7 @@ public class WSRemote implements Closeable, WSRemoteEndpoint
         }
     }
 
-    public void sendFrame(WebSocketFrame frame, Callback callback)
+    public void sendFrame(WSFrame frame, Callback callback)
     {
         assertIsOpen();
         lockMsg(MsgType.ASYNC);
@@ -295,7 +296,7 @@ public class WSRemote implements Closeable, WSRemoteEndpoint
         }
     }
 
-    public void unlockedSendFrame(WebSocketFrame frame, Callback callback)
+    public void unlockedSendFrame(WSFrame frame, Callback callback)
     {
         assertIsOpen();
         try
@@ -339,7 +340,7 @@ public class WSRemote implements Closeable, WSRemoteEndpoint
     {
         if (!open.get())
         {
-            throw new WebSocketException("WSRemote not open");
+            throw new WSException("WSRemoteImpl not open");
         }
     }
 

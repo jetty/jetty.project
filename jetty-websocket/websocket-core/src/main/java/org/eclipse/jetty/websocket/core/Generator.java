@@ -16,17 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.generator;
+package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.Extension;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
@@ -62,7 +58,7 @@ public class Generator
      */
     public static final int MAX_HEADER_LENGTH = 28;
 
-    private final WebSocketBehavior behavior;
+    private final WSBehavior behavior;
     private final ByteBufferPool bufferPool;
     private final boolean readOnly;
     
@@ -88,7 +84,7 @@ public class Generator
      * @param bufferPool
      *            the buffer pool to use
      */
-    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public Generator(WSPolicy policy, ByteBufferPool bufferPool)
     {
         this(policy,bufferPool,true,false);
     }
@@ -103,7 +99,7 @@ public class Generator
      * @param validating
      *            true to enable RFC frame validation
      */
-    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating)
+    public Generator(WSPolicy policy, ByteBufferPool bufferPool, boolean validating)
     {
         this(policy,bufferPool,validating,false);
     }
@@ -120,7 +116,7 @@ public class Generator
      * @param readOnly
      *            true if generator is to treat frames as read-only and not modify them. Useful for debugging purposes, but not generally for runtime use.
      */
-    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating, boolean readOnly)
+    public Generator(WSPolicy policy, ByteBufferPool bufferPool, boolean validating, boolean readOnly)
     {
         this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
@@ -363,7 +359,7 @@ public class Generator
         }
     }
 
-    public WebSocketBehavior getBehavior()
+    public WSBehavior getBehavior()
     {
         return behavior;
     }

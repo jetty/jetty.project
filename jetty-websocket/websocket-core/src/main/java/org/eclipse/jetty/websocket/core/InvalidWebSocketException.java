@@ -22,7 +22,7 @@ package org.eclipse.jetty.websocket.core;
  * Indicating that the provided Class is not a valid WebSocket per the chosen API.
  */
 @SuppressWarnings("serial")
-public class InvalidWebSocketException extends WebSocketException
+public class InvalidWebSocketException extends WSException
 {
     public InvalidWebSocketException(String message)
     {

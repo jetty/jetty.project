@@ -29,11 +29,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WSBehavior;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.parser.DeMaskProcessor;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.ParserDeMasker;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -44,20 +44,20 @@ public class DeMaskProcessorTest
     @Test
     public void testDeMaskText()
     {
-        // Use a string that is not multiple of 4 in length to test if/else branches in DeMaskProcessor
+        // Use a string that is not multiple of 4 in length to test if/else branches in ParserDeMasker
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01";
 
-        WebSocketFrame frame = new TextFrame().setPayload(message);
+        WSFrame frame = new TextFrame().setPayload(message);
         frame.setMask(TypeUtil.fromHexString("11223344"));
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ByteBuffer buf = new UnitGenerator(policy).generate(frame);
         LOG.debug("Buf: {}",BufferUtil.toDetailString(buf));
         ByteBuffer payload = buf.slice();
         payload.position(6); // where payload starts
         LOG.debug("Payload: {}",BufferUtil.toDetailString(payload));
 
-        DeMaskProcessor demask = new DeMaskProcessor();
+        ParserDeMasker demask = new ParserDeMasker();
         demask.reset(frame);
         demask.process(payload);
 
@@ -77,7 +77,7 @@ public class DeMaskProcessorTest
         frame.setPayload(ByteBuffer.wrap(message));
         frame.setMask(Hex.asByteArray("11223344"));
     
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
         ByteBuffer buf = new UnitGenerator(policy).generate(frame);
         LOG.debug("Buf: {}",BufferUtil.toDetailString(buf));
         ByteBuffer payload = buf.slice();
@@ -86,7 +86,7 @@ public class DeMaskProcessorTest
         LOG.debug("Payload: {}",BufferUtil.toDetailString(payload));
         LOG.debug("Pre-Processed: {}", Hex.asHex(payload));
 
-        DeMaskProcessor demask = new DeMaskProcessor();
+        ParserDeMasker demask = new ParserDeMasker();
         demask.reset(frame);
         ByteBuffer slice1 = payload.slice();
         ByteBuffer slice2 = payload.slice();

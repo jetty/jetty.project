@@ -23,7 +23,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
 
 /**
@@ -57,7 +57,7 @@ public interface WebSocketContainerScope
      * 
      * @return the websocket policy
      */
-    WebSocketPolicy getPolicy();
+    WSPolicy getPolicy();
 
     /**
      * The SslContextFactory in use by the container.

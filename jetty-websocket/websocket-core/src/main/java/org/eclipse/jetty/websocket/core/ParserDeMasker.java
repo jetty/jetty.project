@@ -16,13 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.parser;
+package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.core.Frame;
 
-public class DeMaskProcessor implements PayloadProcessor
+public class ParserDeMasker implements ParserPayloadProcessor
 {
     private byte[] maskBytes;
     private int maskInt;

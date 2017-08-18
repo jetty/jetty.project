@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 
 /**
  * Support for writing a single WebSocket BINARY message via a {@link OutputStream}

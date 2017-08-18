@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.junit.Assert;
 
 /**

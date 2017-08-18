@@ -63,14 +63,13 @@ public class CloseStatus
      */
     public CloseStatus()
     {
-        this(StatusCode.NO_CODE);
+        this(WSConstants.NO_CODE);
     }
 
     /**
      * Creates a reason for closing a web socket connection with the given status code and no reason phrase.
      *
      * @param statusCode the close code
-     * @see StatusCode
      */
     public CloseStatus(int statusCode)
     {
@@ -82,7 +81,6 @@ public class CloseStatus
      *
      * @param statusCode the close code
      * @param reasonPhrase the reason phrase
-     * @see StatusCode
      */
     public CloseStatus(int statusCode, String reasonPhrase)
     {

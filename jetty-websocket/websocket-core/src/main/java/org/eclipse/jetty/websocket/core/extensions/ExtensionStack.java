@@ -36,12 +36,12 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.parser.Parser;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.Parser;
 
 /**
  * Represents the stack of Extensions.
@@ -221,7 +221,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
      * @param configs
      *            the configurations being requested
      */
-    public void negotiate(DecoratedObjectFactory objectFactory, WebSocketPolicy policy, ByteBufferPool bufferPool, List<ExtensionConfig> configs)
+    public void negotiate(DecoratedObjectFactory objectFactory, WSPolicy policy, ByteBufferPool bufferPool, List<ExtensionConfig> configs)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Extension Configs={}",configs);
@@ -299,7 +299,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         this.nextOutgoing = nextOutgoing;
     }
 
-    public void setPolicy(WebSocketPolicy policy)
+    public void setPolicy(WSPolicy policy)
     {
         for (Extension extension : extensions)
         {

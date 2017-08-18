@@ -27,8 +27,8 @@ import java.util.Set;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WSException;
 
 public class WSExtensionFactory implements Iterable<Class<? extends Extension>>
 {
@@ -73,7 +73,7 @@ public class WSExtensionFactory implements Iterable<Class<? extends Extension>>
         return availableExtensions.values().iterator();
     }
 
-    public Extension newInstance(DecoratedObjectFactory objectFactory, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionConfig config)
+    public Extension newInstance(DecoratedObjectFactory objectFactory, WSPolicy policy, ByteBufferPool bufferPool, ExtensionConfig config)
     {
         if (config == null)
         {
@@ -105,7 +105,7 @@ public class WSExtensionFactory implements Iterable<Class<? extends Extension>>
         }
         catch (InstantiationException | IllegalAccessException e)
         {
-            throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
+            throw new WSException("Cannot instantiate extension: " + extClass,e);
         }
     }
 

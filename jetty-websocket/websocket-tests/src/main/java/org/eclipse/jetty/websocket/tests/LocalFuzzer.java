@@ -35,12 +35,12 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WSConstants;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.parser.Parser;
+import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.hamcrest.Matchers;
 
@@ -353,7 +353,7 @@ public class LocalFuzzer implements AutoCloseable
         LOG.debug("Response: {}", parsedResponse);
         
         assertThat("Is Switching Protocols", parsedResponse.getStatus(), is(101));
-        assertThat("Is Connection Upgrade", parsedResponse.get(WebSocketConstants.SEC_WEBSOCKET_ACCEPT), notNullValue());
+        assertThat("Is Connection Upgrade", parsedResponse.get(WSConstants.SEC_WEBSOCKET_ACCEPT), notNullValue());
         assertThat("Is Connection Upgrade", parsedResponse.get("Connection"), is("Upgrade"));
         assertThat("Is WebSocket Upgrade", parsedResponse.get("Upgrade"), is("WebSocket"));
         return parsedResponse;

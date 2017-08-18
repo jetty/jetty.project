@@ -43,27 +43,29 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.StatusCode;
+import org.eclipse.jetty.websocket.core.Generator;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.Parser;
+import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.WSBehavior;
+import org.eclipse.jetty.websocket.core.WSException;
+import org.eclipse.jetty.websocket.core.WSTimeoutException;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.generator.Generator;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.parser.Parser;
 import org.eclipse.jetty.websocket.core.util.CompletionCallback;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WSConnection extends AbstractConnection implements Parser.Handler, IncomingFrames, SuspendToken, Connection.UpgradeTo, Dumpable
+public class WSConnection extends AbstractConnection implements Parser.Handler, IncomingFrames, OutgoingFrames, SuspendToken, Connection.UpgradeTo, Dumpable
 {
     private class Flusher extends FrameFlusher
     {
@@ -103,7 +105,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
-    private final WebSocketPolicy policy;
+    private final WSPolicy policy;
     private final AtomicBoolean suspendToken;
     private final AtomicBoolean closed = new AtomicBoolean();
     private final FrameFlusher flusher;
@@ -142,7 +144,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
      */
     public WSConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                         DecoratedObjectFactory decoratedObjectFactory,
-                        WebSocketPolicy policy, ExtensionStack extensionStack,
+                        WSPolicy policy, ExtensionStack extensionStack,
                         UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(endp, executor);
@@ -151,7 +153,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
         Objects.requireNonNull(decoratedObjectFactory, "DecoratedObjectFactory");
-        Objects.requireNonNull(policy, "WebSocketPolicy");
+        Objects.requireNonNull(policy, "WSPolicy");
         Objects.requireNonNull(extensionStack, "ExtensionStack");
         Objects.requireNonNull(upgradeRequest, "UpgradeRequest");
         Objects.requireNonNull(upgradeResponse, "UpgradeResponse");
@@ -183,6 +185,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         this.extensionStack.configure(this.generator);
 
         this.extensionStack.setNextIncoming(this);
+        this.extensionStack.setNextOutgoing(flusher);
 
         this.outgoingFrames = extensionStack;
         this.incomingFrames = extensionStack;
@@ -215,7 +218,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Close Frame Previously Sent: ignoring: {} [{}]", closeStatus, callback);
-            callback.failed(new WebSocketException("Already closed"));
+            callback.failed(new WSException("Already closed"));
         }
     }
 
@@ -261,7 +264,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         return parser;
     }
 
-    public WebSocketPolicy getPolicy()
+    public WSPolicy getPolicy()
     {
         return policy;
     }
@@ -321,7 +324,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
 
-        notifyError(new WebSocketTimeoutException("Connection Idle Timeout"));
+        notifyError(new WSTimeoutException("Connection Idle Timeout"));
         return true;
     }
 
@@ -423,21 +426,21 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
-            close(StatusCode.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
+            close(WSConstants.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof SocketTimeoutException)
         {
             // A path often seen in Windows
-            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof IOException)
         {
-            close(StatusCode.PROTOCOL, cause.getMessage(), onDisconnectCallback);
+            close(WSConstants.PROTOCOL, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof SocketException)
         {
             // A path unique to Unix
-            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof CloseException)
         {
@@ -447,12 +450,12 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
             // Force disconnect for protocol breaking status codes
             switch (ce.getStatusCode())
             {
-                case StatusCode.PROTOCOL:
-                case StatusCode.BAD_DATA:
-                case StatusCode.BAD_PAYLOAD:
-                case StatusCode.MESSAGE_TOO_LARGE:
-                case StatusCode.POLICY_VIOLATION:
-                case StatusCode.SERVER_ERROR:
+                case WSConstants.PROTOCOL:
+                case WSConstants.BAD_DATA:
+                case WSConstants.BAD_PAYLOAD:
+                case WSConstants.MESSAGE_TOO_LARGE:
+                case WSConstants.POLICY_VIOLATION:
+                case WSConstants.SERVER_ERROR:
                 {
                     callback = onDisconnectCallback;
                 }
@@ -460,9 +463,9 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
 
             close(ce.getStatusCode(), ce.getMessage(), callback);
         }
-        else if (cause instanceof WebSocketTimeoutException)
+        else if (cause instanceof WSTimeoutException)
         {
-            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else
         {
@@ -470,10 +473,10 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
 
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
-            int statusCode = StatusCode.SERVER_ERROR;
-            if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
+            int statusCode = WSConstants.SERVER_ERROR;
+            if (getPolicy().getBehavior() == WSBehavior.CLIENT)
             {
-                statusCode = StatusCode.POLICY_VIOLATION;
+                statusCode = WSConstants.POLICY_VIOLATION;
             }
             close(statusCode, cause.getMessage(), Callback.NOOP);
         }
@@ -526,7 +529,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                 catch (Throwable t)
                 {
                     localEndpoint.getLog().warn("Error during OPEN", t);
-                    onError(new CloseException(StatusCode.SERVER_ERROR, t));
+                    onError(new CloseException(WSConstants.SERVER_ERROR, t));
                 }
 
                 /* Perform fillInterested outside of onConnected / onOpen.
@@ -834,7 +837,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
             LOG.debug("outgoingFrame({}, {})", frame, callback);
         }
 
-        flusher.enqueue(frame, callback, batchMode);
+        outgoingFrames.outgoingFrame(frame, callback, batchMode);
     }
 
     @Override

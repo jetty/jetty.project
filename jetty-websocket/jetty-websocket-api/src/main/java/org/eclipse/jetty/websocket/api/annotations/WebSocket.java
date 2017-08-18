@@ -24,7 +24,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.eclipse.jetty.websocket.core.StatusCode;
+import org.eclipse.jetty.websocket.common.StatusCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**

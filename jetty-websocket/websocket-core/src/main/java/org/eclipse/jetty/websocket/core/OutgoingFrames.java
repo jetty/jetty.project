@@ -16,10 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.io;
+package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
  * Interface for dealing with frames outgoing to (eventually) the network layer.

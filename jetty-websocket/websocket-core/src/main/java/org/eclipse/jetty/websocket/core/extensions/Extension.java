@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.io.IncomingFrames;
-import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 
 /**
  * Interface for WebSocket Extensions.

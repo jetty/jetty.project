@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.StatusCode;
+import org.eclipse.jetty.websocket.common.StatusCode;
 
 public class CloseFrame extends ControlFrame
 {

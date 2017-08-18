@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
@@ -55,7 +55,7 @@ public class IdentityExtensionTest extends AbstractExtensionTest
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);
-        WebSocketFrame actual = capture.frames.poll();
+        WSFrame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));
@@ -86,7 +86,7 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);
 
-        WebSocketFrame actual = capture.frames.poll();
+        WSFrame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));

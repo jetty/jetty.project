@@ -35,10 +35,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.StatusCode;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.StatusCode;
+import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WSException;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -46,8 +47,8 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.parser.Parser;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.parser.ParserCapture;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
@@ -61,7 +62,7 @@ public class GeneratorTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    private static UnitGenerator unitGenerator = new UnitGenerator(WebSocketPolicy.newServerPolicy(), true);
+    private static UnitGenerator unitGenerator = new UnitGenerator(WSPolicy.newServerPolicy(), true);
 
     /**
      * From Autobahn WebSocket Client Testcase 1.2.2
@@ -83,7 +84,7 @@ public class GeneratorTest
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
+        WSFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = unitGenerator.generate(binaryFrame);
 
@@ -126,7 +127,7 @@ public class GeneratorTest
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
+        WSFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = unitGenerator.generate(binaryFrame);
 
@@ -172,7 +173,7 @@ public class GeneratorTest
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
+        WSFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = unitGenerator.generate(binaryFrame);
 
@@ -217,7 +218,7 @@ public class GeneratorTest
         }
 
         bb.flip();
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
+        WSFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = unitGenerator.generate(binaryFrame);
 
@@ -265,7 +266,7 @@ public class GeneratorTest
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
+        WSFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = unitGenerator.generate(binaryFrame);
 
@@ -310,7 +311,7 @@ public class GeneratorTest
 
         bb.flip();
 
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(bb);
+        WSFrame binaryFrame = new BinaryFrame().setPayload(bb);
 
         ByteBuffer actual = unitGenerator.generate(binaryFrame);
 
@@ -341,7 +342,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Binary_Empty()
     {
-        WebSocketFrame binaryFrame = new BinaryFrame().setPayload(new byte[]{});
+        WSFrame binaryFrame = new BinaryFrame().setPayload(new byte[]{});
 
         ByteBuffer actual = unitGenerator.generate(binaryFrame);
 
@@ -513,7 +514,7 @@ public class GeneratorTest
         int pingCount = 2;
 
         // Prepare frames
-        WebSocketFrame[] frames = new WebSocketFrame[pingCount + 1];
+        WSFrame[] frames = new WSFrame[pingCount + 1];
         for (int i = 0; i < pingCount; i++)
         {
             frames[i] = new PingFrame().setPayload(String.format("ping-%d", i));
@@ -522,7 +523,7 @@ public class GeneratorTest
 
         // Mask All Frames
         byte maskingKey[] = Hex.asByteArray("11223344");
-        for (WebSocketFrame f : frames)
+        for (WSFrame f : frames)
         {
             f.setMask(maskingKey);
         }
@@ -554,7 +555,7 @@ public class GeneratorTest
             bytes[i] = Integer.valueOf(Integer.toOctalString(i)).byteValue();
         }
 
-        WebSocketFrame pingFrame = new PingFrame().setPayload(bytes);
+        WSFrame pingFrame = new PingFrame().setPayload(bytes);
 
         ByteBuffer actual = unitGenerator.generate(pingFrame);
 
@@ -606,7 +607,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Ping_Empty()
     {
-        WebSocketFrame pingFrame = new PingFrame();
+        WSFrame pingFrame = new PingFrame();
 
         ByteBuffer actual = unitGenerator.generate(pingFrame);
 
@@ -657,7 +658,7 @@ public class GeneratorTest
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte) 0x00);
 
-        expectedException.expect(WebSocketException.class);
+        expectedException.expect(WSException.class);
         PingFrame pingFrame = new PingFrame();
         pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
     }
@@ -671,7 +672,7 @@ public class GeneratorTest
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte) 0x00);
 
-        expectedException.expect(WebSocketException.class);
+        expectedException.expect(WSException.class);
         PongFrame pingFrame = new PongFrame();
         pingFrame.setPayload(ByteBuffer.wrap(bytes)); // should throw exception
     }
@@ -685,8 +686,8 @@ public class GeneratorTest
     @Test
     public void testGenerate_RFC6455_FragmentedUnmaskedTextMessage()
     {
-        WebSocketFrame text1 = new TextFrame().setPayload("Hel").setFin(false);
-        WebSocketFrame text2 = new ContinuationFrame().setPayload("lo");
+        WSFrame text1 = new TextFrame().setPayload("Hel").setFin(false);
+        WSFrame text2 = new ContinuationFrame().setPayload("lo");
 
         ByteBuffer actual1 = unitGenerator.generate(text1);
         ByteBuffer actual2 = unitGenerator.generate(text2);
@@ -742,7 +743,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_RFC6455_SingleMaskedTextMessage()
     {
-        WebSocketFrame text = new TextFrame().setPayload("Hello");
+        WSFrame text = new TextFrame().setPayload("Hello");
         text.setMask(new byte[]
                 {0x37, (byte) 0xfa, 0x21, 0x3d});
 
@@ -859,7 +860,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_RFC6455_SingleUnmaskedTextMessage()
     {
-        WebSocketFrame text = new TextFrame().setPayload("Hello");
+        WSFrame text = new TextFrame().setPayload("Hello");
 
         ByteBuffer actual = unitGenerator.generate(text);
 
@@ -884,7 +885,7 @@ public class GeneratorTest
         Arrays.fill(buf, (byte) '*');
         String text = new String(buf, StandardCharsets.UTF_8);
 
-        WebSocketFrame textFrame = new TextFrame().setPayload(text);
+        WSFrame textFrame = new TextFrame().setPayload(text);
 
         ByteBuffer actual = unitGenerator.generate(textFrame);
 
@@ -922,7 +923,7 @@ public class GeneratorTest
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
+        WSFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = unitGenerator.generate(textFrame);
 
@@ -962,7 +963,7 @@ public class GeneratorTest
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
+        WSFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = unitGenerator.generate(textFrame);
 
@@ -1002,7 +1003,7 @@ public class GeneratorTest
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
+        WSFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = unitGenerator.generate(textFrame);
 
@@ -1044,7 +1045,7 @@ public class GeneratorTest
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
+        WSFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = unitGenerator.generate(textFrame);
 
@@ -1084,7 +1085,7 @@ public class GeneratorTest
             builder.append("*");
         }
 
-        WebSocketFrame textFrame = new TextFrame().setPayload(builder.toString());
+        WSFrame textFrame = new TextFrame().setPayload(builder.toString());
 
         ByteBuffer actual = unitGenerator.generate(textFrame);
 
@@ -1115,7 +1116,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Text_Empty()
     {
-        WebSocketFrame textFrame = new TextFrame().setPayload("");
+        WSFrame textFrame = new TextFrame().setPayload("");
 
         ByteBuffer actual = unitGenerator.generate(textFrame);
 
@@ -1132,7 +1133,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Text_Hello()
     {
-        WebSocketFrame frame = new TextFrame().setPayload("Hello");
+        WSFrame frame = new TextFrame().setPayload("Hello");
         byte utf[] = StringUtil.getUtf8Bytes("Hello");
         assertGeneratedBytes("8105" + Hex.asHex(utf), frame);
     }
@@ -1140,7 +1141,7 @@ public class GeneratorTest
     @Test
     public void testGenerate_Text_Masked()
     {
-        WebSocketFrame frame = new TextFrame().setPayload("Hello");
+        WSFrame frame = new TextFrame().setPayload("Hello");
         byte maskingKey[] = Hex.asByteArray("11223344");
         frame.setMask(maskingKey);
 
@@ -1166,7 +1167,7 @@ public class GeneratorTest
         // we are testing that masking works as intended, even if the provided
         // payload does not start at position 0.
         LOG.debug("Payload = {}", BufferUtil.toDetailString(payload));
-        WebSocketFrame frame = new TextFrame().setPayload(payload);
+        WSFrame frame = new TextFrame().setPayload(payload);
         byte maskingKey[] = Hex.asByteArray("11223344");
         frame.setMask(maskingKey);
 
@@ -1189,7 +1190,7 @@ public class GeneratorTest
         byte payload[] = new byte[10240];
         Arrays.fill(payload, (byte) 0x44);
 
-        WebSocketFrame frame = new BinaryFrame().setPayload(payload);
+        WSFrame frame = new BinaryFrame().setPayload(payload);
 
         // Generate
         int windowSize = 1024;
@@ -1220,7 +1221,7 @@ public class GeneratorTest
         byte mask[] = new byte[]
                 {0x2A, (byte) 0xF0, 0x0F, 0x00};
 
-        WebSocketFrame frame = new BinaryFrame().setPayload(payload);
+        WSFrame frame = new BinaryFrame().setPayload(payload);
         frame.setMask(mask); // masking!
 
         // Generate
@@ -1239,14 +1240,14 @@ public class GeneratorTest
         assertThat("Generated Buffer", completeBuffer.remaining(), is(expectedSize));
 
         // Parse complete buffer.
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WSPolicy policy = WSPolicy.newServerPolicy();
         ParserCapture capture = new ParserCapture();
         Parser parser = new Parser(policy, new MappedByteBufferPool(), capture);
 
         parser.parse(completeBuffer);
 
         // Assert validity of frame
-        WebSocketFrame actual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
+        WSFrame actual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame.opcode", actual.getOpCode(), Matchers.is(OpCode.BINARY));
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(payload.length));
 
@@ -1315,7 +1316,7 @@ public class GeneratorTest
         }
     }
 
-    private void assertGeneratedBytes(CharSequence expectedBytes, WebSocketFrame... frames)
+    private void assertGeneratedBytes(CharSequence expectedBytes, WSFrame... frames)
     {
         // collect up all frames as single ByteBuffer
         ByteBuffer allframes = unitGenerator.asBuffer(frames);

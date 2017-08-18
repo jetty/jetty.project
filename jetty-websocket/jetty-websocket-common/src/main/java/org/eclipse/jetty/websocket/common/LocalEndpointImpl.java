@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WSException;
 import org.eclipse.jetty.websocket.core.frames.ReadOnlyDelegatedFrame;
 
 public class LocalEndpointImpl implements WSLocalEndpoint
@@ -119,7 +119,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         }
         catch (Throwable cause)
         {
-            throw new WebSocketException("Unhandled OPEN endpoint method error", cause);
+            throw new WSException("Unhandled OPEN endpoint method error", cause);
         }
     }
 
@@ -135,7 +135,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         }
         catch (Throwable cause)
         {
-            throw new WebSocketException("Unhandled CLOSE endpoint method error", cause);
+            throw new WSException("Unhandled CLOSE endpoint method error", cause);
         }
     }
 
@@ -151,7 +151,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         }
         catch (Throwable cause)
         {
-            throw new WebSocketException("Unhandled FRAME endpoint method error", cause);
+            throw new WSException("Unhandled FRAME endpoint method error", cause);
         }
     }
 
@@ -167,7 +167,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         }
         catch (Throwable t)
         {
-            WebSocketException wsError = new WebSocketException("Unhandled ERROR endpoint method error", t);
+            WSException wsError = new WSException("Unhandled ERROR endpoint method error", t);
             wsError.addSuppressed(cause);
             throw wsError;
         }
@@ -188,7 +188,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         }
         catch (Throwable cause)
         {
-            throw new WebSocketException("Unhandled PING endpoint method error", cause);
+            throw new WSException("Unhandled PING endpoint method error", cause);
         }
     }
 
@@ -207,7 +207,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         }
         catch (Throwable cause)
         {
-            throw new WebSocketException("Unhandled PONG endpoint method error", cause);
+            throw new WSException("Unhandled PONG endpoint method error", cause);
         }
     }
 }

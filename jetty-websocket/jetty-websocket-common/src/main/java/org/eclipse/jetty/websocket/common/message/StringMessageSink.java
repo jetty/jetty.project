@@ -30,18 +30,18 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.MessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
 public class StringMessageSink implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
-    private WebSocketPolicy policy;
+    private WSPolicy policy;
     private final MethodHandle onMessageHandle;
     private Utf8StringBuilder utf;
     private int size = 0;
 
-    public StringMessageSink(WebSocketPolicy policy, MethodHandle methodHandle) throws InvalidSignatureException
+    public StringMessageSink(WSPolicy policy, MethodHandle methodHandle) throws InvalidSignatureException
     {
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");

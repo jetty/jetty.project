@@ -26,9 +26,9 @@ import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
-import org.eclipse.jetty.websocket.core.StatusCode;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.generator.Generator;
+import org.eclipse.jetty.websocket.common.StatusCode;
+import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.Generator;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,7 +53,7 @@ public class WebSocketFrameTest
     @Before
     public void initGenerator()
     {
-        WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+        WSPolicy policy = WSPolicy.newServerPolicy();
         strictGenerator = new Generator(policy,bufferPool);
         laxGenerator = new Generator(policy,bufferPool,false);
     }
@@ -67,7 +67,7 @@ public class WebSocketFrameTest
     @Test
     public void testLaxInvalidClose()
     {
-        WebSocketFrame frame = new CloseFrame().setFin(false);
+        WSFrame frame = new CloseFrame().setFin(false);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         String expected = "0800";
         assertFrameHex("Lax Invalid Close Frame",expected,actual);
@@ -76,7 +76,7 @@ public class WebSocketFrameTest
     @Test
     public void testLaxInvalidPing()
     {
-        WebSocketFrame frame = new PingFrame().setFin(false);
+        WSFrame frame = new PingFrame().setFin(false);
         ByteBuffer actual = generateWholeFrame(laxGenerator,frame);
         String expected = "0900";
         assertFrameHex("Lax Invalid Ping Frame",expected,actual);
@@ -94,7 +94,7 @@ public class WebSocketFrameTest
     @Test
     public void testStrictValidPing()
     {
-        WebSocketFrame frame = new PingFrame();
+        WSFrame frame = new PingFrame();
         ByteBuffer actual = generateWholeFrame(strictGenerator,frame);
         String expected = "8900";
         assertFrameHex("Strict Valid Ping Frame",expected,actual);

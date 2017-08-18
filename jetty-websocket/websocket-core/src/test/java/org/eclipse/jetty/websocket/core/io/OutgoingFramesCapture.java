@@ -28,11 +28,12 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
-    public BlockingQueue<WebSocketFrame> frames = new LinkedBlockingDeque<>();
+    public BlockingQueue<WSFrame> frames = new LinkedBlockingDeque<>();
     
     public void assertFrameCount(int expectedCount)
     {
@@ -54,7 +55,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     {
         System.out.printf("Captured %d outgoing writes%n",frames.size());
         int i=0;
-        for (WebSocketFrame frame: frames)
+        for (WSFrame frame: frames)
         {
             System.out.printf("[%3d] %s%n",i++,frame);
             System.out.printf("      %s%n",BufferUtil.toDetailString(frame.getPayload()));
@@ -64,7 +65,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     public int getFrameCount(byte op)
     {
         int count = 0;
-        for (WebSocketFrame frame : frames)
+        for (WSFrame frame : frames)
         {
             if (frame.getOpCode() == op)
             {
@@ -77,7 +78,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
     @Override
     public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
-        frames.add(WebSocketFrame.copy(frame));
+        frames.add(WSFrame.copy(frame));
         // Consume bytes
         ByteBuffer payload = frame.getPayload();
         payload.position(payload.limit());

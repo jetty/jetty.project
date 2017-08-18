@@ -26,9 +26,9 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.frames.WSFrame;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.core.io.WSRemote;
+import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +44,7 @@ public class WSRemoteEndpointTest
 
     private WSRemoteEndpoint newWSRemote(OutgoingFramesCapture framesCapture)
     {
-        WSRemote remote = new WSRemote(framesCapture);
+        WSRemoteImpl remote = new WSRemoteImpl(framesCapture);
         remote.open();
         return remote;
     }
@@ -76,7 +76,7 @@ public class WSRemoteEndpointTest
 
         framesCapture.assertFrameCount(2);
 
-        WebSocketFrame actual;
+        WSFrame actual;
 
         actual = framesCapture.frames.remove();
         assertThat("Frame[0].opCode", actual.getOpCode(), is(OpCode.TEXT));
@@ -106,7 +106,7 @@ public class WSRemoteEndpointTest
 
         framesCapture.assertFrameCount(3);
 
-        WebSocketFrame actual;
+        WSFrame actual;
 
         actual = framesCapture.frames.remove();
         assertThat("Frame[0].opCode", actual.getOpCode(), is(OpCode.TEXT));

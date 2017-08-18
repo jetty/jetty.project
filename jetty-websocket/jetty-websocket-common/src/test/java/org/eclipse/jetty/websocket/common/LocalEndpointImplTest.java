@@ -45,16 +45,15 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.StatusCode;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WSExtensionFactory;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.io.WSRemote;
+import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,7 +69,7 @@ public class LocalEndpointImplTest
     private static DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
     private static WSExtensionFactory extensionFactory = new WSExtensionFactory();
     private LocalEndpointFactory endpointFactory = new LocalEndpointFactory();
-    private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
+    private WSPolicy policy = WSPolicy.newServerPolicy();
 
     private WSLocalEndpoint newLocalEndpoint(Object wsEndpoint)
     {
@@ -84,7 +83,7 @@ public class LocalEndpointImplTest
                 policy, extensionStack, upgradeRequest, upgradeResponse);
 
         WSLocalEndpoint localEndpoint = endpointFactory.createLocalEndpoint(wsEndpoint, session, policy, executor);
-        session.setWebSocketEndpoint(wsEndpoint, localEndpoint, new WSRemote(extensionStack));
+        session.setWebSocketEndpoint(wsEndpoint, localEndpoint, new WSRemoteImpl(extensionStack));
 
         return localEndpoint;
     }

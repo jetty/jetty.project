@@ -16,27 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.parser;
-
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.Frame;
+package org.eclipse.jetty.websocket.core;
 
 /**
- * Process the payload (for demasking, validating, etc..)
+ * Behavior for how the WebSocket should operate.
+ * <p>
+ * This dictated by the <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a> spec in various places, where certain behavior must be performed depending on
+ * operation as a <a href="https://tools.ietf.org/html/rfc6455#section-4.1">CLIENT</a> vs a <a href="https://tools.ietf.org/html/rfc6455#section-4.2">SERVER</a>
  */
-public interface PayloadProcessor
+public enum WSBehavior
 {
-    /**
-     * Used to process payloads for in the spec.
-     * 
-     * @param payload
-     *            the payload to process
-     * @throws BadPayloadException
-     *             the exception when the payload fails to validate properly
-     */
-    void process(ByteBuffer payload);
-
-    void reset(Frame frame);
+    CLIENT,
+    SERVER
 }

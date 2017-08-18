@@ -20,22 +20,24 @@ package org.eclipse.jetty.websocket.core;
 
 /**
  * Per spec, a protocol error should result in a Close frame of status code 1002 (PROTOCOL_ERROR)
+ *
+ * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
 @SuppressWarnings("serial")
 public class ProtocolException extends CloseException
 {
     public ProtocolException(String message)
     {
-        super(StatusCode.PROTOCOL,message);
+        super(WSConstants.PROTOCOL,message);
     }
 
     public ProtocolException(String message, Throwable t)
     {
-        super(StatusCode.PROTOCOL,message,t);
+        super(WSConstants.PROTOCOL,message,t);
     }
 
     public ProtocolException(Throwable t)
     {
-        super(StatusCode.PROTOCOL,t);
+        super(WSConstants.PROTOCOL,t);
     }
 }

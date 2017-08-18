@@ -20,24 +20,24 @@ package org.eclipse.jetty.websocket.core;
 
 /**
  * Exception when a violation of policy occurs and should trigger a connection close.
- * 
- * @see StatusCode#POLICY_VIOLATION
+ *
+ * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
 @SuppressWarnings("serial")
 public class PolicyViolationException extends CloseException
 {
     public PolicyViolationException(String message)
     {
-        super(StatusCode.POLICY_VIOLATION,message);
+        super(WSConstants.POLICY_VIOLATION,message);
     }
 
     public PolicyViolationException(String message, Throwable t)
     {
-        super(StatusCode.POLICY_VIOLATION,message,t);
+        super(WSConstants.POLICY_VIOLATION,message,t);
     }
 
     public PolicyViolationException(Throwable t)
     {
-        super(StatusCode.POLICY_VIOLATION,t);
+        super(WSConstants.POLICY_VIOLATION,t);
     }
 }

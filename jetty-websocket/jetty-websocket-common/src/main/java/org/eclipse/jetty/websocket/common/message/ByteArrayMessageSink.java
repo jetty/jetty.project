@@ -28,19 +28,19 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
 public class ByteArrayMessageSink implements MessageSink
 {
     private static final byte EMPTY_BUFFER[] = new byte[0];
     private static final int BUFFER_SIZE = 65535;
-    private final WebSocketPolicy policy;
+    private final WSPolicy policy;
     private final MethodHandle onMessageMethod;
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteArrayMessageSink(WebSocketPolicy policy, MethodHandle methodHandle)
+    public ByteArrayMessageSink(WSPolicy policy, MethodHandle methodHandle)
     {
         Objects.requireNonNull(methodHandle, "MethodHandle");
         // byte[] buf, int offset, int length
