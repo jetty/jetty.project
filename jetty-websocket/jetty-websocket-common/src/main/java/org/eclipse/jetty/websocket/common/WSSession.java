@@ -23,10 +23,9 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.api.*;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
@@ -41,28 +40,40 @@ public class WSSession extends WSConnection implements Session
      * It is assumed that the WebSocket Upgrade Handshake has already
      * completed successfully before creating this connection.
      * </p>
+     *
+     * @param jettyEndpoint The Jetty EndPoint for this connection
+     * @param executor The common Executor
+     * @param bufferPool The common Byte BufferPool
+     * @param objectFactory Object Factory for decorators (CDI)
+     * @param policy The policy for this WebSocket connection
+     * @param extensionStack The configured ExtensionStack
+     * @param upgradeRequest The Handshake Upgrade Request used to establish this connection
+     * @param upgradeResponse The Handshake Upgrade Response used to establish this connection
      */
-    public WSSession(EndPoint endp, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory decoratedObjectFactory, WebSocketPolicy policy, ExtensionStack extensionStack, UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse, Object wsEndpoint, WSLocalEndpoint localEndpoint)
+    public WSSession(EndPoint jettyEndpoint, Executor executor, ByteBufferPool bufferPool,
+                     DecoratedObjectFactory objectFactory,
+                     WebSocketPolicy policy, ExtensionStack extensionStack,
+                     UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
-        super(endp, executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse, wsEndpoint, localEndpoint);
+        super(jettyEndpoint, executor, bufferPool, objectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-
+        // TODO
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-
+        // TODO
     }
 
     @Override
     public String getProtocolVersion()
     {
-        return null;
+        return getUpgradeRequest().getProtocolVersion();
     }
 
     @Override

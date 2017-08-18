@@ -111,8 +111,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final String id;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
-    private final WSLocalEndpoint localEndpoint;
-    private final WSRemoteEndpoint remoteEndpoint;
     private final OutgoingFrames outgoingFrames;
     private final IncomingFrames incomingFrames;
     private final WSConnectionState connectionState = new WSConnectionState();
@@ -127,10 +125,13 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     // Holder for errors during open that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
-    /* The websocket endpoint object itself.
-     * Not declared final, as it can be decorated later by other libraries (CDI)
+    /**
+     * The websocket endpoint objects and endpoints
+     * Not declared final, as they can be decorated later by other libraries (CDI)
      */
     private Object wsEndpoint;
+    private WSLocalEndpoint localEndpoint;
+    private WSRemoteEndpoint remoteEndpoint;
 
     /**
      * Create a WSConnection.
@@ -142,8 +143,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     public WSConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                         DecoratedObjectFactory decoratedObjectFactory,
                         WebSocketPolicy policy, ExtensionStack extensionStack,
-                        UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse,
-                        Object wsEndpoint, WSLocalEndpoint localEndpoint)
+                        UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(endp, executor);
 
@@ -155,8 +155,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         Objects.requireNonNull(extensionStack, "ExtensionStack");
         Objects.requireNonNull(upgradeRequest, "UpgradeRequest");
         Objects.requireNonNull(upgradeResponse, "UpgradeResponse");
-        Objects.requireNonNull(wsEndpoint, "WebSocket Endpoint");
-        Objects.requireNonNull(localEndpoint, "WSLocalEndpoint");
 
         LOG = Log.getLogger(WSConnection.class.getName() + "." + policy.getBehavior());
         this.bufferPool = bufferPool;
@@ -173,9 +171,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         this.policy = policy;
         this.extensionStack = extensionStack;
 
-        this.wsEndpoint = wsEndpoint;
-        this.localEndpoint = localEndpoint;
-
         this.generator = new Generator(policy, bufferPool);
         this.parser = new Parser(policy, bufferPool, this);
         this.suspendToken = new AtomicBoolean(false);
@@ -191,9 +186,13 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
 
         this.outgoingFrames = extensionStack;
         this.incomingFrames = extensionStack;
+    }
 
-        this.remoteEndpoint = new WSRemote(this.extensionStack);
-
+    public void setWebSocketEndpoint(Object endpoint, WSLocalEndpoint localEndpoint, WSRemoteEndpoint remoteEndpoint)
+    {
+        this.wsEndpoint = endpoint;
+        this.localEndpoint = localEndpoint;
+        this.remoteEndpoint = remoteEndpoint;
     }
 
     private void close(int statusCode, String reason, Callback callback)

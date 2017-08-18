@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
@@ -35,19 +36,9 @@ public interface RemoteEndpoint extends WSRemoteEndpoint
      * @param data the message to be sent
      * @throws IOException if unable to send the bytes
      * @see #sendBinary(ByteBuffer, Callback)
+     * @since 10.0
      */
     void sendBinary(ByteBuffer data) throws IOException;
-
-    /**
-     * Initiates the asynchronous transmission of a binary message. This method returns before the message is
-     * transmitted. Developers may use the returned
-     * Future object to track progress of the transmission.
-     *
-     * @param data the data being sent
-     * @return the Future object representing the send operation.
-     * @see #sendBinary(ByteBuffer, Callback)
-     */
-    Future<Void> sendBinaryByFuture(ByteBuffer data);
 
     /**
      * Send a binary message in pieces, blocking until all of the message has been transmitted. The runtime reads the
@@ -58,6 +49,7 @@ public interface RemoteEndpoint extends WSRemoteEndpoint
      * @param isLast true if this is the last piece of the partial bytes
      * @throws IOException if unable to send the partial bytes
      * @see #sendPartialBinary(ByteBuffer, boolean, Callback)
+     * @since 10.0
      */
     void sendPartialBinary(ByteBuffer fragment, boolean isLast) throws IOException;
 
@@ -70,6 +62,7 @@ public interface RemoteEndpoint extends WSRemoteEndpoint
      * @param isLast true if this is the last piece of the partial bytes
      * @throws IOException if unable to send the partial bytes
      * @see #sendPartialText(String, boolean, Callback)
+     * @since 10.0
      */
     void sendPartialText(String fragment, boolean isLast) throws IOException;
 
@@ -103,17 +96,130 @@ public interface RemoteEndpoint extends WSRemoteEndpoint
      * @param text the message to be sent
      * @throws IOException if unable to send the text message
      * @see #sendText(String, Callback)
+     * @since 10.0
      */
     void sendText(String text) throws IOException;
+
+    /**
+     * Send a binary message, returning when all bytes of the message has been transmitted.
+     * <p>
+     * Note: this is a blocking call
+     *
+     * @param data
+     *            the message to be sent
+     * @throws IOException
+     *             if unable to send the bytes
+     * @deprecated use {@link #sendBinary(ByteBuffer)}
+     */
+    @Deprecated
+    void sendBytes(ByteBuffer data) throws IOException;
+
+    /**
+     * Initiates the asynchronous transmission of a binary message. This method returns before the message is
+     * transmitted. Developers may use the returned
+     * Future object to track progress of the transmission.
+     *
+     * @param data
+     *            the data being sent
+     * @return the Future object representing the send operation.
+     * @deprecated use {@link #sendBinary(ByteBuffer, Callback)}
+     */
+    @Deprecated
+    Future<Void> sendBytesByFuture(ByteBuffer data);
+
+    /**
+     * Initiates the asynchronous transmission of a binary message. This method returns before the message is
+     * transmitted. Developers may provide a callback to
+     * be notified when the message has been transmitted or resulted in an error.
+     *
+     * @param data
+     *            the data being sent
+     * @param callback
+     *            callback to notify of success or failure of the write operation
+     * @deprecated use {@link #sendBinary(ByteBuffer, Callback)}
+     */
+    @Deprecated
+    void sendBytes(ByteBuffer data, WriteCallback callback);
+
+    /**
+     * Send a binary message in pieces, blocking until all of the message has been transmitted. The runtime reads the
+     * message in order. Non-final pieces are
+     * sent with isLast set to false. The final piece must be sent with isLast set to true.
+     *
+     * @param fragment
+     *            the piece of the message being sent
+     * @param isLast
+     *            true if this is the last piece of the partial bytes
+     * @throws IOException
+     *             if unable to send the partial bytes
+     * @deprecated use {@link #sendPartialBinary(ByteBuffer, boolean, Callback)}
+     */
+    @Deprecated
+    void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException;
+
+    /**
+     * Send a text message in pieces, blocking until all of the message has been transmitted. The runtime reads the
+     * message in order. Non-final pieces are sent
+     * with isLast set to false. The final piece must be sent with isLast set to true.
+     *
+     * @param fragment
+     *            the piece of the message being sent
+     * @param isLast
+     *            true if this is the last piece of the partial bytes
+     * @throws IOException
+     *             if unable to send the partial bytes
+     * @deprecated use {@link #sendPartialText(String, boolean, Callback)}
+     */
+    @Deprecated
+    void sendPartialString(String fragment, boolean isLast) throws IOException;
+
+    /**
+     * Send a text message, blocking until all bytes of the message has been transmitted.
+     * <p>
+     * Note: this is a blocking call
+     *
+     * @param text
+     *            the message to be sent
+     * @throws IOException
+     *             if unable to send the text message
+     * @deprecated Use {@link #sendText(String)}
+     */
+    @Deprecated
+    void sendString(String text) throws IOException;
 
     /**
      * Initiates the asynchronous transmission of a text message. This method may return before the message is
      * transmitted. Developers may use the returned
      * Future object to track progress of the transmission.
      *
-     * @param text the text being sent
+     * @param text
+     *            the text being sent
      * @return the Future object representing the send operation.
-     * @see #sendText(String, Callback)
+     * @deprecated Use {@link #sendText(String, Callback)}
      */
-    Future<Void> sendTextByFuture(String text);
+    @Deprecated
+    Future<Void> sendStringByFuture(String text);
+
+    /**
+     * Initiates the asynchronous transmission of a text message. This method may return before the message is
+     * transmitted. Developers may provide a callback to
+     * be notified when the message has been transmitted or resulted in an error.
+     *
+     * @param text
+     *            the text being sent
+     * @param callback
+     *            callback to notify of success or failure of the write operation
+     * @deprecated Use {@link #sendText(String, Callback)}
+     */
+    @Deprecated
+    void sendString(String text, WriteCallback callback);
+
+    /**
+     * Get the InetSocketAddress for the established connection.
+     *
+     * @return the InetSocketAddress for the established connection. (or null, if the connection is no longer established)
+     * @deprecated use {@link Session#getRemoteAddress()}
+     */
+    @Deprecated
+    InetSocketAddress getInetSocketAddress();
 }

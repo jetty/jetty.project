@@ -24,15 +24,13 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
-import org.eclipse.jetty.websocket.common.BlockingWriteCallback.WriteBlocker;
-import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
+import org.eclipse.jetty.websocket.core.io.OutgoingFrames;
 
 /**
  * Support for writing a single WebSocket BINARY message via a {@link OutputStream}
@@ -43,24 +41,19 @@ public class MessageOutputStream extends OutputStream
 
     private final OutgoingFrames outgoing;
     private final ByteBufferPool bufferPool;
-    private final BlockingWriteCallback blocker;
+    private final SharedBlockingCallback blocker;
     private long frameCount;
     private long bytesSent;
     private BinaryFrame frame;
     private ByteBuffer buffer;
-    private WriteCallback callback;
+    private Callback callback;
     private boolean closed;
-
-    public MessageOutputStream(WebSocketSession session)
-    {
-        this(session.getOutgoingHandler(), session.getPolicy().getOutputBufferSize(), session.getBufferPool());
-    }
 
     public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
     {
         this.outgoing = outgoing;
         this.bufferPool = bufferPool;
-        this.blocker = new BlockingWriteCallback();
+        this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
         BufferUtil.flipToFill(buffer);
         this.frame = new BinaryFrame();
@@ -144,7 +137,7 @@ public class MessageOutputStream extends OutputStream
             frame.setPayload(buffer);
             frame.setFin(fin);
 
-            try(WriteBlocker b=blocker.acquireWriteBlocker())
+            try(SharedBlockingCallback.Blocker b=blocker.acquire())
             {
                 outgoing.outgoingFrame(frame, b, BatchMode.OFF);
                 b.block();
@@ -190,7 +183,7 @@ public class MessageOutputStream extends OutputStream
         }
     }
 
-    public void setCallback(WriteCallback callback)
+    public void setCallback(Callback callback)
     {
         synchronized (this)
         {
@@ -200,27 +193,27 @@ public class MessageOutputStream extends OutputStream
 
     private void notifySuccess()
     {
-        WriteCallback callback;
+        Callback callback;
         synchronized (this)
         {
             callback = this.callback;
         }
         if (callback != null)
         {
-            callback.writeSuccess();
+            callback.succeeded();
         }
     }
 
     private void notifyFailure(Throwable failure)
     {
-        WriteCallback callback;
+        Callback callback;
         synchronized (this)
         {
             callback = this.callback;
         }
         if (callback != null)
         {
-            callback.writeFailed(failure);
+            callback.failed(failure);
         }
     }
 }
