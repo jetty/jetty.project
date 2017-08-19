@@ -72,51 +72,47 @@ public abstract class Credential implements Serializable
     }
 
     /**
-     * <p>Utility method that replaces String.equals() to avoid timing attacks.</p>
+     * <p>Utility method that replaces String.equals() to avoid timing attacks.
+     * The length of the loop executed will always be the length of the unknown credential</p>
      *
-     * @param s1 the first string to compare
-     * @param s2 the second string to compare
+     * @param known the first string to compare (should be known string)
+     * @param unknown the second string to compare (should be the unknown string)
      * @return whether the two strings are equal
      */
-    protected static boolean stringEquals(String s1, String s2)
+    protected static boolean stringEquals(String known, String unknown)
     {
-        if (s1 == s2)
+        if (known == unknown)
             return true;
-        if (s1 == null || s2 == null)
+        if (known == null || unknown == null)
             return false;
         boolean result = true;
-        int l1 = s1.length();
-        int l2 = s2.length();
-        if (l1 != l2)
-            result = false;
-        int l = Math.min(l1, l2);
-        for (int i = 0; i < l; ++i)
-            result &= s1.charAt(i) == s2.charAt(i);
-        return result;
+        int l1 = known.length();
+        int l2 = unknown.length();
+        for (int i = 0; i < l2; ++i)
+            result &= known.charAt(i%l1) == unknown.charAt(i);
+        return result && l1 == l2;
     }
 
     /**
-     * <p>Utility method that replaces Arrays.equals() to avoid timing attacks.</p>
+     * <p>Utility method that replaces Arrays.equals() to avoid timing attacks.
+     * The length of the loop executed will always be the length of the unknown credential</p>
      *
-     * @param b1 the first byte array to compare
-     * @param b2 the second byte array to compare
+     * @param known the first byte array to compare (should be known value)
+     * @param unknown the second byte array to compare  (should be unknown value)
      * @return whether the two byte arrays are equal
      */
-    protected static boolean byteEquals(byte[] b1, byte[] b2)
+    protected static boolean byteEquals(byte[] known, byte[] unknown)
     {
-        if (b1 == b2)
+        if (known == unknown)
             return true;
-        if (b1 == null || b2 == null)
+        if (known == null || unknown == null)
             return false;
         boolean result = true;
-        int l1 = b1.length;
-        int l2 = b2.length;
-        if (l1 != l2)
-            result = false;
-        int l = Math.min(l1, l2);
-        for (int i = 0; i < l; ++i)
-            result &= b1[i] == b2[i];
-        return result;
+        int l1 = known.length;
+        int l2 = unknown.length;
+        for (int i = 0; i < l2; ++i)
+            result &= known[i%l1] == unknown[i];
+        return result && l1 == l2;
     }
 
     /**
