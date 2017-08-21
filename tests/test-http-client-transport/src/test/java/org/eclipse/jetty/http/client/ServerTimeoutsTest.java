@@ -694,7 +694,7 @@ public class ServerTimeoutsTest extends AbstractTest
             {
                 try
                 {
-                    Thread.sleep(2 * idleTimeout);
+                    Thread.sleep(idleTimeout + idleTimeout / 2);
                     IO.copy(request.getInputStream(), response.getOutputStream());
                 }
                 catch (InterruptedException x)
@@ -729,7 +729,7 @@ public class ServerTimeoutsTest extends AbstractTest
                 });
 
         // Wait for the server application to block reading.
-        Thread.sleep(3 * idleTimeout);
+        Thread.sleep(2 * idleTimeout);
         content.offer(ByteBuffer.wrap(data2));
         content.close();
 

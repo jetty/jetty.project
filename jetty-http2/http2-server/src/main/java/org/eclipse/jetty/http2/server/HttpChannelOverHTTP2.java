@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.server;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -300,45 +301,53 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
         return handle || wasDelayed ? this : null;
     }
 
-    public boolean isRequestExecuting()
+    public boolean isRequestIdle()
     {
-        return !getState().isIdle();
+        return getState().isIdle();
     }
 
-    public boolean onStreamTimeout(Throwable failure)
+    public boolean onStreamTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
+        boolean result = false;
+        if (isRequestIdle())
+        {
+            consumeInput();
+            result = true;
+        }
+
         getHttpTransport().onStreamTimeout(failure);
         if (getRequest().getHttpInput().onIdleTimeout(failure))
-            handle();
+            consumer.accept(this::handleWithContext);
 
-        if (isRequestExecuting())
-            return false;
-
-        consumeInput();
-        return true;
+        return result;
     }
 
-    public void onFailure(Throwable failure)
+    public Runnable onFailure(Throwable failure)
     {
         getHttpTransport().onStreamFailure(failure);
-        if (getRequest().getHttpInput().failed(failure))
-        {
-            ContextHandler handler = getState().getContextHandler();
-            if (handler != null)
-                handler.handle(getRequest(), this);
-            else
-                handle();
-        }
-        else
-        {
-            getState().asyncError(failure);
-        }
+        boolean handle = getRequest().getHttpInput().failed(failure);
         consumeInput();
+        return () ->
+        {
+            if (handle)
+                handleWithContext();
+            else
+                getState().asyncError(failure);
+        };
     }
 
     protected void consumeInput()
     {
         getRequest().getHttpInput().consumeAll();
+    }
+
+    private void handleWithContext()
+    {
+        ContextHandler context = getState().getContextHandler();
+        if (context != null)
+            context.handle(getRequest(), this);
+        else
+            handle();
     }
 
     /**
