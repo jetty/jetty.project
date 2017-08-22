@@ -300,18 +300,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return result;
     }
 
-    public Runnable onFailure(Throwable failure)
+    public Runnable onFailure(Throwable failure, Callback callback)
     {
         getHttpTransport().onStreamFailure(failure);
         boolean handle = getRequest().getHttpInput().failed(failure);
         consumeInput();
-        return () ->
-        {
-            if (handle)
-                handleWithContext();
-            else
-                getState().asyncError(failure);
-        };
+        return new FailureTask(failure, callback, handle);
     }
 
     protected void consumeInput()
@@ -365,5 +359,36 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (stream != null)
             streamId = stream.getId();
         return String.format("%s#%d", super.toString(), getStream() == null ? -1 : streamId);
+    }
+
+    private class FailureTask implements Runnable
+    {
+        private final Throwable failure;
+        private final Callback callback;
+        private final boolean handle;
+
+        public FailureTask(Throwable failure, Callback callback, boolean handle)
+        {
+            this.failure = failure;
+            this.callback = callback;
+            this.handle = handle;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                if (handle)
+                    handleWithContext();
+                else
+                    getState().asyncError(failure);
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
     }
 }
