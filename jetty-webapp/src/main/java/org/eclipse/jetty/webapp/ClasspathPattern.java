@@ -79,7 +79,8 @@ public class ClasspathPattern extends AbstractSet<String>
             _pattern=pattern;
             _inclusive = !pattern.startsWith("-");
             _name = _inclusive ? pattern : pattern.substring(1).trim();
-            _type = _name.startsWith("file:")?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
+            boolean is_location = _name.startsWith("file:") || _name.startsWith("jrt:");
+            _type = is_location?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
         }
         
         Entry(String name, boolean include)
@@ -87,7 +88,8 @@ public class ClasspathPattern extends AbstractSet<String>
             _pattern=include?name:("-"+name);
             _inclusive = include;
             _name = name;
-            _type = _name.startsWith("file:")?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
+            boolean is_location = _name.startsWith("file:") || _name.startsWith("jrt:");
+            _type = is_location?Type.LOCATION:(_name.endsWith(".")?Type.PACKAGE:Type.CLASSNAME);
         }
         
 
@@ -308,36 +310,65 @@ public class ClasspathPattern extends AbstractSet<String>
     }
     
     @SuppressWarnings("serial")
-    public static class ByLocation extends HashSet<File> implements Predicate<Path>
+    public static class ByLocation extends HashSet<URI> implements Predicate<URI>
     {        
         @Override
-        public boolean test(Path path)
+        public boolean test(URI uri)
         {
-            for (File file: this)
+            // TODO this is very inefficient with object creation
+
+            switch(uri.getScheme())
             {
-                if (file.isDirectory())
+                case "file":
                 {
-                    if (path.startsWith(file.toPath()))
+                    Path path = Paths.get(uri);
+                    for (URI u: this)
                     {
-                        return true;
+                        if (u.getScheme().equals("file"))
+                        {
+                            File file = new File(u);
+                            if (file.isDirectory())
+                            {
+                                if (path.startsWith(file.toPath()))
+                                {
+                                    return true;
+                                }
+                            } else
+                            {
+                                if (path.equals(file.toPath()))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
                     }
-               }
-                else
-                {
-                    if (path.equals(file.toPath()))
-                    {
-                        return true;
-                    }
+                    return false;
                 }
+
+                case "jrt":
+                {
+                    String module = uri.getPath().split("/")[1];
+                    for (URI u: this)
+                    {
+                        if (u.getScheme().equals("jrt"))
+                        {
+                            String m = u.toString().split("/")[1];
+                            if (module.equals(m))
+                                return true;
+                        }
+                    }
+                    return false;
+                }
+
+                default:
+                    throw new IllegalStateException("unknown URI scheme: "+uri);
             }
-                
-            return false;
         }
     }
     
     Map<String,Entry> _entries = new HashMap<>();
     IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
-    IncludeExcludeSet<File,Path> _locations = new IncludeExcludeSet<>(ByLocation.class);
+    IncludeExcludeSet<URI,URI> _locations = new IncludeExcludeSet<>(ByLocation.class);
     
     public ClasspathPattern()
     {
@@ -419,11 +450,11 @@ public class ClasspathPattern extends AbstractSet<String>
         {
             try
             {
-                File file = Resource.newResource(entry.getName()).getFile().getAbsoluteFile().getCanonicalFile();
+                URI uri = Resource.newResource(entry.getName()).getURI();
                 if (entry.isInclusive())
-                    _locations.include(file);
+                    _locations.include(uri);
                 else
-                    _locations.exclude(file);
+                    _locations.exclude(uri);
             }
             catch (Exception e)
             {
@@ -548,7 +579,7 @@ public class ClasspathPattern extends AbstractSet<String>
                 return byName; // Already excluded so no need to check location.
             URI location = TypeUtil.getLocationOfClass(clazz);
             Boolean byLocation = location == null ? null
-                    : _locations.isIncludedAndNotExcluded(Paths.get(location));
+                    : _locations.isIncludedAndNotExcluded(location);
             
             if (LOG.isDebugEnabled())
                 LOG.debug("match {} from {} byName={} byLocation={} in {}",clazz,location,byName,byLocation,this);
@@ -586,8 +617,7 @@ public class ClasspathPattern extends AbstractSet<String>
             URI jarUri = URIUtil.getJarSource(url.toURI());
             if ("file".equalsIgnoreCase(jarUri.getScheme()))
             {
-                File file = new File(jarUri);
-                byLocation = _locations.isIncludedAndNotExcluded(file.toPath());
+                byLocation = _locations.isIncludedAndNotExcluded(jarUri);
             }
         }
         catch(Exception e)
