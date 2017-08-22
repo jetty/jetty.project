@@ -92,7 +92,7 @@ public class OutgoingMessageCapture implements OutgoingFrames
             case OpCode.TEXT:
             {
                 events.offer(String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength()));
-                messageSink = new StringMessageSink(policy, wholeTextHandle);
+                messageSink = new StringMessageSink(policy, null, wholeTextHandle);
             }
             break;
             case OpCode.BINARY:

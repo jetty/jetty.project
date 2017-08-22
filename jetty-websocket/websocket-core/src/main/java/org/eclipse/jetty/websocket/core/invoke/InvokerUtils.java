@@ -208,9 +208,13 @@ public class InvokerUtils
 
         try
         {
-            // Low level invoker
-            MethodHandle methodHandle = lookup.unreflect(method);
-            MethodType rawType = methodHandle.type();
+            // Low level invoker.
+            // We intentionally do not use lookup#unreflect() as that will incorrectly preserve
+            // the calling 'refc' type of where the method is declared, not the targetClass.
+            // That behavior of #unreflect() results in a MethodType referring to the
+            // base/abstract/interface where the method is declared, and not the targetClass
+            MethodType rawType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
+            MethodHandle methodHandle = lookup.findVirtual(targetClass, method.getName(), rawType);
 
             // If callingType and rawType are the same (and there's no named args),
             // then there's no need to reorder / permute / drop args
@@ -319,7 +323,7 @@ public class InvokerUtils
             // Return method handle
             return methodHandle;
         }
-        catch (IllegalAccessException e)
+        catch (IllegalAccessException | NoSuchMethodException e)
         {
             // TODO: throw Invalid Invoker Exception
             if (!throwOnFailure)
@@ -327,7 +331,7 @@ public class InvokerUtils
                 return null;
             }
 
-            throw new RuntimeException("Unable to obtain MethodHandle for " + method, e);
+            throw new InvalidSignatureException("Unable to obtain MethodHandle for " + method, e);
         }
     }
 

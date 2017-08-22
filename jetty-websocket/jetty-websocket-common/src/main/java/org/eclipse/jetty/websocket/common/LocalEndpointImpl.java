@@ -142,7 +142,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
 
             try
             {
-                closeHandle.invoke(close);
+                closeHandle.invoke(close.getCode(), close.getReason());
             }
             catch (Throwable cause)
             {

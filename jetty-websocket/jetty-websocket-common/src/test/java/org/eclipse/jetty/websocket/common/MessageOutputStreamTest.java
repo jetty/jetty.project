@@ -62,7 +62,7 @@ public class MessageOutputStreamTest
     @Test(timeout = 2000)
     public void testMultipleWrites() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getInputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
         {
             stream.write("Hello".getBytes("UTF-8"));
             stream.write(" ".getBytes("UTF-8"));
@@ -78,7 +78,7 @@ public class MessageOutputStreamTest
     @Test(timeout = 2000)
     public void testSingleWrite() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getInputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
         {
             stream.write("Hello World".getBytes("UTF-8"));
         }
@@ -98,7 +98,7 @@ public class MessageOutputStreamTest
         Arrays.fill(buf, (byte) 'x');
         buf[bufsize - 1] = (byte) 'o'; // mark last entry for debugging
 
-        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getInputBufferSize(), bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
         {
             stream.write(buf);
         }

@@ -114,7 +114,7 @@ public class LocalEndpointFactory
 
         if (metadata.getMaxTextMessageSize() >= -1)
         {
-            endpointPolicy.setMaxTextMessageBufferSize(metadata.getMaxTextMessageSize());
+            endpointPolicy.setMaxTextMessageSize(metadata.getMaxTextMessageSize());
         }
 
         MethodHandle openHandle = metadata.getOpenHandle();
@@ -177,7 +177,10 @@ public class LocalEndpointFactory
         MethodHandle ret = methodHandle;
         for (Object obj : objs)
         {
-            ret = ret.bindTo(obj);
+            if (ret.type().parameterType(0).isAssignableFrom(obj.getClass()))
+            {
+                ret = ret.bindTo(obj);
+            }
         }
         return ret;
     }
@@ -275,6 +278,7 @@ public class LocalEndpointFactory
         onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketConnect.class);
         if (onmethod != null)
         {
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketConnect.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION);
             metadata.setOpenHandler(methodHandle, onmethod);
@@ -284,6 +288,7 @@ public class LocalEndpointFactory
         onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketClose.class);
         if (onmethod != null)
         {
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketClose.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg STATUS_CODE = new InvokerUtils.Arg(int.class);
             final InvokerUtils.Arg REASON = new InvokerUtils.Arg(String.class);
@@ -301,6 +306,7 @@ public class LocalEndpointFactory
         onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketError.class);
         if (onmethod != null)
         {
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketError.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, CAUSE);
@@ -311,6 +317,7 @@ public class LocalEndpointFactory
         onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketFrame.class);
         if (onmethod != null)
         {
+            assertSignatureValid(endpointClass, onmethod, OnWebSocketFrame.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(Frame.class).required();
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, FRAME);
@@ -353,13 +360,15 @@ public class LocalEndpointFactory
             onmessageloop:
             for (Method onMsg : onMessages)
             {
+                assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
+
                 MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, textCallingArgs);
                 if (methodHandle != null)
                 {
                     // Normal Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setTextHandler(StringMessageSink.class, methodHandle, onMsg);
-                    break onmessageloop;
+                    continue onmessageloop;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, binaryBufferCallingArgs);
@@ -368,7 +377,7 @@ public class LocalEndpointFactory
                     // ByteBuffer Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(ByteBufferMessageSink.class, methodHandle, onMsg);
-                    break onmessageloop;
+                    continue onmessageloop;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, binaryArrayCallingArgs);
@@ -377,7 +386,7 @@ public class LocalEndpointFactory
                     // byte[] Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(ByteArrayMessageSink.class, methodHandle, onMsg);
-                    break onmessageloop;
+                    continue onmessageloop;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, inputStreamCallingArgs);
@@ -386,7 +395,7 @@ public class LocalEndpointFactory
                     // InputStream Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(InputStreamMessageSink.class, methodHandle, onMsg);
-                    break onmessageloop;
+                    continue onmessageloop;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, readerCallingArgs);
@@ -395,7 +404,7 @@ public class LocalEndpointFactory
                     // Reader Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setTextHandler(ReaderMessageSink.class, methodHandle, onMsg);
-                    break onmessageloop;
+                    continue onmessageloop;
                 }
                 else
                 {

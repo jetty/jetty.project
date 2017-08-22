@@ -23,25 +23,26 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
-public class ByteArrayMessageSink implements MessageSink
+public class ByteArrayMessageSink extends MessageSinkImpl
 {
     private static final byte EMPTY_BUFFER[] = new byte[0];
     private static final int BUFFER_SIZE = 65535;
-    private final WSPolicy policy;
-    private final MethodHandle onMessageMethod;
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteArrayMessageSink(WSPolicy policy, MethodHandle methodHandle)
+    public ByteArrayMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
+        super(policy, executor, methodHandle);
+
         Objects.requireNonNull(methodHandle, "MethodHandle");
         // byte[] buf, int offset, int length
         MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
@@ -49,11 +50,9 @@ public class ByteArrayMessageSink implements MessageSink
         {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
         }
-
-        this.onMessageMethod = methodHandle;
-        this.policy = policy;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void accept(Frame frame, Callback callback)
     {
@@ -76,10 +75,10 @@ public class ByteArrayMessageSink implements MessageSink
                 if (out != null)
                 {
                     byte buf[] = out.toByteArray();
-                    onMessageMethod.invoke(buf, 0, buf.length);
+                    methodHandle.invoke(buf, 0, buf.length);
                 }
                 else
-                    onMessageMethod.invoke(EMPTY_BUFFER, 0, 0);
+                    methodHandle.invoke(EMPTY_BUFFER, 0, 0);
             }
 
             callback.succeeded();

@@ -135,8 +135,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
         assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), nullValue());
-        assertThat(classId + ".textSink", metadata.getBinarySink(), nullValue());
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), nullValue());
+        assertThat(classId + ".textSink", metadata.getTextSink(), nullValue());
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
@@ -160,8 +160,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
         assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(InputStreamMessageSink.class));
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), nullValue());
-        assertThat(classId + ".textSink", metadata.getBinarySink(), nullValue());
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), nullValue());
+        assertThat(classId + ".textSink", metadata.getTextSink(), nullValue());
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
@@ -185,8 +185,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
         assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), nullValue());
-        assertThat(classId + ".textSink", metadata.getBinarySink(), nullValue());
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
+        assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(StringMessageSink.class));
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
@@ -210,8 +210,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), EXISTS);
-        assertThat(classId + ".textSink", metadata.getBinarySink(), equalTo(StringMessageSink.class));
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
+        assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(StringMessageSink.class));
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
@@ -235,8 +235,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), EXISTS);
-        assertThat(classId + ".textSink", metadata.getBinarySink(), equalTo(StringMessageSink.class));
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
+        assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(StringMessageSink.class));
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), nullValue());
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), nullValue());
@@ -260,8 +260,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), nullValue());
-        assertThat(classId + ".textSink", metadata.getBinarySink(), nullValue());
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), nullValue());
+        assertThat(classId + ".textSink", metadata.getTextSink(), nullValue());
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), nullValue());
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), nullValue());
@@ -285,8 +285,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), nullValue());
-        assertThat(classId + ".textSink", metadata.getBinarySink(), nullValue());
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), nullValue());
+        assertThat(classId + ".textSink", metadata.getTextSink(), nullValue());
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), nullValue());
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), nullValue());
@@ -310,8 +310,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), EXISTS);
-        assertThat(classId + ".textSink", metadata.getBinarySink(), equalTo(StringMessageSink.class));
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
+        assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(StringMessageSink.class));
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
@@ -335,8 +335,8 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
 
-        assertThat(classId + ".textHandle", metadata.getBinaryHandle(), EXISTS);
-        assertThat(classId + ".textSink", metadata.getBinarySink(), equalTo(ReaderMessageSink.class));
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
+        assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(ReaderMessageSink.class));
 
         assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
         assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);

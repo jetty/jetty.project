@@ -22,27 +22,28 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
-public class StringMessageSink implements MessageSink
+public class StringMessageSink extends MessageSinkImpl
 {
     private static final Logger LOG = Log.getLogger(StringMessageSink.class);
-    private WSPolicy policy;
-    private final MethodHandle onMessageHandle;
     private Utf8StringBuilder utf;
     private int size = 0;
 
-    public StringMessageSink(WSPolicy policy, MethodHandle methodHandle) throws InvalidSignatureException
+    public StringMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
+        super(policy, executor, methodHandle);
+
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");
         MethodType onMessageType = MethodType.methodType(Void.TYPE, String.class);
@@ -51,8 +52,6 @@ public class StringMessageSink implements MessageSink
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
         }
 
-        this.policy = policy;
-        this.onMessageHandle = methodHandle;
         this.size = 0;
     }
 
@@ -82,9 +81,9 @@ public class StringMessageSink implements MessageSink
             {
                 // notify event
                 if (utf != null)
-                    onMessageHandle.invoke(utf.toString());
+                    methodHandle.invoke(utf.toString());
                 else
-                    onMessageHandle.invoke("");
+                    methodHandle.invoke("");
 
                 // reset
                 size = 0;
