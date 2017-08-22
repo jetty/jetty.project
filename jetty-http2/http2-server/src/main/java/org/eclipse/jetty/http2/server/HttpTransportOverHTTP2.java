@@ -325,14 +325,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             synchronized (this)
             {
                 commit = this.commit;
-                State state = this.state;
-                this.state = State.FAILED;
-                if (this.failure == null)
-                    this.failure = failure;
-                else
-                    this.failure.addSuppressed(failure);
+                // Only fail pending writes, as we
+                // may need to write an error page.
                 if (state == State.WRITING)
                 {
+                    this.state = State.FAILED;
+                    this.failure = failure;
                     callback = this.callback;
                     this.callback = null;
                 }
