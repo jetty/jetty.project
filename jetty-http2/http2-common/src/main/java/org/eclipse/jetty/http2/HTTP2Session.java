@@ -435,8 +435,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     {
                         // We received a GO_AWAY, so try to write
                         // what's in the queue and then disconnect.
-                        notifyClose(this, frame);
-                        control(null, Callback.NOOP, new DisconnectFrame());
+                        notifyClose(this, frame, new DisconnectCallback());
                         return;
                     }
                     break;
@@ -476,8 +475,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void onConnectionFailure(int error, String reason)
     {
-        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)));
-        close(error, reason, Callback.NOOP);
+        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)), new CloseCallback(error, reason));
     }
 
     @Override
@@ -1003,8 +1001,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void abort(Throwable failure)
     {
-        notifyFailure(this, failure);
-        terminate(failure);
+        notifyFailure(this, failure, new TerminateCallback(failure));
     }
 
     public boolean isDisconnected()
@@ -1066,11 +1063,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected void notifyClose(Session session, GoAwayFrame frame)
+    protected void notifyClose(Session session, GoAwayFrame frame, Callback callback)
     {
         try
         {
-            listener.onClose(session, frame);
+            listener.onClose(session, frame, callback);
         }
         catch (Throwable x)
         {
@@ -1091,11 +1088,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected void notifyFailure(Session session, Throwable failure)
+    protected void notifyFailure(Session session, Throwable failure, Callback callback)
     {
         try
         {
-            listener.onFailure(session, failure);
+            listener.onFailure(session, failure, callback);
         }
         catch (Throwable x)
         {
@@ -1328,6 +1325,101 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             promise.failed(x);
+        }
+    }
+
+    private class CloseCallback implements Callback
+    {
+        private final int error;
+        private final String reason;
+
+        private CloseCallback(int error, String reason)
+        {
+            this.error = error;
+            this.reason = reason;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            complete();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        private void complete()
+        {
+            close(error, reason, Callback.NOOP);
+        }
+    }
+
+    private class DisconnectCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            complete();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        private void complete()
+        {
+            control(null, Callback.NOOP, new DisconnectFrame());
+        }
+    }
+
+    private class TerminateCallback implements Callback
+    {
+        private final Throwable failure;
+
+        private TerminateCallback(Throwable failure)
+        {
+            this.failure = failure;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            failure.addSuppressed(x);
+            complete();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        private void complete()
+        {
+            terminate(failure);
         }
     }
 }
