@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.websocket.core.frames.ReadOnlyDelegatedFrame;
 public class LocalEndpointImpl implements WSLocalEndpoint
 {
     private final Logger log;
-    private final Object endpointInstance;
+    private final AtomicBoolean open = new AtomicBoolean(false);
     private final MethodHandle openHandle;
     private final MethodHandle closeHandle;
     private final MethodHandle errorHandle;
@@ -51,7 +52,6 @@ public class LocalEndpointImpl implements WSLocalEndpoint
                              MethodHandle frameHandle,
                              MethodHandle pingHandle, MethodHandle pongHandle)
     {
-        this.endpointInstance = endpointInstance;
         this.log = Log.getLogger(endpointInstance.getClass());
 
         this.openHandle = openHandle;
@@ -68,6 +68,12 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     public Logger getLog()
     {
         return this.log;
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return open.get();
     }
 
     @Override
@@ -110,32 +116,38 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     @Override
     public void onOpen()
     {
-        if (openHandle == null)
-            return;
+        if (open.compareAndSet(false, true))
+        {
+            if (openHandle == null)
+                return;
 
-        try
-        {
-            openHandle.invoke();
-        }
-        catch (Throwable cause)
-        {
-            throw new WSException("Unhandled OPEN endpoint method error", cause);
+            try
+            {
+                openHandle.invoke();
+            }
+            catch (Throwable cause)
+            {
+                throw new WSException("Unhandled OPEN endpoint method error", cause);
+            }
         }
     }
 
     @Override
     public void onClose(CloseStatus close)
     {
-        if (closeHandle == null)
-            return;
+        if (open.compareAndSet(true, false))
+        {
+            if (closeHandle == null)
+                return;
 
-        try
-        {
-            closeHandle.invoke(close);
-        }
-        catch (Throwable cause)
-        {
-            throw new WSException("Unhandled CLOSE endpoint method error", cause);
+            try
+            {
+                closeHandle.invoke(close);
+            }
+            catch (Throwable cause)
+            {
+                throw new WSException("Unhandled CLOSE endpoint method error", cause);
+            }
         }
     }
 
@@ -158,18 +170,28 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     @Override
     public void onError(Throwable cause)
     {
-        if (errorHandle == null)
-            return;
+        if (open.compareAndSet(true, false))
+        {
+            if (errorHandle == null)
+            {
+                log.warn("ERROR endpoint method missing", cause);
+                return;
+            }
 
-        try
-        {
-            errorHandle.invoke(cause);
+            try
+            {
+                errorHandle.invoke(cause);
+            }
+            catch (Throwable t)
+            {
+                WSException wsError = new WSException("Unhandled ERROR endpoint method error", t);
+                wsError.addSuppressed(cause);
+                throw wsError;
+            }
         }
-        catch (Throwable t)
+        else
         {
-            WSException wsError = new WSException("Unhandled ERROR endpoint method error", t);
-            wsError.addSuppressed(cause);
-            throw wsError;
+            log.warn("ERROR endpoint method not called (endpoint closed)", cause);
         }
     }
 
@@ -181,7 +203,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
 
         try
         {
-            if(payload == null)
+            if (payload == null)
                 payload = BufferUtil.EMPTY_BUFFER;
 
             pingHandle.invoke(payload);
@@ -200,7 +222,7 @@ public class LocalEndpointImpl implements WSLocalEndpoint
 
         try
         {
-            if(payload == null)
+            if (payload == null)
                 payload = BufferUtil.EMPTY_BUFFER;
 
             pongHandle.invoke(payload);

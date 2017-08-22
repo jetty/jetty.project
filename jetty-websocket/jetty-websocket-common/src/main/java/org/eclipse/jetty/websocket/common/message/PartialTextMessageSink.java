@@ -18,21 +18,22 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.util.function.Function;
+import java.lang.invoke.MethodHandle;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 
-public class PartialTextMessageSink implements MessageSink
+public class PartialTextMessageSink extends MessageSinkImpl
 {
-    private final Function<PartialTextMessage, Void> onTextFunction;
     private final Utf8PartialBuilder utf8Partial;
 
-    public PartialTextMessageSink(Function<PartialTextMessage, Void> function)
+    public PartialTextMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
-        this.onTextFunction = function;
+        super(policy, executor, methodHandle);
         this.utf8Partial = new Utf8PartialBuilder();
     }
 
@@ -42,10 +43,10 @@ public class PartialTextMessageSink implements MessageSink
         String partialText = utf8Partial.toPartialString(frame.getPayload());
         try
         {
-            onTextFunction.apply(new PartialTextMessage(partialText,frame.isFin()));
+            methodHandle.invoke(partialText, frame.isFin());
             callback.succeeded();
         }
-        catch(Throwable t)
+        catch (Throwable t)
         {
             callback.failed(t);
         }

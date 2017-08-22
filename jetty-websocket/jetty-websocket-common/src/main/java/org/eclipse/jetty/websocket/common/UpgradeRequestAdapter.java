@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class UpgradeRequestAdapter implements UpgradeRequest
@@ -74,12 +74,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
         {
             extensions.add(ExtensionConfig.parse(config));
         }
-    }
-
-    @Override
-    public void clearHeaders()
-    {
-        headers.clear();
     }
 
     @Override
@@ -317,7 +311,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     @Override
     public void setHeaders(Map<String, List<String>> headers)
     {
-        clearHeaders();
+        headers.clear();
 
         for (Map.Entry<String, List<String>> entry : headers.entrySet())
         {

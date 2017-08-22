@@ -25,7 +25,6 @@ import java.net.InetSocketAddress;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.common.StatusCode;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
@@ -79,6 +78,23 @@ public interface Session extends Closeable
      * @see #disconnect()
      */
     void close(int statusCode, String reason);
+
+    /**
+     * Send a websocket Close frame, with status code.
+     * <p>
+     * This will enqueue a graceful close to the remote endpoint.
+     *
+     * @param statusCode
+     *            the status code
+     * @param reason
+     *            the (optional) reason. (can be null for no reason)
+     * @see StatusCode
+     *
+     * @see #close()
+     * @see #close(CloseStatus)
+     * @see #disconnect()
+     */
+    void close(StatusCode statusCode, String reason);
 
     /**
      * Issue a harsh disconnect of the underlying connection.

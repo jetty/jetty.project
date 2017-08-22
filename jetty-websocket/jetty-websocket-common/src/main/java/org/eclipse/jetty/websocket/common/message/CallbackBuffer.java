@@ -19,31 +19,24 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
-/**
- * {@link Function} argument for Partial Binary Messages
- */
-public class PartialBinaryMessage
+public class CallbackBuffer
 {
-    private final ByteBuffer payload;
-    private final boolean fin;
+    public ByteBuffer buffer;
+    public Callback callback;
     
-    public PartialBinaryMessage(ByteBuffer payload, boolean fin)
+    public CallbackBuffer(Callback callback, ByteBuffer buffer)
     {
-        this.payload = payload == null ? BufferUtil.EMPTY_BUFFER : payload;
-        this.fin = fin;
+        this.callback = callback;
+        this.buffer = buffer;
     }
     
-    public ByteBuffer getPayload()
+    @Override
+    public String toString()
     {
-        return payload;
-    }
-    
-    public boolean isFin()
-    {
-        return fin;
+        return String.format("CallbackBuffer[%s,%s]", BufferUtil.toDetailString(buffer),callback.getClass().getSimpleName());
     }
 }

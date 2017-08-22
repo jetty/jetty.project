@@ -18,32 +18,32 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.util.function.Function;
+import java.lang.invoke.MethodHandle;
+import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.common.MessageSinkImpl;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 
-public class PartialBinaryMessageSink implements MessageSink
+public class PartialBinaryMessageSink extends MessageSinkImpl
 {
-    private final Function<PartialBinaryMessage, Void> onBinaryFunction;
-
-    public PartialBinaryMessageSink(Function<PartialBinaryMessage, Void> function)
+    public PartialBinaryMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
-        this.onBinaryFunction = function;
+        super(policy, executor, methodHandle);
     }
-    
+
     @Override
-    public void accept(Frame frame, FrameCallback callback)
+    public void accept(Frame frame, Callback callback)
     {
         try
         {
-            onBinaryFunction.apply(new PartialBinaryMessage(frame.getPayload(), frame.isFin()));
-            callback.succeed();
+            methodHandle.invoke(frame.getPayload(), frame.isFin());
+            callback.succeeded();
         }
         catch(Throwable t)
         {
-            callback.fail(t);
+            callback.failed(t);
         }
     }
 }

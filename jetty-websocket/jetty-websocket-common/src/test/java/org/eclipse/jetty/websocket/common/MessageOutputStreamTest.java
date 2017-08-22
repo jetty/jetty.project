@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,7 +48,7 @@ public class MessageOutputStreamTest
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private WSPolicy policy;
-    private OutgoingFramesCapture remoteSocket;
+    private OutgoingMessageCapture remoteSocket;
 
     @Before
     public void setupTest() throws Exception
@@ -57,7 +56,7 @@ public class MessageOutputStreamTest
         policy = WSPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
 
-        remoteSocket = new OutgoingFramesCapture();
+        remoteSocket = new OutgoingMessageCapture(policy);
     }
 
     @Test(timeout = 2000)
@@ -70,8 +69,8 @@ public class MessageOutputStreamTest
             stream.write("World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
-        ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
+        Assert.assertThat("Socket.messageQueue.size", remoteSocket.binaryMessages.size(), is(1));
+        ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
@@ -84,8 +83,8 @@ public class MessageOutputStreamTest
             stream.write("Hello World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
-        ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
+        Assert.assertThat("Socket.messageQueue.size", remoteSocket.binaryMessages.size(), is(1));
+        ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
@@ -104,8 +103,8 @@ public class MessageOutputStreamTest
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.bufferQueue.size(), is(1));
-        ByteBuffer buffer = remoteSocket.bufferQueue.poll(1, TimeUnit.SECONDS);
+        Assert.assertThat("Socket.messageQueue.size", remoteSocket.binaryMessages.size(), is(1));
+        ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, endsWith("xxxxxo"));
     }

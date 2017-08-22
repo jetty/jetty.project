@@ -45,7 +45,7 @@ import org.eclipse.jetty.websocket.core.frames.WSFrame;
  */
 public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
 {
-    private enum MsgType
+    public enum MsgType
     {
         ASYNC,
         PARTIAL_TEXT,
@@ -58,7 +58,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
 
     /* Where outgoing frames are sent. */
     private final OutgoingFrames outgoing;
-    private final SharedBlockingCallback blocker = new SharedBlockingCallback();
+    protected final SharedBlockingCallback blocker = new SharedBlockingCallback();
     private final AtomicInteger msgState = new AtomicInteger();
     private AtomicBoolean open = new AtomicBoolean(false);
     private volatile BatchMode batchMode = BatchMode.AUTO;
@@ -193,7 +193,6 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
             if (isLast)
                 unlockMsg(MsgType.PARTIAL_TEXT);
         }
-
     }
 
     /**
@@ -262,11 +261,16 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
     @Override
     public void flush() throws IOException
     {
+        sendBlocking(FrameFlusher.FLUSH_FRAME);
+    }
+
+    protected void sendBlocking(WSFrame frame) throws IOException
+    {
         assertIsOpen();
         lockMsg(MsgType.ASYNC);
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
         {
-            sendFrame(FrameFlusher.FLUSH_FRAME, b);
+            sendFrame(frame, b);
             b.block();
         }
         finally
@@ -344,7 +348,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
         }
     }
 
-    private boolean lockMsg(MsgType type)
+    protected boolean lockMsg(MsgType type)
     {
         while (true)
         {
@@ -384,7 +388,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
         }
     }
 
-    private void unlockMsg(MsgType type)
+    protected void unlockMsg(MsgType type)
     {
         while (true)
         {

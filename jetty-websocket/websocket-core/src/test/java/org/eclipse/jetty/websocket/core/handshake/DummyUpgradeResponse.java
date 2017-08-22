@@ -69,12 +69,6 @@ public class DummyUpgradeResponse implements UpgradeResponse
     }
 
     @Override
-    public String getProtocolVersion()
-    {
-        return null;
-    }
-
-    @Override
     public int getStatusCode()
     {
         return 0;

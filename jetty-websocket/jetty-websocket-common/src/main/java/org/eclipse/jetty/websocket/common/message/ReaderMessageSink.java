@@ -19,18 +19,19 @@
 package org.eclipse.jetty.websocket.common.message;
 
 import java.io.Reader;
+import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 
 public class ReaderMessageSink extends DispatchedMessageSink<Reader,Void>
 {
-    public ReaderMessageSink(Executor executor, Function<Reader, Void> function)
+    public ReaderMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
-        super(executor, function);
+        super(policy, executor, methodHandle);
     }
-    
+
     @Override
     public MessageReader newSink(Frame frame)
     {

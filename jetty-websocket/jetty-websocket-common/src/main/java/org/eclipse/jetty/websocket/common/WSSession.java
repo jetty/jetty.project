@@ -18,56 +18,84 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.util.concurrent.Executor;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WSCoreSession;
+import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.io.SuspendToken;
 import org.eclipse.jetty.websocket.core.io.WSConnection;
 
-public class WSSession extends WSConnection implements Session
+public class WSSession<T extends WSConnection> extends WSCoreSession<T> implements Session
 {
-    /**
-     * Create a WSConnection.
-     * <p>
-     * It is assumed that the WebSocket Upgrade Handshake has already
-     * completed successfully before creating this connection.
-     * </p>
-     *
-     * @param jettyEndpoint The Jetty EndPoint for this connection
-     * @param executor The common Executor
-     * @param bufferPool The common Byte BufferPool
-     * @param objectFactory Object Factory for decorators (CDI)
-     * @param policy The policy for this WebSocket connection
-     * @param extensionStack The configured ExtensionStack
-     * @param upgradeRequest The Handshake Upgrade Request used to establish this connection
-     * @param upgradeResponse The Handshake Upgrade Response used to establish this connection
-     */
-    public WSSession(EndPoint jettyEndpoint, Executor executor, ByteBufferPool bufferPool,
-                     DecoratedObjectFactory objectFactory,
-                     WSPolicy policy, ExtensionStack extensionStack,
-                     UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
+    private RemoteEndpoint remote;
+
+    public WSSession(T connection)
     {
-        super(jettyEndpoint, executor, bufferPool, objectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);
+        super(connection);
+    }
+
+    @Override
+    public void setWebSocketEndpoint(Object endpoint, WSPolicy policy, WSLocalEndpoint localEndpoint, WSRemoteEndpoint remoteEndpoint)
+    {
+        if(!(remoteEndpoint instanceof org.eclipse.jetty.websocket.api.RemoteEndpoint))
+        {
+            throw new RuntimeException("WSRemoteEndpoint must implement " + org.eclipse.jetty.websocket.api.RemoteEndpoint.class.getName());
+        }
+        this.remote = (RemoteEndpoint) remoteEndpoint;
+        super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
+    }
+
+    @Override
+    public void close()
+    {
+        super.close(WSConstants.NORMAL, null, Callback.NOOP);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        // TODO
+        super.close(closeStatus, Callback.NOOP);
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        // TODO
+        super.close(statusCode, reason, Callback.NOOP);
+    }
+
+    @Override
+    public void close(StatusCode statusCode, String reason)
+    {
+        this.close(statusCode.getCode(), reason);
+    }
+
+    @Override
+    public void disconnect() throws IOException
+    {
+        getConnection().disconnect();
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return getConnection().getIdleTimeout();
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return getConnection().getLocalAddress();
     }
 
     @Override
@@ -79,12 +107,48 @@ public class WSSession extends WSConnection implements Session
     @Override
     public RemoteEndpoint getRemote()
     {
-        return null;
+        return remote;
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return getConnection().getRemoteAddress();
+    }
+
+    @Override
+    public UpgradeRequest getUpgradeRequest()
+    {
+        return getConnection().getUpgradeRequest();
+    }
+
+    @Override
+    public UpgradeResponse getUpgradeResponse()
+    {
+        return getConnection().getUpgradeResponse();
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return getConnection().isOpen();
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return getConnection().isSecure();
     }
 
     @Override
     public void setIdleTimeout(long ms)
     {
+        getConnection().setMaxIdleTimeout(ms);
+    }
 
+    @Override
+    public SuspendToken suspend()
+    {
+        return getConnection().suspend();
     }
 }

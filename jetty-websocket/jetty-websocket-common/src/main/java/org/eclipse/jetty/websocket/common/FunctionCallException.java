@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.common;
 
 import java.lang.reflect.InvocationTargetException;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.core.WSException;
 
-public class FunctionCallException extends WebSocketException
+public class FunctionCallException extends WSException
 {
     public FunctionCallException(String message)
     {

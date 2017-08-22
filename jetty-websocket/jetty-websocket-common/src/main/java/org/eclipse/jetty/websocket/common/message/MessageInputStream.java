@@ -26,11 +26,11 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.
@@ -41,13 +41,13 @@ import org.eclipse.jetty.websocket.common.MessageSink;
 public class MessageInputStream extends InputStream implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(MessageInputStream.class);
-    private static final FrameCallbackBuffer EOF = new FrameCallbackBuffer(new FrameCallback.Adapter(), ByteBuffer.allocate(0).asReadOnlyBuffer());
-    private final Deque<FrameCallbackBuffer> buffers = new ArrayDeque<>(2);
+    private static final CallbackBuffer EOF = new CallbackBuffer(Callback.NOOP, ByteBuffer.allocate(0).asReadOnlyBuffer());
+    private final Deque<CallbackBuffer> buffers = new ArrayDeque<>(2);
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private FrameCallbackBuffer activeFrame;
+    private CallbackBuffer activeFrame;
     
     @Override
-    public void accept(Frame frame, FrameCallback callback)
+    public void accept(Frame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("accepting {}", frame);
@@ -55,20 +55,20 @@ public class MessageInputStream extends InputStream implements MessageSink
         // If closed, we should just toss incoming payloads into the bit bucket.
         if (closed.get())
         {
-            callback.fail(new IOException("Already Closed"));
+            callback.failed(new IOException("Already Closed"));
             return;
         }
         
         if (!frame.hasPayload() && !frame.isFin())
         {
-            callback.succeed();
+            callback.succeeded();
             return;
         }
         
         synchronized (buffers)
         {
             ByteBuffer payload = frame.getPayload();
-            buffers.offer(new FrameCallbackBuffer(callback, payload));
+            buffers.offer(new CallbackBuffer(callback, payload));
             
             if (frame.isFin())
             {
@@ -97,12 +97,12 @@ public class MessageInputStream extends InputStream implements MessageSink
         super.close();
     }
     
-    public FrameCallbackBuffer getActiveFrame() throws InterruptedIOException
+    public CallbackBuffer getActiveFrame() throws InterruptedIOException
     {
         if (activeFrame == null)
         {
             // sync and poll queue
-            FrameCallbackBuffer result;
+            CallbackBuffer result;
             synchronized (buffers)
             {
                 try
@@ -133,9 +133,9 @@ public class MessageInputStream extends InputStream implements MessageSink
         {
             closed.set(true);
             Throwable cause = new IOException("Shutdown");
-            for (FrameCallbackBuffer buffer : buffers)
+            for (CallbackBuffer buffer : buffers)
             {
-                buffer.callback.fail(cause);
+                buffer.callback.failed(cause);
             }
             // Removed buffers that may have remained in the queue.
             buffers.clear();
@@ -179,7 +179,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             return -1;
         }
         
-        FrameCallbackBuffer result = getActiveFrame();
+        CallbackBuffer result = getActiveFrame();
         
         if (LOG.isDebugEnabled())
             LOG.debug("result = {}", result);
@@ -199,7 +199,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         if (!result.buffer.hasRemaining())
         {
             activeFrame = null;
-            result.callback.succeed();
+            result.callback.succeeded();
         }
         
         // return number of bytes actually copied into buffer

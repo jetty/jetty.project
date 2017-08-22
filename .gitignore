@@ -5,23 +5,22 @@
 
 # maven
 target/
-*/src/main/java/META-INF/
+**/src/main/java/META-INF/
 *.versionsBackup
 *.releaseBackup
-bin/
+bin/**
 
 # common junk
 *.log
 *.diff
 *.patch
-*.sw[a-p]
 *.bak
 *.backup
 *.debug
 *.dump
 
 # vim 
-.*.sw[a-p]
+*.swp
 *~
 ~*
 
@@ -39,11 +38,11 @@ bin/
 .pmd
 
 # netbeans
-/nbproject
+**/nbproject
 
 # merge tooling
 *.orig
 
 # test generated content
-*/src/test/*/WEB-INF/lib/test*.jar
+**/src/test/*/WEB-INF/lib/test*.jar
 

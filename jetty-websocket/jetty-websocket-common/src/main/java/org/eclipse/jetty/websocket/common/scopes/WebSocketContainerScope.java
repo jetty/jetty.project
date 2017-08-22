@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketSession;
 
 /**
  * Defined Scope for a WebSocketContainer.
@@ -72,33 +71,4 @@ public interface WebSocketContainerScope
      * @return true if container is started and running
      */
     boolean isRunning();
-
-    /**
-     * Add a WebSocketSession.Listener for create/open/close events
-     *
-     * @param listener the listener to add
-     */
-    void addSessionListener(WebSocketSession.Listener listener);
-
-    /**
-     * Remove a WebSocketSession.Listener
-     *
-     * @param listener the listener to remove
-     * @return true if a listener was removed, false if no listener was removed
-     */
-    boolean removeSessionListener(WebSocketSession.Listener listener);
-    
-    /**
-     * A Session has been opened
-     * 
-     * @param session the session that was opened
-     */
-    void onSessionOpened(WebSocketSession session);
-    
-    /**
-     * A Session has been closed
-     * 
-     * @param session the session that was closed
-     */
-    void onSessionClosed(WebSocketSession session);
 }

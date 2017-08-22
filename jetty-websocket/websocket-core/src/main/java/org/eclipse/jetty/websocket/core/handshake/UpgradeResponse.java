@@ -83,13 +83,6 @@ public interface UpgradeResponse
     List<String> getHeaders(String name);
 
     /**
-     * Get the version of the WebSocket protocol
-     *
-     * @return the protocol version
-     */
-    String getProtocolVersion();
-
-    /**
      * Get the HTTP Response Status Code
      * 
      * @return the status code

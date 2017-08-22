@@ -16,31 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.message;
+package org.eclipse.jetty.websocket.common;
 
-import java.util.function.Function;
+import java.lang.invoke.MethodHandle;
+import java.util.concurrent.Executor;
 
-/**
- * {@link Function} argument for Partial Text Messages
- */
-public class PartialTextMessage
+import org.eclipse.jetty.websocket.core.WSPolicy;
+
+public abstract class MessageSinkImpl implements MessageSink
 {
-    private final String payload;
-    private final boolean fin;
-    
-    public PartialTextMessage(String payload, boolean fin)
-    {
-        this.payload = payload;
-        this.fin = fin;
-    }
+    protected final WSPolicy policy;
+    protected final Executor executor;
+    protected final MethodHandle methodHandle;
 
-    public String getPayload()
+    public MessageSinkImpl(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
-        return payload;
-    }
-
-    public boolean isFin()
-    {
-        return fin;
+        this.policy = policy;
+        this.executor = executor;
+        this.methodHandle = methodHandle;
     }
 }

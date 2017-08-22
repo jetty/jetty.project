@@ -18,13 +18,15 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 
 /**
  * Centralized logic for Dispatched Message Handling.
@@ -98,19 +100,20 @@ import org.eclipse.jetty.websocket.core.Frame;
  * @param <T> the type of object to give to user function
  * @param <R> the type of object that user function will return
  */
-public abstract class DispatchedMessageSink<T, R> implements MessageSink
+public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
 {
     private final Executor executor;
-    private final Function<T, R> function;
+    private final MethodHandle methodHandle;
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
-    
-    public DispatchedMessageSink(Executor executor, Function<T, R> function)
+
+    public DispatchedMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
+        super(policy, executor, methodHandle);
         this.executor = executor;
-        this.function = function;
+        this.methodHandle = methodHandle;
     }
-    
+
     public abstract MessageSink newSink(Frame frame);
     
     public void accept(Frame frame, final Callback callback)
@@ -122,7 +125,15 @@ public abstract class DispatchedMessageSink<T, R> implements MessageSink
             dispatchComplete = CompletableFuture.supplyAsync(() ->
             {
                 final T dispatchedType = (T) typeSink;
-                function.apply(dispatchedType);
+                try
+                {
+                     methodHandle.invoke(dispatchedType);
+                }
+                catch (Throwable throwable)
+                {
+                    // TODO: handle error somehow?
+                    throwable.printStackTrace();
+                }
                 return null;
             }, executor);
         }

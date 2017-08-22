@@ -67,7 +67,7 @@ public class LocalEndpointFactory
     {
         LocalEndpointMetadata metadata = metadataMap.get(endpointClass);
 
-        if (metadata != null)
+        if (metadata == null)
         {
             metadata = createMetadata(endpointClass);
             metadataMap.put(endpointClass, metadata);

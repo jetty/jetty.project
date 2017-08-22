@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketConnectionListener;
@@ -47,13 +50,14 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WSExtensionFactory;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
+import org.eclipse.jetty.websocket.core.io.WSConnection;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,15 +79,19 @@ public class LocalEndpointImplTest
     {
         EndPoint jettyEndpoint = new ByteArrayEndPoint();
         ExtensionStack extensionStack = new ExtensionStack(extensionFactory);
+        List<ExtensionConfig> configs = new ArrayList<>();
+        extensionStack.negotiate(objectFactory, policy, bufferPool, configs);
 
-        UpgradeRequest upgradeRequest = null;
-        UpgradeResponse upgradeResponse = null;
+        UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
+        UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
 
-        WSSession session = new WSSession(jettyEndpoint, executor, bufferPool, objectFactory,
+        WSConnection connection = new WSConnection(jettyEndpoint, executor, bufferPool, objectFactory,
                 policy, extensionStack, upgradeRequest, upgradeResponse);
 
+        WSSession session = new WSSession(connection);
+
         WSLocalEndpoint localEndpoint = endpointFactory.createLocalEndpoint(wsEndpoint, session, policy, executor);
-        session.setWebSocketEndpoint(wsEndpoint, localEndpoint, new WSRemoteImpl(extensionStack));
+        session.setWebSocketEndpoint(wsEndpoint, policy, localEndpoint, new RemoteEndpointImpl(extensionStack, connection.getRemoteAddress()));
 
         return localEndpoint;
     }
@@ -120,7 +128,7 @@ public class LocalEndpointImplTest
         // Trigger Events
         localEndpoint.onOpen();
         localEndpoint.onText(new TextFrame().setPayload("Hello?").setFin(true), Callback.NOOP);
-        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL, "Normal"));
+        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
 
         // Validate Events
         socket.events.assertEvents(
@@ -153,7 +161,7 @@ public class LocalEndpointImplTest
         // Trigger Events
         localEndpoint.onOpen();
         localEndpoint.onText(new TextFrame().setPayload("Hello Text").setFin(true), Callback.NOOP);
-        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL, "Normal"));
+        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
 
         // Validate Events
         socket.events.assertEvents(
@@ -196,7 +204,7 @@ public class LocalEndpointImplTest
         // Trigger Events
         localEndpoint.onOpen();
         localEndpoint.onText(new TextFrame().setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
-        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL, "Normal"));
+        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
 
         // Await completion (of threads)
         socket.streamLatch.await(2, TimeUnit.SECONDS);
@@ -218,7 +226,7 @@ public class LocalEndpointImplTest
         localEndpoint.onText(new ContinuationFrame().setPayload("lo ").setFin(false), Callback.NOOP);
         localEndpoint.onText(new ContinuationFrame().setPayload("Wor").setFin(false), Callback.NOOP);
         localEndpoint.onText(new ContinuationFrame().setPayload("ld").setFin(true), Callback.NOOP);
-        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL, "Normal"));
+        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
 
         // Await completion (of threads)
         socket.streamLatch.await(2, TimeUnit.SECONDS);
@@ -254,7 +262,7 @@ public class LocalEndpointImplTest
         localEndpoint.onText(new TextFrame().setPayload("Hello").setFin(false), Callback.NOOP);
         localEndpoint.onText(new ContinuationFrame().setPayload(" ").setFin(false), Callback.NOOP);
         localEndpoint.onText(new ContinuationFrame().setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL, "Normal"));
+        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
 
         // Validate Events
         socket.events.assertEvents(

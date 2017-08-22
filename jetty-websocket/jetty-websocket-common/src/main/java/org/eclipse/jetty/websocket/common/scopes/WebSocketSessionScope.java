@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
-import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WSCoreSession;
 
 /**
  * Defined Scope for a WebSocketSession (active connection)
@@ -26,10 +26,10 @@ import org.eclipse.jetty.websocket.core.WebSocketSession;
 public interface WebSocketSessionScope
 {
     /**
-     * Active {@link WebSocketSession} associated with this scope.
+     * Active {@link WSCoreSession} associated with this scope.
      * @return the websocket session
      */
-    WebSocketSession getWebSocketSession();
+    WSCoreSession getWebSocketSession();
 
     /**
      * The parent {@link WebSocketContainerScope} for this session scope.

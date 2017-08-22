@@ -21,9 +21,9 @@ package org.eclipse.jetty.websocket.common.message;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.core.Frame;
 
 /**
  * Support class for reading a (single) WebSocket TEXT message via a Reader.
@@ -41,7 +41,7 @@ public class MessageReader extends InputStreamReader implements MessageSink
     }
     
     @Override
-    public void accept(Frame frame, FrameCallback callback)
+    public void accept(Frame frame, Callback callback)
     {
         this.stream.accept(frame, callback);
     }
