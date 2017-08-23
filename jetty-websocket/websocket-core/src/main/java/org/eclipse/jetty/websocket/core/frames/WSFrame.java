@@ -108,7 +108,7 @@ public abstract class WSFrame implements Frame
      * <p>
      * It is assumed to always be in FLUSH mode (ready to read) in this object.
      */
-    protected ByteBuffer data;
+    protected ByteBuffer payload;
 
     /**
      * Construct form opcode
@@ -167,14 +167,14 @@ public abstract class WSFrame implements Frame
             return false;
         }
         WSFrame other = (WSFrame)obj;
-        if (data == null)
+        if (payload == null)
         {
-            if (other.data != null)
+            if (other.payload != null)
             {
                 return false;
             }
         }
-        else if (!data.equals(other.data))
+        else if (!payload.equals(other.payload))
         {
             return false;
         }
@@ -211,7 +211,7 @@ public abstract class WSFrame implements Frame
     @Override
     public ByteBuffer getPayload()
     {
-        return data;
+        return payload;
     }
 
     public String getPayloadAsUTF8()
@@ -222,11 +222,11 @@ public abstract class WSFrame implements Frame
     @Override
     public int getPayloadLength()
     {
-        if (data == null)
+        if (payload == null)
         {
             return 0;
         }
-        return data.remaining();
+        return payload.remaining();
     }
 
     @Override
@@ -240,7 +240,7 @@ public abstract class WSFrame implements Frame
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((data == null)?0:data.hashCode());
+        result = (prime * result) + ((payload == null)?0: payload.hashCode());
         result = (prime * result) + finRsvOp;
         result = (prime * result) + Arrays.hashCode(mask);
         return result;
@@ -249,7 +249,7 @@ public abstract class WSFrame implements Frame
     @Override
     public boolean hasPayload()
     {
-        return ((data != null) && data.hasRemaining());
+        return ((payload != null) && payload.hasRemaining());
     }
 
     public abstract boolean isControlFrame();
@@ -300,7 +300,7 @@ public abstract class WSFrame implements Frame
     {
         finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
         masked = false;
-        data = null;
+        payload = null;
         mask = null;
     }
 
@@ -343,7 +343,7 @@ public abstract class WSFrame implements Frame
      */
     public WSFrame setPayload(ByteBuffer buf)
     {
-        data = buf;
+        payload = buf;
         return this;
     }
 

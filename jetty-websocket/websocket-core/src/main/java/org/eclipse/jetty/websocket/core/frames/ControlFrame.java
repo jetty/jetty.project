@@ -82,14 +82,14 @@ public abstract class ControlFrame extends WSFrame
             return false;
         }
         ControlFrame other = (ControlFrame)obj;
-        if (data == null)
+        if (payload == null)
         {
-            if (other.data != null)
+            if (other.payload != null)
             {
                 return false;
             }
         }
-        else if (!data.equals(other.data))
+        else if (!payload.equals(other.payload))
         {
             return false;
         }

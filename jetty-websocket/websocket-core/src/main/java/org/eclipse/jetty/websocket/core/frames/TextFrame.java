@@ -46,10 +46,10 @@ public class TextFrame extends DataFrame
     
     public String getPayloadAsUTF8()
     {
-        if (data == null)
+        if (payload == null)
         {
             return null;
         }
-        return BufferUtil.toUTF8String(data);
+        return BufferUtil.toUTF8String(payload);
     }
 }

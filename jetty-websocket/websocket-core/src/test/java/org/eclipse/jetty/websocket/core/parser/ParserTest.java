@@ -933,10 +933,10 @@ public class ParserTest
     
         WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         String actual = BufferUtil.toUTF8String(txt.getPayload());
-        assertThat("TextFrame[0].data", actual, is("Hel"));
+        assertThat("TextFrame[0].payload", actual, is("Hel"));
         txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         actual = BufferUtil.toUTF8String(txt.getPayload());
-        assertThat("TextFrame[1].data", actual, is("lo"));
+        assertThat("TextFrame[1].payload", actual, is("lo"));
     }
     
     /**
@@ -1427,7 +1427,7 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        Assert.assertThat("TextFrame.payload",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
     @Test
@@ -1503,7 +1503,7 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        Assert.assertThat("TextFrame.payload",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
     @Test
@@ -1524,7 +1524,7 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        Assert.assertThat("TextFrame.payload",txt.getPayloadAsUTF8(),is(expectedText));
     }
     
     @Test
@@ -1558,9 +1558,9 @@ public class ParserTest
         capture.assertHasFrame(OpCode.TEXT,1);
         capture.assertHasFrame(OpCode.CONTINUATION,1);
         WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame[0].data",txt.getPayloadAsUTF8(),is(part1));
+        Assert.assertThat("TextFrame[0].payload",txt.getPayloadAsUTF8(),is(part1));
         txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame[1].data",txt.getPayloadAsUTF8(),is(part2));
+        Assert.assertThat("TextFrame[1].payload",txt.getPayloadAsUTF8(),is(part2));
     }
     
     @Test
@@ -1582,6 +1582,6 @@ public class ParserTest
         
         capture.assertHasFrame(OpCode.TEXT,1);
         WSFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        Assert.assertThat("TextFrame.data",txt.getPayloadAsUTF8(),is(expectedText));
+        Assert.assertThat("TextFrame.payload",txt.getPayloadAsUTF8(),is(expectedText));
     }
 }
