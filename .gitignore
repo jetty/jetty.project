@@ -4,8 +4,8 @@
 .settings
 
 # maven
-target/
-**/src/main/java/META-INF/
+**/target/**
+**/src/main/java/META-INF/**
 *.versionsBackup
 *.releaseBackup
 bin/**
