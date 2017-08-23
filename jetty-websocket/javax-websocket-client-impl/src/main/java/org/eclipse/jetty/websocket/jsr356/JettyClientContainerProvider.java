@@ -186,7 +186,7 @@ public class JettyClientContainerProvider extends ContainerProvider
                 {
                     // Add as bean to contextHandler
                     // Allow startup to follow Jetty lifecycle
-                    ((ContainerLifeCycle) contextHandler).addBean(clientContainer);
+                    ((ContainerLifeCycle) contextHandler).addManaged(clientContainer);
                 }
                 else
                 {
