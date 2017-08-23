@@ -147,9 +147,6 @@ public class MessageOutputStream extends OutputStream
             // Any flush after the first will be a CONTINUATION frame.
             frame.setIsContinuation();
 
-            // Buffer has been sent, buffer should have been consumed
-            assert buffer.remaining() == 0;
-
             BufferUtil.clearToFill(buffer);
         }
     }

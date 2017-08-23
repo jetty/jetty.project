@@ -56,7 +56,7 @@ public class MessageWriterTest
         remoteSocket = new OutgoingMessageCapture(policy);
     }
     
-    @Test(timeout = 2000)
+    @Test
     public void testMultipleWrites() throws Exception
     {
         try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize, bufferPool))
@@ -71,7 +71,7 @@ public class MessageWriterTest
         Assert.assertThat("Message",msg,is("Hello World"));
     }
     
-    @Test(timeout = 20000)
+    @Test
     public void testSingleWrite() throws Exception
     {
         try (MessageWriter stream = new MessageWriter(remoteSocket, bufferSize, bufferPool))
@@ -84,8 +84,8 @@ public class MessageWriterTest
         Assert.assertThat("Message",msg,is("Hello World"));
     }
     
-    @Test(timeout = 20000)
-    public void testWriteMultipleBuffers() throws Exception
+    @Test
+    public void testWriteLarge_RequiringMultipleBuffers() throws Exception
     {
         int size = (int)(policy.getOutputBufferSize() * 2.5);
         char buf[] = new char[size];

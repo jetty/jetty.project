@@ -26,8 +26,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
@@ -41,6 +42,8 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class OutgoingMessageCapture implements OutgoingFrames
 {
+    private static final Logger LOG = Log.getLogger(OutgoingMessageCapture.class);
+
     public BlockingQueue<String> textMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> binaryMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<String> events = new LinkedBlockingDeque<>();
@@ -76,34 +79,46 @@ public class OutgoingMessageCapture implements OutgoingFrames
             case OpCode.CLOSE:
             {
                 CloseStatus closeStatus = CloseFrame.toCloseStatus(frame.getPayload());
-                events.offer(String.format("CLOSE:%s:%s", StatusCode.asName(closeStatus.getCode()), closeStatus.getReason()));
+                String event = String.format("CLOSE:%s:%s", StatusCode.asName(closeStatus.getCode()), closeStatus.getReason());
+                LOG.debug(event);
+                events.offer(event);
             }
             break;
             case OpCode.PING:
             {
-                events.offer(String.format("PING:%s", dataHint(frame.getPayload())));
+                String event = String.format("PING:%s", dataHint(frame.getPayload()));
+                LOG.debug(event);
+                events.offer(event);
             }
             break;
             case OpCode.PONG:
             {
-                events.offer(String.format("PING:%s", dataHint(frame.getPayload())));
+                String event = String.format("PONG:%s", dataHint(frame.getPayload()));
+                LOG.debug(event);
+                events.offer(event);
             }
             break;
             case OpCode.TEXT:
             {
-                events.offer(String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength()));
+                String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
+                LOG.debug(event);
+                events.offer(event);
                 messageSink = new StringMessageSink(policy, null, wholeTextHandle);
             }
             break;
             case OpCode.BINARY:
             {
-                events.offer(String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength()));
-                messageSink = new ByteBufferMessageSink(policy, wholeBinaryHandle);
+                String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
+                LOG.debug(event);
+                events.offer(event);
+                messageSink = new ByteBufferMessageSink(policy, null, wholeBinaryHandle);
             }
             break;
             case OpCode.CONTINUATION:
             {
-                events.offer(String.format("CONTINUATION:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength()));
+                String event = String.format("CONTINUATION:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
+                LOG.debug(event);
+                events.offer(event);
             }
             break;
         }
@@ -135,7 +150,8 @@ public class OutgoingMessageCapture implements OutgoingFrames
         if (buf != null)
         {
             copy = ByteBuffer.allocate(buf.remaining());
-            BufferUtil.put(buf, copy);
+            copy.put(buf);
+            copy.flip();
         }
         this.binaryMessages.offer(copy);
     }

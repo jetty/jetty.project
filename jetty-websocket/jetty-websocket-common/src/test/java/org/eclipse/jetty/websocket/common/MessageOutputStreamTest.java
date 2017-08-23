@@ -59,7 +59,7 @@ public class MessageOutputStreamTest
         remoteSocket = new OutgoingMessageCapture(policy);
     }
 
-    @Test(timeout = 2000)
+    @Test
     public void testMultipleWrites() throws Exception
     {
         try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
@@ -69,13 +69,13 @@ public class MessageOutputStreamTest
             stream.write("World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.binaryMessages.size(), is(1));
+        Assert.assertThat("Socket.binaryMessages.size", remoteSocket.binaryMessages.size(), is(1));
         ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
 
-    @Test(timeout = 2000)
+    @Test
     public void testSingleWrite() throws Exception
     {
         try (MessageOutputStream stream = new MessageOutputStream(remoteSocket, policy.getOutputBufferSize(), bufferPool))
@@ -83,14 +83,14 @@ public class MessageOutputStreamTest
             stream.write("Hello World".getBytes("UTF-8"));
         }
 
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.binaryMessages.size(), is(1));
+        Assert.assertThat("Socket.binaryMessages.size", remoteSocket.binaryMessages.size(), is(1));
         ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, is("Hello World"));
     }
 
-    @Test(timeout = 2000000)
-    public void testWriteMultipleBuffers() throws Exception
+    @Test
+    public void testWriteLarge_RequiringMultipleBuffers() throws Exception
     {
         int bufsize = (int) (policy.getOutputBufferSize() * 2.5);
         byte buf[] = new byte[bufsize];
@@ -103,7 +103,7 @@ public class MessageOutputStreamTest
             stream.write(buf);
         }
 
-        Assert.assertThat("Socket.messageQueue.size", remoteSocket.binaryMessages.size(), is(1));
+        Assert.assertThat("Socket.binaryMessages.size", remoteSocket.binaryMessages.size(), is(1));
         ByteBuffer buffer = remoteSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
         String message = BufferUtil.toUTF8String(buffer);
         Assert.assertThat("Message", message, endsWith("xxxxxo"));

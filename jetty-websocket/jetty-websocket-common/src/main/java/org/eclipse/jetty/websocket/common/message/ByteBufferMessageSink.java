@@ -23,24 +23,25 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.common.MessageSink;
+import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 
-public class ByteBufferMessageSink implements MessageSink
+public class ByteBufferMessageSink extends MessageSinkImpl
 {
     private static final int BUFFER_SIZE = 65535;
-    private final WSPolicy policy;
-    private final MethodHandle onMessageMethod;
     private ByteArrayOutputStream out;
     private int size;
 
-    public ByteBufferMessageSink(WSPolicy policy, MethodHandle methodHandle)
+    public ByteBufferMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
     {
+        super(policy, executor, methodHandle);
+
         // Validate onMessageMethod
         Objects.requireNonNull(methodHandle, "MethodHandle");
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
@@ -48,11 +49,9 @@ public class ByteBufferMessageSink implements MessageSink
         {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
         }
-
-        this.onMessageMethod = methodHandle;
-        this.policy = policy;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void accept(Frame frame, Callback callback)
     {
@@ -68,14 +67,15 @@ public class ByteBufferMessageSink implements MessageSink
                     out = new ByteArrayOutputStream(BUFFER_SIZE);
 
                 BufferUtil.writeTo(payload, out);
+                payload.position(payload.limit()); // consume buffer
             }
 
             if (frame.isFin())
             {
                 if (out != null)
-                    onMessageMethod.invoke(ByteBuffer.wrap(out.toByteArray()));
+                    methodHandle.invoke(ByteBuffer.wrap(out.toByteArray()));
                 else
-                    onMessageMethod.invoke(BufferUtil.EMPTY_BUFFER);
+                    methodHandle.invoke(BufferUtil.EMPTY_BUFFER);
             }
 
             callback.succeeded();
