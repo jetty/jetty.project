@@ -330,9 +330,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 if (state == State.WRITING)
                 {
                     this.state = State.FAILED;
+                    this.failure = failure;
                     callback = this.callback;
                     this.callback = null;
-                    this.failure = failure;
                 }
             }
             if (LOG.isDebugEnabled())

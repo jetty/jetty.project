@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 
@@ -199,19 +201,27 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public boolean onStreamTimeout(IStream stream, Throwable failure)
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-        boolean result = channel != null && channel.onStreamTimeout(failure);
+        boolean result = channel != null && channel.onStreamTimeout(failure, task -> offerTask(task, true));
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", stream, failure);
         return result;
     }
 
-    public void onStreamFailure(IStream stream, Throwable failure)
+    public void onStreamFailure(IStream stream, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing failure on {}: {}", stream, failure);
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
         if (channel != null)
-            channel.onFailure(failure);
+        {
+            Runnable task = channel.onFailure(failure, callback);
+            if (task != null)
+                offerTask(task, true);
+        }
+        else
+        {
+            callback.succeeded();
+        }
     }
 
     public boolean onSessionTimeout(Throwable failure)
@@ -222,20 +232,29 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
             if (channel != null)
-                result &= !channel.isRequestExecuting();
+                result &= channel.isRequestIdle();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
         return result;
     }
 
-    public void onSessionFailure(Throwable failure)
+    public void onSessionFailure(Throwable failure, Callback callback)
     {
         ISession session = getSession();
         if (LOG.isDebugEnabled())
             LOG.debug("Processing failure on {}: {}", session, failure);
-        for (Stream stream : session.getStreams())
-            onStreamFailure((IStream)stream, failure);
+        Collection<Stream> streams = session.getStreams();
+        if (streams.isEmpty())
+        {
+            callback.succeeded();
+        }
+        else
+        {
+            CountingCallback counter = new CountingCallback(callback, streams.size());
+            for (Stream stream : streams)
+                onStreamFailure((IStream)stream, failure, counter);
+        }
     }
 
     public void push(Connector connector, IStream stream, MetaData.Request request)

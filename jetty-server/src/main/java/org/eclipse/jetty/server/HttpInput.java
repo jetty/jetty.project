@@ -165,6 +165,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             _contentConsumed = 0;
             _firstByteTimeStamp = -1;
             _blockUntil = 0;
+            _waitingForContent = false;
             if (_interceptor instanceof Destroyable)
                 ((Destroyable)_interceptor).destroy();
             _interceptor = null;

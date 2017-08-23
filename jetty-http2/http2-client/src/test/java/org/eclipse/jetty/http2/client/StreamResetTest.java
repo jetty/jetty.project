@@ -67,7 +67,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -439,7 +438,6 @@ public class StreamResetTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                Log.getLogger(StreamResetTest.class).info("SIMON: uri={}", request.getRequestURI());
                 phaser.get().countDown();
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -466,7 +464,6 @@ public class StreamResetTest extends AbstractTest
                 @Override
                 public void onHeaders(Stream stream, HeadersFrame frame)
                 {
-                    Log.getLogger(StreamResetTest.class).info("SIMON: response={}/{}", stream.getId(), frame.getMetaData());
                     MetaData.Response response = (MetaData.Response)frame.getMetaData();
                     if (response.getStatus() == HttpStatus.OK_200)
                         latch.get().countDown();
@@ -475,7 +472,6 @@ public class StreamResetTest extends AbstractTest
                 @Override
                 public void onData(Stream stream, DataFrame frame, Callback callback)
                 {
-                    Log.getLogger(StreamResetTest.class).info("SIMON: data={}/{}", stream.getId(), frame);
                     callback.succeeded();
                     if (frame.isEndStream())
                         latch.get().countDown();
@@ -544,7 +540,6 @@ public class StreamResetTest extends AbstractTest
 
             Session client = newClient(new Session.Listener.Adapter());
          
-            Log.getLogger(HttpChannel.class).info("Expecting java.lang.IllegalStateException: explictly_thrown_by_test");
             MetaData.Request request = newRequest("GET", new HttpFields());
             HeadersFrame frame = new HeadersFrame(request, null, false);
             FuturePromise<Stream> promise = new FuturePromise<>();
