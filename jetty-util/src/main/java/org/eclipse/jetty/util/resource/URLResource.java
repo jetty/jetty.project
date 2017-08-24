@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
-/** Abstract resource class.
+/** URL resource class.
  */
 public class URLResource extends Resource
 {
@@ -179,10 +179,6 @@ public class URLResource extends Resource
                 return new File(perm.getName());
         }
 
-        // Try the URL file arg
-        try {return new File(_url.getFile());}
-        catch(Exception e) {LOG.ignore(e);}
-
         // Don't know the file
         return null;    
     }
@@ -196,7 +192,6 @@ public class URLResource extends Resource
     {
         return _url.toExternalForm();
     }
-
     
     /* ------------------------------------------------------------ */
     /**
@@ -209,8 +204,6 @@ public class URLResource extends Resource
     {
         return getInputStream (true); //backwards compatibility
     }
-    
-    
  
     /* ------------------------------------------------------------ */
     /**
