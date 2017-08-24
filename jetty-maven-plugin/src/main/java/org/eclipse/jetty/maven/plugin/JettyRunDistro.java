@@ -38,8 +38,10 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -120,6 +122,14 @@ public class JettyRunDistro extends JettyRunMojo
      * @parameter property="jetty.jvmArgs"
      */
     private String jvmArgs;
+    
+    /**
+     * Extra environment variables to be passed to the forked process
+     * 
+     * @parameter
+     */
+    private Map<String,String> env = new HashMap<String,String>();
+    
     
     /**
      * Optional list of jetty properties to put on the command line
@@ -249,7 +259,9 @@ public class JettyRunDistro extends JettyRunMojo
 
             //create the command to run the new process
             ProcessBuilder command = configureCommand();
-
+            
+           
+            
             if (waitForChild)
             {
                 command.inheritIO();
@@ -491,6 +503,7 @@ public class JettyRunDistro extends JettyRunMojo
         if (stopKey != null)
             cmd.add("-DSTOP.KEY="+stopKey);
         
+        //add any args to the jvm
         if (jvmArgs != null)
         {
             String[] args = jvmArgs.split(" ");
@@ -501,6 +514,7 @@ public class JettyRunDistro extends JettyRunMojo
             }
         }
         
+        //set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
         tmp.append("--module=");
         tmp.append("server,http,webapp,deploy");
@@ -512,23 +526,30 @@ public class JettyRunDistro extends JettyRunMojo
                     tmp.append(","+m);
             }
         }
+        
         if (libExtJars != null && !libExtJars.isEmpty() && tmp.indexOf("ext") < 0)
             tmp.append(",ext");
         tmp.append(",maven");
-
         cmd.add(tmp.toString());
         
+        //put any jetty properties onto the command line
         if (jettyProperties != null)
         {
             for (String p:jettyProperties)
                 cmd.add(p);
         }
         
+        //existence of this file signals process started
         tokenFile = target.toPath().resolve(createToken()+".txt");
         cmd.add("jetty.token.file="+tokenFile.toAbsolutePath().toString());
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.directory(targetBase);
+        
+        //set up extra environment vars if there are any
+        if (!env.isEmpty())
+            builder.environment().putAll(env);
+
         return builder;
     }
     
