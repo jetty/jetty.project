@@ -125,7 +125,7 @@ public class JettyRunDistro extends JettyRunMojo
      * Optional list of jetty properties to put on the command line
      * @parameter
      */
-    private String[] properties;
+    private String[] jettyProperties;
 
     /**
      * @parameter default-value="${session}"
@@ -518,9 +518,9 @@ public class JettyRunDistro extends JettyRunMojo
 
         cmd.add(tmp.toString());
         
-        if (properties != null)
+        if (jettyProperties != null)
         {
-            for (String p:properties)
+            for (String p:jettyProperties)
                 cmd.add(p);
         }
         

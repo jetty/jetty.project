@@ -15,6 +15,7 @@
     <Arg><Ref id="wac"/></Arg>
     <Arg><Property name="jetty.base" default="."/>/etc/maven.props</Arg>
     <Arg><Ref id="Server"/></Arg>
+    <Arg></Arg>
   </Call>
 
 </Configure>
