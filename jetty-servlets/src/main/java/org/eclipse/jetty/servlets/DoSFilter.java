@@ -583,7 +583,7 @@ public class DoSFilter implements Filter
             }
             else
             {
-                loadId = isRemotePort() ? (request.getRemoteAddr() + request.getRemotePort()) : request.getRemoteAddr();
+                loadId = isRemotePort() ? createRemotePortId(request) : request.getRemoteAddr();
                 type = USER_IP;
             }
         }
@@ -615,6 +615,10 @@ public class DoSFilter implements Filter
 
         return tracker;
     }
+    
+    
+    
+    
     
     public void addToRateTracker (RateTracker tracker)
     {
@@ -1356,4 +1360,12 @@ public class DoSFilter implements Filter
             super.onTimeout(event);
         }
     }
+    
+    private String createRemotePortId(final ServletRequest request) {
+        final String addr = request.getRemoteAddr();
+        final int port = request.getRemotePort();
+        if (addr.contains(":")) return "[" + addr + "]:" + port;
+        return addr + ":" + port;
+    }
+    
 }
