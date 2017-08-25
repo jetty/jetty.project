@@ -381,26 +381,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         if (LOG.isDebugEnabled())
             LOG.debug("connect websocket {} to {}",websocket,toUri);
 
+        init();
+
         WebSocketUpgradeRequest wsReq = new WebSocketUpgradeRequest(this,httpClient,request);
 
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Starting {}",this);
-
-        if (isStopAtShutdown()) {
-            ShutdownThread.register(this);
-        }
-
-        super.doStart();
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Started {}",this);
     }
 
     @Override
@@ -409,9 +395,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}",this);
 
-        if (isStopAtShutdown()) {
-            ShutdownThread.deregister(this);
-        }
+        ShutdownThread.deregister(this);
 
         super.doStop();
 
@@ -569,6 +553,14 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         return httpClient.getSslContextFactory();
     }
 
+    private synchronized void init() throws IOException
+    {
+        if (isStopAtShutdown() && !ShutdownThread.isRegistered(this))
+        {
+            ShutdownThread.register(this);
+        }
+    }
+
     /**
      * Factory method for new ConnectionManager
      *
@@ -716,7 +708,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         if (stop)
         {
-            if (!stopAtShutdown && isStarted()) {
+            if (!stopAtShutdown && isStarted() && !ShutdownThread.isRegistered(this)) {
                 ShutdownThread.register(this);
             }
         }
