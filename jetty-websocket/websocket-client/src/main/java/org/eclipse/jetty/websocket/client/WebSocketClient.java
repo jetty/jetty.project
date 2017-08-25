@@ -704,15 +704,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @see Runtime#addShutdownHook(Thread)
      * @see ShutdownThread
      */
-    public void setStopAtShutdown(boolean stop)
+    public synchronized void setStopAtShutdown(boolean stop)
     {
         if (stop)
         {
-            if (!stopAtShutdown && isStarted() && !ShutdownThread.isRegistered(this)) {
+            if (!stopAtShutdown && isStarted() && !ShutdownThread.isRegistered(this))
+            {
                 ShutdownThread.register(this);
             }
         }
-        else {
+        else
+        {
             ShutdownThread.deregister(this);
         }
 
