@@ -583,7 +583,9 @@ public class DoSFilter implements Filter
             }
             else
             {
-                loadId = isRemotePort() ? (request.getRemoteAddr() + request.getRemotePort()) : request.getRemoteAddr();
+                loadId = isRemotePort() ?
+                    request.getRemoteAddr() + ":" + request.getRemotePort() :
+                    request.getRemoteAddr();
                 type = USER_IP;
             }
         }
