@@ -709,19 +709,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         if (stop)
         {
             if (!stopAtShutdown && isStarted() && !ShutdownThread.isRegistered(this))
-            {
                 ShutdownThread.register(this);
-            }
         }
         else
-        {
             ShutdownThread.deregister(this);
-        }
 
         stopAtShutdown = stop;
     }
 
-    public boolean isStopAtShutdown() {
+    public boolean isStopAtShutdown()
+    {
         return stopAtShutdown;
     }
 
