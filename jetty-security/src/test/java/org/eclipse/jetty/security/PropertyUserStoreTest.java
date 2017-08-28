@@ -189,7 +189,7 @@ public class PropertyUserStoreTest
         final String usersFile = initUsersPackedFileText();
 
         PropertyUserStore store = new PropertyUserStore();
-        store.setConfigPath(usersFile);
+        store.setConfig(usersFile);
 
         store.registerUserListener(userCount);
 
