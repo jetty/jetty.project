@@ -46,7 +46,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore("Disabled due to behavioral differences in various FileSystems (hard to write a single testcase that works in all scenarios)")
+// @Ignore("Disabled due to behavioral differences in various FileSystems (hard to write a single testcase that works in all scenarios)")
 public class PathWatcherTest
 {
     public static class PathWatchEventCapture implements PathWatcher.Listener
@@ -81,6 +81,18 @@ public class PathWatcherTest
         {
             synchronized (events)
             {
+                Path relativePath = this.baseDir.relativize(event.getPath());
+                String key = relativePath.toString().replace(File.separatorChar,'/');
+
+                List<PathWatchEventType> types = this.events.get(key);
+                if (types == null)
+                {
+                    types = new ArrayList<>();
+                }
+                types.add(event.getType());
+                this.events.put(key,types);
+                LOG.debug("Captured Event: {} | {}",event.getType(),key);
+                
                 //if triggered by path
                 if (triggerPath != null)
                 {
@@ -95,19 +107,6 @@ public class PathWatcherTest
                 {
                     finishedLatch.countDown();
                 }
-                
-
-                Path relativePath = this.baseDir.relativize(event.getPath());
-                String key = relativePath.toString().replace(File.separatorChar,'/');
-
-                List<PathWatchEventType> types = this.events.get(key);
-                if (types == null)
-                {
-                    types = new ArrayList<>();
-                }
-                types.add(event.getType());
-                this.events.put(key,types);
-                LOG.debug("Captured Event: {} | {}",event.getType(),key);
             }
         }
 
