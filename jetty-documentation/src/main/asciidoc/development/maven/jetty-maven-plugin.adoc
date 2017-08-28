@@ -597,6 +597,9 @@ The available configuration parameters - in addition to those for the `jetty:run
 jvmArgs::
 Optional.
 A string representing arbitrary arguments to pass to the forked JVM.
+env::
+Optional.
+Map of key/value pairs to pass as environment to the forked JVM.
 waitForChild::
 Default is `true`.
 This causes the parent process to wait for the forked process to exit.

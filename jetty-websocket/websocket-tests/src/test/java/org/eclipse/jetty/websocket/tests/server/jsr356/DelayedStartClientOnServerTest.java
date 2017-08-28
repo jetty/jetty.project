@@ -250,7 +250,7 @@ public class DelayedStartClientOnServerTest
             
             List<String> threadNames = getThreadNames(server, (ContainerLifeCycle)container);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("Jsr356Client@")));
+            assertThat("Threads", threadNames, hasItem(containsString("WebSocketContainer@")));
         }
         finally
         {

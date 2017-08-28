@@ -25,7 +25,6 @@ import java.security.Principal;
 import javax.security.auth.Subject;
 import javax.servlet.ServletRequest;
 
-
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -203,7 +202,6 @@ public abstract class AbstractLoginService extends AbstractLifeCycle implements 
         
         if (user.getUserPrincipal() instanceof UserPrincipal)
         {
-            System.err.println("VALIDATING user "+fresh.getName());
             return fresh.authenticate(((UserPrincipal)user.getUserPrincipal())._credential);
         }
         

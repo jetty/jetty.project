@@ -19,18 +19,14 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.Executor;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
@@ -48,10 +44,8 @@ public class JettyClientContainerProvider extends ContainerProvider
     private static final Logger LOG = Log.getLogger(JettyClientContainerProvider.class);
     
     private static boolean useSingleton = false;
-    private static WebSocketContainer INSTANCE;
     private static boolean useServerContainer = false;
-    private static Executor commonExecutor;
-    private static ByteBufferPool commonBufferPool;
+    private static WebSocketContainer INSTANCE;
 
     private static Object lock = new Object();
     
@@ -83,7 +77,7 @@ public class JettyClientContainerProvider extends ContainerProvider
     
     /**
      * Add ability of calls to {@link ContainerProvider#getWebSocketContainer()} to
-     * find and return the {@link javax.websocket.server.ServerContainer} from the
+     * find and return the {@code javax.websocket.server.ServerContainer} from the
      * active {@code javax.servlet.ServletContext}.
      * <p>
      * <p>
@@ -91,7 +85,7 @@ public class JettyClientContainerProvider extends ContainerProvider
      * occurs within a thread being processed by the Servlet container.
      * </p>
      *
-     * @param flag true to to use return the {@link javax.websocket.server.ServerContainer}
+     * @param flag true to to use return the {@code javax.websocket.server.ServerContainer}
      * from the active {@code javax.servlet.ServletContext} for all calls to
      * {@link ContainerProvider#getWebSocketContainer()} from within a Servlet thread.
      */
@@ -103,13 +97,13 @@ public class JettyClientContainerProvider extends ContainerProvider
     
     /**
      * Test if {@link ContainerProvider#getWebSocketContainer()} has the ability to
-     * find and return the {@link javax.websocket.server.ServerContainer} from the
+     * find and return the {@code javax.websocket.server.ServerContainer} from the
      * active {@code javax.servlet.ServletContext}, before creating a new client based
      * {@link WebSocketContainer}.
      *
      * @return true if {@link WebSocketContainer} returned from
      * calls to {@link ContainerProvider#getWebSocketContainer()} could be the
-     * {@link javax.websocket.server.ServerContainer}
+     * {@code javax.websocket.server.ServerContainer}
      * from the active {@code javax.servlet.ServletContext}
      */
     @SuppressWarnings("unused")
@@ -194,28 +188,14 @@ public class JettyClientContainerProvider extends ContainerProvider
             // Still no instance?
             if (webSocketContainer == null)
             {
-                if (commonExecutor == null)
-                {
-                    QueuedThreadPool threadPool = new QueuedThreadPool();
-                    String name = "Jsr356Client@" + hashCode();
-                    threadPool.setName(name);
-                    threadPool.setDaemon(true);
-                    commonExecutor = threadPool;
-                }
-
-                if (commonBufferPool == null)
-                {
-                    commonBufferPool = new MappedByteBufferPool();
-                }
-
-                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy(), commonBufferPool, commonExecutor, null);
+                SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
                 ClientContainer clientContainer = new ClientContainer(containerScope);
                 
                 if (contextHandler != null && contextHandler instanceof ContainerLifeCycle)
                 {
                     // Add as bean to contextHandler
                     // Allow startup to follow Jetty lifecycle
-                    ((ContainerLifeCycle) contextHandler).addBean(clientContainer);
+                    ((ContainerLifeCycle) contextHandler).addManaged(clientContainer);
                 }
                 else
                 {
