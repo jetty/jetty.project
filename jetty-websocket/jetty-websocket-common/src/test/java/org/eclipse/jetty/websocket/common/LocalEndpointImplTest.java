@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -45,14 +45,18 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketConnectionListener;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
-import org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener;
+import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerBasicSocket;
+import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocket;
+import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSocket;
+import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WSExtensionFactory;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
@@ -120,7 +124,7 @@ public class LocalEndpointImplTest
     }
 
     @Test
-    public void testConnectionOnly_OpenTextClose() throws Exception
+    public void testConnectionListener() throws Exception
     {
         ConnectionOnly socket = new ConnectionOnly();
         WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
@@ -133,40 +137,6 @@ public class LocalEndpointImplTest
         // Validate Events
         socket.events.assertEvents(
                 "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketClose\\([^\\)]*\\)");
-    }
-
-    public static class DataConnection extends ConnectionOnly implements WebSocketListener
-    {
-        @Override
-        public void onWebSocketBinary(byte[] payload, int offset, int len)
-        {
-            events.add("onWebSocketBinary(byte[%d], %d, %d)", payload.length, offset, len);
-        }
-
-        @Override
-        public void onWebSocketText(String message)
-        {
-            events.add("onWebSocketText(%s)", message);
-        }
-    }
-
-    @Test
-    public void testWebSocketListener_OpenTextClose() throws Exception
-    {
-        // Setup
-        DataConnection socket = new DataConnection();
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
-        
-        // Trigger Events
-        localEndpoint.onOpen();
-        localEndpoint.onText(new TextFrame().setPayload("Hello Text").setFin(true), Callback.NOOP);
-        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
-
-        // Validate Events
-        socket.events.assertEvents(
-                "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketText\\(Hello Text\\)",
                 "onWebSocketClose\\([^\\)]*\\)");
     }
 
@@ -223,9 +193,9 @@ public class LocalEndpointImplTest
         // Trigger Events
         localEndpoint.onOpen();
         localEndpoint.onText(new TextFrame().setPayload("Hel").setFin(false), Callback.NOOP);
-        localEndpoint.onText(new ContinuationFrame().setPayload("lo ").setFin(false), Callback.NOOP);
-        localEndpoint.onText(new ContinuationFrame().setPayload("Wor").setFin(false), Callback.NOOP);
-        localEndpoint.onText(new ContinuationFrame().setPayload("ld").setFin(true), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("lo ").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("Wor").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("ld").setFin(true), Callback.NOOP);
         localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
 
         // Await completion (of threads)
@@ -235,43 +205,137 @@ public class LocalEndpointImplTest
         socket.events.assertEvents("onTextStream\\(Hello World\\)");
     }
 
-    public static class PartialData extends ConnectionOnly implements WebSocketPartialListener
-    {
-        @Override
-        public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
-        {
-            events.add("onWebSocketPartialBinary(%s, %b)", BufferUtil.toDetailString(payload), fin);
-        }
-
-        @Override
-        public void onWebSocketPartialText(String payload, boolean fin)
-        {
-            events.add("onWebSocketPartialText(%s, %b)", payload, fin);
-        }
-    }
-
     @Test
-    public void testWebSocketPartialListener() throws Exception
+    public void testListenerPartialSocket() throws Exception
     {
         // Setup
-        PartialData socket = new PartialData();
+        ListenerPartialSocket socket = new ListenerPartialSocket();
         WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
         localEndpoint.onText(new TextFrame().setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onText(new ContinuationFrame().setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onText(new ContinuationFrame().setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onBinary(new BinaryFrame().setPayload("Save").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload(" the ").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("Pig").setFin(true), Callback.NOOP);
+        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode()));
+
+        // Validate Events
+        socket.events.assertEvents(
+                "onWebSocketConnect\\([^\\)]*\\)",
+                "onWebSocketPartialText\\(\"Hello\", false\\)",
+                "onWebSocketPartialText\\(\" \", false\\)",
+                "onWebSocketPartialText\\(\"World\", true\\)",
+                "onWebSocketPartialBinary\\(.*ByteBuffer.*Save.*, false\\)",
+                "onWebSocketPartialBinary\\(.*ByteBuffer.* the .*, false\\)",
+                "onWebSocketPartialBinary\\(.*ByteBuffer.*Pig.*, true\\)",
+                "onWebSocketClose\\(NORMAL, <null>\\)"
+        );
+    }
+
+    @Test
+    public void testListenerBasicSocket()
+    {
+        // Setup
+        ListenerBasicSocket socket = new ListenerBasicSocket();
+        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+
+        // Trigger Events
+        localEndpoint.onOpen();
+        localEndpoint.onText(new TextFrame().setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onBinary(new BinaryFrame().setPayload("Save").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload(" the ").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("Pig").setFin(true), Callback.NOOP);
         localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
 
         // Validate Events
         socket.events.assertEvents(
                 "onWebSocketConnect\\([^\\)]*\\)",
-                "onWebSocketPartialText\\(Hello, false\\)",
-                "onWebSocketPartialText\\( , false\\)",
-                "onWebSocketPartialText\\(World, true\\)",
-                "onWebSocketClose\\([^\\)]*\\)"
+                "onWebSocketText\\(\"Hello World\"\\)",
+                "onWebSocketBinary\\(\\[12\\], 0, 12\\)",
+                "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
         );
     }
 
+    @Test
+    public void testListenerBasicSocket_Error()
+    {
+        // Setup
+        ListenerBasicSocket socket = new ListenerBasicSocket();
+        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+
+        // Trigger Events
+        localEndpoint.onOpen();
+        localEndpoint.onText(new TextFrame().setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onError(new RuntimeException("Nothing to see here"));
+
+        // Validate Events
+        socket.events.assertEvents(
+                "onWebSocketConnect\\([^\\)]*\\)",
+                "onWebSocketError\\(\\(RuntimeException\\) \"Nothing to see here\"\\)"
+        );
+    }
+
+    @Test
+    public void testListenerFrameSocket()
+    {
+        // Setup
+        ListenerFrameSocket socket = new ListenerFrameSocket();
+        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+
+        // Trigger Events
+        localEndpoint.onOpen();
+        localEndpoint.onFrame(new TextFrame().setPayload("Hello").setFin(false));
+        localEndpoint.onFrame(new ContinuationFrame().setPayload(" ").setFin(false));
+        localEndpoint.onFrame(new ContinuationFrame().setPayload("World").setFin(true));
+        localEndpoint.onFrame(new BinaryFrame().setPayload("Save").setFin(false));
+        localEndpoint.onFrame(new ContinuationFrame().setPayload(" the ").setFin(false));
+        localEndpoint.onFrame(new ContinuationFrame().setPayload("Pig").setFin(true));
+        localEndpoint.onFrame(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(), "Normal"));
+
+        // Validate Events
+        socket.events.assertEvents(
+                "onWebSocketConnect\\([^\\)]*\\)",
+                "onWebSocketFrame\\(.*TEXT.len=5,fin=false,.*\\)",
+                "onWebSocketFrame\\(.*CONTINUATION.len=1,fin=false,.*\\)",
+                "onWebSocketFrame\\(.*CONTINUATION.len=5,fin=true,.*\\)",
+                "onWebSocketFrame\\(.*BINARY.len=4,fin=false,.*\\)",
+                "onWebSocketFrame\\(.*CONTINUATION.len=5,fin=false,.*\\)",
+                "onWebSocketFrame\\(.*CONTINUATION.len=3,fin=true,.*\\)",
+                "onWebSocketFrame\\(.*CLOSE.len=8,fin=true,.*\\)"
+        );
+    }
+
+    @Test
+    public void testListenerPingPongSocket()
+    {
+        // Setup
+        ListenerPingPongSocket socket = new ListenerPingPongSocket();
+        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+
+        // Trigger Events
+        localEndpoint.onOpen();
+        localEndpoint.onText(new TextFrame().setPayload("Hello").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload(" ").setFin(false), Callback.NOOP);
+        localEndpoint.onPing(BufferUtil.toBuffer("You there?", UTF_8));
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("World").setFin(true), Callback.NOOP);
+        localEndpoint.onBinary(new BinaryFrame().setPayload("Save").setFin(false), Callback.NOOP);
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload(" the ").setFin(false), Callback.NOOP);
+        localEndpoint.onPong(BufferUtil.toBuffer("You there?", UTF_8));
+        localEndpoint.onContinuation(new ContinuationFrame().setPayload("Pig").setFin(true), Callback.NOOP);
+        localEndpoint.onClose(new CloseStatus(StatusCode.NORMAL.getCode(), "Normal"));
+
+        // Validate Events
+        socket.events.assertEvents(
+                "onWebSocketConnect\\([^\\)]*\\)",
+                "onWebSocketPing\\(.*ByteBuffer.*You there.*\\)",
+                "onWebSocketPong\\(.*ByteBuffer.*You there.*\\)",
+                "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
+        );
+    }
 }

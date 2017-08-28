@@ -39,6 +39,7 @@ import org.eclipse.jetty.websocket.common.endpoints.annotated.MyEchoSocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.MyStatelessEchoSocket;
 import org.eclipse.jetty.websocket.common.endpoints.annotated.NoopSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerBasicSocket;
+import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocket;
 import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
@@ -64,14 +65,6 @@ public class LocalEndpointMetadataTest
     private LocalEndpointMetadata createMetadata(Class<?> endpointClass)
     {
         return endpointFactory.createMetadata(endpointClass);
-    }
-
-    @Test
-    public void testGood_ListenerBasicSocket()
-    {
-        LocalEndpointFactory endpointFactory = new LocalEndpointFactory();
-        LocalEndpointMetadata metadata = endpointFactory.getMetadata(ListenerBasicSocket.class);
-        assertThat("Metadata", metadata, notNullValue());
     }
 
     /**
@@ -343,6 +336,56 @@ public class LocalEndpointMetadataTest
         assertThat(classId + ".errorHandle", metadata.getErrorHandle(), nullValue());
 
         assertThat(classId + ".frameHandle", metadata.getFrameHandle(), nullValue());
+        assertThat(classId + ".pingHandle", metadata.getPingHandle(), nullValue());
+        assertThat(classId + ".pongHandle", metadata.getPongHandle(), nullValue());
+    }
+
+    /**
+     * Test Case for socket using {@link org.eclipse.jetty.websocket.api.listeners.WebSocketListener}
+     */
+    @Test
+    public void testListenerBasicSocket()
+    {
+        LocalEndpointMetadata metadata = createMetadata(ListenerBasicSocket.class);
+
+        String classId = ListenerBasicSocket.class.getSimpleName();
+
+        assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
+        assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
+
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), EXISTS);
+        assertThat(classId + ".textSink", metadata.getTextSink(), equalTo(StringMessageSink.class));
+
+        assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
+        assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
+        assertThat(classId + ".errorHandle", metadata.getErrorHandle(), EXISTS);
+
+        assertThat(classId + ".frameHandle", metadata.getFrameHandle(), nullValue());
+        assertThat(classId + ".pingHandle", metadata.getPingHandle(), nullValue());
+        assertThat(classId + ".pongHandle", metadata.getPongHandle(), nullValue());
+    }
+
+    /**
+     * Test Case for socket using {@link org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener}
+     */
+    @Test
+    public void testListenerFrameSocket() throws Exception
+    {
+        LocalEndpointMetadata metadata = createMetadata(ListenerFrameSocket.class);
+
+        String classId = ListenerFrameSocket.class.getSimpleName();
+
+        assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
+        assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
+
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), nullValue());
+        assertThat(classId + ".textSink", metadata.getTextSink(), nullValue());
+
+        assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
+        assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
+        assertThat(classId + ".errorHandle", metadata.getErrorHandle(), EXISTS);
+
+        assertThat(classId + ".frameHandle", metadata.getFrameHandle(), EXISTS);
         assertThat(classId + ".pingHandle", metadata.getPingHandle(), nullValue());
         assertThat(classId + ".pongHandle", metadata.getPongHandle(), nullValue());
     }

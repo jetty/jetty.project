@@ -20,7 +20,9 @@ package org.eclipse.jetty.websocket.common.endpoints.listeners;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketPartialListener;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
 import org.eclipse.jetty.websocket.core.util.TextUtil;
@@ -32,7 +34,7 @@ public class ListenerPartialSocket implements WebSocketPartialListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        events.add("onWebSocketClose(%d, %s)", statusCode, TextUtil.quote(reason));
+        events.add("onWebSocketClose(%s, %s)", StatusCode.asName(statusCode), TextUtil.quote(reason));
     }
     
     @Override
@@ -44,18 +46,18 @@ public class ListenerPartialSocket implements WebSocketPartialListener
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), cause.getMessage());
+        events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
     }
     
     @Override
     public void onWebSocketPartialText(String payload, boolean fin)
     {
-        events.add("onWebSocketPartialText('%s', %b)", payload, fin);
+        events.add("onWebSocketPartialText(%s, %b)", TextUtil.quote(payload), fin);
     }
     
     @Override
     public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
     {
-        events.add("onWebSocketPartialBinary(%s [%d], %b)", payload, payload.remaining(), fin);
+        events.add("onWebSocketPartialBinary(%s, %b)", BufferUtil.toDetailString(payload), fin);
     }
 }

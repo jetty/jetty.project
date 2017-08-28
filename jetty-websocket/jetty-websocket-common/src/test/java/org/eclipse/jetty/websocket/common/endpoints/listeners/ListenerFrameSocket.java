@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.endpoints.listeners;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
@@ -31,7 +32,7 @@ public class ListenerFrameSocket implements WebSocketFrameListener
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        events.add("onWebSocketClose(%d, %s)", statusCode, TextUtil.quote(reason));
+        events.add("onWebSocketClose(%s, %s)", StatusCode.asName(statusCode), TextUtil.quote(reason));
     }
     
     @Override
@@ -43,12 +44,12 @@ public class ListenerFrameSocket implements WebSocketFrameListener
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), cause.getMessage());
+        events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
     }
     
     @Override
     public void onWebSocketFrame(Frame frame)
     {
-        events.add("onWebSocketFrame(%s, %d, %b)", frame.getType(), frame.getPayload().remaining(), frame.isFin());
+        events.add("onWebSocketFrame(%s)", frame.toString());
     }
 }
