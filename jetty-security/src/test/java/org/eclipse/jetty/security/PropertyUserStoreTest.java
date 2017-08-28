@@ -169,7 +169,7 @@ public class PropertyUserStoreTest
         final File usersFile = initUsersText();
 
         PropertyUserStore store = new PropertyUserStore();
-        store.setConfigPath(usersFile);
+        store.setConfigFile(usersFile);
 
         store.registerUserListener(userCount);
 
@@ -215,7 +215,7 @@ public class PropertyUserStoreTest
 
         PropertyUserStore store = new PropertyUserStore();
         store.setHotReload(true);
-        store.setConfigPath(usersFile);
+        store.setConfigFile(usersFile);
 
         store.registerUserListener(userCount);
 
@@ -246,7 +246,7 @@ public class PropertyUserStoreTest
 
         PropertyUserStore store = new PropertyUserStore();
         store.setHotReload(true);
-        store.setConfigPath(usersFile);
+        store.setConfigFile(usersFile);
 
         store.registerUserListener(userCount);
 
