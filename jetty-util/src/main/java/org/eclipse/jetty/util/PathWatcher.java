@@ -39,8 +39,8 @@ import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -70,19 +71,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PathWatcher extends AbstractLifeCycle implements Runnable
 {
-    public static class PathMatcherSet extends HashSet<PathMatcher> implements Predicate<Path>
-    {
-        @Override
-        public boolean test(Path path)
-        {
-            for (PathMatcher pm: this)
-                if (pm.matches(path))
-                    return true;
-            return false;
-        }
-    }
-
-    public static class Config implements Predicate<Path>
+    public static class Config
     {
         public static final int UNLIMITED_DEPTH = -9999;
         
@@ -301,28 +290,38 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return this.dir;
         }
 
-        public boolean test(Path path)
+        @Deprecated
+        public boolean isExcluded(Path dir) throws IOException
         {
-            try
+            if (excludeHidden)
             {
-                if (excludeHidden && Files.isHidden(path))
+                if (Files.isHidden(dir))
                 {
-                    VERBOSE_LOG.debug("test({}) -> [Hidden]", path);
-                    return false;
+                    if (NOISY_LOG.isDebugEnabled())
+                    {
+                        NOISY_LOG.debug("isExcluded [Hidden] on {}",dir);
+                    }
+                    return true;
                 }
-
-                boolean matched = includeExclude.test(path);
-
-                if (VERBOSE_LOG.isDebugEnabled())
-                {
-                    VERBOSE_LOG.debug("test({}) -> {}", path, matched);
-                }
-                return matched;
             }
-            catch(IOException e)
+
+            boolean matched = ((PathMatcherSet)includeExclude.getExcluded()).test(dir);
+            if (NOISY_LOG.isDebugEnabled())
             {
-                throw new RuntimeException(e);
+                NOISY_LOG.debug("isExcluded [{}] on {}",matched,dir);
             }
+            return matched;
+        }
+
+        @Deprecated
+        public boolean isIncluded(Path dir)
+        {
+            boolean matched = ((PathMatcherSet)includeExclude.getIncluded()).test(dir);
+            if (NOISY_LOG.isDebugEnabled())
+            {
+                NOISY_LOG.debug("isIncluded [{}] on {}",matched,dir);
+            }
+            return matched;
         }
 
         public boolean matches(Path path)
@@ -380,9 +379,9 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             Path root = path.getRoot();
             if (root != null)
             {
-                if (VERBOSE_LOG.isDebugEnabled())
+                if (NOISY_LOG.isDebugEnabled())
                 {
-                    VERBOSE_LOG.debug("Path: {} -> Root: {}", path, root);
+                    NOISY_LOG.debug("Path: {} -> Root: {}",path,root);
                 }
                 for (char c : root.toString().toCharArray())
                 {
@@ -486,18 +485,21 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             //     - generate pending add event (iff notifiable and matches patterns)
             //   - else stop visiting this dir
 
-            if (base.test(dir))
+            if (!base.isExcluded(dir))
             {
-                if (watcher.isNotifiable())
+                if (base.isIncluded(dir))
                 {
-                    // Directory is specifically included in PathMatcher, then
-                    // it should be notified as such to interested listeners
-                    PathWatchEvent event = new PathWatchEvent(dir,PathWatchEventType.ADDED);
-                    if (LOG.isDebugEnabled())
+                    if (watcher.isNotifiable())
                     {
-                        LOG.debug("Pending {}",event);
+                        // Directory is specifically included in PathMatcher, then
+                        // it should be notified as such to interested listeners
+                        PathWatchEvent event = new PathWatchEvent(dir,PathWatchEventType.ADDED);
+                        if (LOG.isDebugEnabled())
+                        {
+                            LOG.debug("Pending {}",event);
+                        }
+                        watcher.addToPendingList(dir, event);
                     }
-                    watcher.addToPendingList(dir, event);
                 }
 
                 //Register the dir with the watcher if it is:
@@ -677,7 +679,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         @Override
         public String toString()
         {
-            return String.format("PathWatchEvent[%8s|%s]",type,path);
+            return String.format("PathWatchEvent[%s|%s]",type,path);
         }
     }
     
@@ -823,7 +825,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     /**
      * super noisy debug logging
      */
-    private static final Logger VERBOSE_LOG = Log.getLogger(PathWatcher.class.getName() + ".PathWatcherVerbose");
+    private static final Logger NOISY_LOG = Log.getLogger(PathWatcher.class.getName() + ".Noisy");
 
     @SuppressWarnings("unchecked")
     protected static <T> WatchEvent<T> cast(WatchEvent<?> event)
@@ -858,12 +860,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     public PathWatcher()
     {
     }
-
-    public Collection<Config> getConfigs()
-    {
-        return configs;
-    }
-
+    
     /**
      * Request watch on a the given path (either file or dir)
      * using all Config defaults. In the case of a dir,
@@ -1228,16 +1225,16 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 //If no pending events, wait forever for new events
                 if (pendingEvents.isEmpty())
                 {
-                    if (VERBOSE_LOG.isDebugEnabled())
-                        VERBOSE_LOG.debug("Waiting for take()");
+                    if (NOISY_LOG.isDebugEnabled())
+                        NOISY_LOG.debug("Waiting for take()");
                     key = watchService.take();
                 }
                 else
                 {
                     //There are existing events that might be ready to go,
                     //only wait as long as the quiet time for any new events
-                    if (VERBOSE_LOG.isDebugEnabled())
-                        VERBOSE_LOG.debug("Waiting for poll({}, {})", updateQuietTimeDuration, updateQuietTimeUnit);
+                    if (NOISY_LOG.isDebugEnabled())
+                        NOISY_LOG.debug("Waiting for poll({}, {})",updateQuietTimeDuration,updateQuietTimeUnit);
 
                     key = watchService.poll(updateQuietTimeDuration,updateQuietTimeUnit);
                    
@@ -1428,4 +1425,15 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     }
 
 
+    public static class PathMatcherSet extends HashSet<PathMatcher> implements Predicate<Path>
+    {
+        @Override
+        public boolean test(Path path)
+        {
+            for (PathMatcher pm: this)
+                if (pm.matches(path))
+                    return true;
+            return false;
+        }
+    }
 }
