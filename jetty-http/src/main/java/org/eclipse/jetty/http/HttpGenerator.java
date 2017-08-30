@@ -560,10 +560,6 @@ public class HttpGenerator
         for (int f=0;f<n;f++)
         {
             HttpField field = trailer.getField(f);
-            String v = field.getValue();
-            if (v==null || v.length()==0)
-                continue; // rfc7230 does not allow no value
-
             putTo(field,buffer);
         }
 
