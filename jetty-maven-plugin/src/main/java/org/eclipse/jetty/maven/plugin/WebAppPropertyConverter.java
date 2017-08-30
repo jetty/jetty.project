@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.server.Server;
@@ -139,27 +140,30 @@ public class WebAppPropertyConverter
      * Configure a webapp from a properties file.
      * 
      * @param webApp the webapp to configure
-     * @param resource the properties file to apply
+     * @param resource the properties file to apply     
      * @param server the Server instance to use
+     * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception
      */
-    public static void fromProperties (JettyWebAppContext webApp, String resource, Server server)
+    public static void fromProperties (JettyWebAppContext webApp, String resource, Server server, Map<String,String> jettyProperties)
     throws Exception
     {
         if (resource == null)
             throw new IllegalStateException("No resource");
         
-        fromProperties(webApp, Resource.newResource(resource).getFile(), server);
+        fromProperties(webApp, Resource.newResource(resource).getFile(), server, jettyProperties);
     }
+    
     
     /**
      * Configure a webapp from a properties file
      * @param webApp the webapp to configure
      * @param propsFile the properties to apply
-     * @param server the Server instance
+     * @param server the Server instance to use if there is a context xml file to apply
+     * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception
      */
-    public static void fromProperties (JettyWebAppContext webApp, File propsFile, Server server)
+    public static void fromProperties (JettyWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
     throws Exception
     {
         if (webApp == null)
@@ -248,6 +252,14 @@ public class WebAppPropertyConverter
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str).getURI().toURL());
             xmlConfiguration.getIdMap().put("Server",server);
+            //add in any properties
+            if (jettyProperties != null)
+            {
+                for (Map.Entry<String,String> prop:jettyProperties.entrySet())
+                {
+                    xmlConfiguration.getProperties().put(prop.getKey(), prop.getValue());
+                }
+            }
             xmlConfiguration.configure(webApp);
         }
     }

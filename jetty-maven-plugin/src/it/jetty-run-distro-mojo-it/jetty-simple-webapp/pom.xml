@@ -87,10 +87,10 @@
               <goal>run-distro</goal>
             </goals>
             <configuration>
-              <properties>
-                <property>jetty.server.dumpAfterStart=true</property>
-                <property>jetty.http.port=@jetty.runPort@</property>
-              </properties>
+              <jettyProperties>
+                <jettyProperty>jetty.server.dumpAfterStart=true</jettyProperty>
+                <jettyProperty>jetty.http.port=@jetty.runPort@</jettyProperty>
+              </jettyProperties>
               <waitForChild>false</waitForChild>
               <modules>
                 <module>quickstart</module>

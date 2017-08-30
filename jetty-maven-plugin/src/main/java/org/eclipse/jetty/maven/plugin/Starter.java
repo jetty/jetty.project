@@ -20,7 +20,9 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -41,15 +43,15 @@ public class Starter
     private static final Logger LOG = Log.getLogger(Starter.class);
 
     private List<File> jettyXmls; // list of jetty.xml config files to apply
-
     private Server server;
     private JettyWebAppContext webApp;
-
+    private Map<String,String> jettyProperties; //optional list of jetty properties to set
     
     private int stopPort=0;
     private String stopKey=null;
     private File propsFile;
     private String token;
+    
 
 
     
@@ -93,29 +95,35 @@ public class Starter
             monitor.setExitVm(true);
         }
     }
-    
+
     public void configureWebApp ()
-    throws Exception
+            throws Exception
     {
         if (propsFile == null)
             return;
-        
+
         //apply a properties file that defines the things that we configure in the jetty:run plugin
-        WebAppPropertyConverter.fromProperties(webApp, propsFile, server);
+        WebAppPropertyConverter.fromProperties(webApp, propsFile, server, jettyProperties);       
     }
 
     public void getConfiguration (String[] args)
-    throws Exception
+            throws Exception
     {
         for (int i=0; i<args.length; i++)
         {
             //--stop-port
             if ("--stop-port".equals(args[i]))
+            {
                 stopPort = Integer.parseInt(args[++i]);
+                continue;
+            }
 
             //--stop-key
             if ("--stop-key".equals(args[i]))
+            {
                 stopKey = args[++i];
+                continue;
+            }
 
             //--jettyXml
             if ("--jetty-xml".equals(args[i]))
@@ -125,20 +133,31 @@ public class Starter
                 for (int j=0; names!= null && j < names.length; j++)
                 {
                     jettyXmls.add(new File(names[j].trim()));
-                }  
+                }
+                continue;
             }
-
             //--props
             if ("--props".equals(args[i]))
             {
                 propsFile = new File(args[++i].trim());
+                continue;
             }
             
             //--token
             if ("--token".equals(args[i]))
             {
                 token = args[++i].trim();
+                continue;
             }
+            
+
+            //assume everything else is a jetty property to be passed in
+            if (jettyProperties == null)
+                jettyProperties = new HashMap<>();
+
+            String[] tmp = args[i].trim().split("=");
+            if (tmp.length == 2)
+                jettyProperties.put(tmp[0], tmp[1]);
         }
     }
 
@@ -174,7 +193,7 @@ public class Starter
      */
     public void applyJettyXml() throws Exception
     {
-        Server tmp = ServerSupport.applyXmlConfigurations(server, jettyXmls);
+        Server tmp = ServerSupport.applyXmlConfigurations(server, jettyXmls, jettyProperties);
         if (server == null)
             server = tmp;
         

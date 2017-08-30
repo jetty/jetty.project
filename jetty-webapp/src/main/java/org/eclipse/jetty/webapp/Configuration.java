@@ -207,6 +207,6 @@ public interface Configuration
             }
             throw new IllegalArgumentException("replaceClass '"+replaceClass+"' not found in "+this);
         }
-        
+
     }
 }

@@ -170,25 +170,25 @@ public class ServerSupport
 
 
     /**
-     * Apply xml files to server startup, passing in ourselves as the 
-     * "Server" instance.
+     * Apply xml files to server instance.
      * 
      * @param server the server to apply the xml to
      * @param files the list of xml files
+     * @param properties list of jetty properties
      * @return the Server implementation, after the xml is applied
      * @throws Exception if unable to apply the xml configuration
      */
-    public static Server applyXmlConfigurations (Server server, List<File> files) 
+    public static Server applyXmlConfigurations (Server server, List<File> files, Map<String,String> properties) 
     throws Exception
     {
         if (files == null || files.isEmpty())
             return server;
 
         Map<String,Object> lastMap = new HashMap<String,Object>();
-        
+
         if (server != null)
             lastMap.put("Server", server);
-     
+
 
         for ( File xmlFile : files )
         {
@@ -197,6 +197,15 @@ public class ServerSupport
 
 
             XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
+            
+            //add in any properties
+            if (properties != null)
+            {
+                for (Map.Entry<String,String> e:properties.entrySet())
+                {
+                    xmlConfiguration.getProperties().put(e.getKey(), e.getValue());
+                }
+            }
 
             //chain ids from one config file to another
             if (lastMap != null)
@@ -216,4 +225,19 @@ public class ServerSupport
         return (Server)lastMap.get("Server");
     }
 
+    /**
+     * Apply xml files to server instance.
+     * 
+     * @param server the Server instance to configure
+     * @param files the xml configs to apply
+     * @return the Server after application of configs
+     * 
+     * @throws Exception
+     */
+    public static Server applyXmlConfigurations (Server server, List<File> files) 
+            throws Exception
+    {
+        return applyXmlConfigurations(server, files, null);
+    }
+    
 }

@@ -18,27 +18,12 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,9 +32,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /**
@@ -98,6 +92,13 @@ public class JettyRunForkedMojo extends JettyRunMojo
      * @parameter property="jetty.jvmArgs"
      */
     private String jvmArgs;
+    
+    
+    /**
+     * Optional list of jetty properties to put on the command line
+     * @parameter
+     */
+    private String[] jettyProperties;
     
     
     /**
@@ -335,12 +336,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 cmd.add("--jetty-xml");
                 cmd.add(jettyXml);
             }
-        
-            if (contextXml != null)
-            {
-                cmd.add("--context-xml");
-                cmd.add(contextXml);
-            }
             
             cmd.add("--props");
             cmd.add(props.getAbsolutePath());
@@ -348,6 +343,14 @@ public class JettyRunForkedMojo extends JettyRunMojo
             String token = createToken();
             cmd.add("--token");
             cmd.add(token);
+            
+            if (jettyProperties != null)
+            {
+                for (String jettyProp:jettyProperties)
+                {
+                    cmd.add(jettyProp);
+                }
+            }
             
             ProcessBuilder builder = new ProcessBuilder(cmd);
             builder.directory(project.getBasedir());
