@@ -30,7 +30,7 @@ public interface Callback
      * Instance of Adapter that can be used when the callback methods need an empty
      * implementation without incurring in the cost of allocating a new Adapter object.
      */
-    Callback NOOP = new Callback()
+    Callback NOOP = new Callback.NonBlocking()
     {
     };
 

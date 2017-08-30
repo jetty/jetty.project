@@ -45,6 +45,8 @@ public class CountingCallback extends Callback.Nested
     public CountingCallback(Callback callback, int count)
     {
         super(callback);
+        if (count < 1)
+            throw new IllegalArgumentException();
         this.count = new AtomicInteger(count);
     }
 
