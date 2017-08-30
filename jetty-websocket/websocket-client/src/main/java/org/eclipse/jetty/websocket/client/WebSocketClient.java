@@ -66,16 +66,16 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 public class WebSocketClient extends ContainerLifeCycle implements WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
-    
+
     // From HttpClient
     private final HttpClient httpClient;
-    
+
     // The container
     private final WebSocketContainerScope containerScope;
     private final WebSocketExtensionFactory extensionRegistry;
     private SessionFactory sessionFactory;
     private final List<WebSocketSession.Listener> listeners = new CopyOnWriteArrayList<>();
-    
+
     private final int id = ThreadLocalRandom.current().nextInt();
 
     /**
@@ -125,7 +125,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         this(new HttpClient());
         this.httpClient.setExecutor(executor);
-    
+
     }
 
     /**
@@ -237,7 +237,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         this.sessionFactory = new WebSocketSessionFactory(containerScope);
     }
-    
+
     /**
      * Create WebSocketClient based on pre-existing Container Scope, to allow sharing of
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
@@ -388,10 +388,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}",this);
 
-        if (ShutdownThread.isRegistered(this))
-        {
-            ShutdownThread.deregister(this);
-        }
+        ShutdownThread.deregister(this);
 
         super.doStop();
 
@@ -434,7 +431,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     {
         return httpClient.getCookieStore();
     }
-    
+
     public Executor getExecutor()
     {
         return httpClient.getExecutor();
@@ -451,10 +448,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
             threadPool.setDaemon(true);
             return threadPool;
         }
-        
+
         return executor;
     }
-    
+
     public ExtensionFactory getExtensionFactory()
     {
         return extensionRegistry;
@@ -698,7 +695,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         getPolicy().setIdleTimeout(ms);
         httpClient.setIdleTimeout(ms);
     }
-    
+
     /**
      * @deprecated see {@link WebSocketPolicy#setMaxTextMessageBufferSize(int)}
      */

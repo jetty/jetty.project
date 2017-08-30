@@ -39,6 +39,7 @@ import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
@@ -50,8 +51,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -85,16 +88,19 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
 
         protected final Path dir;
+        protected final IncludeExcludeSet<PathMatcher,Path> includeExclude;
         protected int recurseDepth = 0; // 0 means no sub-directories are scanned
-        protected List<PathMatcher> includes;
-        protected List<PathMatcher> excludes;
         protected boolean excludeHidden = false;
 
         public Config(Path path)
         {
+            this(path,new IncludeExcludeSet<>(PathMatcherSet.class));
+        }
+
+        public Config(Path path, IncludeExcludeSet<PathMatcher,Path> includeExclude)
+        {
             this.dir = path;
-            includes = new ArrayList<>();
-            excludes = new ArrayList<>();
+            this.includeExclude = includeExclude;
         }
 
         /**
@@ -105,7 +111,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          */
         public void addExclude(PathMatcher matcher)
         {
-            this.excludes.add(matcher);
+            includeExclude.exclude(matcher);
         }
 
         /**
@@ -189,7 +195,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          */
         public void addInclude(PathMatcher matcher)
         {
-            this.includes.add(matcher);
+            includeExclude.include(matcher);
         }
 
         /**
@@ -256,9 +262,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          */
         public Config asSubConfig(Path dir)
         {
-            Config subconfig = new Config(dir);
-            subconfig.includes = this.includes;
-            subconfig.excludes = this.excludes;
+            Config subconfig = new Config(dir,includeExclude);
             if (dir == this.dir)
                 subconfig.recurseDepth = this.recurseDepth; // TODO shouldn't really do a subconfig for this
             else
@@ -286,18 +290,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return this.dir;
         }
 
-        private boolean hasMatch(Path path, List<PathMatcher> matchers)
-        {
-            for (PathMatcher matcher : matchers)
-            {
-                if (matcher.matches(path))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
+        @Deprecated
         public boolean isExcluded(Path dir) throws IOException
         {
             if (excludeHidden)
@@ -312,13 +305,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 }
             }
 
-            if (excludes.isEmpty())
-            {
-                // no excludes == everything allowed
-                return false;
-            }
-
-            boolean matched = hasMatch(dir,excludes);
+            boolean matched = ((PathMatcherSet)includeExclude.getExcluded()).test(dir);
             if (NOISY_LOG.isDebugEnabled())
             {
                 NOISY_LOG.debug("isExcluded [{}] on {}",matched,dir);
@@ -326,19 +313,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return matched;
         }
 
+        @Deprecated
         public boolean isIncluded(Path dir)
         {
-            if (includes.isEmpty())
-            {
-                // no includes == everything allowed
-                if (NOISY_LOG.isDebugEnabled())
-                {
-                    NOISY_LOG.debug("isIncluded [All] on {}",dir);
-                }
-                return true;
-            }
-
-            boolean matched = hasMatch(dir,includes);
+            boolean matched = ((PathMatcherSet)includeExclude.getIncluded()).test(dir);
             if (NOISY_LOG.isDebugEnabled())
             {
                 NOISY_LOG.debug("isIncluded [{}] on {}",matched,dir);
@@ -348,15 +326,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         public boolean matches(Path path)
         {
-            try
-            {
-                return !isExcluded(path) && isIncluded(path);
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Unable to match path: " + path,e);
-                return false;
-            }
+            return includeExclude.test(path);
         }
 
         /**
@@ -1452,5 +1422,18 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         StringBuilder s = new StringBuilder(this.getClass().getName());
         appendConfigId(s);
         return s.toString();
+    }
+
+
+    public static class PathMatcherSet extends HashSet<PathMatcher> implements Predicate<Path>
+    {
+        @Override
+        public boolean test(Path path)
+        {
+            for (PathMatcher pm: this)
+                if (pm.matches(path))
+                    return true;
+            return false;
+        }
     }
 }

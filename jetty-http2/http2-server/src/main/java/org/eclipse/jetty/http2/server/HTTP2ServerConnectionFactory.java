@@ -122,7 +122,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onClose(Session session, GoAwayFrame frame)
+        public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
             ErrorCode error = ErrorCode.from(frame.getError());
             if (error == null)
@@ -130,13 +130,13 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             String reason = frame.tryConvertPayload();
             if (reason != null && !reason.isEmpty())
                 reason = " (" + reason + ")";
-            getConnection().onSessionFailure(new EofException("HTTP/2 " + error + reason));
+            getConnection().onSessionFailure(new EofException("HTTP/2 " + error + reason), callback);
         }
 
         @Override
-        public void onFailure(Session session, Throwable failure)
+        public void onFailure(Session session, Throwable failure, Callback callback)
         {
-            getConnection().onSessionFailure(failure);
+            getConnection().onSessionFailure(failure, callback);
         }
 
         @Override
@@ -168,7 +168,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             ErrorCode error = ErrorCode.from(frame.getError());
             if (error == null)
                 error = ErrorCode.CANCEL_STREAM_ERROR;
-            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error));
+            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error), Callback.NOOP);
         }
 
         @Override

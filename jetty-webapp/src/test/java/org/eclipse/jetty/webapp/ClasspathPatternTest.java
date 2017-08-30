@@ -30,8 +30,6 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
-import sun.security.provider.Sun;
-
 public class ClasspathPatternTest
 {
     private final ClasspathPattern _pattern = new ClasspathPattern();
@@ -134,7 +132,6 @@ public class ClasspathPatternTest
         ClasspathPattern pattern = new ClasspathPattern();
         pattern.include("something");
         Assert.assertThat(pattern.match(String.class), Matchers.is(false));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
@@ -146,15 +143,55 @@ public class ClasspathPatternTest
         pattern.include(loc_junit.toString(), loc_test.toString());
 
         Assert.assertThat(pattern.match(String.class), Matchers.is(true));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(true));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
 
-        // exclude by package name still works 
-        pattern.add("-sun.security.provider.Sun");
+        pattern.add("-java.lang.String");
+        Assert.assertThat(pattern.match(String.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+    }
+
+    @SuppressWarnings("restriction")
+    @Test
+    public void testIncludedLocationsOrModule() throws Exception
+    {
+        Assume.assumeTrue(JDK.IS_9);
+
+        // jar from JVM classloader
+        URI mod_string = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(mod_string);
+
+        // a jar from maven repo jar
+        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(loc_junit);
+
+        // class file
+        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        // System.err.println(loc_test);
+
+        ClasspathPattern pattern = new ClasspathPattern();
+        pattern.include("something");
+        Assert.assertThat(pattern.match(String.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+
+        // Add module for all JVM base classes
+        pattern.include("jrt:/java.base");
+
+        // Add jar for individual class and classes directory
+        pattern.include(loc_junit.toString(), loc_test.toString());
+
         Assert.assertThat(pattern.match(String.class), Matchers.is(true));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+
+        pattern.add("-java.lang.String");
+        Assert.assertThat(pattern.match(String.class), Matchers.is(false));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(false));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
@@ -184,7 +221,6 @@ public class ClasspathPatternTest
         pattern.include(".");
 
         Assert.assertThat(pattern.match(String.class), Matchers.is(true));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(true));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
@@ -196,7 +232,46 @@ public class ClasspathPatternTest
         pattern.exclude(loc_junit.toString(), loc_test.toString());
 
         Assert.assertThat(pattern.match(String.class), Matchers.is(false));
-        Assert.assertThat(pattern.match(Sun.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
+    }
+
+    @SuppressWarnings("restriction")
+    @Test
+    public void testExcludeLocationsOrModule() throws Exception
+    {
+        Assume.assumeTrue(JDK.IS_9);
+
+        // jar from JVM classloader
+        URI mod_string = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(mod_string);
+
+        // a jar from maven repo jar
+        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(loc_junit);
+
+        // class file
+        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        // System.err.println(loc_test);
+
+        ClasspathPattern pattern = new ClasspathPattern();
+
+        // include everything
+        pattern.include(".");
+
+        Assert.assertThat(pattern.match(String.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(Test.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
+        Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
+
+        // Add directory for both JVM classes
+        pattern.exclude("jrt:/java.base/");
+
+        // Add jar for individual class and classes directory
+        pattern.exclude(loc_junit.toString(), loc_test.toString());
+
+        Assert.assertThat(pattern.match(String.class), Matchers.is(false));
         Assert.assertThat(pattern.match(Test.class), Matchers.is(false));
         Assert.assertThat(pattern.match(JDK.class), Matchers.is(true));
         Assert.assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
@@ -215,5 +290,15 @@ public class ClasspathPatternTest
         {
             Assert.assertTrue(pattern.match("n" + i + "." + Integer.toHexString(100 + i) + ".Name"));
         }
+    }
+
+
+    @Test
+    public void testJvmModule()
+    {
+        URI uri = TypeUtil.getLocationOfClass(String.class);
+        System.err.println(uri);
+        System.err.println(uri.toString().split("/")[0]);
+        System.err.println(uri.toString().split("/")[1]);
     }
 }

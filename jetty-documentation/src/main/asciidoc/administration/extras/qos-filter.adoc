@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.servlets.QoSFilter`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/QoSFilter.html
-* Xref: {JXURL}/org/eclipse/jetty/servlets/QoSFilter.html
 
 [[qos-filter-usage]]
 ==== Usage

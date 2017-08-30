@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.servlet.DefaultServlet`
 * Maven Artifact: org.eclipse.jetty:jetty-servlet
 * Javadoc: {JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html
-* Xref: {JXURL}/org/eclipse/jetty/servlet/DefaultServlet.html
 
 [[default-servlet-usage]]
 ==== Usage

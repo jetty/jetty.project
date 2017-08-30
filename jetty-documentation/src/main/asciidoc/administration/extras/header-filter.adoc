@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.servlets.HeaderFilter`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/HeaderFilter.html
-* Xref: {JXURL}/org/eclipse/jetty/servlets/HeaderFilter.html
 
 [[header-filter-usage]]
 ==== Usage

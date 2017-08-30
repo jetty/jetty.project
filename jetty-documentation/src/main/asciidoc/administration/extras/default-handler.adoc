@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.server.handler.DefaultHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
 * Javadoc: {JDURL}/org/eclipse/jetty/server/handler/DefaultHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/DefaultHandler.html
 
 [[default-handler-usage]]
 ==== Usage

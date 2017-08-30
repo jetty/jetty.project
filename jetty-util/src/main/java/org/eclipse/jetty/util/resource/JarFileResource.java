@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
-class JarFileResource extends JarResource
+public class JarFileResource extends JarResource
 {
     private static final Logger LOG = Log.getLogger(JarFileResource.class);
     private JarFile _jarFile;

@@ -273,13 +273,16 @@ public class PathWatcherTest
      */
     private static void awaitQuietTime(PathWatcher pathWatcher) throws InterruptedException
     {
-        double multiplier = 5.0;
+        long offset = 1000;
+        double multiplier = 3.0;
         if (OS.IS_WINDOWS)
         {
             // Microsoft Windows filesystem is too slow for a lower multiplier
-            multiplier = 6.0;
+            offset = 1500;
+            multiplier = 4.0;
         }
-        TimeUnit.MILLISECONDS.sleep((long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier));
+        long wait = offset + (long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier);
+        TimeUnit.MILLISECONDS.sleep(wait);
     }
 
     private static final int KB = 1024;
@@ -393,7 +396,8 @@ public class PathWatcherTest
             expected.put("a.txt",new PathWatchEventType[] {ADDED});
             expected.put("b.txt",new PathWatchEventType[] {ADDED});
 
-         
+            Thread.currentThread().sleep(1000); // TODO poor test
+
             capture.assertEvents(expected);
             
             //stop it
@@ -401,7 +405,7 @@ public class PathWatcherTest
             
             capture.reset();
             
-            Thread.currentThread().sleep(1000);
+            Thread.currentThread().sleep(1000); // TODO poor test
             
             pathWatcher.start();
             
