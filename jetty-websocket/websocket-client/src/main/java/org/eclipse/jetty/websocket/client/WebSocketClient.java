@@ -77,6 +77,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     private final int id = ThreadLocalRandom.current().nextInt();
 
+    // defaults to true for backwards compatibility
+    private boolean stopAtShutdown = true;
+
     /**
      * Instantiate a WebSocketClient with defaults
      */
@@ -552,7 +555,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
     private synchronized void init() throws IOException
     {
-        if (!ShutdownThread.isRegistered(this))
+        if (isStopAtShutdown() && !ShutdownThread.isRegistered(this))
         {
             ShutdownThread.register(this);
         }
@@ -692,6 +695,31 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public HttpClient getHttpClient()
     {
         return this.httpClient;
+    }
+
+    /**
+     * Set JVM shutdown behavior.
+     * @param stop If true, this client instance will be explicitly stopped when the
+     * JVM is shutdown. Otherwise the application is responsible for maintaining the WebSocketClient lifecycle.
+     * @see Runtime#addShutdownHook(Thread)
+     * @see ShutdownThread
+     */
+    public synchronized void setStopAtShutdown(boolean stop)
+    {
+        if (stop)
+        {
+            if (!stopAtShutdown && isStarted() && !ShutdownThread.isRegistered(this))
+                ShutdownThread.register(this);
+        }
+        else
+            ShutdownThread.deregister(this);
+
+        stopAtShutdown = stop;
+    }
+
+    public boolean isStopAtShutdown()
+    {
+        return stopAtShutdown;
     }
 
     @Override
