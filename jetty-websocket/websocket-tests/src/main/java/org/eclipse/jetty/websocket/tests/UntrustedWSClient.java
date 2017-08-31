@@ -34,9 +34,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 
-public class UntrustedWSClient extends WebSocketClient
+public class UntrustedWSClient extends WebSocketClientImpl
 {
     private static final Logger LOG = Log.getLogger(UntrustedWSClient.class);
     

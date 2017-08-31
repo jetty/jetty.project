@@ -54,7 +54,7 @@ import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionFactory;
+import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -75,7 +75,7 @@ public class LocalEndpointImplTest
     private static Executor executor = Executors.newFixedThreadPool(10);
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
     private static DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
-    private static WSExtensionFactory extensionFactory = new WSExtensionFactory();
+    private static WSExtensionRegistry extensionFactory = new WSExtensionRegistry();
     private LocalEndpointFactory endpointFactory = new LocalEndpointFactory();
     private WSPolicy policy = WSPolicy.newServerPolicy();
 

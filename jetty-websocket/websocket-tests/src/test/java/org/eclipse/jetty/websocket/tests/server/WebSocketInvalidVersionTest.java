@@ -28,7 +28,7 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
@@ -64,12 +64,12 @@ public class WebSocketInvalidVersionTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     
-    private WebSocketClient client;
+    private WebSocketClientImpl client;
     
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClientImpl();
         client.start();
     }
     

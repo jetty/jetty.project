@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.junit.Test;
 
 /**
@@ -47,7 +47,7 @@ public class WebSocketClientInitTest
 
         try
         {
-            WebSocketClient ws = new WebSocketClient(http);
+            WebSocketClientImpl ws = new WebSocketClientImpl(http);
             ws.start();
             try
             {
@@ -59,7 +59,7 @@ public class WebSocketClientInitTest
                 HttpClient httpBean = ws.getBean(HttpClient.class); 
                 assertThat("HttpClient should not be found in WebSocketClient",httpBean,nullValue());
                 assertThat("HttpClient bean is managed",ws.isManaged(httpBean),is(false));
-                assertThat("WebSocketClient should not be found in HttpClient",http.getBean(WebSocketClient.class),nullValue());
+                assertThat("WebSocketClient should not be found in HttpClient",http.getBean(WebSocketClientImpl.class),nullValue());
             }
             finally
             {
@@ -87,7 +87,7 @@ public class WebSocketClientInitTest
     public void testInit_HttpClient_SyntheticStart() throws Exception
     {
         HttpClient http = null;
-        WebSocketClient ws = new WebSocketClient();
+        WebSocketClientImpl ws = new WebSocketClientImpl();
         ws.start();
         try
         {
@@ -99,7 +99,7 @@ public class WebSocketClientInitTest
             HttpClient httpBean = ws.getBean(HttpClient.class); 
             assertThat("HttpClient bean found in WebSocketClient",httpBean,is(http));
             assertThat("HttpClient bean is managed",ws.isManaged(httpBean),is(true));
-            assertThat("WebSocketClient should not be found in HttpClient",http.getBean(WebSocketClient.class),nullValue());
+            assertThat("WebSocketClient should not be found in HttpClient",http.getBean(WebSocketClientImpl.class),nullValue());
         }
         finally
         {

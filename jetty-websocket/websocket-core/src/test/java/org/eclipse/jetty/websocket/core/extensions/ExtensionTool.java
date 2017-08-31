@@ -126,14 +126,14 @@ public class ExtensionTool
     private final DecoratedObjectFactory objectFactory;
     private final WSPolicy policy;
     private final ByteBufferPool bufferPool;
-    private final WSExtensionFactory factory;
+    private final WSExtensionRegistry factory;
 
     public ExtensionTool(WSPolicy policy, ByteBufferPool bufferPool)
     {
         this.objectFactory = new DecoratedObjectFactory();
         this.policy = policy;
         this.bufferPool = bufferPool;
-        this.factory = new WSExtensionFactory();
+        this.factory = new WSExtensionRegistry();
     }
 
     public Tester newTester(String parameterizedExtension)

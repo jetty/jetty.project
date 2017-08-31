@@ -52,7 +52,7 @@ public class ExtensionStackTest
         objectFactory = new DecoratedObjectFactory();
         policy = WSPolicy.newServerPolicy();
         bufferPool = new MappedByteBufferPool();
-        stack = new ExtensionStack(new WSExtensionFactory());
+        stack = new ExtensionStack(new WSExtensionRegistry());
     }
 
     @SuppressWarnings("unchecked")

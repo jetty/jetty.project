@@ -36,7 +36,7 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.WSServer;
@@ -98,7 +98,7 @@ public class LargeContainerTest
             wsb.deployWebapp(webapp);
             // wsb.dump();
 
-            WebSocketClient client = new WebSocketClient(bufferPool);
+            WebSocketClientImpl client = new WebSocketClientImpl(bufferPool);
             try
             {
                 client.getPolicy().setMaxTextMessageSize(128*1024);

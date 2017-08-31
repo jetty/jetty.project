@@ -30,7 +30,7 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -83,7 +83,7 @@ public class WebSocketClientBadUriTest
     @Rule
     public TestTracker tt = new TestTracker();
     
-    private WebSocketClient client;
+    private WebSocketClientImpl client;
     private final String uriStr;
     private final URI uri;
     
@@ -96,7 +96,7 @@ public class WebSocketClientBadUriTest
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClientImpl();
         client.start();
     }
     

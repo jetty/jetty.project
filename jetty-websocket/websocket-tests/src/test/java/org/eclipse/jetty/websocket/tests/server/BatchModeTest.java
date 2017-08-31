@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.After;
@@ -88,7 +88,7 @@ public class BatchModeTest
     
     private Server server;
     private ServerConnector connector;
-    private WebSocketClient client;
+    private WebSocketClientImpl client;
 
     @Before
     public void prepare() throws Exception
@@ -108,7 +108,7 @@ public class BatchModeTest
 
         server.setHandler(handler);
 
-        client = new WebSocketClient();
+        client = new WebSocketClientImpl();
         server.addBean(client, true);
 
         server.start();

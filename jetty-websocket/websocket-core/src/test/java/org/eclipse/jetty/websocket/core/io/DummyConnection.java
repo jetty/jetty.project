@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionFactory;
+import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
 import org.eclipse.jetty.websocket.core.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.DummyUpgradeResponse;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
@@ -43,7 +43,7 @@ public class DummyConnection extends WSConnection
         private ByteBufferPool bufferPool;
         private DecoratedObjectFactory objectFactory;
         private WSPolicy policy;
-        private WSExtensionFactory extensionFactory;
+        private WSExtensionRegistry extensionFactory;
         private ExtensionStack extensionStack;
         private UpgradeRequest upgradeRequest;
         private UpgradeResponse upgradeResponse;
@@ -104,7 +104,7 @@ public class DummyConnection extends WSConnection
             if (objectFactory == null) objectFactory = new DecoratedObjectFactory();
             if (policy == null) policy = WSPolicy.newServerPolicy();
             if (extensionStack == null)
-                extensionStack = new ExtensionStack(new WSExtensionFactory());
+                extensionStack = new ExtensionStack(new WSExtensionRegistry());
             if (upgradeRequest == null) upgradeRequest = new DummyUpgradeRequest();
             if (upgradeResponse == null) upgradeResponse = new DummyUpgradeResponse();
 

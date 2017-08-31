@@ -19,8 +19,7 @@
         <!-- Jetty Native WebSocket Implementation -->
         <module>jetty-websocket-common</module>
         <module>jetty-websocket-api</module>
-        <module>jetty-websocket-client-api</module>
-        <module>jetty-websocket-client-impl</module>
+        <module>jetty-websocket-client</module>
         <module>jetty-websocket-server-impl</module>
         <module>jetty-websocket-server-api</module>
         <!-- JSR356 Implementation -->

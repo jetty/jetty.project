@@ -53,12 +53,12 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
-    private final WSExtensionFactory factory;
+    private final WSExtensionRegistry factory;
     private List<Extension> extensions;
     private IncomingFrames nextIncoming;
     private OutgoingFrames nextOutgoing;
 
-    public ExtensionStack(WSExtensionFactory factory)
+    public ExtensionStack(WSExtensionRegistry factory)
     {
         this.factory = factory;
     }

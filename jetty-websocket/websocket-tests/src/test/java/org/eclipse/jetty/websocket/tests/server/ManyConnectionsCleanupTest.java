@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -241,12 +241,12 @@ public class ManyConnectionsCleanupTest
     @Rule
     public TestName testname = new TestName();
     
-    private WebSocketClient client;
+    private WebSocketClientImpl client;
     
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClientImpl();
         client.start();
     }
     

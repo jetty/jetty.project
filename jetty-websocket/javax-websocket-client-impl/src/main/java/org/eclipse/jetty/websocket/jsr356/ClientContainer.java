@@ -51,8 +51,8 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.io.UpgradeListener;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
+import org.eclipse.jetty.websocket.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
@@ -77,7 +77,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     /** The delegated Container Scope */
     private final WebSocketContainerScope scopeDelegate;
     /** The jetty websocket client in use for this container */
-    private final WebSocketClient client;
+    private final WebSocketClientImpl client;
     private final boolean internalClient;
     
     /**
@@ -123,7 +123,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
     
         this.scopeDelegate = clientScope;
-        this.client = new WebSocketClient(scopeDelegate);
+        this.client = new WebSocketClientImpl(scopeDelegate);
         this.client.setSessionFactory(new JsrSessionFactory(this));
         this.internalClient = true;
         
@@ -141,7 +141,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      *
      * @param client the WebSocketClient to use.
      */
-    public ClientContainer(WebSocketClient client)
+    public ClientContainer(WebSocketClientImpl client)
     {
         this.scopeDelegate = client;
         this.client = client;
@@ -282,7 +282,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         return scopeDelegate.getBufferPool();
     }
     
-    public WebSocketClient getClient()
+    public WebSocketClientImpl getClient()
     {
         return client;
     }

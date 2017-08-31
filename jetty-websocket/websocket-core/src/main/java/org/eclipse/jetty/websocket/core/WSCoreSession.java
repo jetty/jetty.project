@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.WSConnection;
 import org.eclipse.jetty.websocket.core.util.CompletionCallback;
 
-public class WSCoreSession<T extends WSConnection> extends ContainerLifeCycle implements IncomingFrames
+public abstract class WSCoreSession<T extends WSConnection> extends ContainerLifeCycle implements IncomingFrames
 {
     // Callbacks
     private Callback onDisconnectCallback = new CompletionCallback()
@@ -429,6 +429,7 @@ public class WSCoreSession<T extends WSConnection> extends ContainerLifeCycle im
         super.doStart();
     }
 
+    // TODO: consider onError?
     private void notifyError(Throwable cause)
     {
         if (log.isDebugEnabled())

@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
@@ -46,12 +46,12 @@ public class SlowClientTest
     public TestName testname = new TestName();
     
     private UntrustedWSServer server;
-    private WebSocketClient client;
+    private WebSocketClientImpl client;
     
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClientImpl();
         client.getPolicy().setIdleTimeout(60000);
         client.start();
     }

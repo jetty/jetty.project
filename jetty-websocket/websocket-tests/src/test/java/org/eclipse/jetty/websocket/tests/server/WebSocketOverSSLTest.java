@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.junit.AfterClass;
@@ -75,7 +75,7 @@ public class WebSocketOverSSLTest
     public void testEcho() throws Exception
     {
         Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
+        WebSocketClientImpl client = new WebSocketClientImpl(server.getSslContextFactory(),null,bufferPool);
         try
         {
             client.start();
@@ -115,7 +115,7 @@ public class WebSocketOverSSLTest
     public void testServerSessionIsSecure() throws Exception
     {
         Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
+        WebSocketClientImpl client = new WebSocketClientImpl(server.getSslContextFactory(),null,bufferPool);
         try
         {
             client.setConnectTimeout(CONNECT_TIMEOUT);
@@ -155,7 +155,7 @@ public class WebSocketOverSSLTest
     public void testServerSessionRequestURI() throws Exception
     {
         Assert.assertThat("server scheme",server.getServerUri().getScheme(),is("wss"));
-        WebSocketClient client = new WebSocketClient(server.getSslContextFactory(),null,bufferPool);
+        WebSocketClientImpl client = new WebSocketClientImpl(server.getSslContextFactory(),null,bufferPool);
         try
         {
             client.setConnectTimeout(CONNECT_TIMEOUT);

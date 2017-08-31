@@ -25,7 +25,7 @@ import javax.websocket.ClientEndpointConfig.Configurator;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.client.io.UpgradeListener;
+import org.eclipse.jetty.websocket.client.UpgradeListener;
 
 public class JsrUpgradeListener implements UpgradeListener
 {

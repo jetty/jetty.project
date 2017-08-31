@@ -36,7 +36,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.junit.Test;
 
 public class HttpClientInitTest
@@ -44,7 +44,7 @@ public class HttpClientInitTest
     @Test
     public void testDefaultInit() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClientImpl client = new WebSocketClientImpl();
         try
         {
             client.start();
@@ -74,7 +74,7 @@ public class HttpClientInitTest
             http.setConnectTimeout(7777);
         }
         
-        WebSocketClient client = new WebSocketClient(http);
+        WebSocketClientImpl client = new WebSocketClientImpl(http);
         client.addBean(http);
         try
         {
@@ -106,7 +106,7 @@ public class HttpClientInitTest
         
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader))
         {
-            WebSocketClient client = new WebSocketClient();
+            WebSocketClientImpl client = new WebSocketClientImpl();
             try
             {
                 client.start();

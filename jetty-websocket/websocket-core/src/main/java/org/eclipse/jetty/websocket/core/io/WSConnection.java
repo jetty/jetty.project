@@ -284,6 +284,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
 
+        // TODO: notifyError ??
         session.onError(new WSTimeoutException("Connection Idle Timeout"));
         return true;
     }
@@ -320,6 +321,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                 parser.release(frame);
 
                 // notify session & endpoint
+                // TODO: notifyError?
                 session.onError(cause);
             }
         });

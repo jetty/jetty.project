@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -106,7 +106,7 @@ public class CdiAppTest
     @Test
     public void testWebSocketActivated() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClientImpl client = new WebSocketClientImpl();
         try
         {
             client.start();
@@ -130,7 +130,7 @@ public class CdiAppTest
     @Test
     public void testWebSocket_Info_FieldPresence() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClientImpl client = new WebSocketClientImpl();
         try
         {
             client.start();
@@ -160,7 +160,7 @@ public class CdiAppTest
     @Test
     public void testWebSocket_Info_DataFromCdi() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClientImpl client = new WebSocketClientImpl();
         try
         {
             client.start();

@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WSURI;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -101,7 +101,7 @@ public class BasicAppTest
     @Test
     public void testWebSocketEcho() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClientImpl client = new WebSocketClientImpl();
         try
         {
             client.start();

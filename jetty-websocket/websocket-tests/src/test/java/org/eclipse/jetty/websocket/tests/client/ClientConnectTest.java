@@ -39,8 +39,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.client.WebSocketUpgradeRequest;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
+import org.eclipse.jetty.websocket.client.impl.WebSocketUpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.AcceptHash;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
@@ -71,7 +71,7 @@ public class ClientConnectTest
     
     private final int timeout = 500;
     private UntrustedWSServer server;
-    private WebSocketClient client;
+    private WebSocketClientImpl client;
     
     private void assertExecutionException(ExecutionException actualException, Matcher<Throwable> exceptionCauseMatcher, Matcher<String> messageMatcher)
     {
@@ -92,7 +92,7 @@ public class ClientConnectTest
     @Before
     public void startClient() throws Exception
     {
-        client = new WebSocketClient();
+        client = new WebSocketClientImpl();
         client.setBufferPool(bufferPool);
         client.setConnectTimeout(timeout);
         client.start();
@@ -146,7 +146,7 @@ public class ClientConnectTest
         HttpClient httpClient = new HttpClient();
         httpClient.start();
         
-        WebSocketUpgradeRequest req = new WebSocketUpgradeRequest(new WebSocketClient(), httpClient, wsUri, clientSocket);
+        WebSocketUpgradeRequest req = new WebSocketUpgradeRequest(new WebSocketClientImpl(), httpClient, wsUri, clientSocket);
         req.header("X-Foo", "Req");
         CompletableFuture<Session> sess = req.sendAsync();
         

@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
@@ -60,13 +60,13 @@ public class ClientCloseHandshakeTest
     public TestName testname = new TestName();
 
     private UntrustedWSServer server;
-    private WebSocketClient client;
+    private WebSocketClientImpl client;
 
     @Before
     public void startClient() throws Exception
     {
         HttpClient httpClient = new HttpClient();
-        client = new WebSocketClient(httpClient);
+        client = new WebSocketClientImpl(httpClient);
         client.addBean(httpClient);
         client.start();
     }
