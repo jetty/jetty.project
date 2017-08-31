@@ -18,8 +18,20 @@
 
 package org.eclipse.jetty.servlets;
 
-import javax.servlet.ServletContext;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.Enumeration;
+
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
 import org.hamcrest.Matchers;
@@ -29,10 +41,86 @@ import org.junit.Test;
 
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
+    private static class RemoteAddressRequest extends Request
+    {
+        public RemoteAddressRequest(String remoteHost, int remotePort)
+        {
+            super(null, null);
+            setRemoteAddr(new InetSocketAddress(remoteHost, remotePort));
+        }
+    }
+
+    private static class NoOpFilterConfig implements FilterConfig
+    {
+        @Override
+        public String getFilterName()
+        {
+            return "noop";
+        }
+
+        @Override
+        public ServletContext getServletContext()
+        {
+            return null;
+        }
+
+        @Override
+        public String getInitParameter(String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Enumeration<String> getInitParameterNames()
+        {
+            return Collections.emptyEnumeration();
+        }
+    }
+
     @Before
     public void setUp() throws Exception
     {
         startServer(DoSFilter.class);
+    }
+
+    @Test
+    public void testRemotePortLoadIdCreation_ipv6() throws ServletException {
+        final ServletRequest request = new RemoteAddressRequest("::192.9.5.5", 12345);
+        DoSFilter doSFilter = new DoSFilter();
+        doSFilter.init(new NoOpFilterConfig());
+        doSFilter.setRemotePort(true);
+
+        try
+        {
+            RateTracker tracker = doSFilter.getRateTracker(request);
+            assertThat("tracker.id", tracker.getId(),
+                    anyOf(
+                            is("[::192.9.5.5]:12345"), // short form
+                            is("[0:0:0:0:0:0:c009:505]:12345") // long form
+                    ));
+        }
+        finally
+        {
+            doSFilter.stopScheduler();
+        }
+    }
+
+    @Test
+    public void testRemotePortLoadIdCreation_ipv4() throws ServletException {
+        final ServletRequest request = new RemoteAddressRequest("127.0.0.1", 12345);
+        DoSFilter doSFilter = new DoSFilter();
+        doSFilter.init(new NoOpFilterConfig());
+        doSFilter.setRemotePort(true);
+
+        try
+        {
+            RateTracker tracker = doSFilter.getRateTracker(request);
+            assertThat("tracker.id", tracker.getId(), is("127.0.0.1:12345"));
+        }
+        finally
+        {
+            doSFilter.stopScheduler();
+        }
     }
 
     @Test
@@ -70,7 +158,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     {
         String last="GET /ctx/timeout/?sleep="+2*_requestMaxTime+" HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests("",0,0,0,last);
-        Assert.assertThat(responses, Matchers.containsString(" 503 "));
+        assertThat(responses, Matchers.containsString(" 503 "));
     }
 
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException
