@@ -18,10 +18,17 @@
 
 package org.eclipse.jetty.servlets;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
+import org.eclipse.jetty.servlets.mocks.MockFilterConfig;
+import org.eclipse.jetty.servlets.mocks.MockHttpServletRequest;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,6 +41,41 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     {
         startServer(DoSFilter.class);
     }
+    
+    
+    @Test
+    public void testRemotePortLoadIdCreation_ipv6() throws ServletException {
+        final ServletRequest request = newMockHttpServletRequest("::192.9.5.5", 12345);
+        DoSFilter doSFilter = new DoSFilter();
+        doSFilter.init(new MockFilterConfig());
+        doSFilter.setRemotePort(true);
+        
+        try {
+            RateTracker tracker = doSFilter.getRateTracker(request);
+            Assert.assertEquals("[::192.9.5.5]:12345", tracker.getId());
+        } finally {
+            doSFilter.stopScheduler();
+        }
+    }
+    
+    
+    @Test
+    public void testRemotePortLoadIdCreation_ipv4() throws ServletException {
+        final ServletRequest request = newMockHttpServletRequest("127.0.0.1", 12345);
+        DoSFilter doSFilter = new DoSFilter();
+        doSFilter.init(new MockFilterConfig());
+        doSFilter.setRemotePort(true);
+        
+        try {
+            RateTracker tracker = doSFilter.getRateTracker(request);
+            Assert.assertEquals("127.0.0.1:12345", tracker.getId());
+        } finally {
+            doSFilter.stopScheduler();
+        }
+    }
+    
+    
+    
 
     @Test
     public void testRateIsRateExceeded() throws InterruptedException
@@ -86,5 +128,22 @@ public class DoSFilterTest extends AbstractDoSFilterTest
                 exceeded = true;
         }
         return exceeded;
+    }
+    
+    
+    
+    private HttpServletRequest newMockHttpServletRequest(final String remoteAddr,
+            final int remotePort) {
+        return new MockHttpServletRequest() {
+            @Override
+            public String getRemoteAddr() {
+                return remoteAddr;
+            }
+
+            @Override
+            public int getRemotePort() {
+                return remotePort;
+            }
+        }; 
     }
 }
