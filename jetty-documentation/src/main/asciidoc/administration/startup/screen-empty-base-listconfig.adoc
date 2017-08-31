@@ -16,7 +16,7 @@
 
 [source, screen, subs="{sub-order}"]
 ....
-[mybase]$ java -jar /opt/jetty-distribution/start.jar --list-config
+[mybase]$ java -jar $JETTY_HOME/start.jar --list-config
 
 Java Environment:
 -----------------
@@ -28,7 +28,7 @@ Java Environment:
  java.runtime.name = Java(TM) SE Runtime Environment
  java.runtime.version = 1.8.0_92-b14
  java.io.tmpdir = /var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/
- user.dir = /Users/staff/installs/repository/jetty-distribution-9.4.0/mybase
+ user.dir = /Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase
  user.language = en
  user.country = US
 
@@ -36,14 +36,14 @@ Jetty Environment:
 -----------------
  jetty.version = {VERSION}
  jetty.tag.version = master
- jetty.home = /Users/staff/installs/repository/jetty-distribution-9.4.0
- jetty.base = /Users/staff/installs/repository/jetty-distribution-9.4.0/mybase
+ jetty.home = /Users/staff/installs/repository/jetty-distribution-{VERSION}
+ jetty.base = /Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase
 
 Config Search Order:
 --------------------
  <command-line>
- ${jetty.base} -> /Users/staff/installs/repository/jetty-distribution-9.4.0/mybase
- ${jetty.home} -> /Users/staff/installs/repository/jetty-distribution-9.4.0
+ ${jetty.base} -> /Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase
+ ${jetty.home} -> /Users/staff/installs/repository/jetty-distribution-{VERSION}
 
 
 JVM Arguments:
