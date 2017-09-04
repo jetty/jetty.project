@@ -16,7 +16,7 @@
 
 [source, screen, subs="{sub-order}"]
 ....
-[mybase]$ java -jar ../start.jar --list-modules=logging,-internal
+[mybase]$ java -jar $JETTY_HOME/start.jar --list-modules=logging,-internal
 
 Available Modules:
 ==================

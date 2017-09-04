@@ -129,13 +129,13 @@ xmlns:date="http://exslt.org/dates-and-times"
         
         </td>
         <td style="width: 50%">
-          <script type="text/javascript">  (function() {
-            var cx = '016459005284625897022:obd4lsai2ds';
+          <script>
+            (function() {
+            var cx = '005120552842603642412:peimxy9z8nu';
             var gcse = document.createElement('script');
             gcse.type = 'text/javascript';
             gcse.async = true;
-            gcse.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') +
-            '//www.google.com/cse/cse.js?cx=' + cx;
+            gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
             var s = document.getElementsByTagName('script')[0];
             s.parentNode.insertBefore(gcse, s);
             })();
