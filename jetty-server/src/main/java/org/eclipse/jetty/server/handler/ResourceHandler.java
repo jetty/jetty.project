@@ -91,15 +91,15 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
         if (_welcomes == null)
             return null;
 
-        String welcome_servlet = null;
         for (int i = 0; i < _welcomes.length; i++)
         {
             String welcome_in_context = URIUtil.addPaths(pathInContext,_welcomes[i]);
             Resource welcome = getResource(welcome_in_context);
             if (welcome != null && welcome.exists())
-                return _welcomes[i];
+                return welcome_in_context;
         }
-        return welcome_servlet;
+        // not found
+        return null;
     }
 
     

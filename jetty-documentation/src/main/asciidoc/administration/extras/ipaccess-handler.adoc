@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.server.handler.IPAccessHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
 * Javadoc: {JDURL}/org/eclipse/jetty/server/handler/IPAccessHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/IPAccessHandler.html
 
 [[ipaccess-handler-usage]]
 ==== Usage

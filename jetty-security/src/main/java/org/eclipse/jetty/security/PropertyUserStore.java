@@ -18,17 +18,8 @@
 
 package org.eclipse.jetty.security;
 
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.JarResource;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.Credential;
-
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +31,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarFileResource;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Credential;
 
 /**
  * PropertyUserStore
@@ -59,13 +61,10 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 {
     private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
 
-    private static final String JAR_FILE = "jar:file:";
-
     protected Path _configPath;
-    protected Resource _configResource;
     
-    protected PathWatcher pathWatcher;
-    protected boolean hotReload = false; // default is not to reload
+    protected PathWatcher _pathWatcher;
+    protected boolean _hotReload = false; // default is not to reload
 
     protected boolean _firstLoad = true; // true if first load, false from that point on
     protected List<UserListener> _listeners;
@@ -73,9 +72,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     /**
      * Get the config (as a string)
      * @return the config path as a string
-     * @deprecated use {@link #getConfigPath()} instead
      */
-    @Deprecated
     public String getConfig()
     {
         if (_configPath != null)
@@ -89,16 +86,28 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      */
     public void setConfig(String config)
     {
+        if (config == null)
+        {
+            _configPath = null;
+            return;
+        }
+        
         try
         {
             Resource configResource = Resource.newResource(config);
-            if (configResource.getFile() != null)
-                setConfigPath(configResource.getFile());
+            
+            if (configResource instanceof JarFileResource)
+                _configPath = extractPackedFile((JarFileResource)configResource);
+            else if (configResource instanceof PathResource)
+                _configPath = ((PathResource)configResource).getPath();
+            else if (configResource.getFile() != null)
+                setConfigFile(configResource.getFile());
             else
-                throw new IllegalArgumentException(config+" is not a file");
+                throw new IllegalArgumentException(config);
         }
         catch (Exception e)
         {
+            _configPath = null;
             throw new IllegalStateException(e);
         }
 
@@ -117,44 +126,33 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      * Set the Config Path from a String reference to a file
      * @param configFile the config file can a be a file path or a reference to a file within a jar file <code>jar:file:</code>
      */
+    @Deprecated
     public void setConfigPath(String configFile)
     {
-        if (configFile == null)
-        {
-            _configPath = null;
-        }
-        else if (new File( configFile ).exists())
-        {
-            _configPath = new File(configFile).toPath();
-        }
-        if ( !new File( configFile ).exists() && configFile.startsWith( JAR_FILE ))
-        {
-            // format of the url is jar:file:/foo/bar/beer.jar!/mountain_goat/pale_ale.txt
-            // ideally we'd like to extract this to Resource class?
-            try
-            {
-                _configPath = extractPackedFile( configFile );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( "cannot extract file from url:" + configFile, e );
-            }
-        }
+        setConfig(configFile);
     }
 
-    private Path extractPackedFile( String configFile )
+    private Path extractPackedFile( JarFileResource configResource )
         throws IOException
     {
-        int fileIndex = configFile.indexOf( "!" );
-        String entryPath = configFile.substring( fileIndex + 1, configFile.length() );
+        String uri = configResource.getURI().toASCIIString();
+        int colon = uri.lastIndexOf(":");
+        int bang_slash = uri.indexOf("!/");
+        if (colon<0 || bang_slash<0 || colon>bang_slash)
+            throw new IllegalArgumentException("Not resolved JarFile resource: "+uri);        
+        String entry_path = uri.substring(colon+2).replace("!/","__").replace('/','_').replace('.','_');
 
         Path tmpDirectory = Files.createTempDirectory( "users_store" );
-        Path extractedPath = Paths.get(tmpDirectory.toString(), entryPath);
-        // delete if exists as copyTo do not overwrite
+        tmpDirectory.toFile().deleteOnExit();
+        Path extractedPath = Paths.get(tmpDirectory.toString(), entry_path);
         Files.deleteIfExists( extractedPath );
-        // delete on shutdown
         extractedPath.toFile().deleteOnExit();
-        JarResource.newResource( configFile ).copyTo( tmpDirectory.toFile() );
+        IO.copy(configResource.getInputStream(),new FileOutputStream(extractedPath.toFile()));
+        if (isHotReload())
+        {
+            LOG.warn("Cannot hot reload from packed configuration: {}",configResource);
+            setHotReload(false);
+        }
         return extractedPath;
     }
 
@@ -162,7 +160,17 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      * Set the Config Path from a {@link File} reference
      * @param configFile the config file
      */
+    @Deprecated
     public void setConfigPath(File configFile)
+    {
+        setConfigFile(configFile);
+    }
+    
+    /**
+     * Set the Config Path from a {@link File} reference
+     * @param configFile the config file
+     */
+    public void setConfigFile(File configFile)
     {
         if(configFile == null)
         {
@@ -182,19 +190,15 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         _configPath = configPath;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the resource associated with the configured properties file, creating it if necessary
      * @throws IOException if unable to get the resource
      */
     public Resource getConfigResource() throws IOException
     {
-        if (_configResource == null)
-        {
-            _configResource = new PathResource(_configPath);
-        }
-
-        return _configResource;
+        if (_configPath==null)
+            return null;
+        return new PathResource(_configPath);
     }
     
     /**
@@ -204,7 +208,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
      */
     public boolean isHotReload()
     {
-        return hotReload;
+        return _hotReload;
     }
 
     /**
@@ -218,7 +222,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         {
             throw new IllegalStateException("Cannot set hot reload while user store is running");
         }
-        this.hotReload = enable;
+        this._hotReload = enable;
     }
 
    
@@ -247,8 +251,9 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         }
         
         Properties properties = new Properties();
-        if (getConfigResource().exists())
-            properties.load(getConfigResource().getInputStream());
+        Resource config = getConfigResource();
+        if (config!=null && config.exists())
+            properties.load(config.getInputStream());
         
         Set<String> known = new HashSet<>();
 
@@ -297,7 +302,6 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
             }
         }
 
-
         /*
          * set initial load to false as there should be no more initial loads
          */
@@ -324,11 +328,11 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         loadUsers();
         if ( isHotReload() && (_configPath != null) )
         {
-            this.pathWatcher = new PathWatcher();
-            this.pathWatcher.watch(_configPath);
-            this.pathWatcher.addListener(this);
-            this.pathWatcher.setNotifyExistingOnStart(false);
-            this.pathWatcher.start();
+            this._pathWatcher = new PathWatcher();
+            this._pathWatcher.watch(_configPath);
+            this._pathWatcher.addListener(this);
+            this._pathWatcher.setNotifyExistingOnStart(false);
+            this._pathWatcher.start();
         }
        
     }
@@ -357,9 +361,9 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (this.pathWatcher != null)
-            this.pathWatcher.stop();
-        this.pathWatcher = null;
+        if (this._pathWatcher != null)
+            this._pathWatcher.stop();
+        this._pathWatcher = null;
     }
 
     /**

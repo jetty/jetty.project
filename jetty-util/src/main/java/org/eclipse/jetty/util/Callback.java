@@ -36,6 +36,11 @@ public interface Callback extends Invocable
      */
     static Callback NOOP = new Callback()
     {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
     };
 
     /**

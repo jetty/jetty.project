@@ -19,7 +19,7 @@
 
 The Handler is the Jetty component that deals with received requests.
 
-Many users of Jetty never need to write a Jetty Handler, but instead use the link:{JXURL}/org/eclipse/jetty/servlet/package-summary.html[Servlet API.]
+Many users of Jetty never need to write a Jetty Handler, but instead use the link:{JDURL}/org/eclipse/jetty/servlet/package-summary.html[Servlet API.]
 You can reuse the existing Jetty handlers for context, security, sessions and servlets without the need for extension.
 However, some users might have special requirements or footprint concerns that prohibit the use of the full servlet API.
 For them implementing a Jetty handler is a straight forward way to provide dynamic web content with a minimum of fuss.
@@ -171,4 +171,4 @@ This is typically used to pass a request to a link:{JDURL}/org/eclipse/jetty/ser
 [[more-about-handlers]]
 ==== More About Handlers
 
-See the link:{JXURL}/[latest Jetty Source XRef] and the link:{JDURL}/[latest Jetty JavaDoc] for detailed information on each Jetty handler.
+See the link:{JDURL}/[latest Jetty JavaDoc] for detailed information on each Jetty handler.

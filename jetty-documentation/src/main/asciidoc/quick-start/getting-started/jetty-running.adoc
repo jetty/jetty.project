@@ -55,27 +55,43 @@ Within the standard Jetty distribution there is the `demo-base` directory, which
 > cd $JETTY_HOME/demo-base/
 > java -jar $JETTY_HOME/start.jar
 
-2015-06-04 10:55:24.161:INFO::main: Logging initialized @308ms
-2015-06-04 10:55:24.431:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
-2015-06-04 10:55:24.434:INFO:oejs.Server:main: jetty-9.3.0.v20150601
-2015-06-04 10:55:24.457:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/webapps/] at interval 1
-2015-06-04 10:55:24.826:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@c038203{/,file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/webapps/ROOT/,AVAILABLE}{/ROOT}
-2015-06-04 10:55:24.929:WARN::main: test-jaas webapp is deployed. DO NOT USE IN PRODUCTION!
-2015-06-04 10:55:24.978:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@46238e3f{/test-jaas,file:///tmp/jetty-0.0.0.0-8080-test-jaas.war-_test-jaas-any-9105214562680121772.dir/webapp/,AVAILABLE}{/test-jaas.war}
-2015-06-04 10:55:25.162:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
-2015-06-04 10:55:25.208:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@6b67034{/async-rest,[file:///tmp/jetty-0.0.0.0-8080-async-rest.war-_async-rest-any-1023939491558622183.dir/webapp/, jar:file:///tmp/jetty-0.0.0.0-8080-async-rest.war-_async-rest-any-1023939491558622183.dir/webapp/WEB-INF/lib/example-async-rest-jar-9.3.0.v20150601.jar!/META-INF/resources],AVAILABLE}{/async-rest.war}
-2015-06-04 10:55:25.311:WARN::main: test-jndi webapp is deployed. DO NOT USE IN PRODUCTION!
-2015-06-04 10:55:25.386:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@8b96fde{/test-jndi,file:///tmp/jetty-0.0.0.0-8080-test-jndi.war-_test-jndi-any-1692053319754270133.dir/webapp/,AVAILABLE}{/test-jndi.war}
-2015-06-04 10:55:25.508:WARN::main: test-spec webapp is deployed. DO NOT USE IN PRODUCTION!
-2015-06-04 10:55:25.594:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@69930714{/test-spec,[file:///tmp/jetty-0.0.0.0-8080-test-spec.war-_test-spec-any-5518740932795802823.dir/webapp/, jar:file:///tmp/jetty-0.0.0.0-8080-test-spec.war-_test-spec-any-5518740932795802823.dir/webapp/WEB-INF/lib/test-web-fragment-9.3.0.v20150601.jar!/META-INF/resources],AVAILABLE}{/test-spec.war}
-2015-06-04 10:55:25.781:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@3eb7fc54{/proxy,file:///tmp/jetty-0.0.0.0-8080-xref-proxy.war-_xref-proxy-any-3068657547009829038.dir/webapp/,AVAILABLE}{/xref-proxy.war}
-2015-06-04 10:55:25.786:INFO:oejsh.ContextHandler:main: Started o.e.j.s.h.MovedContextHandler@59662a0b{/oldContextPath,null,AVAILABLE}
-2015-06-04 10:55:25.951:WARN::main: test webapp is deployed. DO NOT USE IN PRODUCTION!
-2015-06-04 10:55:26.248:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@4f83df68{/test,file:///tmp/jetty-0.0.0.0-8080-test.war-_test-any-5238659347611323540.dir/webapp/,AVAILABLE}{/test.war}
-2015-06-04 10:55:26.255:INFO:oejs.ServerConnector:main: Started ServerConnector@5a9c4ad9{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
-2015-06-04 10:55:26.259:INFO:oejus.SslContextFactory:main: x509={jetty.eclipse.org=jetty} wild={} alias=null for SslContextFactory@23941fb4(file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/etc/keystore,file:///opt/jetty-distribution-9.3.0.v20150601/demo-base/etc/keystore)
-2015-06-04 10:55:26.269:INFO:oejs.ServerConnector:main: Started ServerConnector@5d908d47{SSL,[ssl, http/1.1]}{0.0.0.0:8443}
-2015-06-04 10:55:26.270:INFO:oejs.Server:main: Started @2417ms
+2017-08-16 16:55:15.571:INFO::main: Logging initialized @521ms to org.eclipse.jetty.util.log.StdErrLog
+2017-08-16 16:55:15.907:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
+2017-08-16 16:55:15.910:INFO:oejs.Server:main: jetty-9.4.7-SNAPSHOT
+2017-08-16 16:55:15.931:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///tmp/jetty-distribution-9.4.7-SNAPSHOT/demo-base/webapps/] at interval 1
+2017-08-16 16:55:16.151:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=50ms
+2017-08-16 16:55:16.369:INFO:oejs.session:main: DefaultSessionIdManager workerName=node0
+2017-08-16 16:55:16.369:INFO:oejs.session:main: No SessionScavenger set, using defaults
+2017-08-16 16:55:16.370:INFO:oejs.session:main: Scavenging every 660000ms
+2017-08-16 16:55:16.416:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@7113b13f{/,file:///tmp/jetty-distribution-9.4.7-SNAPSHOT/demo-base/webapps/ROOT/,AVAILABLE}{/ROOT}
+2017-08-16 16:55:16.625:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=82ms
+2017-08-16 16:55:16.631:WARN::main: test webapp is deployed. DO NOT USE IN PRODUCTION!
+2017-08-16 16:55:16.751:INFO:oejsh.ManagedAttributeListener:main: update PushFilter null->org.eclipse.jetty.servlets.PushCacheFilter@1a677343 on o.e.j.w.WebAppContext@2d7275fc{/test,file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-test.war-_test-any-7157753932050220016.dir/webapp/,STARTING}{/test.war}
+2017-08-16 16:55:16.757:INFO:oejsh.ManagedAttributeListener:main: update QoSFilter null->org.eclipse.jetty.servlets.QoSFilter@79079097 on o.e.j.w.WebAppContext@2d7275fc{/test,file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-test.war-_test-any-7157753932050220016.dir/webapp/,STARTING}{/test.war}
+2017-08-16 16:55:16.760:WARN:oeju.DeprecationWarning:main: Using @Deprecated Class org.eclipse.jetty.servlets.MultiPartFilter
+2017-08-16 16:55:16.809:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@2d7275fc{/test,file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-test.war-_test-any-7157753932050220016.dir/webapp/,AVAILABLE}{/test.war}
+2017-08-16 16:55:16.816:INFO:oejsh.ContextHandler:main: Started o.e.j.s.h.MovedContextHandler@7c9d8e2{/oldContextPath,null,AVAILABLE}
+2017-08-16 16:55:16.854:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=23ms
+2017-08-16 16:55:16.891:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@69453e37{/doc,file:///tmp/jetty-distribution-9.4.7-SNAPSHOT/demo-base/webapps/doc/,AVAILABLE}{/doc}
+2017-08-16 16:55:16.942:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=25ms
+2017-08-16 16:55:16.945:WARN::main: test-jaas webapp is deployed. DO NOT USE IN PRODUCTION!
+2017-08-16 16:55:16.983:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@4e3958e7{/test-jaas,file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-test-jaas.war-_test-jaas-any-6953571893682159674.dir/webapp/,AVAILABLE}{/test-jaas.war}
+2017-08-16 16:55:17.106:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=21ms
+2017-08-16 16:55:17.109:WARN::main: test-jndi webapp is deployed. DO NOT USE IN PRODUCTION!
+2017-08-16 16:55:17.192:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@1d8bd0de{/test-jndi,file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-test-jndi.war-_test-jndi-any-1246461885510956986.dir/webapp/,AVAILABLE}{/test-jndi.war}
+2017-08-16 16:55:17.307:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=53ms
+2017-08-16 16:55:17.310:WARN::main: test-spec webapp is deployed. DO NOT USE IN PRODUCTION!
+2017-08-16 16:55:17.388:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@51dcb805{/test-spec,[file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-test-spec.war-_test-spec-any-3750193079644252256.dir/webapp/, jar:file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-test-spec.war-_test-spec-any-3750193079644252256.dir/webapp/WEB-INF/lib/test-web-fragment-9.4.7-SNAPSHOT.jar!/META-INF/resources],AVAILABLE}{/test-spec.war}
+2017-08-16 16:55:17.490:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=53ms
+2017-08-16 16:55:17.493:WARN::main: async-rest webapp is deployed. DO NOT USE IN PRODUCTION!
+2017-08-16 16:55:17.516:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@1de76cc7{/async-rest,[file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-async-rest.war-_async-rest-any-8972552397332323832.dir/webapp/, jar:file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-async-rest.war-_async-rest-any-8972552397332323832.dir/webapp/WEB-INF/lib/example-async-rest-jar-9.4.7-SNAPSHOT.jar!/META-INF/resources],AVAILABLE}{/async-rest.war}
+2017-08-16 16:55:17.643:INFO:oeja.AnnotationConfiguration:main: Scanning elapsed time=83ms
+2017-08-16 16:55:17.921:INFO:oejsh.ContextHandler:main: Started o.e.j.w.WebAppContext@242b836{/proxy,file:///private/var/folders/h6/yb_lbnnn11g0y1jjlvqg631h0000gn/T/jetty-0.0.0.0-8080-javadoc-proxy.war-_javadoc-proxy-any-4521643038409884891.dir/webapp/,AVAILABLE}{/javadoc-proxy.war}
+2017-08-16 16:55:17.936:INFO:oejs.AbstractConnector:main: Started ServerConnector@6f15d60e{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2017-08-16 16:55:17.944:INFO:oejus.SslContextFactory:main: x509=X509@58e1d9d(jetty,h=[jetty.eclipse.org],w=[]) for SslContextFactory@446a1e84(file:///tmp/jetty-distribution-9.4.7-SNAPSHOT/demo-base/etc/keystore,file:///tmp/jetty-distribution-9.4.7-SNAPSHOT/demo-base/etc/keystore)
+2017-08-16 16:55:17.944:INFO:oejus.SslContextFactory:main: x509=X509@4f0f2942(mykey,h=[],w=[]) for SslContextFactory@446a1e84(file:///tmp/jetty-distribution-9.4.7-SNAPSHOT/demo-base/etc/keystore,file:///tmp/jetty-distribution-9.4.7-SNAPSHOT/demo-base/etc/keystore)
+2017-08-16 16:55:18.071:INFO:oejs.AbstractConnector:main: Started ServerConnector@41488b16{SSL,[ssl, http/1.1]}{0.0.0.0:8443}
+2017-08-16 16:55:18.072:INFO:oejs.Server:main: Started @3022ms
 ----
 
 You can visit this demo server by pointing a browser at link:http://localhost:8080[], which will now show a welcome page and several demo/test web applications.
