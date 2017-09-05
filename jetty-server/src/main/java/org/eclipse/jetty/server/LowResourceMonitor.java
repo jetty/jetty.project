@@ -84,7 +84,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
     private String _cause;
     private String _reasons;
     private long _lowStarted;
-    private boolean _acceptingInLowResources;
+    private boolean _acceptingInLowResources = true;
 
     private final Runnable _monitor = new Runnable()
     {

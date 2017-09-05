@@ -27,3 +27,6 @@ etc/jetty-lowresources.xml
 
 ## Max time a resource may stay in low resource mode before actions are taken (in milliseconds)
 # jetty.lowresources.maxLowResourcesTime=5000
+
+## Accept new connections while in low resources
+# jetty.lowresources.accepting=true
