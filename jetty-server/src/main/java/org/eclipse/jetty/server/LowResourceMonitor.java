@@ -21,6 +21,8 @@ package org.eclipse.jetty.server;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +48,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * Low resources can be detected by:
  * <ul>
  * <li>{@link ThreadPool#isLowOnThreads()} if {@link Connector#getExecutor()} is
- * an instance of {@link ThreadPool} and {@link #setMonitorThreads(boolean)} is true.<li>
+ * an instance of {@link ThreadPool} and {@link #setMonitorThreads(boolean)} is true.</li>
  * <li>If {@link #setMaxMemory(long)} is non zero then low resources is detected if the JVMs
  * {@link Runtime} instance has {@link Runtime#totalMemory()} minus {@link Runtime#freeMemory()}
  * greater than {@link #getMaxMemory()}</li>
@@ -60,6 +62,9 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * resources state persists for more than {@link #getMaxLowResourcesTime()}, then the
  * {@link #getLowResourcesIdleTimeout()} to all connections again.  Once the low resources state is
  * cleared, the idle timeout is reset to the connector default given by {@link Connector#getIdleTimeout()}.
+ * <p>
+ * If {@link #setAcceptingInLowResources(boolean)} is set to true, then no new connections are accepted
+ * when in low resources state.
  */
 @ManagedObject ("Monitor for low resource conditions and activate a low resource mode if detected")
 public class LowResourceMonitor extends AbstractLifeCycle
@@ -68,6 +73,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
     private final Server _server;
     private Scheduler _scheduler;
     private Connector[] _monitoredConnectors;
+    private Set<AbstractConnector> _acceptingConnectors = new HashSet<>();
     private int _period=1000;
     private int _maxConnections;
     private long _maxMemory;
@@ -78,6 +84,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
     private String _cause;
     private String _reasons;
     private long _lowStarted;
+    private boolean _acceptingInLowResources;
 
     private final Runnable _monitor = new Runnable()
     {
@@ -134,6 +141,17 @@ public class LowResourceMonitor extends AbstractLifeCycle
             _monitoredConnectors = monitoredConnectors.toArray(new Connector[monitoredConnectors.size()]);
     }
 
+    @ManagedAttribute("If false, new connections are not accepted while in low resources")
+    public boolean isAcceptingInLowResources()
+    {
+        return _acceptingInLowResources;
+    }
+
+    public void setAcceptingInLowResources(boolean acceptingInLowResources)
+    {
+        _acceptingInLowResources = acceptingInLowResources;
+    }
+    
     @ManagedAttribute("The monitor period in ms")
     public int getPeriod()
     {
@@ -329,6 +347,15 @@ public class LowResourceMonitor extends AbstractLifeCycle
     {
         for(Connector connector : getMonitoredOrServerConnectors())
         {
+            if (connector instanceof AbstractConnector)
+            {
+                AbstractConnector c = (AbstractConnector)connector;
+                if (c.isAccepting())
+                {
+                    _acceptingConnectors.add(c);
+                    c.setAccepting(false);
+                }
+            }
             for (EndPoint endPoint : connector.getConnectedEndPoints())
                 endPoint.setIdleTimeout(_lowResourcesIdleTimeout);
         }
@@ -341,6 +368,12 @@ public class LowResourceMonitor extends AbstractLifeCycle
             for (EndPoint endPoint : connector.getConnectedEndPoints())
                 endPoint.setIdleTimeout(connector.getIdleTimeout());
         }
+        
+        for (AbstractConnector connector : _acceptingConnectors)
+        {
+            connector.setAccepting(true);
+        }
+        _acceptingConnectors.clear();
     }
 
     private String low(String reasons, String newReason)
