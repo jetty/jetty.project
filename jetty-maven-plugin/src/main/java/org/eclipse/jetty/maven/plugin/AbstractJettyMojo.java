@@ -453,7 +453,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             ServerSupport.configureConnectors(server, httpConnector);
 
             //set up a RequestLog if one is provided and the handle structure
-            ServerSupport.configureHandlers(server, this.requestLog);
+            ServerSupport.configureHandlers(server, contextHandlers, this.requestLog);
             
             //Set up list of default Configurations to apply to a webapp
             ServerSupport.configureDefaultConfigurationClasses(server);

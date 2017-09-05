@@ -67,7 +67,7 @@ public class Starter
         ServerSupport.configureConnectors(server, null);
 
         //check if contexts already configured, create if not
-        ServerSupport.configureHandlers(server, null);
+        ServerSupport.configureHandlers(server, null, null);
         
         //Set up list of default Configurations to apply to a webapp
         ServerSupport.configureDefaultConfigurationClasses(server);

@@ -249,7 +249,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 server = new Server();
 
             //ensure handler structure enabled
-            ServerSupport.configureHandlers(server, null);
+            ServerSupport.configureHandlers(server, contextHandlers, null);
             
             ServerSupport.configureDefaultConfigurationClasses(server);
                    

@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -64,7 +65,7 @@ public class ServerSupport
      * @param requestLog the request log
      * @throws Exception if unable to configure the handlers
      */
-    public static void configureHandlers (Server server, RequestLog requestLog) throws Exception 
+    public static void configureHandlers (Server server, ContextHandler[] contextHandlers, RequestLog requestLog) throws Exception 
     {
         if (server == null)
             throw new IllegalArgumentException ("Server is null");
@@ -89,7 +90,15 @@ public class ServerSupport
             {
                 handlers.addHandler(contexts);
             }
-        }  
+        } 
+        
+        if (contextHandlers != null)
+        {   
+            for (ContextHandler context:contextHandlers)
+            {
+                contexts.addHandler(context);
+            }
+        }
     }
     
 

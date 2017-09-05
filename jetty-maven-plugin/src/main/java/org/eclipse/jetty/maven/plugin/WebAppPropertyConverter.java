@@ -156,59 +156,50 @@ public class WebAppPropertyConverter
     
     
     /**
-     * Configure a webapp from a properties file
+     * Configure a webapp from properties.
+     * 
      * @param webApp the webapp to configure
-     * @param propsFile the properties to apply
-     * @param server the Server instance to use if there is a context xml file to apply
-     * @param jettyProperties jetty properties to use if there is a context xml file to apply
+     * @param webAppProperties properties that describe the configuration of the webapp
+     * @param server the jetty Server instance
+     * @param jettyProperties jetty properties
+     * 
      * @throws Exception
      */
-    public static void fromProperties (JettyWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
+    public static void fromProperties (JettyWebAppContext webApp, Properties webAppProperties, Server server, Map<String,String> jettyProperties)
     throws Exception
     {
         if (webApp == null)
             throw new IllegalArgumentException("No webapp");
-        if (propsFile == null)
-            throw new IllegalArgumentException("No properties file");
-        
-        if (!propsFile.exists())
-            throw new IllegalArgumentException (propsFile.getCanonicalPath()+" does not exist");
-        
-        Properties props = new Properties();
-        try (InputStream in = new FileInputStream(propsFile))
-        {
-            props.load(in);
-        }
         
 
-        String str = props.getProperty("context.path");
+        String str = webAppProperties.getProperty("context.path");
         if (!StringUtil.isBlank(str))
             webApp.setContextPath(str);
 
 
         // - web.xml
-        str = props.getProperty("web.xml");
+        str = webAppProperties.getProperty("web.xml");
         if (!StringUtil.isBlank(str))
             webApp.setDescriptor(str); 
 
         //if there is a pregenerated quickstart file
-        str = props.getProperty("quickstart.web.xml");
+        str = webAppProperties.getProperty("quickstart.web.xml");
         if (!StringUtil.isBlank(str))
         {
             webApp.setQuickStartWebDescriptor(Resource.newResource(new File(str)));
         }
 
         // - the tmp directory
-        str = props.getProperty("tmp.dir");
+        str = webAppProperties.getProperty("tmp.dir");
         if (!StringUtil.isBlank(str))    
             webApp.setTempDirectory(new File(str.trim()));
 
-        str = props.getProperty("tmp.dir.persist");
+        str = webAppProperties.getProperty("tmp.dir.persist");
         if (!StringUtil.isBlank(str))
             webApp.setPersistTempDirectory(Boolean.valueOf(str));
         
         //Get the calculated base dirs which includes the overlays
-        str = props.getProperty("base.dirs");
+        str = webAppProperties.getProperty("base.dirs");
         if (!StringUtil.isBlank(str))
         {
             ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
@@ -217,20 +208,20 @@ public class WebAppPropertyConverter
         }       
 
         // - the equivalent of web-inf classes
-        str = props.getProperty("classes.dir");
+        str = webAppProperties.getProperty("classes.dir");
         if (!StringUtil.isBlank(str))
         {
             webApp.setClasses(new File(str));
         }
         
-        str = props.getProperty("testClasses.dir");
+        str = webAppProperties.getProperty("testClasses.dir");
         if (!StringUtil.isBlank(str))
         {
             webApp.setTestClasses(new File(str));
         }
 
         // - the equivalent of web-inf lib
-        str = props.getProperty("lib.jars");
+        str = webAppProperties.getProperty("lib.jars");
         if (!StringUtil.isBlank(str))
         {
             List<File> jars = new ArrayList<File>();
@@ -247,7 +238,7 @@ public class WebAppPropertyConverter
         //the pom to override the context xml file, but as the other mojos all
         //configure a WebAppContext in the pom (the <webApp> element), it is 
         //already configured by the time the context xml file is applied.
-        str = (String)props.getProperty("context.xml");
+        str = (String)webAppProperties.getProperty("context.xml");
         if (!StringUtil.isBlank(str))
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str).getURI().toURL());
@@ -262,6 +253,33 @@ public class WebAppPropertyConverter
             }
             xmlConfiguration.configure(webApp);
         }
+    }
+    
+    /**
+     * Configure a webapp from a properties file
+     * @param webApp the webapp to configure
+     * @param propsFile the properties to apply
+     * @param server the Server instance to use if there is a context xml file to apply
+     * @param jettyProperties jetty properties to use if there is a context xml file to apply
+     * @throws Exception
+     */
+    public static void fromProperties (JettyWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
+    throws Exception
+    {
+
+        if (propsFile == null)
+            throw new IllegalArgumentException("No properties file");
+        
+        if (!propsFile.exists())
+            throw new IllegalArgumentException (propsFile.getCanonicalPath()+" does not exist");
+        
+        Properties props = new Properties();
+        try (InputStream in = new FileInputStream(propsFile))
+        {
+            props.load(in);
+        }
+       
+        fromProperties(webApp, props, server, jettyProperties);
     }
 
    
