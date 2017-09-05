@@ -18,9 +18,14 @@
 
 package org.eclipse.jetty.util;
 
-import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.ADDED;
+import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.DELETED;
+import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.MODIFIED;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,6 +33,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.DosFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,19 +44,37 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Ignore;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-@Ignore("Disabled due to behavioral differences in various FileSystems (hard to write a single testcase that works in all scenarios)")
+@RunWith(AdvancedRunner.class)
 public class PathWatcherTest
 {
+    public static final int QUIET_TIME;
+    public static final int WAIT_TIME;
+    public static final int LONG_TIME;
+    
+    static
+    {
+        if (OS.IS_LINUX)
+            QUIET_TIME = 300;
+        else if (OS.IS_OSX)
+            QUIET_TIME = 5000;
+        else
+            QUIET_TIME = 1000;
+        WAIT_TIME = 2 * QUIET_TIME;
+        LONG_TIME = 5 * QUIET_TIME;
+    }
+    
     public static class PathWatchEventCapture implements PathWatcher.Listener
     {
         public final static String FINISH_TAG = "#finished#.tag";
@@ -76,27 +102,17 @@ public class PathWatcherTest
            events.clear();
        }
 
+        public void reset(int count)
+        {
+            setFinishTrigger(count);
+            events.clear();
+        }
+
         @Override
         public void onPathWatchEvent(PathWatchEvent event)
         {
             synchronized (events)
             {
-                //if triggered by path
-                if (triggerPath != null)
-                {
-                   
-                    if (triggerPath.equals(event.getPath()) && (event.getType() == triggerType))
-                    {
-                        LOG.debug("Encountered finish trigger: {} on {}",event.getType(),event.getPath());
-                        finishedLatch.countDown();
-                    }
-                }
-                else if (finishedLatch != null)
-                {
-                    finishedLatch.countDown();
-                }
-                
-
                 Path relativePath = this.baseDir.relativize(event.getPath());
                 String key = relativePath.toString().replace(File.separatorChar,'/');
 
@@ -108,6 +124,20 @@ public class PathWatcherTest
                 types.add(event.getType());
                 this.events.put(key,types);
                 LOG.debug("Captured Event: {} | {}",event.getType(),key);
+            }
+            //if triggered by path
+            if (triggerPath != null)
+            {
+
+                if (triggerPath.equals(event.getPath()) && (event.getType() == triggerType))
+                {
+                    LOG.debug("Encountered finish trigger: {} on {}",event.getType(),event.getPath());
+                    finishedLatch.countDown();
+                }
+            }
+            else if (finishedLatch != null)
+            {
+                finishedLatch.countDown();
             }
         }
 
@@ -122,13 +152,21 @@ public class PathWatcherTest
          */
         public void assertEvents(Map<String, PathWatchEventType[]> expectedEvents)
         {
-            assertThat("Event match (file|diretory) count",this.events.size(),is(expectedEvents.size()));
-
-            for (Map.Entry<String, PathWatchEventType[]> entry : expectedEvents.entrySet())
+            try
             {
-                String relativePath = entry.getKey();
-                PathWatchEventType[] expectedTypes = entry.getValue();
-                assertEvents(relativePath,expectedTypes);
+                assertThat("Event match (file|directory) count", this.events.size(), is(expectedEvents.size()));
+
+                for (Map.Entry<String, PathWatchEventType[]> entry : expectedEvents.entrySet())
+                {
+                    String relativePath = entry.getKey();
+                    PathWatchEventType[] expectedTypes = entry.getValue();
+                    assertEvents(relativePath, expectedTypes);
+                }
+            }
+            catch(Throwable th)
+            {
+                System.err.println(this.events);
+                throw th;
             }
         }
 
@@ -175,7 +213,7 @@ public class PathWatcherTest
             latchCount = count;
             finishedLatch = new CountDownLatch(latchCount);
         }
-
+        
         /**
          * Await the countdown latch on the finish trigger
          * 
@@ -196,6 +234,12 @@ public class PathWatcherTest
             LOG.debug("Waiting for finish ({} ms)",awaitMillis);
             assertThat("Timed Out (" + awaitMillis + "ms) waiting for capture to finish",finishedLatch.await(awaitMillis,TimeUnit.MILLISECONDS),is(true));
             LOG.debug("Finished capture");
+        }
+        
+        @Override
+        public String toString()
+        {
+            return events.toString();
         }
     }
 
@@ -228,38 +272,36 @@ public class PathWatcherTest
      * @throws InterruptedException
      *             if sleep between writes was interrupted
      */
-    private void updateFileOverTime(Path path, int fileSize, int timeDuration, TimeUnit timeUnit) throws IOException, InterruptedException
+    private void updateFileOverTime(Path path, int timeDuration, TimeUnit timeUnit)
     {
-        // how long to sleep between writes
-        int sleepMs = 100;
-
-        // how many millis to spend writing entire file size
-        long totalMs = timeUnit.toMillis(timeDuration);
-
-        // how many write chunks to write
-        int writeCount = (int)((int)totalMs / (int)sleepMs);
-
-        // average chunk buffer
-        int chunkBufLen = fileSize / writeCount;
-        byte chunkBuf[] = new byte[chunkBufLen];
-        Arrays.fill(chunkBuf,(byte)'x');
-
-        try (FileOutputStream out = new FileOutputStream(path.toFile()))
+        try
         {
-            int left = fileSize;
+            // how long to sleep between writes
+            int sleepMs = 200;
 
-            while (left > 0)
+            // average chunk buffer
+            int chunkBufLen = 16;
+            byte chunkBuf[] = new byte[chunkBufLen];
+            Arrays.fill(chunkBuf, (byte)'x');
+            long end = System.nanoTime() + timeUnit.toNanos(timeDuration);
+            
+            try (FileOutputStream out = new FileOutputStream(path.toFile()))
             {
-                int len = Math.min(left,chunkBufLen);
-                out.write(chunkBuf,0,len);
-                left -= chunkBufLen;
-                out.flush();
-                out.getChannel().force(true);
-                // Force file to actually write to disk.
-                // Skipping any sort of filesystem caching of the write
-                out.getFD().sync();
-                TimeUnit.MILLISECONDS.sleep(sleepMs);
+                while(System.nanoTime()<end)
+                {
+                    out.write(chunkBuf);
+                    out.flush();
+                    out.getChannel().force(true);
+                    // Force file to actually write to disk.
+                    // Skipping any sort of filesystem caching of the write
+                    out.getFD().sync();
+                    TimeUnit.MILLISECONDS.sleep(sleepMs);
+                }
             }
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
     }
 
@@ -273,13 +315,7 @@ public class PathWatcherTest
      */
     private static void awaitQuietTime(PathWatcher pathWatcher) throws InterruptedException
     {
-        double multiplier = 5.0;
-        if (OS.IS_WINDOWS)
-        {
-            // Microsoft Windows filesystem is too slow for a lower multiplier
-            multiplier = 6.0;
-        }
-        TimeUnit.MILLISECONDS.sleep((long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier));
+        TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
     }
 
     private static final int KB = 1024;
@@ -288,74 +324,126 @@ public class PathWatcherTest
     @Rule
     public TestingDir testdir = new TestingDir();
 
+
     @Test
-    public void testConfig_ShouldRecurse_0() throws IOException
+    public void testSequence() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
-        // Create a few directories
-        Files.createDirectories(dir.resolve("a/b/c/d"));
+        // Files we are interested in
+        Files.createFile(dir.resolve("file0"));
+        Files.createDirectories(dir.resolve("subdir0/subsubdir0"));
+        Files.createFile(dir.resolve("subdir0/fileA"));
+        Files.createFile(dir.resolve("subdir0/subsubdir0/unseen"));
 
+        PathWatcher pathWatcher = new PathWatcher();
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
+
+        // Add listener
+        PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        pathWatcher.addListener(capture);
+
+        // Add test dir configuration
         PathWatcher.Config config = new PathWatcher.Config(dir);
-
-        config.setRecurseDepth(0);
-        assertThat("Config.recurse[0].shouldRecurse[./a/b]",config.shouldRecurseDirectory(dir.resolve("a/b")),is(false));
-        assertThat("Config.recurse[0].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(false));
-        assertThat("Config.recurse[0].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(false));
-    }
-
-    @Test
-    public void testConfig_ShouldRecurse_1() throws IOException
-    {
-        Path dir = testdir.getEmptyPathDir();
-
-        // Create a few directories
-        Files.createDirectories(dir.resolve("a/b/c/d"));
-
-        PathWatcher.Config config = new PathWatcher.Config(dir);
-
         config.setRecurseDepth(1);
-        assertThat("Config.recurse[1].shouldRecurse[./a/b]",config.shouldRecurseDirectory(dir.resolve("a/b")),is(false));
-        assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
-    }
+        pathWatcher.watch(config);
 
-    @Test
-    public void testConfig_ShouldRecurse_2() throws IOException
-    {
-        Path dir = testdir.getEmptyPathDir();
+        try
+        {
+            Map<String, PathWatchEventType[]> expected = new HashMap<>();
 
-        // Create a few directories
-        Files.createDirectories(dir.resolve("a/b/c/d"));
+            // Check initial scan events
+            capture.setFinishTrigger(4);
+            pathWatcher.start();
+            expected.put("file0",new PathWatchEventType[] { ADDED });
+            expected.put("subdir0",new PathWatchEventType[] { ADDED });
+            expected.put("subdir0/fileA",new PathWatchEventType[] { ADDED });
+            expected.put("subdir0/subsubdir0",new PathWatchEventType[] { ADDED });
 
-        PathWatcher.Config config = new PathWatcher.Config(dir);
+            capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS);
+            capture.assertEvents(expected);
+            Thread.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
 
-        config.setRecurseDepth(2);
-        assertThat("Config.recurse[1].shouldRecurse[./a/b/c]",config.shouldRecurseDirectory(dir.resolve("a/b/c")),is(false));
-        assertThat("Config.recurse[1].shouldRecurse[./a/b]",config.shouldRecurseDirectory(dir.resolve("a/b")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
-    }
-    
-    
-    @Test
-    public void testConfig_ShouldRecurse_3() throws IOException
-    {
-        Path dir = testdir.getEmptyPathDir();
-        
-        //Create some deep dirs
-        Files.createDirectories(dir.resolve("a/b/c/d/e/f/g"));
-        
-        PathWatcher.Config config = new PathWatcher.Config(dir);
-        config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/g]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/g")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/f]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/f")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/e]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/e")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./a/b/c]",config.shouldRecurseDirectory(dir.resolve("a/b/c")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./a/b]",config.shouldRecurseDirectory(dir.resolve("a/b")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
-        assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
+            // Check adding files
+            capture.reset(3);
+            expected.clear();
+            Files.createFile(dir.resolve("subdir0/subsubdir0/toodeep"));
+            expected.put("subdir0/subsubdir0",new PathWatchEventType[] { MODIFIED });
+            Files.createFile(dir.resolve("file1"));
+            expected.put("file1",new PathWatchEventType[] { ADDED });
+            Files.createFile(dir.resolve("subdir0/fileB"));
+            expected.put("subdir0/fileB",new PathWatchEventType[] { ADDED });
+
+            capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS);
+            capture.assertEvents(expected);
+            Thread.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+
+            // Check slow modification
+            capture.reset(1);
+            expected.clear();
+            long start = System.nanoTime();
+            new Thread(()->{updateFileOverTime(dir.resolve("file1"),2*QUIET_TIME,TimeUnit.MILLISECONDS);}).start();
+            expected.put("file1",new PathWatchEventType[] { MODIFIED });
+            capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS);
+            long end = System.nanoTime();
+            capture.assertEvents(expected);
+            assertThat(end-start,greaterThan(TimeUnit.MILLISECONDS.toNanos(2*QUIET_TIME)));
+            Thread.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+
+            // Check slow add
+            capture.reset(1);
+            expected.clear();
+            start = System.nanoTime();
+            new Thread(()->{updateFileOverTime(dir.resolve("file2"),2*QUIET_TIME,TimeUnit.MILLISECONDS);}).start();
+            expected.put("file2",new PathWatchEventType[] { ADDED });
+            capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS);
+            end = System.nanoTime();
+            capture.assertEvents(expected);
+            assertThat(end-start,greaterThan(TimeUnit.MILLISECONDS.toNanos(2*QUIET_TIME)));
+            Thread.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+
+            // Check move directory
+            if (OS.IS_LINUX)
+            {
+                capture.reset(5);
+                expected.clear();
+                Files.move(dir.resolve("subdir0"), dir.resolve("subdir1"), StandardCopyOption.ATOMIC_MOVE);
+                expected.put("subdir0", new PathWatchEventType[]{DELETED});
+                // TODO expected.put("subdir0/fileA",new PathWatchEventType[] { DELETED });
+                // TODO expected.put("subdir0/subsubdir0",new PathWatchEventType[] { DELETED });
+                expected.put("subdir1", new PathWatchEventType[]{ADDED});
+                expected.put("subdir1/fileA", new PathWatchEventType[]{ADDED});
+                expected.put("subdir1/fileB", new PathWatchEventType[]{ADDED});
+                expected.put("subdir1/subsubdir0", new PathWatchEventType[]{ADDED});
+
+                capture.finishedLatch.await(LONG_TIME, TimeUnit.MILLISECONDS);
+                capture.assertEvents(expected);
+                Thread.sleep(WAIT_TIME);
+                capture.assertEvents(expected);
+            }
+
+            // Check delete file
+            capture.reset(2);
+            expected.clear();
+            Files.delete(dir.resolve("file1"));
+            expected.put("file1",new PathWatchEventType[] { DELETED });
+            Files.delete(dir.resolve("file2"));
+            expected.put("file2",new PathWatchEventType[] { DELETED });
+
+            capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS);
+            capture.assertEvents(expected);
+            Thread.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+
+        }
+        finally
+        {
+            pathWatcher.stop();
+        }
     }
     
     @Test
@@ -368,7 +456,7 @@ public class PathWatcherTest
         
         PathWatcher pathWatcher = new PathWatcher();
         pathWatcher.setNotifyExistingOnStart(true);
-        pathWatcher.setUpdateQuietTime(500,TimeUnit.MILLISECONDS);
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
         
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
@@ -393,7 +481,8 @@ public class PathWatcherTest
             expected.put("a.txt",new PathWatchEventType[] {ADDED});
             expected.put("b.txt",new PathWatchEventType[] {ADDED});
 
-         
+            Thread.currentThread().sleep(1000); // TODO poor test
+
             capture.assertEvents(expected);
             
             //stop it
@@ -401,7 +490,7 @@ public class PathWatcherTest
             
             capture.reset();
             
-            Thread.currentThread().sleep(1000);
+            Thread.currentThread().sleep(1000); // TODO poor test
             
             pathWatcher.start();
             
@@ -436,13 +525,17 @@ public class PathWatcherTest
 
         // Files we don't care about
         Files.createFile(dir.resolve("foo.war.backup"));
-        Files.createFile(dir.resolve(".hidden.war"));
+
+        String hidden_war = OS.IS_WINDOWS ? "hidden.war" : ".hidden.war";
+        Files.createFile(dir.resolve(hidden_war));
+        if (OS.IS_WINDOWS)
+            Files.setAttribute(dir.resolve(hidden_war),"dos:hidden",Boolean.TRUE);
         Files.createDirectories(dir.resolve(".wat/WEB-INF"));
         Files.createFile(dir.resolve(".wat/huh.war"));
         Files.createFile(dir.resolve(".wat/WEB-INF/web.xml"));
 
         PathWatcher pathWatcher = new PathWatcher();
-        pathWatcher.setUpdateQuietTime(300,TimeUnit.MILLISECONDS);
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
@@ -458,16 +551,18 @@ public class PathWatcherTest
 
         try
         {
+            capture.setFinishTrigger(2);
             pathWatcher.start();
 
             // Let quiet time do its thing
-            awaitQuietTime(pathWatcher);
+            capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS);
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
-
             expected.put("bar/WEB-INF/web.xml",new PathWatchEventType[] { ADDED });
             expected.put("foo.war",new PathWatchEventType[] { ADDED });
 
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
             capture.assertEvents(expected);
         }
         finally
@@ -494,11 +589,10 @@ public class PathWatcherTest
     
 
         PathWatcher pathWatcher = new PathWatcher();
-        pathWatcher.setUpdateQuietTime(300,TimeUnit.MILLISECONDS);
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
-        capture.setFinishTrigger(3);
         pathWatcher.addListener(capture);
 
         // Add test dir configuration
@@ -510,16 +604,17 @@ public class PathWatcherTest
 
         try
         {
+            capture.setFinishTrigger(3);
             pathWatcher.start();
-
-            // Let quiet time do its thing
-            awaitQuietTime(pathWatcher);
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
 
             expected.put("a.txt",new PathWatchEventType[] { ADDED });
             expected.put("b/b.txt",new PathWatchEventType[] { ADDED });
             expected.put("c/d/d.txt",new PathWatchEventType[] { ADDED });
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
             capture.assertEvents(expected);
         }
         finally
@@ -539,16 +634,15 @@ public class PathWatcherTest
         Files.createFile(dir.resolve("bar/WEB-INF/web.xml"));
 
         PathWatcher pathWatcher = new PathWatcher();
-        pathWatcher.setUpdateQuietTime(300,TimeUnit.MILLISECONDS);
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
-        capture.setFinishTrigger(5);
         pathWatcher.addListener(capture);
 
         // Add test dir configuration
         PathWatcher.Config baseDirConfig = new PathWatcher.Config(dir);
-        baseDirConfig.setRecurseDepth(2);
+        baseDirConfig.setRecurseDepth(100);
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
@@ -556,11 +650,13 @@ public class PathWatcherTest
 
         try
         {
+            capture.setFinishTrigger(2);
             pathWatcher.start();
 
-            // Pretend that startup occurred
-            awaitQuietTime(pathWatcher);
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
 
+            capture.setFinishTrigger(3);
+            
             // Update web.xml
             Path webFile = dir.resolve("bar/WEB-INF/web.xml");
             //capture.setFinishTrigger(webFile,MODIFIED);
@@ -573,7 +669,7 @@ public class PathWatcherTest
             Files.createFile(dir.resolve("bar.war"));
 
             // Let capture complete
-            capture.awaitFinish(pathWatcher);
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
 
@@ -581,6 +677,8 @@ public class PathWatcherTest
             expected.put("foo.war",new PathWatchEventType[] { ADDED, DELETED });
             expected.put("bar.war",new PathWatchEventType[] { ADDED });
 
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
             capture.assertEvents(expected);
         }
         finally
@@ -600,7 +698,7 @@ public class PathWatcherTest
         Files.createFile(dir.resolve("bar/WEB-INF/web.xml"));
 
         PathWatcher pathWatcher = new PathWatcher();
-        pathWatcher.setUpdateQuietTime(300,TimeUnit.MILLISECONDS);
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
@@ -616,25 +714,35 @@ public class PathWatcherTest
 
         try
         {
+            capture.setFinishTrigger(2);
             pathWatcher.start();
 
             // Pretend that startup occurred
-            awaitQuietTime(pathWatcher);
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
 
             // New war added
+            capture.setFinishTrigger(1);
             Path warFile = dir.resolve("hello.war");
-            capture.setFinishTrigger(warFile,MODIFIED);
-            updateFile(warFile,"Hello Update");
+            updateFile(warFile,"Create Hello");
+            Thread.sleep(QUIET_TIME/2);
+            updateFile(warFile,"Hello 1");
+            Thread.sleep(QUIET_TIME/2);
+            updateFile(warFile,"Hello two");   
+            Thread.sleep(QUIET_TIME/2);
+            updateFile(warFile,"Hello three");            
 
             // Let capture finish
-            capture.awaitFinish(pathWatcher);
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
 
             expected.put("bar/WEB-INF/web.xml",new PathWatchEventType[] { ADDED });
             expected.put("foo.war",new PathWatchEventType[] { ADDED });
-            expected.put("hello.war",new PathWatchEventType[] { ADDED, MODIFIED });
+            expected.put("hello.war",new PathWatchEventType[] { ADDED });
 
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
+            Assume.assumeFalse(OS.IS_OSX); // TODO fix this
             capture.assertEvents(expected);
         }
         finally
@@ -643,8 +751,195 @@ public class PathWatcherTest
         }
     }
 
+    @Test
+    public void testDeployFiles_NewDir() throws Exception
+    {
+        Path dir = testdir.getEmptyPathDir();
+
+        // Files we are interested in
+        Files.createFile(dir.resolve("foo.war"));
+
+        PathWatcher pathWatcher = new PathWatcher();
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
+
+        // Add listener
+        PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        pathWatcher.addListener(capture);
+
+        // Add test dir configuration
+        PathWatcher.Config baseDirConfig = new PathWatcher.Config(dir);
+        baseDirConfig.setRecurseDepth(2);
+        baseDirConfig.addExcludeHidden();
+        baseDirConfig.addIncludeGlobRelative("*.war");
+        baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
+        pathWatcher.watch(baseDirConfig);
+
+        try
+        {
+            capture.setFinishTrigger(1);
+            pathWatcher.start();
+
+            // Pretend that startup occurred
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
+
+            // New war added
+            capture.setFinishTrigger(1);
+
+            Files.createDirectories(dir.resolve("bar/WEB-INF"));
+            Thread.sleep(QUIET_TIME/2);
+            Files.createFile(dir.resolve("bar/WEB-INF/web.xml"));
+            Thread.sleep(QUIET_TIME/2);
+            updateFile(dir.resolve("bar/WEB-INF/web.xml"),"Update");
+            Thread.sleep(QUIET_TIME/2);
+            updateFile(dir.resolve("bar/WEB-INF/web.xml"),"Update web.xml");    
+
+            // Let capture finish
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
+
+            Map<String, PathWatchEventType[]> expected = new HashMap<>();
+
+            expected.put("bar/WEB-INF/web.xml",new PathWatchEventType[] { ADDED });
+            expected.put("foo.war",new PathWatchEventType[] { ADDED });
+
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+        }
+        finally
+        {
+            pathWatcher.stop();
+        }
+    }
+
+
+    @Test
+    public void testDeployFilesBeyondDepthLimit() throws Exception
+    {
+        Path dir = testdir.getEmptyPathDir();
+
+        // Files we are interested in
+        Files.createDirectories(dir.resolve("foo/WEB-INF/lib"));
+        Files.createDirectories(dir.resolve("bar/WEB-INF/lib"));
+
+        PathWatcher pathWatcher = new PathWatcher();
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
+
+        // Add listener
+        PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        pathWatcher.addListener(capture);
+
+        // Add test dir configuration
+        PathWatcher.Config baseDirConfig = new PathWatcher.Config(dir);
+        baseDirConfig.setRecurseDepth(0);
+        pathWatcher.watch(baseDirConfig);
+
+        try
+        {
+            capture.setFinishTrigger(2);
+            pathWatcher.start();
+
+            // Pretend that startup occurred
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
+
+            Map<String, PathWatchEventType[]> expected = new HashMap<>();
+            expected.put("foo",new PathWatchEventType[] { ADDED });
+            expected.put("bar",new PathWatchEventType[] { ADDED });
+            
+            capture.assertEvents(expected);
+            
+            capture.reset(1);
+            expected.clear();
+            expected.put("bar",new PathWatchEventType[] { MODIFIED });
+            Files.createFile(dir.resolve("bar/index.html"));
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
+
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+            
+            capture.reset(1);
+            expected.clear();
+            expected.put("bob",new PathWatchEventType[] { ADDED });
+            Files.createFile(dir.resolve("bar/WEB-INF/lib/ignored"));
+            PathWatcher.LOG.debug("create bob");
+            Files.createDirectories(dir.resolve("bob/WEB-INF/lib"));
+            Thread.sleep(QUIET_TIME/2);
+            PathWatcher.LOG.debug("create bob/index.html");
+            Files.createFile(dir.resolve("bob/index.html"));
+            Thread.sleep(QUIET_TIME/2);
+            PathWatcher.LOG.debug("update bob/index.html");
+            updateFile(dir.resolve("bob/index.html"),"Update");
+            Thread.sleep(QUIET_TIME/2);
+            PathWatcher.LOG.debug("update bob/index.html");
+            updateFile(dir.resolve("bob/index.html"),"Update index.html");
+
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+            
+        }
+        finally
+        {
+            pathWatcher.stop();
+        }
+    }
+    
+
+    @Test
+    public void testWatchFile() throws Exception
+    {
+        Path dir = testdir.getEmptyPathDir();
+
+        // Files we are interested in
+        Files.createDirectories(dir.resolve("bar/WEB-INF"));
+        Files.createFile(dir.resolve("bar/WEB-INF/web.xml"));
+
+        PathWatcher pathWatcher = new PathWatcher();
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
+
+        // Add listener
+        PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        pathWatcher.addListener(capture);
+
+        // Add test configuration
+        pathWatcher.watch(dir.resolve("bar/WEB-INF/web.xml"));
+        pathWatcher.setNotifyExistingOnStart(false);
+
+        try
+        {
+            pathWatcher.start();
+            Thread.sleep(WAIT_TIME);
+            assertThat(capture.events.size(),is(0));
+
+            Files.createFile(dir.resolve("bar/index.htnl"));
+            Files.createFile(dir.resolve("bar/WEB-INF/other.xml"));
+            Files.createDirectories(dir.resolve("bar/WEB-INF/lib"));
+
+            Thread.sleep(WAIT_TIME);
+            assertThat(capture.events.size(),is(0));
+
+            capture.setFinishTrigger(1);
+            updateFile(dir.resolve("bar/WEB-INF/web.xml"),"Update web.xml");
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
+
+            Map<String, PathWatchEventType[]> expected = new HashMap<>();
+
+            expected.put("bar/WEB-INF/web.xml",new PathWatchEventType[] { MODIFIED });
+
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
+            capture.assertEvents(expected);
+        }
+        finally
+        {
+            pathWatcher.stop();
+        }
+    }
+
+    
     /**
-     * Pretend to add a new war file that is large, and being copied into place
+     * Pretend to modify a new war file that is large, and being copied into place
      * using some sort of technique that is slow enough that it takes a while for
      * the entire war file to exist in place.
      * <p>
@@ -654,17 +949,18 @@ public class PathWatcherTest
      *             on test failure
      */
     @Test
-    public void testDeployFiles_NewWar_LargeSlowCopy() throws Exception
+    public void testDeployFiles_ModifyWar_LargeSlowCopy() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
         // Files we are interested in
         Files.createFile(dir.resolve("foo.war"));
+        Files.createFile(dir.resolve("hello.war"));
         Files.createDirectories(dir.resolve("bar/WEB-INF"));
         Files.createFile(dir.resolve("bar/WEB-INF/web.xml"));
 
         PathWatcher pathWatcher = new PathWatcher();
-        pathWatcher.setUpdateQuietTime(500,TimeUnit.MILLISECONDS);
+        pathWatcher.setUpdateQuietTime(QUIET_TIME,TimeUnit.MILLISECONDS);
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
@@ -680,25 +976,34 @@ public class PathWatcherTest
 
         try
         {
+            capture.setFinishTrigger(3);
             pathWatcher.start();
 
             // Pretend that startup occurred
-            awaitQuietTime(pathWatcher);
+            assertTrue(capture.finishedLatch.await(LONG_TIME,TimeUnit.MILLISECONDS));
+
 
             // New war added (slowly)
+            capture.setFinishTrigger(1);
             Path warFile = dir.resolve("hello.war");
-            capture.setFinishTrigger(warFile,MODIFIED);
-            updateFileOverTime(warFile,50 * MB,3,TimeUnit.SECONDS);
-
-            // Let capture finish
-            capture.awaitFinish(pathWatcher);
+            long start = System.nanoTime();
+            new Thread(()->
+            {
+                updateFileOverTime(warFile,2*QUIET_TIME,TimeUnit.MILLISECONDS);
+            }).start();
+            
+            assertTrue(capture.finishedLatch.await(4*QUIET_TIME,TimeUnit.MILLISECONDS));
+            long end = System.nanoTime();
+            assertThat(end-start,greaterThan(TimeUnit.MILLISECONDS.toNanos(2*QUIET_TIME)));
+            
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
-
             expected.put("bar/WEB-INF/web.xml",new PathWatchEventType[] { ADDED });
             expected.put("foo.war",new PathWatchEventType[] { ADDED });
             expected.put("hello.war",new PathWatchEventType[] { ADDED, MODIFIED });
 
+            capture.assertEvents(expected);
+            TimeUnit.MILLISECONDS.sleep(WAIT_TIME);
             capture.assertEvents(expected);
         }
         finally
