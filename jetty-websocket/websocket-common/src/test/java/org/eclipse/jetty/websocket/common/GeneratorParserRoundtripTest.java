@@ -23,19 +23,18 @@ import static org.hamcrest.Matchers.is;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class GeneratorParserRoundtripTest
 {
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("GeneratorParserRoundtrip");
+    public ByteBufferPool bufferPool = new MappedByteBufferPool();
     
     @Test
     public void testParserAndGenerator() throws Exception

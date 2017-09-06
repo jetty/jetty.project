@@ -34,13 +34,12 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test simulating a client that talks too quickly.
@@ -85,7 +84,7 @@ public class TooFastClientTest
             
             // Add text frames
             Generator generator = new Generator(WebSocketPolicy.newClientPolicy(),
-                    new LeakTrackingBufferPoolRule("Generator"));
+                    new MappedByteBufferPool());
             
             String msg1 = "Echo 1";
             String msg2 = "This is also an echooooo!";

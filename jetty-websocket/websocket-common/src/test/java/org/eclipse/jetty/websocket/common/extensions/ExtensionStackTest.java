@@ -23,6 +23,8 @@ import static org.hamcrest.Matchers.is;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -31,17 +33,14 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class ExtensionStackTest
 {
     private static final Logger LOG = Log.getLogger(ExtensionStackTest.class);
-    
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+
+    public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @SuppressWarnings("unchecked")
     private <T> T assertIsExtension(String msg, Object obj, Class<T> clazz)

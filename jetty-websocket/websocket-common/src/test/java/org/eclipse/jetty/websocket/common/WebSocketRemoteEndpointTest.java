@@ -23,8 +23,9 @@ import static org.hamcrest.Matchers.containsString;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketConnection;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -36,8 +37,7 @@ public class WebSocketRemoteEndpointTest
     @Rule
     public TestName testname = new TestName();
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("WebSocketRemoteEndpoint");
+    public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @Test
     public void testTextBinaryText() throws IOException
