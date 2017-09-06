@@ -50,6 +50,8 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -58,7 +60,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.util.Sha1Sum;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
@@ -71,8 +72,7 @@ public class StreamTest
 {
     private static final Logger LOG = Log.getLogger(StreamTest.class);
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     private static File outputDir;
     private static Server server;

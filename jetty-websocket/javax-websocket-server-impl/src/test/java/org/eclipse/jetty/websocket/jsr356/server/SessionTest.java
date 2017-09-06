@@ -29,16 +29,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -47,9 +47,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class SessionTest
 {
-    private static interface Case
+    private interface Case
     {
-        public void customize(WebAppContext context);
+        void customize(WebAppContext context);
     }
 
     @Parameters
@@ -98,8 +98,7 @@ public class SessionTest
         return cases;
     }
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     private final Case testcase;
     private final static AtomicInteger ID = new AtomicInteger(0);

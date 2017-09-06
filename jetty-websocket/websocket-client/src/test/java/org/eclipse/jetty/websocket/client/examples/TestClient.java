@@ -29,12 +29,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.OpCode;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 
 /**
  * This is not a general purpose websocket client. It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.
@@ -96,7 +98,7 @@ public class TestClient
 
     private static final Random __random = new Random();
 
-    private static LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("TestClient");
+    private static LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
 
     private final String _host;
     private final int _port;
