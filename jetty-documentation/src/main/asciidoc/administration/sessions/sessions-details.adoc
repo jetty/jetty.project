@@ -19,13 +19,13 @@
 
 ==== SessionIdManager
 
-There is a maximum of 1 `SessionIdManager` per jetty Server instance.
+There is a maximum of one (1) `SessionIdManager` per Jetty Server instance.
 Its purpose is to generate fresh, unique session ids and to coordinate the re-use of session ids amongst co-operating contexts.
 
 Unlike in previous versions of Jetty, the `SessionIdManager` is agnostic with respect to the type of clustering technology chosen.
 
 Jetty provides a default implementation - the `DefaultSessionIdManager` - which should meet the needs of most users.
-If you do not explicitly enable one of the session modules, or otherwise configure a `SessionIdManager`, the `DefaultSessionIdManager` will be used.
+If you do not explicitly enable one of the session modules or otherwise configure a `SessionIdManager`, the `DefaultSessionIdManager` will be used.
 
 If the `DefaultSessionIdManager` does not meet your needs, you can extend the `org.eclipse.jetty.server.session.AbstractSessionIdManager` or do a fresh implementation of the `org.eclipse.jetty.server.session.SessionIdManager` interface.
 
@@ -33,7 +33,7 @@ See link:#session-configuration-housekeeper[Configuring the SessionIdManager and
 
 ==== HouseKeeper
 
-There is a maximum of 1 `HouseKeeper` per `SessionIdManager`.
+There is a maximum of one (1) `HouseKeeper` per `SessionIdManager`.
 Its purpose is to periodically poll the `SessionHandlers` to clean out expired sessions.
 
 By default the `HouseKeeper` will poll the `SessionHandlers` every 10 mins to find and delete expired sessions, although this interval is configurable.
@@ -43,14 +43,15 @@ See link:#session-configuration-housekeeper[Configuring the SessionIdManager and
 
 ==== SessionCache
 
-There is 1 `SessionCache` per context.
+There is one (1) `SessionCache` *per context.*
 Its purpose is to provide an L1 cache of Session objects.
 Having a working set of Session objects in memory allows multiple simultaneous requests for the same session to share the same Session object.
 
-Jetty provides 2 `SessionCache` implementations: the `DefaultSessionCache` and the `NullSessionCache`.
+Jetty provides two (2) `SessionCache` implementations: the `DefaultSessionCache` and the `NullSessionCache`.
 The `DefaultSessionCache` retains Session objects in memory in a cache and has a number of link:#session-configuration-sessioncache[configuration options] to control cache behavior.
 It is the default that is used if no other `SessionCache` has been configured.
 It is suitable for non-clustered and clustered deployments with a sticky load balancer, as well as clustered deployments with a non-sticky load balancer, with some caveats.
+
 The `NullSessionCache` does not actually cache any objects: each request uses a fresh Session object.
 It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
 
@@ -60,18 +61,19 @@ They can also be configured to do an immediate, eager write of a freshly created
 This can be useful if you are likely to experience multiple, near simultaneous requests referencing the same session, e.g. with HTTP/2 and you don't have a sticky load balancer.
 Alternatively, if the eager write is not done, application paths which create and then invalidate a session within a single request never incur the cost of writing to persistent storage.
 
-Additionally, if the `EVICT_ON_INACTIVITY` eviction policy is in use, you can link:#session-configuration-sessioncache[configure] the `DefaultSessionCache` to force a write of the Session to the SessionDataStore just before the Session is evicted.
+Additionally, if the `EVICT_ON_INACTIVITY` eviction policy is in use, you can link:#session-configuration-sessioncache[configure] the `DefaultSessionCache` to force a write of the Session to the `SessionDataStore` just before the Session is evicted.
 
-See link:#session-configuration-sessioncache[The L1 Session Cache] for more information.
+See link:#session-configuration-sessioncache[the L1 Session Cache] for more information.
 
 ==== SessionDataStore
 
-There is 1 `SessionDataStore` per context. Its purpose is to handle all persistence related operations on sessions.
+There is one (1) `SessionDataStore` per context.
+Its purpose is to handle all persistence related operations on sessions.
 
 The common characteristics for all `SessionDataStores` are whether or not they support passivation, and the length of the grace period.
 
 Supporting passivation means that session data is serialized.
-Some persistence mechanisms serialize, such as JDBC, GCloud Datastore etc,  whereas others may store an object in shared memory eg Infinispan when configured with a local cache.
+Some persistence mechanisms serialize, such as JDBC, GCloud Datastore etc, whereas others may store an object in shared memory, e.g. Infinispan, when configured with a local cache.
 
 Whether or not a clustering technology entails passivation controls whether or not the session passivation/activation listeners will be called.
 
@@ -90,10 +92,10 @@ The distribution provides a number of alternative `SessionDataStore` implementat
 
 ==== CachingSessionDataStore
 
-The `CachingSessionDataStore` is a special type of `SessionDataStore` that inserts an L2 cache of SessionData - the `SessionDataMap` - in front of a delegate `SessionDataStore`.
+The `CachingSessionDataStore` is a special type of `SessionDataStore` that inserts an L2 cache of Session data - the `SessionDataMap` - in front of a delegate `SessionDataStore`.
 The `SessionDataMap` is preferentially consulted before the actual SessionDataStore on reads.
 This can improve the performance of slow stores.
 
 Jetty provides one implementation of the this L2 cache based on `Memcached`, the `MemcachedSessionDataMap`.
 
-See link:#session-configuration-memcachedsessiondatastore[The L2 SessionData Cache].
+See link:#session-configuration-memcachedsessiondatastore[the L2 SessionData Cache]for additional information.

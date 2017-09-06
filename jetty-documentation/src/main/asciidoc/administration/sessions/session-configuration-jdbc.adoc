@@ -16,7 +16,7 @@
 
 [[configuring-sessions-jdbc]]
 
-=== Persisted Sessions: JDBC
+=== Persistent Sessions: JDBC
 
 ==== Enabling JDBC Sessions
 

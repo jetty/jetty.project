@@ -15,7 +15,8 @@
 //  ========================================================================
 
 [[session-configuration-memcachedsessiondatastore]]
-=== Persisted Sessions: The L2 Session Data Cache
+
+=== Persistent Sessions: The L2 Session Data Cache
 
 If your chosen persistence technology is slow, it can be helpful to locally cache the session data.
 The `CachingSessionDataStore` is a special type of `SessionDataStore` that locally caches session data, which makes reads faster. It writes-through to your chosen type of `SessionDataStore` when session data changes.
@@ -24,7 +25,7 @@ The `CachingSessionDataStore` is a special type of `SessionDataStore` that local
 
 The `MemcachedSessionDataMap` uses `memcached` to perform caching.
 
-To enable it with the jetty distribution, use the `session-store-cache` link:#startup-modules[module], along with your chosen `session-store-xxxx` module of course, and optionally the `session-cache-hash` or `session-cache-null` modules.
+To enable it with the Jetty distribution, enable the `session-store-cache` link:#startup-modules[module], along with your chosen `session-store-xxxx` module, and optionally the `session-cache-hash` or `session-cache-null` modules.
 
 After enabling, the `$jetty.base/start.d/session-store-cache.ini` file will be generated:
 
@@ -56,8 +57,6 @@ jetty.session.memcached.expirySec::
 Default value `0`.
 This is the length of time in seconds that an item can remain in the memcached cache, where 0 indicates indefinitely.
 
-
 jetty.session.memcached.heartbeats::
 Default value `true`.
 Whether or not the memcached system should generate heartbeats.
-

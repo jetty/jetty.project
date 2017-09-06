@@ -16,7 +16,7 @@
 
 [[configuring-sessions-hazelcast]]
 
-=== Persisted Sessions: Hazelcast
+=== Persistent Sessions: Hazelcast
 
 ==== Enabling Hazelcast Sessions
 
