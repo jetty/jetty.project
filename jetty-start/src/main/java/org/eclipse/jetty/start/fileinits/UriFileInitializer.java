@@ -19,18 +19,12 @@
 package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 import org.eclipse.jetty.start.BaseHome;
-import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
-import org.eclipse.jetty.start.StartLog;
 
 public class UriFileInitializer extends FileInitializer
 {    
