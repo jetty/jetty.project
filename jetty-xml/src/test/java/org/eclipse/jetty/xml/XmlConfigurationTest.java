@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.log.Log;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -33,6 +35,7 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -246,6 +249,23 @@ public class XmlConfigurationTest
         configuration.configure(tc);
         assertEquals("Set String 3", "SetValue", tc.testObject);
         assertEquals("Set Type 3", 2, tc.testInt);
+    }
+
+    @Test
+    public void testMeaningfullSetException() throws Exception
+    {
+        XmlConfiguration configuration =
+            new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"PropertyTest\"><Property name=\"null\"/></Set></Configure>");
+        TestConfiguration tc = new TestConfiguration();
+        try
+        {
+            configuration.configure(tc);
+            Assert.fail();
+        }
+        catch(NoSuchMethodException e)
+        {
+            assertThat(e.getMessage(),containsString("Found setters for int"));
+        }
     }
 
     @Test
