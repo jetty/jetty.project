@@ -261,7 +261,7 @@ public class HouseKeeper extends AbstractLifeCycle
             return;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Scavenging sessions");
+            LOG.debug("{} scavenging sessions", this);
         
         //find the session managers
         for (SessionHandler manager:_sessionIdManager.getSessionHandlers())

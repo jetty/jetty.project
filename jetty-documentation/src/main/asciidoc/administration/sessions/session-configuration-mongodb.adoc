@@ -16,7 +16,7 @@
 
 [[configuring-sessions-mongo]]
 
-=== Clustered Session Management: MongoDB
+=== Persisted Sessions: MongoDB
 
 ==== Enabling MongoDB Sessions
 

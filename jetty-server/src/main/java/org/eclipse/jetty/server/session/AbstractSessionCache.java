@@ -628,7 +628,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         {
 
             boolean dsdel = _sessionDataStore.delete(id);
-            if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in db {}",id, dsdel);                   
+            if (LOG.isDebugEnabled()) LOG.debug("Session {} deleted in session data store {}",id, dsdel);                   
         }
         
         //delete it from the session object store
@@ -656,7 +656,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
            return Collections.emptySet();
        
        if (LOG.isDebugEnabled())
-           LOG.debug("SessionDataStore checking expiration on {}", candidates);
+           LOG.debug("{} checking expiration on {}", this, candidates);
        Set<String> allCandidates = _sessionDataStore.getExpired(candidates);
        Set<String> sessionsInUse = new HashSet<>();
        if (allCandidates != null)

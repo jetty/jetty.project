@@ -1,0 +1,53 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[session-configuration-housekeeper]]
+=== The SessionIdManager and the Housekeeper
+
+==== The Defaults
+By default, jetty will instantiate a single instance of the DefaultSessionIdManager and HouseKeeper at startup with default settings.
+
+The default settings are:
+
+DefaultSessionIdManager: worker name::
+This uniquely identifies the jetty server instance within a cluster. 
+It is set from the value of the JETTY_WORKER_INSTANCE environment variable, or "node0" if the environment value is not set.
+If you have more than one jetty instance, it is crucial that you explicitly configure the worker name on each jetty instance (see below for how to configure).
+
+HouseKeeper: scavenge interval::
+This is the period in seconds between runs of the session scavenger, and by default is set to the equivalent of 10mins.
+As a rule of thumb, you should  ensure that the scavenge interval is shorter than the  maxInactiveInterval of your sessions to ensure that they are promptly scavenged. See below for instructions on how to configure this.
+
+==== Configuring
+To change the default values, use the link:#startup-modules[module system] to link:#startup-modules[enable] the `sessions` module.
+
+This will enable the `$jetty.home/etc/sessions/id-manager.xml` file and generate a `$jetty.base/start.d/sessions.ini` file.
+
+The `$jetty.home/etc/sessions/id-manager.xml` file instantiates a singleton DefaultSessionIdManager and HouseKeeper and configures them using the properties from the `$jetty.base/start.d/sessions.ini` file.
+
+Edit the file to change the properties to easily customize the DefaultSessionIdManager and HouseKeeper:
+
+jetty.sessionIdManager.workerName::
+By default it is `node1`.
+This uniquely identifies the jetty server instance within a cluster.
+If you have more than one jetty instance, it is crucial that you configure the worker name differently on each jetty instance.
+
+
+jetty.sessionScavengeInterval.seconds::
+This is the period in seconds between runs of the session scavenger.
+By default it will run every 600 secs (ie 10 mins).
+As a rule of thumb, you should  ensure that the scavenge interval is shorter than the  maxInactiveInterval of your sessions to ensure that they are promptly scavenged.
+
