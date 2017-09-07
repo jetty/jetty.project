@@ -22,6 +22,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.locks.Condition;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -32,6 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  * with a Thread immediately being assigned the Runnable task, or fail if no Thread is
  * available. Threads are preallocated up to the capacity from a wrapped {@link Executor}.
  */
+@ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutor extends AbstractLifeCycle implements Executor
 {
     private static final Logger LOG = Log.getLogger(ReservedThreadExecutor.class);
@@ -79,17 +82,28 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     {
         return _executor;
     }
-    
+
+    @ManagedAttribute(value = "max number of reserved threads", readonly = true)
     public int getCapacity()
     {
         return _queue.length;
     }
-    
-    public int getPreallocated()
+
+    @ManagedAttribute(value = "available reserved threads", readonly = true)
+    public int getAvailable()
     {
         try (Locker.Lock lock = _locker.lock())
         {
             return _size;
+        }
+    }
+
+    @ManagedAttribute(value = "pending reserved threads", readonly = true)
+    public int getPending()
+    {
+        try (Locker.Lock lock = _locker.lock())
+        {
+            return _pending;
         }
     }
     
