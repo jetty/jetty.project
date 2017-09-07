@@ -68,10 +68,30 @@ public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
+    private static final int JVM_MAJOR_VER;
+    
     protected Set<String> _parsedClassNames = new ConcurrentHashSet<String>();
     
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM5; //compatibility of api
-   
+
+    static
+    {
+        // Determine JVM spec version
+        // Using guidance from http://openjdk.java.net/jeps/223
+        String jvmSpecVer = System.getProperty("java.vm.specification.version");
+
+        if (jvmSpecVer.indexOf('.') >= 0)
+        {
+            // Old spec version (Java 1.8 and older)
+            String parts[] = jvmSpecVer.split("\\.");
+            JVM_MAJOR_VER = Integer.parseInt(parts[1]);
+        }
+        else
+        {
+            // Newer spec version (Java 9+)
+            JVM_MAJOR_VER = Integer.parseInt(jvmSpecVer);
+        }
+    }
 
     /**
      * Convert internal name to simple name
@@ -1028,10 +1048,61 @@ public class AnnotationParser
         if (path == null || path.length()==0)
             return false;
 
-        //skip any classfiles that are in a hidden directory
+        if (path.startsWith("META-INF/versions/"))
+        {
+            // Handle JEP 238 - Multi-Release Jars
+            if (JVM_MAJOR_VER < 9)
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("JEP-238 Multi-Release JAR not supported on Java " +
+                            System.getProperty("java.version") + ": " + path);
+                }
+                return false;
+            }
+
+            // Safety check for ASM bytecode support level.
+            // When ASM 6.0 is integrated, the below will start to work.
+            if (ASM_OPCODE_VERSION <= Opcodes.ASM5)
+            {
+                // Cannot scan Java 9 classes with ASM version 5
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Unable to scan newer Java bytecode (Java 9?) with ASM 5 (skipping): " + path);
+                }
+                return false;
+            }
+
+            int idxStart = "META-INF/versions/".length();
+            int idxEnd = path.indexOf('/', idxStart + 1);
+            try
+            {
+                int pathVersion = Integer.parseInt(path.substring(idxStart, idxEnd));
+                if (pathVersion < JVM_MAJOR_VER)
+                {
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("JEP-238 Multi-Release JAR version " + pathVersion +
+                                " not supported on Java " + System.getProperty("java.version") +
+                                ": " + path);
+                    }
+                    return false;
+                }
+            }
+            catch (NumberFormatException e)
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Not a valid JEP-238 Multi-Release path: " + path);
+                }
+                return false;
+            }
+        }
+
+        // skip any classfiles that are in a hidden directory
         if (path.startsWith(".") || path.contains("/."))
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Contains hidden dirs: {}"+path);
+            if (LOG.isDebugEnabled()) LOG.debug("Contains hidden dirs: " + path);
             return false;
         }
 

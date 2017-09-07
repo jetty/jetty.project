@@ -176,6 +176,26 @@ public class TestAnnotationParser
     }
 
     @Test
+    public void testModuleInfoClassInJar() throws Exception
+    {
+        File badClassesJar = MavenTestingUtils.getTestResourceFile("jdk9/slf4j-api-1.8.0-alpha2.jar");
+        AnnotationParser parser = new AnnotationParser();
+        Set<Handler> emptySet = Collections.emptySet();
+        parser.parse(emptySet, badClassesJar.toURI());
+        // Should throw no exceptions, and happily skip the module-info.class files
+    }
+
+    @Test
+    public void testJep238MultiReleaseInJar() throws Exception
+    {
+        File badClassesJar = MavenTestingUtils.getTestResourceFile("jdk9/log4j-api-2.9.0.jar");
+        AnnotationParser parser = new AnnotationParser();
+        Set<Handler> emptySet = Collections.emptySet();
+        parser.parse(emptySet, badClassesJar.toURI());
+        // Should throw no exceptions, and skip the META-INF/versions/9/* files
+    }
+
+    @Test
     public void testBasedirExclusion() throws Exception
     {
         // Build up basedir, which itself has a path segment that violates java package and classnaming.
