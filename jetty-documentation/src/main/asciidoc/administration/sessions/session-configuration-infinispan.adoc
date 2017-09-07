@@ -16,7 +16,7 @@
 
 [[configuring-sessions-infinispan]]
 
-=== Persisted Sessions: Inifinspan
+=== Persistent Sessions: Inifinspan
 
 ==== Enabling Infinispan Sessions
 

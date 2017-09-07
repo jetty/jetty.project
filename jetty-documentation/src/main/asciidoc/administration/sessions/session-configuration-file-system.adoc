@@ -16,9 +16,9 @@
 
 [[configuring-sessions-file-system]]
 
-=== Persisted Sessions: File System
+=== Persistent Sessions: File System
 
-Note: Persisting sessions to the local file system should NOT be used in a clustered environment.
+Note: Persisting sessions to the local file system should *not* be used in a clustered environment.
 
 ==== Enabling File System Sessions
 

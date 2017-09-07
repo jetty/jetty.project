@@ -86,7 +86,7 @@ The default system classes are:
 .Default System Classes
 [width="100%",cols="8%,92%",options="header",]
 |=======================================================================
-|System Classes
+|System Classes | Note
 |java. |Java SE classes (per servlet spec v2.5 / SRV.9.7.2).
 |javax. |Java SE classes (per servlet spec v2.5 / SRV.9.7.2).
 |org.xml. |Needed by javax.xml.
@@ -98,7 +98,7 @@ The default system classes are:
 |org.eclipse.jetty.servlet.DefaultServlet |Webapp can see and not change default servlet.
 |=======================================================================
 
-Absolute classname can be passed, names ending with . are treated as packages names, and names starting with - are treated as negative matches and must be listed before any enclosing packages.
+Absolute classname can be passed, names ending with `.` are treated as packages names, and names starting with `-` are treated as negative matches and must be listed before any enclosing packages.
 
 [[setting-server-classes]]
 ===== Setting Server Classes

@@ -19,10 +19,10 @@
 
 ==== The DefaultSessionCache
 
-In the absence of any explicit configuration, jetty will instantiate an instance of the `DefaultSessionCache` per context.
-If you wish to change any of the defaulted values, you need to enable the `sesssion-cache-hash` link:#startup-modules[module].
+In the absence of any explicit configuration, Jetty will instantiate an instance of the `DefaultSessionCache` per context.
+If you wish to change any of the default values, you need to enable the `session-cache-hash` link:#startup-modules[module].
 
-Opening `start.d/session-cache-hash.ini` will show a list of all the configurable options:
+Once the `session-cache-hash` module has been enabled, you can view a list of all the configurable values by opening `start.d/session-cache-hash.ini`:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -39,15 +39,19 @@ Integer.
 Controls whether session objects that are held in memory are subject to eviction from the memory cache.
 Evicting sessions can reduce the memory footprint of the cache.
 Eviction is usually used in conjunction with a `SessionDataStore` that persists sessions.
-If you are not using a `SessionDataStore` that persists sessions, then be aware that evicted sessions will be lost.
 Values are:
 * -1 : sessions are never evicted from the cache
 *  0 : sessions are evicted from the cache as soon as the last active request for it finishes
 *  >= 1 : any positive number is the time in seconds after which a session that is in the cache but has not experienced any activity will be evicted
 
+____
+[NOTE]
+If you are not using a `SessionDataStore` that persists sessions, be aware that evicted sessions will be lost.
+____
+
 jetty.session.saveOnInactiveEvict::
 Boolean, default `false`.
-Controls whether a session will be saved to the `SessionDataStore` just prior to its eviction. 
+Controls whether a session will be saved to the `SessionDataStore` just prior to its eviction.
 
 jetty.session.saveOnCreate::
 Boolean, default `false`.

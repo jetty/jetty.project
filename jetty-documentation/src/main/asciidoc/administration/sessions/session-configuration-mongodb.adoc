@@ -16,7 +16,7 @@
 
 [[configuring-sessions-mongo]]
 
-=== Persisted Sessions: MongoDB
+=== Persistent Sessions: MongoDB
 
 ==== Enabling MongoDB Sessions
 
