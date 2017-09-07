@@ -57,18 +57,18 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     public ReservedThreadExecutor(Executor executor,int capacity)
     {
         _executor = executor;
-        
+
         if (capacity < 0)
         {
-            if (executor instanceof ThreadPool)
+            int cpus = Runtime.getRuntime().availableProcessors();
+            if (executor instanceof ThreadPool.SizedThreadPool)
             {
-                int threads = ((ThreadPool)executor).getThreads();
-                int cpus = Runtime.getRuntime().availableProcessors();
-                capacity = Math.max(1,Math.min(cpus,threads/8));
+                int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
+                capacity = Math.max(1, Math.min(cpus, threads / 8));
             }
             else
             {
-                capacity = Runtime.getRuntime().availableProcessors();
+                capacity = cpus;
             }
         }
         
