@@ -402,7 +402,7 @@ public class JettyWebAppContext extends WebAppContext
         {
             if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
                 ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-            else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
+            else if (getQuickStartWebDescriptor() != null && c instanceof MavenQuickStartConfiguration)
                 ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());
         }
 
