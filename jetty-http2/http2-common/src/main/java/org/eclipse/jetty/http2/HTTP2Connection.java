@@ -58,7 +58,6 @@ public class HTTP2Connection extends AbstractConnection
         this.session = session;
         this.bufferSize = bufferSize;
         this.strategy = new EatWhatYouKill(producer, executor.getExecutor(), executor);
-        
         LifeCycle.start(strategy);
     }
 
@@ -274,6 +273,8 @@ public class HTTP2Connection extends AbstractConnection
         @Override
         public InvocationType getInvocationType()
         {
+            // TODO: see also AbstractHTTP2ServerConnectionFactory.reservedThreads.
+            // TODO: it's non blocking here because reservedThreads=0.
             return InvocationType.NON_BLOCKING;
         }
     }
