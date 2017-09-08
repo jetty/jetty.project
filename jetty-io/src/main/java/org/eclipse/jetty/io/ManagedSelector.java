@@ -411,15 +411,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public void destroyEndPoint(final EndPoint endPoint)
     {
-        final Connection connection = endPoint.getConnection();
-        submit(() ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Destroyed {}", endPoint);
-            if (connection != null)
-                _selectorManager.connectionClosed(connection);
-            _selectorManager.endPointClosed(endPoint);
-        });
+        submit(new DestroyEndPoint(endPoint));
     }
 
     @Override
@@ -608,7 +600,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CreateEndPoint implements Runnable, Closeable
+    private class CreateEndPoint extends NonBlockingAction implements Closeable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
@@ -801,6 +793,27 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public Selector getSelector()
     {
-        return _selector;        
+        return _selector;
+    }
+
+    private class DestroyEndPoint extends NonBlockingAction
+    {
+        private final EndPoint endPoint;
+
+        public DestroyEndPoint(EndPoint endPoint)
+        {
+            this.endPoint = endPoint;
+        }
+
+        @Override
+        public void run()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Destroyed {}", endPoint);
+            Connection connection = endPoint.getConnection();
+            if (connection != null)
+                _selectorManager.connectionClosed(connection);
+            _selectorManager.endPointClosed(endPoint);
+        }
     }
 }
