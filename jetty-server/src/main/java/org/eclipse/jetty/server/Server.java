@@ -402,11 +402,7 @@ public class Server extends HandlerWrapper implements Attributes
                 acceptors += abstractConnector.getAcceptors();
 
                 if (connector instanceof ServerConnector)
-                {
-                    // The SelectorManager uses 2 threads for each selector,
-                    // one for the normal and one for the low priority strategies.
-                    selectors += 2 * ((ServerConnector)connector).getSelectorManager().getSelectorCount();
-                }
+                    selectors += ((ServerConnector)connector).getSelectorManager().getSelectorCount();
             }
         }
 
