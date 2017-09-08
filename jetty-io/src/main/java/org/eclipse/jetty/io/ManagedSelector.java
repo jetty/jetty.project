@@ -79,6 +79,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         setStopTimeout(5000);
     }
 
+    public Selector getSelector()
+    {
+        return _selector;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -140,6 +145,116 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             selector.wakeup();
     }
 
+    private Runnable processConnect(SelectionKey key, final Connect connect)
+    {
+        SelectableChannel channel = key.channel();
+        try
+        {
+            key.attach(connect.attachment);
+            boolean connected = _selectorManager.doFinishConnect(channel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connected {} {}", connected, channel);
+            if (connected)
+            {
+                if (connect.timeout.cancel())
+                {
+                    key.interestOps(0);
+                    return new CreateEndPoint(channel, key)
+                    {
+                        @Override
+                        protected void failed(Throwable failure)
+                        {
+                            super.failed(failure);
+                            connect.failed(failure);
+                        }
+                    };
+                }
+                else
+                {
+                    throw new SocketTimeoutException("Concurrent Connect Timeout");
+                }
+            }
+            else
+            {
+                throw new ConnectException();
+            }
+        }
+        catch (Throwable x)
+        {
+            connect.failed(x);
+            return null;
+        }
+    }
+
+    private void closeNoExceptions(Closeable closeable)
+    {
+        try
+        {
+            if (closeable != null)
+                closeable.close();
+        }
+        catch (Throwable x)
+        {
+            LOG.ignore(x);
+        }
+    }
+
+    private EndPoint createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
+    {
+        EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
+        endPoint.onOpen();
+        _selectorManager.endPointOpened(endPoint);
+        Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
+        endPoint.setConnection(connection);
+        selectionKey.attach(endPoint);
+        _selectorManager.connectionOpened(connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", endPoint);
+        return endPoint;
+    }
+
+    public void destroyEndPoint(final EndPoint endPoint)
+    {
+        submit(new DestroyEndPoint(endPoint));
+    }
+
+    @Override
+    public String dump()
+    {
+        super.dump();
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Selector selector = _selector;
+        if (selector == null || !selector.isOpen())
+            dumpBeans(out, indent);
+        else
+        {
+            final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
+            DumpKeys dumpKeys = new DumpKeys(dump);
+            submit(dumpKeys);
+            dumpKeys.await(5, TimeUnit.SECONDS);
+            if (dump.isEmpty())
+                dumpBeans(out, indent);
+            else
+                dumpBeans(out, indent, dump);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        Selector selector = _selector;
+        return String.format("%s id=%s keys=%d selected=%d",
+                super.toString(),
+                _id,
+                selector != null && selector.isOpen() ? selector.keys().size() : -1,
+                selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
+    }
+
     /**
      * A {@link Selectable} is an {@link EndPoint} that wish to be
      * notified of non-blocking events by the {@link ManagedSelector}.
@@ -160,7 +275,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          */
         void updateKey();
     }
-
 
     private class SelectorProducer implements ExecutionStrategy.Producer
     {
@@ -331,7 +445,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             return String.format("%s@%x", getClass().getSimpleName(), hashCode());
         }
     }
-    
+
     private abstract static class NonBlockingAction implements Runnable, Invocable
     {
         @Override
@@ -339,116 +453,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             return InvocationType.NON_BLOCKING;
         }
-    }
-
-    private Runnable processConnect(SelectionKey key, final Connect connect)
-    {
-        SelectableChannel channel = key.channel();
-        try
-        {
-            key.attach(connect.attachment);
-            boolean connected = _selectorManager.doFinishConnect(channel);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Connected {} {}", connected, channel);
-            if (connected)
-            {
-                if (connect.timeout.cancel())
-                {
-                    key.interestOps(0);
-                    return new CreateEndPoint(channel, key)
-                    {
-                        @Override
-                        protected void failed(Throwable failure)
-                        {
-                            super.failed(failure);
-                            connect.failed(failure);
-                        }
-                    };
-                }
-                else
-                {
-                    throw new SocketTimeoutException("Concurrent Connect Timeout");
-                }
-            }
-            else
-            {
-                throw new ConnectException();
-            }
-        }
-        catch (Throwable x)
-        {
-            connect.failed(x);
-            return null;
-        }
-    }
-
-    private void closeNoExceptions(Closeable closeable)
-    {
-        try
-        {
-            if (closeable != null)
-                closeable.close();
-        }
-        catch (Throwable x)
-        {
-            LOG.ignore(x);
-        }
-    }
-
-    private EndPoint createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
-    {
-        EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
-        endPoint.onOpen();
-        _selectorManager.endPointOpened(endPoint);
-        Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
-        endPoint.setConnection(connection);
-        selectionKey.attach(endPoint);
-        _selectorManager.connectionOpened(connection);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Created {}", endPoint);
-        return endPoint;
-    }
-
-    public void destroyEndPoint(final EndPoint endPoint)
-    {
-        submit(new DestroyEndPoint(endPoint));
-    }
-
-    @Override
-    public String dump()
-    {
-        super.dump();
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        Selector selector = _selector;
-        if (selector == null || !selector.isOpen())
-            dumpBeans(out, indent);
-        else
-        {
-            final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
-            DumpKeys dumpKeys = new DumpKeys(dump);
-            submit(dumpKeys);
-            dumpKeys.await(5, TimeUnit.SECONDS);
-            if (dump.isEmpty())
-                dumpBeans(out, indent);
-            else
-                dumpBeans(out, indent, dump);
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        Selector selector = _selector;
-        return String.format("%s id=%s keys=%d selected=%d",
-                super.toString(),
-                _id,
-                selector != null && selector.isOpen() ? selector.keys().size() : -1,
-                selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
     }
 
     private class DumpKeys implements Runnable
@@ -789,11 +793,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 return false;
             }
         }
-    }
-
-    public Selector getSelector()
-    {
-        return _selector;
     }
 
     private class DestroyEndPoint extends NonBlockingAction
