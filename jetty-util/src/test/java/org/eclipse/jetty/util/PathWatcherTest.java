@@ -31,11 +31,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.DosFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1010,5 +1009,44 @@ public class PathWatcherTest
         {
             pathWatcher.stop();
         }
+    }
+    
+    /**
+     * If a file is set to be watched then other items in the same directory as
+     * the file should not be inspected, otherwise exceptions can be thrown
+     * unrelated to what the user intended.
+     * @throws java.nio.file.AccessDeniedException
+     * @throws IOException if test file/directory creation fails
+     * @throws Exception if path watcher fails to start
+     */
+    @Test
+    public void testWatchFileOnly() throws AccessDeniedException, IOException, Exception {
+        final Path dir = testdir.getEmptyPathDir();
+        Path pdir = null;
+        try {
+            pdir = Files.createTempDirectory(dir, "private");
+            setPermissions(pdir, false, false, false);
+            final Path f = Files.createTempFile(dir, "testfile", ".conf");
+            PathWatcher pw = new PathWatcher();
+            pw.watch(f);
+            pw.start();
+        } finally {
+            setPermissions(pdir, true, true, true); //allow auto cleanup
+        }
+    }
+    
+    
+    
+    
+    
+    private Path setPermissions(final Path p, final boolean read, 
+            final boolean write, final boolean exec) {
+        if (p != null) {
+            final File f = p.toFile();
+            f.setReadable(read);
+            f.setWritable(write);
+            f.setExecutable(exec);
+        }
+        return p;
     }
 }
