@@ -21,6 +21,7 @@ package org.eclipse.jetty.jmx;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,14 +47,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 {
     private final static Logger LOG = Log.getLogger(MBeanContainer.class.getName());
     private final static ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<>();
-
-    public static void resetUnique()
-    {
-        __unique.clear();
-    }
+    private static final Container ROOT = new ContainerLifeCycle();
 
     private final MBeanServer _mbeanServer;
-    private final Map<Object, ObjectName> _beans = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Object, Container> _beans = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Object, ObjectName> _mbeans = new ConcurrentHashMap<>();
     private String _domain = null;
 
     /**
@@ -64,7 +62,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
      */
     public ObjectName findMBean(Object object)
     {
-        return _beans.get(object);
+        return _mbeans.get(object);
     }
 
     /**
@@ -75,7 +73,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
      */
     public Object findBean(ObjectName objectName)
     {
-        for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
+        for (Map.Entry<Object, ObjectName> entry : _mbeans.entrySet())
         {
             if (entry.getValue().equals(objectName))
                 return entry.getKey();
@@ -130,9 +128,19 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         if (LOG.isDebugEnabled())
             LOG.debug("beanAdded {}->{}", parent, obj);
 
+        if (obj == null)
+            return;
+
+        if (parent == null)
+            parent = ROOT;
+
+        // Is the bean already tracked ?
+        if (_beans.putIfAbsent(obj, parent) != null)
+            return;
+
         // Is there an object name for the parent ?
         ObjectName parentObjectName = null;
-        if (parent != null)
+        if (parent != ROOT)
         {
             parentObjectName = findMBean(parent);
             if (parentObjectName == null)
@@ -142,10 +150,6 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
                 parentObjectName = findMBean(parent);
             }
         }
-
-        // Does the mbean already exist ?
-        if (obj == null || _beans.containsKey(obj))
-            return;
 
         try
         {
@@ -207,7 +211,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             if (LOG.isDebugEnabled())
                 LOG.debug("Registered {}", objectName);
 
-            _beans.put(obj, objectName);
+            _mbeans.put(obj, objectName);
         }
         catch (Throwable x)
         {
@@ -219,12 +223,17 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     public void beanRemoved(Container parent, Object obj)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("beanRemoved {}", obj);
+            LOG.debug("beanRemoved {}->{}", parent, obj);
 
-        ObjectName objectName = _beans.remove(obj);
+        if (parent == null)
+            parent = ROOT;
 
-        if (objectName != null)
-            unregister(objectName);
+        if (_beans.remove(obj, parent))
+        {
+            ObjectName objectName = _mbeans.remove(obj);
+            if (objectName != null)
+                unregister(objectName);
+        }
     }
 
     /**
@@ -248,7 +257,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     public void dump(Appendable out, String indent) throws IOException
     {
         ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out, indent, _beans.entrySet());
+        ContainerLifeCycle.dump(out, indent, _mbeans.entrySet());
     }
 
     @Override
@@ -260,9 +269,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     @Override
     public void destroy()
     {
-        _beans.values().stream()
-                .filter(objectName -> objectName != null)
+        _mbeans.values().stream()
+                .filter(Objects::nonNull)
                 .forEach(this::unregister);
+        _mbeans.clear();
+        _beans.clear();
     }
 
     private void unregister(ObjectName objectName)
