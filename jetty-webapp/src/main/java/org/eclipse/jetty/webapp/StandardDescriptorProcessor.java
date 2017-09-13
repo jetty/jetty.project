@@ -1429,6 +1429,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public void visitSecurityConstraint(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
+        if (context.getSecurityHandler() == null)
+        {
+            LOG.warn("security-constraint declared but SecurityHandler==null");
+            return;
+        }
+
         Constraint scBase = new Constraint();
 
         //ServletSpec 3.0, p74 security-constraints, as minOccurs > 1, are additive
@@ -1702,6 +1708,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     public void visitSecurityRole(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
+        if (context.getSecurityHandler() == null)
+        {
+            LOG.warn("security-role declared but SecurityHandler==null");
+            return;
+        }
         //ServletSpec 3.0, p74 elements with multiplicity >1 are additive when merged
         XmlParser.Node roleNode = node.get("role-name");
         String role = roleNode.toString(false, true);
@@ -1939,6 +1950,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void visitDenyUncoveredHttpMethods(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
+        if (context.getSecurityHandler() == null)
+        {
+            LOG.warn("deny-uncovered-http-methods declared but SecurityHandler==null");
+            return;
+        }
+
         ((ConstraintAware)context.getSecurityHandler()).setDenyUncoveredHttpMethods(true);
     }
 
