@@ -24,9 +24,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
@@ -43,7 +40,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -64,12 +60,27 @@ import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * JettyRunDistro
- *
+ * 
+ * This goal is used to deploy the unassembled webapp into a jetty distribution. If the location
+ * of an existing unpacked distribution is not supplied as the configuration param jettyHome, 
+ * this goal will download and unpack the jetty distro before deploying the webapp.
+ * 
+ * The webapp will execute in the distro in a forked process.
+ * 
+ * The <b>stopKey</b>, <b>stopPort</b> configuration elements can be used to control the stopping of the forked process. By default, this plugin will launch
+ * the forked jetty instance and wait for it to complete (in which case it acts much like the <b>jetty:run</b> goal, and you will need to Cntrl-C to stop).
+ * By setting the configuration element <b>waitForChild</b> to <b>false</b>, the plugin will terminate after having forked the jetty process. In this case
+ * you can use the <b>jetty:stop</b> goal to terminate the process.
+ * 
+ * This goal does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
+ * 
+ * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
+ *  
  * @goal run-distro
  * @requiresDependencyResolution test
  * @execute phase="test-compile"
  * @description Runs unassembled webapp in a locally installed jetty distro
+ * 
  */
 public class JettyRunDistro extends JettyRunMojo
 {
@@ -173,7 +184,7 @@ public class JettyRunDistro extends JettyRunMojo
     private boolean waitForChild;
     
     /**
-     * How many times to check to see if the
+     * Max number of times to try checking if the
      * child has started successfully.
      * 
      * @parameter default-value="10"
@@ -181,8 +192,8 @@ public class JettyRunDistro extends JettyRunMojo
     private int maxChildChecks;
     
     /**
-     * How long to wait between each
-     * poll of the child startup state.
+     * Millisecs to wait between each
+     * check to see if the child started successfully.
      * 
      * @parameter default-value="100"
      */
@@ -197,10 +208,6 @@ public class JettyRunDistro extends JettyRunMojo
     private Path tokenFile;
     
     
-    // IDEAS:
-    // 5. try to use the scanner as normal and remake the properties and context.xml file to get the
-    //    deployer to automatically redeploy it on changes.
-
     /** 
      * @see org.eclipse.jetty.maven.plugin.JettyRunMojo#execute()
      */

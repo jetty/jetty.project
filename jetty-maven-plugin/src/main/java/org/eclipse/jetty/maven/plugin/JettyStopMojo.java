@@ -30,10 +30,10 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 
 /**
- * JettyStopMojo - stops a running instance of jetty.
- * The ff are required:
- * -DstopKey=someKey
- * -DstopPort=somePort
+ * This goal stops a running instance of jetty.
+ * 
+ * The <b>stopPort</b> and <b>stopKey</b> parameters can be used to
+ * configure which jetty to stop.
  * 
  * @goal stop
  * @description Stops jetty that is configured with &lt;stopKey&gt; and &lt;stopPort&gt;.

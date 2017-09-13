@@ -30,7 +30,12 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
- * JettyEffectiveWebXml
+ * This goal runs the jetty quickstart feature on an unassembled webapp in order to generate
+ * a comprehensive web.xml that combines all information from annotations, webdefault.xml and all web-fragment.xml
+ * files. By default, the web.xml is generated to the console output only. Use the <b>effectiveWebXml</b> parameter
+ * to provide a file name into which to save the output.
+ * 
+ * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  *
  * @goal effective-web-xml
  * @requiresDependencyResolution test
