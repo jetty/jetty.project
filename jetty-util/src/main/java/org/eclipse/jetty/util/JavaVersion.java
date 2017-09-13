@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.start;
+package org.eclipse.jetty.util;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,11 +27,13 @@ import java.util.regex.Pattern;
  */
 public class JavaVersion
 {
-    // Copy of code in jetty-util
+    // Copy of version in jetty-start
 
     private static final Pattern PRE_JDK9 = Pattern.compile("1\\.(\\d)(\\.(\\d+)(_(\\d+))?)?(-.+)?");
     // Regexp from JEP 223 (http://openjdk.java.net/jeps/223).
     private static final Pattern JDK9 = Pattern.compile("(\\d+)(\\.(\\d+))?(\\.(\\d+))?((-.+)?(\\+(\\d+)?(-.+)?)?)");
+
+    public static final JavaVersion VERSION = parse(System.getProperty("java.version"));
 
     public static JavaVersion parse(String version)
     {
@@ -155,5 +157,10 @@ public class JavaVersion
     public String getSuffix()
     {
         return suffix;
+    }
+
+    public String toString()
+    {
+        return version;
     }
 }
