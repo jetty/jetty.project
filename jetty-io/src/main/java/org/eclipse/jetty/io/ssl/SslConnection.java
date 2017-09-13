@@ -1168,7 +1168,7 @@ public class SslConnection extends AbstractConnection
         @Override
         public boolean isInputShutdown()
         {
-            return _sslEngine.isInboundDone();
+            return getEndPoint().isInputShutdown() || _sslEngine.isInboundDone();
         }
 
         private void notifyHandshakeSucceeded(SSLEngine sslEngine)
