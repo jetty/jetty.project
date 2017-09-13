@@ -19,26 +19,30 @@
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.eclipse.jetty.toolchain.test.JDK;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 
 public class ClusteredLastAccessTimeTest extends AbstractClusteredLastAccessTimeTest
 { 
-   public static InfinispanTestSupport __testSupport;
-   
-    
+    public static InfinispanTestSupport __testSupport;
+
     @BeforeClass
     public static void setup () throws Exception
     {
-       __testSupport = new InfinispanTestSupport();
-       __testSupport.setUseFileStore(true);
-       __testSupport.setup();
+        Assume.assumeFalse(JDK.IS_9);
+
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setUseFileStore(true);
+        __testSupport.setup();
     }
     
     @AfterClass
     public static void teardown () throws Exception
     {
-       __testSupport.teardown();
+        if (__testSupport != null)
+            __testSupport.teardown();
     }
 
 
@@ -58,5 +62,4 @@ public class ClusteredLastAccessTimeTest extends AbstractClusteredLastAccessTime
         factory.setCache(__testSupport.getCache());
         return factory;
     }
-    
 }
