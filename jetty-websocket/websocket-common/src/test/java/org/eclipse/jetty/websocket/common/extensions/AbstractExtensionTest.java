@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -28,9 +29,8 @@ public abstract class AbstractExtensionTest
 {
     @Rule
     public TestName testname = new TestName();
-    
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+
+    public ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     protected ExtensionTool clientExtensions;
     protected ExtensionTool serverExtensions;

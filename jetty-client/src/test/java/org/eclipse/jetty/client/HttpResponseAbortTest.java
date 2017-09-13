@@ -29,9 +29,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -53,22 +51,11 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseBegin(new Response.BeginListener()
+                .onResponseBegin(response -> response.abort(new Exception()))
+                .send(result ->
                 {
-                    @Override
-                    public void onBegin(Response response)
-                    {
-                        response.abort(new Exception());
-                    }
-                })
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        latch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    latch.countDown();
                 });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -81,23 +68,15 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseHeader(new Response.HeaderListener()
+                .onResponseHeader((response, field) ->
                 {
-                    @Override
-                    public boolean onHeader(Response response, HttpField field)
-                    {
-                        response.abort(new Exception());
-                        return true;
-                    }
+                    response.abort(new Exception());
+                    return true;
                 })
-                .send(new Response.CompleteListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        latch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    latch.countDown();
                 });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -110,23 +89,11 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseHeaders(new Response.HeadersListener()
+                .onResponseHeaders(response -> response.abort(new Exception()))
+                .send(result ->
                 {
-                    @Override
-                    public void onHeaders(Response response)
-                    {
-                        response.abort(new Exception());
-                    }
-                })
-                .send(new Response.CompleteListener()
-                {
-
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        latch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    latch.countDown();
                 });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -158,22 +125,11 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         final CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onResponseContent(new Response.ContentListener()
+                .onResponseContent((response, content) -> response.abort(new Exception()))
+                .send(result ->
                 {
-                    @Override
-                    public void onContent(Response response, ByteBuffer content)
-                    {
-                        response.abort(new Exception());
-                    }
-                })
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        Assert.assertTrue(result.isFailed());
-                        latch.countDown();
-                    }
+                    Assert.assertTrue(result.isFailed());
+                    latch.countDown();
                 });
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -202,53 +158,31 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        final CountDownLatch abortLatch = new CountDownLatch(1);
+        final DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
         final AtomicInteger completes = new AtomicInteger();
         final CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
-                .onRequestSuccess(new org.eclipse.jetty.client.api.Request.SuccessListener()
+                .content(contentProvider)
+                .onResponseContent((response, content) ->
                 {
-                    @Override
-                    public void onSuccess(org.eclipse.jetty.client.api.Request request)
+                    try
                     {
-                        try
-                        {
-                            abortLatch.await(5, TimeUnit.SECONDS);
-                        }
-                        catch (InterruptedException x)
-                        {
-                            x.printStackTrace();
-                        }
+                        response.abort(new Exception());
+                        contentProvider.close();
+                        // Delay to let the request side to finish its processing.
+                        Thread.sleep(1000);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        x.printStackTrace();
                     }
                 })
-                .onResponseContent(new Response.ContentListener()
+                .send(result ->
                 {
-                    @Override
-                    public void onContent(Response response, ByteBuffer content)
-                    {
-                        try
-                        {
-                            response.abort(new Exception());
-                            abortLatch.countDown();
-                            // Delay to let the request side to finish its processing.
-                            Thread.sleep(1000);
-                        }
-                        catch (InterruptedException x)
-                        {
-                            x.printStackTrace();
-                        }
-                    }
-                })
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        completes.incrementAndGet();
-                        Assert.assertTrue(result.isFailed());
-                        completeLatch.countDown();
-                    }
+                    completes.incrementAndGet();
+                    Assert.assertTrue(result.isFailed());
+                    completeLatch.countDown();
                 });
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 

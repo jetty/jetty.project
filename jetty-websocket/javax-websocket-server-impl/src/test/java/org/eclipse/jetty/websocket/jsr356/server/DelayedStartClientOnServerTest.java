@@ -380,10 +380,6 @@ public class DelayedStartClientOnServerTest
                 QueuedThreadPool qtp = (QueuedThreadPool) executor;
                 threadNames.add(qtp.getName());
             }
-            else
-            {
-                System.err.println("### Executor: " + executor);
-            }
         }
         
         for (ContainerLifeCycle child : container.getBeans(ContainerLifeCycle.class))

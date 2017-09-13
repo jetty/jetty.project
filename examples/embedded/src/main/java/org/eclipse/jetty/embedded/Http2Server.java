@@ -122,7 +122,6 @@ public class Http2Server
         ALPN.debug=false;
 
         server.start();
-        //server.dumpStdErr();
         server.join();
     }
 

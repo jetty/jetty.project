@@ -21,7 +21,9 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 
@@ -31,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -627,5 +630,69 @@ public class HttpFieldsTest
         assertFalse(header.contains(HttpHeader.AGE,"abc"));
 
         assertFalse(header.containsKey("n11"));
+    }
+    
+
+    @Test
+    public void testIteration() throws Exception
+    {
+        HttpFields header = new HttpFields();
+        Iterator<HttpField> i = header.iterator();
+        assertThat(i.hasNext(),is(false));
+
+        header.put("name1", "valueA");
+        header.put("name2", "valueB");
+        header.add("name3", "valueC");
+
+        i = header.iterator();
+        assertThat(i.hasNext(),is(true));
+        assertThat(i.next().getName(),is("name1"));
+        assertThat(i.next().getName(),is("name2"));
+        i.remove();
+        assertThat(i.next().getName(),is("name3"));
+        assertThat(i.hasNext(),is(false));
+        
+        i = header.iterator();
+        assertThat(i.hasNext(),is(true));
+        assertThat(i.next().getName(),is("name1"));
+        assertThat(i.next().getName(),is("name3"));
+        assertThat(i.hasNext(),is(false));
+        
+        
+        ListIterator<HttpField> l = header.listIterator();
+        assertThat(l.hasNext(),is(true));
+        l.add(new HttpField("name0","value"));
+        assertThat(l.hasNext(),is(true));
+        assertThat(l.next().getName(),is("name1"));
+        l.set(new HttpField("NAME1","value"));
+        assertThat(l.hasNext(),is(true));
+        assertThat(l.hasPrevious(),is(true));
+        assertThat(l.previous().getName(),is("NAME1"));
+        assertThat(l.hasNext(),is(true));
+        assertThat(l.hasPrevious(),is(true));
+        assertThat(l.previous().getName(),is("name0"));
+        assertThat(l.hasNext(),is(true));
+        assertThat(l.hasPrevious(),is(false));
+        assertThat(l.next().getName(),is("name0"));
+        assertThat(l.hasNext(),is(true));
+        assertThat(l.hasPrevious(),is(true));
+        assertThat(l.next().getName(),is("NAME1"));
+        l.add(new HttpField("name2","value"));
+        assertThat(l.next().getName(),is("name3"));
+        assertThat(l.hasNext(),is(false));
+        assertThat(l.hasPrevious(),is(true));
+        l.add(new HttpField("name4","value"));
+        assertThat(l.hasNext(),is(false));
+        assertThat(l.hasPrevious(),is(true));
+        assertThat(l.previous().getName(),is("name4"));
+        
+        i = header.iterator();
+        assertThat(i.hasNext(),is(true));
+        assertThat(i.next().getName(),is("name0"));
+        assertThat(i.next().getName(),is("NAME1"));
+        assertThat(i.next().getName(),is("name2"));
+        assertThat(i.next().getName(),is("name3"));
+        assertThat(i.next().getName(),is("name4"));
+        assertThat(i.hasNext(),is(false));
     }
 }

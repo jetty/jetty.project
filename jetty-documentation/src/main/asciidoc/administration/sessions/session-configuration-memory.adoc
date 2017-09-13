@@ -16,21 +16,16 @@
 
 [[configuring-sessions-memory]]
 
-=== Non-Clustered Session Management: Memory
+=== Non-Persistent Sessions
 
-Non-clustered, in-memory-only is the default style of Session Management.
-In previous versions of Jetty this was referred to as "hash" sessions, as they were stored in a `HashMap` in  memory.
-When using the Jetty distribution, if you do not configure any session module, this will be enabled by default.
+Non-clustered, non-persistent, in-memory-only is the default style of session management.
+In previous versions of Jetty this was referred to as "hash" sessions, as they were stored in a `HashMap` in memory.
 
-Specifically, Jetty will hook up:
+This is delivered by a combination of the `DefaultSessionCache` (to keep sessions in memory) and a `NullSessionDataStore` (to avoid session persistence).
 
-A `DefaultSessionIdManager`::
-* Produces unique session ids and supports cross-context dispatch re-use of session ids
-A `HouseKeeper`::
-* Scavenges for expired sessions every 10 mins
-A `DefaultSessionCache` per context::
-* Keeps session objects in memory
-A `NullSessionDataStore` per context::
-* No persistence of sessions
+If you do nothing, Jetty will instantiate one of each of these objects for each context at startup time using hard-coded defaults.
 
-If you wish to change any of the default configuration, enable the `session-cache-hash` module.
+To explicitly set up non-persisted sessions using modules, use both the `session-cache-hash` and the `session-store-null` modules.
+
+Enabling the modules allows you to configure behavior - see link:#session-configuration-sessioncache[the L1 Session Cache] for detailed information on configuration options for the `DefaultSessionCache`.
+The `NullSessionDataStore` has no customizable options.

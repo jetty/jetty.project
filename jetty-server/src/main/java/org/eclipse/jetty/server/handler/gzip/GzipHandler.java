@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.zip.Deflater;
 
@@ -495,22 +496,27 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
         
         // Special handling for etags
-        String etag = baseRequest.getHttpFields().get(HttpHeader.IF_NONE_MATCH); 
-        if (etag!=null)
+        for (ListIterator<HttpField> fields = baseRequest.getHttpFields().listIterator(); fields.hasNext();)
         {
-            int i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
-            if (i>0)
+            HttpField field = fields.next();
+            if (field.getHeader()==HttpHeader.IF_NONE_MATCH || field.getHeader()==HttpHeader.IF_MATCH)
             {
-                baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag",etag);
-                while (i>=0)
+                String etag = field.getValue();
+                int i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
+                if (i>0)
                 {
-                    etag=etag.substring(0,i)+etag.substring(i+CompressedContentFormat.GZIP._etag.length());
-                    i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote,i);
-                }
-                baseRequest.getHttpFields().put(new HttpField(HttpHeader.IF_NONE_MATCH,etag));
+                    baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag",etag);
+                    while (i>=0)
+                    {
+                        etag=etag.substring(0,i)+etag.substring(i+CompressedContentFormat.GZIP._etag.length());
+                        i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote,i);
+                    }
+                    
+                    fields.set(new HttpField(field.getHeader(),etag));
+                }   
             }
         }
-
+      
         HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
         try
         {

@@ -1265,7 +1265,7 @@ public class SessionHandler extends ScopedHandler
         Set<String> candidates = new HashSet<String>(Arrays.asList(ss));
         _candidateSessionIdsForExpiry.removeAll(candidates);
         if (LOG.isDebugEnabled())
-            LOG.debug("Scavenging session ids {}", candidates);
+            LOG.debug("{} scavenging session ids {}", this, candidates);
         try
         {
             candidates = _sessionCache.checkExpiration(candidates);

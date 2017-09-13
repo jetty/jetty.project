@@ -15,7 +15,8 @@
 //  ========================================================================
 
 [[configuring-sessions-gcloud]]
-=== Clustered Session Management: Google Cloud DataStore
+
+=== Persistent Sessions: Google Cloud DataStore
 
 ==== Preparation
 

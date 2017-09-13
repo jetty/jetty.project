@@ -24,4 +24,4 @@ session-data-cache=xmemcached
 #jetty.session.memcached.host=localhost
 #jetty.session.memcached.port=11211
 #jetty.session.memcached.expirySec=
-
+#jetty.session.memcached.heartbeats=true

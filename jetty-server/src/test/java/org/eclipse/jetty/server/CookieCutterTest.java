@@ -142,7 +142,7 @@ public class CookieCutterTest
      * Example from RFC2965
      */
     @Test
-    @Ignore("comma separation no longer supported by RFC6265")
+    @Ignore("comma separation no longer supported by new RFC6265")
     public void testRFC2965_CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +

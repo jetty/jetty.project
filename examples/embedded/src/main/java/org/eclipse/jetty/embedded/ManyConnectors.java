@@ -20,6 +20,8 @@ package org.eclipse.jetty.embedded;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.security.Provider;
+import java.security.Security;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
@@ -37,7 +39,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class ManyConnectors
 {
     public static void main( String[] args ) throws Exception
-    {
+    {        
         // Since this example shows off SSL configuration, we need a keystore
         // with the appropriate key. These lookup of jetty.home is purely a hack
         // to get access to a keystore that we use in many unit tests and should
@@ -84,6 +86,9 @@ public class ManyConnectors
         // to know about. Much more configuration is available the ssl context,
         // including things like choosing the particular certificate out of a
         // keystore to be used.
+        
+        Security.addProvider((Provider)ClassLoader.getSystemClassLoader().loadClass("org.conscrypt.OpenSSLProvider").newInstance());
+        
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
@@ -126,6 +131,7 @@ public class ManyConnectors
 
         // Start the server
         server.start();
+        
         server.join();
     }
 }

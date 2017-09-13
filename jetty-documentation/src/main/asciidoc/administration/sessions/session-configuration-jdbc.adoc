@@ -16,7 +16,7 @@
 
 [[configuring-sessions-jdbc]]
 
-=== Clustered Session Management: JDBC
+=== Persistent Sessions: JDBC
 
 ==== Enabling JDBC Sessions
 

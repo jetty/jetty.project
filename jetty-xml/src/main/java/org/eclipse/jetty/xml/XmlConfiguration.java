@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -531,6 +532,8 @@ public class XmlConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("XML " + (obj != null?obj.toString():oClass.getName()) + "." + name + "(" + value + ")");
 
+            MultiException me = new MultiException();
+            
             // Try for trivial match
             try
             {
@@ -541,6 +544,7 @@ public class XmlConfiguration
             catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
             {
                 LOG.ignore(e);
+                me.add(e);
             }
 
             // Try for native match
@@ -555,6 +559,7 @@ public class XmlConfiguration
             catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
             {
                 LOG.ignore(e);
+                me.add(e);
             }
 
             // Try a field
@@ -570,11 +575,13 @@ public class XmlConfiguration
             catch (NoSuchFieldException e)
             {
                 LOG.ignore(e);
+                me.add(e);
             }
 
             // Search for a match by trying all the set methods
             Method[] sets = oClass.getMethods();
             Method set = null;
+            String types = null;
             for (int s = 0; sets != null && s < sets.length; s++)
             {
                 if (sets[s].getParameterCount()!=1)
@@ -582,6 +589,7 @@ public class XmlConfiguration
                 Class<?>[] paramTypes = sets[s].getParameterTypes();
                 if (name.equals(sets[s].getName()))
                 {
+                    types = types==null?paramTypes[0].getName():(types+","+paramTypes[0].getName());
                     // lets try it
                     try
                     {
@@ -592,6 +600,7 @@ public class XmlConfiguration
                     catch (IllegalArgumentException | IllegalAccessException e)
                     {
                         LOG.ignore(e);
+                        me.add(e);
                     }
 
                     try
@@ -606,6 +615,7 @@ public class XmlConfiguration
                     catch (IllegalAccessException e)
                     {
                         LOG.ignore(e);
+                        me.add(e);
                     }
                 }
             }
@@ -636,11 +646,21 @@ public class XmlConfiguration
                 catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
                 {
                     LOG.ignore(e);
+                    me.add(e);
                 }
             }
 
             // No Joy
-            throw new NoSuchMethodException(oClass + "." + name + "(" + vClass[0] + ")");
+            String message = oClass + "." + name + "(" + vClass[0] + ")";
+            if (types!=null)
+                message += ". Found setters for "+types;
+            throw new NoSuchMethodException(message)
+            {
+                {
+                    for (int i=0; i<me.size(); i++)
+                        addSuppressed(me.getThrowable(i));
+                }
+            };
         }
 
         /**

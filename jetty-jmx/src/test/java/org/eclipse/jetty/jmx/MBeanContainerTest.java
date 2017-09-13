@@ -200,8 +200,8 @@ public class MBeanContainerTest
         setUpDestroy();
 
         // when
-        mbeanContainer.destroy();
         objectName = mbeanContainer.findMBean(managed);
+        mbeanContainer.destroy();
 
         // then
         Assert.assertFalse("Unregistered bean - managed", mbeanContainer.getMBeanServer().isRegistered(objectName));
@@ -212,9 +212,9 @@ public class MBeanContainerTest
     {
         // given
         setUpDestroy();
-        objectName = mbeanContainer.findMBean(managed);
 
         // when
+        objectName = mbeanContainer.findMBean(managed);
         mbeanContainer.getMBeanServer().unregisterMBean(objectName);
 
         // then
@@ -223,5 +223,35 @@ public class MBeanContainerTest
         // the exception. i.e Actual code just printing the stacktrace, whenever
         // an exception of type InstanceNotFoundException occurs.
         mbeanContainer.destroy();
+    }
+
+    @Test
+    public void testNonManagedLifecycleNotUnregistered() throws Exception
+    {
+        testNonManagedObjectNotUnregistered(new ContainerLifeCycle());
+    }
+
+    @Test
+    public void testNonManagedPojoNotUnregistered() throws Exception
+    {
+        testNonManagedObjectNotUnregistered(new Object());
+    }
+
+    private void testNonManagedObjectNotUnregistered(Object lifeCycle) throws Exception
+    {
+        ContainerLifeCycle parent = new ContainerLifeCycle();
+        parent.addBean(mbeanContainer);
+
+        ContainerLifeCycle child = new ContainerLifeCycle();
+        parent.addBean(child);
+
+        parent.addBean(lifeCycle, true);
+        child.addBean(lifeCycle, false);
+
+        parent.start();
+
+        parent.removeBean(child);
+
+        Assert.assertNotNull(mbeanContainer.findMBean(lifeCycle));
     }
 }

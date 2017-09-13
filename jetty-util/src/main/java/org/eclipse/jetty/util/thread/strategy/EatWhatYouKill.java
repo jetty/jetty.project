@@ -21,7 +21,11 @@ package org.eclipse.jetty.util.thread.strategy;
 import java.io.Closeable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -57,6 +61,7 @@ import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
  * sub-strategy is called ProduceExecuteConsume (PEC).
  * </p>
  */
+@ManagedObject("eat what you kill execution strategy")
 public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(EatWhatYouKill.class);
@@ -64,19 +69,22 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private enum State { IDLE, PRODUCING, REPRODUCING }
     
     private final Locker _locker = new Locker();
-    private State _state = State.IDLE;
+    private final LongAdder _nonBlocking = new LongAdder();
+    private final LongAdder _blocking = new LongAdder();
+    private final LongAdder _executed = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
     private final ReservedThreadExecutor _producers;
+    private State _state = State.IDLE;
 
     public EatWhatYouKill(Producer producer, Executor executor)
     {
         this(producer,executor,new ReservedThreadExecutor(executor,1));
     }
 
-    public EatWhatYouKill(Producer producer, Executor executor, int maxProducersPending)
+    public EatWhatYouKill(Producer producer, Executor executor, int maxReserved)
     {
-        this(producer,executor,new ReservedThreadExecutor(executor,maxProducersPending));
+        this(producer,executor,new ReservedThreadExecutor(executor,maxReserved));
     }
         
     public EatWhatYouKill(Producer producer, Executor executor, ReservedThreadExecutor producers)
@@ -184,7 +192,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 {
                     // Could another one just have been queued with a produce call?
                     if (_state==State.REPRODUCING)
+                    {
                         _state = State.PRODUCING;
+                    }
                     else
                     {
                         if (LOG.isDebugEnabled())
@@ -194,36 +204,42 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     }
                 }
             }
-            else if (Invocable.getInvocationType(task)==InvocationType.NON_BLOCKING)
-            {
-                // PRODUCE CONSUME (EWYK!)
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} PC t={}",this,task);
-                task.run();
-            }
             else
             {
                 boolean consume;
-                try (Lock locked = _locker.lock())
+                if (Invocable.getInvocationType(task) == InvocationType.NON_BLOCKING)
                 {
-                    if (_producers.tryExecute(this))
+                    // PRODUCE CONSUME (EWYK!)
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} PC t={}", this, task);
+                    consume = true;
+                    _nonBlocking.increment();
+                }
+                else
+                {
+                    try (Lock locked = _locker.lock())
                     {
-                        // EXECUTE PRODUCE CONSUME!
-                        // We have executed a new Producer, so we can EWYK consume
-                        _state = State.IDLE;
-                        producing = false;
-                        consume = true;
+                        if (_producers.tryExecute(this))
+                        {
+                            // EXECUTE PRODUCE CONSUME!
+                            // We have executed a new Producer, so we can EWYK consume
+                            _state = State.IDLE;
+                            producing = false;
+                            consume = true;
+                            _blocking.increment();
+                        }
+                        else
+                        {
+                            // PRODUCE EXECUTE CONSUME!
+                            consume = false;
+                            _executed.increment();
+                        }
                     }
-                    else
-                    {
-                        // PRODUCE EXECUTE CONSUME!
-                        consume = false;
-                    }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} {} t={}", this, consume ? "EPC" : "PEC", task);
                 }
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} {} t={}",this,consume?"EPC":"PEC",task);
-                
                 // Consume or execute task
                 try
                 {
@@ -232,7 +248,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     else
                         _executor.execute(task);
                 }
-                catch(RejectedExecutionException e)
+                catch (RejectedExecutionException e)
                 {
                     LOG.warn(e);
                     if (task instanceof Closeable)
@@ -241,13 +257,13 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         {
                             ((Closeable)task).close();
                         }
-                        catch(Throwable e2)
+                        catch (Throwable e2)
                         {
                             LOG.ignore(e2);
                         }
                     }
                 }
-                catch(Throwable e)
+                catch (Throwable e)
                 {
                     LOG.warn(e);
                 }
@@ -257,12 +273,39 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         return producing;
     }
 
-    public Boolean isIdle()
+    @ManagedAttribute(value = "number of non blocking tasks consumed", readonly = true)
+    public long getNonBlockingTasksConsumed()
+    {
+        return _nonBlocking.longValue();
+    }
+
+    @ManagedAttribute(value = "number of blocking tasks consumed", readonly = true)
+    public long getBlockingTasksConsumed()
+    {
+        return _blocking.longValue();
+    }
+
+    @ManagedAttribute(value = "number of blocking tasks executed", readonly = true)
+    public long getBlockingTasksExecuted()
+    {
+        return _executed.longValue();
+    }
+
+    @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
+    public boolean isIdle()
     {
         try (Lock locked = _locker.lock())
         {
             return _state==State.IDLE;
         }
+    }
+
+    @ManagedOperation(value = "resets the task counts", impact = "ACTION")
+    public void reset()
+    {
+        _nonBlocking.reset();
+        _blocking.reset();
+        _executed.reset();
     }
 
     public String toString()
