@@ -122,7 +122,7 @@ public class HttpClient extends ContainerLifeCycle
     private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
     private final SslContextFactory sslContextFactory;
-    private AuthenticationStore authenticationStore;
+    private AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private CookieManager cookieManager;
     private CookieStore cookieStore;
     private Executor executor;
@@ -226,9 +226,6 @@ public class HttpClient extends ContainerLifeCycle
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
 
         decoderFactories.add(new GZIPContentDecoder.Factory(byteBufferPool));
-
-        if (authenticationStore == null)
-            authenticationStore = new HttpAuthenticationStore();
 
         cookieManager = newCookieManager();
         cookieStore = cookieManager.getCookieStore();
