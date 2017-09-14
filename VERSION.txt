@@ -1,4 +1,98 @@
-jetty-9.4.7-SNAPSHOT
+jetty-9.4.7.v20170914 - 14 September 2017
+ + 215 Consider native ALPN/SSL provider
+ + 487 JDK 9 build compatibility
+ + 1116 Support empty HTTP header values
+ + 1200 Use PathWatcher in DeploymentManager
+ + 1357 RolloverFileOutputStream: No rollout performed at midnight
+ + 1416 GzipHandler generated ETag suffix has problems with If-Match header
+   logic
+ + 1468 Configure PKIX Revocation Checker for SslContextFactory
+ + 1469 RolloverFileOutputStream: IllegalStateException Task already scheduled
+ + 1498 Add JRTResource to support future Java 9 classloader behaviors
+ + 1499 ClasspathPattern needs MODULE ruleset to support future Java 9
+   classloader behaviors
+ + 1503 IPv6 address needs normalization (without brackets) in
+   ForwardedRequestCustomizer
+ + 1507 RolloverFileOutputStream: Negative delay Timer.schedule exception
+ + 1513 RolloverFileOutputStream: can't handle multiple instances
+ + 1515 Improved RollOverFileOutputStream removeOldFiles() behavior
+ + 1520 PropertyUserStore should extract packed config file
+ + 1556 Remove a timing channel in Password matching
+ + 1571 Support Hazelcast session management in 9.4
+ + 1590 Improve RolloverFileOutputStream functionality with multiple TimeZones
+ + 1591 JDBCSessionDataStore doesn't work with root context on Oracle DB
+ + 1592 CompressedContentFormat.tagEquals() - incorrect comparison of entity
+   tag hashes
+ + 1595 HTTP/2: Avoid sending unnecessary stream WINDOW_UPDATE frames
+ + 1600 Update jndi.mod and plus.mod
+ + 1603 WebSocketServerFactory NPE in toString()
+ + 1604 WebSocketContainer stop needs improvement
+ + 1605 ContainerProvider.getWebSocketContainer() behavior is not to spec
+ + 1618 AsyncContext.dispatch() does not use raw/encoded URI
+ + 1622 HeaderFilter doesn't work if the response has been committed
+ + 1623 JettyRunMojo use dependencies from reactor (outputdirectory)
+ + 1625 Support new IANA declared Websocket Close Status Codes
+ + 1637 Thread per connection retained in HTTP/2
+ + 1638 Add it test for Maven Plugin
+ + 1642 Using RewriteHandler with AsyncContext.dispatch() and
+   HttpServletRequestWrapper not possible
+ + 1643 ProxyServlet always uses default number of selector threads -
+   constructor should allow to overwrite the default.
+ + 1645 NotSerializableException: DoSFilter when using Non-Clustered Session
+   Management: File System
+ + 1655 Improve extensibility of ServerConnector
+ + 1656 Improve configurability of ConnectionPools
+ + 1661 AbstractProxyServlet onProxyResponseFailure Error
+ + 1662 NPE with WebSocket Compress Extensions
+ + 1664 IPAccessHandler CIDR IP range check is incorrect
+ + 1671 Asymmetric usage of trailers in MetaData.Request
+ + 1675 Session id should not be logged with INFO level in AbstractSessionCache
+ + 1679 DeploymentManagerMBean not usable through JMX
+ + 1682 Jetty-WarFragmentFolderPath directive has no effect in eclipse runtime
+   mode except for the first launch
+ + 1685 Update ALPN support for Java 8u141
+ + 1687 HTTP2: Correcting missing callback notification when channel not found
+ + 1692 Annotation scanning should ignore `module-info.class` files
+ + 1698 Missing WWW-Authenticate from SpnegoAuthenticator when other
+   Authorization header provided
+ + 1702 Update ALPN support for Java 8u144
+ + 1703 Improve HttpInput failure logging
+ + 1706 Log Implementation ignored when executing under OSGi
+ + 1709 SpnegoAuthenticator improperly handling case-insensitive Negotiate
+   header
+ + 1713 Do not over allocate selectors for small thread pools
+ + 1715 Standardise properties and ids in jetty XML files
+ + 1717 DoSFilter getRateTracker IP/Port loadId minor improvement
+ + 1718 QueuedThreadPool not exposed on JMX
+ + 1719 HTTP/2: Improve handling of queued requests
+ + 1721 Async I/O POST fails with big files
+ + 1724 Add dependency on jetty-annotations for apache-jsp
+ + 1732 Allow pause accepting new connections during high load
+ + 1737 DefaultServlet wrong welcome dispatcher using non-root URL path
+ + 1738 jetty-bom fails oss.sonatype.org validation
+ + 1741 Java 9 javadoc failure in build
+ + 1749 Dump HttpDestination exchange queue
+ + 1750 PoolingHttpDestination creates ConnectionPool twice
+ + 1759 HTTP/2: producer can block in onReset
+ + 1766 JettyClientContainerProvider does not actually use common objects
+   correctly
+ + 1789 PropertyUserStoreTest failures in Windows
+ + 1790 HTTP/2: 100% CPU usage seen during close/shutdown of endpoint
+ + 1792 Accept ISO-8859-1 characters in response reason
+ + 1794 Config properties typos in session-store-cache.mod
+ + 1795 Fix session id manager workerName
+ + 1796 ReservedThreadExecutor defaulting to capacity=1 only
+ + 1797 JEP 238 - Multi-Release JAR files break bytecode scanning
+ + 1798 JMXify EatWhatYouKill
+ + 1804 Make EndPoint creation and destroy a non-blocking task
+ + 1805 ReservedThreadExecutor should start ReservedThreads lazily
+ + 1809 NPE: StandardDescriptorProcessor.visitSecurityConstraint() with null/no
+   security manager
+ + 1814 Move JavaVersion to jetty-util for future Java 9 support requirements
+ + 1816 HttpClientTest.testClientCannotValidateServerCertificate() hangs with
+   JDK 9
+ + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy
+   with CONNECT
 
 jetty-9.4.6.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
