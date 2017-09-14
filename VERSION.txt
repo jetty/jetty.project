@@ -1,3 +1,5 @@
+jetty-9.4.8-SNAPSHOT
+
 jetty-9.4.7.v20170914 - 14 September 2017
  + 215 Consider native ALPN/SSL provider
  + 487 JDK 9 build compatibility
