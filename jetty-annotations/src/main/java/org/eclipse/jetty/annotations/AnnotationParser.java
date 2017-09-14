@@ -24,9 +24,14 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
@@ -69,10 +74,9 @@ public class AnnotationParser
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
     private static final int JVM_MAJOR_VER;
-
-    protected Set<String> _parsedClassNames = ConcurrentHashMap.newKeySet();
-    
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM5; //compatibility of api
+    
+    protected Map<String, List<String>> _parsedClassNames = new ConcurrentHashMap<>();
 
     static
     {
@@ -92,7 +96,8 @@ public class AnnotationParser
             JVM_MAJOR_VER = Integer.parseInt(jvmSpecVer);
         }
     }
-
+    
+  
     /**
      * Convert internal name to simple name
      * 
@@ -489,9 +494,6 @@ public class AnnotationParser
                            final String[] interfaces)
         {           
             _ci = new ClassInfo(_containingResource, normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
-            
-            _parsedClassNames.add(_ci.getClassName());                 
-
             for (Handler h:_handlers)
                h.handle(_ci);
         }
@@ -545,19 +547,45 @@ public class AnnotationParser
         }
     }
 
+    
+    /**
+     * Add a class as having been parsed.
+     * 
+     * @param classname the name of the class
+     * @param location the fully qualified location of the class
+     */
+    public void addParsedClass (String classname, Resource location)
+    {
+        List<String> list = new ArrayList<>(1);
+        if (location != null)
+            list.add(location.toString());
+
+        List<String> existing = _parsedClassNames.putIfAbsent(classname, list);
+        if (existing != null)
+        {
+            existing.addAll(list);
+            LOG.warn("{} scanned from multiple locations: {}", classname, existing);
+        }
+    }
+ 
+    
  
 
     /**
-     * True if the class has already been processed, false otherwise
-     * @param className the classname
-     * @return true if class was parsed, false if not
+     * Get the locations of the given classname. There may be more than one
+     * location if there are duplicates of the same class.
+     * 
+     * @param classname the name of the class
+     * @return an immutable list of locations
      */
-    public boolean isParsed (String className)
+    public List<String> getParsedLocations (String classname)
     {
-        return _parsedClassNames.contains(className);
+        List<String> list = _parsedClassNames.get(classname);
+        if (list == null)
+            return Collections.emptyList();
+        return Collections.unmodifiableList(list);
     }
 
-    
     
     /**
      * Parse a given class
@@ -567,27 +595,26 @@ public class AnnotationParser
      * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, String className)
-    throws Exception
+            throws Exception
     {
         if (className == null)
             return;
 
-        if (!isParsed(className))
+        String tmp = className;
+        className = className.replace('.', '/')+".class";
+        URL resource = Loader.getResource(className);
+        if (resource!= null)
         {
-            className = className.replace('.', '/')+".class";
-            URL resource = Loader.getResource(className);
-            if (resource!= null)
+            Resource r = Resource.newResource(resource);
+            addParsedClass(tmp, r);
+            try (InputStream is = r.getInputStream())
             {
-                Resource r = Resource.newResource(resource);
-                try (InputStream is = r.getInputStream())
-                {
-                    scanClass(handlers, null, is);
-                }
+                scanClass(handlers, null, is);
             }
         }
     }
 
-    
+
     
     /**
      * Parse the given class, optionally walking its inheritance hierarchy
@@ -598,25 +625,22 @@ public class AnnotationParser
      * @throws Exception if unable to parse class
      */
     public void parse (Set<? extends Handler> handlers, Class<?> clazz, boolean visitSuperClasses)
-    throws Exception
+            throws Exception
     {
         Class<?> cz = clazz;
         while (cz != Object.class)
         {
-            if (!isParsed(cz.getName()))
+            String nameAsResource = cz.getName().replace('.', '/')+".class";
+            URL resource = Loader.getResource(nameAsResource);
+            if (resource!= null)
             {
-                String nameAsResource = cz.getName().replace('.', '/')+".class";
-                URL resource = Loader.getResource(nameAsResource);
-                if (resource!= null)
+                Resource r = Resource.newResource(resource);
+                addParsedClass(clazz.getName(), r);
+                try (InputStream is =  r.getInputStream())
                 {
-                    Resource r = Resource.newResource(resource);
-                    try (InputStream is =  r.getInputStream())
-                    {
-                        scanClass(handlers, null, is);
-                    }
+                    scanClass(handlers, null, is);
                 }
             }
-
 
             if (visitSuperClasses)
                 cz = cz.getSuperclass();
@@ -652,25 +676,24 @@ public class AnnotationParser
      * @throws Exception if unable to parse
      */
     public void parse (Set<? extends Handler> handlers, List<String> classNames)
-    throws Exception
+            throws Exception
     {
         MultiException me = new MultiException();
-        
+
         for (String s:classNames)
         {
             try
             {
-                if (!isParsed(s))
+                String name = s;
+                s = s.replace('.', '/')+".class";
+                URL resource = Loader.getResource(s);
+                if (resource!= null)
                 {
-                    s = s.replace('.', '/')+".class";
-                    URL resource = Loader.getResource(s);
-                    if (resource!= null)
+                    Resource r = Resource.newResource(resource);
+                    addParsedClass(name, r);
+                    try (InputStream is = r.getInputStream())
                     {
-                        Resource r = Resource.newResource(resource);
-                        try (InputStream is = r.getInputStream())
-                        {
-                            scanClass(handlers, null, is);
-                        }
+                        scanClass(handlers, null, is);
                     }
                 }
             }
@@ -682,7 +705,7 @@ public class AnnotationParser
         me.ifExceptionThrow();
     }
 
-    
+
     /**
      * Parse all classes in a directory
      * 
@@ -690,58 +713,67 @@ public class AnnotationParser
      * @param dir the resource directory to look for classes
      * @throws Exception if unable to parse
      */
-    protected void parseDir (Set<? extends Handler> handlers, Resource dir)
+  
+
+    /**
+     * Parse all classes in a directory
+     * 
+     * @param handlers the set of handlers to look for classes in 
+     * @param dir the resource directory to look for classes
+     * @throws Exception if unable to parse
+     */
+    protected void parseDir (Set<? extends Handler> handlers, Resource root)
     throws Exception
     {
-        // skip dirs whose name start with . (ie hidden)
-        if (!dir.isDirectory() || !dir.exists() || dir.getName().startsWith("."))
+        if (!root.isDirectory() || !root.exists() || root.getName().startsWith("."))
             return;
 
-        if (LOG.isDebugEnabled()) {LOG.debug("Scanning dir {}", dir);};
-
-        MultiException me = new MultiException();
+        if (LOG.isDebugEnabled()) {LOG.debug("Scanning dir {}", root);};
         
-        String[] files=dir.list();
-        for (int f=0;files!=null && f<files.length;f++)
+        File rootFile = root.getFile();
+        
+        MultiException me = new MultiException();
+        Collection<Resource> resources = root.getAllResources();
+        if (resources != null)
         {
-            Resource res = dir.addPath(files[f]);
-            if (res.isDirectory())
-                parseDir(handlers, res);
-            else
+            for (Resource r:resources)
             {
-                //we've already verified the directories, so just verify the class file name
-                File file = res.getFile();
+                if (r.isDirectory())
+                    continue;
+
+                File file = r.getFile();                                      
                 if (isValidClassFileName((file==null?null:file.getName())))
                 {
+                    Path classpath = rootFile.toPath().relativize(file.toPath());
+                    String str = classpath.toString();
+                    str = str.substring(0, str.lastIndexOf(".class")).replace('/', '.').replace('\\', '.');
+                    
                     try
                     {
-                        String name = res.getName();
-                        if (!isParsed(name))
+                        if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
+                        addParsedClass(str, r);
+                        try (InputStream is=r.getInputStream())
                         {
-                            Resource r = Resource.newResource(res.getURL());
-                            if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
-                            try (InputStream is=r.getInputStream())
-                            {
-                                scanClass(handlers, dir, is);
-                            }
+                            scanClass(handlers, Resource.newResource(file.getParentFile()), is);
                         }
                     }                  
                     catch (Exception ex)
                     {
-                        if (LOG.isDebugEnabled()) LOG.debug("Error scanning file "+files[f], ex);
-                        me.add(new RuntimeException("Error scanning file "+files[f],ex));
+                        if (LOG.isDebugEnabled()) LOG.debug("Error scanning file "+file, ex);
+                        me.add(new RuntimeException("Error scanning file "+file,ex));
                     }
                 }
                 else
                 {
-                   if (LOG.isDebugEnabled()) LOG.debug("Skipping scan on invalid file {}", res);
+                    if (LOG.isDebugEnabled()) LOG.debug("Skipping scan on invalid file {}", file);
                 }
             }
         }
-
+        
         me.ifExceptionThrow();
     }
-
+    
+   
 
     /**
      * Parse classes in the supplied classloader. 
@@ -935,7 +967,7 @@ public class AnnotationParser
      * @throws Exception if unable to parse
      */
     protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry)
-    throws Exception
+            throws Exception
     {
         if (jar == null || entry == null)
             return;
@@ -950,20 +982,18 @@ public class AnnotationParser
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
             String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-
-            if (!isParsed(shortName))
+            Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
+            addParsedClass(shortName, clazz);
+            if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
+            try (InputStream is = clazz.getInputStream())
             {
-                Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
-                if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                try (InputStream is = clazz.getInputStream())
-                {
-                    scanClass(handlers, jar, is);
-                }
+                scanClass(handlers, jar, is);
             }
+
         }
     }
-    
-    
+
+
 
     /**
      * Use ASM on a class
@@ -979,6 +1009,15 @@ public class AnnotationParser
         ClassReader reader = new ClassReader(is);
         reader.accept(new MyClassVisitor(handlers, containingResource), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
     }
+    
+    /**
+     * Remove any parsed class names.
+     */
+    public void resetParsedClasses ()
+    {
+        _parsedClassNames.clear();
+    }
+
     
     /**
      * Check that the given path represents a valid class file name.

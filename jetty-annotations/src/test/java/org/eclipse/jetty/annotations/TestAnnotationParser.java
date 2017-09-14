@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -209,6 +211,40 @@ public class TestAnnotationParser
         // Validate
         Assert.assertThat("Found Class", tracker.foundClasses, contains(ClassA.class.getName()));
     }
+    
+    
+    @Test
+    public void testScanDuplicateClassesInJars() throws Exception
+    {
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar"));
+        Resource testJar2 = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest_copy.jar"));
+        AnnotationParser parser = new AnnotationParser();
+        Set<Handler> emptySet = Collections.emptySet();
+        parser.parse(emptySet, testJar);
+        parser.parse(emptySet, testJar2);
+        List<String> locations = parser.getParsedLocations("org.acme.ClassOne");
+        Assert.assertNotNull(locations);
+        Assert.assertEquals(2, locations.size());
+        Assert.assertTrue(!(locations.get(0).equals(locations.get(1))));
+    }
+    
+    
+    @Test
+    public void testScanDuplicateClasses() throws Exception
+    {
+        Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar"));
+        File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
+        AnnotationParser parser = new AnnotationParser();
+        Set<Handler> emptySet = Collections.emptySet();
+        parser.parse(emptySet, testJar);
+        parser.parse(emptySet, Resource.newResource(testClasses));
+        List<String> locations = parser.getParsedLocations("org.acme.ClassOne");
+        Assert.assertNotNull(locations);
+        Assert.assertEquals(2, locations.size());
+        Assert.assertTrue(!(locations.get(0).equals(locations.get(1))));
+    }
+    
+    
 
     private void copyClass(Class<?> clazz, File basedir) throws IOException
     {

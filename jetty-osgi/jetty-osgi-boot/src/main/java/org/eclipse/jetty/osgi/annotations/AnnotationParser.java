@@ -203,12 +203,11 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
             }
             //transform into a classname to pass to the resolver
             String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-            if (!isParsed(shortName))
+
+            addParsedClass(shortName, getResource(bundle));
+            try (InputStream classInputStream = classUrl.openStream())
             {
-                try (InputStream classInputStream = classUrl.openStream())
-                {
-                    scanClass(handlers, getResource(bundle), classInputStream);
-                }
+                scanClass(handlers, getResource(bundle), classInputStream);
             }
         }
     }
