@@ -716,6 +716,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         Resource web_inf_lib = web_inf.addPath("/lib");
         if (web_inf_lib.exists() && web_inf_lib.isDirectory())
         {
+            // TODO should files be sorted? What is the interaction with Ordering?
             String[] files=web_inf_lib.list();
             for (int f=0;files!=null && f<files.length;f++)
             {
