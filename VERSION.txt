@@ -1,3 +1,5 @@
+jetty-9.3.22-SNAPSHOT
+
 jetty-9.3.21.v20170918 - 18 September 2017
  + 487 JDK 9 build compatibility
  + 1116 Support empty HTTP header values

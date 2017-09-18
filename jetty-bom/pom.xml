@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-bom</artifactId>
-  <version>9.3.21.v20170918</version>
+  <version>9.3.22-SNAPSHOT</version>
   <name>Jetty :: Bom</name>
   <description>Jetty BOM artifact</description>
   <url>http://www.eclipse.org/jetty</url>
@@ -98,252 +98,252 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-annotations</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-core</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-full-servlet</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-servlet</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>cdi-websocket</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-continuation</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-server</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-server</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-gcloud-memcached-session-manager</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-gcloud-session-manager</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-hazelcast</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-client</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-common</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-hpack</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-http-client-transport</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-server</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http-spi</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-infinispan</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-io</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaas</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaspi</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jmx</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jndi</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-monitor</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-nosql</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi-boot</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi-boot-jsp</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi-boot-warurl</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-plus</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-proxy</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-quickstart</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-rewrite</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-security</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlets</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-spring</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util-ajax</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-webapp</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-client-impl</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-server-impl</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-api</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-client</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-common</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-server</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>javax-websocket-servlet</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-xml</artifactId>
-        <version>9.3.21.v20170918</version>
+        <version>9.3.22-SNAPSHOT</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
