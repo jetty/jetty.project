@@ -262,11 +262,14 @@
         <artifactId>jetty-memcached-sessions</artifactId>
         <version>9.4.7-SNAPSHOT</version>
       </dependency>
+      <!--
+      not anymore part of the build?
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-monitor</artifactId>
         <version>9.4.7-SNAPSHOT</version>
       </dependency>
+      -->
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-nosql</artifactId>
@@ -388,7 +391,7 @@
         <version>9.4.7-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-servlet</artifactId>
         <version>9.4.7-SNAPSHOT</version>
       </dependency>
