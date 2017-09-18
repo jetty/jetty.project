@@ -44,6 +44,7 @@ public class WSSession<T extends WSConnection> extends WSCoreSession<T> implemen
     public WSSession(T connection)
     {
         super(connection);
+        connection.setSession(this);
     }
 
     public void setFuture(CompletableFuture<Session> fut)
@@ -62,21 +63,32 @@ public class WSSession<T extends WSConnection> extends WSCoreSession<T> implemen
         super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
     }
 
+    private void closeRemote()
+    {
+        if (this.remote instanceof RemoteEndpointImpl)
+        {
+            ((RemoteEndpointImpl) this.remote).close();
+        }
+    }
+
     @Override
     public void close()
     {
+        closeRemote();
         super.close(WSConstants.NORMAL, null, Callback.NOOP);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
+        closeRemote();
         super.close(closeStatus, Callback.NOOP);
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
+        closeRemote();
         super.close(statusCode, reason, Callback.NOOP);
     }
 
@@ -144,6 +156,16 @@ public class WSSession<T extends WSConnection> extends WSCoreSession<T> implemen
     public boolean isSecure()
     {
         return getConnection().isSecure();
+    }
+
+    @Override
+    public void open()
+    {
+        if (this.remote instanceof RemoteEndpointImpl)
+        {
+            ((RemoteEndpointImpl) this.remote).open();
+        }
+        super.open();
     }
 
     @Override

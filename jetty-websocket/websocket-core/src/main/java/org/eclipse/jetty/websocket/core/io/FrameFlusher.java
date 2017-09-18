@@ -292,8 +292,8 @@ public class FrameFlusher implements OutgoingFrames
         }
     }
 
+    private static final Logger LOG = Log.getLogger(FrameFlusher.class);
     public static final BinaryFrame FLUSH_FRAME = new BinaryFrame();
-    private final Logger LOG;
     private final EndPoint endpoint;
     private final int bufferSize;
     private final Generator generator;
@@ -306,7 +306,6 @@ public class FrameFlusher implements OutgoingFrames
 
     public FrameFlusher(Generator generator, EndPoint endpoint, int bufferSize, int maxGather)
     {
-        this.LOG = Log.getLogger(FrameFlusher.class.getName() + "." + generator.getBehavior().name());
         this.endpoint = endpoint;
         this.bufferSize = bufferSize;
         this.generator = Objects.requireNonNull(generator);

@@ -86,6 +86,8 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
         this.sessionPolicy = policy;
         this.localEndpoint = localEndpoint;
         this.remoteEndpoint = remoteEndpoint;
+        addBean(this.localEndpoint, true);
+        addBean(this.remoteEndpoint, true);
     }
 
     public void close(int statusCode, String reason, Callback callback)
@@ -195,12 +197,6 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
     {
         if (log.isDebugEnabled())
             log.debug("{}.open()", this.getClass().getSimpleName());
-
-        if (remoteEndpoint != null)
-        {
-            // already opened
-            return;
-        }
 
         try
         {

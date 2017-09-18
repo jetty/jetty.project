@@ -433,7 +433,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
             notifyCallbackSuccess(current.callback);
-            succeeded();
+            super.succeeded();
         }
 
 
@@ -446,7 +446,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // and the failure of a frame may not mean that the whole
             // connection is now invalid.
             notifyCallbackFailure(current.callback,cause);
-            succeeded();
+            super.failed(cause);
         }
 
         private void notifyCallbackSuccess(Callback callback)

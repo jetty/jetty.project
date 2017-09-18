@@ -238,7 +238,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         WSSession session = new WSSession(connection);
         LocalEndpointImpl localEndpoint = localEndpointFactory.createLocalEndpoint(websocket, session, getPolicy(), getExecutor());
-        WSRemoteEndpoint remoteEndpoint = new RemoteEndpointImpl(connection, connection.getRemoteAddress());
+        RemoteEndpointImpl remoteEndpoint = new RemoteEndpointImpl(connection, connection.getRemoteAddress());
 
         session.setWebSocketEndpoint(websocket, localEndpoint.getPolicy(), localEndpoint, remoteEndpoint);
         return session;
@@ -569,7 +569,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         
         // Process (version specific) handshake response
         handshaker.doHandshakeResponse(request, response);
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("Websocket upgrade {} v={} subprotocol={} connection={}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
         

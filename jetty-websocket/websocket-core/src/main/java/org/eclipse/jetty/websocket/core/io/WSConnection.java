@@ -124,7 +124,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         Objects.requireNonNull(upgradeRequest, "UpgradeRequest");
         Objects.requireNonNull(upgradeResponse, "UpgradeResponse");
 
-        LOG = Log.getLogger(WSConnection.class.getName() + "." + policy.getBehavior());
+        LOG = Log.getLogger(this.getClass());
         this.bufferPool = bufferPool;
         this.objectFactory = decoratedObjectFactory;
 
@@ -157,7 +157,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         this.incomingFrames = extensionStack;
     }
 
-    protected void setSession(WSCoreSession session)
+    public void setSession(WSCoreSession session)
     {
         this.session = session;
     }
@@ -257,7 +257,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     public boolean isOpen()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(".isOpen() = {}", !closed.get());
+            LOG.debug("isOpen() = {}", !closed.get());
         return !closed.get();
     }
 
@@ -270,7 +270,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     public void onClose()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onClose()");
+            LOG.debug("onClose() of physical connection");
 
         closed.set(true);
 
@@ -358,6 +358,12 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     @Override
     public void incomingFrame(Frame frame, Callback callback)
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("incomingFrame({}, {})", frame, callback);
+        }
+
+        session.incomingFrame(frame, callback);
     }
 
     private ByteBuffer getNetworkBuffer()
@@ -385,6 +391,10 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     @Override
     public void onFillable()
     {
+        if(LOG.isDebugEnabled())
+        {
+            LOG.debug("onFillable()");
+        }
         getNetworkBuffer();
         fillAndParse();
     }
@@ -483,7 +493,12 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}.onOpened()", this.getClass().getSimpleName());
+            LOG.debug("onOpen() of physical connection");
+
+        if(connectionState.onConnecting())
+        {
+            session.open();
+        }
         super.onOpen();
     }
 

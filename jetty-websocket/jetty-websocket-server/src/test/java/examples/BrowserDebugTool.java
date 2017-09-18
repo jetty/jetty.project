@@ -140,6 +140,9 @@ public class BrowserDebugTool implements WebSocketCreator
                 // Registering Frame Debug
                 // factory.getExtensionRegistry().register("@frame-capture",FrameCaptureExtension.class);
 
+                // Disable permessage-deflate
+                factory.getExtensionRegistry().unregister("permessage-deflate");
+
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
 
@@ -172,7 +175,7 @@ public class BrowserDebugTool implements WebSocketCreator
 
     public void start() throws Exception
     {
-        server.setDumpAfterStart(true);
+        server.setDumpAfterStart(Boolean.getBoolean("jetty.server.dumpAfterStart"));
         server.start();
         LOG.info("Server available on port {}",getPort());
     }
