@@ -30,11 +30,14 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSException;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.frames.ReadOnlyDelegatedFrame;
 
 public class LocalEndpointImpl implements WSLocalEndpoint
 {
     private final Logger log;
+    private final Object endpointInstance;
+    private final WSPolicy policy;
     private final AtomicBoolean open = new AtomicBoolean(false);
     private final MethodHandle openHandle;
     private final MethodHandle closeHandle;
@@ -46,13 +49,16 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     private final MethodHandle pongHandle;
     private MessageSink activeMessageSink;
 
-    public LocalEndpointImpl(Object endpointInstance, MethodHandle openHandle,
-                             MethodHandle closeHandle, MethodHandle errorHandle,
+    public LocalEndpointImpl(Object endpointInstance, WSPolicy endpointPolicy,
+                             MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                              MessageSink textSink, MessageSink binarySink,
                              MethodHandle frameHandle,
                              MethodHandle pingHandle, MethodHandle pongHandle)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
+
+        this.endpointInstance = endpointInstance;
+        this.policy = endpointPolicy;
 
         this.openHandle = openHandle;
         this.closeHandle = closeHandle;
@@ -68,6 +74,16 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     public Logger getLog()
     {
         return this.log;
+    }
+
+    public WSPolicy getPolicy()
+    {
+        return policy;
+    }
+
+    public Object getEndpointInstance()
+    {
+        return endpointInstance;
     }
 
     @Override

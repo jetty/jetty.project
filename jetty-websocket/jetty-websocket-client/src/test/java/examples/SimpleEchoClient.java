@@ -22,7 +22,7 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 /**
  * Example of a simple Echo Client.
@@ -37,7 +37,7 @@ public class SimpleEchoClient
             destUri = args[0];
         }
 
-        WebSocketClientImpl client = new WebSocketClientImpl();
+        WebSocketClient client = new WebSocketClient();
         SimpleEchoSocket socket = new SimpleEchoSocket();
         try
         {

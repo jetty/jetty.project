@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
@@ -43,6 +44,11 @@ public class WSSession<T extends WSConnection> extends WSCoreSession<T> implemen
     public WSSession(T connection)
     {
         super(connection);
+    }
+
+    public void setFuture(CompletableFuture<Session> fut)
+    {
+        // TODO
     }
 
     @Override

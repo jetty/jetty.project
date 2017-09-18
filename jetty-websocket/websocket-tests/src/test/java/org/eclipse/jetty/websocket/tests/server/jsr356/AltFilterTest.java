@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.servlet.impl.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.WSServer;
 import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.BasicEchoSocket;
@@ -39,7 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Testing the use of an alternate {@link org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
+ * Testing the use of an alternate {@link WebSocketUpgradeFilter}
  * defined in the WEB-INF/web.xml
  */
 public class AltFilterTest

@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.core.RawFrameBuilder;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.tests.RawFrameBuilder;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
 
 public class BadCloseSocket extends UntrustedWSEndpoint

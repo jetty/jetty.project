@@ -29,12 +29,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 
 /**
@@ -61,7 +59,7 @@ public class ClientDemo
         @Override
         public void onWebSocketConnect(Session session)
         {
-            if (_verbose)
+            if (verbose)
             {
                 System.err.printf("%s#onWebSocketConnect %s %s\n",this.getClass().getSimpleName(),session,session.getClass().getSimpleName());
             }
@@ -77,10 +75,10 @@ public class ClientDemo
             {
                 len = maxFragmentLength;
             }
-            __messagesSent++;
+            messagesSent++;
             while (off < data.length)
             {
-                __framesSent++;
+                framesSent++;
 
                 off += len;
                 if ((data.length - off) > len)
@@ -96,26 +94,24 @@ public class ClientDemo
 
     }
 
-    private static boolean _verbose = false;
+    private static boolean verbose = false;
 
-    private static final Random __random = new Random();
+    private static final Random RANDOM = new Random();
 
-    private static ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private final String host;
+    private final int port;
+    private final String protocol;
+    private final int timeout;
 
-    private final String _host;
-    private final int _port;
-    private final String _protocol;
-    private final int _timeout;
+    private static int framesSent;
+    private static int messagesSent;
+    private static AtomicInteger framesReceived = new AtomicInteger();
+    private static AtomicInteger messagesReceived = new AtomicInteger();
 
-    private static int __framesSent;
-    private static int __messagesSent;
-    private static AtomicInteger __framesReceived = new AtomicInteger();
-    private static AtomicInteger __messagesReceived = new AtomicInteger();
-
-    private static AtomicLong __totalTime = new AtomicLong();
-    private static AtomicLong __minDuration = new AtomicLong(Long.MAX_VALUE);
-    private static AtomicLong __maxDuration = new AtomicLong(Long.MIN_VALUE);
-    private static long __start;
+    private static AtomicLong totalTime = new AtomicLong();
+    private static AtomicLong minDuration = new AtomicLong(Long.MAX_VALUE);
+    private static AtomicLong maxDuration = new AtomicLong(Long.MIN_VALUE);
+    private static long start;
 
     public static void main(String[] args) throws Exception
     {
@@ -158,7 +154,7 @@ public class ClientDemo
             }
             else if ("-v".equals(a) || "--verbose".equals(a))
             {
-                _verbose = true;
+                verbose = true;
             }
             else if ("-b".equals(a) || "--binary".equals(a))
             {
@@ -179,11 +175,11 @@ public class ClientDemo
         }
 
         ClientDemo[] client = new ClientDemo[clients];
-        WebSocketClientImpl wsclient = new WebSocketClientImpl(bufferPool);
+        WebSocketClient wsclient = new WebSocketClient();
         try
         {
             wsclient.start();
-            __start = System.currentTimeMillis();
+            start = System.currentTimeMillis();
             protocol = protocol == null?"echo":protocol;
 
             for (int i = 0; i < clients; i++)
@@ -213,7 +209,7 @@ public class ClientDemo
                         StringBuilder b = new StringBuilder();
                         while (b.length() < size)
                         {
-                            b.append('A' + __random.nextInt(26));
+                            b.append('A' + RANDOM.nextInt(26));
                         }
                         data = b.toString().getBytes(StandardCharsets.UTF_8);
                         break;
@@ -221,7 +217,7 @@ public class ClientDemo
                     case OpCode.BINARY:
                     {
                         data = new byte[size];
-                        __random.nextBytes(data);
+                        RANDOM.nextBytes(data);
                         break;
                     }
                 }
@@ -247,13 +243,13 @@ public class ClientDemo
                 }
             }
 
-            long duration = System.currentTimeMillis() - __start;
+            long duration = System.currentTimeMillis() - start;
             System.out.println("--- " + host + " websocket ping statistics using " + clients + " connection" + (clients > 1?"s":"") + " ---");
-            System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n",__framesSent,__framesReceived.get(),__messagesSent,
-                    __messagesReceived.get(),duration,((1000L * __messagesReceived.get()) / duration),(1000.0D * __messagesReceived.get() * 8 * size)
+            System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n", framesSent, framesReceived.get(), messagesSent,
+                    messagesReceived.get(),duration,((1000L * messagesReceived.get()) / duration),(1000.0D * messagesReceived.get() * 8 * size)
                             / duration / 1024 / 1024);
-            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get() / 1000000.0,__messagesReceived.get() == 0?0.0:(__totalTime.get()
-                    / __messagesReceived.get() / 1000000.0),__maxDuration.get() / 1000000.0);
+            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n", minDuration.get() / 1000000.0, messagesReceived.get() == 0?0.0:(totalTime.get()
+                    / messagesReceived.get() / 1000000.0), maxDuration.get() / 1000000.0);
 
             wsclient.stop();
         }
@@ -276,21 +272,18 @@ public class ClientDemo
         System.exit(1);
     }
 
-    private BlockingQueue<Long> _starts = new LinkedBlockingQueue<Long>();
+    private BlockingQueue<Long> _starts = new LinkedBlockingQueue<>();
 
-    int _messageBytes;
-    int _frames;
-    byte _opcode = -1;
-    private WebSocketClientImpl client;
+    private WebSocketClient client;
     private TestSocket socket;
 
-    public ClientDemo(WebSocketClientImpl client, String host, int port, String protocol, int timeoutMS) throws Exception
+    public ClientDemo(WebSocketClient client, String host, int port, String protocol, int timeoutMS) throws Exception
     {
         this.client = client;
-        _host = host;
-        _port = port;
-        _protocol = protocol;
-        _timeout = timeoutMS;
+        this.host = host;
+        this.port = port;
+        this.protocol = protocol;
+        timeout = timeoutMS;
     }
 
     private void disconnect()
@@ -300,11 +293,11 @@ public class ClientDemo
 
     private void open() throws Exception
     {
-        client.getPolicy().setIdleTimeout(_timeout);
+        client.getPolicy().setIdleTimeout(timeout);
         ClientUpgradeRequest request = new ClientUpgradeRequest();
-        request.setSubProtocols(_protocol);
+        request.setSubProtocols(protocol);
         socket = new TestSocket();
-        URI wsUri = new URI("ws://" + _host + ":" + _port + "/");
+        URI wsUri = new URI("ws://" + host + ":" + port + "/");
         client.connect(socket,wsUri,request).get(10,TimeUnit.SECONDS);
     }
 

@@ -47,8 +47,8 @@ import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.impl.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.servlet.impl.WebSocketServerFactory;
 
 @ManagedObject("JSR356 Server Container")
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer

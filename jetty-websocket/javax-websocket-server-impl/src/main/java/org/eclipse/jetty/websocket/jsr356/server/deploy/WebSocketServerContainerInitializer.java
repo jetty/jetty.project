@@ -41,9 +41,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.servlet.impl.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.servlet.impl.NativeWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.servlet.impl.WebSocketUpgradeFilter;
 
 @HandlesTypes(
 { ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class })

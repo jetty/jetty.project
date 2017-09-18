@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.handshake;
 
 import java.net.HttpCookie;
 import java.net.URI;
-import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -63,7 +62,7 @@ public class DummyUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public Map<String, List<String>> getHeaders()
+    public Map<String, List<String>> getHeaderMap()
     {
         return null;
     }
@@ -93,12 +92,6 @@ public class DummyUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public String getOrigin()
-    {
-        return null;
-    }
-
-    @Override
     public Map<String, List<String>> getParameterMap()
     {
         return null;
@@ -123,37 +116,13 @@ public class DummyUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public Object getSession()
-    {
-        return null;
-    }
-
-    @Override
     public List<String> getSubProtocols()
     {
         return null;
     }
 
     @Override
-    public Principal getUserPrincipal()
-    {
-        return null;
-    }
-
-    @Override
     public boolean hasSubProtocol(String test)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isOrigin(String test)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isSecure()
     {
         return false;
     }
@@ -202,12 +171,6 @@ public class DummyUpgradeRequest implements UpgradeRequest
 
     @Override
     public void setRequestURI(URI uri)
-    {
-
-    }
-
-    @Override
-    public void setSession(Object session)
     {
 
     }

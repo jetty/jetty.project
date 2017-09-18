@@ -60,13 +60,13 @@ public class ClientCloseHandshakeTest
     public TestName testname = new TestName();
 
     private UntrustedWSServer server;
-    private WebSocketClientImpl client;
+    private WebSocketClient client;
 
     @Before
     public void startClient() throws Exception
     {
         HttpClient httpClient = new HttpClient();
-        client = new WebSocketClientImpl(httpClient);
+        client = new WebSocketClient(httpClient);
         client.addBean(httpClient);
         client.start();
     }

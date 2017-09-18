@@ -19,9 +19,9 @@
 package examples;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -64,12 +64,13 @@ public class SimpleEchoSocket
         this.session = session;
         try
         {
-            Future<Void> fut;
-            fut = session.getRemote().sendStringByFuture("Hello");
-            fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
+            FutureCallback callback = new FutureCallback();
+            session.getRemote().sendText("Hello", callback);
+            callback.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
-            fut = session.getRemote().sendStringByFuture("Thanks for the conversation.");
-            fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
+            callback = new FutureCallback();
+            session.getRemote().sendText("Thanks for the conversation.", callback);
+            callback.get(2,TimeUnit.SECONDS); // wait for send to complete.
 
             session.close(StatusCode.NORMAL,"I'm done");
         }

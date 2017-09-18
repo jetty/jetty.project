@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.common;
 
 import java.net.HttpCookie;
 import java.net.URI;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,20 +39,13 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     private List<HttpCookie> cookies = new ArrayList<>(1);
     private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private Map<String, List<String>> parameters = new HashMap<>(1);
-    private Object session;
     private String httpVersion;
     private String method;
     private String host;
-    private boolean secure;
 
     protected UpgradeRequestAdapter()
     {
         /* anonymous, no requestURI, upgrade request */
-    }
-
-    public UpgradeRequestAdapter(String requestURI)
-    {
-        this(URI.create(requestURI));
     }
 
     public UpgradeRequestAdapter(URI requestURI)
@@ -147,7 +139,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     }
 
     @Override
-    public Map<String, List<String>> getHeaders()
+    public Map<String, List<String>> getHeaderMap()
     {
         return headers;
     }
@@ -174,12 +166,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public String getMethod()
     {
         return method;
-    }
-
-    @Override
-    public String getOrigin()
-    {
-        return getHeader("Origin");
     }
 
     /**
@@ -216,37 +202,10 @@ public class UpgradeRequestAdapter implements UpgradeRequest
         return requestURI;
     }
 
-    /**
-     * Access the Servlet HTTP Session (if present)
-     * <p>
-     * Note: Never present on a Client UpgradeRequest.
-     * 
-     * @return the Servlet HTTPSession on server side UpgradeRequests
-     */
-    @Override
-    public Object getSession()
-    {
-        return session;
-    }
-
     @Override
     public List<String> getSubProtocols()
     {
         return subProtocols;
-    }
-
-    /**
-     * Get the User Principal for this request.
-     * <p>
-     * Only applicable when using UpgradeRequest from server side.
-     * 
-     * @return the user principal
-     */
-    @Override
-    public Principal getUserPrincipal()
-    {
-        // Server side should override to implement
-        return null;
     }
 
     @Override
@@ -260,18 +219,6 @@ public class UpgradeRequestAdapter implements UpgradeRequest
             }
         }
         return false;
-    }
-
-    @Override
-    public boolean isOrigin(String test)
-    {
-        return test.equalsIgnoreCase(getOrigin());
-    }
-
-    @Override
-    public boolean isSecure()
-    {
-        return secure;
     }
 
     @Override
@@ -344,26 +291,12 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     {
         this.requestURI = uri;
         String scheme = uri.getScheme();
-        if ("ws".equalsIgnoreCase(scheme))
-        {
-            secure = false;
-        }
-        else if ("wss".equalsIgnoreCase(scheme))
-        {
-            secure = true;
-        }
-        else
+        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme))
         {
             throw new IllegalArgumentException("URI scheme must be 'ws' or 'wss'");
         }
         this.host = this.requestURI.getHost();
         this.parameters.clear();
-    }
-
-    @Override
-    public void setSession(Object session)
-    {
-        this.session = session;
     }
 
     @Override

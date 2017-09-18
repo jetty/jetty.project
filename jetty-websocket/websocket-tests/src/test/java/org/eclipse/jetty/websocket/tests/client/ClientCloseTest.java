@@ -50,7 +50,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClient;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.Defaults;
@@ -75,7 +75,7 @@ public class ClientCloseTest
     public TestTracker tt = new TestTracker();
 
     private UntrustedWSServer server;
-    private WebSocketClientImpl client;
+    private WebSocketClient client;
 
     private void confirmConnection(TrackingEndpoint clientSocket, Future<Session> clientFuture, UntrustedWSSession serverSession) throws Exception
     {
@@ -154,7 +154,7 @@ public class ClientCloseTest
     public void startClient() throws Exception
     {
         HttpClient httpClient = new HttpClient(new TestClientTransportOverHTTP(), null);
-        client = new WebSocketClientImpl(httpClient);
+        client = new WebSocketClient(httpClient);
         client.addBean(httpClient);
         client.start();
     }

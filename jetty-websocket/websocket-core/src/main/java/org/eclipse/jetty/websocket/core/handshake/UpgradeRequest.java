@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.handshake;
 
 import java.net.HttpCookie;
 import java.net.URI;
-import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -91,7 +90,7 @@ public interface UpgradeRequest
      *
      * @return the headers
      */
-    Map<String, List<String>> getHeaders();
+    Map<String, List<String>> getHeaderMap();
 
     /**
      * Get the specific header values (for multi-value headers)
@@ -128,17 +127,6 @@ public interface UpgradeRequest
     String getMethod();
 
     /**
-     * The WebSocket Origin of this Upgrade Request
-     * <p>
-     * See <a href="http://tools.ietf.org/html/rfc6455#section-10.2">RFC6455: Section 10.2</a> for details.
-     * <p>
-     * Equivalent to {@link #getHeader(String)} passed the "Origin" header.
-     *
-     * @return the Origin header
-     */
-    String getOrigin();
-
-    /**
      * Returns a map of the query parameters of the request.
      *
      * @return a unmodifiable map of query parameters of the request.
@@ -170,29 +158,11 @@ public interface UpgradeRequest
     URI getRequestURI();
 
     /**
-     * Access the Servlet HTTP Session (if present)
-     * <p>
-     * Note: Never present on a Client UpgradeRequest.
-     *
-     * @return the Servlet HTTPSession on server side UpgradeRequests
-     */
-    Object getSession();
-
-    /**
      * Get the list of offered WebSocket sub-protocols.
      *
      * @return the list of offered sub-protocols
      */
     List<String> getSubProtocols();
-
-    /**
-     * Get the User Principal for this request.
-     * <p>
-     * Only applicable when using UpgradeRequest from server side.
-     *
-     * @return the user principal
-     */
-    Principal getUserPrincipal();
 
     /**
      * Test if a specific sub-protocol is offered
@@ -201,21 +171,6 @@ public interface UpgradeRequest
      * @return true if sub-protocol exists on request
      */
     boolean hasSubProtocol(String test);
-
-    /**
-     * Test if supplied Origin is the same as the Request
-     *
-     * @param test the supplied origin
-     * @return true if the supplied origin matches the request origin
-     */
-    boolean isOrigin(String test);
-
-    /**
-     * Test if connection is secure.
-     *
-     * @return true if connection is secure.
-     */
-    boolean isSecure();
 
     /**
      * Set the list of Cookies on the request
@@ -290,15 +245,6 @@ public interface UpgradeRequest
      * @param uri the Request URI
      */
     void setRequestURI(URI uri);
-
-    /**
-     * Set the Session associated with this request.
-     * <p>
-     * Typically used to associate the Servlet HttpSession object.
-     *
-     * @param session the session object to associate with this request
-     */
-    void setSession(Object session);
 
     /**
      * Set the offered WebSocket Sub-Protocol list.

@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.invoke.InvokerUtils;
@@ -92,7 +91,7 @@ public class LocalEndpointFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public WSLocalEndpoint createLocalEndpoint(Object endpointInstance, Session session, WSPolicy policy, Executor executor)
+    public LocalEndpointImpl createLocalEndpoint(Object endpointInstance, Session session, WSPolicy policy, Executor executor)
     {
         LocalEndpointMetadata metadata = getMetadata(endpointInstance.getClass());
 
@@ -142,6 +141,7 @@ public class LocalEndpointFactory
 
         return new LocalEndpointImpl(
                 endpointInstance,
+                endpointPolicy,
                 openHandle, closeHandle, errorHandle,
                 textSink, binarySink,
                 frameHandle, pingHandle, pongHandle);
