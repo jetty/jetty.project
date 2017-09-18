@@ -1,4 +1,28 @@
-jetty-9.3.22-SNAPSHOT
+jetty-9.3.21.v20170918 - 18 September 2017
+ + 487 JDK 9 build compatibility
+ + 1116 Support empty HTTP header values
+ + 1357 RolloverFileOutputStream: No rollout performed at midnight
+ + 1469 RolloverFileOutputStream: IllegalStateException Task already scheduled
+ + 1507 RolloverFileOutputStream: Negative delay Timer.schedule exception
+ + 1513 RolloverFileOutputStream: can't handle multiple instances
+ + 1515 Improved RollOverFileOutputStream removeOldFiles() behavior
+ + 1556 Remove a timing channel in Password matching
+ + 1590 Improve RolloverFileOutputStream functionality with multiple TimeZones
+ + 1655 Improve extensibility of ServerConnector
+ + 1661 AbstractProxyServlet onProxyResponseFailure Error
+ + 1664 IPAccessHandler CIDR IP range check is incorrect
+ + 1685 Update ALPN support for Java 8u141
+ + 1687 HTTP2: Correcting missing callback notification when channel not found
+ + 1702 Update ALPN support for Java 8u144
+ + 1703 Improve HttpInput failure logging
+ + 1719 HTTP/2: Improve handling of queued requests
+ + 1741 Java 9 javadoc failure in build
+ + 1749 Dump HttpDestination exchange queue
+ + 1750 PoolingHttpDestination creates ConnectionPool twice
+ + 1759 HTTP/2: producer can block in onReset
+ + 1790 HTTP/2: 100% CPU usage seen during close/shutdown of endpoint
+ + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy
+   with CONNECT
 
 jetty-9.3.20.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
