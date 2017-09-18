@@ -169,12 +169,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>jetty-fcgi-client</artifactId>
+        <artifactId>fcgi-client</artifactId>
         <version>9.4.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>jetty-fcgi-server</artifactId>
+        <artifactId>fcgi-server</artifactId>
         <version>9.4.7-SNAPSHOT</version>
       </dependency>
       <dependency>
