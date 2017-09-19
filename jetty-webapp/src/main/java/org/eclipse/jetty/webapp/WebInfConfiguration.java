@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -702,7 +703,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * Look for jars in <code>WEB-INF/lib</code>
      *  
      * @param context the context to find the lib jars in
-     * @return the list of jars as {@link Resource}
+     * @return the list of jars as {@link Resource}, or null
      * @throws Exception if unable to scan for lib jars
      */
     protected List<Resource> findWebInfLibJars(WebAppContext context)
@@ -714,10 +715,13 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         List<Resource> jarResources = new ArrayList<Resource>();
         Resource web_inf_lib = web_inf.addPath("/lib");
-        if (web_inf_lib.exists() && web_inf_lib.isDirectory())
+        if (web_inf_lib.exists() && web_inf_lib.isDirectory()) // TODO perhaps redundant given null check from list()?
         {
-            // TODO should files be sorted? What is the interaction with Ordering?
             String[] files=web_inf_lib.list();
+            if (files != null)
+            {
+                Arrays.sort(files);
+            }
             for (int f=0;files!=null && f<files.length;f++)
             {
                 try
