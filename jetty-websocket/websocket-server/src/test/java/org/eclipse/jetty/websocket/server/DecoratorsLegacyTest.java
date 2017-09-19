@@ -43,8 +43,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Unstable - see Issue #1815")
 public class DecoratorsLegacyTest
 {
     private static class DecoratorsSocket extends WebSocketAdapter

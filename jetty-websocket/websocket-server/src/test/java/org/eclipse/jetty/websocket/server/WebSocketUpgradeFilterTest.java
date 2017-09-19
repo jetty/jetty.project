@@ -43,10 +43,12 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+@Ignore("Unstable - see Issue #1815")
 @RunWith(Parameterized.class)
 public class WebSocketUpgradeFilterTest
 {
