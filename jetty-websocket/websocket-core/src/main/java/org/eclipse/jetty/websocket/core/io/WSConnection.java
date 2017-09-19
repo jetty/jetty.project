@@ -90,13 +90,14 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final String id;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
-    private final OutgoingFrames outgoingFrames;
-    private final IncomingFrames incomingFrames;
     private final WSConnectionState connectionState = new WSConnectionState();
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
     private final DecoratedObjectFactory objectFactory;
 
     private WSCoreSession session;
+    // Path for frames in/out of the connection
+    protected OutgoingFrames outgoingFrames;
+    protected IncomingFrames incomingFrames;
     // Read / Parse variables
     private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
     private ByteBuffer networkBuffer;
@@ -154,12 +155,12 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         this.extensionStack.setNextOutgoing(flusher);
 
         this.outgoingFrames = extensionStack;
-        this.incomingFrames = extensionStack;
     }
 
     public void setSession(WSCoreSession session)
     {
         this.session = session;
+        this.incomingFrames = session;
     }
 
     @Override
@@ -297,7 +298,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        incomingFrames.incomingFrame(frame, new Callback()
+        extensionStack.incomingFrame(frame, new Callback()
         {
             @Override
             public void succeeded()
@@ -321,7 +322,6 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
                 parser.release(frame);
 
                 // notify session & endpoint
-                // TODO: notifyError?
                 session.onError(cause);
             }
         });
@@ -363,7 +363,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
             LOG.debug("incomingFrame({}, {})", frame, callback);
         }
 
-        session.incomingFrame(frame, callback);
+        incomingFrames.incomingFrame(frame, callback);
     }
 
     private ByteBuffer getNetworkBuffer()

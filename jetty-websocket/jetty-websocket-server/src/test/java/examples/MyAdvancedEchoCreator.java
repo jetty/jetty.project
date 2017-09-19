@@ -18,9 +18,9 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.server.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.server.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class MyAdvancedEchoCreator implements WebSocketCreator
 {

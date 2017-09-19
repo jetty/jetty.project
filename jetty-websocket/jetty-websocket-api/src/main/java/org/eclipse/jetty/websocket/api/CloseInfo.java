@@ -20,10 +20,6 @@ package org.eclipse.jetty.websocket.api;
 
 import org.eclipse.jetty.websocket.core.CloseStatus;
 
-/**
- * @deprecated use {@link CloseStatus} instead
- */
-@Deprecated
 public class CloseInfo extends CloseStatus
 {
     public CloseInfo()
@@ -36,14 +32,18 @@ public class CloseInfo extends CloseStatus
         super(statusCode);
     }
 
+    public CloseInfo(StatusCode statusCode)
+    {
+        super(statusCode.getCode());
+    }
+
     public CloseInfo(int statusCode, String reasonPhrase)
     {
         super(statusCode, reasonPhrase);
     }
 
-    @Deprecated
-    public int getStatusCode()
+    public CloseInfo(StatusCode statusCode, String reasonPhrase)
     {
-        return getCode();
+        super(statusCode.getCode(), reasonPhrase);
     }
 }

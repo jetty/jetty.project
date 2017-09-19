@@ -21,6 +21,7 @@
         <module>jetty-websocket-api</module>
         <module>jetty-websocket-client</module>
         <module>jetty-websocket-server</module>
+        <module>jetty-websocket-tests</module>
         <!-- JSR356 Implementation -->
         <module>javax-websocket-client-impl</module>
         <module>javax-websocket-server-impl</module>

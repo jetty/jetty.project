@@ -17,15 +17,7 @@
 //
 
 /**
- * Jetty WebSocket Servlet API
- * <p>
- * How to provide WebSocket servers via the Jetty WebSocket Servlet API:
- * <ol>
- * <li>Create your WebSocket Object</li>
- * <li>Create your WebSocketServlet</li>
- * <li>Register your WebSocket Object with the WebSocketServletFactory</li>
- * <li>Wire up your WebSocketServlet to your web.xml or via Servlet 3.x annotations</li>
- * </ol>
+ * Jetty WebSocket Server : Implementation [<em>Internal Use Only</em>]
  */
 package org.eclipse.jetty.websocket.server;
 

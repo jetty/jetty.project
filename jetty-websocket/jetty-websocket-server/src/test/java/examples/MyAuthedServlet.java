@@ -18,8 +18,8 @@
 
 package examples;
 
-import org.eclipse.jetty.websocket.server.WebSocketServlet;
-import org.eclipse.jetty.websocket.server.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 @SuppressWarnings("serial")
 public class MyAuthedServlet extends WebSocketServlet

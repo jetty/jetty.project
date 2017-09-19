@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.websocket.core.WSBehavior;
 import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.server.impl.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public abstract class WebSocketHandler extends HandlerWrapper
 {

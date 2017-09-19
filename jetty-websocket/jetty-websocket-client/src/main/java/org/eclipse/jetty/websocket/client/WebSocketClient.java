@@ -31,6 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -52,6 +53,7 @@ import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.io.WSConnection;
 import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
 
 public class WebSocketClient extends ContainerLifeCycle implements SessionListener
@@ -66,6 +68,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private final LocalEndpointFactory localEndpointFactory;
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private final int id = ThreadLocalRandom.current().nextInt();
+    protected Function<WebSocketClientConnection, WSSession<? extends WSConnection>> newSessionFunction =
+            (connection) -> new WSSession(connection);
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -407,7 +411,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     protected WSSession createSession(WebSocketClientConnection connection, Object endpointInstance)
     {
-        WSSession session = new WSSession(connection);
+        WSSession session = newSessionFunction.apply(connection);
         LocalEndpointImpl localEndpoint = localEndpointFactory.createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
         WSRemoteEndpoint remoteEndpoint = new WSRemoteImpl(connection);
 
