@@ -29,11 +29,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -764,36 +766,10 @@ public class AnnotationParser
      * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
-    throws Exception
+    @Deprecated
+    public void parse (final Set<? extends Handler> handlers, ClassLoader loader, boolean visitParents, boolean nullInclusive) throws Exception
     {
-        if (loader==null)
-            return;
-
-        if (!(loader instanceof URLClassLoader))
-            return; //can't extract classes?
-
-        final MultiException me = new MultiException();
-        
-        JarScanner scanner = new JarScanner()
-        {
-            @Override
-            public void processEntry(URI jarUri, JarEntry entry)
-            {
-                try
-                {
-                    parseJarEntry(handlers, Resource.newResource(jarUri), entry, resolver);
-                }
-                catch (Exception e)
-                {
-                    me.add(new RuntimeException("Error parsing entry "+entry.getName()+" from jar "+ jarUri, e));
-                }
-            }
-
-        };
-
-        scanner.scan(null, loader, nullInclusive, visitParents);
-        me.ifExceptionThrow();
+        throw new UnsupportedOperationException();
     }
 
 
@@ -905,33 +881,20 @@ public class AnnotationParser
         {
             if (LOG.isDebugEnabled()) {LOG.debug("Scanning jar {}", jarResource);};
 
-            //treat it as a jar that we need to open and scan all entries from  
-            InputStream in = jarResource.getInputStream();
-            if (in==null)
-                return;
-
             MultiException me = new MultiException();
-            JarInputStream jar_in = new JarInputStream(in);
-            try
-            { 
-                JarEntry entry = jar_in.getNextJarEntry();
-                while (entry!=null)
-                {      
-                    try
-                    {
-                        parseJarEntry(handlers, jarResource, entry, resolver);                        
-                    }
-                    catch (Exception e)
-                    {
-                        me.add(new RuntimeException("Error scanning entry "+entry.getName()+" from jar "+jarResource, e));
-                    }
-                    entry = jar_in.getNextJarEntry();
-                }
-            }
-            catch (Exception e)
+            JarFile jarFile = MultiReleaseJarFile.open(jarResource.getFile());
+            MultiReleaseJarFile.stream(jarFile).forEach(e->
             {
-                me.add(new RuntimeException("Error scanning jar "+jarResource, e));
-            }
+                try
+                {
+                    parseJarEntry(handlers, jarResource, jarFile, e,resolver);
+                }
+                catch (Exception ex)
+                {
+                    me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
+                }
+            });
+
             finally
             {
                 jar_in.close();
@@ -945,15 +908,14 @@ public class AnnotationParser
      * Parse a single entry in a jar file
      * 
      * @param handlers the handlers to look for classes in  
-     * @param jar the jar resource to parse
+     * @param jarFile the jar resource being parses
      * @param entry the entry in the jar resource to parse
      * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
-    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarEntry entry, final ClassNameResolver resolver)
-    throws Exception
+    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarFile jarFile, JarEntry entry,final ClassNameResolver resolver) throws Exception
     {
-        if (jar == null || entry == null)
+        if (jarFile == null || entry == null)
             return;
 
         //skip directories
@@ -973,7 +935,7 @@ public class AnnotationParser
             {
                 Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
                 if (LOG.isDebugEnabled()) {LOG.debug("Scanning class from jar {}", clazz);};
-                try (InputStream is = clazz.getInputStream())
+            try (InputStream is = jarFile.getInputStream(entry))
                 {
                     scanClass(handlers, jar, is);
                 }
@@ -1054,57 +1016,6 @@ public class AnnotationParser
         //no path is not valid
         if (path == null || path.length()==0)
             return false;
-
-        if (path.startsWith("META-INF/versions/"))
-        {
-            // Handle JEP 238 - Multi-Release Jars
-            if (JVM_MAJOR_VER < 9)
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("JEP-238 Multi-Release JAR not supported on Java " +
-                            System.getProperty("java.version") + ": " + path);
-                }
-                return false;
-            }
-
-            // Safety check for ASM bytecode support level.
-            // When ASM 6.0 is integrated, the below will start to work.
-            if (ASM_OPCODE_VERSION <= Opcodes.ASM5)
-            {
-                // Cannot scan Java 9 classes with ASM version 5
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Unable to scan newer Java bytecode (Java 9?) with ASM 5 (skipping): " + path);
-                }
-                return false;
-            }
-
-            int idxStart = "META-INF/versions/".length();
-            int idxEnd = path.indexOf('/', idxStart + 1);
-            try
-            {
-                int pathVersion = Integer.parseInt(path.substring(idxStart, idxEnd));
-                if (pathVersion < JVM_MAJOR_VER)
-                {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("JEP-238 Multi-Release JAR version " + pathVersion +
-                                " not supported on Java " + System.getProperty("java.version") +
-                                ": " + path);
-                    }
-                    return false;
-                }
-            }
-            catch (NumberFormatException e)
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Not a valid JEP-238 Multi-Release path: " + path);
-                }
-                return false;
-            }
-        }
 
         // skip any classfiles that are in a hidden directory
         if (path.startsWith(".") || path.contains("/."))

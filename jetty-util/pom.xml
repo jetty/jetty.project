@@ -11,6 +11,8 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util</bundle-symbolic-name>
+    <java9.sourceDirectory>${project.basedir}/src/main/java9</java9.sourceDirectory>
+    <java9.build.outputDirectory>${project.build.directory}/classes-java9</java9.build.outputDirectory>
   </properties>
   <build>
     <plugins>
@@ -57,4 +59,69 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+    <id>jdk9 MR Jar</id>
+    <activation>
+      <jdk>[1.9,)</jdk>
+    </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>compile-java9</id>
+                <phase>compile</phase>
+                <configuration>
+                  <tasks>
+                    <mkdir dir="${java9.build.outputDirectory}" />
+                    <javac target="1.9" srcdir="${java9.sourceDirectory}" destdir="${java9.build.outputDirectory}"
+                           classpath="${project.build.directory}/classes" includeantruntime="false" />
+                  </tasks>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-resources</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.outputDirectory}/META-INF/versions/9</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${java9.build.outputDirectory}</directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <configuration>
+              <archive>
+                <manifestEntries>
+                  <Multi-Release>true</Multi-Release>
+                </manifestEntries>
+              </archive>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
