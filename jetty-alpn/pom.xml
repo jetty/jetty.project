@@ -13,6 +13,10 @@
   <modules>
     <module>jetty-alpn-server</module>
     <module>jetty-alpn-client</module>
+    <module>jetty-alpn-openjdk8-server</module>
+    <module>jetty-alpn-openjdk8-client</module>
+    <module>jetty-alpn-conscrypt-server</module>
+    <module>jetty-alpn-conscrypt-client</module>
   </modules>
   <profiles>
     <profile>

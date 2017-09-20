@@ -24,7 +24,6 @@ import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
-import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -32,24 +31,21 @@ import org.eclipse.jetty.server.NegotiatingServerConnection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class ALPNServerConnection extends NegotiatingServerConnection implements ALPN.ServerProvider
+public class ALPNServerConnection extends NegotiatingServerConnection
 {
     private static final Logger LOG = Log.getLogger(ALPNServerConnection.class);
 
     public ALPNServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
         super(connector, endPoint, engine, protocols, defaultProtocol);
-        ALPN.put(engine, this);
     }
 
-    @Override
     public void unsupported()
     {
         select(Collections.emptyList());
     }
-
-    @Override
-    public String select(List<String> clientProtocols)
+    
+    public void select(List<String> clientProtocols)
     {
         SSLEngine sslEngine = getSSLEngine();
         List<String> serverProtocols = getProtocols();
@@ -70,7 +66,7 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
                 if (factory instanceof CipherDiscriminator && !((CipherDiscriminator)factory).isAcceptable(serverProtocol, tlsProtocol, tlsCipher))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} protocol {} not acceptable to {} for {}/{}", this, serverProtocol, factory, tlsProtocol, tlsCipher);
+                        LOG.debug("Protocol {} not acceptable to {} for {}/{} on {}", serverProtocol, factory, tlsProtocol, tlsCipher, getEndPoint());
                     continue;
                 }
 
@@ -87,21 +83,12 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} could not negotiate protocol among client{} and server{}", this, clientProtocols, serverProtocols);
+                    LOG.debug("Could not negotiate protocol from client{} and server{} on {}", clientProtocols, serverProtocols, getEndPoint());
                 throw new IllegalStateException();
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("{} protocol selected {} among client{} and server{}", this, negotiated, clientProtocols, serverProtocols);
+            LOG.debug("Protocol selected {} from client{} and server{} on {}", negotiated, clientProtocols, serverProtocols, getEndPoint());
         setProtocol(negotiated);
-        ALPN.remove(sslEngine);
-        return negotiated;
-    }
-
-    @Override
-    public void close()
-    {
-        ALPN.remove(getSSLEngine());
-        super.close();
     }
 }

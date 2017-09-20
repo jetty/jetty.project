@@ -17,7 +17,7 @@
 [[sessions-usecases]]
 === Use Cases
 
-===== Clustering with a Sticky Load Balancer
+==== Clustering with a Sticky Load Balancer
 
 Preferably, your cluster will utilize a sticky load balancer.
 This will route requests for the same Session to the same Jetty instance.
@@ -36,7 +36,7 @@ With this policy, Session objects will remain in the cache until they either exp
 If you have a high likelihood of simultaneous requests for the same session object, then the `EVICT_ON_SESSION_EXIT` policy will ensure the Session object stays in the cache as long as it is needed.
 
 
-===== Clustering Without a Sticky Load Balancer
+==== Clustering Without a Sticky Load Balancer
 
 Without a sticky load balancer requests for the same session may arrive on any node in the cluster.
 This means it is likely that the copy of the Session object in any `SessionCache` is likely to be out-of-date, as the Session was probably last accessed on a different node.
@@ -52,7 +52,7 @@ Again, due to the lack of Session transactionality, the ordering outcome of writ
 As the Session is cached while at least one request is accessing it, it is possible for multiple simultaneous requests to share the same Session object.
 
 
-===== Handling corrupted or unloadable session data
+==== Handling corrupted or unloadable session data
 
 For various reasons it might not be possible for the `SessionDataStore` to re-read a stored session.
 One scenario is that the session stores a serialized object in it's attributes, and after a redeployment there in an incompatible class change.
