@@ -52,12 +52,6 @@
     <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-alpn-java-server</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-alpn-openjdk8-server</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -86,4 +80,21 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>jdk9</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-alpn-java-server</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
