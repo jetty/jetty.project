@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.message;
+package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -28,10 +28,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.util.Utf8CharBuffer;
 
 /**
@@ -184,7 +183,7 @@ public class MessageWriter extends Writer
         }
     }
 
-    public void setCallback(WriteCallback callback)
+    public void setCallback(Callback callback)
     {
         synchronized (this)
         {

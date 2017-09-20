@@ -21,12 +21,16 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
@@ -53,11 +57,14 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.client.UpgradeListener;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
+import org.eclipse.jetty.websocket.core.io.WSConnection;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
@@ -70,37 +77,35 @@ import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
 @ManagedObject("JSR356 Client Container")
-public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope
+public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
-    
-    /** The delegated Container Scope */
-    private final WebSocketContainerScope scopeDelegate;
-    /** The jetty websocket client in use for this container */
-    private final WebSocketClientImpl client;
+
+    // From HttpClient
+    private final HttpClient httpClient;
+    // The container
+    private final WSPolicy clientPolicy;
+    private final WSExtensionRegistry extensionRegistry;
+    private final DecoratedObjectFactory objectFactory;
+    private final LocalEndpointFactory localEndpointFactory;
+    private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
+    private final int id = ThreadLocalRandom.current().nextInt();
+    protected Function<WebSocketClientConnection, WSSession<? extends WSConnection>> newSessionFunction =
+            (connection) -> new WSSession(connection);
+
     private final boolean internalClient;
     
-    /**
-     * @deprecated use {@link #ClientContainer(WebSocketContainerScope)}
-     */
-    @Deprecated
     public ClientContainer()
     {
-        // This constructor is used with Standalone JSR Client usage.
-        this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
-        client.setDaemon(true);
+        this(new HttpClient());
+        addManaged(this.httpClient);
     }
-    
-    /**
-     * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
-     *
-     * @param scope the scope of the ServerContainer
-     */
-    public ClientContainer(final WebSocketContainerScope scope)
+
+    public ClientContainer(HttpClient httpClient)
     {
-        this(scope, null);
+        this.httpClient = httpClient;
     }
-    
+
     /**
      * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
      *

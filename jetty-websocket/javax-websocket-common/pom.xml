@@ -9,22 +9,17 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>javax-websocket-client-impl</artifactId>
-  <name>Jetty :: Websocket :: javax.websocket :: Client Implementation</name>
+  <artifactId>javax-websocket-common</artifactId>
+  <name>Jetty :: Websocket :: javax.websocket :: Common Impl</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.javax.websocket</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.javax.websocket.common</bundle-symbolic-name>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>websocket-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -48,7 +43,7 @@
               <instructions>
                 <Bundle-Description>javax.websocket.client Implementation</Bundle-Description>
                 <Export-Package>
-                  org.eclipse.jetty.websocket.jsr356.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                  org.eclipse.jetty.websocket.jsr356.common.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
               </instructions>
             </configuration>

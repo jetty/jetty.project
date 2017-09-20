@@ -24,7 +24,7 @@ import javax.servlet.ServletContextListener;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.servlet.NativeWebSocketConfiguration;
 
 public class InfoContextAltAttributeListener implements WebSocketCreator, ServletContextListener
 {

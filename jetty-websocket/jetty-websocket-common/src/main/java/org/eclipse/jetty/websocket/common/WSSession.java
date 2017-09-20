@@ -49,7 +49,7 @@ public class WSSession<T extends WSConnection> extends WSCoreSession<T> implemen
 
     public void setFuture(CompletableFuture<Session> fut)
     {
-        // TODO
+        // TODO do we still need this?
     }
 
     @Override

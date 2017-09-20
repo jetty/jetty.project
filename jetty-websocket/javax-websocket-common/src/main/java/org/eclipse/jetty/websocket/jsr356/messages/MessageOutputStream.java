@@ -16,10 +16,10 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.message;
+package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -28,48 +28,43 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.util.Utf8CharBuffer;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 /**
- * Support for writing a single WebSocket TEXT message via a {@link Writer}
- * <p>
- * Note: Per WebSocket spec, all WebSocket TEXT messages must be encoded in UTF-8
+ * Support for writing a single WebSocket BINARY message via a {@link OutputStream}
  */
-public class MessageWriter extends Writer
+public class MessageOutputStream extends OutputStream
 {
-    private static final Logger LOG = Log.getLogger(MessageWriter.class);
+    private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
 
     private final OutgoingFrames outgoing;
     private final ByteBufferPool bufferPool;
     private final SharedBlockingCallback blocker;
     private long frameCount;
-    private TextFrame frame;
+    private long bytesSent;
+    private BinaryFrame frame;
     private ByteBuffer buffer;
-    private Utf8CharBuffer utf;
     private Callback callback;
     private boolean closed;
 
-    public MessageWriter(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
+    public MessageOutputStream(OutgoingFrames outgoing, int bufferSize, ByteBufferPool bufferPool)
     {
         this.outgoing = outgoing;
         this.bufferPool = bufferPool;
         this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
         BufferUtil.flipToFill(buffer);
-        this.frame = new TextFrame();
-        this.utf = Utf8CharBuffer.wrap(buffer);
+        this.frame = new BinaryFrame();
     }
 
     @Override
-    public void write(char[] chars, int off, int len) throws IOException
+    public void write(byte[] bytes, int off, int len) throws IOException
     {
         try
         {
-            send(chars, off, len);
+            send(bytes, off, len);
         }
         catch (Throwable x)
         {
@@ -80,11 +75,11 @@ public class MessageWriter extends Writer
     }
 
     @Override
-    public void write(int c) throws IOException
+    public void write(int b) throws IOException
     {
         try
         {
-            send(new char[]{(char)c}, 0, 1);
+            send(new byte[]{(byte)b}, 0, 1);
         }
         catch (Throwable x)
         {
@@ -117,7 +112,7 @@ public class MessageWriter extends Writer
             flush(true);
             bufferPool.release(buffer);
             if (LOG.isDebugEnabled())
-                LOG.debug("Stream closed, {} frames sent", frameCount);
+                LOG.debug("Stream closed, {} frames ({} bytes) sent", frameCount, bytesSent);
             // Notify without holding locks.
             notifySuccess();
         }
@@ -138,13 +133,11 @@ public class MessageWriter extends Writer
 
             closed = fin;
 
-            ByteBuffer data = utf.getByteBuffer();
-            if (LOG.isDebugEnabled())
-                LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(buffer));
-            frame.setPayload(data);
+            BufferUtil.flipToFlush(buffer, 0);
+            frame.setPayload(buffer);
             frame.setFin(fin);
 
-            try (SharedBlockingCallback.Blocker b = blocker.acquire())
+            try(SharedBlockingCallback.Blocker b=blocker.acquire())
             {
                 outgoing.outgoingFrame(frame, b, BatchMode.OFF);
                 b.block();
@@ -154,37 +147,43 @@ public class MessageWriter extends Writer
             // Any flush after the first will be a CONTINUATION frame.
             frame.setIsContinuation();
 
-            utf.clear();
+            // Buffer has been sent, buffer should have been consumed
+            assert buffer.remaining() == 0;
+
+            BufferUtil.clearToFill(buffer);
         }
     }
 
-    private void send(char[] chars, int offset, int length) throws IOException
+    private void send(byte[] bytes, final int offset, final int length) throws IOException
     {
         synchronized (this)
         {
             if (closed)
                 throw new IOException("Stream is closed");
 
-            while (length > 0)
+            int remaining = length;
+            int off = offset;
+            while (remaining > 0)
             {
                 // There may be no space available, we want
                 // to handle correctly when space == 0.
-                int space = utf.remaining();
-                int size = Math.min(space, length);
-                utf.append(chars, offset, size);
-                offset += size;
-                length -= size;
-                if (length > 0)
+                int space = buffer.remaining();
+                int size = Math.min(space, remaining);
+                buffer.put(bytes, off, size);
+                off += size;
+                remaining -= size;
+                if (remaining > 0)
                 {
                     // If we could not write everything, it means
                     // that the buffer was full, so flush it.
                     flush(false);
                 }
             }
+            bytesSent += length;
         }
     }
 
-    public void setCallback(WriteCallback callback)
+    public void setCallback(Callback callback)
     {
         synchronized (this)
         {
