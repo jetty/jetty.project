@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -58,7 +59,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -173,7 +173,7 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n";
 
-        String responses=_connector.getResponses(request);
+        String responses=_connector.getResponse(request);
         assertThat("Responses", responses, startsWith("HTTP/1.1 400"));
     }
 
