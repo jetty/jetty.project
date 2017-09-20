@@ -109,14 +109,14 @@ public class JettyRunDistro extends JettyRunMojo
     
     
     /**
-     * 
+     * Optional jetty.home dir
      * @parameter
      */
     private File jettyHome;
     
     
     /**
-     * 
+     * Optional jetty.base dir
      * @parameter
      */
     private File jettyBase;

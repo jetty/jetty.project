@@ -175,16 +175,21 @@ public class Starter
     {
         server.join();
     }
-    
-    
-    public void communicateStartupResult (Exception e)
+
+
+    public void communicateStartupResult ()
     {
         if (token != null)
         {
-            if (e==null)
-                System.out.println(token);
-            else
-                System.out.println(token+"\t"+e.getMessage());
+            try
+            {
+                Resource r = Resource.newResource(token);
+                r.getFile().createNewFile();
+            }
+            catch (Exception x)
+            {
+                throw new IllegalStateException (x);
+            }
         }
     }
     
@@ -250,12 +255,11 @@ public class Starter
            starter.getConfiguration(args);
            starter.configureJetty();
            starter.run();
-           starter.communicateStartupResult(null);
+           starter.communicateStartupResult();
            starter.join();
        }
        catch (Exception e)
        {
-           starter.communicateStartupResult(e);
            e.printStackTrace();
            System.exit(1);
        }

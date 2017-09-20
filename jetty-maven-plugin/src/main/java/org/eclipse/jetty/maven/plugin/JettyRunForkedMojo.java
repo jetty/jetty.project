@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -120,11 +123,22 @@ public class JettyRunForkedMojo extends JettyRunMojo
      */
     private boolean waitForChild;
 
-    /**
-     * @parameter default-value="50"
-     */
-    private int maxStartupLines;
     
+    /**
+     * Max number of times to try checking if the
+     * child has started successfully.
+     * 
+     * @parameter alias="maxStartupLines" default-value="50"
+     */
+    private int maxChildChecks;
+    
+    /**
+     * Millisecs to wait between each
+     * check to see if the child started successfully.
+     * 
+     * @parameter default-value="100"
+     */
+    private long maxChildCheckInterval;
     
     /**
      * Extra environment variables to be passed to the forked process
@@ -145,9 +159,15 @@ public class JettyRunForkedMojo extends JettyRunMojo
     private Random random;    
     
 
-    private boolean originalPersistTemp;
+    /**
+     * Whether or not the plugin has explicit slf4j dependencies.
+     * The maven environment will always have slf4j on the classpath,
+     * which we don't want to put onto the forked process unless the
+     * pom has an explicit dependency on it.
+     */
+    private boolean hasSlf4jDeps;
     
-    
+
     /**
      * ShutdownThread
      *
@@ -168,54 +188,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
             }
         }
     }
-
-
-    /**
-     * we o
-     */
-//    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
-//    {
-//
-//        return null;
-//    }
-
-    /**
-     * ConsoleStreamer
-     * 
-     * Simple streamer for the console output from a Process
-     */
-    private static class ConsoleStreamer implements Runnable
-    {
-        private String mode;
-        private BufferedReader reader;
-
-        public ConsoleStreamer(String mode, InputStream is)
-        {
-            this.mode = mode;
-            this.reader = new BufferedReader(new InputStreamReader(is));
-        }
-
-
-        public void run()
-        {
-            String line;
-            try
-            {
-                while ((line = reader.readLine()) != (null))
-                {
-                    System.out.println("[" + mode + "] " + line);
-                }
-            }
-            catch (IOException ignore)
-            {
-                /* ignore */
-            }
-            finally
-            {
-                IO.close(reader);
-            }
-        }
-    }
     
     
     
@@ -228,6 +200,17 @@ public class JettyRunForkedMojo extends JettyRunMojo
     {
         Runtime.getRuntime().addShutdownHook(new ShutdownThread());
         random = new Random();
+        
+        List<Dependency> deps = plugin.getPlugin().getDependencies();
+        for (Dependency d:deps)
+        {
+            if (d.getGroupId().contains("slf4j"))
+            {
+                hasSlf4jDeps = true;
+                break;
+            }
+        }
+        
         super.execute();
     }
     
@@ -255,9 +238,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
-
-            //get the original persistance setting
-            originalPersistTemp = webApp.isPersistTempDirectory();
 
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
@@ -341,8 +321,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
             cmd.add(props.getAbsolutePath());
             
             String token = createToken();
+            Path tokenFile = target.toPath().resolve(createToken()+".txt");
             cmd.add("--token");
-            cmd.add(token);
+            cmd.add(tokenFile.toAbsolutePath().toString());
             
             if (jettyProperties != null)
             {
@@ -368,49 +349,32 @@ public class JettyRunForkedMojo extends JettyRunMojo
             
             if (waitForChild)
             {
-                forkedProcess = builder.start();
-                startPump("STDOUT",forkedProcess.getInputStream());
-                startPump("STDERR",forkedProcess.getErrorStream());
+                builder.inheritIO();
+            }
+            else
+            {
+                builder.redirectOutput(new File(target, "jetty.out"));
+                builder.redirectErrorStream(true);
+            }
+            
+            forkedProcess = builder.start();
+            
+            if (waitForChild)
+            {
                 int exitcode = forkedProcess.waitFor();            
                 PluginLog.getLog().info("Forked execution exit: "+exitcode);
             }
             else
-            {   //merge stderr and stdout from child
-                builder.redirectErrorStream(true);
-                forkedProcess = builder.start();
-
-                //wait for the child to be ready before terminating.
-                //child indicates it has finished starting by printing on stdout the token passed to it
-                try
+            {  
+                //just wait until the child has started successfully
+                int attempts = maxChildChecks;
+                while (!Files.exists(tokenFile) && attempts > 0)
                 {
-                    String line = "";
-                    try (InputStream is = forkedProcess.getInputStream();
-                            LineNumberReader reader = new LineNumberReader(new InputStreamReader(is)))
-                    {
-                        int attempts = maxStartupLines; //max lines we'll read trying to get token
-                        while (attempts>0 && line != null)
-                        {
-                            --attempts;
-                            line = reader.readLine();
-                            if (line != null && line.startsWith(token))
-                                break;
-                        }
-
-                    }
-
-                    if (line != null && line.trim().equals(token))
-                        PluginLog.getLog().info("Forked process started.");
-                    else
-                    {
-                        String err = (line == null?"":(line.startsWith(token)?line.substring(token.length()):line));
-                        PluginLog.getLog().info("Forked process startup errors"+(!"".equals(err)?", received: "+err:""));
-                    }
+                    Thread.currentThread().sleep(maxChildCheckInterval);
+                    --attempts;
                 }
-                catch (Exception e)
-                {
-                    throw new MojoExecutionException ("Problem determining if forked process is ready: "+e.getMessage());
-                }
-
+                if (attempts <=0 )
+                    getLog().info("Couldn't verify success of child startup");
             }
         }
         catch (InterruptedException ex)
@@ -522,6 +486,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
             Artifact artifact = (Artifact) obj;
             if ("jar".equals(artifact.getType()))
             {
+                //ignore slf4j from inside maven
+                if (artifact.getGroupId().contains("slf4j") && !hasSlf4jDeps)
+                        continue;
                 if (classPath.length() > 0)
                 {
                     classPath.append(File.pathSeparator);
@@ -530,6 +497,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             }
         }
+
         
         //Any jars that we need from the plugin environment (like the ones containing Starter class)
         Set<Artifact> extraJars = getExtraJars();
@@ -616,13 +584,5 @@ public class JettyRunForkedMojo extends JettyRunMojo
     private String createToken ()
     {
         return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
-    }
-    
-    private void startPump(String mode, InputStream inputStream)
-    {
-        ConsoleStreamer pump = new ConsoleStreamer(mode,inputStream);
-        Thread thread = new Thread(pump,"ConsoleStreamer/" + mode);
-        thread.setDaemon(true);
-        thread.start();
     }
 }
