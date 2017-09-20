@@ -814,12 +814,13 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            JarFile jarFile = MultiReleaseJarFile.open(jarResource.getFile());
-            MultiReleaseJarFile.stream(jarFile).forEach(e->
+            // TODO do not force version 8 once ASM can scan 9
+            MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),8,false);
+            jarFile.stream().forEach(e->
             {
                 try
                 {
-                    parseJarEntry(handlers, jarResource, jarFile, e);
+                    parseJarEntry(handlers, jarResource, e);
                 }
                 catch (Exception ex)
                 {
@@ -836,13 +837,12 @@ public class AnnotationParser
      * Parse a single entry in a jar file
      * 
      * @param handlers the handlers to look for classes in  
-     * @param jarFile the jar resource being parses
-     * @param entry the entry in the jar resource to parse
+     * @param entry the entry in the potentially MultiRelease jar resource to parse
      * @throws Exception if unable to parse
      */
-    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, JarFile jarFile, JarEntry entry) throws Exception
+    protected void parseJarEntry (Set<? extends Handler> handlers, Resource jar, MultiReleaseJarFile.VersionedJarEntry entry) throws Exception
     {
-        if (jarFile == null || entry == null)
+        if (jar == null || entry == null)
             return;
 
         //skip directories
@@ -855,11 +855,10 @@ public class AnnotationParser
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
             String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-            Resource clazz = Resource.newResource("jar:"+jar.getURI()+"!/"+name);
-            addParsedClass(shortName, clazz);
+            addParsedClass(shortName, Resource.newResource("jar:"+jar.getURI()+"!/"+entry.getNameInJar()));
             if (LOG.isDebugEnabled())
-                LOG.debug("Scanning class from jar {}", clazz);
-            try (InputStream is = jarFile.getInputStream(entry))
+                LOG.debug("Scanning class from jar {}!/{}", jar, entry);
+            try (InputStream is = entry.getInputStream())
             {
                 scanClass(handlers, jar, is);
             }
