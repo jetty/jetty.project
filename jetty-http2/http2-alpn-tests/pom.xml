@@ -51,14 +51,14 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.eclipse.jetty.alpn</groupId>
-            <artifactId>alpn-api</artifactId>
-            <version>${alpn.api.version}</version>
-            <scope>provided</scope>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-alpn-java-server</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-alpn-server</artifactId>
+            <artifactId>jetty-alpn-openjdk8-server</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
