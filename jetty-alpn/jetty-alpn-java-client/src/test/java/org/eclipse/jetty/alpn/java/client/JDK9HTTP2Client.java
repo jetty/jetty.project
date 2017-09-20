@@ -42,16 +42,16 @@ public class JDK9HTTP2Client
     public static void main(String[] args) throws Exception
     {
         HTTP2Client client = new HTTP2Client();
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory();
         client.addBean(sslContextFactory);
         client.start();
 
-        String host = "localhost";
-        int port = 8443;
+        String host = "webtide.com";
+        int port = 443;
 
         FuturePromise<Session> sessionPromise = new FuturePromise<>();
         client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener.Adapter(), sessionPromise);
-        Session session = sessionPromise.get(555, TimeUnit.SECONDS);
+        Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
         HttpFields requestFields = new HttpFields();
         requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);

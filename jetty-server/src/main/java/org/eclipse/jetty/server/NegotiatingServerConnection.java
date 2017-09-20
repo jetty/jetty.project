@@ -55,27 +55,27 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
         this.engine = engine;
     }
 
-    protected List<String> getProtocols()
+    public List<String> getProtocols()
     {
         return protocols;
     }
 
-    protected String getDefaultProtocol()
+    public String getDefaultProtocol()
     {
         return defaultProtocol;
     }
 
-    protected Connector getConnector()
+    public Connector getConnector()
     {
         return connector;
     }
     
-    protected SSLEngine getSSLEngine()
+    public SSLEngine getSSLEngine()
     {
         return engine;
     }
 
-    protected String getProtocol()
+    public String getProtocol()
     {
         return protocol;
     }

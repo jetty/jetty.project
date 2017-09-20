@@ -19,13 +19,16 @@
 package org.eclipse.jetty.alpn.java.server;
 
 import java.util.List;
+import java.util.function.BiFunction;
 
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
-import org.eclipse.jetty.alpn.ALPN;
+import org.eclipse.jetty.alpn.server.ALPNServerConnection;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -34,40 +37,61 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
     private static final Logger LOG = Log.getLogger(JDK9ServerALPNProcessor.class);
 
     @Override
-    public void configure(SSLEngine sslEngine)
+    public void init()
     {
-        sslEngine.setHandshakeApplicationProtocolSelector(this::process);
-    }
-
-    private String process(SSLEngine sslEngine, List<String> protocols)
-    {
-        try
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("ALPN selecting among client{}", protocols);
-            ALPN.ServerProvider provider = (ALPN.ServerProvider)ALPN.remove(sslEngine);
-            return provider == null ? "" : provider.select(protocols);
-        }
-        catch (SSLException x)
-        {
-            return null;
-        }
+        if (JavaVersion.VERSION.getPlatform()<9)
+            throw new IllegalStateException(this + " not applicable for java "+JavaVersion.VERSION);
     }
 
     @Override
-    public void handshakeSucceeded(Event event)
+    public boolean appliesTo(SSLEngine sslEngine)
     {
-        ALPN.ServerProvider provider = (ALPN.ServerProvider)ALPN.remove(event.getSSLEngine());
-        if (provider != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("ALPN unsupported by client");
-            provider.unsupported();
-        }
+        Module module = sslEngine.getClass().getModule();
+        return module!=null && "java.base".equals(module.getName());
     }
 
     @Override
-    public void handshakeFailed(Event event, Throwable failure)
+    public void configure(SSLEngine sslEngine, Connection connection)
     {
+        sslEngine.setHandshakeApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection));
+    }
+
+    private final class ALPNCallback implements BiFunction<SSLEngine,List<String>,String>, SslHandshakeListener
+    {
+        private final ALPNServerConnection alpnConnection;
+
+        private ALPNCallback(ALPNServerConnection connection)
+        {
+            alpnConnection = connection;
+            ((SslConnection.DecryptedEndPoint)alpnConnection.getEndPoint()).getSslConnection().addHandshakeListener(this);
+        }
+
+        @Override
+        public String apply(SSLEngine engine, List<String> protocols)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("apply {} {}", alpnConnection, protocols);
+            alpnConnection.select(protocols);
+            return alpnConnection.getProtocol();
+        }
+
+        @Override
+        public void handshakeSucceeded(Event event)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("handshakeSucceeded {} {}", alpnConnection, event);
+            if (alpnConnection.getProtocol()==null)
+            {
+                LOG.warn("No ALPN callback! {} {}",alpnConnection, event);
+                alpnConnection.unsupported();
+            }
+        }
+
+        @Override
+        public void handshakeFailed(Event event, Throwable failure)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("handshakeFailed {} {} {}", alpnConnection, event, failure);
+        }
     }
 }

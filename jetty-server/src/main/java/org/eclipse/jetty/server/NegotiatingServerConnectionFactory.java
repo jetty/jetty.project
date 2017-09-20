@@ -32,28 +32,6 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 
 public abstract class NegotiatingServerConnectionFactory extends AbstractConnectionFactory
 {
-    public static void checkProtocolNegotiationAvailable()
-    {
-        try
-        {
-            String javaVersion = System.getProperty("java.version");
-            String alpnClassName = "org.eclipse.jetty.alpn.ALPN";
-            if (javaVersion.startsWith("1."))
-            {
-                Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(alpnClassName);
-                if (klass.getClassLoader() != null)
-                    throw new IllegalStateException(alpnClassName + " must be on JVM boot classpath");
-            }
-            else
-            {
-                NegotiatingServerConnectionFactory.class.getClassLoader().loadClass(alpnClassName);
-            }
-        }
-        catch (ClassNotFoundException x)
-        {
-            throw new IllegalStateException("No ALPN classes available");
-        }
-    }
 
     private final List<String> negotiatedProtocols;
     private String defaultProtocol;

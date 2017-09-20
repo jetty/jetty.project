@@ -109,7 +109,8 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory,W
     {
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext == null?null:scontext.getContextHandler());
-        _mimeTypes = _context == null?new MimeTypes():_context.getMimeTypes();
+        if (_mimeTypes==null)
+            _mimeTypes = _context == null?new MimeTypes():_context.getMimeTypes();
 
         _resourceService.setContentFactory(new ResourceContentFactory(this,_mimeTypes,_resourceService.getPrecompressedFormats()));
         _resourceService.setWelcomeFactory(this);

@@ -18,38 +18,66 @@
 
 package org.eclipse.jetty.alpn.java.client;
 
-import java.io.UncheckedIOException;
 import java.util.List;
 
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 
-import org.eclipse.jetty.alpn.ALPN;
+import org.eclipse.jetty.alpn.client.ALPNClientConnection;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
+import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.util.JavaVersion;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class JDK9ClientALPNProcessor implements ALPNProcessor.Client
 {
+    private static final Logger LOG = Log.getLogger(JDK9ClientALPNProcessor.class);
+
     @Override
-    public void configure(SSLEngine sslEngine, List<String> protocols)
+    public void init()
     {
-        SSLParameters sslParameters = sslEngine.getSSLParameters();
-        sslParameters.setApplicationProtocols(protocols.toArray(new String[0]));
-        sslEngine.setSSLParameters(sslParameters);
+        if (JavaVersion.VERSION.getPlatform()<9)
+            throw new IllegalStateException(this + " not applicable for java "+JavaVersion.VERSION);
     }
 
     @Override
-    public void process(SSLEngine sslEngine)
+    public boolean appliesTo(SSLEngine sslEngine)
     {
-        try
+        Module module = sslEngine.getClass().getModule();
+        return module!=null && "java.base".equals(module.getName());
+    }
+
+    @Override
+    public void configure(SSLEngine sslEngine, Connection connection)
+    {
+        ALPNClientConnection alpn = (ALPNClientConnection)connection;
+        SSLParameters sslParameters = sslEngine.getSSLParameters();
+        List<String> protocols = alpn.getProtocols();
+        sslParameters.setApplicationProtocols(protocols.toArray(new String[protocols.size()]));
+        sslEngine.setSSLParameters(sslParameters);
+        ((DecryptedEndPoint)connection.getEndPoint()).getSslConnection()
+                .addHandshakeListener(new ALPNListener(alpn));
+    }
+
+    private final class ALPNListener implements SslHandshakeListener
+    {
+        private final ALPNClientConnection alpnConnection;
+
+        private ALPNListener(ALPNClientConnection connection)
         {
-            ALPN.ClientProvider provider = (ALPN.ClientProvider)ALPN.get(sslEngine);
-            if (provider != null)
-                provider.selected(sslEngine.getApplicationProtocol());
+            alpnConnection = connection;
         }
-        catch (SSLException x)
+
+        @Override
+        public void handshakeSucceeded(Event event)
         {
-            throw new UncheckedIOException(x);
+            String protocol = alpnConnection.getSSLEngine().getApplicationProtocol();
+            if (LOG.isDebugEnabled())
+                LOG.debug("selected protocol {}", protocol);
+            alpnConnection.selected(protocol);
         }
     }
 }
