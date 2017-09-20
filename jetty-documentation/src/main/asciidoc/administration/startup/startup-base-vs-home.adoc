@@ -115,8 +115,8 @@ Jetty Environment:
  Config Search Order:
  --------------------
   <command-line>
-  ${jetty.base} -> /home/user/jetty-distribution-9.4.1.v20170120/demo-base
-  ${jetty.home} -> /home/user/Desktop/jetty-distribution-9.4.1.v20170120
+  ${jetty.base} -> /home/user/jetty-distribution-{VERSION}/demo-base
+  ${jetty.home} -> /home/user/Desktop/jetty-distribution-{VERSION}
 
 JVM Arguments:
 --------------
@@ -152,26 +152,26 @@ Jetty Server Classpath:
 Version Information on 42 entries in the classpath.
 Note: order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
- 0:               {VERSION} | ${jetty.home}/lib/jetty-client-{VERSION}.jar
+ 0:          {VERSION} | ${jetty.home}/lib/jetty-client-{VERSION}.jar
  1:      1.4.1.v201005082020 | ${jetty.base}/lib/ext/javax.mail.glassfish-1.4.1.v201005082020.jar
- 2:               {VERSION} | ${jetty.base}/lib/ext/test-mock-resources-{VERSION}.jar
+ 2:          {VERSION} | ${jetty.base}/lib/ext/test-mock-resources-{VERSION}.jar
  3:                    (dir) | ${jetty.home}/resources
  4:                    3.1.0 | ${jetty.home}/lib/servlet-api-3.1.jar
  5:                  3.1.RC0 | ${jetty.home}/lib/jetty-schemas-3.1.jar
- 6:               {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
- 7:               {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
- 8:               {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
- 9:               {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
-10:               {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
-11:               {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
-12:               {VERSION} | ${jetty.home}/lib/jetty-jaas-{VERSION}.jar
-13:               {VERSION} | ${jetty.home}/lib/jetty-jndi-{VERSION}.jar
+ 6:          {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
+ 7:          {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
+ 8:          {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
+ 9:          {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
+10:          {VERSION} | ${jetty.home}/lib/jetty-util-{VERSION}.jar
+11:          {VERSION} | ${jetty.home}/lib/jetty-io-{VERSION}.jar
+12:          {VERSION} | ${jetty.home}/lib/jetty-jaas-{VERSION}.jar
+13:          {VERSION} | ${jetty.home}/lib/jetty-jndi-{VERSION}.jar
 14:      1.1.0.v201105071233 | ${jetty.home}/lib/jndi/javax.activation-1.1.0.v201105071233.jar
 15:      1.4.1.v201005082020 | ${jetty.home}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
 16:                      1.2 | ${jetty.home}/lib/jndi/javax.transaction-api-1.2.jar
-17:               {VERSION} | ${jetty.home}/lib/jetty-rewrite-{VERSION}.jar
-18:               {VERSION} | ${jetty.home}/lib/jetty-security-{VERSION}.jar
-19:               {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar
+17:          {VERSION} | ${jetty.home}/lib/jetty-rewrite-{VERSION}.jar
+18:          {VERSION} | ${jetty.home}/lib/jetty-security-{VERSION}.jar
+19:          {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar
 20:                    3.0.0 | ${jetty.home}/lib/jsp/javax.el-3.0.0.jar
 21:      1.2.0.v201105211821 | ${jetty.home}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
 22:                    2.3.2 | ${jetty.home}/lib/jsp/javax.servlet.jsp-2.3.2.jar
@@ -179,21 +179,21 @@ Note: order presented here is how they would appear on the classpath.
 24:                    2.3.3 | ${jetty.home}/lib/jsp/jetty-jsp-jdt-2.3.3.jar
 25:      1.2.0.v201112081803 | ${jetty.home}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
 26:   3.8.2.v20130121-145325 | ${jetty.home}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar
-27:               {VERSION} | ${jetty.home}/lib/jetty-plus-{VERSION}.jar
-28:               {VERSION} | ${jetty.home}/lib/jetty-webapp-{VERSION}.jar
-29:               {VERSION} | ${jetty.home}/lib/jetty-annotations-{VERSION}.jar
+27:          {VERSION} | ${jetty.home}/lib/jetty-plus-{VERSION}.jar
+28:          {VERSION} | ${jetty.home}/lib/jetty-webapp-{VERSION}.jar
+29:          {VERSION} | ${jetty.home}/lib/jetty-annotations-{VERSION}.jar
 30:                      4.1 | ${jetty.home}/lib/annotations/asm-4.1.jar
 31:                      4.1 | ${jetty.home}/lib/annotations/asm-commons-4.1.jar
 32:                      1.2 | ${jetty.home}/lib/annotations/javax.annotation-api-1.2.jar
-33:               {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
+33:          {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
 34:                      1.0 | ${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
-35:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-client-impl-{VERSION}.jar
-36:               {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-server-impl-{VERSION}.jar
-37:               {VERSION} | ${jetty.home}/lib/websocket/websocket-api-{VERSION}.jar
-38:               {VERSION} | ${jetty.home}/lib/websocket/websocket-client-{VERSION}.jar
-39:               {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
-40:               {VERSION} | ${jetty.home}/lib/websocket/websocket-server-{VERSION}.jar
-41:               {VERSION} | ${jetty.home}/lib/websocket/websocket-servlet-{VERSION}.jar
+35:          {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-client-impl-{VERSION}.jar
+36:          {VERSION} | ${jetty.home}/lib/websocket/javax-websocket-server-impl-{VERSION}.jar
+37:          {VERSION} | ${jetty.home}/lib/websocket/websocket-api-{VERSION}.jar
+38:          {VERSION} | ${jetty.home}/lib/websocket/websocket-client-{VERSION}.jar
+39:          {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
+40:          {VERSION} | ${jetty.home}/lib/websocket/websocket-server-{VERSION}.jar
+41:          {VERSION} | ${jetty.home}/lib/websocket/websocket-servlet-{VERSION}.jar
 
 Jetty Active XMLs:
 ------------------
