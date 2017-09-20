@@ -1,23 +1,22 @@
 [description]
-Enables session data store in a local Infinispan cache
+Enables session data store in a remote Infinispan cache
 
 [tags]
 session
 
 [provides]
 session-store
-session-store-infnispan-embedded
+session-store-infinispan-remote
 
 [depend]
 sessions
 
 [files]
-maven://org.infinispan/infinispan-embedded/7.1.1.Final|lib/infinispan/infinispan-embedded-7.1.1.Final.jar
-basehome:modules/session-store-infinispan-embedded/infinispan-embedded.xml|etc/infinispan-embedded.xml
-
+maven://org.infinispan/infinispan-remote/9.1.0.Final|lib/infinispan/infinispan-remote-9.1.0.Final.jar
+basehome:modules/session-store-infinispan-remote/
 
 [xml]
-etc/sessions/infinispan/default.xml
+etc/sessions/infinispan/remote.xml
 
 [lib]
 lib/jetty-infinispan-${jetty.version}.jar
@@ -28,6 +27,9 @@ Infinispan is an open source project hosted on Github and released under the Apa
 http://infinispan.org/
 http://www.apache.org/licenses/LICENSE-2.0.html
 
+
 [ini-template]
+#jetty.session.infinispan.remoteCacheName=sessions
+#jetty.session.infinispan.idleTimeout.seconds=0
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0

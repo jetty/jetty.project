@@ -6,13 +6,13 @@ session
 
 [provides]
 session-store
-session-store-infnispan-embedded
+session-store-infinispan-embedded
 
 [depend]
 sessions
 
 [files]
-maven://org.infinispan/infinispan-embedded/7.1.1.Final|lib/infinispan/infinispan-embedded-7.1.1.Final.jar
+maven://org.infinispan/infinispan-embedded/9.1.0.Final|lib/infinispan/infinispan-embedded-9.1.0.Final.jar
 basehome:modules/session-store-infinispan-embedded/infinispan-embedded.xml|etc/infinispan-embedded.xml
 
 
