@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -277,37 +279,47 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return handle || wasDelayed ? this : null;
     }
 
-    public boolean isRequestExecuting()
+    public boolean isRequestIdle()
     {
-        return !getState().isIdle();
+        return getState().isIdle();
     }
 
-    public boolean onStreamTimeout(Throwable failure)
+    public boolean onStreamTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
+        boolean result = false;
+        if (isRequestIdle())
+        {
+            consumeInput();
+            result = true;
+        }
+
         getHttpTransport().onStreamTimeout(failure);
         if (getRequest().getHttpInput().onIdleTimeout(failure))
-            handle();
+            consumer.accept(this::handleWithContext);
 
-        if (isRequestExecuting())
-            return false;
-
-        consumeInput();
-        return true;
+        return result;
     }
 
-    public void onFailure(Throwable failure)
+    public Runnable onFailure(Throwable failure, Callback callback)
     {
         getHttpTransport().onStreamFailure(failure);
-        if (getRequest().getHttpInput().failed(failure))
-            handle();
-        else
-            getState().asyncError(failure);
+        boolean handle = getRequest().getHttpInput().failed(failure);
         consumeInput();
+        return new FailureTask(failure, callback, handle);
     }
 
     protected void consumeInput()
     {
         getRequest().getHttpInput().consumeAll();
+    }
+
+    private void handleWithContext()
+    {
+        ContextHandler context = getState().getContextHandler();
+        if (context != null)
+            context.handle(getRequest(), this);
+        else
+            handle();
     }
 
     /**
@@ -347,5 +359,36 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (stream != null)
             streamId = stream.getId();
         return String.format("%s#%d", super.toString(), getStream() == null ? -1 : streamId);
+    }
+
+    private class FailureTask implements Runnable
+    {
+        private final Throwable failure;
+        private final Callback callback;
+        private final boolean handle;
+
+        public FailureTask(Throwable failure, Callback callback, boolean handle)
+        {
+            this.failure = failure;
+            this.callback = callback;
+            this.handle = handle;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                if (handle)
+                    handleWithContext();
+                else
+                    getState().asyncError(failure);
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
     }
 }

@@ -496,7 +496,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>2.4</version>
+          <version>2.5</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -717,7 +717,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>4.0</version>
+        <version>4.2</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -827,6 +827,20 @@
                   <copyGenerated>true</copyGenerated>
                   <attachArtifact>false</attachArtifact>
                   <updateDate>true</updateDate>
+                  <versionTagHeader>Tag for release: jetty-${project.version}</versionTagHeader>
+                  <filenameExcludes>
+                    <filenameExclude>jetty-documentation/.*</filenameExclude>
+                    <filenameExclude>examples/.*</filenameExclude>
+                    <filenameExclude>aggregates/.*</filenameExclude>
+                    <filenameExclude>.*/test-.*</filenameExclude>
+                    <filenameExclude>.*/.*-test/.*</filenameExclude>
+                    <filenameExclude>.*/.*-tests/.*</filenameExclude>
+                    <filenameExclude>.*/src/test/.*</filenameExclude>
+                    <filenameExclude>\.git.*</filenameExclude>
+                    <filenameExclude>.*\.md$</filenameExclude>
+                    <filenameExclude>.*\.txt$</filenameExclude>
+                    <filenameExclude>Jenkinsfile</filenameExclude>
+                  </filenameExcludes>
                 </configuration>
               </execution>
             </executions>

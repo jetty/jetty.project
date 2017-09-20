@@ -15,13 +15,6 @@
     <bundle-symbolic-name>${project.groupId}.embedded</bundle-symbolic-name>
   </properties>
   <dependencies>
-  
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>18.0</version>
-        </dependency>
-        
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>

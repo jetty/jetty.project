@@ -175,6 +175,7 @@ public class HTTP2Connection extends AbstractConnection
     {
         private final Callback fillCallback = new FillCallback();
         private ByteBuffer buffer;
+        private boolean shutdown;
 
         @Override
         public Runnable produce()
@@ -185,7 +186,7 @@ public class HTTP2Connection extends AbstractConnection
             if (task != null)
                 return task;
 
-            if (isFillInterested())
+            if (isFillInterested() || shutdown)
                 return null;
 
             if (buffer == null)
@@ -221,6 +222,7 @@ public class HTTP2Connection extends AbstractConnection
                 else if (filled < 0)
                 {
                     release();
+                    shutdown = true;
                     session.onShutdown();
                     return null;
                 }
