@@ -31,10 +31,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
 /**
- * <p>Utility class to create a stream of Multi Release {@link JarEntry}s</p>
- * <p>This is the java 8 version of this class.
- * A java 9 version of this class is included as a Multi Release class in the
- * jetty-util jar, that uses java 9 APIs to correctly handle Multi Release jars.</p>
+ * <p>Utility class to handle a Multi Release Jar file</p>
  */
 public class MultiReleaseJarFile
 {
@@ -47,11 +44,22 @@ public class MultiReleaseJarFile
     /* Map to hold unversioned name to VersionedJarEntry */
     private final Map<String,VersionedJarEntry> entries;
 
+    /**
+     * Construct a multi release jar file for the current JVM version, ignoring directories.
+     * @param file The file to open
+     */
     public MultiReleaseJarFile(File file) throws IOException
     {
         this(file,JavaVersion.VERSION.getMajor(),false);
     }
 
+    /**
+     * Construct a multi release jar file
+     * @param file The file to open
+     * @param majorVersion The major JVM version to apply when selecting a version.
+     * @param includeDirectories true if any directory entries should not be ignored
+     * @throws IOException if the jar file cannot be read
+     */
     public MultiReleaseJarFile(File file, int majorVersion, boolean includeDirectories) throws IOException
     {
         if (file==null || !file.exists() || !file.canRead() || file.isDirectory())
@@ -89,21 +97,34 @@ public class MultiReleaseJarFile
         entries = Collections.unmodifiableMap(map);
     }
 
+    /**
+     * @return true IFF the jar is a multi release jar
+     */
     public boolean isMultiRelease()
     {
         return multiRelease;
     }
 
+    /**
+     * @return The major version applied to this jar for the purposes of selecting entries
+     */
     public int getVersion()
     {
         return majorVersion;
     }
 
+    /**
+     * @return A stream of versioned entries from the jar, excluded any that are not applicable
+     */
     public Stream<VersionedJarEntry> stream()
     {
         return entries.values().stream();
     }
 
+    /** Get a versioned resource entry by name
+     * @param name The unversioned name of the resource
+     * @return The versioned entry of the resource
+     */
     public VersionedJarEntry getEntry(String name)
     {
         return entries.get(name);
@@ -115,6 +136,9 @@ public class MultiReleaseJarFile
         return String.format("%s[%b,%d]",jarFile.getName(),isMultiRelease(),getVersion());
     }
 
+    /**
+     * A versioned Jar entry
+     */
     public class VersionedJarEntry
     {
         final JarEntry entry;
@@ -152,31 +176,52 @@ public class MultiReleaseJarFile
             this.outer = inner ? name.substring(0, name.indexOf('$')) + name.substring(name.length() - 6, name.length()) : null;
         }
 
+        /**
+         * @return the unversioned name of the resource
+         */
         public String getName()
         {
             return name;
         }
 
+        /**
+         * @return The name of the resource within the jar, which could be versioned
+         */
         public String getNameInJar()
         {
             return entry.getName();
         }
 
+        /**
+         * @return The version of the resource or 0 for a base version
+         */
         public int getVersion()
         {
             return version;
         }
 
+        /**
+         *
+         * @return True iff the entry is not from the base version
+         */
         public boolean isVersioned()
         {
             return version > 0;
         }
 
+        /**
+         *
+         * @return True iff the entry is a directory
+         */
         public boolean isDirectory()
         {
             return entry.isDirectory();
         }
 
+        /**
+         * @return An input stream of the content of the versioned entry.
+         * @throws IOException if something goes wrong!
+         */
         public InputStream getInputStream() throws IOException
         {
             return jarFile.getInputStream(entry);
