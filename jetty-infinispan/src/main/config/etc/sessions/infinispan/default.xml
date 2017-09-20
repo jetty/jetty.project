@@ -9,6 +9,7 @@
   <!-- Get a reference to the default local cache.                           -->
   <!-- ===================================================================== -->
   <New id="local" class="org.infinispan.manager.DefaultCacheManager">
+     <Arg><Property name="jetty.base" default="."/>/etc/infinispan-embedded.xml</Arg>
      <Get id="cache" name="cache"></Get>
   </New>
   
