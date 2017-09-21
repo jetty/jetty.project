@@ -22,6 +22,11 @@
 
 When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
+____
+[IMPORTANT]
+If you are running Jetty with JDK 9 or greater, enable `session-store-infinispan-remote-910.mod` instead.
+____
+
 [source, screen, subs="{sub-order}"]
 ----
 $ java -jar ../start.jar --create-startd
@@ -105,6 +110,11 @@ ____
 
 During testing, it can be helpful to run an in-process instance of Infinispan.
 To enable this you will first need to enable the `session-store-infinispan-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+____
+[IMPORTANT]
+If you are running Jetty with JDK 9 or greater, enable `session-store-infinispan-embedded-910.mod` instead.
+____
 
 [source, screen, subs="{sub-order}"]
 ----

@@ -71,9 +71,7 @@ detected.
 
   <!-- disable cookies
   <Get name="sessionHandler">
-     <Get name="sessionManager">
-        <Set name="usingCookies" type="boolean">false</Set>
-     </Get>
+    <Set name="usingCookies" type="boolean">false</Set>
   </Get>
   -->
 

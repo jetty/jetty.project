@@ -18,35 +18,54 @@
 
 package org.eclipse.jetty.io.ssl;
 
-import java.util.List;
-
 import javax.net.ssl.SSLEngine;
+
+import org.eclipse.jetty.io.Connection;
 
 public interface ALPNProcessor
 {
-    public interface Server
+    /**
+     * Initializes this ALPNProcessor
+     *
+     * @throws RuntimeException if this processor is unavailable (e.g. missing dependencies or wrong JVM)
+     */
+    public default void init()
     {
-        public static final ALPNProcessor.Server NOOP = new ALPNProcessor.Server()
-        {
-        };
-
-        public default void configure(SSLEngine sslEngine)
-        {
-        }
     }
 
-    public interface Client
+    /**
+     * Tests if this processor can be applied to the given SSLEngine.
+     *
+     * @param sslEngine the SSLEngine to check
+     * @return true if the processor can be applied to the given SSLEngine
+     */
+    public default boolean appliesTo(SSLEngine sslEngine)
     {
-        public static final Client NOOP = new Client()
-        {
-        };
+        return false;
+    }
 
-        public default void configure(SSLEngine sslEngine, List<String> protocols)
-        {
-        }
+    /**
+     * Configures the given SSLEngine and the given Connection for ALPN.
+     *
+     * @param sslEngine the SSLEngine to configure
+     * @param connection the Connection to configure
+     * @throws RuntimeException if this processor cannot be configured
+     */
+    public default void configure(SSLEngine sslEngine, Connection connection)
+    {
+    }
 
-        public default void process(SSLEngine sslEngine)
-        {
-        }
+    /**
+     * Server-side interface used by ServiceLoader.
+     */
+    public interface Server extends ALPNProcessor
+    {
+    }
+
+    /**
+     * Client-side interface used by ServiceLoader.
+     */
+    public interface Client extends ALPNProcessor
+    {
     }
 }

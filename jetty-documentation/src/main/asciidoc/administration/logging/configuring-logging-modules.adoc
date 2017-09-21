@@ -207,7 +207,7 @@ INFO  : logging-log4j   initialized in ${jetty.base}/start.d/logging-log4j.ini
 MKDIR : ${jetty.base}/lib/slf4j
 DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 MKDIR : ${jetty.base}/lib/log4j
-COPY  : /Users/chris/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar to ${jetty.base}/lib/log4j/log4j-1.2.17.jar
+COPY  : /Users/admin/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar to ${jetty.base}/lib/log4j/log4j-1.2.17.jar
 MKDIR : ${jetty.base}/resources
 COPY  : ${jetty.home}/modules/log4j-impl/resources/log4j.xml to ${jetty.base}/resources/log4j.xml
 DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-log4j12/1.7.21/slf4j-log4j12-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-log4j12-1.7.21.jar

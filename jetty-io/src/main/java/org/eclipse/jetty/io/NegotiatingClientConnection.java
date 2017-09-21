@@ -45,7 +45,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         this.context = context;
     }
 
-    protected SSLEngine getSSLEngine()
+    public SSLEngine getSSLEngine()
     {
         return engine;
     }

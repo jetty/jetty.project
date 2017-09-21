@@ -24,10 +24,11 @@ When using the Jetty distribution, you will first need to enable the `session-st
 
 [source, screen, subs="{sub-order}"]
 ----
-mb-olamy:tmp-base olamy$ java -jar ../start.jar --create-startd
+$ java -jar ../start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
 INFO  : Base directory was modified
-mb-olamy:tmp-base olamy$ java -jar ../start.jar --add-to-start=session-store-hazelcast-remote
+
+$ java -jar ../start.jar --add-to-start=session-store-hazelcast-remote
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -44,11 +45,11 @@ Proceed (y/N)? y
 INFO  : server          transitively enabled, ini template available with --add-to-start=server
 INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
 INFO  : session-store-hazelcast-remote initialized in ${jetty.base}/start.d/session-store-hazelcast-remote.ini
-MKDIR : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2
-DOWNLD: http://central.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
+MKDIR : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2
+DOWNLD: http://central.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
 MKDIR : ${jetty.base}/lib/hazelcast
-COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
-COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar
+COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
+COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar
 INFO  : Base directory was modified
 ----
 
@@ -112,10 +113,10 @@ To enable this you will first need to enable the `session-store-hazelcast-embedd
 
 [source, screen, subs="{sub-order}"]
 ----
-mb-olamy:tmp-base olamy$ java -jar ../start.jar --create-startd
+$ java -jar ../start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
 INFO  : Base directory was modified
-mb-olamy:tmp-base olamy$ java -jar ../start.jar --add-to-start=session-store-hazelcast-embedded
+$ java -jar ../start.jar --add-to-start=session-store-hazelcast-embedded
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -132,11 +133,11 @@ Proceed (y/N)? y
 INFO  : server          transitively enabled, ini template available with --add-to-start=server
 INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
 INFO  : session-store-hazelcast-embedded initialized in ${jetty.base}/start.d/session-store-hazelcast-embedded.ini
-MKDIR : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2
-DOWNLD: http://central.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
+MKDIR : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2
+DOWNLD: http://central.maven.org/maven2/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar
 MKDIR : ${jetty.base}/lib/hazelcast
-COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
-COPY  : /Users/olamy/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar
+COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast/3.8.2/hazelcast-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-3.8.2.jar
+COPY  : /Users/admin/mvn-repo/com/hazelcast/hazelcast-client/3.8.2/hazelcast-client-3.8.2.jar to ${jetty.base}/lib/hazelcast/hazelcast-client-3.8.2.jar
 ----
 
 Doing this enables the embedded Hazelcast Session module and any dependent modules or files needed for it to run on the server.

@@ -20,7 +20,7 @@
 This document provides an overview of how to configure SSL and TLS for Jetty.
 
 [[configuring-jetty-for-ssl]]
-===== Configuring Jetty for SSL
+==== Configuring Jetty for SSL
 
 To configure Jetty for SSL, complete the tasks in the following sections:
 
