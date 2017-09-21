@@ -561,7 +561,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             {
                 continue;
             }
-            MavenProject mavenProject = getProjectReferences( artifact, project );
+            MavenProject mavenProject = getProjectReference( artifact, project );
             if (mavenProject != null)
             {
                 File projectPath = Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
@@ -583,7 +583,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         return dependencyFiles; 
     }
 
-    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    protected MavenProject getProjectReference(Artifact artifact, MavenProject project )
     {
         if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
         {
