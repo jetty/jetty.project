@@ -1138,12 +1138,8 @@
     </profile>
     <!--
       Usage:
-      configure settings.xml for jetty.eclipse.website server entry
-      > mvn -Paggregate-site javadoc:aggregate
-      then
-      > mvn -N site:deploy
-      or
-      > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
+      Javadoc aggregation for Jetty website
+      > mvn -Paggregate-site clean install javadoc:aggregate -Dtest=foo
      -->
     <profile>
       <id>aggregate-site</id>
