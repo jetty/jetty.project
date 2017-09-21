@@ -289,7 +289,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     protected void interruptAcceptors()
     {
-        try (Locker.Lock lock = _locker.lockIfNotHeld())
+        try (Locker.Lock lock = _locker.lock())
         {
             for (Thread thread : _acceptors)
             {
@@ -388,7 +388,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void addConnectionFactory(ConnectionFactory factory)
     {
-        try (Locker.Lock lock = _locker.lockIfNotHeld())
+        try (Locker.Lock lock = _locker.lock())
         {
             Set<ConnectionFactory> to_remove = new HashSet<>();
             for (String key:factory.getProtocols())
