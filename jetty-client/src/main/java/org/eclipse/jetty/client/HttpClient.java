@@ -73,6 +73,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * <p>{@link HttpClient} provides an efficient, asynchronous, non-blocking implementation
@@ -204,9 +205,12 @@ public class HttpClient extends ContainerLifeCycle
             executor = threadPool;
         }
         addBean(executor);
-
+        
         if (byteBufferPool == null)
-            byteBufferPool = new MappedByteBufferPool();
+            byteBufferPool = new MappedByteBufferPool(2048,
+                executor instanceof ThreadPool.SizedThreadPool
+                    ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads()/2
+                    : Runtime.getRuntime().availableProcessors()*2);
         addBean(byteBufferPool);
 
         if (scheduler == null)
