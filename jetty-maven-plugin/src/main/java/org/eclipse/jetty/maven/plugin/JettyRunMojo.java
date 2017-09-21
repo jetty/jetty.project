@@ -38,7 +38,6 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
-import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;

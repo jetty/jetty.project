@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 
