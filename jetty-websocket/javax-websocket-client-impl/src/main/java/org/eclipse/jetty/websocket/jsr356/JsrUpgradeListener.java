@@ -59,7 +59,7 @@ public class JsrUpgradeListener implements UpgradeListener
             return;
         }
 
-        JsrHandshakeResponse hr = new JsrHandshakeResponse(response);
+        JavaxWebSocketHandshakeResponse hr = new JavaxWebSocketHandshakeResponse(response);
         configurator.afterResponse(hr);
     }
 }

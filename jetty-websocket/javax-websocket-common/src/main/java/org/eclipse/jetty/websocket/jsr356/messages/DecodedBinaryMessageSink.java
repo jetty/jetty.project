@@ -18,33 +18,30 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
-import java.util.function.Function;
+import java.lang.invoke.MethodHandle;
 
-import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-import javax.websocket.EncodeException;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class DecodedBinaryMessageSink extends ByteBufferMessageSink
 {
-    public DecodedBinaryMessageSink(WSPolicy policy, WSLocalEndpoint<JsrSession> endpointFunctions, Decoder.Binary decoder, Function<Object, Object> onMessageFunction)
+    public DecodedBinaryMessageSink(WSPolicy policy, JavaxWebSocketSession session, WSLocalEndpoint endpointFunctions, Decoder.Binary decoder, MethodHandle methodHandle)
     {
-        super(policy, (byteBuf) ->
+        super(policy, session.getExecutor(), methodHandle);
+        /*(byteBuf) ->
         {
             try
             {
                 Object decoded = null;
                 
                 decoded = decoder.decode(byteBuf);
-                
+
                 // notify event
                 Object ret = onMessageFunction.apply(decoded);
-                
+
                 if (ret != null)
                 {
                     // send response
@@ -57,6 +54,6 @@ public class DecodedBinaryMessageSink extends ByteBufferMessageSink
             {
                 throw new WebSocketException(e);
             }
-        });
+        });*/
     }
 }

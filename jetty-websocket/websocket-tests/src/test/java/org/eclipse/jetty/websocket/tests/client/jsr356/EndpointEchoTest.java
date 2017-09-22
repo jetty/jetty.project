@@ -30,7 +30,7 @@ import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.servlets.EchoServlet;
@@ -95,7 +95,7 @@ public class EndpointEchoTest
         Session session = container.connectToServer(ClientEndpoint.class, server.getServerUri());
         session.getBasicRemote().sendText("Echo");
         
-        JsrSession jsrSession = (JsrSession) session;
+        JavaxWebSocketSession jsrSession = (JavaxWebSocketSession) session;
         Object obj = jsrSession.getEndpoint();
         
         assertThat("session.endpoint", obj, instanceOf(ClientEndpoint.class));

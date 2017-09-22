@@ -87,7 +87,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     private final WSPolicy clientPolicy;
     private final WSExtensionRegistry extensionRegistry;
     private final DecoratedObjectFactory objectFactory;
-    private final LocalEndpointFactory localEndpointFactory;
+    private final JavaxWebSocketLocalEndpointFactory localEndpointFactory;
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private final int id = ThreadLocalRandom.current().nextInt();
     protected Function<WebSocketClientConnection, WSSession<? extends WSConnection>> newSessionFunction =
@@ -197,7 +197,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         
         for (Extension ext : config.getExtensions())
         {
-            req.addExtensions(new JsrExtensionConfig(ext));
+            req.addExtensions(new JavaxWebSocketExtensionConfig(ext));
         }
         
         if (config.getPreferredSubprotocols().size() > 0)
@@ -213,7 +213,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         Future<org.eclipse.jetty.websocket.api.Session> futSess = client.connect(instance, path, req, upgradeListener);
         try
         {
-            return (JsrSession) futSess.get();
+            return (JavaxWebSocketSession) futSess.get();
         }
         catch (InterruptedException e)
         {
@@ -330,7 +330,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         
         for (String name : extensions.getExtensionNames())
         {
-            ret.add(new JsrExtension(name));
+            ret.add(new JavaxWebSocketExtension(name));
         }
         
         return ret;

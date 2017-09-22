@@ -18,23 +18,20 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
-import java.util.function.Function;
+import java.lang.invoke.MethodHandle;
 
-import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-import javax.websocket.EncodeException;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class DecodedTextMessageSink extends StringMessageSink
 {
-    public DecodedTextMessageSink(WSPolicy policy, WSLocalEndpoint<JsrSession> endpointFunctions, Decoder.Text decoder, Function<Object, Object> onMessageFunction)
+    public DecodedTextMessageSink(JavaxWebSocketSession session, WSLocalEndpoint endpointFunctions, Decoder.Text decoder, MethodHandle methodHandle)
     {
-        super(policy, (message) ->
+        super(session.getPolicy(), session.getExecutor(), methodHandle);
+
+        /*super(policy, (message) ->
         {
             try
             {
@@ -55,6 +52,6 @@ public class DecodedTextMessageSink extends StringMessageSink
             {
                 throw new WebSocketException(e);
             }
-        });
+        });*/
     }
 }

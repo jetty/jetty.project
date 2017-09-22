@@ -18,28 +18,25 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.Map;
 
-import javax.websocket.PongMessage;
+import javax.websocket.HandshakeResponse;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 
-public class JsrPongMessage implements PongMessage
+public class JavaxWebSocketHandshakeResponse implements HandshakeResponse
 {
-    private final ByteBuffer data;
+    private final Map<String, List<String>> headers;
 
-    public JsrPongMessage(ByteBuffer buf)
+    public JavaxWebSocketHandshakeResponse(UpgradeResponse response)
     {
-        this.data = buf;
+        this.headers = response.getHeaders();
     }
 
     @Override
-    public ByteBuffer getApplicationData()
+    public Map<String, List<String>> getHeaders()
     {
-        if (data == null)
-        {
-            return BufferUtil.EMPTY_BUFFER;
-        }
-        return data.slice();
+        return this.headers;
     }
 }

@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.tests.LocalWebSocketConnection;
 import org.eclipse.jetty.websocket.tests.jsr356.handlers.ByteArrayWholeHandler;
@@ -60,7 +60,7 @@ public class JsrSessionTest
     
     private SimpleContainerScope containerScope;
     private ClientContainer container;
-    private JsrSession session;
+    private JavaxWebSocketSession session;
     
     @Before
     public void initSession() throws Exception
@@ -80,7 +80,7 @@ public class JsrSessionTest
         ConfiguredEndpoint ei = new ConfiguredEndpoint(new DummyEndpoint(), config);
         
         // Session
-        session = new JsrSession(container, id, requestURI, ei, connection);
+        session = new JavaxWebSocketSession(container, id, requestURI, ei, connection);
         session.start();
     }
     

@@ -62,8 +62,8 @@ import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
 import org.eclipse.jetty.websocket.common.reflect.Arg;
 import org.eclipse.jetty.websocket.common.reflect.UnorderedSignature;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
-import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketPongMessage;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedBinaryMessageSink;
@@ -75,7 +75,7 @@ import org.eclipse.jetty.websocket.jsr356.messages.DecodedTextMessageSink;
  * Endpoint Functions used as interface between from the parsed websocket frames
  * and the user provided endpoint methods.
  */
-public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
+public class JsrEndpointFunctions extends CommonEndpointFunctions<JavaxWebSocketSession>
 {
     private static final Logger LOG = Log.getLogger(JsrEndpointFunctions.class);
     
@@ -259,7 +259,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
                 Function<ByteBuffer, Void> pongFunction = (payload) ->
                 {
                     //noinspection unchecked
-                    handler.onMessage((T) new JsrPongMessage(payload));
+                    handler.onMessage((T) new JavaxWebSocketPongMessage(payload));
                     return null;
                 };
                 setOnPong(new MessageHandlerPongFunction(handler, pongFunction), handler);
@@ -581,7 +581,7 @@ public class JsrEndpointFunctions extends CommonEndpointFunctions<JsrSession>
             setOnPong((pong) ->
             {
                 args[0] = getSession();
-                args[1] = new JsrPongMessage(pong);
+                args[1] = new JavaxWebSocketPongMessage(pong);
                 Object ret = invoker.apply(endpoint, args);
                 if (ret != null)
                 {

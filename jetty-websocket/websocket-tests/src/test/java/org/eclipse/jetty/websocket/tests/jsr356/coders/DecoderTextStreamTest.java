@@ -38,7 +38,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.CompletableFutureCallback;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
 import org.eclipse.jetty.websocket.tests.jsr356.DummyJsrEndpointFunctions;
 import org.junit.AfterClass;
@@ -58,7 +58,7 @@ public class DecoderTextStreamTest
         executor.shutdown();
     }
     
-    private WSLocalEndpoint<JsrSession> endpointFunctions = new DummyJsrEndpointFunctions();
+    private WSLocalEndpoint<JavaxWebSocketSession> endpointFunctions = new DummyJsrEndpointFunctions();
     
     @Test
     public void testQuotes_Decoder_Direct() throws Exception

@@ -31,9 +31,8 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WSException;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.frames.ReadOnlyDelegatedFrame;
 
-public class LocalEndpointImpl implements WSLocalEndpoint
+public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
 {
     private final Logger log;
     private final Object endpointInstance;
@@ -42,18 +41,15 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     private final MethodHandle openHandle;
     private final MethodHandle closeHandle;
     private final MethodHandle errorHandle;
-    private final MessageSink textSink;
-    private final MessageSink binarySink;
-    private final MethodHandle frameHandle;
-    private final MethodHandle pingHandle;
-    private final MethodHandle pongHandle;
+    private MessageSink textSink;
+    private MessageSink binarySink;
+    private MethodHandle pongHandle;
     private MessageSink activeMessageSink;
 
-    public LocalEndpointImpl(Object endpointInstance, WSPolicy endpointPolicy,
-                             MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                             MessageSink textSink, MessageSink binarySink,
-                             MethodHandle frameHandle,
-                             MethodHandle pingHandle, MethodHandle pongHandle)
+    public JavaxWebSocketLocalEndpointImpl(Object endpointInstance, WSPolicy endpointPolicy,
+                                           MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
+                                           MessageSink textSink, MessageSink binarySink,
+                                           MethodHandle pongHandle)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 
@@ -65,9 +61,12 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         this.errorHandle = errorHandle;
         this.textSink = textSink;
         this.binarySink = binarySink;
-        this.frameHandle = frameHandle;
-        this.pingHandle = pingHandle;
         this.pongHandle = pongHandle;
+    }
+
+    public Object getEndpointInstance()
+    {
+        return endpointInstance;
     }
 
     @Override
@@ -79,11 +78,6 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     public WSPolicy getPolicy()
     {
         return policy;
-    }
-
-    public Object getEndpointInstance()
-    {
-        return endpointInstance;
     }
 
     @Override
@@ -99,53 +93,6 @@ public class LocalEndpointImpl implements WSLocalEndpoint
             activeMessageSink = binarySink;
 
         acceptMessage(frame, callback);
-    }
-
-    @Override
-    public void onText(Frame frame, Callback callback)
-    {
-        if (activeMessageSink == null)
-            activeMessageSink = textSink;
-
-        acceptMessage(frame, callback);
-    }
-
-    @Override
-    public void onContinuation(Frame frame, Callback callback)
-    {
-        acceptMessage(frame, callback);
-    }
-
-    private void acceptMessage(Frame frame, Callback callback)
-    {
-        // No message sink is active
-        if (activeMessageSink == null)
-            return;
-
-        // Accept the payload into the message sink
-        activeMessageSink.accept(frame, callback);
-        if (frame.isFin())
-            activeMessageSink = null;
-    }
-
-
-    @Override
-    public void onOpen()
-    {
-        if (open.compareAndSet(false, true))
-        {
-            if (openHandle == null)
-                return;
-
-            try
-            {
-                openHandle.invoke();
-            }
-            catch (Throwable cause)
-            {
-                throw new WSException("Unhandled OPEN endpoint method error", cause);
-            }
-        }
     }
 
     @Override
@@ -168,19 +115,9 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     }
 
     @Override
-    public void onFrame(Frame frame)
+    public void onContinuation(Frame frame, Callback callback)
     {
-        if (frameHandle == null)
-            return;
-
-        try
-        {
-            frameHandle.invoke(new ReadOnlyDelegatedFrame(frame));
-        }
-        catch (Throwable cause)
-        {
-            throw new WSException("Unhandled FRAME endpoint method error", cause);
-        }
+        acceptMessage(frame, callback);
     }
 
     @Override
@@ -212,22 +149,34 @@ public class LocalEndpointImpl implements WSLocalEndpoint
     }
 
     @Override
+    public void onFrame(Frame frame)
+    {
+        // Ignore - not supported by JSR356
+    }
+
+    @Override
+    public void onOpen()
+    {
+        if (open.compareAndSet(false, true))
+        {
+            if (openHandle == null)
+                return;
+
+            try
+            {
+                openHandle.invoke();
+            }
+            catch (Throwable cause)
+            {
+                throw new WSException("Unhandled OPEN endpoint method error", cause);
+            }
+        }
+    }
+
+    @Override
     public void onPing(ByteBuffer payload)
     {
-        if (pingHandle == null)
-            return;
-
-        try
-        {
-            if (payload == null)
-                payload = BufferUtil.EMPTY_BUFFER;
-
-            pingHandle.invoke(payload);
-        }
-        catch (Throwable cause)
-        {
-            throw new WSException("Unhandled PING endpoint method error", cause);
-        }
+        // Ignore - not supported by JSR356
     }
 
     @Override
@@ -247,5 +196,43 @@ public class LocalEndpointImpl implements WSLocalEndpoint
         {
             throw new WSException("Unhandled PONG endpoint method error", cause);
         }
+    }
+
+    @Override
+    public void onText(Frame frame, Callback callback)
+    {
+        if (activeMessageSink == null)
+            activeMessageSink = textSink;
+
+        acceptMessage(frame, callback);
+    }
+
+    public void setBinarySink(MessageSink binarySink)
+    {
+        // Safe to do this way, as any active sink is tracked in activeSink variable
+        this.binarySink = binarySink;
+    }
+
+    public void setPongHandle(MethodHandle pongHandle)
+    {
+        this.pongHandle = pongHandle;
+    }
+
+    public void setTextSink(MessageSink textSink)
+    {
+        // Safe to do this way, as any active sink is tracked in activeSink variable
+        this.textSink = textSink;
+    }
+
+    private void acceptMessage(Frame frame, Callback callback)
+    {
+        // No message sink is active
+        if (activeMessageSink == null)
+            return;
+
+        // Accept the payload into the message sink
+        activeMessageSink.accept(frame, callback);
+        if (frame.isFin())
+            activeMessageSink = null;
     }
 }

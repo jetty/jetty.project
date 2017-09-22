@@ -27,9 +27,9 @@ import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class DummyEndpointFunctions extends AbstractLifeCycle implements WSLocalEndpoint<JsrSession>
+public class DummyEndpointFunctions extends AbstractLifeCycle implements WSLocalEndpoint<JavaxWebSocketSession>
 {
     private static final Logger LOG = Log.getLogger(DummyEndpointFunctions.class);
     
@@ -40,13 +40,13 @@ public class DummyEndpointFunctions extends AbstractLifeCycle implements WSLocal
     }
     
     @Override
-    public JsrSession getSession()
+    public JavaxWebSocketSession getSession()
     {
         return null;
     }
     
     @Override
-    public void onOpen(JsrSession session)
+    public void onOpen(JavaxWebSocketSession session)
     {
     
     }

@@ -36,11 +36,11 @@ import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
 
-public class JsrAsyncRemote extends AbstractJsrRemote implements javax.websocket.RemoteEndpoint.Async
+public class JavaxWebSocketAsyncRemote extends AbstractJsrRemote implements javax.websocket.RemoteEndpoint.Async
 {
-    static final Logger LOG = Log.getLogger(JsrAsyncRemote.class);
+    static final Logger LOG = Log.getLogger(JavaxWebSocketAsyncRemote.class);
 
-    protected JsrAsyncRemote(JsrSession session)
+    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session)
     {
         super(session);
     }

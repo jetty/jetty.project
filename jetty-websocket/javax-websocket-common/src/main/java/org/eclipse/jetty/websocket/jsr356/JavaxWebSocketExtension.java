@@ -27,7 +27,7 @@ import javax.websocket.Extension;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
-public class JsrExtension implements Extension
+public class JavaxWebSocketExtension implements Extension
 {
     private static class JsrParameter implements Extension.Parameter
     {
@@ -60,7 +60,7 @@ public class JsrExtension implements Extension
      * A configured extension
      * @param cfg the configuration for the extension 
      */
-    public JsrExtension(ExtensionConfig cfg)
+    public JavaxWebSocketExtension(ExtensionConfig cfg)
     {
         this.name = cfg.getName();
         if (cfg.getParameters() != null)
@@ -76,7 +76,7 @@ public class JsrExtension implements Extension
      * A potential (unconfigured) extension
      * @param name the name of the extension
      */
-    public JsrExtension(String name)
+    public JavaxWebSocketExtension(String name)
     {
         this.name = name;
     }
@@ -99,7 +99,7 @@ public class JsrExtension implements Extension
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        JsrExtension that = (JsrExtension) o;
+        JavaxWebSocketExtension that = (JavaxWebSocketExtension) o;
 
         return name != null ? name.equals(that.name) : that.name == null;
     }

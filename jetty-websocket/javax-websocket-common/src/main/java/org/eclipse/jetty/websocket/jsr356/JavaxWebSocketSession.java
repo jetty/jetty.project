@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.Principal;
@@ -61,10 +60,10 @@ import org.eclipse.jetty.websocket.jsr356.io.JavaxWebSocketConnection;
  * Client Session for the JSR.
  * TODO: rename to JavaxWebSocketSession
  */
-public class JsrSession<T extends JavaxWebSocketConnection>
+public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
         extends WSCoreSession<T> implements javax.websocket.Session
 {
-    private static final Logger LOG = Log.getLogger(JsrSession.class);
+    private static final Logger LOG = Log.getLogger(JavaxWebSocketSession.class);
 
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final javax.websocket.WebSocketContainer container;
@@ -77,10 +76,10 @@ public class JsrSession<T extends JavaxWebSocketConnection>
 
     private List<Extension> negotiatedExtensions;
     private Map<String, String> pathParameters = new HashMap<>();
-    private JsrAsyncRemote asyncRemote;
-    private JsrBasicRemote basicRemote;
+    private JavaxWebSocketAsyncRemote asyncRemote;
+    private JavaxWebSocketBasicRemote basicRemote;
 
-    public JsrSession(WebSocketContainer container, T connection)
+    public JavaxWebSocketSession(WebSocketContainer container, T connection)
     {
         super(connection);
         this.container = container;
@@ -250,7 +249,7 @@ public class JsrSession<T extends JavaxWebSocketConnection>
     {
         if (asyncRemote == null)
         {
-            asyncRemote = new JsrAsyncRemote(this);
+            asyncRemote = new JavaxWebSocketAsyncRemote(this);
         }
         return asyncRemote;
     }
@@ -266,7 +265,7 @@ public class JsrSession<T extends JavaxWebSocketConnection>
     {
         if (basicRemote == null)
         {
-            basicRemote = new JsrBasicRemote(this);
+            basicRemote = new JavaxWebSocketBasicRemote(this);
         }
         return basicRemote;
     }
@@ -377,7 +376,7 @@ public class JsrSession<T extends JavaxWebSocketConnection>
 
         if ((negotiatedExtensions == null) && extensions != null)
         {
-            negotiatedExtensions = extensions.stream().map(JsrExtension::new).collect(Collectors.toList());
+            negotiatedExtensions = extensions.stream().map(JavaxWebSocketExtension::new).collect(Collectors.toList());
         }
         return negotiatedExtensions;
     }
@@ -410,7 +409,7 @@ public class JsrSession<T extends JavaxWebSocketConnection>
     {
         // TODO: maintain internal Set of open sessions
         Set<Session> sessions = new HashSet<>();
-        sessions.addAll(getBeans(JsrSession.class));
+        sessions.addAll(getBeans(JavaxWebSocketSession.class));
         return sessions;
     }
 

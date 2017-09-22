@@ -22,9 +22,9 @@ import javax.websocket.Extension;
 
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
-public class JsrExtensionConfig extends ExtensionConfig
+public class JavaxWebSocketExtensionConfig extends ExtensionConfig
 {
-    public JsrExtensionConfig(Extension ext)
+    public JavaxWebSocketExtensionConfig(Extension ext)
     {
         super(ext.getName());
         for (Extension.Parameter param : ext.getParameters())

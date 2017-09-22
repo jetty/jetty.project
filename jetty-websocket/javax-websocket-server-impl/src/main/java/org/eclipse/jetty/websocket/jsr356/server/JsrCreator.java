@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrExtension;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtension;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -119,12 +119,12 @@ public class JsrCreator implements WebSocketCreator
         List<Extension> installedExtensions = new ArrayList<>();
         for (String extName : extensionFactory.getAvailableExtensions().keySet())
         {
-            installedExtensions.add(new JsrExtension(extName));
+            installedExtensions.add(new JavaxWebSocketExtension(extName));
         }
         List<Extension> requestedExts = new ArrayList<>();
         for (ExtensionConfig reqCfg : req.getExtensions())
         {
-            requestedExts.add(new JsrExtension(reqCfg));
+            requestedExts.add(new JavaxWebSocketExtension(reqCfg));
         }
         List<Extension> usedExtensions = configurator.getNegotiatedExtensions(installedExtensions,requestedExts);
         List<ExtensionConfig> configs = new ArrayList<>();

@@ -18,28 +18,25 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
+import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 
-import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-import javax.websocket.EncodeException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 
 public class DecodedReaderMessageSink extends ReaderMessageSink
 {
     private static final Logger LOG = Log.getLogger(DecodedReaderMessageSink.class);
     
-    public DecodedReaderMessageSink(WSLocalEndpoint<JsrSession> endpointFunctions, Executor executor, Decoder.TextStream decoder, Function<Object, Object> onMessageFunction)
+    public DecodedReaderMessageSink(WSPolicy policy, WSLocalEndpoint endpointFunctions, Executor executor, Decoder.TextStream decoder, MethodHandle methodHandle)
     {
-        super(executor, (reader) ->
+        super(policy, executor, methodHandle);
+
+        /*super(executor, (reader) ->
         {
             try
             {
@@ -67,6 +64,6 @@ public class DecodedReaderMessageSink extends ReaderMessageSink
             {
                 throw new WebSocketException(e);
             }
-        });
+        });*/
     }
 }

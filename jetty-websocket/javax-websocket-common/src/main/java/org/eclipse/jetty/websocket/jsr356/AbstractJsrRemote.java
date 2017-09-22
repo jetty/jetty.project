@@ -39,9 +39,9 @@ public abstract class AbstractJsrRemote extends WSRemoteImpl implements javax.we
 {
     private static final Logger LOG = Log.getLogger(AbstractJsrRemote.class);
 
-    protected final JsrSession session;
+    protected final JavaxWebSocketSession session;
 
-    public AbstractJsrRemote(JsrSession session)
+    public AbstractJsrRemote(JavaxWebSocketSession session)
     {
         super(session.getConnection());
         this.session = session;

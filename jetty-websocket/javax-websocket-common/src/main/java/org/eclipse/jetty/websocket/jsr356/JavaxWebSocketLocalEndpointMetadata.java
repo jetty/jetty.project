@@ -27,20 +27,17 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 
-public class LocalEndpointMetadata
+public class JavaxWebSocketLocalEndpointMetadata
 {
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
-
-    private MethodHandle frameHandle;
 
     private MethodHandle textHandle;
     private Class<? extends MessageSink> textSink;
     private MethodHandle binaryHandle;
     private Class<? extends MessageSink> binarySink;
 
-    private MethodHandle pingHandle;
     private MethodHandle pongHandle;
 
     // EndpointConfig entries
@@ -91,17 +88,6 @@ public class LocalEndpointMetadata
     public MethodHandle getErrorHandle()
     {
         return errorHandle;
-    }
-
-    public void setFrameHandler(MethodHandle frame, Object origin)
-    {
-        assertNotSet(this.frameHandle, "FRAME Handler", origin);
-        this.frameHandle = frame;
-    }
-
-    public MethodHandle getFrameHandle()
-    {
-        return frameHandle;
     }
 
     public void setClientConfigurator(Class<? extends ClientEndpointConfig.Configurator> clientConfigurator)
@@ -163,17 +149,6 @@ public class LocalEndpointMetadata
     public MethodHandle getOpenHandle()
     {
         return openHandle;
-    }
-
-    public void setPingHandle(MethodHandle ping, Object origin)
-    {
-        assertNotSet(this.pingHandle, "PING Handler", origin);
-        this.pingHandle = ping;
-    }
-
-    public MethodHandle getPingHandle()
-    {
-        return pingHandle;
     }
 
     public void setPongHandle(MethodHandle pong, Object origin)

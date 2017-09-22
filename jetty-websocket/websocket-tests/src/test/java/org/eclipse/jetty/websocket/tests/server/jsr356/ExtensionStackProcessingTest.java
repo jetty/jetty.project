@@ -43,8 +43,8 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.client.impl.WebSocketClientConnection;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.compress.DeflateFrameExtension;
-import org.eclipse.jetty.websocket.jsr356.JsrExtension;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketExtension;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.impl.NativeWebSocketConfiguration;
@@ -118,7 +118,7 @@ public class ExtensionStackProcessingTest
         assumeDeflateFrameAvailable();
         
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
+                .extensions(Arrays.<Extension>asList(new JavaxWebSocketExtension("deflate-frame")))
                 .build();
 
         final String content = "deflate_me";
@@ -135,7 +135,7 @@ public class ExtensionStackProcessingTest
         }, config, uri);
 
         // Make sure everything is wired properly.
-        OutgoingFrames firstOut = ((JsrSession)session).getOutgoingHandler();
+        OutgoingFrames firstOut = ((JavaxWebSocketSession)session).getOutgoingHandler();
         Assert.assertTrue(firstOut instanceof ExtensionStack);
         ExtensionStack extensionStack = (ExtensionStack)firstOut;
         Assert.assertTrue(extensionStack.isRunning());
@@ -166,7 +166,7 @@ public class ExtensionStackProcessingTest
         assumeDeflateFrameAvailable();
         
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))
+                .extensions(Arrays.<Extension>asList(new JavaxWebSocketExtension("permessage-deflate")))
                 .build();
 
         final String content = "deflate_me";

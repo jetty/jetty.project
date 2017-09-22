@@ -18,27 +18,24 @@
 
 package org.eclipse.jetty.websocket.jsr356.messages;
 
-import java.io.IOException;
+import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 
-import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-import javax.websocket.EncodeException;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.core.WSPolicy;
 
 public class DecodedInputStreamMessageSink extends InputStreamMessageSink
 {
-    public DecodedInputStreamMessageSink(WSLocalEndpoint<JsrSession> endpointFunctions,
+    public DecodedInputStreamMessageSink(WSPolicy policy,
+                                         WSLocalEndpoint endpointFunctions,
                                          Executor executor,
                                          Decoder.BinaryStream decoder,
-                                         Function<Object, Object> onMessageFunction)
+                                         MethodHandle methodHandle)
     {
-        super(executor, (reader) ->
+        super(policy, executor, methodHandle);
+        /*(reader) ->
         {
             try
             {
@@ -59,6 +56,6 @@ public class DecodedInputStreamMessageSink extends InputStreamMessageSink
             {
                 throw new WebSocketException(e);
             }
-        });
+        });*/
     }
 }
