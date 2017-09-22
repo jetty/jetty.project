@@ -18,11 +18,15 @@
 
 package org.eclipse.jetty.annotations;
 
+
 import javax.annotation.security.DeclareRoles;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -30,6 +34,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
+    private static final Logger LOG = Log.getLogger(DeclareRolesAnnotationHandler.class);
 
     protected WebAppContext _context;
 
@@ -47,6 +52,12 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return; //only applicable on javax.servlet.Servlet derivatives
+
+        if (!(_context.getSecurityHandler() instanceof ConstraintAware))
+        {
+            LOG.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
+            return;
+        }
 
         DeclareRoles declareRoles = (DeclareRoles) clazz.getAnnotation(DeclareRoles.class);
         if (declareRoles == null)

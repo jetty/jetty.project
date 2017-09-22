@@ -155,7 +155,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 10);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, "ØÆ", new HttpFields(), 10);
         info.getFields().add("Content-Type", "test/data;\r\nextra=value");
         info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
@@ -176,7 +176,7 @@ public class HttpGeneratorServerTest
                 
         assertEquals(10, gen.getContentPrepared());
         
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("HTTP/1.1 200 ØÆ"));
         assertThat(response, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(response, containsString("Content-Type: test/data;  extra=value"));
         assertThat(response, containsString("Content-Length: 10"));

@@ -19,8 +19,10 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
 import java.util.Date;
 import java.util.EnumSet;
 
@@ -64,7 +66,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class Http2Server
 {
     public static void main(String... args) throws Exception
-    {
+    {   
         Server server = new Server();
 
         MBeanContainer mbContainer = new MBeanContainer(
@@ -72,7 +74,10 @@ public class Http2Server
         server.addBean(mbContainer);
 
         ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
-        context.setResourceBase("src/main/resources/docroot");
+        String docroot = "src/main/resources/docroot";
+        if (!new File(docroot).exists())
+            docroot = "examples/embedded/src/main/resources/docroot";
+        context.setResourceBase(docroot);
         context.addFilter(PushCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         // context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(PushedTilesFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
@@ -94,11 +99,14 @@ public class Http2Server
 
         // SSL Context Factory for HTTPS and HTTP/2
         String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
+        if (!new File(jetty_distro).exists())
+            jetty_distro = "jetty-distribution/target/distribution";
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
+        // sslContextFactory.setProvider("Conscrypt");
 
         // HTTPS Configuration
         HttpConfiguration https_config = new HttpConfiguration(http_config);
@@ -122,7 +130,6 @@ public class Http2Server
         ALPN.debug=false;
 
         server.start();
-        //server.dumpStdErr();
         server.join();
     }
 

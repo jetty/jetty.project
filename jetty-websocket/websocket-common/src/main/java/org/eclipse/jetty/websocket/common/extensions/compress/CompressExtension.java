@@ -258,7 +258,7 @@ public abstract class CompressExtension extends AbstractExtension
 
     private static boolean supplyInput(Inflater inflater, ByteBuffer buf)
     {
-        if (buf.remaining() <= 0)
+        if (buf == null || buf.remaining() <= 0)
         {
             if (LOG.isDebugEnabled())
             {
@@ -298,7 +298,7 @@ public abstract class CompressExtension extends AbstractExtension
 
     private static boolean supplyInput(Deflater deflater, ByteBuffer buf)
     {
-        if (buf.remaining() <= 0)
+        if (buf == null || buf.remaining() <= 0)
         {
             if (LOG.isDebugEnabled())
             {
@@ -451,6 +451,10 @@ public abstract class CompressExtension extends AbstractExtension
             // the heap if the payload is a huge mapped file.
             Frame frame = entry.frame;
             ByteBuffer data = frame.getPayload();
+
+            if(data == null)
+                data = BufferUtil.EMPTY_BUFFER;
+
             int remaining = data.remaining();
             int outputLength = Math.max(256,data.remaining());
             if (LOG.isDebugEnabled())

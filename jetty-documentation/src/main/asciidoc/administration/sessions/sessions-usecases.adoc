@@ -1,0 +1,60 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[sessions-usecases]]
+=== Use Cases
+
+==== Clustering with a Sticky Load Balancer
+
+Preferably, your cluster will utilize a sticky load balancer.
+This will route requests for the same Session to the same Jetty instance.
+In this case, the `DefaultSessionCache` can be used to keep in-use Session objects in memory.
+You can fine-tune the cache by controlling how long Session objects remain in memory with the eviction policy settings.
+
+If you have a large number of Sessions or very large Session objects, then you may want to manage your memory allocation by controlling the amount of time Session objects spend in the cache.
+The `EVICT_ON_SESSION_EXIT` eviction policy will remove a Session object from the cache as soon as the last simultaneous request referencing it exits.
+Alternatively, the `EVICT_ON_INACTIVITY` policy will remove a Session object from the cache after a configurable amount of time has passed without a request referencing it.
+
+If your Sessions are very long lived and infrequently referenced, you might use the `EVICT_ON_INACTIVITY_POLICY` to control the size of the cache.
+
+If your Sessions are small, or relatively few or stable in number or they are read-mostly, then you might select the `NEVER_EVICT` policy.
+With this policy, Session objects will remain in the cache until they either expire or are explicitly invalidated.
+
+If you have a high likelihood of simultaneous requests for the same session object, then the `EVICT_ON_SESSION_EXIT` policy will ensure the Session object stays in the cache as long as it is needed.
+
+
+==== Clustering Without a Sticky Load Balancer
+
+Without a sticky load balancer requests for the same session may arrive on any node in the cluster.
+This means it is likely that the copy of the Session object in any `SessionCache` is likely to be out-of-date, as the Session was probably last accessed on a different node.
+In this case, your `choices` are to use either the `NullSessionCache` or to de-tune the `DefaultSessionCache`.
+If you use the NullSessionCache all Session object caching is avoided.
+This means that every time a request references a session it must be brought in from persistent storage.
+It also means that there can be no sharing of Session objects for multiple requests for the same session: each will have their own Session object.
+Furthermore, the outcome of session writes are indeterminate because the Servlet Specification does not mandate ACID transactions for sessions.
+
+If you use the `DefaultSessionCache`, there is a risk that the caches on some nodes will contain out-of-date Session information as simultaneous requests for the same session are scattered over the cluster.
+To mitigate this somewhat you can use the `EVICT_ON_SESSION_EXIT` eviction policy: this will ensure that the Session is removed from the cache as soon as the last simultaneous request for it exits.
+Again, due to the lack of Session transactionality, the ordering outcome of write operations cannot be guaranteed.
+As the Session is cached while at least one request is accessing it, it is possible for multiple simultaneous requests to share the same Session object.
+
+
+==== Handling corrupted or unloadable session data
+
+For various reasons it might not be possible for the `SessionDataStore` to re-read a stored session.
+One scenario is that the session stores a serialized object in it's attributes, and after a redeployment there in an incompatible class change.
+Using the setter `SessionCache.setRemoveUnloadableSessions(true)` will allow the `SessionDataStore` to delete the unreadable session from persistent storage.
+This can be useful from preventing the scavenger from continually generating errors on the same expired, but un-restorable, session.

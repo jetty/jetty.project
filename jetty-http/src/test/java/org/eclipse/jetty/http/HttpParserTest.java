@@ -573,7 +573,9 @@ public class HttpParserTest
         BufferUtil.put(BufferUtil.toBuffer(" HTTP/1.0\r\n"), buffer);
         BufferUtil.put(BufferUtil.toBuffer("Header1: "), buffer);
         buffer.put("\u00e6 \u00e6".getBytes(StandardCharsets.ISO_8859_1));
-        BufferUtil.put(BufferUtil.toBuffer("  \r\n\r\n"), buffer);
+        BufferUtil.put(BufferUtil.toBuffer("  \r\nHeader2: "), buffer);
+        buffer.put((byte)-1);
+        BufferUtil.put(BufferUtil.toBuffer("\r\n\r\n"), buffer);
         BufferUtil.flipToFlush(buffer, 0);
 
         HttpParser.RequestHandler handler = new Handler();
@@ -585,7 +587,9 @@ public class HttpParserTest
         Assert.assertEquals("HTTP/1.0", _versionOrReason);
         Assert.assertEquals("Header1", _hdr[0]);
         Assert.assertEquals("\u00e6 \u00e6", _val[0]);
-        Assert.assertEquals(0, _headers);
+        Assert.assertEquals("Header2", _hdr[1]);
+        Assert.assertEquals(""+(char)255, _val[1]);
+        Assert.assertEquals(1, _headers);
         Assert.assertEquals(null, _bad);
     }
     
@@ -1302,6 +1306,22 @@ public class HttpParserTest
         Assert.assertEquals(null, _content);
         Assert.assertTrue(_headerCompleted);
         Assert.assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testResponseReasonIso8859_1() throws Exception
+    {   
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "HTTP/1.1 302 déplacé temporairement\r\n"
+                        + "Content-Length: 0\r\n" 
+                        + "\r\n",StandardCharsets.ISO_8859_1);
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parser.parseNext(buffer);
+        Assert.assertEquals("HTTP/1.1", _methodOrVersion);
+        Assert.assertEquals("302", _uriOrStatus);
+        Assert.assertEquals("déplacé temporairement", _versionOrReason);
     }
 
     @Test

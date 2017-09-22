@@ -260,9 +260,15 @@ public class WebSocketPolicy
     }
 
     /**
-     * Get the maximum size of a binary message during parsing/generating.
+     * Get the maximum size of a binary message during parsing.
      * <p>
-     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     This is a memory conservation option, memory over this limit will not be
+     *     allocated by Jetty for handling binary messages.  This applies to individual frames,
+     *     whole message handling, and partial message handling.
+     * </p>
+     * <p>
+     *     Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
      * 
      * @return the maximum size of a binary message
      */
@@ -282,9 +288,15 @@ public class WebSocketPolicy
     }
 
     /**
-     * Get the maximum size of a text message during parsing/generating.
+     * Get the maximum size of a text message during parsing.
      * <p>
-     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     This is a memory conservation option, memory over this limit will not be
+     *     allocated by Jetty for handling text messages.  This applies to individual frames,
+     *     whole message handling, and partial message handling.
+     * </p>
+     * <p>
+     *     Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
      * 
      * @return the maximum size of a text message.
      */
@@ -372,7 +384,7 @@ public class WebSocketPolicy
     /**
      * The maximum size of a binary message buffer.
      * <p>
-     * Used ONLY for stream based message writing.
+     * Used ONLY for stream based binary message writing.
      * 
      * @param size
      *            the maximum size of the binary message buffer
@@ -403,9 +415,15 @@ public class WebSocketPolicy
     }
     
     /**
-     * The maximum size of a binary message during parsing/generating.
+     * The maximum size of a binary message during parsing.
      * <p>
-     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     This is a memory conservation option, memory over this limit will not be
+     *     allocated by Jetty for handling binary messages.  This applies to individual frames,
+     *     whole message handling, and partial message handling.
+     * </p>
+     * <p>
+     *     Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
      * 
      * @param size
      *            the maximum allowed size of a binary message.
@@ -420,7 +438,7 @@ public class WebSocketPolicy
     /**
      * The maximum size of a text message buffer.
      * <p>
-     * Used ONLY for stream based message writing.
+     * Used ONLY for stream based text message writing.
      * 
      * @param size
      *            the maximum size of the text message buffer
@@ -450,9 +468,15 @@ public class WebSocketPolicy
     }
     
     /**
-     * The maximum size of a text message during parsing/generating.
+     * The maximum size of a text message during parsing.
      * <p>
-     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     *     This is a memory conservation option, memory over this limit will not be
+     *     allocated by Jetty for handling text messages.  This applies to individual frames,
+     *     whole message handling, and partial message handling.
+     * </p>
+     * <p>
+     *     Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
      * 
      * @param size
      *            the maximum allowed size of a text message.

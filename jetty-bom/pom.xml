@@ -169,12 +169,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>jetty-fcgi-client</artifactId>
+        <artifactId>fcgi-client</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>jetty-fcgi-server</artifactId>
+        <artifactId>fcgi-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -260,11 +260,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.memcached</groupId>
         <artifactId>jetty-memcached-sessions</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-monitor</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>

@@ -1056,5 +1056,4 @@ public class StringUtil
     {
         return object==null?null:String.valueOf(object);
     }
-
 }

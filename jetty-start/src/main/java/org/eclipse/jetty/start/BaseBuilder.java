@@ -20,7 +20,6 @@ package org.eclipse.jetty.start;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,12 +29,11 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.BaseHomeFileInitializer;
-import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.LocalFileInitializer;
+import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
 

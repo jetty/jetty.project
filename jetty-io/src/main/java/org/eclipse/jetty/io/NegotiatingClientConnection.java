@@ -45,7 +45,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         this.context = context;
     }
 
-    protected SSLEngine getSSLEngine()
+    public SSLEngine getSSLEngine()
     {
         return engine;
     }
@@ -80,13 +80,17 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         while (true)
         {
             int filled = fill();
-            if (filled == 0 && !completed)
-                fillInterested();
-            if (filled <= 0 || completed)
+            if (completed || filled < 0)
+            {
+                replaceConnection();
                 break;
+            }
+            if (filled == 0)
+            {
+                fillInterested();
+                break;
+            }
         }
-        if (completed)
-            replaceConnection();
     }
 
     private int fill()

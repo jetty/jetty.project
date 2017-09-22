@@ -84,6 +84,12 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-infinispan</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+              <exclusion>
+                 <groupId>org.infinispan</groupId>
+                 <artifactId>infinispan-core</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
           <groupId>org.eclipse.jetty</groupId>
@@ -98,8 +104,14 @@
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-core</artifactId>
+      <version>9.1.0.Final</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>7.1.1.Final</version>
+      <version>9.1.0.Final</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

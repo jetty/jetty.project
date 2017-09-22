@@ -278,4 +278,106 @@ public class NotAcceptingTest
         }
     }
     
+    @Test
+    public void testConnectionLimit() throws Exception
+    {
+        Server server = new Server();
+        server.addBean(new ConnectionLimit(9,server));
+        server.setHandler(new HelloHandler());
+
+        LocalConnector localConnector = new LocalConnector(server);
+        localConnector.setIdleTimeout(60000);
+        server.addConnector(localConnector);
+        
+        ServerConnector blockingConnector = new ServerConnector(server,1,1);
+        blockingConnector.setPort(0);
+        blockingConnector.setIdleTimeout(60000);
+        blockingConnector.setAcceptQueueSize(10);
+        server.addConnector(blockingConnector);
+        
+        ServerConnector asyncConnector = new ServerConnector(server,0,1);
+        asyncConnector.setPort(0);
+        asyncConnector.setIdleTimeout(60000);
+        asyncConnector.setAcceptQueueSize(10);
+        server.addConnector(asyncConnector);
+
+        server.start();
+        
+        try (
+            LocalEndPoint local0 = localConnector.connect();
+            LocalEndPoint local1 = localConnector.connect();
+            LocalEndPoint local2 = localConnector.connect();
+            Socket blocking0 = new Socket("localhost",blockingConnector.getLocalPort());
+            Socket blocking1 = new Socket("localhost",blockingConnector.getLocalPort());
+            Socket blocking2 = new Socket("localhost",blockingConnector.getLocalPort());
+            Socket async0 = new Socket("localhost",asyncConnector.getLocalPort());
+            Socket async1 = new Socket("localhost",asyncConnector.getLocalPort());
+            Socket async2 = new Socket("localhost",asyncConnector.getLocalPort());
+            )
+        {
+            for (LocalEndPoint client: new LocalEndPoint[] {local0,local1,local2})
+            {
+                client.addInputAndExecute(BufferUtil.toBuffer("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+                HttpTester.Response response = HttpTester.parseResponse(client.getResponse());
+                assertThat(response.getStatus(),is(200));
+                assertThat(response.getContent(),is("Hello\n"));
+            }
+            
+            for (Socket client : new Socket[]{blocking0,blocking1,blocking2,async0,async1,async2})
+            {
+                HttpTester.Input in = HttpTester.from(client.getInputStream());
+                client.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n".getBytes());
+                HttpTester.Response response = HttpTester.parseResponse(in);
+                assertThat(response.getStatus(),is(200));
+                assertThat(response.getContent(),is("Hello\n"));
+            }
+            
+            assertThat(localConnector.isAccepting(),is(false));
+            assertThat(blockingConnector.isAccepting(),is(false));
+            assertThat(asyncConnector.isAccepting(),is(false));
+            
+            {
+                // Close an async connection
+                HttpTester.Input in = HttpTester.from(async1.getInputStream());
+                async1.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\nConnection: close\r\n\r\n".getBytes());
+                HttpTester.Response response = HttpTester.parseResponse(in);
+                assertThat(response.getStatus(),is(200));
+                assertThat(response.getContent(),is("Hello\n"));
+            }
+            
+            // make a new connection and request
+            try (Socket blocking3 = new Socket("localhost",blockingConnector.getLocalPort());)
+            {
+                HttpTester.Input in = HttpTester.from(blocking3.getInputStream());
+                blocking3.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n".getBytes());
+                HttpTester.Response response = HttpTester.parseResponse(in);
+                assertThat(response.getStatus(),is(200));
+                assertThat(response.getContent(),is("Hello\n"));
+            }
+        }
+
+        Thread.sleep(500); // TODO avoid lame sleep ???
+        assertThat(localConnector.isAccepting(),is(true));
+        assertThat(blockingConnector.isAccepting(),is(true));
+        assertThat(asyncConnector.isAccepting(),is(true));
+        
+    }
+
+    public static class HelloHandler extends AbstractHandler
+    {
+        public HelloHandler()
+        {
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentType("text/html;charset=utf-8");
+            response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().println("Hello");
+        }
+        
+    }
+    
 }

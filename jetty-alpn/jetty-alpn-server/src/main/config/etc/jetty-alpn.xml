@@ -15,18 +15,9 @@
   <Call name="addConnectionFactory">
     <Arg>
       <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
-        <Arg type="String">
-          <Property name="jetty.alpn.protocols" default="" />
-        </Arg>
-        <Set name="defaultProtocol">
-          <Property name="jetty.alpn.defaultProtocol" />
-        </Set>
+        <Arg name="protocols" type="String"><Property name="jetty.alpn.protocols" default="" /></Arg>
+        <Set name="defaultProtocol"><Property name="jetty.alpn.defaultProtocol" /></Set>  
       </New>
     </Arg>
   </Call>
-
-  <!-- ALPN debugging on System.err -->
-  <Set class="org.eclipse.jetty.alpn.ALPN" name="debug" type="boolean"><Property name="jetty.alpn.debug" default="false" /></Set>
-
 </Configure>
-

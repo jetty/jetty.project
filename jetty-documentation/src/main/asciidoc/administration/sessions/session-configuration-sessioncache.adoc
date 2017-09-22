@@ -1,0 +1,73 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[session-configuration-sessioncache]]
+=== The L1 Session Cache
+
+==== The DefaultSessionCache
+
+In the absence of any explicit configuration, Jetty will instantiate an instance of the `DefaultSessionCache` per context.
+If you wish to change any of the default values, you need to enable the `session-cache-hash` link:#startup-modules[module].
+
+Once the `session-cache-hash` module has been enabled, you can view a list of all the configurable values by opening `start.d/session-cache-hash.ini`:
+
+[source, screen, subs="{sub-order}"]
+----
+--module=session-cache-hash
+
+#jetty.session.evictionPolicy=-1
+#jetty.session.saveOnInactiveEvict=false
+#jetty.session.saveOnCreate=false
+#jetty.session.removeUnloadableSessions=false
+----
+
+jetty.session.evictionPolicy::
+Integer.
+Controls whether session objects that are held in memory are subject to eviction from the memory cache.
+Evicting sessions can reduce the memory footprint of the cache.
+Eviction is usually used in conjunction with a `SessionDataStore` that persists sessions.
+Values are:
+* -1 : sessions are never evicted from the cache
+*  0 : sessions are evicted from the cache as soon as the last active request for it finishes
+*  >= 1 : any positive number is the time in seconds after which a session that is in the cache but has not experienced any activity will be evicted
+
+____
+[NOTE]
+If you are not using a `SessionDataStore` that persists sessions, be aware that evicted sessions will be lost.
+____
+
+jetty.session.saveOnInactiveEvict::
+Boolean, default `false`.
+Controls whether a session will be saved to the `SessionDataStore` just prior to its eviction.
+
+jetty.session.saveOnCreate::
+Boolean, default `false`.
+Controls whether a session that is newly created will be immediately saved to the `SessionDataStore` or lazily saved as the last request for the session exits.
+
+jetty.session.removeUnloadableSessions::
+Boolean, default `false`.
+Controls whether a session that cannot be restored - for example because it is corrupted - from the `SessionDataStore` is deleted by the `SessionDataStore`.
+
+For more general information on the uses of these configuration properties, see link:#sessions-details[Session Components].
+
+
+==== The NullSessionCache
+
+The `NullSessionCache` is a trivial implementation of the `SessionCache` that does not cache any session information.
+You may need to use it if your clustering setup does not have a sticky load balancer, or if you want absolutely minimal support for sessions.
+If you use this in conjunction with the `NullSessionDataStore`, then sessions will neither be retained in memory nor persisted.
+
+To enable the `NullSessionCache`, enable the `sesssion-cache-null` link:#startup-modules[module].

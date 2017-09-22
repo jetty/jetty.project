@@ -15,7 +15,8 @@
 //  ========================================================================
 
 [[configuring-sessions-gcloud]]
-=== Clustered Session Management: Google Cloud DataStore
+
+=== Persistent Sessions: Google Cloud DataStore
 
 ==== Preparation
 
@@ -122,49 +123,49 @@ COPY  : ${jetty.home}/modules/jul-impl/etc/java-util-logging.properties to ${jet
 MKDIR : ${jetty.base}/lib/slf4j
 DOWNLD: http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-api-1.7.21.jar
 MKDIR : ${jetty.base}/lib/gcloud
-COPY  : /Users/chris/.m2/repository/aopalliance/aopalliance/1.0/aopalliance-1.0.jar to ${jetty.base}/lib/gcloud/aopalliance-1.0.jar
-COPY  : /Users/chris/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.1.3/jackson-core-2.1.3.jar to ${jetty.base}/lib/gcloud/jackson-core-2.1.3.jar
-COPY  : /Users/chris/.m2/repository/com/google/api-client/google-api-client-appengine/1.21.0/google-api-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-appengine-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/api-client/google-api-client/1.20.0/google-api-client-1.20.0.jar to ${jetty.base}/lib/gcloud/google-api-client-1.20.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/api-client/google-api-client-servlet/1.21.0/google-api-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-servlet-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/aopalliance/aopalliance/1.0/aopalliance-1.0.jar to ${jetty.base}/lib/gcloud/aopalliance-1.0.jar
+COPY  : /Users/admin/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.1.3/jackson-core-2.1.3.jar to ${jetty.base}/lib/gcloud/jackson-core-2.1.3.jar
+COPY  : /Users/admin/.m2/repository/com/google/api-client/google-api-client-appengine/1.21.0/google-api-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-appengine-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/api-client/google-api-client/1.20.0/google-api-client-1.20.0.jar to ${jetty.base}/lib/gcloud/google-api-client-1.20.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/api-client/google-api-client-servlet/1.21.0/google-api-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-api-client-servlet-1.21.0.jar
 DOWNLD: http://central.maven.org/maven2/com/google/api/gax/0.0.21/gax-0.0.21.jar to ${jetty.base}/lib/gcloud/gax-0.0.21.jar
-COPY  : /Users/chris/.m2/repository/com/google/api/grpc/grpc-google-common-protos/0.1.0/grpc-google-common-protos-0.1.0.jar to ${jetty.base}/lib/gcloud/grpc-google-common-protos-0.1.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/api/grpc/grpc-google-iam-v1/0.1.0/grpc-google-iam-v1-0.1.0.jar to ${jetty.base}/lib/gcloud/grpc-google-iam-v1-0.1.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/auth/google-auth-library-credentials/0.3.1/google-auth-library-credentials-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-credentials-0.3.1.jar
-COPY  : /Users/chris/.m2/repository/com/google/auth/google-auth-library-oauth2-http/0.3.1/google-auth-library-oauth2-http-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-oauth2-http-0.3.1.jar
+COPY  : /Users/admin/.m2/repository/com/google/api/grpc/grpc-google-common-protos/0.1.0/grpc-google-common-protos-0.1.0.jar to ${jetty.base}/lib/gcloud/grpc-google-common-protos-0.1.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/api/grpc/grpc-google-iam-v1/0.1.0/grpc-google-iam-v1-0.1.0.jar to ${jetty.base}/lib/gcloud/grpc-google-iam-v1-0.1.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/auth/google-auth-library-credentials/0.3.1/google-auth-library-credentials-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-credentials-0.3.1.jar
+COPY  : /Users/admin/.m2/repository/com/google/auth/google-auth-library-oauth2-http/0.3.1/google-auth-library-oauth2-http-0.3.1.jar to ${jetty.base}/lib/gcloud/google-auth-library-oauth2-http-0.3.1.jar
 DOWNLD: http://central.maven.org/maven2/com/google/auto/value/auto-value/1.2/auto-value-1.2.jar to ${jetty.base}/lib/gcloud/auto-value-1.2.jar
 DOWNLD: http://central.maven.org/maven2/com/google/cloud/datastore/datastore-v1-proto-client/1.3.0/datastore-v1-proto-client-1.3.0.jar to ${jetty.base}/lib/gcloud/datastore-v1-proto-client-1.3.0.jar
 DOWNLD: http://central.maven.org/maven2/com/google/cloud/datastore/datastore-v1-protos/1.3.0/datastore-v1-protos-1.3.0.jar to ${jetty.base}/lib/gcloud/datastore-v1-protos-1.3.0.jar
 DOWNLD: http://central.maven.org/maven2/com/google/cloud/google-cloud-core/0.5.1/google-cloud-core-0.5.1.jar to ${jetty.base}/lib/gcloud/google-cloud-core-0.5.0.jar
 DOWNLD: http://central.maven.org/maven2/com/google/cloud/google-cloud-datastore/0.5.1/google-cloud-datastore-0.5.1.jar to ${jetty.base}/lib/gcloud/google-cloud-datastore-0.5.1.jar
-COPY  : /Users/chris/.m2/repository/com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar to ${jetty.base}/lib/gcloud/jsr305-1.3.9.jar
-COPY  : /Users/chris/.m2/repository/com/google/code/gson/gson/2.3/gson-2.3.jar to ${jetty.base}/lib/gcloud/gson-2.3.jar
-COPY  : /Users/chris/.m2/repository/com/google/guava/guava/19.0/guava-19.0.jar to ${jetty.base}/lib/gcloud/guava-19.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-appengine/1.21.0/google-http-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-appengine-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-jackson2/1.19.0/google-http-client-jackson2-1.19.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson2-1.19.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-jackson/1.21.0/google-http-client-jackson-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client/1.21.0/google-http-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-jdo/1.21.0/google-http-client-jdo-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jdo-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/http-client/google-http-client-protobuf/1.20.0/google-http-client-protobuf-1.20.0.jar to ${jetty.base}/lib/gcloud/google-http-client-protobuf-1.20.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/inject/guice/4.0/guice-4.0.jar to ${jetty.base}/lib/gcloud/guice-4.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/oauth-client/google-oauth-client-appengine/1.21.0/google-oauth-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-appengine-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/oauth-client/google-oauth-client/1.21.0/google-oauth-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/oauth-client/google-oauth-client-servlet/1.21.0/google-oauth-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-servlet-1.21.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/protobuf/protobuf-java/3.0.0/protobuf-java-3.0.0.jar to ${jetty.base}/lib/gcloud/protobuf-java-3.0.0.jar
-COPY  : /Users/chris/.m2/repository/com/google/protobuf/protobuf-java-util/3.0.0/protobuf-java-util-3.0.0.jar to ${jetty.base}/lib/gcloud/protobuf-java-util-3.0.0.jar
-COPY  : /Users/chris/.m2/repository/commons-codec/commons-codec/1.3/commons-codec-1.3.jar to ${jetty.base}/lib/gcloud/commons-codec-1.3.jar
-COPY  : /Users/chris/.m2/repository/io/grpc/grpc-context/1.0.1/grpc-context-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-context-1.0.1.jar
-COPY  : /Users/chris/.m2/repository/io/grpc/grpc-core/1.0.1/grpc-core-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-core-1.0.1.jar
-COPY  : /Users/chris/.m2/repository/io/grpc/grpc-protobuf/1.0.1/grpc-protobuf-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-protobuf-1.0.1.jar
-COPY  : /Users/chris/.m2/repository/io/grpc/grpc-protobuf-lite/1.0.1/grpc-protobuf-lite-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-protobuf-lite-1.0.1.jar
-COPY  : /Users/chris/.m2/repository/javax/inject/javax.inject/1/javax.inject-1.jar to ${jetty.base}/lib/gcloud/javax.inject-1.jar
-COPY  : /Users/chris/.m2/repository/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb.jar to ${jetty.base}/lib/gcloud/jdo2-api-2.3-eb.jar
-COPY  : /Users/chris/.m2/repository/javax/transaction/transaction-api/1.1/transaction-api-1.1.jar to ${jetty.base}/lib/gcloud/transaction-api-1.1.jar
-COPY  : /Users/chris/.m2/repository/joda-time/joda-time/2.9.2/joda-time-2.9.2.jar to ${jetty.base}/lib/gcloud/joda-time-2.9.2.jar
-COPY  : /Users/chris/.m2/repository/org/apache/httpcomponents/httpclient/4.0.1/httpclient-4.0.1.jar to ${jetty.base}/lib/gcloud/httpclient-4.0.1.jar
-COPY  : /Users/chris/.m2/repository/org/apache/httpcomponents/httpcore/4.0.1/httpcore-4.0.1.jar to ${jetty.base}/lib/gcloud/httpcore-4.0.1.jar
-COPY  : /Users/chris/.m2/repository/org/codehaus/jackson/jackson-core-asl/1.9.11/jackson-core-asl-1.9.11.jar to ${jetty.base}/lib/gcloud/jackson-core-asl-1.9.11.jar
-COPY  : /Users/chris/.m2/repository/org/json/json/20151123/json-20151123.jar to ${jetty.base}/lib/gcloud/json-20151123.jar
+COPY  : /Users/admin/.m2/repository/com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar to ${jetty.base}/lib/gcloud/jsr305-1.3.9.jar
+COPY  : /Users/admin/.m2/repository/com/google/code/gson/gson/2.3/gson-2.3.jar to ${jetty.base}/lib/gcloud/gson-2.3.jar
+COPY  : /Users/admin/.m2/repository/com/google/guava/guava/19.0/guava-19.0.jar to ${jetty.base}/lib/gcloud/guava-19.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/http-client/google-http-client-appengine/1.21.0/google-http-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-appengine-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/http-client/google-http-client-jackson2/1.19.0/google-http-client-jackson2-1.19.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson2-1.19.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/http-client/google-http-client-jackson/1.21.0/google-http-client-jackson-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jackson-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/http-client/google-http-client/1.21.0/google-http-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/http-client/google-http-client-jdo/1.21.0/google-http-client-jdo-1.21.0.jar to ${jetty.base}/lib/gcloud/google-http-client-jdo-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/http-client/google-http-client-protobuf/1.20.0/google-http-client-protobuf-1.20.0.jar to ${jetty.base}/lib/gcloud/google-http-client-protobuf-1.20.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/inject/guice/4.0/guice-4.0.jar to ${jetty.base}/lib/gcloud/guice-4.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/oauth-client/google-oauth-client-appengine/1.21.0/google-oauth-client-appengine-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-appengine-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/oauth-client/google-oauth-client/1.21.0/google-oauth-client-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/oauth-client/google-oauth-client-servlet/1.21.0/google-oauth-client-servlet-1.21.0.jar to ${jetty.base}/lib/gcloud/google-oauth-client-servlet-1.21.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/protobuf/protobuf-java/3.0.0/protobuf-java-3.0.0.jar to ${jetty.base}/lib/gcloud/protobuf-java-3.0.0.jar
+COPY  : /Users/admin/.m2/repository/com/google/protobuf/protobuf-java-util/3.0.0/protobuf-java-util-3.0.0.jar to ${jetty.base}/lib/gcloud/protobuf-java-util-3.0.0.jar
+COPY  : /Users/admin/.m2/repository/commons-codec/commons-codec/1.3/commons-codec-1.3.jar to ${jetty.base}/lib/gcloud/commons-codec-1.3.jar
+COPY  : /Users/admin/.m2/repository/io/grpc/grpc-context/1.0.1/grpc-context-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-context-1.0.1.jar
+COPY  : /Users/admin/.m2/repository/io/grpc/grpc-core/1.0.1/grpc-core-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-core-1.0.1.jar
+COPY  : /Users/admin/.m2/repository/io/grpc/grpc-protobuf/1.0.1/grpc-protobuf-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-protobuf-1.0.1.jar
+COPY  : /Users/admin/.m2/repository/io/grpc/grpc-protobuf-lite/1.0.1/grpc-protobuf-lite-1.0.1.jar to ${jetty.base}/lib/gcloud/grpc-protobuf-lite-1.0.1.jar
+COPY  : /Users/admin/.m2/repository/javax/inject/javax.inject/1/javax.inject-1.jar to ${jetty.base}/lib/gcloud/javax.inject-1.jar
+COPY  : /Users/admin/.m2/repository/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb.jar to ${jetty.base}/lib/gcloud/jdo2-api-2.3-eb.jar
+COPY  : /Users/admin/.m2/repository/javax/transaction/transaction-api/1.1/transaction-api-1.1.jar to ${jetty.base}/lib/gcloud/transaction-api-1.1.jar
+COPY  : /Users/admin/.m2/repository/joda-time/joda-time/2.9.2/joda-time-2.9.2.jar to ${jetty.base}/lib/gcloud/joda-time-2.9.2.jar
+COPY  : /Users/admin/.m2/repository/org/apache/httpcomponents/httpclient/4.0.1/httpclient-4.0.1.jar to ${jetty.base}/lib/gcloud/httpclient-4.0.1.jar
+COPY  : /Users/admin/.m2/repository/org/apache/httpcomponents/httpcore/4.0.1/httpcore-4.0.1.jar to ${jetty.base}/lib/gcloud/httpcore-4.0.1.jar
+COPY  : /Users/admin/.m2/repository/org/codehaus/jackson/jackson-core-asl/1.9.11/jackson-core-asl-1.9.11.jar to ${jetty.base}/lib/gcloud/jackson-core-asl-1.9.11.jar
+COPY  : /Users/admin/.m2/repository/org/json/json/20151123/json-20151123.jar to ${jetty.base}/lib/gcloud/json-20151123.jar
 DOWNLD: http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.21/jcl-over-slf4j-1.7.21.jar to ${jetty.base}/lib/slf4j/jcl-over-slf4j-1.7.21.jar
 COPY  : ${jetty.home}/modules/gcloud/index.yaml to ${jetty.base}/etc/index.yaml
 INFO  : Base directory was modified

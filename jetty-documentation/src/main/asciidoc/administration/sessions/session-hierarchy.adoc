@@ -49,8 +49,11 @@ image::images/SessionsHierarchy.png[]
 
 ==== Configuring Sessions in the Jetty Distribution
 
-Jetty provides support for several different Session Management technologies.
-Both link:#configuring-sessions-file-system[local file storage] and in-memory session management can be implemented for standard implementations.
-For implementations using clustered technologies, link:#configuring-sessions-jdbc[JDBC], link:#configuring-sessions-mongo[MongoDB], link:#configuring-sessions-infinispan[Inifinispan] and link:#configuring-sessions-gcloud[Google Cloud Datastore] are all supported.
-Setting up these technologies is as easy as enabling it's link:#startup-modules[module] and editing it's associated ini file with any usernames, passwords or changes you need to make for your instance.
-The following sections will cover how exactly to enable the required modules as well as an overview of what options are available for customization.
+Configuring session management involves selecting a link:#startup-modules[module] for the desired type of link:#session-configuration-sessioncache[session caching] behavior, and a module for the type of session persistence.
+
+Jetty provides two different session caches: the `DefaultSessionCache` which holds sessions in memory, and the `NullSessionCache` which does not.
+There is more information on both of these types of session caching and the circumstances which would lead you to select one or the other in the link:#sessions-details[Session Components] section, and more information on the configuration options of each in link:#session-configuration-sessioncache[the L1 Session Cache] section.
+
+For session persistence, Jetty provides a number of different implementations from which to choose including link:#configuring-sessions-memory[non-persistence], link:#configuring-sessions-file-system[local file storage], clustered technologies such as link:#configuring-sessions-jdbc[JDBC], link:#configuring-sessions-mongo[MongoDB], link:#configuring-sessions-infinispan[Inifinispan], link:#configuring-sessions-gcloud[Google Cloud Datastore], and link:#configuring-sessions-hazelcast[Hazelcast].
+
+Depending on your persistence technology, to enhance performance, you may want to use an L2 cache for session data, in which case Jetty provides the link:#session-configuration-memcachedsessiondatastore[memcached L2 session data cache].

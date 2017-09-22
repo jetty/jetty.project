@@ -128,7 +128,7 @@ public class TestOSGiUtil
         for (Bundle b : bundleContext.getBundles())
         {
             bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-            System.err.println("    " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion()+ " " + b.getState());
+            System.err.println("    " + b.getBundleId()+" "+b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion()+ " " + b.getState());
         }
     }
    

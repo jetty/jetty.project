@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -58,7 +59,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -149,6 +149,32 @@ public class RequestTest
 
         String responses=_connector.getResponse(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testParamExtraction_BadSequence() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                Map<String, String[]> map = request.getParameterMap();
+                // should have thrown a BadMessageException
+                return false;
+            }
+        };
+
+        //Send a request with query string with illegal hex code to cause
+        //an exception parsing the params
+        String request="GET /?test_%e0%x8%81=missing HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Content-Type: text/html;charset=utf8\n"+
+                "Connection: close\n"+
+                "\n";
+
+        String responses=_connector.getResponse(request);
+        assertThat("Responses", responses, startsWith("HTTP/1.1 400"));
     }
 
     @Test

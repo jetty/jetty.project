@@ -16,6 +16,7 @@
         <Set name="maxConnections"><Property name="jetty.lowresources.maxConnections" default="0"/></Set>
         <Set name="maxMemory"><Property name="jetty.lowresources.maxMemory" default="0"/></Set>
         <Set name="maxLowResourcesTime"><Property name="jetty.lowresources.maxLowResourcesTime" default="5000"/></Set>
+	<Set name="acceptingInLowResources"><Property name="jetty.lowresources.accepting" default="true"/></Set>
       </New>
     </Arg>
   </Call>

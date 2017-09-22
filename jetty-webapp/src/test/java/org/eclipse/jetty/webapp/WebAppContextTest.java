@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
+import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -218,6 +219,34 @@ public class WebAppContextTest
         }
     }
     
+    @Test
+    public void testNullSessionAndSecurityHandler() throws Exception
+    {
+        Server server = new Server(0);
+        HandlerList handlers = new HandlerList();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(), 
+                                                  ServletContextHandler.NO_SESSIONS|ServletContextHandler.NO_SECURITY);
+        context.setContextPath("/");
+        context.setBaseResource(Resource.newResource("./src/test/webapp"));
+        server.setHandler(handlers);
+        handlers.addHandler(contexts);
+        contexts.addHandler(context);
+
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        try
+        {
+            server.start();
+            Assert.assertTrue(context.isAvailable());
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
     class ServletA extends GenericServlet
     {
         @Override

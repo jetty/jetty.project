@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Interface for initializing a file resource.

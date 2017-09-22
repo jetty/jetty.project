@@ -17,6 +17,9 @@ specific version of Java.
 [depend]
 alpn-impl/alpn-${java.version}
 
+[lib]
+lib/jetty-alpn-openjdk8-server-${jetty.version}.jar
+
 [files]
 lib/
 lib/alpn/

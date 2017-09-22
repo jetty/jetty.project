@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -114,7 +116,10 @@ public abstract class AbstractTest
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
+        serverThreads.setDetailedDump(true);
         server = new Server(serverThreads);
+        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbeanContainer);
         connector = newServerConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -130,10 +135,13 @@ public abstract class AbstractTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
+        clientThreads.setDetailedDump(true);
         client = newHttpClient(provideClientTransport(transport), sslContextFactory);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();
+        if (server != null)
+            server.addBean(client);
     }
 
     protected ConnectionFactory[] provideServerConnectionFactory(Transport transport)

@@ -43,7 +43,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * Subclasses should implement the processEntry(URL jarUrl, JarEntry entry)
  * method to handle entries in jar files whose names match the supplied 
  * pattern.
+ * @deprecated Does not handle MR Jars
  */
+@Deprecated()
 public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
 {
     private static final Logger LOG = Log.getLogger(JarScanner.class);

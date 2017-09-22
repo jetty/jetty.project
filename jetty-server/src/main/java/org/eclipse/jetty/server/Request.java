@@ -2244,7 +2244,7 @@ public class Request implements HttpServletRequest
         event.setDispatchContext(getServletContext());
 
         String uri = ((HttpServletRequest)servletRequest).getRequestURI();
-        if (uri.startsWith(_contextPath))
+        if (_contextPath!=null && uri.startsWith(_contextPath))
             uri = uri.substring(_contextPath.length());
         else
             // TODO probably need to strip encoded context from requestURI, but will do this for now:
