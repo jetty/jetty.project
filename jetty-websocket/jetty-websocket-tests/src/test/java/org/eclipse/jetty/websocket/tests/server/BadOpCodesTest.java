@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
@@ -66,10 +66,10 @@ public class BadOpCodesTest extends AbstractLocalServerCase
     @Test
     public void testBadOpCode() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BadFrame((byte) opcode)); // intentionally bad
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -85,12 +85,12 @@ public class BadOpCodesTest extends AbstractLocalServerCase
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello"));
         send.add(new BadFrame((byte) opcode).setPayload(buf)); // intentionally bad
         send.add(new PingFrame());
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     

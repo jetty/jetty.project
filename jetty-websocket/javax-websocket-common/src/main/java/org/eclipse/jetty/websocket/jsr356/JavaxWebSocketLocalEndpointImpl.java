@@ -28,15 +28,15 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSException;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
+public class JavaxWebSocketLocalEndpointImpl implements WebSocketLocalEndpoint
 {
     private final Logger log;
     private final Object endpointInstance;
-    private final WSPolicy policy;
+    private final WebSocketPolicy policy;
     private final AtomicBoolean open = new AtomicBoolean(false);
     private final MethodHandle openHandle;
     private final MethodHandle closeHandle;
@@ -46,7 +46,7 @@ public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
     private MethodHandle pongHandle;
     private MessageSink activeMessageSink;
 
-    public JavaxWebSocketLocalEndpointImpl(Object endpointInstance, WSPolicy endpointPolicy,
+    public JavaxWebSocketLocalEndpointImpl(Object endpointInstance, WebSocketPolicy endpointPolicy,
                                            MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
                                            MessageSink textSink, MessageSink binarySink,
                                            MethodHandle pongHandle)
@@ -75,7 +75,7 @@ public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
         return this.log;
     }
 
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         return policy;
     }
@@ -109,7 +109,7 @@ public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
             }
             catch (Throwable cause)
             {
-                throw new WSException("Unhandled CLOSE endpoint method error", cause);
+                throw new WebSocketException("Unhandled CLOSE endpoint method error", cause);
             }
         }
     }
@@ -137,7 +137,7 @@ public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
             }
             catch (Throwable t)
             {
-                WSException wsError = new WSException("Unhandled ERROR endpoint method error", t);
+                WebSocketException wsError = new WebSocketException("Unhandled ERROR endpoint method error", t);
                 wsError.addSuppressed(cause);
                 throw wsError;
             }
@@ -168,7 +168,7 @@ public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
             }
             catch (Throwable cause)
             {
-                throw new WSException("Unhandled OPEN endpoint method error", cause);
+                throw new WebSocketException("Unhandled OPEN endpoint method error", cause);
             }
         }
     }
@@ -194,7 +194,7 @@ public class JavaxWebSocketLocalEndpointImpl implements WSLocalEndpoint
         }
         catch (Throwable cause)
         {
-            throw new WSException("Unhandled PONG endpoint method error", cause);
+            throw new WebSocketException("Unhandled PONG endpoint method error", cause);
         }
     }
 

@@ -19,13 +19,28 @@
 package org.eclipse.jetty.websocket.core;
 
 /**
- * Behavior for how the WebSocket should operate.
- * <p>
- * This dictated by the <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a> spec in various places, where certain behavior must be performed depending on
- * operation as a <a href="https://tools.ietf.org/html/rfc6455#section-4.1">CLIENT</a> vs a <a href="https://tools.ietf.org/html/rfc6455#section-4.2">SERVER</a>
+ * A recoverable exception within the websocket framework.
  */
-public enum WSBehavior
+@SuppressWarnings("serial")
+public class WebSocketException extends RuntimeException
 {
-    CLIENT,
-    SERVER
+    public WebSocketException()
+    {
+        super();
+    }
+
+    public WebSocketException(String message)
+    {
+        super(message);
+    }
+
+    public WebSocketException(String message, Throwable cause)
+    {
+        super(message,cause);
+    }
+
+    public WebSocketException(Throwable cause)
+    {
+        super(cause);
+    }
 }

@@ -35,8 +35,8 @@ import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.tests.ParserCapture;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.junit.Test;
@@ -45,7 +45,7 @@ import org.junit.Test;
  * Test simulating a client that talks too quickly.
  * <p>
  * This is mainly for the {@link org.eclipse.jetty.io.Connection.UpgradeTo} logic within
- * the {@link WSConnection} implementation.
+ * the {@link WebSocketCoreConnection} implementation.
  * </p>
  * <p>
  * There is a class of client that will send the GET+Upgrade Request along with a few websocket frames in a single
@@ -65,7 +65,7 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         BufferUtil.put(upgradeRequestBytes, buf);
 
         // Create A few WebSocket Frames
-        List<WSFrame> frames = new ArrayList<>();
+        List<WebSocketFrame> frames = new ArrayList<>();
         frames.add(new TextFrame().setPayload("Hello 1"));
         frames.add(new TextFrame().setPayload("Hello 2"));
         frames.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
@@ -98,7 +98,7 @@ public class ConnectionUpgradeToBufferTest extends AbstractLocalServerCase
         } while (!capture.closed);
 
         // Validate echoed frames
-        WSFrame incomingFrame;
+        WebSocketFrame incomingFrame;
         incomingFrame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Incoming Frame[0]", incomingFrame, notNullValue());
         assertThat("Incoming Frame[0].op", incomingFrame.getOpCode(), is(OpCode.TEXT));

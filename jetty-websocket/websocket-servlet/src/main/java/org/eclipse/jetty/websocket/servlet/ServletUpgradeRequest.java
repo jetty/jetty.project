@@ -37,7 +37,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 
@@ -264,10 +264,10 @@ public class ServletUpgradeRequest implements UpgradeRequest
     @Override
     public String getProtocolVersion()
     {
-        String version = request.getHeader(WSConstants.SEC_WEBSOCKET_VERSION);
+        String version = request.getHeader(WebSocketConstants.SEC_WEBSOCKET_VERSION);
         if(version == null)
         {
-            return Integer.toString(WSConstants.SPEC_VERSION);
+            return Integer.toString(WebSocketConstants.SPEC_VERSION);
         }
         return version;
     }

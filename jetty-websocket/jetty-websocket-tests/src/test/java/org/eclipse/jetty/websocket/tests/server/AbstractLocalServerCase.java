@@ -32,13 +32,13 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitGenerator;
@@ -70,7 +70,7 @@ public abstract class AbstractLocalServerCase
     
     @Rule
     public TestName testname = new TestName();
-    public UnitGenerator generator = new UnitGenerator(WSPolicy.newClientPolicy());
+    public UnitGenerator generator = new UnitGenerator(WebSocketPolicy.newClientPolicy());
     
     public AbstractLocalServerCase()
     {
@@ -114,7 +114,7 @@ public abstract class AbstractLocalServerCase
      * @param frameSize the individual frame size to utilize
      * @return the overall message payload (useful for expectation checks)
      */
-    public ByteBuffer newMultiFrameMessage(List<WSFrame> send, byte opcode, int overallSize, int frameSize)
+    public ByteBuffer newMultiFrameMessage(List<WebSocketFrame> send, byte opcode, int overallSize, int frameSize)
     {
         byte msg[] = new byte[overallSize];
         Arrays.fill(msg, (byte) 'M');
@@ -145,7 +145,7 @@ public abstract class AbstractLocalServerCase
     
     public Parser newClientParser(Parser.Handler parserHandler)
     {
-        return new Parser(WSPolicy.newClientPolicy(), new MappedByteBufferPool(), parserHandler);
+        return new Parser(WebSocketPolicy.newClientPolicy(), new MappedByteBufferPool(), parserHandler);
     }
     
     public ParsedResponse performUpgrade(LocalConnector.LocalEndPoint endPoint, ByteBuffer buf) throws Exception

@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
@@ -127,7 +127,7 @@ public class JavaxWebSocketAsyncRemote extends AbstractJsrRemote implements java
         {
             Encoder.TextStream etxt = (Encoder.TextStream) encoder;
             SendHandlerCallback callback = new SendHandlerCallback(handler);
-            WSConnection connection = session.getConnection();
+            WebSocketCoreConnection connection = session.getConnection();
             try (MessageWriter writer = new MessageWriter(connection, connection.getInputBufferSize(), connection.getBufferPool()))
             {
                 writer.setCallback(callback);
@@ -157,7 +157,7 @@ public class JavaxWebSocketAsyncRemote extends AbstractJsrRemote implements java
         {
             Encoder.BinaryStream ebin = (Encoder.BinaryStream) encoder;
             SendHandlerCallback callback = new SendHandlerCallback(handler);
-            WSConnection connection = session.getConnection();
+            WebSocketCoreConnection connection = session.getConnection();
             try (MessageOutputStream out = new MessageOutputStream(connection, connection.getInputBufferSize(), connection.getBufferPool()))
             {
                 out.setCallback(callback);

@@ -60,13 +60,13 @@ import org.eclipse.jetty.websocket.common.LocalEndpointFactory;
 import org.eclipse.jetty.websocket.common.LocalEndpointImpl;
 import org.eclipse.jetty.websocket.common.RemoteEndpointImpl;
 import org.eclipse.jetty.websocket.common.SessionListener;
-import org.eclipse.jetty.websocket.common.WSSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.WSException;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -85,34 +85,34 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final Scheduler scheduler = new ScheduledExecutorScheduler();
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private final String supportedVersions;
-    private final WSPolicy containerPolicy;
+    private final WebSocketPolicy containerPolicy;
     private final ByteBufferPool bufferPool;
-    private final WSExtensionRegistry extensionRegistry;
+    private final WebSocketExtensionRegistry extensionRegistry;
     private final LocalEndpointFactory localEndpointFactory;
     private final ServletContext context; // can be null when this factory is used from WebSocketHandler
     private final List<Class<?>> registeredSocketClasses = new ArrayList<>();
     private Executor executor;
     private DecoratedObjectFactory objectFactory;
     private WebSocketCreator creator;
-    private Function<WebSocketServerConnection, WSSession<? extends WSConnection>> newSessionFunction =
-            (connection) -> new WSSession(connection);
+    private Function<WebSocketServerConnection, WebSocketSessionImpl<? extends WebSocketCoreConnection>> newSessionFunction =
+            (connection) -> new WebSocketSessionImpl(connection);
     
     public WebSocketServerFactory(ServletContext context)
     {
-        this(context, WSPolicy.newServerPolicy(), new MappedByteBufferPool());
+        this(context, WebSocketPolicy.newServerPolicy(), new MappedByteBufferPool());
     }
     
     public WebSocketServerFactory(ServletContext context, ByteBufferPool bufferPool)
     {
-        this(context, WSPolicy.newServerPolicy(), bufferPool);
+        this(context, WebSocketPolicy.newServerPolicy(), bufferPool);
     }
     
-    public WebSocketServerFactory(ServletContext context, WSPolicy policy)
+    public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy)
     {
         this(context, policy, new MappedByteBufferPool());
     }
     
-    public WebSocketServerFactory(ServletContext context, WSPolicy policy, ByteBufferPool bufferPool)
+    public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this(Objects.requireNonNull(context, ServletContext.class.getName()), policy, null, null, bufferPool);
     }
@@ -124,12 +124,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      * @param executor the executor to use
      * @param bufferPool the buffer pool to use
      */
-    public WebSocketServerFactory(WSPolicy policy, Executor executor, ByteBufferPool bufferPool)
+    public WebSocketServerFactory(WebSocketPolicy policy, Executor executor, ByteBufferPool bufferPool)
     {
         this(null, policy, new DecoratedObjectFactory(), executor, bufferPool);
     }
     
-    private WebSocketServerFactory(ServletContext context, WSPolicy policy, DecoratedObjectFactory objectFactory, Executor executor, ByteBufferPool bufferPool)
+    private WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, DecoratedObjectFactory objectFactory, Executor executor, ByteBufferPool bufferPool)
     {
         this.context = context;
         this.containerPolicy = policy;
@@ -139,7 +139,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         this.creator = this;
         this.contextClassloader = Thread.currentThread().getContextClassLoader();
-        this.extensionRegistry = new WSExtensionRegistry();
+        this.extensionRegistry = new WebSocketExtensionRegistry();
         this.localEndpointFactory = new LocalEndpointFactory();
 
         this.handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
@@ -225,14 +225,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
     }
     
-    private WSSession createSession(Object websocket, WebSocketServerConnection connection)
+    private WebSocketSessionImpl createSession(Object websocket, WebSocketServerConnection connection)
     {
         if (websocket == null)
         {
             throw new InvalidWebSocketException("Unable to create Session from null websocket");
         }
 
-        WSSession session = newSessionFunction.apply(connection);
+        WebSocketSessionImpl session = newSessionFunction.apply(connection);
         LocalEndpointImpl localEndpoint = localEndpointFactory.createLocalEndpoint(websocket, session, getPolicy(), getExecutor());
         RemoteEndpointImpl remoteEndpoint = new RemoteEndpointImpl(connection, connection.getRemoteAddress());
 
@@ -248,7 +248,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         if (registeredSocketClasses.size() < 1)
         {
-            throw new WSException("No WebSockets have been registered with the factory.  Cannot use default implementation of WebSocketCreator.");
+            throw new WebSocketException("No WebSockets have been registered with the factory.  Cannot use default implementation of WebSocketCreator.");
         }
         
         if (registeredSocketClasses.size() > 1)
@@ -263,7 +263,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
         catch (InstantiationException | IllegalAccessException e)
         {
-            throw new WSException("Unable to create instance of " + firstClass, e);
+            throw new WebSocketException("Unable to create instance of " + firstClass, e);
         }
     }
     
@@ -313,18 +313,18 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     }
 
     @Override
-    public WSExtensionRegistry getExtensionRegistry()
+    public WebSocketExtensionRegistry getExtensionRegistry()
     {
         return extensionRegistry;
     }
     
-    public Collection<WSSession> getOpenSessions()
+    public Collection<WebSocketSessionImpl> getOpenSessions()
     {
-        return getBeans(WSSession.class);
+        return getBeans(WebSocketSessionImpl.class);
     }
     
     @Override
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         return containerPolicy;
     }
@@ -397,20 +397,20 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
 
     @Override
-    public void onCreated(WSSession session)
+    public void onCreated(WebSocketSessionImpl session)
     {
         // TODO
     }
 
     @Override
-    public void onOpened(WSSession session)
+    public void onOpened(WebSocketSessionImpl session)
     {
         addManaged(session);
         notifySessionListeners(listener -> listener.onOpened(session));
     }
 
     @Override
-    public void onClosed(WSSession session)
+    public void onClosed(WebSocketSessionImpl session)
     {
         removeBean(session);
         notifySessionListeners(listener -> listener.onClosed(session));
@@ -443,7 +443,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.creator = creator;
     }
 
-    public void setNewSessionFunction(Function<WebSocketServerConnection, WSSession<? extends WSConnection>> newSessionFunction)
+    public void setNewSessionFunction(Function<WebSocketServerConnection, WebSocketSessionImpl<? extends WebSocketCoreConnection>> newSessionFunction)
     {
         this.newSessionFunction = newSessionFunction;
     }
@@ -548,7 +548,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
         
         // Setup Session
-        WSSession session = createSession(websocket, wsConnection);
+        WebSocketSessionImpl session = createSession(websocket, wsConnection);
         // set true negotiated extension list back to response
         response.setExtensions(extensionStack.getNegotiatedExtensions());
 

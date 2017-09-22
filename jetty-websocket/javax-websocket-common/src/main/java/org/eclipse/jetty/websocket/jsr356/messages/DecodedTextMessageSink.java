@@ -22,12 +22,12 @@ import java.lang.invoke.MethodHandle;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class DecodedTextMessageSink extends StringMessageSink
 {
-    public DecodedTextMessageSink(JavaxWebSocketSession session, WSLocalEndpoint endpointFunctions, Decoder.Text decoder, MethodHandle methodHandle)
+    public DecodedTextMessageSink(JavaxWebSocketSession session, WebSocketLocalEndpoint endpointFunctions, Decoder.Text decoder, MethodHandle methodHandle)
     {
         super(session.getPolicy(), session.getExecutor(), methodHandle);
 

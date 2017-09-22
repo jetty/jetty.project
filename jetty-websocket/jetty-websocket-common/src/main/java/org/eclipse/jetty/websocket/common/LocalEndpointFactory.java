@@ -53,7 +53,7 @@ import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.invoke.InvokerUtils;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
@@ -91,11 +91,11 @@ public class LocalEndpointFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public LocalEndpointImpl createLocalEndpoint(Object endpointInstance, Session session, WSPolicy policy, Executor executor)
+    public LocalEndpointImpl createLocalEndpoint(Object endpointInstance, Session session, WebSocketPolicy policy, Executor executor)
     {
         LocalEndpointMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        WSPolicy endpointPolicy = policy.clonePolicy();
+        WebSocketPolicy endpointPolicy = policy.clonePolicy();
         if (metadata.getIdleTimeout() > 0)
         {
             endpointPolicy.setIdleTimeout(metadata.getIdleTimeout());
@@ -147,7 +147,7 @@ public class LocalEndpointFactory
                 frameHandle, pingHandle, pongHandle);
     }
 
-    private MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WSPolicy endpointPolicy, Executor executor)
+    private MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketPolicy endpointPolicy, Executor executor)
     {
         if (msgHandle == null)
             return null;
@@ -156,7 +156,7 @@ public class LocalEndpointFactory
 
         try
         {
-            Constructor sinkConstructor = sinkClass.getConstructor(WSPolicy.class, Executor.class, MethodHandle.class);
+            Constructor sinkConstructor = sinkClass.getConstructor(WebSocketPolicy.class, Executor.class, MethodHandle.class);
             MessageSink messageSink = (MessageSink) sinkConstructor.newInstance(endpointPolicy, executor, msgHandle);
             return messageSink;
         }

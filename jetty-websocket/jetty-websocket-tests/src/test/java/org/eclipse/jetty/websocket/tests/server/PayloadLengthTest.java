@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.junit.Test;
@@ -66,11 +66,11 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         Arrays.fill(payload, (byte) 'x');
         ByteBuffer buf = ByteBuffer.wrap(payload);
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -88,11 +88,11 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         Arrays.fill(payload, (byte) 'x');
         ByteBuffer buf = ByteBuffer.wrap(payload);
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -110,11 +110,11 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         Arrays.fill(payload, (byte) 0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BinaryFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -132,11 +132,11 @@ public class PayloadLengthTest extends AbstractLocalServerCase
         Arrays.fill(payload, (byte) 0xFE);
         ByteBuffer buf = ByteBuffer.wrap(payload);
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BinaryFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new BinaryFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     

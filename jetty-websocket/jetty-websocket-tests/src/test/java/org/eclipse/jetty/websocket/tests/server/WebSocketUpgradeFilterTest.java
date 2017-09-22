@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.LocalServer;
 import org.junit.After;
@@ -79,8 +79,8 @@ public abstract class WebSocketUpgradeFilterTest
                     new CloseFrame().setPayload(StatusCode.NORMAL.getCode())
             );
             
-            BlockingQueue<WSFrame> framesQueue = session.getOutputFrames();
-            WSFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             
@@ -100,8 +100,8 @@ public abstract class WebSocketUpgradeFilterTest
                     new CloseFrame().setPayload(StatusCode.NORMAL.getCode())
             );
             
-            BlockingQueue<WSFrame> framesQueue = session.getOutputFrames();
-            WSFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             
@@ -122,8 +122,8 @@ public abstract class WebSocketUpgradeFilterTest
                     new CloseFrame().setPayload(StatusCode.NORMAL.getCode())
             );
             
-            BlockingQueue<WSFrame> framesQueue = session.getOutputFrames();
-            WSFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             

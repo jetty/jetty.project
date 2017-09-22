@@ -43,7 +43,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.WSTimeoutException;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -345,7 +345,7 @@ public class ClientDisconnectedTest
             session.getRemote().sendString("drop-me");
 
             clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WSTimeoutException.class), containsString("Connection Idle Timeout"));
+            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Connection Idle Timeout"));
         }
         finally
         {
@@ -386,7 +386,7 @@ public class ClientDisconnectedTest
             clientSocket.close(StatusCode.NORMAL, "All Done");
 
             clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WSTimeoutException.class), containsString("Connection Idle Timeout"));
+            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Connection Idle Timeout"));
         }
         finally
         {
@@ -427,7 +427,7 @@ public class ClientDisconnectedTest
             clientSocket.close(StatusCode.NORMAL, "All Done");
 
             clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WSTimeoutException.class), containsString("Connection Idle Timeout"));
+            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Connection Idle Timeout"));
         }
         finally
         {

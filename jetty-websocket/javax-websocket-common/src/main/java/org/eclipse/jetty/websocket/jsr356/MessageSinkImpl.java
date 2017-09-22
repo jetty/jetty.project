@@ -21,15 +21,15 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public abstract class MessageSinkImpl implements MessageSink
 {
-    protected final WSPolicy policy;
+    protected final WebSocketPolicy policy;
     protected final Executor executor;
     protected final MethodHandle methodHandle;
 
-    public MessageSinkImpl(WSPolicy policy, Executor executor, MethodHandle methodHandle)
+    public MessageSinkImpl(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         this.policy = policy;
         this.executor = executor;

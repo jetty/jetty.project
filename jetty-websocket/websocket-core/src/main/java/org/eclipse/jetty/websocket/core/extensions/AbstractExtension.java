@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.OutgoingFrames;
 public abstract class AbstractExtension extends AbstractLifeCycle implements Dumpable, Extension
 {
     private final Logger log;
-    private WSPolicy policy;
+    private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
@@ -73,7 +73,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
             out.append(bean.toString());
     }
     
-    public void init(WSPolicy policy, ByteBufferPool bufferPool)
+    public void init(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this.policy = policy;
         this.bufferPool = bufferPool;
@@ -108,7 +108,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         return nextOutgoing;
     }
 
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         return policy;
     }
@@ -186,7 +186,7 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Dum
         this.nextOutgoing = nextOutgoing;
     }
 
-    public void setPolicy(WSPolicy policy)
+    public void setPolicy(WebSocketPolicy policy)
     {
         this.policy = policy;
     }

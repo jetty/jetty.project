@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
 import org.junit.Test;
@@ -48,10 +48,10 @@ public class ReservedBitTest extends AbstractLocalServerCase
     @Test
     public void testCase3_1() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small").setRsv1(true)); // intentionally bad
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -72,12 +72,12 @@ public class ReservedBitTest extends AbstractLocalServerCase
     @Test
     public void testCase3_2() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
         send.add(new TextFrame().setPayload("small").setRsv2(true)); // intentionally bad
         send.add(new PingFrame().setPayload("ping"));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
@@ -99,12 +99,12 @@ public class ReservedBitTest extends AbstractLocalServerCase
     @Test
     public void testCase3_3() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
         send.add(new TextFrame().setPayload("small").setRsv1(true).setRsv2(true)); // intentionally bad
         send.add(new PingFrame().setPayload("ping"));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
@@ -126,12 +126,12 @@ public class ReservedBitTest extends AbstractLocalServerCase
     @Test
     public void testCase3_4() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
         send.add(new TextFrame().setPayload("small").setRsv3(true)); // intentionally bad
         send.add(new PingFrame().setPayload("ping"));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("small")); // echo on good frame
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
@@ -156,10 +156,10 @@ public class ReservedBitTest extends AbstractLocalServerCase
         byte payload[] = new byte[8];
         Arrays.fill(payload,(byte)0xFF);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BinaryFrame().setPayload(payload).setRsv3(true).setRsv1(true)); // intentionally bad
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -183,10 +183,10 @@ public class ReservedBitTest extends AbstractLocalServerCase
         byte payload[] = new byte[8];
         Arrays.fill(payload,(byte)0xFF);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload).setRsv3(true).setRsv2(true)); // intentionally bad
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -207,14 +207,14 @@ public class ReservedBitTest extends AbstractLocalServerCase
     @Test
     public void testCase3_7() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
-        WSFrame frame = new CloseFrame().setPayload(StatusCode.NORMAL.getCode());
+        List<WebSocketFrame> send = new ArrayList<>();
+        WebSocketFrame frame = new CloseFrame().setPayload(StatusCode.NORMAL.getCode());
         frame.setRsv1(true);
         frame.setRsv2(true);
         frame.setRsv3(true);
         send.add(frame); // intentionally bad
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);

@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import org.eclipse.jetty.websocket.common.WSSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketSession extends WSSession
+public class LocalWebSocketSession extends WebSocketSessionImpl
 {
     private String id;
     private OutgoingFramesCapture outgoingCapture;

@@ -28,8 +28,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.websocket.core.WSBehavior;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public abstract class WebSocketHandler extends HandlerWrapper
@@ -69,7 +69,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
 
     public abstract void configure(WebSocketServletFactory factory);
 
-    public void configurePolicy(WSPolicy policy)
+    public void configurePolicy(WebSocketPolicy policy)
     {
         /* leave at default */
     }
@@ -77,7 +77,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
-        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         configurePolicy(policy);
         webSocketFactory = new WebSocketServerFactory(policy, getServer().getThreadPool(), bufferPool);
         addBean(webSocketFactory);

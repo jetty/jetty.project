@@ -44,7 +44,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WSSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
@@ -139,7 +139,7 @@ public class WebSocketClientTest
         assertThat("Client Session.upgradeRequest", clientSession.getUpgradeResponse(), notNullValue());
         
         // Verify Client Session Tracking
-        Collection<WSSession> sessions = client.getBeans(WSSession.class);
+        Collection<WebSocketSessionImpl> sessions = client.getBeans(WebSocketSessionImpl.class);
         Assert.assertThat("client.beans[session].size", sessions.size(), is(1));
         
         // Server accepts connect

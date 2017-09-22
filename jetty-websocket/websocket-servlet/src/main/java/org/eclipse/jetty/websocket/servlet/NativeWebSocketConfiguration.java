@@ -29,8 +29,8 @@ import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.websocket.core.WSException;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
  * Interface for Configuring WebSocket endpoints on a Jetty ServletContext
@@ -96,12 +96,12 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
     }
 
     /**
-     * Used to configure the Default {@link WSPolicy} used by all endpoints that
+     * Used to configure the Default {@link WebSocketPolicy} used by all endpoints that
      * don't redeclare the values.
      *
      * @return the default policy for all WebSockets
      */
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         return this.factory.getPolicy();
     }
@@ -143,7 +143,7 @@ public class NativeWebSocketConfiguration extends ContainerLifeCycle implements 
             }
             catch (InstantiationException | IllegalAccessException e)
             {
-                throw new WSException("Unable to create instance of " + endpointClass.getName(), e);
+                throw new WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }
         });
     }

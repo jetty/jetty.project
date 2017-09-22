@@ -23,12 +23,12 @@ import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.MessageSink;
 
 public class InputStreamMessageSink extends DispatchedMessageSink<InputStream, Void>
 {
-    public InputStreamMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
+    public InputStreamMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
     }

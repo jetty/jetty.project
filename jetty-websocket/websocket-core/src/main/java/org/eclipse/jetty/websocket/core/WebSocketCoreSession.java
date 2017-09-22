@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.eclipse.jetty.websocket.core.io.WSConnectionState.*;
-import static org.eclipse.jetty.websocket.core.io.WSConnectionState.State.*;
+import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.*;
+import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State.*;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -38,10 +38,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.CompletionCallback;
 
-public abstract class WSCoreSession<T extends WSConnection> extends ContainerLifeCycle implements IncomingFrames
+public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> extends ContainerLifeCycle implements IncomingFrames
 {
     // Callbacks
     private Callback onDisconnectCallback = new CompletionCallback()
@@ -66,21 +66,21 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
      * Not declared final, as they can be decorated later by other libraries (CDI)
      */
     private Object wsEndpoint;
-    private WSLocalEndpoint localEndpoint;
-    private WSRemoteEndpoint remoteEndpoint;
-    private WSPolicy sessionPolicy;
+    private WebSocketLocalEndpoint localEndpoint;
+    private WebSocketRemoteEndpoint remoteEndpoint;
+    private WebSocketPolicy sessionPolicy;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     // Holder for errors during open that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
-    public WSCoreSession(T connection)
+    public WebSocketCoreSession(T connection)
     {
         this.log = Log.getLogger(this.getClass());
         this.connection = connection;
     }
 
-    public void setWebSocketEndpoint(Object endpoint, WSPolicy policy, WSLocalEndpoint localEndpoint, WSRemoteEndpoint remoteEndpoint)
+    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, WebSocketLocalEndpoint localEndpoint, WebSocketRemoteEndpoint remoteEndpoint)
     {
         this.wsEndpoint = endpoint;
         this.sessionPolicy = policy;
@@ -100,7 +100,7 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
         connection.close(closeStatus, callback);
     }
 
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         if (sessionPolicy == null)
             return connection.getPolicy();
@@ -134,21 +134,21 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
-            close(WSConstants.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof SocketTimeoutException)
         {
             // A path often seen in Windows
-            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof IOException)
         {
-            close(WSConstants.PROTOCOL, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.PROTOCOL, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof SocketException)
         {
             // A path unique to Unix
-            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else if (cause instanceof CloseException)
         {
@@ -158,12 +158,12 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
             // Force disconnect for protocol breaking status codes
             switch (ce.getStatusCode())
             {
-                case WSConstants.PROTOCOL:
-                case WSConstants.BAD_DATA:
-                case WSConstants.BAD_PAYLOAD:
-                case WSConstants.MESSAGE_TOO_LARGE:
-                case WSConstants.POLICY_VIOLATION:
-                case WSConstants.SERVER_ERROR:
+                case WebSocketConstants.PROTOCOL:
+                case WebSocketConstants.BAD_DATA:
+                case WebSocketConstants.BAD_PAYLOAD:
+                case WebSocketConstants.MESSAGE_TOO_LARGE:
+                case WebSocketConstants.POLICY_VIOLATION:
+                case WebSocketConstants.SERVER_ERROR:
                 {
                     callback = onDisconnectCallback;
                 }
@@ -171,9 +171,9 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
 
             close(ce.getStatusCode(), ce.getMessage(), callback);
         }
-        else if (cause instanceof WSTimeoutException)
+        else if (cause instanceof WebSocketTimeoutException)
         {
-            close(WSConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
         }
         else
         {
@@ -181,10 +181,10 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
 
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
-            int statusCode = WSConstants.SERVER_ERROR;
-            if (getPolicy().getBehavior() == WSBehavior.CLIENT)
+            int statusCode = WebSocketConstants.SERVER_ERROR;
+            if (getPolicy().getBehavior() == WebSocketBehavior.CLIENT)
             {
-                statusCode = WSConstants.POLICY_VIOLATION;
+                statusCode = WebSocketConstants.POLICY_VIOLATION;
             }
             close(statusCode, cause.getMessage(), Callback.NOOP);
         }
@@ -225,7 +225,7 @@ public abstract class WSCoreSession<T extends WSConnection> extends ContainerLif
                 catch (Throwable t)
                 {
                     localEndpoint.getLog().warn("Error during OPEN", t);
-                    onError(new CloseException(WSConstants.SERVER_ERROR, t));
+                    onError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
                 }
 
                 /* Perform fillInterested outside of onConnected / onOpen.

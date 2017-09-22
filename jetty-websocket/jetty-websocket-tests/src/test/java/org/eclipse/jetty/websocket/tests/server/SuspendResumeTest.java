@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -115,12 +115,12 @@ public class SuspendResumeTest
     @Test(timeout = 10000)
     public void testSuspendResume_Bulk() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("echo1"));
         send.add(new TextFrame().setPayload("echo2"));
         send.add(new CloseFrame());
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("echo1"));
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());
@@ -135,12 +135,12 @@ public class SuspendResumeTest
     @Test(timeout = 10000)
     public void testSuspendResume_SmallBuffers() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("echo1"));
         send.add(new TextFrame().setPayload("echo2"));
         send.add(new CloseFrame());
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("echo1"));
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());
@@ -155,12 +155,12 @@ public class SuspendResumeTest
     @Test(timeout = 10000)
     public void testSuspendResume_AsFrames() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("echo1"));
         send.add(new TextFrame().setPayload("echo2"));
         send.add(new CloseFrame());
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("echo1"));
         expect.add(new TextFrame().setPayload("echo2"));
         expect.add(new CloseFrame());

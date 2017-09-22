@@ -24,13 +24,13 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
-public class JavaxWebSocketConnection extends WSConnection
+public class JavaxWebSocketConnection extends WebSocketCoreConnection
 {
     /**
      * Create a WSConnection.
@@ -41,7 +41,7 @@ public class JavaxWebSocketConnection extends WSConnection
      */
     public JavaxWebSocketConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                                     DecoratedObjectFactory decoratedObjectFactory,
-                                    WSPolicy policy, ExtensionStack extensionStack,
+                                    WebSocketPolicy policy, ExtensionStack extensionStack,
                                     UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(endp,executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);

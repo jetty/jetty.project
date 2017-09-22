@@ -50,18 +50,18 @@ import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocke
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,11 +75,11 @@ public class LocalEndpointImplTest
     private static Executor executor = Executors.newFixedThreadPool(10);
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
     private static DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
-    private static WSExtensionRegistry extensionFactory = new WSExtensionRegistry();
+    private static WebSocketExtensionRegistry extensionFactory = new WebSocketExtensionRegistry();
     private LocalEndpointFactory endpointFactory = new LocalEndpointFactory();
-    private WSPolicy policy = WSPolicy.newServerPolicy();
+    private WebSocketPolicy policy = WebSocketPolicy.newServerPolicy();
 
-    private WSLocalEndpoint newLocalEndpoint(Object wsEndpoint)
+    private WebSocketLocalEndpoint newLocalEndpoint(Object wsEndpoint)
     {
         EndPoint jettyEndpoint = new ByteArrayEndPoint();
         ExtensionStack extensionStack = new ExtensionStack(extensionFactory);
@@ -89,12 +89,12 @@ public class LocalEndpointImplTest
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         UpgradeResponse upgradeResponse = new UpgradeResponseAdapter();
 
-        WSConnection connection = new WSConnection(jettyEndpoint, executor, bufferPool, objectFactory,
+        WebSocketCoreConnection connection = new WebSocketCoreConnection(jettyEndpoint, executor, bufferPool, objectFactory,
                 policy, extensionStack, upgradeRequest, upgradeResponse);
 
-        WSSession session = new WSSession(connection);
+        WebSocketSessionImpl session = new WebSocketSessionImpl(connection);
 
-        WSLocalEndpoint localEndpoint = endpointFactory.createLocalEndpoint(wsEndpoint, session, policy, executor);
+        WebSocketLocalEndpoint localEndpoint = endpointFactory.createLocalEndpoint(wsEndpoint, session, policy, executor);
         session.setWebSocketEndpoint(wsEndpoint, policy, localEndpoint, new RemoteEndpointImpl(extensionStack, connection.getRemoteAddress()));
 
         return localEndpoint;
@@ -127,7 +127,7 @@ public class LocalEndpointImplTest
     public void testConnectionListener() throws Exception
     {
         ConnectionOnly socket = new ConnectionOnly();
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
@@ -169,7 +169,7 @@ public class LocalEndpointImplTest
     {
         // Setup
         StreamedText socket = new StreamedText(1);
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
@@ -188,7 +188,7 @@ public class LocalEndpointImplTest
     {
         // Setup
         StreamedText socket = new StreamedText(1);
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
@@ -210,7 +210,7 @@ public class LocalEndpointImplTest
     {
         // Setup
         ListenerPartialSocket socket = new ListenerPartialSocket();
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
@@ -240,7 +240,7 @@ public class LocalEndpointImplTest
     {
         // Setup
         ListenerBasicSocket socket = new ListenerBasicSocket();
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
@@ -266,7 +266,7 @@ public class LocalEndpointImplTest
     {
         // Setup
         ListenerBasicSocket socket = new ListenerBasicSocket();
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
@@ -286,7 +286,7 @@ public class LocalEndpointImplTest
     {
         // Setup
         ListenerFrameSocket socket = new ListenerFrameSocket();
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();
@@ -316,7 +316,7 @@ public class LocalEndpointImplTest
     {
         // Setup
         ListenerPingPongSocket socket = new ListenerPingPongSocket();
-        WSLocalEndpoint localEndpoint = newLocalEndpoint(socket);
+        WebSocketLocalEndpoint localEndpoint = newLocalEndpoint(socket);
 
         // Trigger Events
         localEndpoint.onOpen();

@@ -27,7 +27,7 @@ import org.eclipse.jetty.websocket.core.io.BatchMode;
 /**
  * The interface a WSConnection has to the remote WebSocket Endpoint.
  */
-public interface WSRemoteEndpoint
+public interface WebSocketRemoteEndpoint
 {
     /**
      * Get the batch mode behavior.

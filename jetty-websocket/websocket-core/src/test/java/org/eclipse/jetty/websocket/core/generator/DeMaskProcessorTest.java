@@ -29,10 +29,10 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.ParserDeMasker;
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,10 +47,10 @@ public class DeMaskProcessorTest
         // Use a string that is not multiple of 4 in length to test if/else branches in ParserDeMasker
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01";
 
-        WSFrame frame = new TextFrame().setPayload(message);
+        WebSocketFrame frame = new TextFrame().setPayload(message);
         frame.setMask(TypeUtil.fromHexString("11223344"));
     
-        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         ByteBuffer buf = new UnitGenerator(policy).generate(frame);
         LOG.debug("Buf: {}",BufferUtil.toDetailString(buf));
         ByteBuffer payload = buf.slice();
@@ -77,7 +77,7 @@ public class DeMaskProcessorTest
         frame.setPayload(ByteBuffer.wrap(message));
         frame.setMask(Hex.asByteArray("11223344"));
     
-        WSPolicy policy = new WSPolicy(WSBehavior.CLIENT);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
         ByteBuffer buf = new UnitGenerator(policy).generate(frame);
         LOG.debug("Buf: {}",BufferUtil.toDetailString(buf));
         ByteBuffer payload = buf.slice();

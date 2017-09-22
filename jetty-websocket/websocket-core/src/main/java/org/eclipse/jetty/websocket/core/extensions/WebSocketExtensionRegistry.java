@@ -27,14 +27,14 @@ import java.util.Set;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 
-public class WSExtensionRegistry implements Iterable<Class<? extends Extension>>
+public class WebSocketExtensionRegistry implements Iterable<Class<? extends Extension>>
 {
     private Map<String, Class<? extends Extension>> availableExtensions;
 
-    public WSExtensionRegistry()
+    public WebSocketExtensionRegistry()
     {
         ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
         availableExtensions = new HashMap<>();
@@ -73,7 +73,7 @@ public class WSExtensionRegistry implements Iterable<Class<? extends Extension>>
         return availableExtensions.values().iterator();
     }
 
-    public Extension newInstance(DecoratedObjectFactory objectFactory, WSPolicy policy, ByteBufferPool bufferPool, ExtensionConfig config)
+    public Extension newInstance(DecoratedObjectFactory objectFactory, WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionConfig config)
     {
         if (config == null)
         {
@@ -105,7 +105,7 @@ public class WSExtensionRegistry implements Iterable<Class<? extends Extension>>
         }
         catch (InstantiationException | IllegalAccessException e)
         {
-            throw new WSException("Cannot instantiate extension: " + extClass,e);
+            throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
         }
     }
 

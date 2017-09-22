@@ -23,13 +23,13 @@ import java.util.concurrent.Executor;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class DecodedInputStreamMessageSink extends InputStreamMessageSink
 {
-    public DecodedInputStreamMessageSink(WSPolicy policy,
-                                         WSLocalEndpoint endpointFunctions,
+    public DecodedInputStreamMessageSink(WebSocketPolicy policy,
+                                         WebSocketLocalEndpoint endpointFunctions,
                                          Executor executor,
                                          Decoder.BinaryStream decoder,
                                          MethodHandle methodHandle)

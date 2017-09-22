@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.junit.AfterClass;
@@ -55,14 +55,14 @@ public class WebSocketServerSessionTest
     {
         String requestPath = "/test?snack=cashews&amount=handful&brand=off";
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("getParameterMap|snack"));
         send.add(new TextFrame().setPayload("getParameterMap|amount"));
         send.add(new TextFrame().setPayload("getParameterMap|brand"));
         send.add(new TextFrame().setPayload("getParameterMap|cost"));
         send.add(new CloseFrame());
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("[cashews]"));
         expect.add(new TextFrame().setPayload("[handful]"));
         expect.add(new TextFrame().setPayload("[off]"));

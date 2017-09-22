@@ -26,15 +26,15 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.handshake.DummyUpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.DummyUpgradeResponse;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 
-public class DummyConnection extends WSConnection
+public class DummyConnection extends WebSocketCoreConnection
 {
     public static class Builder
     {
@@ -42,8 +42,8 @@ public class DummyConnection extends WSConnection
         private Executor executor;
         private ByteBufferPool bufferPool;
         private DecoratedObjectFactory objectFactory;
-        private WSPolicy policy;
-        private WSExtensionRegistry extensionFactory;
+        private WebSocketPolicy policy;
+        private WebSocketExtensionRegistry extensionFactory;
         private ExtensionStack extensionStack;
         private UpgradeRequest upgradeRequest;
         private UpgradeResponse upgradeResponse;
@@ -72,7 +72,7 @@ public class DummyConnection extends WSConnection
             return this;
         }
 
-        public Builder policy(WSPolicy policy)
+        public Builder policy(WebSocketPolicy policy)
         {
             this.policy = policy;
             return this;
@@ -102,9 +102,9 @@ public class DummyConnection extends WSConnection
             if (executor == null) executor = new QueuedThreadPool();
             if (bufferPool == null) bufferPool = new MappedByteBufferPool();
             if (objectFactory == null) objectFactory = new DecoratedObjectFactory();
-            if (policy == null) policy = WSPolicy.newServerPolicy();
+            if (policy == null) policy = WebSocketPolicy.newServerPolicy();
             if (extensionStack == null)
-                extensionStack = new ExtensionStack(new WSExtensionRegistry());
+                extensionStack = new ExtensionStack(new WebSocketExtensionRegistry());
             if (upgradeRequest == null) upgradeRequest = new DummyUpgradeRequest();
             if (upgradeResponse == null) upgradeResponse = new DummyUpgradeResponse();
 
@@ -114,7 +114,7 @@ public class DummyConnection extends WSConnection
 
     public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                            DecoratedObjectFactory decoratedObjectFactory,
-                           WSPolicy policy, ExtensionStack extensionStack,
+                           WebSocketPolicy policy, ExtensionStack extensionStack,
                            UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(endp, executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);

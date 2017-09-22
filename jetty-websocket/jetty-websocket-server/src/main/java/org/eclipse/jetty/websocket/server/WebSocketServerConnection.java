@@ -25,17 +25,17 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
-public class WebSocketServerConnection extends WSConnection implements Connection.UpgradeTo
+public class WebSocketServerConnection extends WebSocketCoreConnection implements Connection.UpgradeTo
 {
     public WebSocketServerConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                                      DecoratedObjectFactory decoratedObjectFactory,
-                                     WSPolicy policy, ExtensionStack extensionStack,
+                                     WebSocketPolicy policy, ExtensionStack extensionStack,
                                      UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(endp,executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);

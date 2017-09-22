@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import org.eclipse.jetty.websocket.common.WSSession;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
-public class UntrustedWSSession<T extends WSConnection> extends WSSession<T> implements AutoCloseable
+public class UntrustedWSSession<T extends WebSocketCoreConnection> extends WebSocketSessionImpl<T> implements AutoCloseable
 {
     private final UntrustedWSConnection untrustedConnection;
     private UntrustedWSEndpoint untrustedEndpoint;
@@ -37,7 +37,7 @@ public class UntrustedWSSession<T extends WSConnection> extends WSSession<T> imp
     }
 
     @Override
-    public void setWebSocketEndpoint(Object endpoint, WSPolicy policy, WSLocalEndpoint localEndpoint, WSRemoteEndpoint remoteEndpoint)
+    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, WebSocketLocalEndpoint localEndpoint, WebSocketRemoteEndpoint remoteEndpoint)
     {
         this.untrustedEndpoint = (UntrustedWSEndpoint) localEndpoint;
         super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);

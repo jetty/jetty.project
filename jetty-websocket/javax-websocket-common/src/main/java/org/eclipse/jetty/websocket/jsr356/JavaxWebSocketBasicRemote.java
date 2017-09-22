@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
@@ -47,14 +47,14 @@ public class JavaxWebSocketBasicRemote extends AbstractJsrRemote implements Remo
     @Override
     public OutputStream getSendStream() throws IOException
     {
-        WSConnection connection = session.getConnection();
+        WebSocketCoreConnection connection = session.getConnection();
         return new MessageOutputStream(connection, connection.getInputBufferSize(), connection.getBufferPool());
     }
 
     @Override
     public Writer getSendWriter() throws IOException
     {
-        WSConnection connection = session.getConnection();
+        WebSocketCoreConnection connection = session.getConnection();
         return new MessageWriter(connection, connection.getInputBufferSize(), connection.getBufferPool());
     }
 

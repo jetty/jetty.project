@@ -41,7 +41,7 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
@@ -197,7 +197,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     
     private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
-        WSLocalEndpoint endpointFunctions = null;
+        WebSocketLocalEndpoint endpointFunctions = null;
         try
         {
             // Test that endpoint can be instantiated
@@ -251,12 +251,12 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     }
     
     @Override
-    public WSLocalEndpoint newJsrEndpointFunction(Object endpoint,
-                                                  WebSocketPolicy sessionPolicy,
-                                                  AvailableEncoders availableEncoders,
-                                                  AvailableDecoders availableDecoders,
-                                                  Map<String, String> pathParameters,
-                                                  EndpointConfig config)
+    public WebSocketLocalEndpoint newJsrEndpointFunction(Object endpoint,
+                                                         WebSocketPolicy sessionPolicy,
+                                                         AvailableEncoders availableEncoders,
+                                                         AvailableDecoders availableDecoders,
+                                                         Map<String, String> pathParameters,
+                                                         EndpointConfig config)
     {
         return new JsrServerEndpointFunctions(endpoint,
                 sessionPolicy,

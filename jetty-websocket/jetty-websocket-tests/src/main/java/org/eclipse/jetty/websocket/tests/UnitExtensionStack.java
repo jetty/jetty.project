@@ -24,34 +24,34 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.WSBehavior;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class UnitExtensionStack extends ExtensionStack
 {
     public static UnitExtensionStack clientBased()
     {
-        return policyBased(new WSPolicy(WSBehavior.CLIENT));
+        return policyBased(new WebSocketPolicy(WebSocketBehavior.CLIENT));
     }
     
     public static UnitExtensionStack serverBased()
     {
-        return policyBased(new WSPolicy(WSBehavior.SERVER));
+        return policyBased(new WebSocketPolicy(WebSocketBehavior.SERVER));
     }
 
-    private static UnitExtensionStack policyBased(WSPolicy policy)
+    private static UnitExtensionStack policyBased(WebSocketPolicy policy)
     {
-        WSExtensionRegistry extensionFactory = new WSExtensionRegistry();
+        WebSocketExtensionRegistry extensionFactory = new WebSocketExtensionRegistry();
         UnitExtensionStack extensionStack = new UnitExtensionStack(extensionFactory);
         extensionStack.setPolicy(policy);
         return extensionStack;
     }
     
-    private UnitExtensionStack(WSExtensionRegistry extensionRegistry)
+    private UnitExtensionStack(WebSocketExtensionRegistry extensionRegistry)
     {
         super(extensionRegistry);
     }
@@ -59,16 +59,16 @@ public class UnitExtensionStack extends ExtensionStack
     /**
      * Process frames
      */
-    public BlockingQueue<WSFrame> processIncoming(BlockingQueue<WSFrame> framesQueue)
+    public BlockingQueue<WebSocketFrame> processIncoming(BlockingQueue<WebSocketFrame> framesQueue)
     {
-        BlockingQueue<WSFrame> processed = new LinkedBlockingDeque<>();
+        BlockingQueue<WebSocketFrame> processed = new LinkedBlockingDeque<>();
         setNextIncoming((frame, callback) ->
         {
-            processed.offer(WSFrame.copy(frame));
+            processed.offer(WebSocketFrame.copy(frame));
             callback.succeeded();
         });
         
-        for (WSFrame frame : framesQueue)
+        for (WebSocketFrame frame : framesQueue)
         {
             incomingFrame(frame, Callback.NOOP);
         }
@@ -83,16 +83,16 @@ public class UnitExtensionStack extends ExtensionStack
      * @param frames the frames to process
      * @return the processed frames (post extension stack)
      */
-    public List<WSFrame> processOutgoing(List<WSFrame> frames)
+    public List<WebSocketFrame> processOutgoing(List<WebSocketFrame> frames)
     {
-        List<WSFrame> captured = new ArrayList<>();
+        List<WebSocketFrame> captured = new ArrayList<>();
         setNextOutgoing((frame, callback, batchMode) ->
         {
-            captured.add(WSFrame.copy(frame));
+            captured.add(WebSocketFrame.copy(frame));
             callback.succeeded();
         });
         
-        for (WSFrame frame : frames)
+        for (WebSocketFrame frame : frames)
         {
             outgoingFrame(frame, Callback.NOOP, BatchMode.OFF);
         }

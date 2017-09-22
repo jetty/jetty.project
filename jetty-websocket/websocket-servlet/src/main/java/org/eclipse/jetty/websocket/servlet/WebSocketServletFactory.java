@@ -26,8 +26,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
 /**
  * Basic WebSocketServletFactory for working with Jetty-based WebSocketServlets
@@ -67,14 +67,14 @@ public interface WebSocketServletFactory
     
     WebSocketCreator getCreator();
     
-    WSExtensionRegistry getExtensionRegistry();
+    WebSocketExtensionRegistry getExtensionRegistry();
     
     /**
      * Get the base policy in use for WebSockets.
      *
      * @return the base policy
      */
-    WSPolicy getPolicy();
+    WebSocketPolicy getPolicy();
     
     boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response);
     

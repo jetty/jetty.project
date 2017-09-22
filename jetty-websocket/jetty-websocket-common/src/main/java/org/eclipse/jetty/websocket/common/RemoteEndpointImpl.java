@@ -30,10 +30,10 @@ import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
-import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 
-public class RemoteEndpointImpl extends WSRemoteImpl implements org.eclipse.jetty.websocket.api.RemoteEndpoint
+public class RemoteEndpointImpl extends WebSocketRemoteEndpointImpl implements org.eclipse.jetty.websocket.api.RemoteEndpoint
 {
     private final InetSocketAddress remoteAddress;
 
@@ -141,7 +141,7 @@ public class RemoteEndpointImpl extends WSRemoteImpl implements org.eclipse.jett
         return remoteAddress;
     }
 
-    private Future<Void> sendFrameByFuture(WSFrame frame)
+    private Future<Void> sendFrameByFuture(WebSocketFrame frame)
     {
         lockMsg(MsgType.ASYNC);
         try

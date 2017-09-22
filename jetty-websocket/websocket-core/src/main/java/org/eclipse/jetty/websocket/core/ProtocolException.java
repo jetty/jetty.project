@@ -28,16 +28,16 @@ public class ProtocolException extends CloseException
 {
     public ProtocolException(String message)
     {
-        super(WSConstants.PROTOCOL,message);
+        super(WebSocketConstants.PROTOCOL,message);
     }
 
     public ProtocolException(String message, Throwable t)
     {
-        super(WSConstants.PROTOCOL,message,t);
+        super(WebSocketConstants.PROTOCOL,message,t);
     }
 
     public ProtocolException(Throwable t)
     {
-        super(WSConstants.PROTOCOL,t);
+        super(WebSocketConstants.PROTOCOL,t);
     }
 }

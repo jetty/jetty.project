@@ -23,7 +23,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 /**
  * A Data Frame
  */
-public class DataFrame extends WSFrame
+public class DataFrame extends WebSocketFrame
 {
     protected DataFrame(byte opcode)
     {

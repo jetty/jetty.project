@@ -56,8 +56,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.impl.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.impl.WebSocketClientConnection;
-import org.eclipse.jetty.websocket.common.WSSession;
-import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.handshake.AcceptHash;
@@ -226,7 +226,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements UpgradeReque
         String ver = getHttpFields().get(HttpHeader.SEC_WEBSOCKET_VERSION);
         if (ver == null)
         {
-            return Integer.toString(WSConstants.SPEC_VERSION);
+            return Integer.toString(WebSocketConstants.SPEC_VERSION);
         }
         return ver;
     }
@@ -446,7 +446,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements UpgradeReque
                 this,
                 new ClientUpgradeResponse(response));
 
-        WSSession session = wsClient.createSession(connection, endpointInstance);
+        WebSocketSessionImpl session = wsClient.createSession(connection, endpointInstance);
         wsClient.notifySessionListeners((listener -> listener.onCreated(session)));
 
         session.addManaged(extensionStack);

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 
-public abstract class ControlFrame extends WSFrame
+public abstract class ControlFrame extends WebSocketFrame
 {
     /** Maximum size of Control frame, per RFC 6455 */
     public static final int MAX_CONTROL_PAYLOAD = 125;
@@ -120,7 +120,7 @@ public abstract class ControlFrame extends WSFrame
     }
 
     @Override
-    public WSFrame setPayload(ByteBuffer buf)
+    public WebSocketFrame setPayload(ByteBuffer buf)
     {
         if (buf != null && buf.remaining() > MAX_CONTROL_PAYLOAD)
         {

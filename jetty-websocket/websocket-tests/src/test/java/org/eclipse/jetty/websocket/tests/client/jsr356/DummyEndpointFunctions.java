@@ -26,10 +26,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.core.CloseInfo;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
-public class DummyEndpointFunctions extends AbstractLifeCycle implements WSLocalEndpoint<JavaxWebSocketSession>
+public class DummyEndpointFunctions extends AbstractLifeCycle implements WebSocketLocalEndpoint<JavaxWebSocketSession>
 {
     private static final Logger LOG = Log.getLogger(DummyEndpointFunctions.class);
     

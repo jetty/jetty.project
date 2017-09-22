@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
-public final class WSConstants
+public final class WebSocketConstants
 {
     // Core use Close Status Codes
     public static final int NORMAL = 1000;

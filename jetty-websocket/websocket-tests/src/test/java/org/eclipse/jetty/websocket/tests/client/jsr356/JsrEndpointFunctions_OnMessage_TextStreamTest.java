@@ -32,7 +32,7 @@ import javax.websocket.OnMessage;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.jsr356.function.JsrEndpointFunctions;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.TrackingSocket;
 import org.junit.Test;
@@ -40,7 +40,7 @@ import org.junit.Test;
 public class JsrEndpointFunctions_OnMessage_TextStreamTest extends AbstractJsrEndpointFunctionsTest
 {
     @SuppressWarnings("Duplicates")
-    private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<WSLocalEndpoint, Void> func) throws Exception
+    private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<WebSocketLocalEndpoint, Void> func) throws Exception
     {
         // Establish endpoint function
         JsrEndpointFunctions endpointFunctions = new JsrEndpointFunctions(

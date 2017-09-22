@@ -31,28 +31,28 @@ import org.eclipse.jetty.websocket.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.common.UpgradeResponseAdapter;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.junit.rules.TestName;
 
-public class LocalWebSocketConnection extends WSConnection
+public class LocalWebSocketConnection extends WebSocketCoreConnection
 {
     private static final Logger LOG = Log.getLogger(LocalWebSocketConnection.class);
     private final String id;
 
     public LocalWebSocketConnection(String id)
     {
-        this(id, WSPolicy.newServerPolicy());
+        this(id, WebSocketPolicy.newServerPolicy());
     }
 
-    public LocalWebSocketConnection(TestName testname, WSPolicy policy)
+    public LocalWebSocketConnection(TestName testname, WebSocketPolicy policy)
     {
         this(testname.getMethodName(), policy);
     }
 
-    public LocalWebSocketConnection(String id, WSPolicy policy)
+    public LocalWebSocketConnection(String id, WebSocketPolicy policy)
     {
         super(
                 new ByteArrayEndPoint(),
@@ -60,7 +60,7 @@ public class LocalWebSocketConnection extends WSConnection
                 new MappedByteBufferPool(),
                 new DecoratedObjectFactory(),
                 policy,
-                new ExtensionStack(new WSExtensionRegistry()),
+                new ExtensionStack(new WebSocketExtensionRegistry()),
                 new UpgradeRequestAdapter(URI.create("ws://local/" + LocalWebSocketConnection.class.getSimpleName() + "/" + id)),
                 new UpgradeResponseAdapter()
         );

@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
 import org.junit.Test;
@@ -49,12 +49,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_MissingFin() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
         send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -75,12 +75,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_MissingFin_FrameWise() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
         send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -101,12 +101,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_MissingFin_Slowly() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
         send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -127,12 +127,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_NoPrior() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
         send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -153,14 +153,14 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_NoPrior_Alt() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
         send.add(new ContinuationFrame().setPayload("fragment2").setFin(true));
         send.add(new ContinuationFrame().setPayload("fragment3").setFin(false)); // bad frame
         send.add(new TextFrame().setPayload("fragment4").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("fragment1fragment2"));
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
@@ -182,12 +182,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_NoPrior_FrameWise() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
         send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -208,7 +208,7 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_NoPrior_NothingToContinue() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("fragment1").setFin(true)); // nothing to continue
         send.add(new TextFrame().setPayload("fragment2").setFin(false));
         send.add(new ContinuationFrame().setPayload("fragment3").setFin(true));
@@ -217,7 +217,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         send.add(new ContinuationFrame().setPayload("fragment6").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -238,12 +238,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_NoPrior_Slowly() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
         send.add(new TextFrame().setPayload("hello, world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -264,7 +264,7 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Continuation_NoPrior_Twice() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("fragment1").setFin(false)); // bad frame
         send.add(new TextFrame().setPayload("fragment2").setFin(false));
         send.add(new ContinuationFrame().setPayload("fragment3").setFin(true));
@@ -273,7 +273,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         send.add(new ContinuationFrame().setPayload("fragment6").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -294,12 +294,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_MissingContinuation() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
         send.add(new TextFrame().setPayload("fragment2").setFin(true)); // bad frame, must be continuation
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -320,12 +320,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Ping() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload("hello, ").setFin(false));
         send.add(new ContinuationFrame().setPayload("world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -346,12 +346,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_Pong() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("hello, ").setFin(false));
         send.add(new ContinuationFrame().setPayload("world"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -372,12 +372,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_TextContinuation() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
         send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -399,12 +399,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_TextContinuation_FrameWise() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
         send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -427,7 +427,7 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Slow
     public void testFragmented_TextContinuation_PingInterleaved() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("f1").setFin(false));
         send.add(new ContinuationFrame().setPayload(",f2").setFin(false));
         send.add(new PingFrame().setPayload("pong-1"));
@@ -437,7 +437,7 @@ public class ContinuationTest extends AbstractLocalServerCase
         send.add(new ContinuationFrame().setPayload(",f5").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload("pong-1"));
         expect.add(new PongFrame().setPayload("pong-2"));
         expect.add(new TextFrame().setPayload("f1,f2,f3,f4,f5"));
@@ -461,12 +461,12 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_TextContinuation_Slowly() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
         send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -488,13 +488,13 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_TextPingContinuation() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
         send.add(new PingFrame().setPayload("ping"));
         send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload("ping"));
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
@@ -517,13 +517,13 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_TextPingContinuation_FrameWise() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
         send.add(new PingFrame().setPayload("ping"));
         send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload("ping"));
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
@@ -546,13 +546,13 @@ public class ContinuationTest extends AbstractLocalServerCase
     @Test
     public void testFragmented_TextPingContinuation_Slowly() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
         send.add(new PingFrame().setPayload("ping"));
         send.add(new ContinuationFrame().setPayload("world").setFin(true));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload("ping"));
         expect.add(new TextFrame().setPayload("hello, world"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));

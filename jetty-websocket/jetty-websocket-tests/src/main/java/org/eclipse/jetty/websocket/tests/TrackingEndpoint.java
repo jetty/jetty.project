@@ -32,19 +32,19 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
-import org.eclipse.jetty.websocket.common.WSSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
-public class TrackingEndpoint extends AbstractTrackingEndpoint<WSSession> implements WebSocketListener, WebSocketFrameListener
+public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {
     public UpgradeRequest openUpgradeRequest;
     public UpgradeResponse openUpgradeResponse;
     
-    public BlockingQueue<WSFrame> framesQueue = new LinkedBlockingDeque<>();
+    public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
     
@@ -88,8 +88,8 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WSSession> implem
     @Override
     public void onWebSocketConnect(Session session)
     {
-        assertThat("Session type", session, instanceOf(WSSession.class));
-        super.onWSOpen((WSSession) session);
+        assertThat("Session type", session, instanceOf(WebSocketSessionImpl.class));
+        super.onWSOpen((WebSocketSessionImpl) session);
         this.openUpgradeRequest = session.getUpgradeRequest();
         this.openUpgradeResponse = session.getUpgradeResponse();
     }
@@ -108,7 +108,7 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WSSession> implem
             LOG.debug("onWSFrame({})", frame);
         }
         
-        framesQueue.offer(WSFrame.copy(frame));
+        framesQueue.offer(WebSocketFrame.copy(frame));
     }
     
     @Override
@@ -122,14 +122,14 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WSSession> implem
         messageQueue.offer(text);
     }
     
-    public WSConnection getConnection()
+    public WebSocketCoreConnection getConnection()
     {
         return this.session.getConnection();
     }
     
     public EndPoint getJettyEndPoint()
     {
-        WSConnection connection = getConnection();
+        WebSocketCoreConnection connection = getConnection();
         if (connection != null)
         {
             return connection.getEndPoint();

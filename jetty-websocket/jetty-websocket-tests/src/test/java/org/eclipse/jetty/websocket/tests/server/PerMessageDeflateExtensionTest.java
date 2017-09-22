@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -154,7 +154,7 @@ public class PerMessageDeflateExtensionTest
         
         int binBufferSize = (int) (msgSize * 1.5);
         
-        WSPolicy serverPolicy = server.getWebSocketServletFactory().getPolicy();
+        WebSocketPolicy serverPolicy = server.getWebSocketServletFactory().getPolicy();
         
         // Ensure binBufferSize is sane (not smaller then other buffers)
         binBufferSize = Math.max(binBufferSize, serverPolicy.getMaxBinaryMessageSize());
@@ -164,7 +164,7 @@ public class PerMessageDeflateExtensionTest
 
         HttpClient httpClient = new HttpClient(server.getSslContextFactory());
         WebSocketClient client = new WebSocketClient(httpClient);
-        WSPolicy clientPolicy = client.getPolicy();
+        WebSocketPolicy clientPolicy = client.getPolicy();
         clientPolicy.setMaxBinaryMessageSize(binBufferSize);
         if (inputBufferSize > 0)
         {

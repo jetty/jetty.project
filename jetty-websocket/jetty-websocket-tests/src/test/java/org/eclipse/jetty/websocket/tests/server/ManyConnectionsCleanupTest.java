@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WSSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -148,12 +148,12 @@ public class ManyConnectionsCleanupTest
             calls.incrementAndGet();
             if (message.equalsIgnoreCase("openSessions"))
             {
-                Collection<WSSession> sessions = container.getOpenSessions();
+                Collection<WebSocketSessionImpl> sessions = container.getOpenSessions();
                 
                 StringBuilder ret = new StringBuilder();
                 ret.append("openSessions.size=").append(sessions.size()).append('\n');
                 int idx = 0;
-                for (WSSession sess : sessions)
+                for (WebSocketSessionImpl sess : sessions)
                 {
                     ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
                 }
@@ -266,7 +266,7 @@ public class ManyConnectionsCleanupTest
     {
         int iterationCount = 100;
 
-        try(StacklessLogging ignore = new StacklessLogging(FastFailSocket.class, WSSession.class))
+        try(StacklessLogging ignore = new StacklessLogging(FastFailSocket.class, WebSocketSessionImpl.class))
         {
             for (int requests = 0; requests < iterationCount; requests++)
             {

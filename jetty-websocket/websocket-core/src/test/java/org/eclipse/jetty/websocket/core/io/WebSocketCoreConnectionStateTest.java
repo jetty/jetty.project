@@ -23,12 +23,12 @@ import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 
-public class WSConnectionStateTest
+public class WebSocketCoreConnectionStateTest
 {
     @Test
     public void testNormalFlow()
     {
-        WSConnectionState state = new WSConnectionState();
+        WebSocketCoreConnectionState state = new WebSocketCoreConnectionState();
         assertThat("Connecting", state.onConnecting(), is(true));
         assertThat("Connected", state.onConnected(), is(true));
         assertThat("Open", state.onOpen(), is(true));
@@ -39,7 +39,7 @@ public class WSConnectionStateTest
     @Test
     public void testSkipOpen()
     {
-        WSConnectionState state = new WSConnectionState();
+        WebSocketCoreConnectionState state = new WebSocketCoreConnectionState();
         assertThat("Connecting", state.onConnecting(), is(true));
         assertThat("Connected", state.onConnected(), is(true));
         // SKIP assertThat("Open", state.onOpen(), is(true));
@@ -50,7 +50,7 @@ public class WSConnectionStateTest
     @Test
     public void testClosingTwice()
     {
-        WSConnectionState state = new WSConnectionState();
+        WebSocketCoreConnectionState state = new WebSocketCoreConnectionState();
         assertThat("Connecting", state.onConnecting(), is(true));
         assertThat("Connected", state.onConnected(), is(true));
         // SKIP assertThat("Open", state.onOpen(), is(true));

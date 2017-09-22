@@ -48,11 +48,11 @@ import org.eclipse.jetty.websocket.core.Frame;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public abstract class WSFrame implements Frame
+public abstract class WebSocketFrame implements Frame
 {
-    public static WSFrame copy(Frame original)
+    public static WebSocketFrame copy(Frame original)
     {
-        WSFrame copy;
+        WebSocketFrame copy;
         switch (original.getOpCode())
         {
             case OpCode.BINARY:
@@ -114,7 +114,7 @@ public abstract class WSFrame implements Frame
      * Construct form opcode
      * @param opcode the opcode the frame is based on
      */
-    protected WSFrame(byte opcode)
+    protected WebSocketFrame(byte opcode)
     {
         reset();
         setOpCode(opcode);
@@ -142,7 +142,7 @@ public abstract class WSFrame implements Frame
         }
     }
 
-    protected void copyHeaders(WSFrame copy)
+    protected void copyHeaders(WebSocketFrame copy)
     {
         finRsvOp = copy.finRsvOp;
         masked = copy.masked;
@@ -166,7 +166,7 @@ public abstract class WSFrame implements Frame
         {
             return false;
         }
-        WSFrame other = (WSFrame)obj;
+        WebSocketFrame other = (WebSocketFrame)obj;
         if (payload == null)
         {
             if (other.payload != null)
@@ -304,7 +304,7 @@ public abstract class WSFrame implements Frame
         mask = null;
     }
 
-    public WSFrame setFin(boolean fin)
+    public WebSocketFrame setFin(boolean fin)
     {
         // set bit 1
         this.finRsvOp = (byte)((finRsvOp & 0x7F) | (fin?0x80:0x00));
@@ -324,7 +324,7 @@ public abstract class WSFrame implements Frame
         return this;
     }
 
-    protected WSFrame setOpCode(byte op)
+    protected WebSocketFrame setOpCode(byte op)
     {
         this.finRsvOp = (byte)((finRsvOp & 0xF0) | (op & 0x0F));
         return this;
@@ -341,27 +341,27 @@ public abstract class WSFrame implements Frame
      *            the bytebuffer to set
      * @return the frame itself
      */
-    public WSFrame setPayload(ByteBuffer buf)
+    public WebSocketFrame setPayload(ByteBuffer buf)
     {
         payload = buf;
         return this;
     }
 
-    public WSFrame setRsv1(boolean rsv1)
+    public WebSocketFrame setRsv1(boolean rsv1)
     {
         // set bit 2
         this.finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1?0x40:0x00));
         return this;
     }
 
-    public WSFrame setRsv2(boolean rsv2)
+    public WebSocketFrame setRsv2(boolean rsv2)
     {
         // set bit 3
         this.finRsvOp = (byte)((finRsvOp & 0xDF) | (rsv2?0x20:0x00));
         return this;
     }
 
-    public WSFrame setRsv3(boolean rsv3)
+    public WebSocketFrame setRsv3(boolean rsv3)
     {
         // set bit 4
         this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3?0x10:0x00));

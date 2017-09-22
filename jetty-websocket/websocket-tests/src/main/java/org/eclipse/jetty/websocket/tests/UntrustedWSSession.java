@@ -22,7 +22,7 @@ import java.net.URI;
 
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public class UntrustedWSSession extends WebSocketSession implements AutoCloseable
@@ -33,7 +33,7 @@ public class UntrustedWSSession extends WebSocketSession implements AutoCloseabl
     public UntrustedWSSession(WebSocketContainerScope containerScope, URI requestURI, Object endpoint, LogicalConnection connection)
     {
         super(containerScope, requestURI, endpoint, connection);
-        WSConnection abstractWebSocketConnection = (WSConnection) connection;
+        WebSocketCoreConnection abstractWebSocketConnection = (WebSocketCoreConnection) connection;
         abstractWebSocketConnection.getGenerator().setValidating(false);
         this.untrustedConnection = new UntrustedWSConnection(abstractWebSocketConnection);
         this.untrustedEndpoint = (UntrustedWSEndpoint) endpoint;

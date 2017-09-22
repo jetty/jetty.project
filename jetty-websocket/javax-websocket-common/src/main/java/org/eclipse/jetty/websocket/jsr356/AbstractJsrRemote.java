@@ -30,12 +30,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
-import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
 
-public abstract class AbstractJsrRemote extends WSRemoteImpl implements javax.websocket.RemoteEndpoint
+public abstract class AbstractJsrRemote extends WebSocketRemoteEndpointImpl implements javax.websocket.RemoteEndpoint
 {
     private static final Logger LOG = Log.getLogger(AbstractJsrRemote.class);
 
@@ -113,7 +113,7 @@ public abstract class AbstractJsrRemote extends WSRemoteImpl implements javax.we
             if (encoder instanceof Encoder.TextStream)
             {
                 Encoder.TextStream etxt = (Encoder.TextStream) encoder;
-                WSConnection connection = session.getConnection();
+                WebSocketCoreConnection connection = session.getConnection();
                 try (MessageWriter writer = new MessageWriter(connection, connection.getInputBufferSize(), connection.getBufferPool()))
                 {
                     writer.setCallback(callback);
@@ -133,7 +133,7 @@ public abstract class AbstractJsrRemote extends WSRemoteImpl implements javax.we
             if (encoder instanceof Encoder.BinaryStream)
             {
                 Encoder.BinaryStream ebin = (Encoder.BinaryStream) encoder;
-                WSConnection connection = session.getConnection();
+                WebSocketCoreConnection connection = session.getConnection();
                 try (MessageOutputStream out = new MessageOutputStream(connection, connection.getInputBufferSize(), connection.getBufferPool()))
                 {
                     out.setCallback(callback);

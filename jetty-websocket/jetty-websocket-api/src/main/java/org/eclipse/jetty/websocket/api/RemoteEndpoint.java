@@ -24,9 +24,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 
-public interface RemoteEndpoint extends WSRemoteEndpoint
+public interface RemoteEndpoint extends WebSocketRemoteEndpoint
 {
     /**
      * Send a binary message, returning when all bytes of the message has been transmitted.

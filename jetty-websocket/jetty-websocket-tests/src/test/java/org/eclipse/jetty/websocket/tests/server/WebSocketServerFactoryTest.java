@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
-import org.eclipse.jetty.websocket.core.WSBehavior;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.junit.Test;
 
@@ -53,7 +53,7 @@ public class WebSocketServerFactoryTest
     @Test
     public void testInit()
     {
-        WSPolicy policy = new WSPolicy(WSBehavior.SERVER);
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         ByteBufferPool bufferPool = new MappedByteBufferPool();
         
         int wsFactoryLevel = setLogLevel(WebSocketServerFactory.class, StdErrLog.LEVEL_DEBUG);

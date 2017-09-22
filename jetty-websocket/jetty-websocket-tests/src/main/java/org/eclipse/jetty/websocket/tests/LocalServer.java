@@ -40,13 +40,13 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
     private static final Logger LOG = Log.getLogger(LocalServer.class);
     private final ByteBufferPool bufferPool = new MappedByteBufferPool();
-    private final WSPolicy serverPolicy = WSPolicy.newServerPolicy();
+    private final WebSocketPolicy serverPolicy = WebSocketPolicy.newServerPolicy();
     private Server server;
     private ServerConnector connector;
     private LocalConnector localConnector;
@@ -65,7 +65,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         return localConnector;
     }
     
-    public WSPolicy getServerDefaultPolicy()
+    public WebSocketPolicy getServerDefaultPolicy()
     {
         return serverPolicy;
     }
@@ -93,7 +93,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     @Override
     public Parser newClientParser(Parser.Handler parserHandler)
     {
-        return new Parser(WSPolicy.newClientPolicy(), bufferPool, parserHandler);
+        return new Parser(WebSocketPolicy.newClientPolicy(), bufferPool, parserHandler);
     }
     
     @Override

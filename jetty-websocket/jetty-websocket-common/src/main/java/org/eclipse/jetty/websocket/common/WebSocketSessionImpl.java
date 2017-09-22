@@ -27,21 +27,21 @@ import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WSConstants;
-import org.eclipse.jetty.websocket.core.WSCoreSession;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
-public class WSSession<T extends WSConnection> extends WSCoreSession<T> implements Session
+public class WebSocketSessionImpl<T extends WebSocketCoreConnection> extends WebSocketCoreSession<T> implements Session
 {
     private RemoteEndpoint remote;
 
-    public WSSession(T connection)
+    public WebSocketSessionImpl(T connection)
     {
         super(connection);
         connection.setSession(this);
@@ -53,7 +53,7 @@ public class WSSession<T extends WSConnection> extends WSCoreSession<T> implemen
     }
 
     @Override
-    public void setWebSocketEndpoint(Object endpoint, WSPolicy policy, WSLocalEndpoint localEndpoint, WSRemoteEndpoint remoteEndpoint)
+    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, WebSocketLocalEndpoint localEndpoint, WebSocketRemoteEndpoint remoteEndpoint)
     {
         if(!(remoteEndpoint instanceof org.eclipse.jetty.websocket.api.RemoteEndpoint))
         {
@@ -75,7 +75,7 @@ public class WSSession<T extends WSConnection> extends WSCoreSession<T> implemen
     public void close()
     {
         closeRemote();
-        super.close(WSConstants.NORMAL, null, Callback.NOOP);
+        super.close(WebSocketConstants.NORMAL, null, Callback.NOOP);
     }
 
     @Override

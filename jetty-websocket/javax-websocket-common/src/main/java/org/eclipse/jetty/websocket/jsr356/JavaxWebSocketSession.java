@@ -44,10 +44,10 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.WSCoreSession;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -61,7 +61,7 @@ import org.eclipse.jetty.websocket.jsr356.io.JavaxWebSocketConnection;
  * TODO: rename to JavaxWebSocketSession
  */
 public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
-        extends WSCoreSession<T> implements javax.websocket.Session
+        extends WebSocketCoreSession<T> implements javax.websocket.Session
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketSession.class);
 
@@ -87,7 +87,7 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
     }
 
     @Override
-    public void setWebSocketEndpoint(Object websocket, WSPolicy policy, WSLocalEndpoint localEndpoint, WSRemoteEndpoint remoteEndpoint)
+    public void setWebSocketEndpoint(Object websocket, WebSocketPolicy policy, WebSocketLocalEndpoint localEndpoint, WebSocketRemoteEndpoint remoteEndpoint)
     {
         final Object endpoint;
 
@@ -115,7 +115,7 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
         super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
     }
 
-    public WSLocalEndpoint newEndpointFunctions(Object endpoint)
+    public WebSocketLocalEndpoint newEndpointFunctions(Object endpoint)
     {
         // Delegate to container to obtain correct version of JsrEndpointFunctions
         // Could be a Client version, or a Server version

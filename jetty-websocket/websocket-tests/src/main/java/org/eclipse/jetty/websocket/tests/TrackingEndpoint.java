@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSession> implements WebSocketListener, WebSocketFrameListener
 {
@@ -117,19 +117,19 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSession>
         messageQueue.offer(text);
     }
     
-    public WSConnection getConnection()
+    public WebSocketCoreConnection getConnection()
     {
         LogicalConnection connection = this.session.getConnection();
-        if (connection instanceof WSConnection)
+        if (connection instanceof WebSocketCoreConnection)
         {
-            return (WSConnection) connection;
+            return (WebSocketCoreConnection) connection;
         }
         return null;
     }
     
     public EndPoint getJettyEndPoint()
     {
-        WSConnection connection = getConnection();
+        WebSocketCoreConnection connection = getConnection();
         if (connection != null)
         {
             return connection.getEndPoint();

@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -63,7 +63,7 @@ public class Parser
     }
 
     private final Logger LOG;
-    private final WSPolicy policy;
+    private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private final Parser.Handler parserHandler;
 
@@ -71,7 +71,7 @@ public class Parser
     private State state = State.START;
     private int cursor = 0;
     // Frame
-    private WSFrame frame;
+    private WebSocketFrame frame;
     private boolean priorDataFrame;
     // payload specific
     private ByteBuffer payload;
@@ -90,7 +90,7 @@ public class Parser
      */
     private byte flagsInUse=0x00;
     
-    public Parser(WSPolicy wspolicy, ByteBufferPool bufferPool, Parser.Handler parserHandler)
+    public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool, Parser.Handler parserHandler)
     {
         this.bufferPool = bufferPool;
         this.policy = wspolicy;
@@ -141,7 +141,7 @@ public class Parser
         }
     }
 
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         return policy;
     }
@@ -168,9 +168,9 @@ public class Parser
      * @return true if parsing of entire buffer was successful,
      * false if parsing was interrupted by {@link Handler}.  If false, cease parsing the remaining
      * buffer until such time its allowed again (this is important for read backpressure scenarios)
-     * @throws WSException if unable to parse properly
+     * @throws WebSocketException if unable to parse properly
      */
-    public boolean parse(ByteBuffer buffer) throws WSException
+    public boolean parse(ByteBuffer buffer) throws WebSocketException
     {
         // quick fail, nothing left to parse
         if (!buffer.hasRemaining())
@@ -216,11 +216,11 @@ public class Parser
             buffer.position(buffer.limit()); // consume remaining
             
             // let session know
-            WSException wse;
-            if(t instanceof WSException)
-                wse = (WSException) t;
+            WebSocketException wse;
+            if(t instanceof WebSocketException)
+                wse = (WebSocketException) t;
             else
-                wse = new WSException(t);
+                wse = new WebSocketException(t);
                 
             throw wse;
         }
@@ -228,7 +228,7 @@ public class Parser
     
     private void assertBehavior()
     {
-        if (policy.getBehavior() == WSBehavior.SERVER)
+        if (policy.getBehavior() == WebSocketBehavior.SERVER)
         {
             /* Parsing on server.
              *
@@ -245,7 +245,7 @@ public class Parser
                 throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
             }
         }
-        else if(policy.getBehavior() == WSBehavior.CLIENT)
+        else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
         {
             // Required by RFC-6455 / Section 5.1
             if (frame.isMasked())

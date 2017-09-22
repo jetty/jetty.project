@@ -27,11 +27,11 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,27 +46,27 @@ public class GeneratorFrameFlagsTest
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
     
     @Parameters
-    public static Collection<WSFrame[]> data()
+    public static Collection<WebSocketFrame[]> data()
     {
-        List<WSFrame[]> data = new ArrayList<>();
-        data.add(new WSFrame[]{new PingFrame().setFin(false)});
-        data.add(new WSFrame[]{new PingFrame().setRsv1(true)});
-        data.add(new WSFrame[]{new PingFrame().setRsv2(true)});
-        data.add(new WSFrame[]{new PingFrame().setRsv3(true)});
-        data.add(new WSFrame[]{new PongFrame().setFin(false)});
-        data.add(new WSFrame[]{new PingFrame().setRsv1(true)});
-        data.add(new WSFrame[]{new PongFrame().setRsv2(true)});
-        data.add(new WSFrame[]{new PongFrame().setRsv3(true)});
-        data.add(new WSFrame[]{new CloseFrame().setFin(false)});
-        data.add(new WSFrame[]{new CloseFrame().setRsv1(true)});
-        data.add(new WSFrame[]{new CloseFrame().setRsv2(true)});
-        data.add(new WSFrame[]{new CloseFrame().setRsv3(true)});
+        List<WebSocketFrame[]> data = new ArrayList<>();
+        data.add(new WebSocketFrame[]{new PingFrame().setFin(false)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv2(true)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv3(true)});
+        data.add(new WebSocketFrame[]{new PongFrame().setFin(false)});
+        data.add(new WebSocketFrame[]{new PingFrame().setRsv1(true)});
+        data.add(new WebSocketFrame[]{new PongFrame().setRsv2(true)});
+        data.add(new WebSocketFrame[]{new PongFrame().setRsv3(true)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setFin(false)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setRsv1(true)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setRsv2(true)});
+        data.add(new WebSocketFrame[]{new CloseFrame().setRsv3(true)});
         return data;
     }
     
-    private WSFrame invalidFrame;
+    private WebSocketFrame invalidFrame;
     
-    public GeneratorFrameFlagsTest(WSFrame invalidFrame)
+    public GeneratorFrameFlagsTest(WebSocketFrame invalidFrame)
     {
         this.invalidFrame = invalidFrame;
     }
@@ -75,6 +75,6 @@ public class GeneratorFrameFlagsTest
     public void testGenerateInvalidControlFrame()
     {
         ByteBuffer buffer = ByteBuffer.allocate(100);
-        new Generator(WSPolicy.newServerPolicy(), bufferPool).generateWholeFrame(invalidFrame, buffer);
+        new Generator(WebSocketPolicy.newServerPolicy(), bufferPool).generateWholeFrame(invalidFrame, buffer);
     }
 }

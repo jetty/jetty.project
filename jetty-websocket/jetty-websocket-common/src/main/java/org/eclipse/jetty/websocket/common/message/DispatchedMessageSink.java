@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSink;
 import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 /**
  * Centralized logic for Dispatched Message Handling.
@@ -107,7 +107,7 @@ public abstract class DispatchedMessageSink<T, R> extends MessageSinkImpl
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
 
-    public DispatchedMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
+    public DispatchedMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
         this.executor = executor;

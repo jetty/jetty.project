@@ -42,12 +42,12 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.compress.DeflateFrameExtension;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.CapturedHexPayloads;
@@ -65,7 +65,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {
-        WSPolicy policy = WSPolicy.newClientPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(bufferPool);
@@ -92,7 +92,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         assertThat("Incoming Frame Count", capture.frames.size(), is(len));
 
         int i = 0;
-        for (WSFrame actual : capture.frames)
+        for (WebSocketFrame actual : capture.frames)
         {
             String prefix = "Frame[" + i + "]";
             assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
@@ -110,7 +110,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     private void assertOutgoing(String text, String expectedHex) throws IOException
     {
-        WSPolicy policy = WSPolicy.newClientPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(bufferPool);
@@ -294,7 +294,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     @Test
     public void testGeneratedTwoFrames() throws IOException
     {
-        WSPolicy policy = WSPolicy.newClientPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
         DeflateFrameExtension ext = new DeflateFrameExtension();
         ext.setBufferPool(bufferPool);
@@ -389,13 +389,13 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         clientExtension.setBufferPool(bufferPool);
-        clientExtension.setPolicy(WSPolicy.newClientPolicy());
+        clientExtension.setPolicy(WebSocketPolicy.newClientPolicy());
         clientExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
         clientExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         serverExtension.setBufferPool(bufferPool);
-        serverExtension.setPolicy(WSPolicy.newServerPolicy());
+        serverExtension.setPolicy(WebSocketPolicy.newServerPolicy());
         serverExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
         serverExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 

@@ -49,9 +49,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.WSTimeoutException;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
@@ -96,7 +96,7 @@ public class ClientCloseTest
         testFut.get(30, TimeUnit.SECONDS);
 
         // Read Frame on server side
-        WSFrame frame = serverEndpoint.framesQueue.poll(10, TimeUnit.SECONDS);
+        WebSocketFrame frame = serverEndpoint.framesQueue.poll(10, TimeUnit.SECONDS);
         assertThat("Server received frame", frame.getOpCode(), is(OpCode.TEXT));
         assertThat("Server received frame payload", frame.getPayloadAsUTF8(), is(echoMsg));
 
@@ -223,7 +223,7 @@ public class ClientCloseTest
 
             // Verify timeout error
             clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WSTimeoutException.class), containsString("Idle Timeout"));
+            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Idle Timeout"));
         }
         finally
         {

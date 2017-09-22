@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.core.WSBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 
 public class UntrustedWSClient extends WebSocketClient
 {
@@ -54,7 +54,7 @@ public class UntrustedWSClient extends WebSocketClient
     
     public Future<UntrustedWSSession> connect(URI toUri, ClientUpgradeRequest req) throws IOException
     {
-        final Future<Session> connectFut = super.connect(new UntrustedWSEndpoint(WSBehavior.CLIENT.name()), toUri, req);
+        final Future<Session> connectFut = super.connect(new UntrustedWSEndpoint(WebSocketBehavior.CLIENT.name()), toUri, req);
         return new CompletableFuture<UntrustedWSSession>() {
             @Override
             public UntrustedWSSession get() throws InterruptedException, ExecutionException

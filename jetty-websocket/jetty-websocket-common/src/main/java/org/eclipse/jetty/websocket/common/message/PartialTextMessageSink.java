@@ -25,13 +25,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class PartialTextMessageSink extends MessageSinkImpl
 {
     private final Utf8PartialBuilder utf8Partial;
 
-    public PartialTextMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
+    public PartialTextMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
         this.utf8Partial = new Utf8PartialBuilder();

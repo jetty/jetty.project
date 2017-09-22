@@ -24,11 +24,11 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.common.MessageSinkImpl;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class PartialBinaryMessageSink extends MessageSinkImpl
 {
-    public PartialBinaryMessageSink(WSPolicy policy, Executor executor, MethodHandle methodHandle)
+    public PartialBinaryMessageSink(WebSocketPolicy policy, Executor executor, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
     }

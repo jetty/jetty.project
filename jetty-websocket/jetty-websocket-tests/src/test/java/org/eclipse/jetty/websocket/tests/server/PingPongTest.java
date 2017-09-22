@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
@@ -58,8 +58,8 @@ public class PingPongTest extends AbstractLocalServerCase
         
         int pingCount = 10;
         
-        List<WSFrame> send = new ArrayList<>();
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         
         for (int i = 0; i < pingCount; i++)
         {
@@ -95,8 +95,8 @@ public class PingPongTest extends AbstractLocalServerCase
         
         int pingCount = 10;
         
-        List<WSFrame> send = new ArrayList<>();
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         
         for (int i = 0; i < pingCount; i++)
         {
@@ -128,11 +128,11 @@ public class PingPongTest extends AbstractLocalServerCase
         byte payload[] = new byte[125];
         Arrays.fill(payload, (byte) 0xFE);
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -157,11 +157,11 @@ public class PingPongTest extends AbstractLocalServerCase
         byte payload[] = new byte[125];
         Arrays.fill(payload, (byte) '6');
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(), "Test 2.6"));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(), "Test 2.6"));
     
@@ -183,11 +183,11 @@ public class PingPongTest extends AbstractLocalServerCase
     @Test
     public void testPing_NoPayload() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame());
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame());
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -215,12 +215,12 @@ public class PingPongTest extends AbstractLocalServerCase
             Arrays.fill(payload, (byte) '5');
             ByteBuffer buf = ByteBuffer.wrap(payload);
             
-            List<WSFrame> send = new ArrayList<>();
+            List<WebSocketFrame> send = new ArrayList<>();
             // trick websocket frame into making extra large payload for ping
             send.add(new BadFrame(OpCode.PING).setPayload(buf));
             send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(), "Test 2.5"));
             
-            List<WSFrame> expect = new ArrayList<>();
+            List<WebSocketFrame> expect = new ArrayList<>();
             expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
             try (LocalFuzzer session = server.newLocalFuzzer())
@@ -244,11 +244,11 @@ public class PingPongTest extends AbstractLocalServerCase
     {
         byte payload[] = new byte[]{0x00, (byte) 0xFF, (byte) 0xFE, (byte) 0xFD, (byte) 0xFC, (byte) 0xFB, 0x00, (byte) 0xFF};
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -272,11 +272,11 @@ public class PingPongTest extends AbstractLocalServerCase
     {
         byte payload[] = StringUtil.getUtf8Bytes("Hello world");
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload(payload));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload(DataUtils.copyOf(payload)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -298,11 +298,11 @@ public class PingPongTest extends AbstractLocalServerCase
     @Test
     public void testPong_Unsolicited() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame()); // unsolicited pong
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -323,11 +323,11 @@ public class PingPongTest extends AbstractLocalServerCase
     @Test
     public void testPong_UnsolicitedWithPayload() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("unsolicited")); // unsolicited pong
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -348,12 +348,12 @@ public class PingPongTest extends AbstractLocalServerCase
     @Test
     public void testPong_Unsolicited_Ping() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("unsolicited")); // unsolicited pong
         send.add(new PingFrame().setPayload("our ping")); // our ping
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new PongFrame().setPayload("our ping")); // our pong
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     

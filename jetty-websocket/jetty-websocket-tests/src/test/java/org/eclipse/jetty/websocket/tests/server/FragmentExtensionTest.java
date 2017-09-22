@@ -29,12 +29,12 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitExtensionStack;
@@ -80,39 +80,39 @@ public class FragmentExtensionTest
     @Test
     public void testFragmentExtension() throws Exception
     {
-        WSExtensionRegistry extensionRegistry = server.getWebSocketServletFactory().getExtensionRegistry();
+        WebSocketExtensionRegistry extensionRegistry = server.getWebSocketServletFactory().getExtensionRegistry();
         assertThat("Extension Registry", extensionRegistry, notNullValue());
         Assume.assumeTrue("Server has fragment registered", extensionRegistry.isAvailable("fragment"));
         
         int fragSize = 4;
         
         String msg = "Sent as a long message that should be split";
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(msg));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         Map<String,String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
-        upgradeHeaders.put(WSConstants.SEC_WEBSOCKET_EXTENSIONS, "fragment;maxLength=" + fragSize);
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS, "fragment;maxLength=" + fragSize);
     
         try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
         {
-            String negotiatedExtensions = session.upgradeResponse.get(WSConstants.SEC_WEBSOCKET_EXTENSIONS);
+            String negotiatedExtensions = session.upgradeResponse.get(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS);
     
             List<ExtensionConfig> extensionConfigList = ExtensionConfig.parseList(negotiatedExtensions);
             assertThat("Client Upgrade Response.Extensions", extensionConfigList.size(), is(1));
             assertThat("Client Upgrade Response.Extensions[0]", extensionConfigList.get(0).toString(), containsString("fragment"));
     
             UnitExtensionStack extensionStack = UnitExtensionStack.clientBased();
-            List<WSFrame> outgoingFrames = extensionStack.processOutgoing(send);
+            List<WebSocketFrame> outgoingFrames = extensionStack.processOutgoing(send);
             session.sendBulk(outgoingFrames);
     
-            BlockingQueue<WSFrame> framesQueue = session.getOutputFrames();
-            BlockingQueue<WSFrame> incomingFrames = extensionStack.processIncoming(framesQueue);
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            BlockingQueue<WebSocketFrame> incomingFrames = extensionStack.processIncoming(framesQueue);
             
             String parts[] = split(msg, fragSize);
             for (int i = 0; i < parts.length; i++)
             {
-                WSFrame frame = incomingFrames.poll();
+                WebSocketFrame frame = incomingFrames.poll();
                 Assert.assertThat("text[" + i + "].payload", frame.getPayloadAsUTF8(), is(parts[i]));
             }
         }

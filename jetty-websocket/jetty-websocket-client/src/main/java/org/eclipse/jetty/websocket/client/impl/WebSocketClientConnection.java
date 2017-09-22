@@ -26,21 +26,21 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 /**
  * Client side WebSocket physical connection.
  */
-public class WebSocketClientConnection extends WSConnection
+public class WebSocketClientConnection extends WebSocketCoreConnection
 {
     public WebSocketClientConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
                                      DecoratedObjectFactory decoratedObjectFactory,
-                                     WSPolicy policy, ExtensionStack extensionStack,
+                                     WebSocketPolicy policy, ExtensionStack extensionStack,
                                      UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(endp,executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);
@@ -64,9 +64,9 @@ public class WebSocketClientConnection extends WSConnection
     @Override
     public void outgoingFrame(org.eclipse.jetty.websocket.core.Frame frame, Callback callback, org.eclipse.jetty.websocket.core.io.BatchMode batchMode)
     {
-        if (frame instanceof WSFrame)
+        if (frame instanceof WebSocketFrame)
         {
-            WSFrame wsFrame = (WSFrame) frame;
+            WebSocketFrame wsFrame = (WebSocketFrame) frame;
             byte mask[] = new byte[4];
             ThreadLocalRandom.current().nextBytes(mask);
             wsFrame.setMask(mask);

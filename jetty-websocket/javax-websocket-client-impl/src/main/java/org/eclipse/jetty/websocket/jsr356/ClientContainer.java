@@ -57,14 +57,14 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.client.UpgradeListener;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketSession;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
@@ -84,13 +84,13 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     // From HttpClient
     private final HttpClient httpClient;
     // The container
-    private final WSPolicy clientPolicy;
-    private final WSExtensionRegistry extensionRegistry;
+    private final WebSocketPolicy clientPolicy;
+    private final WebSocketExtensionRegistry extensionRegistry;
     private final DecoratedObjectFactory objectFactory;
     private final JavaxWebSocketLocalEndpointFactory localEndpointFactory;
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private final int id = ThreadLocalRandom.current().nextInt();
-    protected Function<WebSocketClientConnection, WSSession<? extends WSConnection>> newSessionFunction =
+    protected Function<WebSocketClientConnection, WSSession<? extends WebSocketCoreConnection>> newSessionFunction =
             (connection) -> new WSSession(connection);
 
     private final boolean internalClient;
@@ -154,12 +154,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.internalClient = false;
     }
     
-    public WSLocalEndpoint newJsrEndpointFunction(Object endpoint,
-                                                  WebSocketPolicy sessionPolicy,
-                                                  AvailableEncoders availableEncoders,
-                                                  AvailableDecoders availableDecoders,
-                                                  Map<String, String> pathParameters,
-                                                  EndpointConfig config)
+    public WebSocketLocalEndpoint newJsrEndpointFunction(Object endpoint,
+                                                         WebSocketPolicy sessionPolicy,
+                                                         AvailableEncoders availableEncoders,
+                                                         AvailableDecoders availableDecoders,
+                                                         Map<String, String> pathParameters,
+                                                         EndpointConfig config)
     {
         return new JsrEndpointFunctions(endpoint,
                 sessionPolicy,

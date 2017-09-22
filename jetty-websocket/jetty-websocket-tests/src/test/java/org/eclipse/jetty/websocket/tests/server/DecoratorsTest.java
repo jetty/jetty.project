@@ -42,7 +42,7 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketAdapter;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -225,9 +225,9 @@ public class DecoratorsTest
                     new CloseFrame().setPayload(StatusCode.NORMAL.getCode())
             );
         
-            BlockingQueue<WSFrame> framesQueue = session.getOutputFrames();
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
         
-            WSFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
         
             String payload = frame.getPayloadAsUTF8();

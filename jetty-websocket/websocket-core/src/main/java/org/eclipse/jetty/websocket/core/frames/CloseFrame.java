@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class CloseFrame extends ControlFrame
 {
@@ -77,7 +77,7 @@ public class CloseFrame extends ControlFrame
 
     public static CloseStatus toCloseStatus(ByteBuffer payload)
     {
-        int statusCode = WSConstants.NO_CODE;
+        int statusCode = WebSocketConstants.NO_CODE;
 
         if ((payload == null) || (payload.remaining() == 0))
         {
@@ -178,7 +178,7 @@ public class CloseFrame extends ControlFrame
         }
 
         // Status Codes not allowed to exist in a Close frame (per RFC6455)
-        if ((statusCode == WSConstants.NO_CLOSE) || (statusCode == WSConstants.NO_CODE) || (statusCode == WSConstants.FAILED_TLS_HANDSHAKE))
+        if ((statusCode == WebSocketConstants.NO_CLOSE) || (statusCode == WebSocketConstants.NO_CODE) || (statusCode == WebSocketConstants.FAILED_TLS_HANDSHAKE))
         {
             throw new ProtocolException("Frame forbidden close status code: " + statusCode);
         }
@@ -208,7 +208,7 @@ public class CloseFrame extends ControlFrame
         }
 
         // Specifically called out as not-transmittable?
-        if ((statusCode == WSConstants.NO_CLOSE) || (statusCode == WSConstants.NO_CODE) || (statusCode == WSConstants.FAILED_TLS_HANDSHAKE))
+        if ((statusCode == WebSocketConstants.NO_CLOSE) || (statusCode == WebSocketConstants.NO_CODE) || (statusCode == WebSocketConstants.FAILED_TLS_HANDSHAKE))
         {
             return false;
         }

@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
@@ -92,8 +92,8 @@ public class IdleTimeoutTest
             
             session.sendFrames(new TextFrame().setPayload("You shouldn't be there"));
             
-            BlockingQueue<WSFrame> framesQueue = session.getOutputFrames();
-            WSFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            WebSocketFrame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CLOSE));
 
             CloseStatus closeStatus = CloseFrame.toCloseStatus(frame.getPayload());

@@ -28,16 +28,16 @@ public class PolicyViolationException extends CloseException
 {
     public PolicyViolationException(String message)
     {
-        super(WSConstants.POLICY_VIOLATION,message);
+        super(WebSocketConstants.POLICY_VIOLATION,message);
     }
 
     public PolicyViolationException(String message, Throwable t)
     {
-        super(WSConstants.POLICY_VIOLATION,message,t);
+        super(WebSocketConstants.POLICY_VIOLATION,message,t);
     }
 
     public PolicyViolationException(Throwable t)
     {
-        super(WSConstants.POLICY_VIOLATION,t);
+        super(WebSocketConstants.POLICY_VIOLATION,t);
     }
 }

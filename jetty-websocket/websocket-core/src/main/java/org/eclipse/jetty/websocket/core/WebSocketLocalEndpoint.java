@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * The interface a WSConnection has to the local WebSocket Endpoint.
  */
-public interface WSLocalEndpoint
+public interface WebSocketLocalEndpoint
 {
     Logger getLog();
 

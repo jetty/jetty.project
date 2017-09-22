@@ -34,7 +34,7 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.CompletableFutureCallback;
@@ -89,7 +89,7 @@ public class DecoderReaderMessageSinkTest
         }
     }
     
-    private WSLocalEndpoint<JavaxWebSocketSession> dummyFunctions = new DummyEndpointFunctions();
+    private WebSocketLocalEndpoint<JavaxWebSocketSession> dummyFunctions = new DummyEndpointFunctions();
     
     @Test
     public void testDecoderReader() throws Exception

@@ -27,17 +27,17 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 public class ParserCapture implements Parser.Handler
 {
-    public BlockingQueue<WSFrame> framesQueue = new LinkedBlockingDeque<>();
+    public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     public boolean closed = false;
     
     public void assertHasFrame(byte opCode, int expectedCount)
     {
         int count = 0;
-        for(WSFrame frame: framesQueue)
+        for(WebSocketFrame frame: framesQueue)
         {
             if(frame.getOpCode() == opCode)
                 count++;
@@ -46,7 +46,7 @@ public class ParserCapture implements Parser.Handler
     }
     
     @Deprecated
-    public BlockingQueue<WSFrame> getFrames()
+    public BlockingQueue<WebSocketFrame> getFrames()
     {
         return framesQueue;
     }
@@ -54,7 +54,7 @@ public class ParserCapture implements Parser.Handler
     @Override
     public boolean onFrame(Frame frame)
     {
-        framesQueue.offer(WSFrame.copy(frame));
+        framesQueue.offer(WebSocketFrame.copy(frame));
         if (frame.getOpCode() == OpCode.CLOSE)
             closed = true;
         return true; // it is consumed

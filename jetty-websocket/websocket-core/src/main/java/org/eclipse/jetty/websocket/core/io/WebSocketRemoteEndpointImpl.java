@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
-import org.eclipse.jetty.websocket.core.WSException;
+import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -38,12 +38,12 @@ import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 /**
  * Represents the remote websocket endpoint, with facilities to send WebSocketFrames
  */
-public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
+public class WebSocketRemoteEndpointImpl implements Closeable, WebSocketRemoteEndpoint
 {
     public enum MsgType
     {
@@ -63,7 +63,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
     private AtomicBoolean open = new AtomicBoolean(false);
     private volatile BatchMode batchMode = BatchMode.AUTO;
 
-    public WSRemoteImpl(OutgoingFrames outgoing)
+    public WebSocketRemoteEndpointImpl(OutgoingFrames outgoing)
     {
         this.outgoing = outgoing;
     }
@@ -264,7 +264,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
         sendBlocking(FrameFlusher.FLUSH_FRAME);
     }
 
-    protected void sendBlocking(WSFrame frame) throws IOException
+    protected void sendBlocking(WebSocketFrame frame) throws IOException
     {
         assertIsOpen();
         lockMsg(MsgType.ASYNC);
@@ -279,7 +279,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
         }
     }
 
-    public void sendFrame(WSFrame frame, Callback callback)
+    public void sendFrame(WebSocketFrame frame, Callback callback)
     {
         assertIsOpen();
         lockMsg(MsgType.ASYNC);
@@ -300,7 +300,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
         }
     }
 
-    public void unlockedSendFrame(WSFrame frame, Callback callback)
+    public void unlockedSendFrame(WebSocketFrame frame, Callback callback)
     {
         assertIsOpen();
         try
@@ -344,7 +344,7 @@ public class WSRemoteImpl implements Closeable, WSRemoteEndpoint
     {
         if (!open.get())
         {
-            throw new WSException("WSRemoteImpl not open");
+            throw new WebSocketException("WSRemoteImpl not open");
         }
     }
 

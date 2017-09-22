@@ -31,12 +31,12 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
@@ -55,7 +55,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newClientPolicy());
+        ext.setPolicy(WebSocketPolicy.newClientPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
@@ -79,7 +79,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         String prefix;
         int i = 0;
-        for (WSFrame actual : capture.frames)
+        for (WebSocketFrame actual : capture.frames)
         {
             prefix = "Frame[" + i + "]";
 
@@ -106,7 +106,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
@@ -118,7 +118,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
-        WSFrame actual = capture.frames.poll();
+        WebSocketFrame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));
@@ -142,7 +142,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=20");
         ext.setConfig(config);
 
@@ -162,7 +162,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         }
 
         // Expected Frames
-        List<WSFrame> expectedFrames = new ArrayList<>();
+        List<WebSocketFrame> expectedFrames = new ArrayList<>();
         expectedFrames.add(new TextFrame().setPayload("No amount of experim").setFin(false));
         expectedFrames.add(new ContinuationFrame().setPayload("entation can ever pr").setFin(false));
         expectedFrames.add(new ContinuationFrame().setPayload("ove me right;").setFin(true));
@@ -178,12 +178,12 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<WSFrame> frames = new LinkedList<>(capture.frames);
+        LinkedList<WebSocketFrame> frames = new LinkedList<>(capture.frames);
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            WSFrame actualFrame = frames.get(i);
-            WSFrame expectedFrame = expectedFrames.get(i);
+            WebSocketFrame actualFrame = frames.get(i);
+            WebSocketFrame expectedFrame = expectedFrames.get(i);
 
             // System.out.printf("actual: %s%n",actualFrame);
             // System.out.printf("expect: %s%n",expectedFrame);
@@ -215,7 +215,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment");
         ext.setConfig(config);
 
@@ -235,7 +235,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         }
 
         // Expected Frames
-        List<WSFrame> expectedFrames = new ArrayList<>();
+        List<WebSocketFrame> expectedFrames = new ArrayList<>();
         expectedFrames.add(new TextFrame().setPayload("No amount of experimentation can ever prove me right;"));
         expectedFrames.add(new TextFrame().setPayload("a single experiment can prove me wrong."));
         expectedFrames.add(new TextFrame().setPayload("-- Albert Einstein"));
@@ -246,12 +246,12 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(len);
 
         String prefix;
-        LinkedList<WSFrame> frames = new LinkedList<>(capture.frames);
+        LinkedList<WebSocketFrame> frames = new LinkedList<>(capture.frames);
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            WSFrame actualFrame = frames.get(i);
-            WSFrame expectedFrame = expectedFrames.get(i);
+            WebSocketFrame actualFrame = frames.get(i);
+            WebSocketFrame expectedFrame = expectedFrames.get(i);
 
             // Validate Frame
             Assert.assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
@@ -280,7 +280,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         FragmentExtension ext = new FragmentExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("fragment;maxLength=4");
         ext.setConfig(config);
 
@@ -293,7 +293,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         capture.assertFrameCount(1);
 
-        WSFrame actual = capture.frames.poll();
+        WebSocketFrame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));

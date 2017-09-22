@@ -28,16 +28,16 @@ public class MessageTooLargeException extends CloseException
 {
     public MessageTooLargeException(String message)
     {
-        super(WSConstants.MESSAGE_TOO_LARGE,message);
+        super(WebSocketConstants.MESSAGE_TOO_LARGE,message);
     }
 
     public MessageTooLargeException(String message, Throwable t)
     {
-        super(WSConstants.MESSAGE_TOO_LARGE,message,t);
+        super(WebSocketConstants.MESSAGE_TOO_LARGE,message,t);
     }
 
     public MessageTooLargeException(Throwable t)
     {
-        super(WSConstants.MESSAGE_TOO_LARGE,t);
+        super(WebSocketConstants.MESSAGE_TOO_LARGE,t);
     }
 }

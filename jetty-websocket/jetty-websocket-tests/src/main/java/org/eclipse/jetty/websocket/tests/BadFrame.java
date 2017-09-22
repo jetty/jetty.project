@@ -19,12 +19,12 @@
 package org.eclipse.jetty.websocket.tests;
 
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 /**
  * Allow Fuzzer / Generator to create bad frames for testing frame validation
  */
-public class BadFrame extends WSFrame
+public class BadFrame extends WebSocketFrame
 {
     public BadFrame(byte opcode)
     {

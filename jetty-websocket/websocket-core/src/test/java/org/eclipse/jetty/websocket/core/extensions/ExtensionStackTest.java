@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
@@ -42,7 +42,7 @@ public class ExtensionStackTest
     private static final Logger LOG = Log.getLogger(ExtensionStackTest.class);
 
     private static DecoratedObjectFactory objectFactory;
-    private static WSPolicy policy;
+    private static WebSocketPolicy policy;
     private static ByteBufferPool bufferPool;
     private static ExtensionStack stack;
 
@@ -50,9 +50,9 @@ public class ExtensionStackTest
     public static void init()
     {
         objectFactory = new DecoratedObjectFactory();
-        policy = WSPolicy.newServerPolicy();
+        policy = WebSocketPolicy.newServerPolicy();
         bufferPool = new MappedByteBufferPool();
-        stack = new ExtensionStack(new WSExtensionRegistry());
+        stack = new ExtensionStack(new WebSocketExtensionRegistry());
     }
 
     @SuppressWarnings("unchecked")

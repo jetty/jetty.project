@@ -25,14 +25,14 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
 public class DecodedReaderMessageSink extends ReaderMessageSink
 {
     private static final Logger LOG = Log.getLogger(DecodedReaderMessageSink.class);
     
-    public DecodedReaderMessageSink(WSPolicy policy, WSLocalEndpoint endpointFunctions, Executor executor, Decoder.TextStream decoder, MethodHandle methodHandle)
+    public DecodedReaderMessageSink(WebSocketPolicy policy, WebSocketLocalEndpoint endpointFunctions, Executor executor, Decoder.TextStream decoder, MethodHandle methodHandle)
     {
         super(policy, executor, methodHandle);
 

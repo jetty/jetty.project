@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.server.servlets.EchoSocket;
 import org.junit.Test;
@@ -91,10 +91,10 @@ public class CloseHandling_BadStatusCodesTest extends AbstractLocalServerCase
         payload.putChar((char) statusCode);
         BufferUtil.flipToFlush(payload, 0);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(payload.slice()));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
         try (StacklessLogging ignore = new StacklessLogging(EchoSocket.class);
@@ -119,10 +119,10 @@ public class CloseHandling_BadStatusCodesTest extends AbstractLocalServerCase
         payload.put(StringUtil.getBytes("Reason"));
         BufferUtil.flipToFlush(payload, 0);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(payload.slice()));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
 
         try (StacklessLogging ignore = new StacklessLogging(EchoSocket.class);

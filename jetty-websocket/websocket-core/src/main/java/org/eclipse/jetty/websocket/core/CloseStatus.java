@@ -63,7 +63,7 @@ public class CloseStatus
      */
     public CloseStatus()
     {
-        this(WSConstants.NO_CODE);
+        this(WebSocketConstants.NO_CODE);
     }
 
     /**

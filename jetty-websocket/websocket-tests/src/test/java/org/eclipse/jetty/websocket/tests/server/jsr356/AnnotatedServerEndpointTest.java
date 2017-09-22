@@ -26,7 +26,7 @@ import java.util.Map;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
@@ -79,7 +79,7 @@ public class AnnotatedServerEndpointTest
     private void assertResponse(String message, String expectedText) throws Exception
     {
         Map<String, String> upgradeRequest = UpgradeUtils.newDefaultUpgradeRequestHeaders();
-        upgradeRequest.put(WSConstants.SEC_WEBSOCKET_PROTOCOL, "echo");
+        upgradeRequest.put(WebSocketConstants.SEC_WEBSOCKET_PROTOCOL, "echo");
         
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(message));

@@ -33,8 +33,8 @@ import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.tests.BadFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
@@ -59,10 +59,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         byte payload[] = new byte[] { 0x00 };
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(buf));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.PROTOCOL.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -91,10 +91,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         payload.put(invalidUtf);
         BufferUtil.flipToFlush(payload,0);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BadFrame(OpCode.CLOSE).setPayload(payload)); // intentionally bad payload
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.BAD_PAYLOAD.getCode()));
     
         try (StacklessLogging ignored = new StacklessLogging(EchoSocket.class);
@@ -115,10 +115,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testClose_Empty() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame());
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame());
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -142,13 +142,13 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         Arrays.fill(utf,(byte)'!');
         String reason = StringUtil.toUTF8String(utf,0,utf.length);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(),reason));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(),reason));
     
-        try (StacklessLogging ignored = new StacklessLogging(WSConnection.class);
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreConnection.class);
              LocalFuzzer session = server.newLocalFuzzer())
         {
             session.sendBulk(send);
@@ -166,11 +166,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testClose_Normal() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("Hello World"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload("Hello World"));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
@@ -191,11 +191,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testClose_Ping() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         send.add(new PingFrame().setPayload("out of band ping"));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -215,10 +215,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testClose_StatusCode() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -238,10 +238,10 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testClose_StatusCode_Reason() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(),"Hic"));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode(),"Hic"));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -261,11 +261,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testClose_Text() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         send.add(new TextFrame().setPayload("out of band text"));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -285,11 +285,11 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testClose_Twice() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         send.add(new CloseFrame());
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -309,12 +309,12 @@ public class CloseHandlingTest extends AbstractLocalServerCase
     @Test
     public void testTextNoFin_Close_ContinuationFin() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("an").setFin(false));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         send.add(new ContinuationFrame().setPayload("ticipation").setFin(true));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -338,12 +338,12 @@ public class CloseHandlingTest extends AbstractLocalServerCase
         Arrays.fill(msg,(byte)'*');
         ByteBuffer buf = ByteBuffer.wrap(msg);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(buf));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         send.add(new PingFrame().setPayload("out of band"));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(buf)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     

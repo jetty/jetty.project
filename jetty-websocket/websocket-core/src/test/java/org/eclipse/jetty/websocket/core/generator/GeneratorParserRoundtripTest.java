@@ -28,9 +28,9 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.parser.ParserCapture;
 import org.junit.Assert;
@@ -43,7 +43,7 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGenerator() throws Exception
     {
-        WSPolicy policy = WSPolicy.newClientPolicy();
+        WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         Generator gen = new Generator(policy,bufferPool);
         ParserCapture capture = new ParserCapture();
         Parser parser = new Parser(policy,bufferPool,capture);
@@ -55,7 +55,7 @@ public class GeneratorParserRoundtripTest
         {
             // Generate Buffer
             BufferUtil.flipToFill(out);
-            WSFrame frame = new TextFrame().setPayload(message);
+            WebSocketFrame frame = new TextFrame().setPayload(message);
             ByteBuffer header = gen.generateHeaderBytes(frame);
             ByteBuffer payload = frame.getPayload();
             out.put(header);
@@ -78,9 +78,9 @@ public class GeneratorParserRoundtripTest
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        Generator gen = new Generator(WSPolicy.newClientPolicy(),bufferPool);
+        Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
         ParserCapture capture = new ParserCapture();
-        Parser parser = new Parser(WSPolicy.newServerPolicy(),bufferPool,capture);
+        Parser parser = new Parser(WebSocketPolicy.newServerPolicy(),bufferPool,capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
@@ -89,7 +89,7 @@ public class GeneratorParserRoundtripTest
         try
         {
             // Setup Frame
-            WSFrame frame = new TextFrame().setPayload(message);
+            WebSocketFrame frame = new TextFrame().setPayload(message);
 
             // Add masking
             byte mask[] = new byte[4];

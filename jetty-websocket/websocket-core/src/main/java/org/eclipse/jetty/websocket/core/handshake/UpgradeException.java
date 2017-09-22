@@ -20,13 +20,13 @@ package org.eclipse.jetty.websocket.core.handshake;
 
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.core.WSException;
+import org.eclipse.jetty.websocket.core.WebSocketException;
 
 /**
  * Exception during WebSocket Upgrade Handshake.
  */
 @SuppressWarnings("serial")
-public class UpgradeException extends WSException
+public class UpgradeException extends WebSocketException
 {
     private final URI requestURI;
     private final int responseStatusCode;

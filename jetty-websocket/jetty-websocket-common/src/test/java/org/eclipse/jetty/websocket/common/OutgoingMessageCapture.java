@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -48,12 +48,12 @@ public class OutgoingMessageCapture implements OutgoingFrames
     public BlockingQueue<ByteBuffer> binaryMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<String> events = new LinkedBlockingDeque<>();
 
-    private final WSPolicy policy;
+    private final WebSocketPolicy policy;
     private final MethodHandle wholeTextHandle;
     private final MethodHandle wholeBinaryHandle;
     private MessageSink messageSink;
 
-    public OutgoingMessageCapture(WSPolicy policy)
+    public OutgoingMessageCapture(WebSocketPolicy policy)
     {
         this.policy = policy;
         MethodHandles.Lookup lookup = MethodHandles.lookup();

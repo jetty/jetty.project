@@ -26,25 +26,25 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
+import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-public class WSRemoteEndpointTest
+public class WebSocketRemoteEndpointTest
 {
     @Rule
     public TestName testname = new TestName();
 
     @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule(WSRemoteEndpointTest.class);
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule(WebSocketRemoteEndpointTest.class);
 
-    private WSRemoteEndpoint newWSRemote(OutgoingFramesCapture framesCapture)
+    private WebSocketRemoteEndpoint newWSRemote(OutgoingFramesCapture framesCapture)
     {
-        WSRemoteImpl remote = new WSRemoteImpl(framesCapture);
+        WebSocketRemoteEndpointImpl remote = new WebSocketRemoteEndpointImpl(framesCapture);
         remote.open();
         return remote;
     }
@@ -53,7 +53,7 @@ public class WSRemoteEndpointTest
     public void testTextBinaryText() throws Exception
     {
         OutgoingFramesCapture framesCapture = new OutgoingFramesCapture();
-        WSRemoteEndpoint remote = newWSRemote(framesCapture);
+        WebSocketRemoteEndpoint remote = newWSRemote(framesCapture);
 
         // Start text message
         remote.sendPartialText("Hello ", false, Callback.NOOP);
@@ -76,7 +76,7 @@ public class WSRemoteEndpointTest
 
         framesCapture.assertFrameCount(2);
 
-        WSFrame actual;
+        WebSocketFrame actual;
 
         actual = framesCapture.frames.remove();
         assertThat("Frame[0].opCode", actual.getOpCode(), is(OpCode.TEXT));
@@ -93,7 +93,7 @@ public class WSRemoteEndpointTest
     public void testTextPingText() throws Exception
     {
         OutgoingFramesCapture framesCapture = new OutgoingFramesCapture();
-        WSRemoteEndpoint remote = newWSRemote(framesCapture);
+        WebSocketRemoteEndpoint remote = newWSRemote(framesCapture);
 
         // Start text message
         remote.sendPartialText("Hello ", false, Callback.NOOP);
@@ -106,7 +106,7 @@ public class WSRemoteEndpointTest
 
         framesCapture.assertFrameCount(3);
 
-        WSFrame actual;
+        WebSocketFrame actual;
 
         actual = framesCapture.frames.remove();
         assertThat("Frame[0].opCode", actual.getOpCode(), is(OpCode.TEXT));

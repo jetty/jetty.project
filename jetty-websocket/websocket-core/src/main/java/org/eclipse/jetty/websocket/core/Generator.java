@@ -58,7 +58,7 @@ public class Generator
      */
     public static final int MAX_HEADER_LENGTH = 28;
 
-    private final WSBehavior behavior;
+    private final WebSocketBehavior behavior;
     private final ByteBufferPool bufferPool;
     private final boolean readOnly;
     
@@ -84,7 +84,7 @@ public class Generator
      * @param bufferPool
      *            the buffer pool to use
      */
-    public Generator(WSPolicy policy, ByteBufferPool bufferPool)
+    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this(policy,bufferPool,true,false);
     }
@@ -99,7 +99,7 @@ public class Generator
      * @param validating
      *            true to enable RFC frame validation
      */
-    public Generator(WSPolicy policy, ByteBufferPool bufferPool, boolean validating)
+    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating)
     {
         this(policy,bufferPool,validating,false);
     }
@@ -116,7 +116,7 @@ public class Generator
      * @param readOnly
      *            true if generator is to treat frames as read-only and not modify them. Useful for debugging purposes, but not generally for runtime use.
      */
-    public Generator(WSPolicy policy, ByteBufferPool bufferPool, boolean validating, boolean readOnly)
+    public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating, boolean readOnly)
     {
         this.behavior = policy.getBehavior();
         this.bufferPool = bufferPool;
@@ -359,7 +359,7 @@ public class Generator
         }
     }
 
-    public WSBehavior getBehavior()
+    public WebSocketBehavior getBehavior()
     {
         return behavior;
     }

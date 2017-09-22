@@ -27,7 +27,7 @@ import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.junit.Test;
@@ -128,11 +128,11 @@ public class Text_GoodUtf8Test extends AbstractLocalServerCase
     @Test
     public void assertEchoTextMessage() throws Exception
     {
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(msg));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new TextFrame().setPayload(DataUtils.copyOf(msg)));
         expect.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
     

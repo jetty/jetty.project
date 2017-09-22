@@ -36,13 +36,13 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.common.WSSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.eclipse.jetty.websocket.tests.Defaults;
@@ -142,7 +142,7 @@ public class WebSocketServletRFCTest
         Arrays.fill(buf2, (byte) 0xBB);
         Arrays.fill(buf3, (byte) 0xCC);
         
-        WSFrame bin;
+        WebSocketFrame bin;
         
         bin = new BinaryFrame().setPayload(buf1).setFin(false);
         
@@ -157,7 +157,7 @@ public class WebSocketServletRFCTest
         clientConnection.write(bin); // write buf3 (fin=true)
         
         // Read frame echo'd back (hopefully a single binary frame)
-        WSFrame incomingFrame = clientSession.getUntrustedEndpoint().framesQueue.poll(5, TimeUnit.SECONDS);
+        WebSocketFrame incomingFrame = clientSession.getUntrustedEndpoint().framesQueue.poll(5, TimeUnit.SECONDS);
         
         int expectedSize = buf1.length + buf2.length + buf3.length;
         assertThat("BinaryFrame.payloadLength", incomingFrame.getPayloadLength(), is(expectedSize));
@@ -221,7 +221,7 @@ public class WebSocketServletRFCTest
         UntrustedWSEndpoint clientSocket = clientSession.getUntrustedEndpoint();
 
         try (StacklessLogging ignored = new StacklessLogging(
-                Log.getLogger(WSSession.class.getName() + ".SERVER"),
+                Log.getLogger(WebSocketSessionImpl.class.getName() + ".SERVER"),
                 Log.getLogger(RFC6455Socket.class)))
         {
             clientSession.getRemote().sendString("CRASH");
@@ -318,11 +318,11 @@ public class WebSocketServletRFCTest
         
         byte buf[] = new byte[]{(byte) 0xC2, (byte) 0xC3};
         
-        Generator generator = new Generator(WSPolicy.newServerPolicy(), client.getHttpClient().getByteBufferPool(), false);
+        Generator generator = new Generator(WebSocketPolicy.newServerPolicy(), client.getHttpClient().getByteBufferPool(), false);
 
         try (StacklessLogging ignored = new StacklessLogging(RFC6455Socket.class))
         {
-            WSFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
+            WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
             txt.setMask(Hex.asByteArray("11223344"));
             ByteBuffer bbHeader = generator.generateHeaderBytes(txt);
 

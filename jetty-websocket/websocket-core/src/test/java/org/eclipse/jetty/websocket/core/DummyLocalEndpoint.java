@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Logger;
 
-public class DummyLocalEndpoint implements WSLocalEndpoint
+public class DummyLocalEndpoint implements WebSocketLocalEndpoint
 {
     private boolean open = false;
 

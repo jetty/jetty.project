@@ -32,14 +32,14 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.io.OutgoingFramesCapture;
@@ -228,7 +228,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
 
@@ -244,7 +244,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
-        WSFrame actual = capture.frames.poll();
+        WebSocketFrame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));
@@ -265,7 +265,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
 
@@ -295,7 +295,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         String prefix;
         int i = 0;
-        for (WSFrame actual : capture.frames)
+        for (WebSocketFrame actual : capture.frames)
         {
             prefix = "Frame[" + i + "]";
 
@@ -321,7 +321,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.setBufferPool(bufferPool);
-        ext.setPolicy(WSPolicy.newServerPolicy());
+        ext.setPolicy(WebSocketPolicy.newServerPolicy());
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.setConfig(config);
 
@@ -339,7 +339,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
 
-        WSFrame actual = capture.frames.poll();
+        WebSocketFrame actual = capture.frames.poll();
 
         Assert.assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
         Assert.assertThat("Frame.fin", actual.isFin(), is(true));

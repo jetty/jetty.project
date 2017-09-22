@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.core;
 
 @SuppressWarnings("serial")
-public class CloseException extends WSException
+public class CloseException extends WebSocketException
 {
     private int statusCode;
 

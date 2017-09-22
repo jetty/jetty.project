@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
 import org.eclipse.jetty.websocket.core.LeakTrackingBufferPoolRule;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,13 +47,13 @@ public class MessageOutputStreamTest
     @Rule
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
-    private WSPolicy policy;
+    private WebSocketPolicy policy;
     private OutgoingMessageCapture remoteSocket;
 
     @Before
     public void setupTest() throws Exception
     {
-        policy = WSPolicy.newServerPolicy();
+        policy = WebSocketPolicy.newServerPolicy();
         policy.setInputBufferSize(1024);
 
         remoteSocket = new OutgoingMessageCapture(policy);

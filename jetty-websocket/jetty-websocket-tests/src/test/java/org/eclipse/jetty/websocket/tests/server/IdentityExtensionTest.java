@@ -29,13 +29,13 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.core.WSConstants;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.UnitExtensionStack;
@@ -67,33 +67,33 @@ public class IdentityExtensionTest
     @Test(timeout = 60000)
     public void testIdentityExtension() throws Exception
     {
-        WSExtensionRegistry extensionRegistry = server.getWebSocketServletFactory().getExtensionRegistry();
+        WebSocketExtensionRegistry extensionRegistry = server.getWebSocketServletFactory().getExtensionRegistry();
         assertThat("Extension Registry", extensionRegistry, notNullValue());
         Assume.assumeTrue("Server has identity registered", extensionRegistry.isAvailable("identity"));
         
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("Hello Identity"));
         send.add(new CloseFrame().setPayload(StatusCode.NORMAL.getCode()));
         
         Map<String, String> upgradeHeaders = UpgradeUtils.newDefaultUpgradeRequestHeaders();
-        upgradeHeaders.put(WSConstants.SEC_WEBSOCKET_EXTENSIONS, "identity;param=0, identity;param=1, identity ; param = '2' ; other = ' some = value '");
+        upgradeHeaders.put(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS, "identity;param=0, identity;param=1, identity ; param = '2' ; other = ' some = value '");
         
         try (LocalFuzzer session = server.newLocalFuzzer("/", upgradeHeaders))
         {
-            String negotiatedExtensions = session.upgradeResponse.get(WSConstants.SEC_WEBSOCKET_EXTENSIONS);
+            String negotiatedExtensions = session.upgradeResponse.get(WebSocketConstants.SEC_WEBSOCKET_EXTENSIONS);
             
             List<ExtensionConfig> extensionConfigList = ExtensionConfig.parseList(negotiatedExtensions);
             assertThat("Client Upgrade Response.Extensions", extensionConfigList.size(), is(3));
             assertThat("Client Upgrade Response.Extensions[0]", extensionConfigList.get(0).toString(), containsString("identity"));
             
             UnitExtensionStack extensionStack = UnitExtensionStack.clientBased();
-            List<WSFrame> outgoingFrames = extensionStack.processOutgoing(send);
+            List<WebSocketFrame> outgoingFrames = extensionStack.processOutgoing(send);
             session.sendBulk(outgoingFrames);
             
-            BlockingQueue<WSFrame> framesQueue = session.getOutputFrames();
-            BlockingQueue<WSFrame> incomingFrames = extensionStack.processIncoming(framesQueue);
+            BlockingQueue<WebSocketFrame> framesQueue = session.getOutputFrames();
+            BlockingQueue<WebSocketFrame> incomingFrames = extensionStack.processIncoming(framesQueue);
             
-            WSFrame frame = incomingFrames.poll();
+            WebSocketFrame frame = incomingFrames.poll();
             Assert.assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
             Assert.assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), is("Hello Identity"));
         }

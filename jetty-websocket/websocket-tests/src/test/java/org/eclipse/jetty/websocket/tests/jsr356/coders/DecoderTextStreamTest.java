@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.CompletableFutureCallback;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
@@ -58,7 +58,7 @@ public class DecoderTextStreamTest
         executor.shutdown();
     }
     
-    private WSLocalEndpoint<JavaxWebSocketSession> endpointFunctions = new DummyJsrEndpointFunctions();
+    private WebSocketLocalEndpoint<JavaxWebSocketSession> endpointFunctions = new DummyJsrEndpointFunctions();
     
     @Test
     public void testQuotes_Decoder_Direct() throws Exception

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import org.eclipse.jetty.websocket.core.WSBehavior;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -33,7 +33,7 @@ public class UntrustedWSServlet extends WebSocketServlet
     {
         this((req, resp) ->
         {
-            UntrustedWSEndpoint endpoint = new UntrustedWSEndpoint(WSBehavior.SERVER.name());
+            UntrustedWSEndpoint endpoint = new UntrustedWSEndpoint(WebSocketBehavior.SERVER.name());
             if (req.hasSubProtocol("echo"))
             {
                 endpoint.setOnTextFunction((session, payload) -> payload);

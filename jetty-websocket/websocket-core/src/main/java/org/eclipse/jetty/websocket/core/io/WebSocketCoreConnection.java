@@ -44,10 +44,10 @@ import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WSCoreSession;
-import org.eclipse.jetty.websocket.core.WSException;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSTimeoutException;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
@@ -56,7 +56,7 @@ import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WSConnection extends AbstractConnection implements Parser.Handler, IncomingFrames, OutgoingFrames, SuspendToken, Connection.UpgradeTo, Dumpable
+public class WebSocketCoreConnection extends AbstractConnection implements Parser.Handler, IncomingFrames, OutgoingFrames, SuspendToken, Connection.UpgradeTo, Dumpable
 {
     private class Flusher extends FrameFlusher
     {
@@ -82,7 +82,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final Generator generator;
     private final Parser parser;
     // Connection level policy (before the session and local endpoint has been created)
-    private final WSPolicy policy;
+    private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
     private final AtomicBoolean closed = new AtomicBoolean();
     private final FrameFlusher flusher;
@@ -90,11 +90,11 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
     private final String id;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
-    private final WSConnectionState connectionState = new WSConnectionState();
+    private final WebSocketCoreConnectionState connectionState = new WebSocketCoreConnectionState();
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
     private final DecoratedObjectFactory objectFactory;
 
-    private WSCoreSession session;
+    private WebSocketCoreSession session;
     // Path for frames in/out of the connection
     protected OutgoingFrames outgoingFrames;
     protected IncomingFrames incomingFrames;
@@ -109,10 +109,10 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
      * completed successfully before creating this connection.
      * </p>
      */
-    public WSConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
-                        DecoratedObjectFactory decoratedObjectFactory,
-                        WSPolicy policy, ExtensionStack extensionStack,
-                        UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
+    public WebSocketCoreConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
+                                   DecoratedObjectFactory decoratedObjectFactory,
+                                   WebSocketPolicy policy, ExtensionStack extensionStack,
+                                   UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
     {
         super(endp, executor);
 
@@ -157,7 +157,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         this.outgoingFrames = extensionStack;
     }
 
-    public void setSession(WSCoreSession session)
+    public void setSession(WebSocketCoreSession session)
     {
         this.session = session;
         this.incomingFrames = session;
@@ -184,7 +184,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Close Frame Previously Sent: ignoring: {} [{}]", closeStatus, callback);
-            callback.failed(new WSException("Already closed"));
+            callback.failed(new WebSocketException("Already closed"));
         }
     }
 
@@ -230,7 +230,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         return parser;
     }
 
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         return policy;
     }
@@ -286,7 +286,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
             LOG.debug("onIdleExpired()");
 
         // TODO: notifyError ??
-        session.onError(new WSTimeoutException("Connection Idle Timeout"));
+        session.onError(new WebSocketTimeoutException("Connection Idle Timeout"));
         return true;
     }
 
@@ -347,7 +347,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
         return "wss".equalsIgnoreCase(requestURI.getScheme());
     }
 
-    public WSConnectionState getState()
+    public WebSocketCoreConnectionState getState()
     {
         return connectionState;
     }
@@ -621,7 +621,7 @@ public class WSConnection extends AbstractConnection implements Parser.Handler, 
             return false;
         if (getClass() != obj.getClass())
             return false;
-        WSConnection other = (WSConnection) obj;
+        WebSocketCoreConnection other = (WebSocketCoreConnection) obj;
         EndPoint endp = getEndPoint();
         EndPoint otherEndp = other.getEndPoint();
         if (endp == null)

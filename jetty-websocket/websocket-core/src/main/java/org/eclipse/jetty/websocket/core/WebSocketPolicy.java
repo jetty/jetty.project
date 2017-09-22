@@ -21,18 +21,18 @@ package org.eclipse.jetty.websocket.core;
 /**
  * Settings for WebSocket operations.
  */
-public class WSPolicy
+public class WebSocketPolicy
 {
     private static final int KB = 1024;
 
-    public static WSPolicy newClientPolicy()
+    public static WebSocketPolicy newClientPolicy()
     {
-        return new WSPolicy(WSBehavior.CLIENT);
+        return new WebSocketPolicy(WebSocketBehavior.CLIENT);
     }
 
-    public static WSPolicy newServerPolicy()
+    public static WebSocketPolicy newServerPolicy()
     {
-        return new WSPolicy(WSBehavior.SERVER);
+        return new WebSocketPolicy(WebSocketBehavior.SERVER);
     }
     
     /**
@@ -112,9 +112,9 @@ public class WSPolicy
     /**
      * Behavior of the websockets
      */
-    private final WSBehavior behavior;
+    private final WebSocketBehavior behavior;
     
-    public WSPolicy(WSBehavior behavior)
+    public WebSocketPolicy(WebSocketBehavior behavior)
     {
         this.behavior = behavior;
     }
@@ -159,9 +159,9 @@ public class WSPolicy
         }
     }
 
-    public WSPolicy clonePolicy()
+    public WebSocketPolicy clonePolicy()
     {
-        WSPolicy clone = new WSPolicy(this.behavior);
+        WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
@@ -186,7 +186,7 @@ public class WSPolicy
         return asyncWriteTimeout;
     }
 
-    public WSBehavior getBehavior()
+    public WebSocketBehavior getBehavior()
     {
         return behavior;
     }

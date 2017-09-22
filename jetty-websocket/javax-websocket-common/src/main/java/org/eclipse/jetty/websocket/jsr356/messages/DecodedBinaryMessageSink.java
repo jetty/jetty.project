@@ -22,13 +22,13 @@ import java.lang.invoke.MethodHandle;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.websocket.core.WSLocalEndpoint;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 
 public class DecodedBinaryMessageSink extends ByteBufferMessageSink
 {
-    public DecodedBinaryMessageSink(WSPolicy policy, JavaxWebSocketSession session, WSLocalEndpoint endpointFunctions, Decoder.Binary decoder, MethodHandle methodHandle)
+    public DecodedBinaryMessageSink(WebSocketPolicy policy, JavaxWebSocketSession session, WebSocketLocalEndpoint endpointFunctions, Decoder.Binary decoder, MethodHandle methodHandle)
     {
         super(policy, session.getExecutor(), methodHandle);
         /*(byteBuf) ->

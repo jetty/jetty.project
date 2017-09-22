@@ -32,16 +32,16 @@ import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.core.AbstractTrackingEndpoint;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 
-public class TrackingEndpoint extends AbstractTrackingEndpoint<WSSession> implements WebSocketListener, WebSocketFrameListener
+public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSessionImpl> implements WebSocketListener, WebSocketFrameListener
 {
     public UpgradeRequest openUpgradeRequest;
     public UpgradeResponse openUpgradeResponse;
 
-    public BlockingQueue<WSFrame> framesQueue = new LinkedBlockingDeque<>();
+    public BlockingQueue<WebSocketFrame> framesQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingDeque<>();
 
@@ -80,8 +80,8 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WSSession> implem
     @Override
     public void onWebSocketConnect(Session session)
     {
-        assertThat("Session type", session, instanceOf(WSSession.class));
-        super.onWSOpen((WSSession) session);
+        assertThat("Session type", session, instanceOf(WebSocketSessionImpl.class));
+        super.onWSOpen((WebSocketSessionImpl) session);
         this.openUpgradeRequest = session.getUpgradeRequest();
         this.openUpgradeResponse = session.getUpgradeResponse();
     }
@@ -100,7 +100,7 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WSSession> implem
             LOG.debug("onWSFrame({})", frame);
         }
 
-        framesQueue.offer(WSFrame.copy(frame));
+        framesQueue.offer(WebSocketFrame.copy(frame));
     }
 
     @Override

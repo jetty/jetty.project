@@ -47,14 +47,14 @@ import org.eclipse.jetty.websocket.client.impl.WebSocketClientConnection;
 import org.eclipse.jetty.websocket.common.LocalEndpointFactory;
 import org.eclipse.jetty.websocket.common.LocalEndpointImpl;
 import org.eclipse.jetty.websocket.common.SessionListener;
-import org.eclipse.jetty.websocket.common.WSSession;
-import org.eclipse.jetty.websocket.core.WSPolicy;
-import org.eclipse.jetty.websocket.core.WSRemoteEndpoint;
+import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.extensions.WSExtensionRegistry;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.io.WSConnection;
-import org.eclipse.jetty.websocket.core.io.WSRemoteImpl;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 
 public class WebSocketClient extends ContainerLifeCycle implements SessionListener
 {
@@ -62,14 +62,14 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     // From HttpClient
     private final HttpClient httpClient;
     // The container
-    private final WSPolicy clientPolicy;
-    private final WSExtensionRegistry extensionRegistry;
+    private final WebSocketPolicy clientPolicy;
+    private final WebSocketExtensionRegistry extensionRegistry;
     private final DecoratedObjectFactory objectFactory;
     private final LocalEndpointFactory localEndpointFactory;
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private final int id = ThreadLocalRandom.current().nextInt();
-    protected Function<WebSocketClientConnection, WSSession<? extends WSConnection>> newSessionFunction =
-            (connection) -> new WSSession(connection);
+    protected Function<WebSocketClientConnection, WebSocketSessionImpl<? extends WebSocketCoreConnection>> newSessionFunction =
+            (connection) -> new WebSocketSessionImpl(connection);
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -99,9 +99,9 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
     {
-        this.clientPolicy = WSPolicy.newClientPolicy();
+        this.clientPolicy = WebSocketPolicy.newClientPolicy();
         this.httpClient = httpClient;
-        this.extensionRegistry = new WSExtensionRegistry();
+        this.extensionRegistry = new WebSocketExtensionRegistry();
         if (objectFactory == null)
         {
             this.objectFactory = new DecoratedObjectFactory();
@@ -277,7 +277,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         this.httpClient.setCookieStore(cookieStore);
     }
 
-    public WSExtensionRegistry getExtensionRegistry()
+    public WebSocketExtensionRegistry getExtensionRegistry()
     {
         return extensionRegistry;
     }
@@ -356,7 +356,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         return Collections.unmodifiableSet(new HashSet<>(getBeans(Session.class)));
     }
 
-    public WSPolicy getPolicy()
+    public WebSocketPolicy getPolicy()
     {
         return this.clientPolicy;
     }
@@ -370,7 +370,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     }
 
     @Override
-    public void onClosed(WSSession session)
+    public void onClosed(WebSocketSessionImpl session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Session Closed: {}", session);
@@ -378,13 +378,13 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     }
 
     @Override
-    public void onCreated(WSSession session)
+    public void onCreated(WebSocketSessionImpl session)
     {
         // TODO: implement?
     }
 
     @Override
-    public void onOpened(WSSession session)
+    public void onOpened(WebSocketSessionImpl session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Session Opened: {}", session);
@@ -409,11 +409,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         return sb.toString();
     }
 
-    protected WSSession createSession(WebSocketClientConnection connection, Object endpointInstance)
+    protected WebSocketSessionImpl createSession(WebSocketClientConnection connection, Object endpointInstance)
     {
-        WSSession session = newSessionFunction.apply(connection);
+        WebSocketSessionImpl session = newSessionFunction.apply(connection);
         LocalEndpointImpl localEndpoint = localEndpointFactory.createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
-        WSRemoteEndpoint remoteEndpoint = new WSRemoteImpl(connection);
+        WebSocketRemoteEndpoint remoteEndpoint = new WebSocketRemoteEndpointImpl(connection);
 
         session.setWebSocketEndpoint(endpointInstance, localEndpoint.getPolicy(), localEndpoint, remoteEndpoint);
         return session;

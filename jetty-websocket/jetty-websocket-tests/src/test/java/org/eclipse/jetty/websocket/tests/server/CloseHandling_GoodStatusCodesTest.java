@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.WSFrame;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.junit.Test;
@@ -93,10 +93,10 @@ public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
         payload.putChar((char) statusCode);
         BufferUtil.flipToFlush(payload, 0);
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(payload.slice()));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(DataUtils.copyOf(payload)));
 
         try (LocalFuzzer session = server.newLocalFuzzer())
@@ -119,10 +119,10 @@ public class CloseHandling_GoodStatusCodesTest extends AbstractLocalServerCase
         payload.put(StringUtil.getBytes("Reason"));
         payload.flip();
 
-        List<WSFrame> send = new ArrayList<>();
+        List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(payload.slice()));
 
-        List<WSFrame> expect = new ArrayList<>();
+        List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(DataUtils.copyOf(payload)));
 
         try (LocalFuzzer session = server.newLocalFuzzer())

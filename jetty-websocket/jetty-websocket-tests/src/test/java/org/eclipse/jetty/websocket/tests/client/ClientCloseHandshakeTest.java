@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WSTimeoutException;
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
@@ -383,7 +383,7 @@ public class ClientCloseHandshakeTest
 
             // client read timeout
             clientSocket.awaitErrorEvent("Client");
-            clientSocket.assertErrorEvent("Client", instanceOf(WSTimeoutException.class), containsString("Idle Timeout"));
+            clientSocket.assertErrorEvent("Client", instanceOf(WebSocketTimeoutException.class), containsString("Idle Timeout"));
 
             // TODO: should this also cause an onClose event?
             // clientSocket.awaitCloseEvent("Client");

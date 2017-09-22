@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.websocket.core.WSPolicy;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -38,7 +38,7 @@ public abstract class AbstractExtensionTest
     @Before
     public void init()
     {
-        clientExtensions = new ExtensionTool(WSPolicy.newClientPolicy(),bufferPool);
-        serverExtensions = new ExtensionTool(WSPolicy.newServerPolicy(),bufferPool);
+        clientExtensions = new ExtensionTool(WebSocketPolicy.newClientPolicy(),bufferPool);
+        serverExtensions = new ExtensionTool(WebSocketPolicy.newServerPolicy(),bufferPool);
     }
 }
