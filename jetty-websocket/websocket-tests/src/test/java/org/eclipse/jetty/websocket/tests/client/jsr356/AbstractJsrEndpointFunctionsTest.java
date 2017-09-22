@@ -28,7 +28,7 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.DummyConnection;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.client.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;

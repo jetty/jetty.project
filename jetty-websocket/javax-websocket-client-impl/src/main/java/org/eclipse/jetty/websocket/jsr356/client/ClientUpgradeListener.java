@@ -16,16 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.client;
+
+import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
+import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 
 /**
- * Basic Message Type enum.
- * <p>
- * The list of options mirrors the registration limits for "websocket message type" defined in JSR-356 / PFD1 section 2.1.3 "Receiving Messages".
+ * Listener for Handshake/Upgrade events.
  */
-public enum MessageType
+public interface ClientUpgradeListener
 {
-    TEXT,
-    BINARY,
-    PONG
+    void onHandshakeRequest(UpgradeRequest request);
+
+    void onHandshakeResponse(UpgradeResponse response);
 }

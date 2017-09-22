@@ -16,21 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.client;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import javax.websocket.EndpointConfig;
 
-public class ConfigurationException extends WebSocketException
+/**
+ * Tag indicating a component that needs to be configured.
+ */
+public interface Configurable
 {
-    private static final long serialVersionUID = 3026803845657799372L;
-
-    public ConfigurationException(String message)
-    {
-        super(message);
-    }
-
-    public ConfigurationException(String message, Throwable cause)
-    {
-        super(message,cause);
-    }
+    public void init(EndpointConfig config);
 }

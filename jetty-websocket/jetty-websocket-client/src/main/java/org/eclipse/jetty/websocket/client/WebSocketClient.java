@@ -46,15 +46,13 @@ import org.eclipse.jetty.websocket.client.impl.HttpClientProvider;
 import org.eclipse.jetty.websocket.client.impl.WebSocketClientConnection;
 import org.eclipse.jetty.websocket.common.LocalEndpointFactory;
 import org.eclipse.jetty.websocket.common.LocalEndpointImpl;
+import org.eclipse.jetty.websocket.common.RemoteEndpointImpl;
 import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
-import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 
 public class WebSocketClient extends ContainerLifeCycle implements SessionListener
 {
@@ -68,8 +66,10 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private final LocalEndpointFactory localEndpointFactory;
     private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
     private final int id = ThreadLocalRandom.current().nextInt();
-    protected Function<WebSocketClientConnection, WebSocketSessionImpl<? extends WebSocketCoreConnection>> newSessionFunction =
-            (connection) -> new WebSocketSessionImpl(connection);
+    protected Function<WebSocketClientConnection, WebSocketSessionImpl<
+            WebSocketClient, WebSocketClientConnection,
+            LocalEndpointImpl, RemoteEndpointImpl>> newSessionFunction =
+            (connection) -> new WebSocketSessionImpl(WebSocketClient.this, connection);
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -413,7 +413,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         WebSocketSessionImpl session = newSessionFunction.apply(connection);
         LocalEndpointImpl localEndpoint = localEndpointFactory.createLocalEndpoint(endpointInstance, session, getPolicy(), httpClient.getExecutor());
-        WebSocketRemoteEndpoint remoteEndpoint = new WebSocketRemoteEndpointImpl(connection);
+        RemoteEndpointImpl remoteEndpoint = new RemoteEndpointImpl(connection, connection.getRemoteAddress());
 
         session.setWebSocketEndpoint(endpointInstance, localEndpoint.getPolicy(), localEndpoint, remoteEndpoint);
         return session;

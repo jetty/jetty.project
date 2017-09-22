@@ -66,7 +66,6 @@ import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -94,8 +93,13 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private Executor executor;
     private DecoratedObjectFactory objectFactory;
     private WebSocketCreator creator;
-    private Function<WebSocketServerConnection, WebSocketSessionImpl<? extends WebSocketCoreConnection>> newSessionFunction =
-            (connection) -> new WebSocketSessionImpl(connection);
+    private Function<WebSocketServerConnection, WebSocketSessionImpl<
+            ? extends WebSocketServerFactory,
+            ? extends WebSocketServerConnection,
+            ? extends LocalEndpointImpl,
+            ? extends RemoteEndpointImpl
+            >> newSessionFunction =
+            (connection) -> new WebSocketSessionImpl(WebSocketServerFactory.this, connection);
     
     public WebSocketServerFactory(ServletContext context)
     {
@@ -443,7 +447,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.creator = creator;
     }
 
-    public void setNewSessionFunction(Function<WebSocketServerConnection, WebSocketSessionImpl<? extends WebSocketCoreConnection>> newSessionFunction)
+    public void setNewSessionFunction(Function<WebSocketServerConnection,
+            WebSocketSessionImpl<
+                    ? extends WebSocketServerFactory,
+                    ? extends WebSocketServerConnection,
+                    ? extends LocalEndpointImpl,
+                    ? extends RemoteEndpointImpl>> newSessionFunction)
     {
         this.newSessionFunction = newSessionFunction;
     }

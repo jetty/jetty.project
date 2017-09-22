@@ -23,27 +23,29 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.io.SuspendToken;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
-public class WebSocketSessionImpl<T extends WebSocketCoreConnection> extends WebSocketCoreSession<T> implements Session
+public class WebSocketSessionImpl<
+        P extends ContainerLifeCycle,
+        C extends WebSocketCoreConnection,
+        L extends LocalEndpointImpl,
+        R extends RemoteEndpointImpl>
+        extends WebSocketCoreSession<P,C,L,R> implements Session
 {
-    private RemoteEndpoint remote;
-
-    public WebSocketSessionImpl(T connection)
+    public WebSocketSessionImpl(P container, C connection)
     {
-        super(connection);
+        super(container, connection);
         connection.setSession(this);
     }
 
@@ -53,22 +55,14 @@ public class WebSocketSessionImpl<T extends WebSocketCoreConnection> extends Web
     }
 
     @Override
-    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, WebSocketLocalEndpoint localEndpoint, WebSocketRemoteEndpoint remoteEndpoint)
+    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, L localEndpoint, R remoteEndpoint)
     {
-        if(!(remoteEndpoint instanceof org.eclipse.jetty.websocket.api.RemoteEndpoint))
-        {
-            throw new RuntimeException("WSRemoteEndpoint must implement " + org.eclipse.jetty.websocket.api.RemoteEndpoint.class.getName());
-        }
-        this.remote = (RemoteEndpoint) remoteEndpoint;
         super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
     }
 
     private void closeRemote()
     {
-        if (this.remote instanceof RemoteEndpointImpl)
-        {
-            ((RemoteEndpointImpl) this.remote).close();
-        }
+        remoteEndpoint.close();
     }
 
     @Override
@@ -125,7 +119,7 @@ public class WebSocketSessionImpl<T extends WebSocketCoreConnection> extends Web
     @Override
     public RemoteEndpoint getRemote()
     {
-        return remote;
+        return remoteEndpoint;
     }
 
     @Override
@@ -161,10 +155,7 @@ public class WebSocketSessionImpl<T extends WebSocketCoreConnection> extends Web
     @Override
     public void open()
     {
-        if (this.remote instanceof RemoteEndpointImpl)
-        {
-            ((RemoteEndpointImpl) this.remote).open();
-        }
+        remoteEndpoint.open();
         super.open();
     }
 

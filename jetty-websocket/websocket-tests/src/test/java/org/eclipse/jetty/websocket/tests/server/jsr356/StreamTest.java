@@ -58,7 +58,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.jsr356.JettyClientContainerProvider;
+import org.eclipse.jetty.websocket.jsr356.client.JettyClientContainerProvider;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;

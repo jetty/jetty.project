@@ -35,13 +35,13 @@ import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
 
-public abstract class AbstractJsrRemote extends WebSocketRemoteEndpointImpl implements javax.websocket.RemoteEndpoint
+public class JavaxWebSocketRemoteEndpoint extends WebSocketRemoteEndpointImpl implements javax.websocket.RemoteEndpoint
 {
-    private static final Logger LOG = Log.getLogger(AbstractJsrRemote.class);
+    private static final Logger LOG = Log.getLogger(JavaxWebSocketRemoteEndpoint.class);
 
     protected final JavaxWebSocketSession session;
 
-    public AbstractJsrRemote(JavaxWebSocketSession session)
+    public JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session)
     {
         super(session.getConnection());
         this.session = session;

@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.*;
-import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State.*;
+import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State;
+import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State.CLOSED;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -41,7 +41,19 @@ import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.CompletionCallback;
 
-public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> extends ContainerLifeCycle implements IncomingFrames
+/**
+ * The Core WebSocket Session.
+ *
+ * @param <P> the parent container
+ * @param <C> the connection implementation
+ * @param <L> the local endpoint implementation
+ * @param <R> the remote endpoint implementation
+ */
+public abstract class WebSocketCoreSession<
+        P extends ContainerLifeCycle,
+        C extends WebSocketCoreConnection,
+        L extends WebSocketLocalEndpoint,
+        R extends WebSocketRemoteEndpoint> extends ContainerLifeCycle implements IncomingFrames
 {
     // Callbacks
     private Callback onDisconnectCallback = new CompletionCallback()
@@ -59,28 +71,30 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
     };
 
     private final Logger log;
-    public final T connection;
+    protected final C connection;
+    protected final P parentContainer;
 
     /**
      * The websocket endpoint objects and endpoints
      * Not declared final, as they can be decorated later by other libraries (CDI)
      */
     private Object wsEndpoint;
-    private WebSocketLocalEndpoint localEndpoint;
-    private WebSocketRemoteEndpoint remoteEndpoint;
+    protected L localEndpoint;
+    protected R remoteEndpoint;
     private WebSocketPolicy sessionPolicy;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     // Holder for errors during open that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
-    public WebSocketCoreSession(T connection)
+    public WebSocketCoreSession(P parentContainer, C connection)
     {
         this.log = Log.getLogger(this.getClass());
+        this.parentContainer = parentContainer;
         this.connection = connection;
     }
 
-    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, WebSocketLocalEndpoint localEndpoint, WebSocketRemoteEndpoint remoteEndpoint)
+    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, L localEndpoint, R remoteEndpoint)
     {
         this.wsEndpoint = endpoint;
         this.sessionPolicy = policy;
@@ -108,14 +122,11 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
     }
 
     /**
-     * Error Event.
-     * <p>
-     * Can be seen from Session and Connection.
-     * </p>
+     * Process an Error event seen by the Session and/or Connection
      *
      * @param t the raw cause
      */
-    public void onError(Throwable t)
+    public void processError(Throwable t)
     {
         synchronized (pendingError)
         {
@@ -128,6 +139,8 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
         }
 
         Throwable cause = getInvokedCause(t);
+
+        notifyError(cause);
 
         // Forward Errors to User WebSocket Object
         localEndpoint.onError(cause);
@@ -218,6 +231,8 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
                     // Open connection
                     if (connection.getState().onOpen())
                     {
+                        parentContainer.addManaged(this);
+
                         if (log.isDebugEnabled())
                             log.debug("ConnectionState: Transition to OPEN");
                     }
@@ -225,7 +240,11 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
                 catch (Throwable t)
                 {
                     localEndpoint.getLog().warn("Error during OPEN", t);
-                    onError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
+                    processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
+                }
+                finally
+                {
+                    notifyOpen();
                 }
 
                 /* Perform fillInterested outside of onConnected / onOpen.
@@ -249,13 +268,18 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
         catch (Throwable t)
         {
             log.warn(t);
-            onError(t);
+            processError(t);
         }
     }
 
-    public T getConnection()
+    public C getConnection()
     {
         return this.connection;
+    }
+
+    public P getParentContainer()
+    {
+        return this.parentContainer;
     }
 
     public Executor getExecutor()
@@ -306,6 +330,7 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
                             CloseFrame closeframe = (CloseFrame) frame;
                             CloseStatus closeStatus = closeframe.getCloseStatus();
                             notifyClose(closeStatus);
+                            parentContainer.removeBean(this);
                             connection.disconnect();
                         }
                         else
@@ -425,8 +450,21 @@ public abstract class WebSocketCoreSession<T extends WebSocketCoreConnection> ex
         super.doStart();
     }
 
-    // TODO: consider onError?
-    private void notifyError(Throwable cause)
+    /**
+     * Event triggered when the open has completed (successfully or with error).
+     */
+    protected void notifyOpen()
+    {
+        // override to trigger behavior
+    }
+
+    /**
+     * When an error has been produced (and unwrapped in some cases), this
+     * method is called to process the error at the local endpoint.
+     *
+     * @param cause the cause of the error
+     */
+    protected void notifyError(Throwable cause)
     {
         if (log.isDebugEnabled())
         {

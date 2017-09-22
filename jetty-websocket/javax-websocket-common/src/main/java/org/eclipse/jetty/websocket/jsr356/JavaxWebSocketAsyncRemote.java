@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.util.TextUtil;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.jsr356.messages.MessageWriter;
 
-public class JavaxWebSocketAsyncRemote extends AbstractJsrRemote implements javax.websocket.RemoteEndpoint.Async
+public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint.Async
 {
     static final Logger LOG = Log.getLogger(JavaxWebSocketAsyncRemote.class);
 

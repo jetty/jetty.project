@@ -16,14 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.common;
 
-import javax.websocket.EndpointConfig;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
- * Tag indicating a component that needs to be configured.
+ * Dummy Container for testing.
  */
-public interface Configurable
+public class DummyContainer extends ContainerLifeCycle
 {
-    public void init(EndpointConfig config);
 }

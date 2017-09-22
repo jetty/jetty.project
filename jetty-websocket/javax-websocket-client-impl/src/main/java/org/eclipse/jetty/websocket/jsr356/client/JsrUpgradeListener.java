@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.client;
 
 import java.util.List;
 import java.util.Map;
@@ -26,8 +26,9 @@ import javax.websocket.ClientEndpointConfig.Configurator;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.client.UpgradeListener;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketHandshakeResponse;
 
-public class JsrUpgradeListener implements UpgradeListener
+public class JsrUpgradeListener implements ClientUpgradeListener
 {
     private Configurator configurator;
 

@@ -83,7 +83,7 @@ public class JavaxWebSocketLocalEndpointFactory
         throw new InvalidWebSocketException("Unrecognized WebSocket endpoint: " + endpointClass.getName());
     }
 
-    public JavaxWebSocketLocalEndpointImpl createLocalEndpoint(Object endpointInstance, JavaxWebSocketSession session, WebSocketPolicy policy, Executor executor)
+    public JavaxWebSocketLocalEndpoint createLocalEndpoint(Object endpointInstance, JavaxWebSocketSession session, WebSocketPolicy policy, Executor executor)
     {
         JavaxWebSocketLocalEndpointMetadata metadata = getMetadata(endpointInstance.getClass());
 
@@ -118,7 +118,7 @@ public class JavaxWebSocketLocalEndpointFactory
         MessageSink textSink = createMessageSink(textHandle, textSinkClass, endpointPolicy, executor);
         MessageSink binarySink = createMessageSink(binaryHandle, binarySinkClass, endpointPolicy, executor);
 
-        return new JavaxWebSocketLocalEndpointImpl(
+        return new JavaxWebSocketLocalEndpoint(
                 endpointInstance,
                 endpointPolicy,
                 openHandle, closeHandle, errorHandle,

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356;
+package org.eclipse.jetty.websocket.jsr356.client;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.Executor;

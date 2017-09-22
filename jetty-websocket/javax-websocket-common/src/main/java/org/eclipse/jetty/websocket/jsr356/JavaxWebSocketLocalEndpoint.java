@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 
-public class JavaxWebSocketLocalEndpointImpl implements WebSocketLocalEndpoint
+public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
 {
     private final Logger log;
     private final Object endpointInstance;
@@ -46,10 +46,10 @@ public class JavaxWebSocketLocalEndpointImpl implements WebSocketLocalEndpoint
     private MethodHandle pongHandle;
     private MessageSink activeMessageSink;
 
-    public JavaxWebSocketLocalEndpointImpl(Object endpointInstance, WebSocketPolicy endpointPolicy,
-                                           MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                           MessageSink textSink, MessageSink binarySink,
-                                           MethodHandle pongHandle)
+    public JavaxWebSocketLocalEndpoint(Object endpointInstance, WebSocketPolicy endpointPolicy,
+                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
+                                       MessageSink textSink, MessageSink binarySink,
+                                       MethodHandle pongHandle)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 

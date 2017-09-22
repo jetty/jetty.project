@@ -68,7 +68,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         @Override
         protected void onFailure(Throwable x)
         {
-            session.onError(x);
+            session.processError(x);
         }
     }
 
@@ -285,8 +285,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
 
-        // TODO: notifyError ??
-        session.onError(new WebSocketTimeoutException("Connection Idle Timeout"));
+        session.processError(new WebSocketTimeoutException("Connection Idle Timeout"));
         return true;
     }
 
@@ -322,7 +321,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
                 parser.release(frame);
 
                 // notify session & endpoint
-                session.onError(cause);
+                session.processError(cause);
             }
         });
 
@@ -454,7 +453,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         }
         catch (Throwable t)
         {
-            session.onError(t);
+            session.processError(t);
         }
         finally
         {
@@ -508,7 +507,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     @Override
     protected boolean onReadTimeout()
     {
-        session.onError(new SocketTimeoutException("Timeout on Read"));
+        session.processError(new SocketTimeoutException("Timeout on Read"));
         return false;
     }
 

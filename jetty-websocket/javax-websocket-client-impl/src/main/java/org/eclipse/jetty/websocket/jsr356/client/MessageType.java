@@ -16,24 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.metadata;
-
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+package org.eclipse.jetty.websocket.jsr356.client;
 
 /**
- * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder})
+ * Basic Message Type enum.
+ * <p>
+ * The list of options mirrors the registration limits for "websocket message type" defined in JSR-356 / PFD1 section 2.1.3 "Receiving Messages".
  */
-public class DuplicateCoderException extends InvalidWebSocketException
+public enum MessageType
 {
-    private static final long serialVersionUID = -3049181444035417170L;
-
-    public DuplicateCoderException(String message)
-    {
-        super(message);
-    }
-
-    public DuplicateCoderException(String message, Throwable cause)
-    {
-        super(message,cause);
-    }
+    TEXT,
+    BINARY,
+    PONG
 }

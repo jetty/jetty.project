@@ -18,30 +18,22 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import java.net.URI;
+import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 
-import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.SessionFactory;
-import org.eclipse.jetty.websocket.core.WebSocketSession;
-
-public class JsrSessionFactory implements SessionFactory
+/**
+ * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder})
+ */
+public class DuplicateCoderException extends InvalidWebSocketException
 {
-    private final ClientContainer container;
+    private static final long serialVersionUID = -3049181444035417170L;
 
-    public JsrSessionFactory(ClientContainer container)
+    public DuplicateCoderException(String message)
     {
-        this.container = container;
+        super(message);
     }
 
-    @Override
-    public WebSocketSession createSession(URI requestURI, Object websocket, LogicalConnection connection)
+    public DuplicateCoderException(String message, Throwable cause)
     {
-        return new JavaxWebSocketSession(container,connection.getId(),requestURI,websocket,connection);
-    }
-
-    @Override
-    public boolean supports(Object websocket)
-    {
-        return (websocket instanceof ConfiguredEndpoint);
+        super(message,cause);
     }
 }

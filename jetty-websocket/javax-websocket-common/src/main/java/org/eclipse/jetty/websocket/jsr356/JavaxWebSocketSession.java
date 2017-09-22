@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.websocket.CloseReason;
@@ -45,9 +46,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
@@ -58,15 +57,17 @@ import org.eclipse.jetty.websocket.jsr356.io.JavaxWebSocketConnection;
 
 /**
  * Client Session for the JSR.
- * TODO: rename to JavaxWebSocketSession
  */
-public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
-        extends WebSocketCoreSession<T> implements javax.websocket.Session
+public class JavaxWebSocketSession<
+        P extends JavaxWebSocketContainer,
+        C extends JavaxWebSocketConnection,
+        L extends JavaxWebSocketLocalEndpoint,
+        R extends JavaxWebSocketRemoteEndpoint>
+        extends WebSocketCoreSession<P,C,L,R> implements javax.websocket.Session
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketSession.class);
 
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
-    private final javax.websocket.WebSocketContainer container;
 
     private EndpointConfig config;
     private AvailableDecoders availableDecoders;
@@ -78,16 +79,44 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
     private Map<String, String> pathParameters = new HashMap<>();
     private JavaxWebSocketAsyncRemote asyncRemote;
     private JavaxWebSocketBasicRemote basicRemote;
+    /**
+     * Optional Future to trigger when the session is opened (or fails to open).
+     * Most commonly used from client implementations that want a future to
+     * base connect + open success against (like JSR-356 client)
+     */
+    private CompletableFuture<JavaxWebSocketSession<P,C,L,R>> openFuture;
 
-    public JavaxWebSocketSession(WebSocketContainer container, T connection)
+    public JavaxWebSocketSession(P container, C connection)
     {
-        super(connection);
-        this.container = container;
+        super(container, connection);
         connection.setSession(this);
     }
 
+    public void setOpenFuture(CompletableFuture<JavaxWebSocketSession<P,C,L,R>> future)
+    {
+        this.openFuture = future;
+    }
+
     @Override
-    public void setWebSocketEndpoint(Object websocket, WebSocketPolicy policy, WebSocketLocalEndpoint localEndpoint, WebSocketRemoteEndpoint remoteEndpoint)
+    protected void notifyError(Throwable cause)
+    {
+        if (openFuture != null && !openFuture.isDone())
+            openFuture.completeExceptionally(cause);
+
+        super.notifyError(cause);
+    }
+
+    @Override
+    protected void notifyOpen()
+    {
+        if(openFuture != null && !openFuture.isDone())
+            openFuture.complete(this);
+
+        super.notifyOpen();
+    }
+
+    @Override
+    public void setWebSocketEndpoint(Object websocket, WebSocketPolicy policy, L localEndpoint, R remoteEndpoint)
     {
         final Object endpoint;
 
@@ -115,18 +144,6 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
         super.setWebSocketEndpoint(endpoint, policy, localEndpoint, remoteEndpoint);
     }
 
-    public WebSocketLocalEndpoint newEndpointFunctions(Object endpoint)
-    {
-        // Delegate to container to obtain correct version of JsrEndpointFunctions
-        // Could be a Client version, or a Server version
-        return container.newJsrEndpointFunction(endpoint,
-                getPolicy(),
-                availableEncoders,
-                availableDecoders,
-                pathParameters,
-                config);
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -142,7 +159,16 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
             LOG.debug("MessageHandler.Partial class: {}", handler.getClass());
         }
 
+        /*
+        TODO: which type? (TEXT or BINARY)
+        TODO: which decoder?
+        TODO: create message sink
+        TODO: localEndpoint.set(Text|Binary)Sink(sink)
+        MessageSink partialSink = container.getMessageSink(clazz, handler);
+        localEndpoint.set
+
         getJsrEndpointFunctions().setMessageHandler(clazz, handler);
+        */
         registerMessageHandler(handler);
     }
 
@@ -160,7 +186,14 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
         {
             LOG.debug("MessageHandler.Whole class: {}", handler.getClass());
         }
+
+        /*
+        TODO: which type? (TEXT, BINARY, or PongMessage)
+        TODO: which decoder? (if not PongMessage)
+        TODO: create message sink
+        TODO: localEndpoint.set(Text|Binary)Sink(sink)
         getJsrEndpointFunctions().setMessageHandler(clazz, handler);
+         */
         registerMessageHandler(handler);
     }
 
@@ -279,7 +312,7 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
     @Override
     public WebSocketContainer getContainer()
     {
-        return this.container;
+        return getParentContainer();
     }
 
     public AvailableDecoders getDecoders()
@@ -360,7 +393,7 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
         }
 
         // Always return copy of set, as it is common to iterate and remove from the real set.
-        return new HashSet<MessageHandler>(messageHandlerSet);
+        return new HashSet<>(messageHandlerSet);
     }
 
     /**
@@ -542,7 +575,11 @@ public class JavaxWebSocketSession<T extends JavaxWebSocketConnection>
         if (messageHandlerSet != null && messageHandlerSet.remove(handler))
         {
             // remove from endpoint functions too
+            /*
+            TODO: find associated type (TEXT / BINARY / PongMessage)
+            TODO: remove from localEndpoint the appropriate
             getJsrEndpointFunctions().removeMessageHandler(handler);
+            */
         }
     }
 

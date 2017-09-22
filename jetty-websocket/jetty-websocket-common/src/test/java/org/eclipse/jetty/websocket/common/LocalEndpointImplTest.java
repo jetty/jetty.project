@@ -63,6 +63,8 @@ import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -71,6 +73,21 @@ public class LocalEndpointImplTest
 {
     @Rule
     public TestName testname = new TestName();
+
+    public static DummyContainer container;
+
+    @BeforeClass
+    public static void startContainer() throws Exception
+    {
+        container = new DummyContainer();
+        container.start();
+    }
+
+    @AfterClass
+    public static void stopContainer() throws Exception
+    {
+        container.stop();
+    }
 
     private static Executor executor = Executors.newFixedThreadPool(10);
     private static ByteBufferPool bufferPool = new MappedByteBufferPool();
@@ -92,9 +109,9 @@ public class LocalEndpointImplTest
         WebSocketCoreConnection connection = new WebSocketCoreConnection(jettyEndpoint, executor, bufferPool, objectFactory,
                 policy, extensionStack, upgradeRequest, upgradeResponse);
 
-        WebSocketSessionImpl session = new WebSocketSessionImpl(connection);
+        WebSocketSessionImpl session = new WebSocketSessionImpl(container, connection);
 
-        WebSocketLocalEndpoint localEndpoint = endpointFactory.createLocalEndpoint(wsEndpoint, session, policy, executor);
+        LocalEndpointImpl localEndpoint = endpointFactory.createLocalEndpoint(wsEndpoint, session, policy, executor);
         session.setWebSocketEndpoint(wsEndpoint, policy, localEndpoint, new RemoteEndpointImpl(extensionStack, connection.getRemoteAddress()));
 
         return localEndpoint;
