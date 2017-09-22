@@ -81,11 +81,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private ServletRegistration.Dynamic _registration;
     private JspContainer _jspContainer;
 
-    private transient Servlet _servlet;
-    private transient Config _config;
-    private transient long _unavailable;
-    private transient boolean _enabled = true;
-    private transient UnavailableException _unavailableEx;
+    private Servlet _servlet;
+    private long _unavailable;
+    private Config _config;
+    private boolean _enabled = true;
+    private UnavailableException _unavailableEx;
 
 
     public static final String APACHE_SENTINEL_CLASS = "org.apache.tomcat.InstanceManager";
@@ -528,7 +528,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public boolean isAvailable()
     {
-        if (isStarted()&& _unavailable==0)
+        if (isStarted() && _unavailable==0)
             return true;
         try
         {
@@ -539,7 +539,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             LOG.ignore(e);
         }
 
-        return isStarted()&& _unavailable==0;
+        return isStarted() && _unavailable==0;
     }
 
     /* ------------------------------------------------------------ */
@@ -773,20 +773,30 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
     }
 
-    public synchronized Servlet ensureInstance()
+    public Servlet ensureInstance()
     throws ServletException, UnavailableException
     {
-        if (_class==null)
-            throw new UnavailableException("Servlet Not Initialized");
-        Servlet servlet=_servlet;
         if (!isStarted())
             throw new UnavailableException("Servlet not initialized", -1);
-        if (_unavailable!=0 || (!_initOnStartup && servlet==null))
-            servlet=getServlet();
-        if (servlet==null)
-            throw new UnavailableException("Could not instantiate "+_class);
 
-        return servlet;
+        Servlet servlet=_servlet;
+        if (servlet!=null && _unavailable==0)
+            return servlet;
+
+        synchronized(this)
+        {
+            servlet=_servlet;
+            if (servlet!=null)
+                return servlet;
+            if (_class == null)
+                throw new UnavailableException("Servlet Not Initialized");
+            if (_unavailable != 0 || (!_initOnStartup && servlet == null))
+                servlet = getServlet();
+            if (servlet == null)
+                throw new UnavailableException("Could not instantiate " + _class);
+
+            return servlet;
+        }
     }
 
     /* ------------------------------------------------------------ */
