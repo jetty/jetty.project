@@ -57,7 +57,7 @@ public class HttpConfiguration
     private int _headerCacheSize=512;
     private int _securePort;
     private long _idleTimeout=-1;
-    private long _blockingTimeout=-1;
+    private long _blockingTimeout= 10*60*1000;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true;
     private boolean _sendXPoweredBy = false;
@@ -240,8 +240,9 @@ public class HttpConfiguration
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
      * to the total operation (as opposed to the idle timeout that applies to the time no 
      * data is being sent).
-     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * @return -1, for no blocking timeout, 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
+     * By default the timeout is set to 10 minutes to avoid potential blocking.
      */
     @ManagedAttribute("Total timeout in ms for blocking I/O operations.")
     public long getBlockingTimeout()
@@ -253,8 +254,8 @@ public class HttpConfiguration
      * Set the timeout applied to blocking operations.
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
      * to the total operation (as opposed to the idle timeout that applies to the time no 
-     * data is being sent).
-     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * data is being sent). By default the timeout is set to 10 minutes to avoid potential blocking.
+     * @param blockingTimeout -1, for no blocking timeout (not recommended), 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     public void setBlockingTimeout(long blockingTimeout)
