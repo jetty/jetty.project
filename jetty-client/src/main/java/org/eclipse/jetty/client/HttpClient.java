@@ -729,7 +729,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public void setUserAgentField(HttpField agent)
     {
-        if (agent.getHeader() != HttpHeader.USER_AGENT)
+        if (agent != null && agent.getHeader() != HttpHeader.USER_AGENT)
             throw new IllegalArgumentException();
         this.agentField = agent;
     }
