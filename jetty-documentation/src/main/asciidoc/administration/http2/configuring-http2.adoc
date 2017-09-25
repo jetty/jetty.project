@@ -64,6 +64,6 @@ Currently there are very few HTTP/2 configuration properties and the default val
 [cols=",",options="header",]
 |=======================================================================
 |Property |Description
-|jetty.http2.maxConcurrentStreams |The maximum number of concurrently open streams allowed on a single HTTP/2 connection (default 1024). Larger values increase parallelism but cost a memory commitment.
+|jetty.http2.maxConcurrentStreams |The maximum number of concurrently open streams allowed on a single HTTP/2 connection (default 128). Larger values increase parallelism but cost a memory commitment.
 |jetty.http2.initialStreamRecvWindow |The initial receive flow control window size for a new stream (default 65535). Larger values may allow greater throughput but also risk head of line blocking if TCP/IP flow control is triggered.
 |=======================================================================
