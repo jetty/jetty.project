@@ -325,15 +325,14 @@ public class WebAppClassLoader extends URLClassLoader
      */
     public void addJars(Resource lib)
     {
-        if (lib.exists() && lib.isDirectory()) // TODO perhaps redundant given null check from list()?
+        if (lib.exists() && lib.isDirectory())
         {
             String[] files=lib.list();
-            if (files == null)
+            if (files != null)
             {
-                return;
+                Arrays.sort(files);
             }
-            Arrays.sort(files);
-            for (int f=0;f<files.length;f++)
+            for (int f=0;files!=null && f<files.length;f++)
             {
                 try 
                 {

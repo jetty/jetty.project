@@ -438,7 +438,7 @@ public class ResourceCollection extends Resource
                 set.add(s);
         }
         String[] result=set.toArray(new String[set.size()]);
-        Arrays.sort(result); // TODO still necessary?
+        Arrays.sort(result);
         return result;
     }
     

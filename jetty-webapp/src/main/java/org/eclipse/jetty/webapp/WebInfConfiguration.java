@@ -715,7 +715,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         List<Resource> jarResources = new ArrayList<Resource>();
         Resource web_inf_lib = web_inf.addPath("/lib");
-        if (web_inf_lib.exists() && web_inf_lib.isDirectory()) // TODO perhaps redundant given null check from list()?
+        if (web_inf_lib.exists() && web_inf_lib.isDirectory())
         {
             String[] files=web_inf_lib.list();
             if (files != null)
