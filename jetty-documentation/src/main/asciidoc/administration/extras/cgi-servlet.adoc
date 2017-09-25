@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.servlets.CGI`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/CGI.html
-* Xref: {JXURL}/org/eclipse/jetty/servlets/CGI.html
 
 [[cgi-servlet-usage]]
 ==== Usage

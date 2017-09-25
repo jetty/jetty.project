@@ -22,9 +22,7 @@
 
 * Classname: `org.eclipse.jetty.server.handler.StatisticsHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
-* Javadoc:
-{JDURL}/org/eclipse/jetty/server/handler/StatisticsHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/StatisticsHandler.html
+* Javadoc: {JDURL}/org/eclipse/jetty/server/handler/StatisticsHandler.html
 
 [[statistics-handler-usage]]
 ==== Usage

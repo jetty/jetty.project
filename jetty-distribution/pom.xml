@@ -157,7 +157,7 @@
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
-                  <destFileName>xref-proxy.war</destFileName>
+                  <destFileName>javadoc-proxy.war</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.example-async-rest</groupId>

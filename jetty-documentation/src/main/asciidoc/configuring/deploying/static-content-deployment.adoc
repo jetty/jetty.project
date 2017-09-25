@@ -39,4 +39,4 @@ Create a file called `scratch.xml` in the `${jetty.base}/webapps` directory and 
 ----
 
 This is a very basic setup for serving static files.
-For advanced static file serving, use the link:{JXURL}/org/eclipse/jetty/servlet/DefaultServlet.html[DefaultServlet].
+For advanced static file serving, use the link:{JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html[DefaultServlet].

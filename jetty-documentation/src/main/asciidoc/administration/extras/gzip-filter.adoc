@@ -24,7 +24,6 @@
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc:
 {JDURL}/org/eclipse/jetty/server/handler/gzip/GzipHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/gzip/GzipHandler.html
 
 [[gzip-filter-usage]]
 ==== Usage

@@ -23,7 +23,6 @@
 * Classname: `org.eclipse.jetty.server.handler.ErrorHandler`
 * Maven Artifact: org.eclipse.jetty:jetty-server
 * Javadoc: {JDURL}/org/eclipse/jetty/server/handler/ErrorHandler.html
-* Xref: {JXURL}/org/eclipse/jetty/server/handler/ErrorHandler.html
 
 [[error-handler-usage]]
 ==== Usage
