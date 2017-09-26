@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import javax.websocket.ClientEndpoint;
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -85,7 +86,21 @@ public class JavaxWebSocketLocalEndpointFactory
 
     public JavaxWebSocketLocalEndpoint createLocalEndpoint(Object endpointInstance, JavaxWebSocketSession session, WebSocketPolicy policy, Executor executor)
     {
-        JavaxWebSocketLocalEndpointMetadata metadata = getMetadata(endpointInstance.getClass());
+        Object endpoint;
+        EndpointConfig config;
+
+        if(endpointInstance instanceof ConfiguredEndpoint)
+        {
+            ConfiguredEndpoint configuredEndpoint = (ConfiguredEndpoint) endpointInstance;
+            endpoint = configuredEndpoint.getRawEndpoint();
+            config = configuredEndpoint.getConfig();
+        } else
+        {
+            endpoint = endpointInstance;
+            config = new BasicEndpointConfig();
+        }
+
+        JavaxWebSocketLocalEndpointMetadata metadata = getMetadata(endpoint.getClass());
 
         WebSocketPolicy endpointPolicy = policy.clonePolicy();
 

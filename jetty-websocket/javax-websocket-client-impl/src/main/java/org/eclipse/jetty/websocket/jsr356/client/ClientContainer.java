@@ -42,7 +42,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
@@ -98,20 +97,41 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
     {
         super(policy);
 
+        // TODO: adjust policy behavior to CLIENT ?
+
         this.httpClient = httpClient;
         this.objectFactory = new DecoratedObjectFactory();
 
+        // TODO: document system property
         String jsr356TrustAll = System.getProperty("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
-
-        // TODO: adjust policy behavior to CLIENT ?
-
-        if(jsr356TrustAll != null)
+        if (jsr356TrustAll != null)
         {
             boolean trustAll = Boolean.parseBoolean(jsr356TrustAll);
-            httpClient.getSslContextFactory().setTrustAll(trustAll);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("JSR356 ClientContainer SSL Trust-All: {}", trustAll);
+            }
+            this.httpClient.getSslContextFactory().setTrustAll(trustAll);
         }
-        
-        ShutdownThread.register(this);
+
+        // TODO: document system property
+        String connectTimeout = System.getProperty("org.eclipse.jetty.websocket.jsr356.connect-timeout");
+        if (connectTimeout != null)
+        {
+            try
+            {
+                int timeout = Integer.parseInt(connectTimeout);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("JSR356 ClientContainer Connect Timeout: {}", timeout);
+                }
+                this.httpClient.setConnectTimeout(timeout);
+            }
+            catch (NumberFormatException e)
+            {
+                LOG.warn("Invalid Connect Timeout: " + connectTimeout, e);
+            }
+        }
     }
 
     public JavaxWebSocketSession createSession(JavaxWebSocketClientConnection connection, Object endpointInstance)
@@ -150,24 +170,24 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
                 }
             }
         }
-        
-        Objects.requireNonNull(instance,"EndpointInstance cannot be null");
-        Objects.requireNonNull(destURI,"Destination URI cannot be null");
 
-        ClientEndpointConfig config = (ClientEndpointConfig)instance.getConfig();
+        Objects.requireNonNull(instance, "EndpointInstance cannot be null");
+        Objects.requireNonNull(destURI, "Destination URI cannot be null");
+
+        ClientEndpointConfig config = (ClientEndpointConfig) instance.getConfig();
         ClientUpgradeRequest req = new ClientUpgradeRequest(this, destURI);
         ClientUpgradeListener upgradeListener = null;
-        
+
         for (Extension ext : config.getExtensions())
         {
             req.addExtensions(new JavaxWebSocketExtensionConfig(ext));
         }
-        
+
         if (config.getPreferredSubprotocols().size() > 0)
         {
             req.setSubProtocols(config.getPreferredSubprotocols());
         }
-        
+
         if (config.getConfigurator() != null)
         {
             upgradeListener = new JsrUpgradeListener(config.getConfigurator());
@@ -203,8 +223,6 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
         req.setWebSocket(instance);
         req.setUpgradeListener(upgradeListener);
 
-        // TODO: set connect timeout?
-
         Future<JavaxWebSocketSession> futSess = req.sendAsync();
         try
         {
@@ -219,7 +237,7 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
         {
             // Unwrap Actual Cause
             Throwable cause = e.getCause();
-            
+
             if (cause instanceof IOException)
             {
                 // Just rethrow
@@ -231,7 +249,7 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
             }
         }
     }
-    
+
     @Override
     public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws DeploymentException, IOException
     {
@@ -243,14 +261,14 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
         ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, clientEndpointConfig);
         return connect(instance, path);
     }
-    
+
     @Override
     public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
     {
         ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new EmptyClientEndpointConfig());
         return connect(instance, path);
     }
-    
+
     @Override
     public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig config, final URI path) throws DeploymentException, IOException
     {
@@ -262,21 +280,14 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
         ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, clientEndpointConfig);
         return connect(instance, path);
     }
-    
+
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
         ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, new EmptyClientEndpointConfig());
         return connect(instance, path);
     }
-    
-    @Override
-    protected void doStop() throws Exception
-    {
-        ShutdownThread.deregister(this);
-        super.doStop();
-    }
-    
+
     @Override
     public long getDefaultMaxSessionIdleTimeout()
     {
@@ -288,13 +299,13 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
     {
         return httpClient.getByteBufferPool();
     }
-    
+
     @Override
     public Executor getExecutor()
     {
         return httpClient.getExecutor();
     }
-    
+
     private ConfiguredEndpoint newConfiguredEndpoint(Class<?> endpointClass, EndpointConfig config)
     {
         try
@@ -306,26 +317,26 @@ public class ClientContainer extends JavaxWebSocketContainer implements javax.we
             throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getClass());
         }
     }
-    
+
     public ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException
     {
         EndpointConfig config = providedConfig;
-        
+
         if (config == null)
         {
             config = newEmptyConfig(endpoint);
         }
-        
+
         config = readAnnotatedConfig(endpoint, config);
-        
+
         return new ConfiguredEndpoint(endpoint, config);
     }
-    
+
     protected EndpointConfig newEmptyConfig(Object endpoint)
     {
         return new EmptyClientEndpointConfig();
     }
-    
+
     protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
     {
         ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);

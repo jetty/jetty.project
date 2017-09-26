@@ -33,7 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.tests.client.jsr356.misbehaving.AnnotatedRuntimeOnOpen;
 import org.eclipse.jetty.websocket.tests.client.jsr356.misbehaving.EndpointRuntimeOnOpen;
 import org.junit.AfterClass;
@@ -122,7 +122,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         AnnotatedRuntimeOnOpen socket = new AnnotatedRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnOpen.class, WebSocketSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(AnnotatedRuntimeOnOpen.class, JavaxWebSocketSession.class))
         {
             // expecting IOException during onOpen
             expectedException.expect(IOException.class);

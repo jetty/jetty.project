@@ -64,6 +64,11 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
         this.pongHandle = pongHandle;
     }
 
+    public MessageSink getBinarySink()
+    {
+        return binarySink;
+    }
+
     public Object getEndpointInstance()
     {
         return endpointInstance;
