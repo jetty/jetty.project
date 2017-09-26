@@ -93,7 +93,8 @@ public class WebDescriptor extends Descriptor
                 URL javaee5=Loader.getResource("javax/servlet/resources/javaee_5.xsd");
                 URL javaee6=Loader.getResource("javax/servlet/resources/javaee_6.xsd");
                 URL javaee7=Loader.getResource("javax/servlet/resources/javaee_7.xsd");
-
+                URL javaee8=Loader.getResource("javax/servlet/resources/javaee_8.xsd");
+                
                 URL webapp24xsd=Loader.getResource("javax/servlet/resources/web-app_2_4.xsd");
                 URL webapp25xsd=Loader.getResource("javax/servlet/resources/web-app_2_5.xsd");
                 URL webapp30xsd=Loader.getResource("javax/servlet/resources/web-app_3_0.xsd");
@@ -163,6 +164,7 @@ public class WebDescriptor extends Descriptor
                 redirectEntity( "http://java.sun.com/xml/ns/javaee/javaee_5.xsd",javaee5);
                 redirectEntity( "http://java.sun.com/xml/ns/javaee/javaee_6.xsd",javaee6);
                 redirectEntity( "http://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd",javaee7);
+                redirectEntity( "http://xmlns.jcp.org/xml/ns/javaee/javaee_8.xsd",javaee8);
                 
                 redirectEntity("web-common_3_0.xsd",webcommon30xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd",webcommon30xsd);
