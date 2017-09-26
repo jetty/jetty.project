@@ -288,7 +288,9 @@ public class HTTP2CServerTest extends AbstractServerTest
     {
         AtomicLong fills = new AtomicLong();
         // Remove "h2c", leaving only "http/1.1".
-        connector.clearConnectionFactories();
+        connector.stop();
+        connector.removeConnectionFactory("h2c");
+        connector.start();
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory()
         {
             @Override
@@ -306,8 +308,10 @@ public class HTTP2CServerTest extends AbstractServerTest
                 return configure(connection, connector, endPoint);
             }
         };
+        connector.stop();
         connector.addConnectionFactory(connectionFactory);
         connector.setDefaultProtocol(connectionFactory.getProtocol());
+        connector.start();
 
         // Now send a HTTP/2 direct request, which
         // will have the PRI * HTTP/2.0 preface.

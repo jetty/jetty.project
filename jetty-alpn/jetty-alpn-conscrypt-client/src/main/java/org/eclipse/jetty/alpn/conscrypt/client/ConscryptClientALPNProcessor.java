@@ -59,7 +59,7 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
     {
         try
         {
-            Method setAlpnProtocols = sslEngine.getClass().getDeclaredMethod("setAlpnProtocols", String[].class);
+            Method setAlpnProtocols = sslEngine.getClass().getDeclaredMethod("setApplicationProtocols", String[].class);
             setAlpnProtocols.setAccessible(true);
             ALPNClientConnection alpn = (ALPNClientConnection)connection;
             String[] protocols = alpn.getProtocols().toArray(new String[0]);
@@ -92,9 +92,9 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
             try
             {
                 SSLEngine sslEngine = alpnConnection.getSSLEngine();
-                Method method = sslEngine.getClass().getDeclaredMethod("getAlpnSelectedProtocol");
+                Method method = sslEngine.getClass().getDeclaredMethod("getApplicationProtocol");
                 method.setAccessible(true);
-                String protocol = new String((byte[])method.invoke(sslEngine), StandardCharsets.US_ASCII);
+                String protocol = (String)method.invoke(sslEngine);
                 alpnConnection.selected(protocol);
             }
             catch (Throwable e)
