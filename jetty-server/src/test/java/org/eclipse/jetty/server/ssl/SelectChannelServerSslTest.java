@@ -119,14 +119,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullHeader() throws Exception
     {
-        try
-        {
-            super.testFullHeader();
-        }
-        catch (SocketException|SSLException e)
-        {
-            Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-        }
+        super.testFullHeader();
     }
 
     @Before
@@ -168,7 +161,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
