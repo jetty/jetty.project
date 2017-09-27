@@ -68,6 +68,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.log.Log;
@@ -100,6 +101,7 @@ public class RequestTest
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         _connector = new LocalConnector(_server,http);
         _server.addConnector(_connector);
+        _connector.setIdleTimeout(500);
         _handler = new RequestHandler();
         _server.setHandler(_handler);
         
@@ -176,6 +178,39 @@ public class RequestTest
         String responses=_connector.getResponse(request);
         assertThat("Responses", responses, startsWith("HTTP/1.1 400"));
     }
+
+
+    @Test
+    public void testParamExtraction_Timeout() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                Map<String, String[]> map = request.getParameterMap();
+                // should have thrown a BadMessageException
+                return false;
+            }
+        };
+
+        //Send a request with query string with illegal hex code to cause
+        //an exception parsing the params
+        String request="POST / HTTP/1.1\r\n"+
+                       "Host: whatever\r\n"+
+                       "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\n"+
+                       "Connection: close\n"+
+                       "Content-Length: 100\n"+
+                       "\n"+
+                       "name=value";
+
+        LocalEndPoint endp = _connector.connect();
+        endp.addInput(request);
+
+        String response = BufferUtil.toString(endp.waitForResponse(false, 1, TimeUnit.SECONDS));
+        assertThat("Responses", response, startsWith("HTTP/1.1 500"));
+    }
+
 
     @Test
     public void testEmptyHeaders() throws Exception
