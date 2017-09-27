@@ -555,5 +555,11 @@ public class ServerConnector extends AbstractNetworkConnector
             onEndPointClosed(endpoint);
             super.endPointClosed(endpoint);
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("SelectorManager@%s",ServerConnector.this);
+        }
     }
 }

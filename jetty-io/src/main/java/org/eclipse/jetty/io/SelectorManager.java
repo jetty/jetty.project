@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadBudget;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
@@ -295,13 +296,15 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     protected void doStart() throws Exception
     {
-        addBean(new ReservedThreadExecutor(getExecutor(),_reservedThreads),true);
+        addBean(new ReservedThreadExecutor(getExecutor(),_reservedThreads,this),true);
+
         for (int i = 0; i < _selectors.length; i++)
         {
             ManagedSelector selector = newSelector(i);
             _selectors[i] = selector;
             addBean(selector);
         }
+
         super.doStart();
     }
 
