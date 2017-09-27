@@ -911,7 +911,7 @@ Some examples of elements with origin attribute information are:
 <servlet-class origin="@WebServlet(com.acme.test.TestServlet):24">
 ----
 
-To generate origin informatino, use the following configuration parameters on the  `webApp` element:
+To generate origin information, use the following configuration parameters on the  `webApp` element:
 
 originAttribute::
 The name of the attribute that will contain the origin.
@@ -923,7 +923,7 @@ False by default. If true, will force the generation of the originAttribute onto
 [[using-overlaid-wars]]
 ==== Using Overlaid wars
 
-If your webapp depends on other war files, thelink:#jetty-run-goal[jetty:run] and link:#jetty-run-forked-goal[jetty:run-forked] goals are able to merge resources from all of them.
+If your webapp depends on other war files, the link:#jetty-run-goal[jetty:run] and link:#jetty-run-forked-goal[jetty:run-forked] goals are able to merge resources from all of them.
 It can do so based on the settings of the http://maven.apache.org/plugins/maven-war-plugin/[maven-war-plugin], or if your project does not use the http://maven.apache.org/plugins/maven-war-plugin/[maven-war-plugin] to handle the overlays, it can fall back to a simple algorithm to determine the ordering of resources.
 
 ===== With maven-war-plugin
@@ -1108,6 +1108,8 @@ Here is a configuration example:
 [[running-more-than-one-webapp]]
 ==== Running More than One Webapp
 
+===== With jetty:run
+
 You can use either a `jetty.xml` file to configure extra (pre-compiled) webapps that you want to deploy, or you can use the `<contextHandlers>` configuration element to do so.
 If you want to deploy webapp A, and webapps B and C in the same Jetty instance:
 
@@ -1190,6 +1192,10 @@ Then configure the location of this `jetty.xml` file into webapp A's jetty plugi
 
 For either of these solutions, the other webapps must already have been built, and they are not automatically monitored for changes.
 You can refer either to the packed WAR file of the pre-built webapps or to their expanded equivalents.
+
+===== With jetty:run-distro
+
+Simply configure a jetty base that contains all of the other prebuilt webapps you wish to deploy.
 
 [[setting-system-properties]]
 ==== Setting System Properties
