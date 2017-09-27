@@ -45,6 +45,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     private int _head;
     private int _size;
     private int _pending;
+    private ThreadBudget.Lease _lease;
+    private Object _owner;
 
     public ReservedThreadExecutor(Executor executor)
     {
@@ -59,23 +61,41 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
      */
     public ReservedThreadExecutor(Executor executor,int capacity)
     {
+        this(executor,capacity,null);
+    }
+
+    /**
+     * @param executor The executor to use to obtain threads
+     * @param capacity The number of threads to preallocate. If less than 0 then capacity
+     * is calculated based on a heuristic from the number of available processors and
+     * thread pool size.
+     */
+    public ReservedThreadExecutor(Executor executor,int capacity, Object owner)
+    {
         _executor = executor;
+        _queue = new ReservedThread[reservedThreads(executor,capacity)];
+        _owner = owner;
+    }
 
-        if (capacity < 0)
+    /**
+     * @param executor The executor to use to obtain threads
+     * @param capacity The number of threads to preallocate, If less than 0 then capacity
+     * is calculated based on a heuristic from the number of available processors and
+     * thread pool size.
+     * @return the number of reserved threads that would be used by a ReservedThreadExecutor
+     * constructed with these arguments.
+     */
+    public static int reservedThreads(Executor executor,int capacity)
+    {
+        if (capacity>=0)
+            return capacity;
+        int cpus = Runtime.getRuntime().availableProcessors();
+        if (executor instanceof ThreadPool.SizedThreadPool)
         {
-            int cpus = Runtime.getRuntime().availableProcessors();
-            if (executor instanceof ThreadPool.SizedThreadPool)
-            {
-                int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
-                capacity = Math.max(1, Math.min(cpus, threads / 8));
-            }
-            else
-            {
-                capacity = cpus;
-            }
+            int threads = ((ThreadPool.SizedThreadPool)executor).getMaxThreads();
+            return Math.max(1, Math.min(cpus, threads / 8));
         }
-
-        _queue = new ReservedThread[capacity];
+        return cpus;
     }
 
     public Executor getExecutor()
@@ -108,8 +128,17 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     }
 
     @Override
+    public void doStart() throws Exception
+    {
+        _lease = ThreadBudget.leaseFrom(getExecutor(),this,_queue.length);
+        super.doStart();
+    }
+
+    @Override
     public void doStop() throws Exception
     {
+        if (_lease!=null)
+            _lease.close();
         try (Locker.Lock lock = _locker.lock())
         {
             while (_size>0)
@@ -179,7 +208,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     {
         try (Locker.Lock lock = _locker.lock())
         {
-            return String.format("%s{s=%d,p=%d}",super.toString(),_size,_pending);
+            if (_owner==null)
+                return String.format("%s@%x{s=%d,p=%d}",this.getClass().getSimpleName(),hashCode(),_size,_pending);
+            return String.format("%s@%s{s=%d,p=%d}",this.getClass().getSimpleName(),_owner,_size,_pending);
         }
     }
 

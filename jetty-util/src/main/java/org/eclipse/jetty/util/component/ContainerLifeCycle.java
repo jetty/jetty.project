@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -198,6 +200,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      * @param bean the bean to test
      * @return whether this aggregate contains and manages the bean
      */
+    @Override
     public boolean isManaged(Object bean)
     {
         for (Bean b : _beans)
@@ -761,6 +764,19 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             return _managed==Managed.MANAGED;
         }
 
+        public boolean isManageable()
+        {
+            switch(_managed)
+            {
+                case MANAGED:
+                    return true;
+                case AUTO:
+                    return _bean instanceof LifeCycle && ((LifeCycle)_bean).isStopped();
+                default:
+                    return false;
+            }
+        }
+
         @Override
         public String toString()
         {
@@ -819,6 +835,40 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                             continue loop;
                 }
                 addBean(n);
+            }
+        }
+    }
+
+
+    /**
+     * @param clazz the class of the beans
+     * @return the list of beans of the given class from the entire managed hierarchy
+     * @param <T> the Bean type
+     */
+    public <T> Collection<T> getContainedBeans(Class<T> clazz)
+    {
+        Set<T> beans = new HashSet<>();
+        getContainedBeans(clazz, beans);
+        return beans;
+    }
+
+    /**
+     * @param clazz the class of the beans
+     * @param <T> the Bean type
+     * @param beans the collection to add beans of the given class from the entire managed hierarchy
+     */
+    protected <T> void getContainedBeans(Class<T> clazz, Collection<T> beans)
+    {
+        beans.addAll(getBeans(clazz));
+        for (Container c : getBeans(Container.class))
+        {
+            Bean bean = getBean(c);
+            if (bean!=null && bean.isManageable())
+            {
+                if (c instanceof ContainerLifeCycle)
+                    ((ContainerLifeCycle)c).getContainedBeans(clazz, beans);
+                else
+                    beans.addAll(c.getContainedBeans(clazz));
             }
         }
     }

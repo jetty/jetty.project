@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * A Jetty server with multiple connectors.
@@ -46,12 +47,14 @@ public class ManyConnectors
         // probably be a direct path to your own keystore.
 
         String jettyDistKeystore = "../../jetty-distribution/target/distribution/demo-base/etc/keystore";
-        String keystorePath = System.getProperty(
-                "example.keystore", jettyDistKeystore);
+        String keystorePath = System.getProperty("example.keystore", jettyDistKeystore);
         File keystoreFile = new File(keystorePath);
         if (!keystoreFile.exists())
         {
-            throw new FileNotFoundException(keystoreFile.getAbsolutePath());
+            keystorePath = "jetty-distribution/target/distribution/demo-base/etc/keystore";
+            keystoreFile = new File(keystorePath);
+            if (!keystoreFile.exists())
+                throw new FileNotFoundException(keystoreFile.getAbsolutePath());
         }
 
         // Create a basic jetty server object without declaring the port. Since

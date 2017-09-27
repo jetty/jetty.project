@@ -67,9 +67,14 @@ public interface ThreadPool extends Executor
     /* ------------------------------------------------------------ */
     public interface SizedThreadPool extends ThreadPool
     {
-        public int getMinThreads();
-        public int getMaxThreads();
-        public void setMinThreads(int threads);
-        public void setMaxThreads(int threads);
+        int getMinThreads();
+        int getMaxThreads();
+        void setMinThreads(int threads);
+        void setMaxThreads(int threads);
+
+        default ThreadBudget getThreadBudget()
+        {
+            return null;
+        }
     }
 }
