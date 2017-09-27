@@ -80,6 +80,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -132,6 +133,9 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link ContextHandler#getMaxFormContentSize()} or if there is no context then the "org.eclipse.jetty.server.Request.maxFormContentSize" {@link Server}
  * attribute. The number of parameters keys is limited by {@link ContextHandler#getMaxFormKeys()} or if there is no context then the
  * "org.eclipse.jetty.server.Request.maxFormKeys" {@link Server} attribute.
+ * </p>
+ * <p>If IOExceptions or timeouts occur while reading form parameters, these are thrown as unchecked Exceptions: ether {@link RuntimeIOException},
+ * {@link BadMessageException} or {@link RuntimeException} as appropriate.</p>
  */
 public class Request implements HttpServletRequest
 {
@@ -522,10 +526,8 @@ public class Request implements HttpServletRequest
         }
         catch (IOException e)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn(e);
-            else
-                LOG.warn(e.toString());
+            LOG.debug(e);
+            throw new RuntimeIOException(e);
         }
     }
 
@@ -538,8 +540,8 @@ public class Request implements HttpServletRequest
         }
         catch (IOException | ServletException e)
         {
-            LOG.warn(e);
-            throw new RuntimeException(e);
+            LOG.debug(e);
+            throw new RuntimeIOException(e);
         }
     }
 

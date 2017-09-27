@@ -362,28 +362,100 @@ You define a `JDBCLoginService` with the name of the realm and the location of t
 
 [source, xml, subs="{sub-order}"]
 ----
-
 <New class="org.eclipse.jetty.security.JDBCLoginService">
   <Set name="name">Test JDBC Realm</Set>
   <Set name="config">etc/jdbcRealm.properties</Set>
 </New>
-
 ----
 
 ==== Authorization
 
-As far as the http://jcp.org/aboutJava/communityprocess/final/jsr340/[Servlet Specification] is concerned, authorization is based on roles.
-As we have seen, a LoginService associates a user with a set of roles.
-When a user requests a resource that is access protected, the LoginService will be asked to authenticate the user if they are not already, and then asked to confirm if that user possesses one of the roles permitted access to the resource.
+As far as the https://jcp.org/en/jsr/detail?id=340[Servlet Specification] is concerned, authorization is based on roles.
+As we have seen, a `LoginService` associates a user with a set of roles.
+When a user requests a resource that is access protected, the `LoginService` will be asked to authenticate the user if they are not already, and then asked to confirm if that user possesses one of the roles permitted access to the resource.
 
 Until Servlet 3.1, role-based authorization could define:
 
-* Access granted to a set of named roles
-* Access totally forbidden, regardless of role
-* Access granted to a user in any of the roles defined in the effective web.xml.
-This is indicated by the special value of `*` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`
+* Access granted to a set of named roles:
 
-With the advent of Servlet 3.1, there is now another authorization:
+[source, xml, subs="{sub-order}"]
+----
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>Foo Admin Data</web-resource-name>
+    <url-pattern>/foo/admin/*</url-pattern>
+  </web-resource-collection>
+  <auth-constraint>
+    <role-name>admin</role-name>
+    <role-name>manager</role-name>
+  </auth-constraint>
+</security-constraint>
+----
+
+* Access totally forbidden, regardless of role:
+
+[source, xml, subs="{sub-order}"]
+----
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>Foo Protected Data</web-resource-name>
+    <url-pattern>/foo/protected/*</url-pattern>
+  </web-resource-collection>
+  <auth-constraint>
+  </auth-constraint>
+</security-constraint>
+----
+* Access granted to a user in any of the roles defined in the effective `web.xml`.
+This is indicated by the special value of `*` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`:
+
+[source, xml, subs="{sub-order}"]
+----
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>Foo Role Data</web-resource-name>
+    <url-pattern>/foo/role/*</url-pattern>
+  </web-resource-collection>
+  <auth-constraint>
+    <role-name>*</role-name>
+  </auth-constraint>
+</security-constraint>
+----
+
+Servlet 3.1 introduced an additional authorization:
 
 * Access granted to any user who is authenticated, regardless of roles.
-This is indicated by the special value of `**` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`
+This is indicated by the special value of `**` for the `<role-name>` of a `<auth-constraint>` in the `<security-constraint>`:
+
+[source, xml, subs="{sub-order}"]
+----
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>Foo Authenticated Data</web-resource-name>
+    <url-pattern>/foo/authenticated/*</url-pattern>
+  </web-resource-collection>
+  <auth-constraint>
+    <role-name>**</role-name>
+  </auth-constraint>
+</security-constraint>
+----
+
+Additionally, when configuring your security constraints you can protect various HTTP methods as well, such as `PUT`, `GET`, `POST`, `HEAD` or `DELETE`.
+This is done by adding the method you want to protect as a `<http-method>` in the `<web-resource-collection>`.
+You can then define roles that should be able to perform these protected methods in an `<auth-constraint>`:
+
+[source, xml, subs="{sub-order}"]
+----
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>Foo Authenticated Data</web-resource-name>
+    <url-pattern>/foo/authenticated/*</url-pattern>
+    <http-method>DELETE</http-method>
+    <http-method>POST</http-method>
+  </web-resource-collection>
+  <auth-constraint>
+    <role-name>admin</role-name>
+  </auth-constraint>
+</security-constraint>
+----
+
+In the above example, only users with an `admin` role will be able to perform `DELETE` or `POST` methods.

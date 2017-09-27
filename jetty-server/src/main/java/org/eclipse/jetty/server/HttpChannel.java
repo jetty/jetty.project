@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -522,7 +523,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);
         }
-        else if (failure instanceof BadMessageException)
+        else if (failure instanceof BadMessageException | failure instanceof IOException | failure instanceof TimeoutException)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(_request.getRequestURI(), failure);

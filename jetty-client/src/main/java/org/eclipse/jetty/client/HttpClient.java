@@ -73,6 +73,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadBudget;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**

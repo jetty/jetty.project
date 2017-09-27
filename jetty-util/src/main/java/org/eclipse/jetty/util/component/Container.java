@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -45,6 +48,7 @@ public interface Container
      * @return the list of beans of the given class (or subclass)
      * @param <T> the Bean type
      * @see #getBeans()
+     * @see #getContainedBeans(Class)
      */
     public <T> Collection<T> getBeans(Class<T> clazz);
 
@@ -93,6 +97,14 @@ public interface Container
      */
     void manage(Object bean);
 
+
+    /**
+     * Test if this container manages a bean
+     * @param bean the bean to test
+     * @return whether this aggregate contains and manages the bean
+     */
+    boolean isManaged(Object bean);
+
     /**
      * Adds the given bean, explicitly managing it or not.
      *
@@ -121,4 +133,11 @@ public interface Container
     public interface InheritedListener extends Listener
     {
     }
+
+    /**
+     * @param clazz the class of the beans
+     * @return the list of beans of the given class from the entire managed hierarchy
+     * @param <T> the Bean type
+     */
+    public <T> Collection<T> getContainedBeans(Class<T> clazz);
 }
