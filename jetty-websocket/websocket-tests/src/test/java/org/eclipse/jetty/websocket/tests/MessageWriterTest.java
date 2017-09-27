@@ -23,6 +23,8 @@ import static org.hamcrest.Matchers.is;
 import java.net.URI;
 import java.util.Arrays;
 
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -45,8 +47,7 @@ public class MessageWriterTest
     @Rule
     public TestName testname = new TestName();
 
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
 
     private WebSocketPolicy policy;
     private TrackingEndpoint remoteSocket;

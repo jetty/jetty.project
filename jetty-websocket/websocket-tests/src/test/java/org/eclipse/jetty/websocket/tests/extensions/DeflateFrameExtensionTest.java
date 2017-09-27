@@ -33,6 +33,8 @@ import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,18 +58,15 @@ import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.tests.CapturedHexPayloads;
 import org.eclipse.jetty.websocket.tests.IncomingFramesCapture;
-import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.OutgoingNetworkBytesCapture;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
     private static final Logger LOG = Log.getLogger(DeflateFrameExtensionTest.class);
-    
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+
+    public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
 
     private void assertIncoming(byte[] raw, String... expectedTextDatas)
     {

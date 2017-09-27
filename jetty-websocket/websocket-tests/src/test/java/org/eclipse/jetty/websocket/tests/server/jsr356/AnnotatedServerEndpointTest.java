@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -30,7 +32,6 @@ import org.eclipse.jetty.websocket.api.WebSocketConstants;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.LocalFuzzer;
 import org.eclipse.jetty.websocket.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.tests.WSServer;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.websocket.tests.server.jsr356.configs.EchoSocketConfigu
 import org.eclipse.jetty.websocket.tests.server.jsr356.sockets.ConfiguredEchoSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -48,8 +48,7 @@ import org.junit.Test;
  */
 public class AnnotatedServerEndpointTest
 {
-    @Rule
-    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
+    public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
     
     private static WSServer server;
     
