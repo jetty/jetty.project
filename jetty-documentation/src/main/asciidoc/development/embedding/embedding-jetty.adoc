@@ -227,7 +227,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/One
 
 The typical way to configure an instance of the Jetty server is via `jetty.xml` and associated configuration files.
 However the Jetty XML configuration format is just a simple rendering of what you can do in code; it is very simple to write embedded code that does precisely what the jetty.xml configuration does.
-The link:{JDURL}/org/eclipse/jetty/embedded/LikeJettyXml.html[LikeJettyXml example] following renders in code the behavior obtained from the configuration files:
+The link:{GITBROWSEURL}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/LikeJettyXml.java[LikeJettyXml example] following renders in code the behavior obtained from the configuration files:
 
 * link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty.xml[jetty.xml]
 * link:{GITBROWSEURL}/jetty-jmx/src/main/config/etc/jetty-jmx.xml[jetty-jmx.xml]

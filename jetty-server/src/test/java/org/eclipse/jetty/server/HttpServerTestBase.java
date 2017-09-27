@@ -357,7 +357,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
              StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
         {
-            Log.getLogger(HttpConnection.class).info("expect header is too large, then ISE extra data ...");
+            Log.getLogger(HttpConnection.class).info("expect header is too large ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -379,9 +379,16 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             buffer[15]='H';
             buffer[16]=':';
             Arrays.fill(buffer,17,buffer.length-1,(byte)'A');
-
-            os.write(buffer);
-            os.flush();
+            // write the request.
+            try
+            {
+                os.write(buffer);
+                os.flush();
+            }
+            catch(Exception e)
+            {
+                // Ignore exceptions during writing, so long as we can read response below
+            }
 
             // Read the response.
             try
@@ -391,7 +398,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
             catch(Exception e)
             {
-                // TODO evaluate why we sometimes get an early close on this test
+                Log.getLogger(HttpServerTestBase.class).warn("TODO Early close???");
+                // TODO #1832 evaluate why we sometimes get an early close on this test
             }
         }
     }

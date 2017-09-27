@@ -15,7 +15,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.java.client</bundle-symbolic-name>
-    <conscrypt.version>1.0.0.RC10</conscrypt.version>
+    <conscrypt.version>1.0.0.RC11</conscrypt.version>
   </properties>
 
   <dependencies>

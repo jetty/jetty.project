@@ -136,7 +136,7 @@ Here's an example of an xml file that defines an in-memory type of LoginService 
       <New class="org.eclipse.jetty.security.HashLoginService">
         <Set name="name">Test Realm</Set>
         <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
-        <Set name="refreshInterval">0</Set>
+        <Set name="hotReload">true</Set>
       </New>
     </Arg>
   </Call>
@@ -264,8 +264,7 @@ You configure the `HashLoginService` with a name and a reference to the location
 
 ----
 
-You can also configure it to check the properties file regularly for changes and reload when changes are detected.
-The `reloadInterval` is in seconds:
+You can also configure it to reload the configuration file when changes to it are detected.
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -273,7 +272,7 @@ The `reloadInterval` is in seconds:
 <New class="org.eclipse.jetty.security.HashLoginService">
     <Set name="name">Test Realm</Set>
     <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
-    <Set name="reloadInterval">5</Set>
+    <Set name="hotReload">true</Set>
     <Call name="start"></Call>
   </New>
 

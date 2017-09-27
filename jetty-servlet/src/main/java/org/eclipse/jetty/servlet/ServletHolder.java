@@ -81,11 +81,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private ServletRegistration.Dynamic _registration;
     private JspContainer _jspContainer;
 
-    private transient Servlet _servlet;
-    private transient Config _config;
-    private transient long _unavailable;
-    private transient boolean _enabled = true;
-    private transient UnavailableException _unavailableEx;
+    private Servlet _servlet;
+    private long _unavailable;
+    private Config _config;
+    private boolean _enabled = true;
+    private UnavailableException _unavailableEx;
 
 
     public static final String APACHE_SENTINEL_CLASS = "org.apache.tomcat.InstanceManager";
@@ -400,9 +400,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         _config=new Config();
 
-        if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
-            _servlet = new SingleThreadedWrapper();
-
+        synchronized (this)
+        {
+            if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
+                _servlet = new SingleThreadedWrapper();
+        }
     }
 
 
@@ -485,18 +487,38 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public synchronized Servlet getServlet()
         throws ServletException
     {
-        // Handle previous unavailability
-        if (_unavailable!=0)
-        {
-            if (_unavailable<0 || _unavailable>0 && System.currentTimeMillis()<_unavailable)
-                throw _unavailableEx;
-            _unavailable=0;
-            _unavailableEx=null;
-        }
+        Servlet servlet=_servlet;
+        if (servlet!=null && _unavailable==0)
+            return servlet;
 
-        if (_servlet==null)
-            initServlet();
-        return _servlet;
+        synchronized(this)
+        {
+            // Handle previous unavailability
+            if (_unavailable!=0)
+            {
+                if (_unavailable<0 || _unavailable>0 && System.currentTimeMillis()<_unavailable)
+                    throw _unavailableEx;
+                _unavailable=0;
+                _unavailableEx=null;
+            }
+
+            servlet=_servlet;
+            if (servlet!=null)
+                return servlet;
+
+            if (isRunning())
+            {
+                if (_class == null)
+                    throw new UnavailableException("Servlet Not Initialized");
+                if (_unavailable != 0 || !_initOnStartup)
+                    initServlet();
+                servlet=_servlet;
+                if (servlet == null)
+                    throw new UnavailableException("Could not instantiate " + _class);
+            }
+
+            return servlet;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -505,7 +527,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public Servlet getServletInstance()
     {
-        return _servlet;
+        Servlet servlet=_servlet;
+        if (servlet!=null)
+            return servlet;
+        synchronized(this)
+        {
+            return _servlet;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -528,7 +556,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public boolean isAvailable()
     {
-        if (isStarted()&& _unavailable==0)
+        if (isStarted() && _unavailable==0)
             return true;
         try
         {
@@ -539,7 +567,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             LOG.ignore(e);
         }
 
-        return isStarted()&& _unavailable==0;
+        return isStarted() && _unavailable==0;
     }
 
     /* ------------------------------------------------------------ */
@@ -604,7 +632,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    private void initServlet()
+    private synchronized void initServlet()
         throws ServletException
     {
         Object old_run_as = null;
@@ -767,26 +795,17 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     protected void prepare (Request baseRequest, ServletRequest request, ServletResponse response)
     throws ServletException, UnavailableException
     {
-        ensureInstance();
+        getServlet();
         MultipartConfigElement mpce = ((Registration)getRegistration()).getMultipartConfig();
         if (mpce != null)
             baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
     }
 
-    public synchronized Servlet ensureInstance()
-    throws ServletException, UnavailableException
+    @Deprecated
+    public Servlet ensureInstance()
+            throws ServletException, UnavailableException
     {
-        if (_class==null)
-            throw new UnavailableException("Servlet Not Initialized");
-        Servlet servlet=_servlet;
-        if (!isStarted())
-            throw new UnavailableException("Servlet not initialized", -1);
-        if (_unavailable!=0 || (!_initOnStartup && servlet==null))
-            servlet=getServlet();
-        if (servlet==null)
-            throw new UnavailableException("Could not instantiate "+_class);
-
-        return servlet;
+        return getServlet();
     }
 
     /* ------------------------------------------------------------ */
@@ -810,7 +829,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_class==null)
             throw new UnavailableException("Servlet Not Initialized");
 
-        Servlet servlet = ensureInstance();
+        Servlet servlet = getServlet();
 
         // Service the request
         Object old_run_as = null;
@@ -855,26 +874,23 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
 
     /* ------------------------------------------------------------ */
-    private boolean isJspServlet ()
+    protected boolean isJspServlet ()
     {
-        if (_servlet == null)
-            return false;
+        Servlet servlet = getServletInstance();
+        Class<?> c = servlet==null?_class:servlet.getClass();
 
-        Class<?> c = _servlet.getClass();
-
-        boolean result = false;
-        while (c != null && !result)
+        while (c != null)
         {
-            result = isJspServlet(c.getName());
+            if (isJspServlet(c.getName()))
+                return true;
             c = c.getSuperclass();
         }
-
-        return result;
+        return false;
     }
 
 
     /* ------------------------------------------------------------ */
-    private boolean isJspServlet (String classname)
+    protected boolean isJspServlet (String classname)
     {
         if (classname == null)
             return false;

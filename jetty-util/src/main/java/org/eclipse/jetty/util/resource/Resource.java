@@ -447,8 +447,8 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     /**
      * list of resource names contained in the given resource.
-     * 
-     * @return a list of resource names contained in the given resource.
+     * Ordering is unspecified, so callers may wish to sort the return value to ensure deterministic behavior.
+     * @return a list of resource names contained in the given resource, or null.
      * Note: The resource names are not URL encoded.
      */
     public abstract String[] list();
