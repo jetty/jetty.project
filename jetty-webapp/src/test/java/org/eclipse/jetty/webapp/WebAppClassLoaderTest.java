@@ -22,10 +22,13 @@ import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
+import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URI;
@@ -34,10 +37,12 @@ import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Before;
@@ -356,6 +361,28 @@ public class WebAppClassLoaderTest
         
         assertThat("Resources Found (Parent Loader Priority == true) (with systemClasses filtering)",resources,ordered(expected));
         
+    }
+
+    @Test
+    public void ordering() throws Exception
+    {
+        // The existence of a URLStreamHandler changes the behavior
+        assumeThat("URLStreamHandler changes behavior, skip test", URLStreamHandlerUtil.getFactory(), nullValue());
+
+        Enumeration<URL> resources = _loader.getResources("org/acme/clashing.txt");
+        assertTrue(resources.hasMoreElements());
+        URL resource = resources.nextElement();
+        try (InputStream data = resource.openStream())
+        {
+            assertEquals("correct contents of " + resource, "alpha", IO.toString(data));
+        }
+        assertTrue(resources.hasMoreElements());
+        resource = resources.nextElement();
+        try (InputStream data = resource.openStream())
+        {
+            assertEquals("correct contents of " + resource, "omega", IO.toString(data));
+        }
+        assertFalse(resources.hasMoreElements());
     }
 
 }

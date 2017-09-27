@@ -29,6 +29,7 @@ import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -328,6 +329,10 @@ public class WebAppClassLoader extends URLClassLoader
         if (lib.exists() && lib.isDirectory())
         {
             String[] files=lib.list();
+            if (files != null)
+            {
+                Arrays.sort(files);
+            }
             for (int f=0;files!=null && f<files.length;f++)
             {
                 try 

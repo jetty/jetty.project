@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.ServletException;
@@ -118,14 +119,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullHeader() throws Exception
     {
-        try
-        {
-            super.testFullHeader();
-        }
-        catch (SocketException e)
-        {
-            Log.getLogger(SslConnection.class).warn("Close overtook 400 response");
-        }
+        super.testFullHeader();
     }
 
     @Before
@@ -167,7 +161,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }

@@ -23,9 +23,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,6 +48,8 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.hamcrest.Matchers;
@@ -369,4 +373,19 @@ public class WebAppContextTest
         
         server.stop();
     }
+
+    @Test
+    public void ordering() throws Exception
+    {
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Resource webapp = new PathResource(testWebappDir);
+        WebAppContext context = new WebAppContext();
+        context.setBaseResource(webapp);
+        context.setContextPath("/test");
+        context.setServer(new Server());
+        new MetaInfConfiguration().preConfigure(context);
+        assertEquals(Arrays.asList("acme.jar", "alpha.jar", "omega.jar"),
+            context.getMetaData().getWebInfJars().stream().map(r -> r.getURI().toString().replaceFirst(".+/", "")).collect(Collectors.toList()));
+    }
+
 }
