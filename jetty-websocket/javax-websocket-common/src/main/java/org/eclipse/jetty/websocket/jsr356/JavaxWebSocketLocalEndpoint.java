@@ -22,6 +22,8 @@ import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.websocket.CloseReason;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -110,7 +112,8 @@ public class JavaxWebSocketLocalEndpoint implements WebSocketLocalEndpoint
 
             try
             {
-                closeHandle.invoke(close.getCode(), close.getReason());
+                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(close.getCode()), close.getReason());
+                closeHandle.invoke(closeReason);
             }
             catch (Throwable cause)
             {

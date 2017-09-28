@@ -41,14 +41,8 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
 {
     private void assertOnMessageInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
-        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
-        BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
-        JavaxWebSocketSession session = newSession();
-
-        JavaxWebSocketLocalEndpoint localEndpoint = factory.createLocalEndpoint(endpoint,
-                session, container.getPolicy(), container.getExecutor());
-
+        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
+        
         // This invocation is the same for all tests
         localEndpoint.onOpen();
         
@@ -112,7 +106,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
     {
         expectedException.expect(InvalidSignatureException.class);
         assertOnMessageInvocation(new MessageSessionSocket(),
-                "onMessage(JsrSession[CLIENT,%s,DummyConnection])",
+                "onMessage(JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
                 MessageSessionSocket.class.getName());
     }
     
@@ -130,7 +124,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_BinaryTest extends AbstractJa
     public void testInvokeMessageSessionByteBuffer() throws Exception
     {
         assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
-                "onMessage(JsrSession[CLIENT,%s,DummyConnection], Hello World)",
+                "onMessage(JavaxWebSocketSession[CLIENT,%s,DummyConnection], Hello World)",
                 MessageSessionByteBufferSocket.class.getName());
     }
 }

@@ -27,6 +27,7 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
+import org.eclipse.jetty.websocket.jsr356.sockets.TrackingSocket;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -72,5 +73,22 @@ public abstract class AbstractJavaxWebSocketLocalEndpointTest
         URI requestURI = URI.create("ws://localhost/" + id);
         DummyConnection connection = DummyConnection.from(container, requestURI);
         return new JavaxWebSocketSession(container, connection);
+    }
+
+    protected JavaxWebSocketLocalEndpoint createLocalEndpoint(TrackingSocket socket)
+    {
+        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
+        BasicEndpointConfig config = new BasicEndpointConfig();
+        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
+        JavaxWebSocketSession session = newSession();
+
+        JavaxWebSocketLocalEndpoint localEndpoint = factory.createLocalEndpoint(endpoint,
+                session, container.getPolicy(), container.getExecutor());
+
+        JavaxWebSocketRemoteEndpoint remoteEndpoint = null;
+
+        session.setWebSocketEndpoint(socket, container.getPolicy(), localEndpoint, remoteEndpoint);
+
+        return localEndpoint;
     }
 }

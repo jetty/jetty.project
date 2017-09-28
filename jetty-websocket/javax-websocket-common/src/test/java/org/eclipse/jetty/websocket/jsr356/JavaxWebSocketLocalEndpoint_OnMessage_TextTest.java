@@ -41,13 +41,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJava
 {
     private void onText(TrackingSocket socket, String msg) throws Exception
     {
-        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
-        BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
-        JavaxWebSocketSession session = newSession();
-
-        JavaxWebSocketLocalEndpoint localEndpoint = factory.createLocalEndpoint(endpoint,
-                session, container.getPolicy(), container.getExecutor());
+        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
 
         // This invocation is the same for all tests
         localEndpoint.onOpen();
@@ -139,7 +133,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextTest extends AbstractJava
     public void testInvokeMessageSessionText() throws Exception
     {
         assertOnMessageInvocation(new MessageSessionTextSocket(),
-                "onMessage(JsrSession[CLIENT,%s,DummyConnection], Hello World)",
+                "onMessage(JavaxWebSocketSession[CLIENT,%s,DummyConnection], Hello World)",
                 MessageSessionTextSocket.class.getName());
     }
 }

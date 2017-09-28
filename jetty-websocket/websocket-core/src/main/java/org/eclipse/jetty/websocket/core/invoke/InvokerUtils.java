@@ -180,11 +180,10 @@ public class InvokerUtils
             }
 
             StringBuilder err = new StringBuilder();
-            err.append("Calling args ");
+            err.append("Target method ");
+            ReflectUtils.append(err, targetClass, method);
+            err.append(" contains too many parameters and cannot be mapped to expected callable args ");
             appendTypeList(err, callingArgs);
-            err.append(" is smaller then parameter ");
-            appendTypeList(err, parameterTypes);
-            err.append(" and cannot be mapped");
             throw new InvalidSignatureException(err.toString());
         }
 

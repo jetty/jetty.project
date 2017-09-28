@@ -39,13 +39,7 @@ public class JavaxWebSocketLocalEndpoint_OnCloseTest extends AbstractJavaxWebSoc
     
     private void assertOnCloseInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
-        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
-        BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
-        JavaxWebSocketSession session = newSession();
-
-        JavaxWebSocketLocalEndpoint localEndpoint = factory.createLocalEndpoint(endpoint,
-                session, container.getPolicy(), container.getExecutor());
+        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
 
         // These invocations are the same for all tests
         localEndpoint.onOpen();
@@ -86,7 +80,7 @@ public class JavaxWebSocketLocalEndpoint_OnCloseTest extends AbstractJavaxWebSoc
     public void testInvokeCloseSession() throws Exception
     {
         assertOnCloseInvocation(new CloseSessionSocket(),
-                "OnClose(JsrSession[CLIENT,%s,DummyConnection])",
+                "OnClose(JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
                 CloseSessionSocket.class.getName());
     }
 
@@ -121,7 +115,7 @@ public class JavaxWebSocketLocalEndpoint_OnCloseTest extends AbstractJavaxWebSoc
     public void testInvokeCloseSessionReason() throws Exception
     {
         assertOnCloseInvocation(new CloseSessionReasonSocket(),
-                "OnClose(JsrSession[CLIENT,%s,DummyConnection], %s)",
+                "OnClose(JavaxWebSocketSession[CLIENT,%s,DummyConnection], %s)",
                 CloseSessionReasonSocket.class.getName(), EXPECTED_REASON);
     }
 
@@ -139,7 +133,7 @@ public class JavaxWebSocketLocalEndpoint_OnCloseTest extends AbstractJavaxWebSoc
     public void testInvokeCloseReasonSession() throws Exception
     {
         assertOnCloseInvocation(new CloseReasonSessionSocket(),
-                "OnClose(%s, JsrSession[CLIENT,%s,DummyConnection])",
+                "OnClose(%s, JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
                 EXPECTED_REASON, CloseReasonSessionSocket.class.getName());
     }
 }

@@ -636,4 +636,13 @@ public class JavaxWebSocketSession<
         // JSR 356 specification mandates default batch mode to be off.
         return BatchMode.OFF;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s,%s,%s]", this.getClass().getSimpleName(),
+                getPolicy().getBehavior(),
+                localEndpoint.getEndpointInstance().getClass().getName(),
+                connection.getClass().getSimpleName());
+    }
 }

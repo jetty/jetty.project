@@ -196,6 +196,46 @@ public class JavaxWebSocketLocalEndpoint_BadSignaturesTest extends AbstractJavax
         assertBadSocket(new InvalidErrorIntSocket(), "onError");
     }
 
+    @SuppressWarnings("UnusedParameters")
+    @ClientEndpoint
+    public static class InvalidErrorNoParamSocket
+    {
+        /**
+         * Invalid Error Method Declaration (missing required Throwable type)
+         */
+        @OnError
+        public void onError()
+        {
+            /* no impl */
+        }
+    }
+
+    @Test
+    public void testInvalidErrorNoParamSocket() throws Exception
+    {
+        assertBadSocket(new InvalidErrorNoParamSocket(), "onError");
+    }
+
+    @SuppressWarnings("UnusedParameters")
+    @ClientEndpoint
+    public static class InvalidErrorSessionOnlySocket
+    {
+        /**
+         * Invalid Error Method Declaration (missing required Throwable type)
+         */
+        @OnError
+        public void onError(Session session)
+        {
+            /* no impl */
+        }
+    }
+
+    @Test
+    public void testInvalidErrorSessionOnlySocket() throws Exception
+    {
+        assertBadSocket(new InvalidErrorSessionOnlySocket(), "onError");
+    }
+
     // TODO: invalid return types
     // TODO: static methods
     // TODO: private or protected methods

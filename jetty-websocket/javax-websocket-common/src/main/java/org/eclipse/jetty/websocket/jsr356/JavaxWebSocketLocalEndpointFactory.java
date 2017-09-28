@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import javax.websocket.ClientEndpoint;
+import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -121,12 +122,12 @@ public class JavaxWebSocketLocalEndpointFactory
         // TODO: handle decoders in bindTo steps?
         // TODO: handle parameterized @PathParam entries?
 
-        openHandle = bindTo(openHandle, endpointInstance, session);
-        closeHandle = bindTo(closeHandle, endpointInstance, session);
-        errorHandle = bindTo(errorHandle, endpointInstance, session);
-        textHandle = bindTo(textHandle, endpointInstance, session);
-        binaryHandle = bindTo(binaryHandle, endpointInstance, session);
-        pongHandle = bindTo(pongHandle, endpointInstance, session);
+        openHandle = bindTo(openHandle, endpoint, session);
+        closeHandle = bindTo(closeHandle, endpoint, session);
+        errorHandle = bindTo(errorHandle, endpoint, session);
+        textHandle = bindTo(textHandle, endpoint, session);
+        binaryHandle = bindTo(binaryHandle, endpoint, session);
+        pongHandle = bindTo(pongHandle, endpoint, session);
 
         // TODO: or handle decoders in createMessageSink?
 
@@ -134,7 +135,7 @@ public class JavaxWebSocketLocalEndpointFactory
         MessageSink binarySink = createMessageSink(binaryHandle, binarySinkClass, endpointPolicy, executor);
 
         return new JavaxWebSocketLocalEndpoint(
-                endpointInstance,
+                endpoint,
                 endpointPolicy,
                 openHandle, closeHandle, errorHandle,
                 textSink, binarySink,
@@ -231,7 +232,7 @@ public class JavaxWebSocketLocalEndpointFactory
         if (onmethod != null)
         {
             assertSignatureValid(endpointClass, onmethod, OnOpen.class);
-            final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class).required();
+            final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION);
             metadata.setOpenHandler(methodHandle, onmethod);
         }
@@ -242,16 +243,8 @@ public class JavaxWebSocketLocalEndpointFactory
         {
             assertSignatureValid(endpointClass, onmethod, OnClose.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
-            final InvokerUtils.Arg STATUS_CODE = new InvokerUtils.Arg(int.class);
-            final InvokerUtils.Arg REASON = new InvokerUtils.Arg(String.class);
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, STATUS_CODE, REASON);
-            // TODO: need mutation of args? ...
-            // Session + CloseInfo ->
-            // setOnClose((closeInfo) ->{
-            // args[0] = getSession();
-            // args[1] = closeInfo.getStatusCode();
-            // args[2] = closeInfo.getReason();
-            // invoker.apply(endpoint, args);
+            final InvokerUtils.Arg CLOSE_REASON = new InvokerUtils.Arg(CloseReason.class);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, CLOSE_REASON);
             metadata.setCloseHandler(methodHandle, onmethod);
         }
         // OnError [0..1]

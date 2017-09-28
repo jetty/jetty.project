@@ -41,13 +41,7 @@ public class JavaxWebSocketLocalEndpoint_OnMessage_TextStreamTest extends Abstra
     @SuppressWarnings("Duplicates")
     private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<WebSocketLocalEndpoint, Void> func) throws Exception
     {
-        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
-        BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
-        JavaxWebSocketSession session = newSession();
-
-        JavaxWebSocketLocalEndpoint localEndpoint = factory.createLocalEndpoint(endpoint,
-                session, container.getPolicy(), container.getExecutor());
+        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
 
         // This invocation is the same for all tests
         localEndpoint.onOpen();

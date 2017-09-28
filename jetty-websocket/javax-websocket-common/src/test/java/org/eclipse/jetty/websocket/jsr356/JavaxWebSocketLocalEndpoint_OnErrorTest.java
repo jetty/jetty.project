@@ -36,53 +36,13 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
     
     private void assertOnErrorInvocation(TrackingSocket socket, String expectedEventFormat, Object... args) throws Exception
     {
-        JavaxWebSocketLocalEndpointFactory factory = new JavaxWebSocketLocalEndpointFactory();
-        BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(socket, config);
-        JavaxWebSocketSession session = newSession();
-
-        JavaxWebSocketLocalEndpoint localEndpoint = factory.createLocalEndpoint(endpoint,
-                session, container.getPolicy(), container.getExecutor());
+        JavaxWebSocketLocalEndpoint localEndpoint = createLocalEndpoint(socket);
 
         // These invocations are the same for all tests
         localEndpoint.onOpen();
         localEndpoint.onError(new RuntimeException("From Testcase"));
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, is(String.format(expectedEventFormat, args)));
-    }
-
-    @ClientEndpoint
-    public static class ErrorSocket extends TrackingSocket
-    {
-        @OnError
-        public void onError()
-        {
-            addEvent("onError()");
-        }
-    }
-
-    @Test
-    public void testInvokeError() throws Exception
-    {
-        assertOnErrorInvocation(new ErrorSocket(), "onError()");
-    }
-
-    @ClientEndpoint
-    public static class ErrorSessionSocket extends TrackingSocket
-    {
-        @OnError
-        public void onError(Session session)
-        {
-            addEvent("onError(%s)", session);
-        }
-    }
-
-    @Test
-    public void testInvokeErrorSession() throws Exception
-    {
-        assertOnErrorInvocation(new ErrorSessionSocket(),
-                "onError(JsrSession[CLIENT,%s,DummyConnection])",
-                ErrorSessionSocket.class.getName());
     }
 
     @ClientEndpoint
@@ -99,7 +59,7 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
     public void testInvokeErrorSessionThrowable() throws Exception
     {
         assertOnErrorInvocation(new ErrorSessionThrowableSocket(),
-                "onError(JsrSession[CLIENT,%s,DummyConnection], %s)",
+                "onError(JavaxWebSocketSession[CLIENT,%s,DummyConnection], %s)",
                 ErrorSessionThrowableSocket.class.getName(), EXPECTED_THROWABLE);
     }
 
@@ -134,7 +94,7 @@ public class JavaxWebSocketLocalEndpoint_OnErrorTest extends AbstractJavaxWebSoc
     public void testInvokeErrorThrowableSession() throws Exception
     {
         assertOnErrorInvocation(new ErrorThrowableSessionSocket(),
-                "onError(%s, JsrSession[CLIENT,%s,DummyConnection])",
+                "onError(%s, JavaxWebSocketSession[CLIENT,%s,DummyConnection])",
                 EXPECTED_THROWABLE,
                 ErrorThrowableSessionSocket.class.getName());
     }
