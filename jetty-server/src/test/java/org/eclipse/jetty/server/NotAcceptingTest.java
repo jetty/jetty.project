@@ -36,17 +36,33 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AdvancedRunner.class)
 public class NotAcceptingTest
 {
+    Server server;
+
+    @Before
+    public void before()
+    {
+        server = new Server();
+    }
+
+    @After
+    public void after() throws Exception
+    {
+        server.stop();
+        server=null;
+    }
+
     @Test
     public void testServerConnectorBlockingAccept() throws Exception
     {
-        Server server = new Server();
         ServerConnector connector = new ServerConnector(server,1,1);
         connector.setPort(0);
         connector.setIdleTimeout(500);
@@ -121,7 +137,6 @@ public class NotAcceptingTest
     @Test
     public void testLocalConnector() throws Exception
     {
-        Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
         connector.setIdleTimeout(500);
         server.addConnector(connector);
@@ -174,7 +189,7 @@ public class NotAcceptingTest
                     {
                         // Can we accept the original?
                         connector.setAccepting(true); 
-                        uri = handler.exchange.exchange("delayed connection");
+                        uri = handler.exchange.exchange("delayed connection",10,TimeUnit.SECONDS);
                         assertThat(uri,is("/four"));
                         response = HttpTester.parseResponse(client2.getResponse());
                         assertThat(response.getStatus(),is(200));
@@ -188,7 +203,6 @@ public class NotAcceptingTest
     @Test
     public void testServerConnectorAsyncAccept() throws Exception
     {
-        Server server = new Server();
         ServerConnector connector = new ServerConnector(server,0,1);
         connector.setPort(0);
         connector.setIdleTimeout(500);

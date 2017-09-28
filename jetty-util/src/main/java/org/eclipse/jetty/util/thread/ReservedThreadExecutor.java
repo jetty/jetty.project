@@ -20,8 +20,11 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
+import org.eclipse.jetty.util.ConcurrentStack;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -32,21 +35,39 @@ import org.eclipse.jetty.util.log.Logger;
  * An Executor using preallocated/reserved Threads from a wrapped Executor.
  * <p>Calls to {@link #execute(Runnable)} on a {@link ReservedThreadExecutor} will either succeed
  * with a Thread immediately being assigned the Runnable task, or fail if no Thread is
- * available. Threads are preallocated up to the capacity from a wrapped {@link Executor}.
+ * available.
+ * <p>Threads are reserved lazily, with a new reserved thread being allocated from a
+ * wrapped {@link Executor} when an execution fails.  If the {@link #setIdleTimeout(long, TimeUnit)}
+ * is set to non zero (default 1 minute), then the reserved thread pool will shrink by 1 thread
+ * whenever it has been idle for that period.
  */
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutor extends AbstractLifeCycle implements Executor
 {
     private static final Logger LOG = Log.getLogger(ReservedThreadExecutor.class);
+    private static final Runnable STOP = new Runnable()
+    {
+        @Override
+        public void run()
+        {}
+
+        @Override
+        public String toString()
+        {
+            return "STOP!";
+        }
+    };
 
     private final Executor _executor;
-    private final Locker _locker = new Locker();
-    private final ReservedThread[] _queue;
-    private int _head;
-    private int _size;
-    private int _pending;
+    private final int _capacity;
+    private final ConcurrentStack.NodeStack<ReservedThread> _stack;
+    private final AtomicInteger _size = new AtomicInteger();
+    private final AtomicInteger _pending = new AtomicInteger();
+
     private ThreadBudget.Lease _lease;
     private Object _owner;
+    private long _idleTime = 1L;
+    private TimeUnit _idleTimeUnit = TimeUnit.MINUTES;
 
     public ReservedThreadExecutor(Executor executor)
     {
@@ -59,7 +80,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
      * is calculated based on a heuristic from the number of available processors and
      * thread pool size.
      */
-    public ReservedThreadExecutor(Executor executor,int capacity)
+    public ReservedThreadExecutor(Executor executor, int capacity)
     {
         this(executor,capacity,null);
     }
@@ -73,10 +94,12 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     public ReservedThreadExecutor(Executor executor,int capacity, Object owner)
     {
         _executor = executor;
-        _queue = new ReservedThread[reservedThreads(executor,capacity)];
+        _capacity = reservedThreads(executor,capacity);
+        _stack = new ConcurrentStack.NodeStack<>();
         _owner = owner;
-    }
 
+        LOG.debug("{}",this);
+    }
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate, If less than 0 then capacity
@@ -106,31 +129,46 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     @ManagedAttribute(value = "max number of reserved threads", readonly = true)
     public int getCapacity()
     {
-        return _queue.length;
+        return _capacity;
     }
 
     @ManagedAttribute(value = "available reserved threads", readonly = true)
     public int getAvailable()
     {
-        try (Locker.Lock lock = _locker.lock())
-        {
-            return _size;
-        }
+        return _size.get();
     }
 
     @ManagedAttribute(value = "pending reserved threads", readonly = true)
     public int getPending()
     {
-        try (Locker.Lock lock = _locker.lock())
-        {
-            return _pending;
-        }
+        return _pending.get();
+    }
+
+    @ManagedAttribute(value = "idletimeout in MS", readonly = true)
+    public long getIdleTimeoutMs()
+    {
+        if(_idleTimeUnit==null)
+            return 0;
+        return _idleTimeUnit.toMillis(_idleTime);
+    }
+
+    /**
+     * Set the idle timeout for shrinking the reserved thread pool
+     * @param idleTime Time to wait before shrinking, or 0 for no timeout.
+     * @param idleTimeUnit Time units for idle timeout
+     */
+    public void setIdleTimeout(long idleTime, TimeUnit idleTimeUnit)
+    {
+        if (isRunning())
+            throw new IllegalStateException();
+        _idleTime = idleTime;
+        _idleTimeUnit = idleTimeUnit;
     }
 
     @Override
     public void doStart() throws Exception
     {
-        _lease = ThreadBudget.leaseFrom(getExecutor(),this,_queue.length);
+        _lease = ThreadBudget.leaseFrom(getExecutor(),this,_capacity);
         super.doStart();
     }
 
@@ -139,16 +177,18 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     {
         if (_lease!=null)
             _lease.close();
-        try (Locker.Lock lock = _locker.lock())
+        while(true)
         {
-            while (_size>0)
+            ReservedThread thread = _stack.pop();
+            if (thread==null)
             {
-                ReservedThread thread = _queue[_head];
-                _queue[_head] = null;
-                _head = (_head+1)%_queue.length;
-                _size--;
-                thread._wakeup.signal();
+                super.doStop();
+                return;
             }
+
+            _size.decrementAndGet();
+
+            thread.stop();
         }
     }
 
@@ -165,120 +205,196 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
      */
     public boolean tryExecute(Runnable task)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} tryExecute {}",this ,task);
+
         if (task==null)
             return false;
 
-        try (Locker.Lock lock = _locker.lock())
+        ReservedThread thread = _stack.pop();
+        if (thread==null && task!=STOP)
         {
-            if (_size==0)
+            startReservedThread();
+            return false;
+        }
+
+        int size = _size.decrementAndGet();
+        thread.offer(task);
+
+        if (size==0 && task!=STOP)
+            startReservedThread();
+
+        return true;
+    }
+
+    private void startReservedThread()
+    {
+        try
+        {
+            while (true)
             {
-                if (_pending<_queue.length)
+                int pending = _pending.get();
+                if (pending >= _capacity)
+                    return;
+                if (_pending.compareAndSet(pending, pending + 1))
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} startReservedThread p={}", this, pending + 1);
+
                     _executor.execute(new ReservedThread());
-                    _pending++;
+                    return;
                 }
-                return false;
             }
-
-            ReservedThread thread = _queue[_head];
-            _queue[_head] = null;
-            _head = (_head+1)%_queue.length;
-            _size--;
-
-            if (_size==0 && _pending<_queue.length)
-            {
-                _executor.execute(new ReservedThread());
-                _pending++;
-            }
-
-            thread._task = task;
-            thread._wakeup.signal();
-
-            return true;
         }
         catch(RejectedExecutionException e)
         {
             LOG.ignore(e);
-            return false;
         }
     }
 
     @Override
     public String toString()
     {
-        try (Locker.Lock lock = _locker.lock())
-        {
-            if (_owner==null)
-                return String.format("%s@%x{s=%d,p=%d}",this.getClass().getSimpleName(),hashCode(),_size,_pending);
-            return String.format("%s@%s{s=%d,p=%d}",this.getClass().getSimpleName(),_owner,_size,_pending);
-        }
+        if (_owner==null)
+            return String.format("%s@%x{s=%d,p=%d}",this.getClass().getSimpleName(),hashCode(),_size.get(),_pending.get());
+        return String.format("%s@%s{s=%d,p=%d}",this.getClass().getSimpleName(),_owner,_size.get(),_pending.get());
     }
 
-    private class ReservedThread implements Runnable
+    private class ReservedThread extends ConcurrentStack.Node implements Runnable
     {
-        private Condition _wakeup = null;
+        private final Locker _locker = new Locker();
+        private final Condition _wakeup = _locker.newCondition();
+        private boolean _starting = true;
         private Runnable _task = null;
 
-        private void reservedWait() throws InterruptedException
+        public void offer(Runnable task)
         {
-            _wakeup.await();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} offer {}", this, task);
+
+            try (Locker.Lock lock = _locker.lock())
+            {
+                _task = task;
+                _wakeup.signal();
+            }
         }
 
-        @Override
-        public void run()
+        public void stop()
         {
-            while (true)
+            offer(STOP);
+        }
+
+        private Runnable reservedWait()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} waiting", this);
+
+            Runnable task = null;
+            while (isRunning() && task==null)
             {
-                Runnable task = null;
+                boolean idle = false;
+
                 try (Locker.Lock lock = _locker.lock())
                 {
-                    // if this is our first loop, decrement pending count
-                    if (_wakeup==null)
-                    {
-                        _pending--;
-                        _wakeup = _locker.newCondition();
-                    }
-
-                    // Exit if no longer running or there now too many preallocated threads
-                    if (!isRunning() || _size>=_queue.length)
-                        break;
-
-                    // Insert ourselves in the queue
-                    _queue[(_head+_size++)%_queue.length] = this;
-
-                    // Wait for a task, ignoring spurious wakeups
-                    while (isRunning() && task==null)
+                    if (_task == null)
                     {
                         try
                         {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("{} waiting", this);
-                            reservedWait();
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("{} woken up", this);
-                            task = _task;
-                            _task = null;
+                            if (_idleTime == 0)
+                                _wakeup.await();
+                            else
+                                idle = !_wakeup.await(_idleTime, _idleTimeUnit);
                         }
                         catch (InterruptedException e)
                         {
                             LOG.ignore(e);
                         }
                     }
+                    task = _task;
+                    _task = null;
                 }
 
-                // Run any task 
-                if (task!=null)
+                if (idle)
                 {
-                    try
-                    {
-                        task.run();
-                    }
-                    catch (Throwable e)
-                    {
-                        LOG.warn(e);
-                    }
+                    // Because threads are held in a stack, excess threads will be
+                    // idle.  However, we cannot remove threads from the bottom of
+                    // the stack, so we submit a poison pill job to stop the thread
+                    // on top of the stack (which unfortunately will be the most
+                    // recently used)
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} IDLE", this);
+                    tryExecute(STOP);
                 }
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} task={}", this, task);
+
+            return task==null?STOP:task;
+        }
+
+        @Override
+        public void run()
+        {
+            while (isRunning())
+            {
+                Runnable task = null;
+
+                // test and increment size BEFORE decrementing pending,
+                // so that we don't have a race starting new pending.
+                while(true)
+                {
+                    int size = _size.get();
+                    if (size>=_capacity)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} size {} > capacity", this, size, _capacity);
+                        if (_starting)
+                            _pending.decrementAndGet();
+                        return;
+                    }
+                    if (_size.compareAndSet(size,size+1))
+                        break;
+                }
+
+                if (_starting)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} started", this);
+                    _pending.decrementAndGet();
+                    _starting = false;
+                }
+
+                // Insert ourselves in the stack. Size is already incremented, but
+                // that only effects the decision to keep other threads reserved.
+                _stack.push(this);
+
+                // Wait for a task
+                task = reservedWait();
+
+                if (task==STOP)
+                    // return on STOP poison pill
+                    break;
+
+                // Run the task
+                try
+                {
+                    task.run();
+                }
+                catch (Throwable e)
+                {
+                    LOG.warn(e);
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} Exited", this);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x",ReservedThreadExecutor.this,hashCode());
         }
     }
 }
