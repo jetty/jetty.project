@@ -78,20 +78,18 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
         @Override
         public void handshakeSucceeded(Event event)
         {
+            String protocol = alpnConnection.getProtocol();
             if (LOG.isDebugEnabled())
-                LOG.debug("handshakeSucceeded {} {}", alpnConnection, event);
-            if (alpnConnection.getProtocol()==null)
-            {
-                LOG.warn("No ALPN callback! {} {}",alpnConnection, event);
+                LOG.debug("TLS handshake succeeded, protocol={} for {}", protocol, alpnConnection);
+            if (protocol ==null)
                 alpnConnection.unsupported();
-            }
         }
 
         @Override
         public void handshakeFailed(Event event, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("handshakeFailed {} {} {}", alpnConnection, event, failure);
+                LOG.debug("TLS handshake failed " + alpnConnection, failure);
         }
     }
 }
