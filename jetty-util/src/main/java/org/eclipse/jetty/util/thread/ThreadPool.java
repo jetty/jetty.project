@@ -71,8 +71,7 @@ public interface ThreadPool extends Executor
         int getMaxThreads();
         void setMinThreads(int threads);
         void setMaxThreads(int threads);
-
-        default ThreadBudget getThreadBudget()
+        default ThreadPoolBudget getThreadPoolBudget()
         {
             return null;
         }

@@ -53,8 +53,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.ThreadBudget;
-import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 
 /**
  * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism
@@ -160,8 +159,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private String _name;
     private int _acceptorPriorityDelta=-2;
     private boolean _accepting = true;
-    private ThreadBudget.Lease lease;
-
+    private ThreadPoolBudget.Lease _lease;
 
     /**
      * @param server The server this connector will be added to. Must not be null.
@@ -276,7 +274,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 throw new IllegalStateException("No protocol factory for SSL next protocol: '" + next + "' in " + this);
         }
 
-        lease = ThreadBudget.leaseFrom(getExecutor(),this,_acceptors.length);
+        _lease = ThreadPoolBudget.leaseFrom(getExecutor(),this,_acceptors.length);
         super.doStart();
 
         _stopping=new CountDownLatch(_acceptors.length);
@@ -312,8 +310,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStop() throws Exception
     {
-        if (lease!=null)
-            lease.close();
+        if (_lease!=null)
+            _lease.close();
 
         // Tell the acceptors we are stopping
         interruptAcceptors();

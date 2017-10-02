@@ -64,7 +64,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     private final AtomicInteger _size = new AtomicInteger();
     private final AtomicInteger _pending = new AtomicInteger();
 
-    private ThreadBudget.Lease _lease;
+    private ThreadPoolBudget.Lease _lease;
     private Object _owner;
     private long _idleTime = 1L;
     private TimeUnit _idleTimeUnit = TimeUnit.MINUTES;
@@ -168,7 +168,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     @Override
     public void doStart() throws Exception
     {
-        _lease = ThreadBudget.leaseFrom(getExecutor(),this,_capacity);
+        _lease = ThreadPoolBudget.leaseFrom(getExecutor(),this,_capacity);
         super.doStart();
     }
 

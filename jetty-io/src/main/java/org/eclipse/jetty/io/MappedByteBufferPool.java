@@ -31,7 +31,6 @@ public class MappedByteBufferPool implements ByteBufferPool
     private final ConcurrentMap<Integer, Bucket> directBuffers = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, Bucket> heapBuffers = new ConcurrentHashMap<>();
     private final int _factor;
-    private final int _maxQueue;
     private final Function<Integer, Bucket> _newBucket;
 
     public MappedByteBufferPool()
@@ -52,8 +51,7 @@ public class MappedByteBufferPool implements ByteBufferPool
     public MappedByteBufferPool(int factor,int maxQueue,Function<Integer, Bucket> newBucket)
     {
         _factor = factor<=0?1024:factor;
-        _maxQueue = maxQueue;
-        _newBucket = newBucket!=null?newBucket:i->new Bucket(this,i*_factor,_maxQueue);
+        _newBucket = newBucket!=null?newBucket:i->new Bucket(this,i*_factor,maxQueue);
     }
 
     @Override

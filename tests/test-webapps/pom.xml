@@ -38,5 +38,6 @@
     <module>test-servlet-spec</module>
     <module>test-jaas-webapp</module>
     <module>test-jndi-webapp</module>
+    <module>test-http2-webapp</module>
   </modules>
 </project>

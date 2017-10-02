@@ -31,11 +31,11 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A budget of required thread usage, used to warn or error for insufficient configured threads.</p>
  *
- * @see ThreadPool.SizedThreadPool#getThreadBudget()
+ * @see ThreadPool.SizedThreadPool#getThreadPoolBudget()
  */
-public class ThreadBudget
+public class ThreadPoolBudget
 {
-    static final Logger LOG = Log.getLogger(ThreadBudget.class);
+    static final Logger LOG = Log.getLogger(ThreadPoolBudget.class);
 
     public interface Lease extends Closeable
     {
@@ -92,10 +92,10 @@ public class ThreadBudget
     final int warnAt;
 
     /**
-     * Construct a bedget for a SizedThreadPool, with the warning level set by heuristic.
+     * Construct a budget for a SizedThreadPool, with the warning level set by heuristic.
      * @param pool The pool to budget thread allocation for.
      */
-    public ThreadBudget(ThreadPool.SizedThreadPool pool)
+    public ThreadPoolBudget(ThreadPool.SizedThreadPool pool)
     {
         this(pool,Runtime.getRuntime().availableProcessors());
     }
@@ -104,7 +104,7 @@ public class ThreadBudget
      * @param pool The pool to budget thread allocation for.
      * @param warnAt The level of free threads at which a warning is generated.
      */
-    public ThreadBudget(ThreadPool.SizedThreadPool pool, int warnAt)
+    public ThreadPoolBudget(ThreadPool.SizedThreadPool pool, int warnAt)
     {
         this.pool = pool;
         this.warnAt = warnAt;
@@ -139,20 +139,20 @@ public class ThreadBudget
         int required = allocations.stream()
             .mapToInt(Lease::getThreads)
             .sum();
-
         int maximum = pool.getMaxThreads();
+        int actual = maximum - required;
 
-        if (required>=maximum)
+        if (actual <= 0)
         {
             infoOnLeases();
-            throw new IllegalStateException(String.format("Insuffient configured threads: required=%d < max=%d for %s", required, maximum, pool));
+            throw new IllegalStateException(String.format("Insufficient configured threads: required=%d < max=%d for %s", required, maximum, pool));
         }
 
-        if ((maximum-required) < warnAt)
+        if (actual < warnAt)
         {
             infoOnLeases();
             if (warned.compareAndSet(false,true))
-                LOG.warn("Low configured threads: ( max={} - required={} ) < warnAt={} for {}", maximum, required, warnAt, pool);
+                LOG.warn("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maximum, required, actual, warnAt, pool);
         }
     }
 
@@ -169,7 +169,7 @@ public class ThreadBudget
     {
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
-            ThreadBudget budget = ((ThreadPool.SizedThreadPool)executor).getThreadBudget();
+            ThreadPoolBudget budget = ((ThreadPool.SizedThreadPool)executor).getThreadPoolBudget();
             if (budget!=null)
                 return budget.leaseTo(leasee,threads);
         }

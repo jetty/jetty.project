@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentMap;
 
@@ -33,6 +25,14 @@ import org.eclipse.jetty.io.ByteBufferPool.Bucket;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class MappedByteBufferPoolTest
 {
@@ -93,8 +93,10 @@ public class MappedByteBufferPoolTest
     }
     
     /**
-     * In a scenario where MappedByteBufferPool is being used improperly, such as releasing a buffer that wasn't created/acquired by the MappedByteBufferPool,
-     * an assertion is tested for.
+     * In a scenario where MappedByteBufferPool is being used improperly,
+     * such as releasing a buffer that wasn't created/acquired by the
+     * MappedByteBufferPool, an assertion is tested for.
+     *
      * @throws Exception test failure
      */
     @Test
@@ -133,8 +135,6 @@ public class MappedByteBufferPoolTest
         buffer = pool.acquire(1024,false);
         assertThat(BufferUtil.toDetailString(buffer),containsString("@T00000002"));
     }
-    
-
 
     @Test
     public void testMaxQueue() throws Exception
@@ -157,6 +157,5 @@ public class MappedByteBufferPoolTest
         
         bufferPool.release(buffer3);
         assertEquals(2, bucket.size());
-
     }
 }

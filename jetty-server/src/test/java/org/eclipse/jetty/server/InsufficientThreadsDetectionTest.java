@@ -21,8 +21,8 @@ package org.eclipse.jetty.server;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadBudget;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class InsufficientThreadsDetectionTest
         }
         catch(IllegalStateException e)
         {
-            Log.getLogger(ThreadBudget.class).warn(e.toString());
+            Log.getLogger(ThreadPoolBudget.class).warn(e.toString());
         }
     }
 
@@ -82,8 +82,6 @@ public class InsufficientThreadsDetectionTest
         _server.start();
     }
 
-    // Github issue #586
-
     @Test
     public void testCaseForMultipleConnectors() throws Exception
     {
@@ -95,22 +93,21 @@ public class InsufficientThreadsDetectionTest
             // first connector consumes 3 threads from server pool
             _server.addConnector(new ServerConnector(_server, null, null, null, 1, 1, new HttpConnectionFactory()));
 
-            // second connect also require 4 threads but uses own executor, so its threads should not be counted
+            // second connect also require 3 threads but uses own executor, so its threads should not be counted
             final QueuedThreadPool connectorPool = new QueuedThreadPool(4, 4);
             _server.addConnector(new ServerConnector(_server, connectorPool, null, null, 1, 1, new HttpConnectionFactory()));
 
-            // first connector consumes 3 threads from server pool
+            // third connector consumes 3 threads from server pool
             _server.addConnector(new ServerConnector(_server, null, null, null, 1, 1, new HttpConnectionFactory()));
 
-            // should not throw exception because limit was not overflown
+            // should throw exception because limit was overflown
             _server.start();
 
             Assert.fail();
         }
         catch(IllegalStateException e)
         {
-            Log.getLogger(ThreadBudget.class).warn(e.toString());
+            Log.getLogger(ThreadPoolBudget.class).warn(e.toString());
         }
     }
-
 }
