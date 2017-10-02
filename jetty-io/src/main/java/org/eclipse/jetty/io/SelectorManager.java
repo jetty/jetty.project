@@ -38,8 +38,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.ThreadBudget;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 /**
@@ -61,6 +61,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
     private int _reservedThreads = -1;
+    private ThreadPoolBudget.Lease _lease;
 
     private static int defaultSelectors(Executor executor)
     {
@@ -296,14 +297,13 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     protected void doStart() throws Exception
     {
         addBean(new ReservedThreadExecutor(getExecutor(),_reservedThreads,this),true);
-
+        _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _selectors.length);
         for (int i = 0; i < _selectors.length; i++)
         {
             ManagedSelector selector = newSelector(i);
             _selectors[i] = selector;
             addBean(selector);
         }
-
         super.doStart();
     }
 
@@ -324,6 +324,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         super.doStop();
         for (ManagedSelector selector : _selectors)
             removeBean(selector);
+        if (_lease != null)
+            _lease.close();
     }
 
     /**

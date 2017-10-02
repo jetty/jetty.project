@@ -65,7 +65,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private boolean _daemon = false;
     private boolean _detailedDump = false;
     private int _lowThreadsThreshold = 1;
-    private ThreadBudget _budget;
+    private ThreadPoolBudget _budget;
 
     public QueuedThreadPool()
     {
@@ -106,23 +106,20 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         }
         _jobs=queue;
         _threadGroup=threadGroup;
-        _budget=new ThreadBudget(this);
+        _budget=new ThreadPoolBudget(this);
     }
 
     @Override
-    public ThreadBudget getThreadBudget()
+    public ThreadPoolBudget getThreadPoolBudget()
     {
         return _budget;
     }
 
-    public void setThreadBudget(ThreadBudget budget)
+    public void setThreadPoolBudget(ThreadPoolBudget budget)
     {
         if (budget!=null && budget.getSizedThreadPool()!=this)
             throw new IllegalArgumentException();
-        synchronized (this)
-        {
-            _budget = budget;
-        }
+        _budget = budget;
     }
 
     @Override

@@ -1,0 +1,58 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.client;
+
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class InsufficientThreadsDetectionTest
+{
+    @Test(expected = IllegalStateException.class)
+    public void testInsufficientThreads() throws Exception
+    {
+        QueuedThreadPool clientThreads = new QueuedThreadPool(1);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+        httpClient.setExecutor(clientThreads);
+        httpClient.start();
+    }
+
+    @Test
+    public void testInsufficientThreadsForMultipleHttpClients() throws Exception
+    {
+        QueuedThreadPool clientThreads = new QueuedThreadPool(3);
+        HttpClient httpClient1 = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+        httpClient1.setExecutor(clientThreads);
+        httpClient1.start();
+
+        try
+        {
+            // Share the same thread pool with another instance.
+            HttpClient httpClient2 = new HttpClient(new HttpClientTransportOverHTTP(1), null);
+            httpClient2.setExecutor(clientThreads);
+            httpClient2.start();
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+            // Expected.
+        }
+    }
+}

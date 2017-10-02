@@ -21,8 +21,8 @@ package org.eclipse.jetty.server;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadBudget;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class InsufficientThreadsDetectionTest
         }
         catch(IllegalStateException e)
         {
-            Log.getLogger(ThreadBudget.class).warn(e.toString());
+            Log.getLogger(ThreadPoolBudget.class).warn(e.toString());
         }
     }
 
@@ -107,7 +107,7 @@ public class InsufficientThreadsDetectionTest
         }
         catch(IllegalStateException e)
         {
-            Log.getLogger(ThreadBudget.class).warn(e.toString());
+            Log.getLogger(ThreadPoolBudget.class).warn(e.toString());
         }
     }
 }
