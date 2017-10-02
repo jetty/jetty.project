@@ -70,7 +70,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             int cpus = Runtime.getRuntime().availableProcessors();
             return Math.max(1,Math.min(cpus/2,threads/16));
         }
-        
         return Math.max(1,Runtime.getRuntime().availableProcessors()/2);
     }
     
