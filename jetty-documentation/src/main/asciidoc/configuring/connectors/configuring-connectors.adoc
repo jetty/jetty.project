@@ -452,7 +452,7 @@ This adds a `SecureRequestCustomizer` which adds SSL Session IDs and certificate
 
 The SSL/TLS connectors for HTTPS and HTTP/2 require a certificate to establish a secure connection.
 Jetty holds certificates in standard JVM keystores and are configured as keystore and truststores on a link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[`SslContextFactory`] instance that is injected into an link:{JDURL}/org/eclipse/jetty/server/SslConnectionFactory.html[`SslConnectionFactory`] instance.
-An example using the keystore distributed with Jetty (containing a self signed test certificate) is in link:{SRCDIR}/jetty-server/src/main/config/etc/jetty-https.xml[`jetty-https.xml`].
+An example using the keystore distributed with Jetty (containing a self signed test certificate) is in link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-https.xml[`jetty-https.xml`].
 Read more about SSL keystores in link:#configuring-ssl[Configuring SSL].
 
 ==== Proxy / Load Balancer Connection Configuration
