@@ -281,7 +281,7 @@ public class Request implements HttpServletRequest
     public PushBuilder newPushBuilder()
     {
         if (!isPushSupported())
-            throw new IllegalStateException(String.format("%s,push=%b,channel=%s", this, isPush(), getHttpChannel()));
+            return null;
 
         HttpFields fields = new HttpFields(getHttpFields().size()+5);
 
