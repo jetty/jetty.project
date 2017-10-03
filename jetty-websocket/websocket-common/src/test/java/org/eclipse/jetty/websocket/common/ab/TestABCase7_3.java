@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -40,11 +39,16 @@ import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TestABCase7_3
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testCase7_3_1GenerateEmptyClose()
@@ -83,7 +87,6 @@ public class TestABCase7_3
 
         Frame pActual = capture.getFrames().poll();
         Assert.assertThat("CloseFrame.payloadLength",pActual.getPayloadLength(),is(0));
-
     }
 
 
@@ -104,13 +107,8 @@ public class TestABCase7_3
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
+        expectedException.expect(ProtocolException.class);
         parser.parseQuietly(expected);
-
-        Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
-
-        ProtocolException known = (ProtocolException)capture.getErrors().poll();
-
-        Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid close frame payload length"));
     }
 
     @Test
@@ -338,12 +336,7 @@ public class TestABCase7_3
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
+        expectedException.expect(ProtocolException.class);
         parser.parseQuietly(expected);
-
-        Assert.assertEquals("error on invalid close payload",1,capture.getErrorCount(ProtocolException.class));
-
-        ProtocolException known = (ProtocolException)capture.getErrors().poll();
-
-        Assert.assertThat("Payload.message",known.getMessage(),containsString("Invalid control frame payload length"));
     }
 }
