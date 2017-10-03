@@ -29,9 +29,11 @@ import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -51,11 +53,13 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -64,6 +68,68 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 @ManagedObject("A Jetty WebSocket Session")
 public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory, WebSocketSessionScope, IncomingFrames, Connection.Listener, ConnectionStateListener
 {
+    public static class OnCloseLocalCallback implements WriteCallback
+    {
+        private final Callback callback;
+        private final LogicalConnection connection;
+        private final CloseInfo close;
+
+        public OnCloseLocalCallback(Callback callback, LogicalConnection connection, CloseInfo close)
+        {
+            this.callback = callback;
+            this.connection = connection;
+            this.close = close;
+        }
+
+        @Override
+        public void writeSuccess()
+        {
+            try
+            {
+                if (callback != null)
+                {
+                    callback.succeeded();
+                }
+            }
+            finally
+            {
+                connection.onLocalClose(close);
+            }
+        }
+
+        @Override
+        public void writeFailed(Throwable x)
+        {
+            try
+            {
+                if (callback != null)
+                {
+                    callback.failed(x);
+                }
+            }
+            finally
+            {
+                connection.onLocalClose(close);
+            }
+        }
+    }
+
+    public class DisconnectCallback implements Callback
+    {
+        @Override
+        public void failed(Throwable x)
+        {
+            disconnect();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            disconnect();
+        }
+    }
+
+
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private static final Logger LOG_OPEN = Log.getLogger(WebSocketSession.class.getName() + "_OPEN");
     private final WebSocketContainerScope containerScope;
@@ -72,6 +138,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final EventDriver websocket;
     private final Executor executor;
     private final WebSocketPolicy policy;
+    private final AtomicBoolean closed = new AtomicBoolean();
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
     private RemoteEndpointFactory remoteEndpointFactory;
@@ -100,27 +167,59 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.connection.getIOState().addListener(this);
         this.policy = websocket.getPolicy();
 
+        this.connection.setSession(this);
+
         addBean(this.connection);
         addBean(this.websocket);
+    }
+
+    /**
+     * Aborts the active session abruptly.
+     */
+    public void abort(int statusCode, String reason)
+    {
+        close(new CloseInfo(statusCode, reason), new DisconnectCallback());
     }
 
     @Override
     public void close()
     {
         /* This is assumed to always be a NORMAL closure, no reason phrase */
-        close(StatusCode.NORMAL, null);
+        close(new CloseInfo(StatusCode.NORMAL), null);
     }
 
     @Override
     public void close(CloseStatus closeStatus)
     {
-        close(closeStatus.getCode(),closeStatus.getPhrase());
+        close(new CloseInfo(closeStatus.getCode(),closeStatus.getPhrase()), null);
     }
 
     @Override
     public void close(int statusCode, String reason)
     {
-        connection.close(statusCode,reason);
+        close(new CloseInfo(statusCode, reason), null);
+    }
+
+    /**
+     * CLOSE Primary Entry Point.
+     *
+     * <ul>
+     *   <li>atomically enqueue CLOSE frame + flip flag to reject more frames</li>
+     *   <li>setup CLOSE frame callback: must close flusher</li>
+     * </ul>
+     *
+     * @param closeInfo the close details
+     */
+    private void close(CloseInfo closeInfo, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("close({})", closeInfo);
+
+        if (closed.compareAndSet(false, true))
+        {
+            CloseFrame frame = closeInfo.asFrame();
+            connection.outgoingFrame(frame, new OnCloseLocalCallback(callback, connection, closeInfo), BatchMode.OFF);
+        }
     }
 
     /**
@@ -388,7 +487,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         {
             return false;
         }
-        return this.connection.isOpen();
+        return !closed.get() && this.connection.isOpen();
     }
 
     @Override
@@ -420,11 +519,21 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         incomingError(cause);
     }
 
+    /**
+     * Jetty Connection onClosed event
+     *
+     * @param connection the connection that was closed
+     */
     @Override
     public void onClosed(Connection connection)
     {
     }
 
+    /**
+     * Jetty Connection onOpen event
+     *
+     * @param connection the connection that was opened
+     */
     @Override
     public void onOpened(Connection connection)
     {

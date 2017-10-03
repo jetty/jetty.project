@@ -157,7 +157,7 @@ public interface Session extends Closeable
      * 
      * @return whether the session is open
      */
-    abstract boolean isOpen();
+    boolean isOpen();
 
     /**
      * Return true if and only if the underlying socket is using a secure transport.

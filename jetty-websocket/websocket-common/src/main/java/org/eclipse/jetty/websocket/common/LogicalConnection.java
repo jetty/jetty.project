@@ -31,27 +31,10 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 public interface LogicalConnection extends OutgoingFrames, SuspendToken
 {
     /**
-     * Send a websocket Close frame, without a status code or reason.
-     * <p>
-     * Basic usage: results in an non-blocking async write, then connection close.
-     * 
-     * @see org.eclipse.jetty.websocket.api.StatusCode
-     * @see #close(int, String)
+     * Called to indicate a close frame was successfully sent to the remote.
+     * @param close the close details
      */
-    public void close();
-
-    /**
-     * Send a websocket Close frame, with status code.
-     * <p>
-     * Advanced usage: results in an non-blocking async write, then connection close.
-     * 
-     * @param statusCode
-     *            the status code
-     * @param reason
-     *            the (optional) reason. (can be null for no reason)
-     * @see org.eclipse.jetty.websocket.api.StatusCode
-     */
-    public void close(int statusCode, String reason);
+    void onLocalClose(CloseInfo close);
 
     /**
      * Terminate the connection (no close frame sent)
@@ -75,7 +58,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * 
      * @return the idle timeout in milliseconds
      */
-    public long getIdleTimeout();
+    long getIdleTimeout();
 
     /**
      * Get the IOState of the connection.
@@ -119,7 +102,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * 
      *  @return true if connection is open
      */
-    public boolean isOpen();
+    boolean isOpen();
 
     /**
      * Tests if the connection is actively reading.
@@ -150,6 +133,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
     void setNextIncomingFrames(IncomingFrames incoming);
 
     /**
+     * Associate the Active Session with the connection.
+     *
+     * @param session the session for this connection
+     */
+    void setSession(WebSocketSession session);
+
+    /**
      * Suspend a the incoming read events on the connection.
      * @return the suspend token
      */
@@ -159,5 +149,5 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      * Get Unique ID for the Connection
      * @return the unique ID for the connection
      */
-    public String getId();
+    String getId();
 }
