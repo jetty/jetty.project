@@ -10,8 +10,8 @@
   <name>Jetty :: Jetty Maven Plugin</name>
   <description>Jetty maven plugins</description>
   <properties>
-    <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>3.4</pluginToolsVersion>
+    <mavenVersion>3.5.0</mavenVersion>
+    <pluginToolsVersion>3.5</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
     <it.debug>false</it.debug>
     <jetty.stopKey>FOOBEER</jetty.stopKey>
@@ -79,6 +79,11 @@
       <artifactId>maven-plugin-annotations</artifactId>
       <version>${pluginToolsVersion}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-artifact-transfer</artifactId>
+      <version>0.9.1</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

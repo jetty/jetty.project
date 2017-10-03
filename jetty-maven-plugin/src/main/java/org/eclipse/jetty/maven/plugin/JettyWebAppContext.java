@@ -333,11 +333,13 @@ public class JettyWebAppContext extends WebAppContext
     @Override
     public void doStart () throws Exception
     {
+
         //choose if this will be a quickstart or normal start
         if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
         {
             MavenQuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
             quickStart.setMode(Mode.QUICKSTART);
+            quickStart.setQuickStartWebXml(getQuickStartWebDescriptor());
             addConfiguration(quickStart);
         }
         else if (isGenerateQuickStart())
@@ -398,7 +400,6 @@ public class JettyWebAppContext extends WebAppContext
     protected void loadConfigurations()
     {
         super.loadConfigurations();
-        
         try
         {
             //inject configurations with config from maven plugin
@@ -406,8 +407,6 @@ public class JettyWebAppContext extends WebAppContext
             {
                 if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
                     ((EnvConfiguration)c).setJettyEnvXml(Resource.toURL(new File(getJettyEnvXml())));
-                else if (c instanceof MavenQuickStartConfiguration && getQuickStartWebDescriptor() != null)
-                    ((MavenQuickStartConfiguration)c).setQuickStartWebXml(getQuickStartWebDescriptor());
             }
         }
         catch(Exception e)

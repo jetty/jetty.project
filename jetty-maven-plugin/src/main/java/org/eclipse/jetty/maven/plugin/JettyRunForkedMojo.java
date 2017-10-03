@@ -18,27 +18,9 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,9 +29,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /**
@@ -57,7 +48,7 @@ import java.util.Set;
  * <p>
  * You need to define a jetty.xml file to configure connectors etc. You can use the normal setters of o.e.j.webapp.WebAppContext on the <b>webApp</b>
  * configuration element for this plugin. You may also need context xml file for any particularly complex webapp setup.
- * about your webapp.
+ * 
  * <p>
  * Unlike the other jetty goals, this does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
  * <p>
@@ -101,6 +92,13 @@ public class JettyRunForkedMojo extends JettyRunMojo
     
     
     /**
+     * Optional list of jetty properties to put on the command line
+     * @parameter
+     */
+    private String[] jettyProperties;
+    
+    
+    /**
      * @parameter default-value="${plugin.artifacts}"
      * @readonly
      */
@@ -119,11 +117,22 @@ public class JettyRunForkedMojo extends JettyRunMojo
      */
     private boolean waitForChild;
 
-    /**
-     * @parameter default-value="50"
-     */
-    private int maxStartupLines;
     
+    /**
+     * Max number of times to try checking if the
+     * child has started successfully.
+     * 
+     * @parameter alias="maxStartupLines" default-value="50"
+     */
+    private int maxChildChecks;
+    
+    /**
+     * Millisecs to wait between each
+     * check to see if the child started successfully.
+     * 
+     * @parameter default-value="100"
+     */
+    private long maxChildCheckInterval;
     
     /**
      * Extra environment variables to be passed to the forked process
@@ -143,12 +152,16 @@ public class JettyRunForkedMojo extends JettyRunMojo
      */
     private Random random;    
     
- 
+
+    /**
+     * Whether or not the plugin has explicit slf4j dependencies.
+     * The maven environment will always have slf4j on the classpath,
+     * which we don't want to put onto the forked process unless the
+     * pom has an explicit dependency on it.
+     */
+    private boolean hasSlf4jDeps;
     
-    private Resource originalBaseResource;
-    private boolean originalPersistTemp;
-    
-    
+
     /**
      * ShutdownThread
      *
@@ -169,54 +182,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
             }
         }
     }
-
-
-    /**
-     * we o
-     */
-//    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
-//    {
-//
-//        return null;
-//    }
-
-    /**
-     * ConsoleStreamer
-     * 
-     * Simple streamer for the console output from a Process
-     */
-    private static class ConsoleStreamer implements Runnable
-    {
-        private String mode;
-        private BufferedReader reader;
-
-        public ConsoleStreamer(String mode, InputStream is)
-        {
-            this.mode = mode;
-            this.reader = new BufferedReader(new InputStreamReader(is));
-        }
-
-
-        public void run()
-        {
-            String line;
-            try
-            {
-                while ((line = reader.readLine()) != (null))
-                {
-                    System.out.println("[" + mode + "] " + line);
-                }
-            }
-            catch (IOException ignore)
-            {
-                /* ignore */
-            }
-            finally
-            {
-                IO.close(reader);
-            }
-        }
-    }
     
     
     
@@ -229,6 +194,17 @@ public class JettyRunForkedMojo extends JettyRunMojo
     {
         Runtime.getRuntime().addShutdownHook(new ShutdownThread());
         random = new Random();
+        
+        List<Dependency> deps = plugin.getPlugin().getDependencies();
+        for (Dependency d:deps)
+        {
+            if (d.getGroupId().contains("slf4j"))
+            {
+                hasSlf4jDeps = true;
+                break;
+            }
+        }
+        
         super.execute();
     }
     
@@ -256,12 +232,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
-            
-            //copy the base resource as configured by the plugin
-            originalBaseResource = webApp.getBaseResource();
-
-            //get the original persistance setting
-            originalPersistTemp = webApp.isPersistTempDirectory();
 
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
@@ -302,6 +272,8 @@ public class JettyRunForkedMojo extends JettyRunMojo
             
             webApp.stop();
             
+            
+            
             if (tpool != null)
                 tpool.stop();
             
@@ -338,19 +310,22 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 cmd.add("--jetty-xml");
                 cmd.add(jettyXml);
             }
-        
-            if (contextXml != null)
-            {
-                cmd.add("--context-xml");
-                cmd.add(contextXml);
-            }
             
             cmd.add("--props");
             cmd.add(props.getAbsolutePath());
             
             String token = createToken();
+            Path tokenFile = target.toPath().resolve(createToken()+".txt");
             cmd.add("--token");
-            cmd.add(token);
+            cmd.add(tokenFile.toAbsolutePath().toString());
+            
+            if (jettyProperties != null)
+            {
+                for (String jettyProp:jettyProperties)
+                {
+                    cmd.add(jettyProp);
+                }
+            }
             
             ProcessBuilder builder = new ProcessBuilder(cmd);
             builder.directory(project.getBasedir());
@@ -368,49 +343,32 @@ public class JettyRunForkedMojo extends JettyRunMojo
             
             if (waitForChild)
             {
-                forkedProcess = builder.start();
-                startPump("STDOUT",forkedProcess.getInputStream());
-                startPump("STDERR",forkedProcess.getErrorStream());
+                builder.inheritIO();
+            }
+            else
+            {
+                builder.redirectOutput(new File(target, "jetty.out"));
+                builder.redirectErrorStream(true);
+            }
+            
+            forkedProcess = builder.start();
+            
+            if (waitForChild)
+            {
                 int exitcode = forkedProcess.waitFor();            
                 PluginLog.getLog().info("Forked execution exit: "+exitcode);
             }
             else
-            {   //merge stderr and stdout from child
-                builder.redirectErrorStream(true);
-                forkedProcess = builder.start();
-
-                //wait for the child to be ready before terminating.
-                //child indicates it has finished starting by printing on stdout the token passed to it
-                try
+            {  
+                //just wait until the child has started successfully
+                int attempts = maxChildChecks;
+                while (!Files.exists(tokenFile) && attempts > 0)
                 {
-                    String line = "";
-                    try (InputStream is = forkedProcess.getInputStream();
-                            LineNumberReader reader = new LineNumberReader(new InputStreamReader(is)))
-                    {
-                        int attempts = maxStartupLines; //max lines we'll read trying to get token
-                        while (attempts>0 && line != null)
-                        {
-                            --attempts;
-                            line = reader.readLine();
-                            if (line != null && line.startsWith(token))
-                                break;
-                        }
-
-                    }
-
-                    if (line != null && line.trim().equals(token))
-                        PluginLog.getLog().info("Forked process started.");
-                    else
-                    {
-                        String err = (line == null?"":(line.startsWith(token)?line.substring(token.length()):line));
-                        PluginLog.getLog().info("Forked process startup errors"+(!"".equals(err)?", received: "+err:""));
-                    }
+                    Thread.currentThread().sleep(maxChildCheckInterval);
+                    --attempts;
                 }
-                catch (Exception e)
-                {
-                    throw new MojoExecutionException ("Problem determining if forked process is ready: "+e.getMessage());
-                }
-
+                if (attempts <=0 )
+                    getLog().info("Couldn't verify success of child startup");
             }
         }
         catch (InterruptedException ex)
@@ -424,6 +382,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
         {
             if (forkedProcess != null && waitForChild)
                 forkedProcess.destroy();
+            
             throw new MojoExecutionException("Failed to create Jetty process", ex);
         }
     }
@@ -457,106 +416,10 @@ public class JettyRunForkedMojo extends JettyRunMojo
     public File prepareConfiguration() throws MojoExecutionException
     {
         try
-        {
+        {   
             //work out the configuration based on what is configured in the pom
             File propsFile = new File (target, "fork.props");
-            if (propsFile.exists())
-                propsFile.delete();   
-
-            propsFile.createNewFile();
-            //propsFile.deleteOnExit();
-
-            Properties props = new Properties();
-            //web.xml
-            if (webApp.getDescriptor() != null)
-            {
-                props.put("web.xml", webApp.getDescriptor());
-            }
-            
-            if (webApp.getQuickStartWebDescriptor() != null)
-            {
-                props.put("quickstart.web.xml", webApp.getQuickStartWebDescriptor().getFile().getAbsolutePath());
-            }
-
-            //sort out the context path
-            if (webApp.getContextPath() != null)
-            {
-                props.put("context.path", webApp.getContextPath());
-            }
-
-            //tmp dir
-            props.put("tmp.dir", webApp.getTempDirectory().getAbsolutePath());
-            props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
-
-            //send over the original base resources before any overlays were added
-            if (originalBaseResource instanceof ResourceCollection)
-                props.put("base.dirs.orig", toCSV(((ResourceCollection)originalBaseResource).getResources()));
-            else
-                props.put("base.dirs.orig", originalBaseResource.toString());
-
-            //send over the calculated resource bases that includes unpacked overlays, but none of the
-            //meta-inf resources
-            Resource postOverlayResources = (Resource)webApp.getAttribute(MavenWebInfConfiguration.RESOURCE_BASES_POST_OVERLAY);
-            if (postOverlayResources instanceof ResourceCollection)
-                props.put("base.dirs", toCSV(((ResourceCollection)postOverlayResources).getResources()));
-            else
-                props.put("base.dirs", postOverlayResources.toString());
-            
-            //web-inf classes
-            if (webApp.getClasses() != null)
-            {
-                props.put("classes.dir",webApp.getClasses().getAbsolutePath());
-            }
-            
-            if (useTestScope && webApp.getTestClasses() != null)
-            {
-                props.put("testClasses.dir", webApp.getTestClasses().getAbsolutePath());
-            }
-
-            //web-inf lib
-            List<File> deps = webApp.getWebInfLib();
-            StringBuffer strbuff = new StringBuffer();
-            for (int i=0; i<deps.size(); i++)
-            {
-                File d = deps.get(i);
-                strbuff.append(d.getAbsolutePath());
-                if (i < deps.size()-1)
-                    strbuff.append(",");
-            }
-            props.put("lib.jars", strbuff.toString());
-
-            //any war files
-            List<Artifact> warArtifacts = getWarArtifacts(); 
-            for (int i=0; i<warArtifacts.size(); i++)
-            {
-                strbuff.setLength(0);           
-                Artifact a  = warArtifacts.get(i);
-                strbuff.append(a.getGroupId()+",");
-                strbuff.append(a.getArtifactId()+",");
-                strbuff.append(a.getFile().getAbsolutePath());
-                props.put("maven.war.artifact."+i, strbuff.toString());
-            }
-          
-            
-            //any overlay configuration
-            WarPluginInfo warPlugin = new WarPluginInfo(project);
-            
-            //add in the war plugins default includes and excludes
-            props.put("maven.war.includes", toCSV(warPlugin.getDependentMavenWarIncludes()));
-            props.put("maven.war.excludes", toCSV(warPlugin.getDependentMavenWarExcludes()));
-            
-            
-            List<OverlayConfig> configs = warPlugin.getMavenWarOverlayConfigs();
-            int i=0;
-            for (OverlayConfig c:configs)
-            {
-                props.put("maven.war.overlay."+(i++), c.toString());
-            }
-            
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
-            {
-                props.store(out, "properties for forked webapp");
-            }
+            WebAppPropertyConverter.toProperties(webApp, propsFile, contextXml);
             return propsFile;
         }
         catch (Exception e)
@@ -566,29 +429,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
     }
     
 
-    
-    
-  
-    
-    /**
-     * @return
-     * @throws MalformedURLException
-     * @throws IOException
-     */
-    private List<Artifact> getWarArtifacts()
-    throws MalformedURLException, IOException
-    {
-        List<Artifact> warArtifacts = new ArrayList<Artifact>();
-        for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
-        {
-            Artifact artifact = iter.next();
-            
-            if (artifact.getType().equals("war"))
-                warArtifacts.add(artifact);
-        }
-
-        return warArtifacts;
-    }
     
     public boolean isPluginArtifact(Artifact artifact)
     {
@@ -640,6 +480,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
             Artifact artifact = (Artifact) obj;
             if ("jar".equals(artifact.getType()))
             {
+                //ignore slf4j from inside maven
+                if (artifact.getGroupId().contains("slf4j") && !hasSlf4jDeps)
+                        continue;
                 if (classPath.length() > 0)
                 {
                     classPath.append(File.pathSeparator);
@@ -648,6 +491,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             }
         }
+
         
         //Any jars that we need from the plugin environment (like the ones containing Starter class)
         Set<Artifact> extraJars = getExtraJars();
@@ -734,41 +578,5 @@ public class JettyRunForkedMojo extends JettyRunMojo
     private String createToken ()
     {
         return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
-    }
-    
-    private void startPump(String mode, InputStream inputStream)
-    {
-        ConsoleStreamer pump = new ConsoleStreamer(mode,inputStream);
-        Thread thread = new Thread(pump,"ConsoleStreamer/" + mode);
-        thread.setDaemon(true);
-        thread.start();
-    }
-
-    private String toCSV (List<String> strings)
-    {
-        if (strings == null)
-            return "";
-        StringBuffer strbuff = new StringBuffer();
-        Iterator<String> itor = strings.iterator();
-        while (itor.hasNext())
-        {
-            strbuff.append(itor.next());
-            if (itor.hasNext())
-                strbuff.append(",");
-        }
-        return strbuff.toString();
-    }
-
-    private String toCSV (Resource[] resources)
-    {
-        StringBuffer rb = new StringBuffer();
-
-        for (Resource r:resources)
-        {
-            if (rb.length() > 0) rb.append(",");
-            rb.append(r.toString());
-        }        
-
-        return rb.toString();
     }
 }

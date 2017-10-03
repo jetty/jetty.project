@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -402,7 +403,9 @@ public class ResourceService
             if (LOG.isDebugEnabled())
                 LOG.debug("welcome={}",welcome);
 
-            if (_redirectWelcome)
+            ServletContext context = request.getServletContext();
+
+            if (_redirectWelcome || context==null)
             {
                 // Redirect to the index
                 response.setContentLength(0);
@@ -416,7 +419,7 @@ public class ResourceService
                 return;
             }
             
-            RequestDispatcher dispatcher=request.getServletContext().getRequestDispatcher(welcome);
+            RequestDispatcher dispatcher=context.getRequestDispatcher(welcome);
             if (dispatcher!=null)
             {
                 // Forward to the index

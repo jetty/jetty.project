@@ -354,6 +354,12 @@ You do not need to assemble the webapp into a WAR, saving time during the develo
 Once invoked, you can configure the plugin to run continuously, scanning for changes in the project and automatically performing a hot redeploy when necessary.
 Any changes you make are immediately reflected in the running instance of Jetty, letting you quickly jump from coding to testing, rather than going through the cycle of: code, compile, reassemble, redeploy, test.
 
+____
+[NOTE]
+As of jetty-9.4.7, when using jetty:run in a multi-module build, it is no longer necessary to build each of the modules that form dependencies of the webapp first.
+Thus, if your webapp depends on other modules in your project and they are present in the reactor at the same time, jetty will use their compiled classes rather than their jar files from your local maven repository.
+____
+
 Here is an example, which turns on scanning for changes every ten seconds, and sets the webapp context path to `/test`:
 
 [source, xml, subs="{sub-order}"]
@@ -588,7 +594,8 @@ Here's the configuration:
 ==== jetty:run-forked
 
 This goal allows you to start the webapp in a new JVM, optionally passing arguments to that new JVM.
-This goal supports the same configuration parameters as the `jetty:run` goal with a couple of extras to help configure the forked process.
+This goal supports mostly the same configuration parameters as the `jetty:run` goal with a couple of extras to help configure the forked process.
+Unlike the `jetty:run` goal, the `jetty:run-forked` goal will not scan the webapp for changes and redeploy.
 
 ===== Configuration
 
@@ -606,10 +613,25 @@ This causes the parent process to wait for the forked process to exit.
 In this case you can use `ctrl-c` to terminate both processes.
 It is more useful to set it to `false`, in which case the parent process terminates whilst leaving the child process running.
 You use the `jetty:stop` goal to stop the child process.
-maxStartupLines::
+In the case where `waitForChild` is `false`, the output from the child process is written to `target/jetty.out`.
+maxChildChecks::
 Default is `50`.
-This is maximum number of lines the parent process reads from the child process to receive an indication that the child has started.
-If the child process produces an excessive amount of output on stdout you may need to increase this number.
+This is maximum number of times the parent process checks to see if the child process has started.
+Only relevant if `waitForChild` is `false`.
+maxChildCheckInterval::
+Default is `100`.
+This is the time in milliseconds between checks to see if the child process has started. 
+Only relevant if `waitForChild` is `false`.
+forkWebXml::
+Default is `target/fork-web.xml`.
+This is the name of the file into which jetty generates the effective web.xml for use by the child process.
+
+The following `jetty:run` parameters are NOT applicable:
+
+* *scanTargets*
+* *scanTargetPatterns*
+* *scanClassesPattern*
+* *scanTestClassesPattern*
 
 Some of the container configuration parameters are *NOT* available with this goal:
 
@@ -649,6 +671,130 @@ ____
 If you want to set a custom port for the Jetty connector you need to specify it in a `jetty xml` file rather than setting the connector and port tags.
 You can specify the location of the `jetty.xml` using the `jettyXml` parameter.
 ____
+
+[[jetty-run-distro-goal]]
+==== jetty:run-distro
+
+Introduced in jetty-9.4.8, this goal allows you to execute your unassembled webapp in a local distribution of jetty.
+This can be useful if your webapp requires a highly customized environment in which to run.
+If your webapp is designed to run in the jetty distribution in production, then this goal is the closest approximation to that environment. 
+
+Similar to the jetty:run-forked goal, this goal will fork a child process in which to execute your webapp in the distro.
+
+===== Configuration
+
+The configuration parameters are mostly the same as the `jetty:run` goal (although see below for some exceptions), with the addition of:
+
+jettyBase::
+Optional. 
+The location of an existing jetty base directory to use to deploy the webapp.
+The existing base will be copied to the `target/` directory before the webapp is deployed.
+If there is no existing jetty base, a fresh one will be made in `target/jetty-base`.
+jettyHome::
+Optional.
+The location of an existing unpacked jetty distribution.
+If one does not exist, a fresh jetty distribution will be downloaded from maven and installed to the `target` directory.
+jettyProperties::
+Optional.
+An array of jetty properties to specify on the command line for the child process.
+jvmArgs::
+Optional.
+A string representing arguments that should be passed to the jvm of the child process.
+modules::
+Optional.
+An array of names of jetty modules that the jetty child process will activate.
+waitForChild::
+Default is `true`.
+Like jetty:run-forked, if `true`, the parent process will wait for the child to exit and echo all of its output to the parent's stdout/stderr.
+In that case you can terminate both processes with a `cntrl-c`.
+If `false`, the parent does not wait for the child to finish, and the child will write all of its output to `target/jetty.out`.
+To stop the asynchronously executing child process you can use `jetty:stop`.
+maxChildChecks::
+Default value 10.
+This is the maximum number of times the parent will check to see if the child started correctly when `waitForChild` is `false`.
+maxChildCheckInterval::
+Default value 100.
+This is the interval in milliseconds between checks to see if the child started correctly.
+Only applicable if `waitForChild` is `false`.
+
+____
+[NOTE]
+Use the `modules` parameter to configure the jetty distribution appropriately rather than using jetty artifacts as `plugin dependencies`.
+____
+
+The following `jetty:run` parameters are *NOT* applicable to this goal:
+
+* *scanTargets*
+* *scanTargetPatterns*
+* *scanClassesPattern*
+* *scanTestClassesPattern*
+
+
+The following container configuration options are *NOT* applicable for this goal:
+
+scanIntervalSeconds::
+Not supported.
+This goal will not monitor and redeploy the webapp.
+reload::
+Not supported.
+This goal will not redeploy the webapp.
+httpConnector::
+Not supported.
+Use the `modules` parameter to enable appropriate modules, or the `jettyBase` parameter to point to an appropriately configured jetty base.
+loginServices::
+Not supported.
+Use the `modules` parameter to enable appropriate modules, or the `jettyBase` parameter to point to an appropriately configured jetty base.
+requestLog::
+Not supported.
+Use the `modules` parameter to enable appropriate modules, or the `jettyBase` parameter to point to an appropriately configured jetty base.
+systemProperties::
+Not supported.
+Use the `jvmArgs` parameter to pass system properties to the forked process.
+
+Here's an example of using the configuration parameters:
+[source, xml, subs="{sub-order}"]
+----
+
+<project>
+...
+  <plugins>
+...
+  <plugin>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-maven-plugin</artifactId>
+    <version>{VERSION}</version>
+    <configuration>
+      <stopKey>alpha</stopKey>
+      <stopPort>9099</stopPort>
+      <jettyBase>/my/existing/jetty-base</jettyBase>
+      <contextXml>/some/existing/context.xml</contextXml>
+      <useTestClasspath>true</useTestClasspath>
+      <modules>
+       <module>apache-jsp</module>
+       <module>apache-jstl</module>
+      </modules>
+      <jettyProperties>
+        <jettyProperty>jetty.server.dumpAfterStart=true</jettyProperty>
+      </jettyProperties>
+      <jvmArgs>-Dorg.eclipse.jetty.webapp.LEVEL=DEBUG</jvmArgs>
+      <webApp>
+        <contextPath>/mypath</contextPath>
+      </webApp>
+    </configuration>
+    </plugin>
+...
+  </plugins>
+</project>
+
+----
+
+To deploy your unassembled web app to jetty running as a local distribution:
+
+[source, screen, subs="{sub-order}"]
+....
+mvn jetty:run-distro
+....
+
 
 [[jetty-start-goal]]
 ==== jetty:start
@@ -766,7 +912,7 @@ Some examples of elements with origin attribute information are:
 <servlet-class origin="@WebServlet(com.acme.test.TestServlet):24">
 ----
 
-To generate origin informatino, use the following configuration parameters on the  `webApp` element:
+To generate origin information, use the following configuration parameters on the  `webApp` element:
 
 originAttribute::
 The name of the attribute that will contain the origin.
@@ -778,7 +924,7 @@ False by default. If true, will force the generation of the originAttribute onto
 [[using-overlaid-wars]]
 ==== Using Overlaid wars
 
-If your webapp depends on other war files, thelink:#jetty-run-goal[jetty:run] and link:#jetty-run-forked-goal[jetty:run-forked] goals are able to merge resources from all of them.
+If your webapp depends on other war files, the link:#jetty-run-goal[jetty:run] and link:#jetty-run-forked-goal[jetty:run-forked] goals are able to merge resources from all of them.
 It can do so based on the settings of the http://maven.apache.org/plugins/maven-war-plugin/[maven-war-plugin], or if your project does not use the http://maven.apache.org/plugins/maven-war-plugin/[maven-war-plugin] to handle the overlays, it can fall back to a simple algorithm to determine the ordering of resources.
 
 ===== With maven-war-plugin
@@ -963,6 +1109,8 @@ Here is a configuration example:
 [[running-more-than-one-webapp]]
 ==== Running More than One Webapp
 
+===== With jetty:run
+
 You can use either a `jetty.xml` file to configure extra (pre-compiled) webapps that you want to deploy, or you can use the `<contextHandlers>` configuration element to do so.
 If you want to deploy webapp A, and webapps B and C in the same Jetty instance:
 
@@ -1045,6 +1193,10 @@ Then configure the location of this `jetty.xml` file into webapp A's jetty plugi
 
 For either of these solutions, the other webapps must already have been built, and they are not automatically monitored for changes.
 You can refer either to the packed WAR file of the pre-built webapps or to their expanded equivalents.
+
+===== With jetty:run-distro
+
+Simply configure a jetty base that contains all of the other prebuilt webapps you wish to deploy.
 
 [[setting-system-properties]]
 ==== Setting System Properties

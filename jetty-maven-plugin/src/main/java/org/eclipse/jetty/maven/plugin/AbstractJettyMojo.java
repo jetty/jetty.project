@@ -21,11 +21,9 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -40,14 +38,10 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -538,8 +532,15 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         //context xml file can OVERRIDE those settings
         if (contextXml != null)
         {
-            File file = FileUtils.getFile(contextXml);
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(file));
+            Path path = Paths.get(contextXml);
+            if (!path.isAbsolute())
+            {
+                Path workDir = Paths.get(System.getProperty("user.dir"));
+                path = workDir.resolve(path);
+                contextXml = path.toFile().getAbsolutePath();
+            }
+    
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(path.toFile()));
             getLog().info("Applying context xml file "+contextXml);
             xmlConfiguration.configure(webApp);   
         }
