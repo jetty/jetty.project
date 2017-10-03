@@ -107,8 +107,9 @@ public class ServerSupport
      * 
      * @param server the server
      * @param connector the connector
+     * @param properties jetty properties
      */
-    public static void configureConnectors (Server server, Connector connector)
+    public static void configureConnectors (Server server, Connector connector, Map<String,String> properties)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -128,8 +129,14 @@ public class ServerSupport
         {
             //Make a new default connector
             MavenServerConnector tmp = new MavenServerConnector();               
-            //use any jetty.http.port settings provided
-            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
+            //use any jetty.http.port settings provided, trying system properties before jetty properties
+            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY);
+            if (port == null)
+                port = System.getProperty("jetty.port");
+            if (port == null)
+                port = (properties != null? properties.get(MavenServerConnector.PORT_SYSPROPERTY):null);
+            if (port == null)
+                port = MavenServerConnector.DEFAULT_PORT_STR;
             tmp.setPort(Integer.parseInt(port.trim()));
             tmp.setServer(server);
             server.setConnectors(new Connector[] {tmp});

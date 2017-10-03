@@ -64,7 +64,7 @@ public class Starter
         applyJettyXml ();
 
         //ensure there's a connector
-        ServerSupport.configureConnectors(server, null);
+        ServerSupport.configureConnectors(server, null, null);
 
         //check if contexts already configured, create if not
         ServerSupport.configureHandlers(server, null, null);

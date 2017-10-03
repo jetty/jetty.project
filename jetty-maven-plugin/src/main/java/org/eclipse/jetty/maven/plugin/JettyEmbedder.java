@@ -293,7 +293,7 @@ public class JettyEmbedder
         if (httpConnector != null)
             httpConnector.setServer(server);
         
-        ServerSupport.configureConnectors(server, httpConnector);
+        ServerSupport.configureConnectors(server, httpConnector, jettyProperties);
 
         //set up handler structure
         ServerSupport.configureHandlers(server, contextHandlers, requestLog);
