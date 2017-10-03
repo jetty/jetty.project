@@ -22,11 +22,9 @@ import org.eclipse.jetty.io.ByteBufferPool;
 
 /**
  * {@link ContentDecoder} for the "gzip" encoding.
- * 
  */
 public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecoder implements ContentDecoder
 {
-
     private static final int DEFAULT_BUFFER_SIZE = 2048;
 
     public GZIPContentDecoder()

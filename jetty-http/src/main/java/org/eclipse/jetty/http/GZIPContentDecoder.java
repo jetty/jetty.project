@@ -101,7 +101,6 @@ public class GZIPContentDecoder implements Destroyable
             if (size<=_inflated.capacity())
             {
                 BufferUtil.append(_inflated,chunk);
-                BufferUtil.put(chunk,_inflated);
                 release(chunk);
             }
             else
