@@ -63,7 +63,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * This goal is used to deploy the unassembled webapp into a jetty distribution. If the location
  * of an existing unpacked distribution is not supplied as the configuration param jettyHome, 
- * this goal will download and unpack the jetty distro before deploying the webapp.
+ * this goal will download and unpack the jetty distro matching the version of this plugin before deploying the webapp.
  * 
  * The webapp will execute in the distro in a forked process.
  * 
