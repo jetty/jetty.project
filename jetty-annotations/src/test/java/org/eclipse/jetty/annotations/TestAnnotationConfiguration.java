@@ -195,7 +195,7 @@ public class TestAnnotationConfiguration
         String dir = MavenTestingUtils.getTargetTestingDir("getFragmentFromJar").getAbsolutePath();
         File file = new File(dir);
         file=new File(file.getCanonicalPath());
-        URL url=file.toURL();
+        URL url=file.toURI().toURL();
 
         Resource jar1 = Resource.newResource(url+"file.jar");
 
