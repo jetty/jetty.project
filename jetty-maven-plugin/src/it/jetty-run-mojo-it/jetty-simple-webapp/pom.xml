@@ -80,7 +80,7 @@
             <id>start-jetty</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>run</goal>
+              <goal>start</goal>
             </goals>
             <configuration>
               <nonBlocking>true</nonBlocking>
