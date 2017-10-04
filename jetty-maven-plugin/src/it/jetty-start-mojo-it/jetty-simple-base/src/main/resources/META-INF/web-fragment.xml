@@ -14,7 +14,7 @@
 
   <servlet>
     <servlet-name>Ping</servlet-name>
-    <servlet-class>org.eclipse.jetty.its.jetty_run_mojo_it.PingServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.its.jetty_start_mojo_it.PingServlet</servlet-class>
     <init-param>
       <param-name>extra1</param-name><param-value>123</param-value>
     </init-param>

@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.its.jetty_run_mojo_it;
+package org.eclipse.jetty.its.jetty_run_war_exploded_mojo_it;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
