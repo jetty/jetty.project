@@ -484,4 +484,6 @@ public abstract class WebSocketCoreSession<
         this.connection.disconnect();
         super.doStop();
     }
+
+    public abstract String getSubprotocol();
 }

@@ -47,7 +47,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.ParserDeMasker;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
@@ -89,7 +88,7 @@ public class WebSocketHandler extends HandlerWrapper
 
     interface WebSocketConnectionFactory extends ConnectionFactory
     {
-        WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, List<String> extensions);
+        WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, List<ExtensionConfig> extensions);
 
         @Override
         default Connection newConnection(Connector connector, EndPoint endPoint)
@@ -114,7 +113,7 @@ public class WebSocketHandler extends HandlerWrapper
     {
         // TODO why is core session abstract?
         WebSocketCoreSession<ContainerLifeCycle,WebSocketCoreConnection,WebSocketLocalEndpoint,WebSocketRemoteEndpoint>
-        newSession(WebSocketCoreConnection connection, String subprotocol);
+        newSession(WebSocketCoreConnection connection, List<String> subprotocols);
     }
 
 
@@ -169,7 +168,7 @@ public class WebSocketHandler extends HandlerWrapper
             QuotedCSV connectionCSVs = null;
             String key = null;
             QuotedCSV extensionCSVs = null;
-            String subprotocol = null;
+            QuotedCSV subprotocolCSVs = null;
 
             for (HttpField field : baseRequest.getHttpFields())
             {
@@ -200,9 +199,9 @@ public class WebSocketHandler extends HandlerWrapper
                             break;
 
                         case SEC_WEBSOCKET_SUBPROTOCOL:
-                            if (subprotocol!=null)
-                                return false;
-                            subprotocol = field.getValue();
+                            if (subprotocolCSVs==null)
+                                subprotocolCSVs = new QuotedCSV();
+                            subprotocolCSVs.addValue(field.getValue());
                             break;
 
                         case SEC_WEBSOCKET_VERSION:
@@ -249,9 +248,14 @@ public class WebSocketHandler extends HandlerWrapper
                     LOG.debug("not upgraded no connection factory {}",baseRequest);
                 return false;
             }
+
+            List<ExtensionConfig> extensions = extensionCSVs==null
+                    ?Collections.emptyList()
+                    :extensionCSVs.getValues().stream().map(ExtensionConfig::parse).collect(Collectors.toList());
+
             HttpChannel channel = baseRequest.getHttpChannel();
             WebSocketCoreConnection connection =
-                    connectionFactory.newConnection(channel.getConnector(),channel.getEndPoint(),extensionCSVs.getValues());
+                    connectionFactory.newConnection(channel.getConnector(),channel.getEndPoint(),extensions);
             if (connection==null)
             {
                 if (LOG.isDebugEnabled())
@@ -270,7 +274,7 @@ public class WebSocketHandler extends HandlerWrapper
                     LOG.debug("not upgraded no session factory {}",baseRequest);
                 return false;
             }
-            WebSocketCoreSession session = sessionFactory.newSession(connection, subprotocol);
+            WebSocketCoreSession session = sessionFactory.newSession(connection, subprotocolCSVs==null?Collections.emptyList():subprotocolCSVs.getValues());
             if (session==null)
             {
                 if (LOG.isDebugEnabled())
@@ -287,6 +291,7 @@ public class WebSocketHandler extends HandlerWrapper
             baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_ACCEPT, AcceptHash.hashKey(key));
             baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
                                              ExtensionConfig.toHeaderValue(connection.getExtensionStack().getNegotiatedExtensions()));
+            String subprotocol = session.getSubprotocol();
             if (subprotocol!=null)
                 baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,subprotocol);
             baseResponse.flushBuffer();
@@ -309,8 +314,6 @@ public class WebSocketHandler extends HandlerWrapper
         }
     };
 
-
-
     static class TestWebSocketConnectionFactory extends ContainerLifeCycle implements WebSocketConnectionFactory
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -319,13 +322,10 @@ public class WebSocketHandler extends HandlerWrapper
         DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
 
         @Override
-        public WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, List<String> extensions)
+        public WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, List<ExtensionConfig> extensions)
         {
             ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
-            extensionStack.negotiate(objectFactory, policy, bufferPool,
-                                     extensions.stream().map(ExtensionConfig::parse).collect(Collectors.toList()));
-            UpgradeRequest upgradeRequest = null; // TODO
-            UpgradeResponse upgradeResponse = null; // TODO
+            extensionStack.negotiate(objectFactory, policy, bufferPool,extensions);
 
             return new WebSocketCoreConnection(
                     endPoint,
@@ -334,8 +334,8 @@ public class WebSocketHandler extends HandlerWrapper
                     objectFactory,
                     policy,
                     extensionStack,
-                    upgradeRequest,
-                    upgradeResponse);
+                    null,
+                    null);
         }
     }
 
@@ -344,7 +344,7 @@ public class WebSocketHandler extends HandlerWrapper
     {
         @Override
         public WebSocketCoreSession<ContainerLifeCycle,WebSocketCoreConnection,WebSocketLocalEndpoint,WebSocketRemoteEndpoint>
-        newSession(WebSocketCoreConnection connection, String subprotocol)
+        newSession(WebSocketCoreConnection connection, List<String> subprotocols)
         {
             // TODO why is remoteEndpoint an interface rather than just an impl?
             WebSocketRemoteEndpointImpl remoteEndpoint = new WebSocketRemoteEndpointImpl(connection);
@@ -371,7 +371,6 @@ public class WebSocketHandler extends HandlerWrapper
                     TextFrame text = new TextFrame();
                     text.setPayload("Opened!");
 
-                    // TODO do I need to mask this myself? if so then why?
                     remoteEndpoint.sendFrame(text, new Callback()
                     {
                         @Override
@@ -413,7 +412,14 @@ public class WebSocketHandler extends HandlerWrapper
                             ((WebSocketRemoteEndpointImpl)remoteEndpoint).open();
                             super.open();
                         }
-                        // TODO why is core session abstract?
+
+                        @Override
+                        public String getSubprotocol()
+                        {
+                            if (subprotocols==null || subprotocols.isEmpty())
+                                return null;
+                            return subprotocols.get(0);
+                        }
                     };
 
             //TODO Why can't this be done in constructor?
