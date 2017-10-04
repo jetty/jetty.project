@@ -296,6 +296,14 @@ public class WebSocketHandler extends HandlerWrapper
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade connection={} session={}",connection,session);
 
+            try
+            {
+                connection.getExtensionStack().start();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
             baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
             return true;
         }
@@ -316,7 +324,6 @@ public class WebSocketHandler extends HandlerWrapper
             ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
             extensionStack.negotiate(objectFactory, policy, bufferPool,
                                      extensions.stream().map(ExtensionConfig::parse).collect(Collectors.toList()));
-
             UpgradeRequest upgradeRequest = null; // TODO
             UpgradeResponse upgradeResponse = null; // TODO
 
@@ -339,10 +346,8 @@ public class WebSocketHandler extends HandlerWrapper
         public WebSocketCoreSession<ContainerLifeCycle,WebSocketCoreConnection,WebSocketLocalEndpoint,WebSocketRemoteEndpoint>
         newSession(WebSocketCoreConnection connection, String subprotocol)
         {
-
             // TODO why is remoteEndpoint an interface rather than just an impl?
             WebSocketRemoteEndpointImpl remoteEndpoint = new WebSocketRemoteEndpointImpl(connection);
-            remoteEndpoint.open(); // TODO why is this needed?
 
             // TODO abstract the creation of a local Endpoint
             WebSocketLocalEndpoint localEndpoint = new WebSocketLocalEndpoint()
@@ -387,14 +392,6 @@ public class WebSocketHandler extends HandlerWrapper
                 public void onText(Frame frame, Callback callback)
                 {
                     ByteBuffer payload = frame.getPayload();
-                    // TODO why does the session have to demask?
-                    if (frame.isMasked())
-                    {
-                        ParserDeMasker demask = new ParserDeMasker(); // TODO recycle
-                        demask.reset(frame);
-                        demask.process(payload);
-                        // TODO this doesn't appear to work???
-                    }
                     String text = BufferUtil.toUTF8String(payload);
 
                     LOG.debug("onText {} / {}",text,frame);
@@ -410,6 +407,12 @@ public class WebSocketHandler extends HandlerWrapper
             WebSocketCoreSession<ContainerLifeCycle,WebSocketCoreConnection,WebSocketLocalEndpoint,WebSocketRemoteEndpoint> session =
                     new WebSocketCoreSession(this,connection)
                     {
+                        @Override
+                        public void open()
+                        {
+                            ((WebSocketRemoteEndpointImpl)remoteEndpoint).open();
+                            super.open();
+                        }
                         // TODO why is core session abstract?
                     };
 
