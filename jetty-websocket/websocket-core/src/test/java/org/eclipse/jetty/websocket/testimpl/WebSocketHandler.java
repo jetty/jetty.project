@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.ParserDeMasker;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
@@ -67,6 +68,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -341,7 +343,7 @@ public class WebSocketHandler extends HandlerWrapper
             // TODO why is remoteEndpoint an interface rather than just an impl?
             WebSocketRemoteEndpointImpl remoteEndpoint = new WebSocketRemoteEndpointImpl(connection);
             remoteEndpoint.open(); // TODO why is this needed?
-            
+
             // TODO abstract the creation of a local Endpoint
             WebSocketLocalEndpoint localEndpoint = new WebSocketLocalEndpoint()
             {
@@ -363,6 +365,8 @@ public class WebSocketHandler extends HandlerWrapper
                     LOG.debug("onOpen {}",this);
                     TextFrame text = new TextFrame();
                     text.setPayload("Opened!");
+
+                    // TODO do I need to mask this myself? if so then why?
                     remoteEndpoint.sendFrame(text, new Callback()
                     {
                         @Override
@@ -382,13 +386,24 @@ public class WebSocketHandler extends HandlerWrapper
                 @Override
                 public void onText(Frame frame, Callback callback)
                 {
-                    LOG.debug("onText {}",frame);
+                    ByteBuffer payload = frame.getPayload();
+                    // TODO why does the session have to demask?
+                    if (frame.isMasked())
+                    {
+                        ParserDeMasker demask = new ParserDeMasker(); // TODO recycle
+                        demask.reset(frame);
+                        demask.process(payload);
+                        // TODO this doesn't appear to work???
+                    }
+                    String text = BufferUtil.toUTF8String(payload);
+
+                    LOG.debug("onText {} / {}",text,frame);
                     // TODO why not constructor injection on TextFrame?
-                    TextFrame text = new TextFrame();
+                    TextFrame textFrame = new TextFrame();
 
                     // TODO why not String getter or ByteBuffer setter?
-                    text.setPayload(BufferUtil.toString(frame.getPayload()));
-                    remoteEndpoint.sendFrame(text, callback);
+                    textFrame.setPayload("echo: "+text);
+                    remoteEndpoint.sendFrame(textFrame, callback);
                 }
             };
 
