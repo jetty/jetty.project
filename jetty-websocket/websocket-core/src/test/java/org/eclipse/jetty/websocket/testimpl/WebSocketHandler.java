@@ -124,6 +124,8 @@ public class WebSocketHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Handshaker handshaker = getHandshaker(baseRequest);
+        if (LOG.isDebugEnabled())
+            LOG.debug("handle {} handshaker={}",baseRequest,handshaker);
         if (handshaker!=null && handshaker.upgradeRequest(baseRequest, request, response))
             return;
         super.handle(target,baseRequest,request,response);
@@ -286,12 +288,13 @@ public class WebSocketHandler extends HandlerWrapper
             if (subprotocol!=null)
                 baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,subprotocol);
             baseResponse.flushBuffer();
+            baseRequest.setHandled(true);
 
             // upgrade
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade connection={} session={}",connection,session);
 
-            baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connectionCSVs);
+            baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
             return true;
         }
     };
@@ -337,13 +340,15 @@ public class WebSocketHandler extends HandlerWrapper
 
             // TODO why is remoteEndpoint an interface rather than just an impl?
             WebSocketRemoteEndpointImpl remoteEndpoint = new WebSocketRemoteEndpointImpl(connection);
+            remoteEndpoint.open(); // TODO why is this needed?
+            
             // TODO abstract the creation of a local Endpoint
             WebSocketLocalEndpoint localEndpoint = new WebSocketLocalEndpoint()
             {
                 @Override
                 public Logger getLog()
                 {
-                    return null;
+                    return LOG;
                 }
 
                 @Override
@@ -353,14 +358,37 @@ public class WebSocketHandler extends HandlerWrapper
                 }
 
                 @Override
+                public void onOpen()
+                {
+                    LOG.debug("onOpen {}",this);
+                    TextFrame text = new TextFrame();
+                    text.setPayload("Opened!");
+                    remoteEndpoint.sendFrame(text, new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            LOG.debug("onOpen write!");
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            LOG.warn(x);
+                        }
+                    });
+                }
+
+                @Override
                 public void onText(Frame frame, Callback callback)
                 {
+                    LOG.debug("onText {}",frame);
                     // TODO why not constructor injection on TextFrame?
                     TextFrame text = new TextFrame();
 
                     // TODO why not String getter or ByteBuffer setter?
                     text.setPayload(BufferUtil.toString(frame.getPayload()));
-                    remoteEndpoint.sendFrame(new TextFrame(), callback);
+                    remoteEndpoint.sendFrame(text, callback);
                 }
             };
 
