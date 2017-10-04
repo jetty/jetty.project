@@ -122,8 +122,8 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         Objects.requireNonNull(decoratedObjectFactory, "DecoratedObjectFactory");
         Objects.requireNonNull(policy, "WSPolicy");
         Objects.requireNonNull(extensionStack, "ExtensionStack");
-        Objects.requireNonNull(upgradeRequest, "UpgradeRequest");
-        Objects.requireNonNull(upgradeResponse, "UpgradeResponse");
+        // TODO Objects.requireNonNull(upgradeRequest, "UpgradeRequest");
+        // TODO Objects.requireNonNull(upgradeResponse, "UpgradeResponse");
 
         LOG = Log.getLogger(this.getClass());
         this.bufferPool = bufferPool;
@@ -161,6 +161,11 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     {
         this.session = session;
         this.incomingFrames = session;
+    }
+
+    public ExtensionStack getExtensionStack()
+    {
+        return extensionStack;
     }
 
     @Override
