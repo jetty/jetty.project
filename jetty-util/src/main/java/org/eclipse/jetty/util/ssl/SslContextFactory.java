@@ -1741,7 +1741,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[provider=%s,keyStore=%s,trusStore=%s)",
+        return String.format("%s@%x[provider=%s,keyStore=%s,trustStore=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
                 _sslProvider,
