@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.its.jetty_run_mojo_it;
+package org.eclipse.jetty.its.jetty_run_distro_mojo_it;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Assert;
@@ -28,16 +28,10 @@ import org.junit.Test;
 public class TestHelloServlet
 {
 
-    public TestHelloServlet()
-    {
-      System.err.println("CONSTRUCTED TESTHELLOSERVLET");
-    }
-
     @Test
     public void hello_servlet()
         throws Exception
     {
-System.err.println("IN HELLOSERVLET, PORT="+Integer.getInteger( "jetty.runPort" ));
         int port = Integer.getInteger( "jetty.runPort" );
         System.out.println( "port used:" + port );
         HttpClient httpClient = new HttpClient();

@@ -57,10 +57,10 @@ public class TestJettyOSGiBootHTTP2
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort(true,"jetty-http2.xml"));
-        options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
+        options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.addAll(http2JettyDependencies());
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
+        options.addAll(TestOSGiUtil.httpServiceJetty());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         return options.toArray(new Option[options.size()]);
@@ -69,8 +69,8 @@ public class TestJettyOSGiBootHTTP2
     public static List<Option> http2JettyDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-        res.add(CoreOptions.systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
-        res.add(CoreOptions.systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
+        res.add(CoreOptions.systemProperty("jetty.http.port").value("0"));
+        res.add(CoreOptions.systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
 
         String alpnBoot = System.getProperty("mortbay-alpn-boot");
         if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }
@@ -108,7 +108,7 @@ public class TestJettyOSGiBootHTTP2
     @Test
     public void testHTTP2OnHttpService() throws Exception
     {
-        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "https", TestJettyOSGiBootCore.DEFAULT_SSL_PORT);
+        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "https", TestOSGiUtil.DEFAULT_SSL_PORT);
     }
 
 }

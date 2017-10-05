@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.its.jetty_run_mojo_it;
+package org.eclipse.jetty.its.jetty_run_war_exploded_mojo_it;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Assert;

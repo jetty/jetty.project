@@ -73,9 +73,9 @@ public class TestJettyOSGiBootWithBundle
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-http.xml"));
+        options.addAll(configureJettyHomeAndPort());
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
-        options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
+        options.addAll(TestOSGiUtil.coreJettyDependencies());
 
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
@@ -84,23 +84,22 @@ public class TestJettyOSGiBootWithBundle
         bundle.add(SomeCustomBean.class);
         bundle.set( Constants.BUNDLE_SYMBOLICNAME, TEST_JETTY_HOME_BUNDLE );
         File etcFolder = new File("src/test/config/etc");
-        bundle.add("jettyhome/etc/jetty-http.xml", new FileInputStream(new File(etcFolder, "jetty-http.xml")));
+        bundle.add("jettyhome/etc/jetty-http-boot-with-bundle.xml", new FileInputStream(new File(etcFolder, "jetty-http-boot-with-bundle.xml")));
         bundle.add("jettyhome/etc/jetty-with-custom-class.xml", new FileInputStream(new File(etcFolder, "jetty-with-custom-class.xml")));
 		options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
         return options.toArray(new Option[options.size()]);
     }
 
-    public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
+    public static List<Option> configureJettyHomeAndPort()
     {
         List<Option> options = new ArrayList<Option>();
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value("etc/jetty-with-custom-class.xml,etc/jetty-http.xml"));
-        options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value("etc/jetty-with-custom-class.xml,etc/jetty-http-boot-with-bundle.xml"));
+        options.add(systemProperty("jetty.http.port").value("0"));
+        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home.bundle").value(TEST_JETTY_HOME_BUNDLE));
         return options;
     }
 
-    @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
@@ -110,6 +109,7 @@ public class TestJettyOSGiBootWithBundle
 
     /**
      */
+    @Ignore
     @Test
     public void testContextHandlerAsOSGiService() throws Exception
     {
@@ -118,7 +118,10 @@ public class TestJettyOSGiBootWithBundle
         try
         {
             client.start();
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT);
+            String tmp = System.getProperty("boot.bundle.port");
+            assertNotNull(tmp);
+            int port = Integer.valueOf(tmp.trim()).intValue();
+            ContentResponse response = client.GET("http://127.0.0.1:" + port);
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             String content = new String(response.getContent());
             assertNotNull(content);

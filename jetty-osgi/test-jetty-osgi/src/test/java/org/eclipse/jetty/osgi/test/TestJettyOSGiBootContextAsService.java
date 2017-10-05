@@ -68,9 +68,9 @@ public class TestJettyOSGiBootContextAsService
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-http.xml"));
+        options.addAll(configureJettyHomeAndPort("jetty-http-boot-context-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
-        options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
+        options.addAll(TestOSGiUtil.coreJettyDependencies());
 
         // a bundle that registers a webapp as a service for the jetty osgi core
         // to pick up and deploy
@@ -95,8 +95,8 @@ public class TestJettyOSGiBootContextAsService
         
         List<Option> options = new ArrayList<Option>();
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
-        options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
+        options.add(systemProperty("jetty.http.port").value("0"));
+        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }
@@ -119,7 +119,10 @@ public class TestJettyOSGiBootContextAsService
         try
         {
             client.start();
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/acme/index.html");
+            String tmp = System.getProperty("boot.context.service.port");
+            assertNotNull(tmp);
+            int port = Integer.valueOf(tmp).intValue();
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());

@@ -405,6 +405,7 @@
           <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
           <!-- But we do pass the sys property of the alpn-boot jar so that it can be configured inside tests -->
           <argLine>-Dmortbay-alpn-boot=${settings.localRepository}/org/mortbay/jetty/alpn/alpn-boot/${alpn.version}/alpn-boot-${alpn.version}.jar</argLine>
+          <skipTests>true</skipTests>
         </configuration>
       </plugin>
       <plugin>

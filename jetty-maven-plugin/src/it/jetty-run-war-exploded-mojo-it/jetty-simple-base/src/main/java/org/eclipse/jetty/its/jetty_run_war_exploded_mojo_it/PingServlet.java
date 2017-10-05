@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.its.jetty_run_mojo_it;
+package org.eclipse.jetty.its.jetty_run_war_exploded_mojo_it;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -26,11 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-/**
- *
- */
-@WebServlet("/hello")
-public class HelloServlet
+public class PingServlet
     extends HttpServlet
 {
 
@@ -40,6 +36,6 @@ public class HelloServlet
     {
         String who = req.getParameter( "name" );
 
-        resp.getWriter().write( "hello " + (who == null ? "unknown" : who) );
+        resp.getWriter().write( "pong " + (who == null ? "unknown" : who) );
     }
 }

@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.its.jetty_run_mojo_it;
+package org.eclipse.jetty.its.jetty_run_forked_mojo_it;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -30,15 +30,10 @@ public class PingServlet
     extends HttpServlet
 {
 
-    public PingServlet()
-    {
-        System.err.println("PINGSERVLET LOADED at"+System.currentTimeMillis());
-    }
     @Override
     protected void doGet( HttpServletRequest req, HttpServletResponse resp )
         throws ServletException, IOException
     {
-        System.err.println("PINGSERVLET HIT at"+System.currentTimeMillis());
         String who = req.getParameter( "name" );
 
         resp.getWriter().write( "pong " + (who == null ? "unknown" : who) );

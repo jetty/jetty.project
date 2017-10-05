@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.its.jetty_run_mojo_it;
+
+package org.eclipse.jetty.its.jetty_start_mojo_it;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Assert;
@@ -40,13 +41,13 @@ public class TestHelloServlet
 
             String response = httpClient.GET( "http://localhost:" + port + "/hello?name=beer" ).getContentAsString();
 
-            System.out.println( "httpResponse hello annotation servlet:" + response );
+            System.out.println( "httpResponse:" + response );
 
             Assert.assertEquals( "hello beer", response.trim() );
 
             response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
 
-            System.out.println( "httpResponse ping fragment servlet:" + response );
+            System.out.println( "httpResponse:" + response );
 
             Assert.assertEquals( "pong beer", response.trim() );
         }

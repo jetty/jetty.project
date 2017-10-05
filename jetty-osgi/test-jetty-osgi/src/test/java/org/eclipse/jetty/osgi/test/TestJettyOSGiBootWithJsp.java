@@ -19,6 +19,7 @@
 package org.eclipse.jetty.osgi.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -61,13 +62,13 @@ public class TestJettyOSGiBootWithJsp
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort(false,"jetty-http.xml"));
+        options.addAll(configureJettyHomeAndPort(false,"jetty-http-boot-with-jsp.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
      
-        options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
+        options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
@@ -98,8 +99,8 @@ public class TestJettyOSGiBootWithJsp
         xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
 
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
-        options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
+        options.add(systemProperty("jetty.http.port").value("0"));
+        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
         options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
         return options;
@@ -108,7 +109,7 @@ public class TestJettyOSGiBootWithJsp
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-        res.addAll(TestJettyOSGiBootCore.jspDependencies());
+        res.addAll(TestOSGiUtil.jspDependencies());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
         
@@ -124,16 +125,7 @@ public class TestJettyOSGiBootWithJsp
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
-    // at the moment can't run httpservice with jsp at the same time.
-    // that is a regression in jetty-9
-    @Ignore
-    @Test
-    public void testHttpService() throws Exception
-    {
-        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", TestJettyOSGiBootCore.DEFAULT_HTTP_PORT);
-    }
-
- 
+   
     @Test
     public void testJspDump() throws Exception
     {
@@ -142,7 +134,11 @@ public class TestJettyOSGiBootWithJsp
         try
         {
             client.start();
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/jsp/jstl.jsp");
+            
+            String tmp = System.getProperty("boot.jsp.port");
+            assertNotNull(tmp);
+            int port = Integer.valueOf(tmp.trim()).intValue();
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/jsp/jstl.jsp");
             
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = new String(response.getContent());

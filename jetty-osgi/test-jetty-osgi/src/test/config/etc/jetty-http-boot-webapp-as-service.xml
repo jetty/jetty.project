@@ -34,7 +34,7 @@
         <Call name="addLifeCycleListener">
           <Arg>
             <New class="org.eclipse.jetty.osgi.boot.utils.ServerConnectorListener">
-              <Set name="sysPropertyName">foo.foo</Set>
+              <Set name="sysPropertyName">boot.webapp.service.port</Set>
             </New>
           </Arg>
         </Call>
