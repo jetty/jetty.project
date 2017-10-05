@@ -70,17 +70,17 @@ public class TestJettyOSGiBootWebAppAsService
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-http.xml"));
+        options.addAll(configureJettyHomeAndPort("jetty-http-boot-webapp-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
-        options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
+        options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
 
-        options.addAll(TestJettyOSGiBootCore.jspDependencies());
+        options.addAll(TestOSGiUtil.jspDependencies());
         options.addAll(testDependencies());
         return options.toArray(new Option[options.size()]);
     }
@@ -99,8 +99,8 @@ public class TestJettyOSGiBootWebAppAsService
         
         List<Option> options = new ArrayList<Option>();
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
-        options.add(systemProperty("jetty.http.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
-        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
+        options.add(systemProperty("jetty.http.port").value("0"));
+        options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }
@@ -141,18 +141,23 @@ public class TestJettyOSGiBootWebAppAsService
         try
         {
             client.start();
-            
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/acme/index.html");
+            String tmp = System.getProperty("boot.webapp.service.port");
+            assertNotNull(tmp);
+            int port = Integer.valueOf(tmp.trim()).intValue();
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = new String(response.getContent());
             assertTrue(content.indexOf("<h1>Test OSGi WebAppA</h1>") != -1);
 
-            response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/acme/mime");
+            response = client.GET("http://127.0.0.1:" + port + "/acme/mime");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             content = new String(response.getContent());
             assertTrue(content.indexOf("MIMETYPE=application/gzip") != -1);
 
-            response = client.GET("http://127.0.0.1:" + "9999" + "/acme/index.html");
+            tmp = System.getProperty("bundle.server.port");
+            assertNotNull(tmp);
+            port = Integer.valueOf(tmp).intValue();
+            response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             content = new String(response.getContent());
             assertTrue(content.indexOf("<h1>Test OSGi WebAppB</h1>") != -1);

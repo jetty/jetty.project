@@ -21,7 +21,10 @@ package com.acme.osgi;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
+import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -43,14 +46,31 @@ public class Activator implements BundleActivator
      */
     public void start(BundleContext context) throws Exception
     {    
-        Server server = new Server(9999);
+        //For test purposes, use a random port
+        Server server = new Server(0);
+        server.getConnectors()[0].addLifeCycleListener(new AbstractLifeCycleListener()
+        {
+
+            /** 
+             * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
+             */
+            @Override
+            public void lifeCycleStarted(LifeCycle event)
+            {
+                System.setProperty("bundle.server.port", String.valueOf(((ServerConnector)event).getLocalPort()));
+                super.lifeCycleStarted(event);
+            }
+
+     
+            
+        });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
         Dictionary serverProps = new Hashtable();
         //define the unique name of the server instance
         serverProps.put("managedServerName", "fooServer");
-        //serverProps.put("jetty.http.port", "9999");
+        //Could also instead call serverProps.put("jetty.http.port", "9999");
         //register as an OSGi Service for Jetty to find 
         _sr = context.registerService(Server.class.getName(), server, serverProps);
     }
