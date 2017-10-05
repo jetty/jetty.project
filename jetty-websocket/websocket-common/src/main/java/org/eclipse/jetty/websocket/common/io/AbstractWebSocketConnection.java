@@ -68,19 +68,19 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
 
         @Override
-        protected void onFailure(Throwable x)
+        public void onCompleteFailure(Throwable failure)
         {
-            notifyError(x);
-
+            super.onCompleteFailure(failure);
+            notifyError(failure);
             if (ioState.wasAbnormalClose())
             {
-                LOG.ignore(x);
+                LOG.ignore(failure);
                 return;
             }
-
             if (LOG.isDebugEnabled())
-                LOG.debug("Write flush failure",x);
-            ioState.onWriteFailure(x);
+                LOG.debug("Write flush failure", failure);
+            ioState.onWriteFailure(failure);
+            disconnect();
         }
     }
 
@@ -186,6 +186,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.session = session;
     }
 
+    @Override
+    public boolean onIdleExpired()
+    {
+        // TODO: handle closing handshake (see HTTP2Connection).
+        return super.onIdleExpired();
+    }
+
     /**
      * Jetty Connection Close
      */
@@ -200,17 +207,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} disconnect()",policy.getBehavior());
-
-        try
-        {
-            flusher.close();
-        }
-        catch (Throwable ignored)
-        {
-            LOG.ignore(ignored);
-        }
-
-        // close FrameFlusher, we cannot write anymore at this point.
+        flusher.terminate(new EOFException("Disconnected"), false);
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
@@ -323,7 +320,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("{} onClose()",policy.getBehavior());
         super.onClose();
         ioState.onDisconnected();
-        flusher.close();
     }
 
     @Override
