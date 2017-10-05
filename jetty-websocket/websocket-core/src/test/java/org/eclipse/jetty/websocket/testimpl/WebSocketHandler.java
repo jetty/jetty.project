@@ -116,10 +116,8 @@ public class WebSocketHandler extends HandlerWrapper
                     endPoint,
                     connector.getExecutor(),
                     bufferPool,
-                    objectFactory,
                     session,
                     extensionStack);
-
         }
     }
 
@@ -129,7 +127,6 @@ public class WebSocketHandler extends HandlerWrapper
         @Override
         public WebSocketCoreSession newSession(Request baseRequest, ServletRequest request, WebSocketPolicy policy, List<ExtensionConfig> extensions, List<String> subprotocols)
         {
-
             // TODO abstract the creation of a local Endpoint
             WebSocketLocalEndpoint localEndpoint = new WebSocketLocalEndpoint.Adaptor()
             {
@@ -185,23 +182,7 @@ public class WebSocketHandler extends HandlerWrapper
             String subprotocol = subprotocols.isEmpty()?null:subprotocols.get(0);
 
             WebSocketCoreSession session =
-                    new WebSocketCoreSession(this,localEndpoint,policy,subprotocol,extensions)
-                    {
-                        @Override
-                        public void open()
-                        {
-                            ((WebSocketRemoteEndpointImpl)remoteEndpoint).open();
-                            super.open();
-                        }
-
-                        @Override
-                        public String getSubprotocol()
-                        {
-                            if (subprotocols==null || subprotocols.isEmpty())
-                                return null;
-                            return subprotocols.get(0);
-                        }
-                    };
+                    new WebSocketCoreSession(this,localEndpoint,policy,subprotocol,extensions);
 
             return session;
         }

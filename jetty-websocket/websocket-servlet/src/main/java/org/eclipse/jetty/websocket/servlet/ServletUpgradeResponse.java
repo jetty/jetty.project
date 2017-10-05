@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 
 /**
  * Servlet Specific UpgradeResponse implementation.

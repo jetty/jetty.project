@@ -29,7 +29,8 @@ import org.eclipse.jetty.util.log.Logger;
 public interface WebSocketLocalEndpoint
 {
     Logger getLog(); // TODO why?
-    boolean isOpen(); // TODO Does the endpoint really know this?
+
+    boolean isOpen(); // TODO Can the endpoint really know this?
 
     void onOpen(WebSocketRemoteEndpoint remote);
 

@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.core.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -44,14 +44,14 @@ import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
@@ -81,6 +81,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
+
     // Connection level policy (before the session and local endpoint has been created)
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
@@ -90,7 +91,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     private final String id;
     private final WebSocketCoreConnectionState connectionState = new WebSocketCoreConnectionState();
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
-    private final DecoratedObjectFactory objectFactory;
 
     private final WebSocketCoreSession session;
 
@@ -111,7 +111,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     public WebSocketCoreConnection(EndPoint endp,
                                    Executor executor,
                                    ByteBufferPool bufferPool,
-                                   DecoratedObjectFactory decoratedObjectFactory,
                                    WebSocketCoreSession session,
                                    ExtensionStack extensionStack)
     {
@@ -121,12 +120,10 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         Objects.requireNonNull(session, "Session");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
-        Objects.requireNonNull(decoratedObjectFactory, "DecoratedObjectFactory");
         Objects.requireNonNull(extensionStack, "ExtensionStack");
 
         LOG = Log.getLogger(this.getClass());
         this.bufferPool = bufferPool;
-        this.objectFactory = decoratedObjectFactory;
 
         this.id = String.format("%s:%d->%s:%d",
                 endp.getLocalAddress().getAddress().getHostAddress(),
@@ -216,11 +213,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     public long getIdleTimeout()
     {
         return getEndPoint().getIdleTimeout();
-    }
-
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return objectFactory;
     }
 
     public Parser getParser()
@@ -504,6 +496,14 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         if (LOG.isDebugEnabled())
         {
             LOG.debug("outgoingFrame({}, {})", frame, callback);
+        }
+
+        if (policy.getBehavior() == WebSocketBehavior.CLIENT && frame instanceof WebSocketFrame)
+        {
+            WebSocketFrame wsFrame = (WebSocketFrame) frame;
+            byte mask[] = new byte[4];
+            ThreadLocalRandom.current().nextBytes(mask); // TODO secure random?
+            wsFrame.setMask(mask);
         }
 
         outgoingFrames.outgoingFrame(frame, callback, batchMode);

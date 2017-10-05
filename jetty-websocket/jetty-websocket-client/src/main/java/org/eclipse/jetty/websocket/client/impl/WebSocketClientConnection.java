@@ -29,8 +29,6 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 /**
@@ -64,13 +62,6 @@ public class WebSocketClientConnection extends WebSocketCoreConnection
     @Override
     public void outgoingFrame(org.eclipse.jetty.websocket.core.Frame frame, Callback callback, org.eclipse.jetty.websocket.core.io.BatchMode batchMode)
     {
-        if (frame instanceof WebSocketFrame)
-        {
-            WebSocketFrame wsFrame = (WebSocketFrame) frame;
-            byte mask[] = new byte[4];
-            ThreadLocalRandom.current().nextBytes(mask);
-            wsFrame.setMask(mask);
-        }
         super.outgoingFrame(frame,callback, batchMode);
     }
 }

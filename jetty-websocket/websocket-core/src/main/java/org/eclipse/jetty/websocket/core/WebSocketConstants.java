@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.http.HttpHeader;
+
 public final class WebSocketConstants
 {
     // Core use Close Status Codes
@@ -34,12 +36,12 @@ public final class WebSocketConstants
     public static final int FAILED_TLS_HANDSHAKE = 1015;
 
     // Request / Response Header Names
-    public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
-    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
-    public static final String SEC_WEBSOCKET_VERSION = "Sec-WebSocket-Version";
-    public static final String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
+    public static final String SEC_WEBSOCKET_EXTENSIONS = HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString();
+    public static final String SEC_WEBSOCKET_PROTOCOL = HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString();
+    public static final String SEC_WEBSOCKET_VERSION = HttpHeader.SEC_WEBSOCKET_VERSION.asString();
+    public static final String SEC_WEBSOCKET_ACCEPT = HttpHeader.SEC_WEBSOCKET_ACCEPT.asString();
     public static final String SEC_WEBSOCKET_ORIGIN = "Sec-WebSocket-Origin";
-    public static final String SEC_WEBSOCKET_KEY = "Sec-WebSocket-Key";
+    public static final String SEC_WEBSOCKET_KEY = HttpHeader.SEC_WEBSOCKET_KEY.asString();
 
     // Supported Spec Version
     public static final int SPEC_VERSION = 13;

@@ -27,13 +27,8 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.handshake.DummyUpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.DummyUpgradeResponse;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 
 public class DummyConnection extends WebSocketCoreConnection
 {
@@ -42,7 +37,6 @@ public class DummyConnection extends WebSocketCoreConnection
         private EndPoint endp;
         private Executor executor;
         private ByteBufferPool bufferPool;
-        private DecoratedObjectFactory objectFactory;
         private WebSocketExtensionRegistry extensionFactory;
         private ExtensionStack extensionStack;
 
@@ -64,12 +58,6 @@ public class DummyConnection extends WebSocketCoreConnection
             return this;
         }
 
-        public Builder objectFactory(DecoratedObjectFactory objectFactory)
-        {
-            this.objectFactory = objectFactory;
-            return this;
-        }
-
         public Builder extensionStack(ExtensionStack extensionStack)
         {
             this.extensionStack = extensionStack;
@@ -81,17 +69,16 @@ public class DummyConnection extends WebSocketCoreConnection
             if (endp == null) endp = new ByteArrayEndPoint();
             if (executor == null) executor = new QueuedThreadPool();
             if (bufferPool == null) bufferPool = new MappedByteBufferPool();
-            if (objectFactory == null) objectFactory = new DecoratedObjectFactory();
             if (extensionStack == null)
                 extensionStack = new ExtensionStack(new WebSocketExtensionRegistry());
 
             // TODO handle session
-            return new DummyConnection(endp, executor, bufferPool, objectFactory, null, extensionStack);
+            return new DummyConnection(endp, executor, bufferPool, null, extensionStack);
         }
     }
 
-    public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory decoratedObjectFactory, WebSocketCoreSession session, ExtensionStack extensionStack)
+    public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, WebSocketCoreSession session, ExtensionStack extensionStack)
     {
-        super(endp, executor, bufferPool, decoratedObjectFactory, session, extensionStack);
+        super(endp, executor, bufferPool, session, extensionStack);
     }
 }

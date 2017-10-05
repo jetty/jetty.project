@@ -76,7 +76,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
     protected final List<ExtensionConfig> extensions;
 
     protected WebSocketCoreConnection connection;
-    protected WebSocketRemoteEndpoint remoteEndpoint;
+    protected WebSocketRemoteEndpointImpl remoteEndpoint;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     // Holder for errors during open that are reported in doStart later
@@ -234,6 +234,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
                 try
                 {
                     // Open WebSocket
+                    remoteEndpoint.open();
                     localEndpoint.onOpen(remoteEndpoint);
 
                     // Open connection

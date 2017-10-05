@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponseAdapter;
 
 /**
  * Internal Implementation of a {@link org.eclipse.jetty.websocket.core.handshake.UpgradeResponse}
