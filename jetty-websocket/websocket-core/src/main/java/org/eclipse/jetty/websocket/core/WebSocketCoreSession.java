@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,24 +37,18 @@ import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 import org.eclipse.jetty.websocket.core.util.CompletionCallback;
 
 /**
  * The Core WebSocket Session.
  *
- * @param <P> the parent container
- * @param <C> the connection implementation
- * @param <L> the local endpoint implementation
- * @param <R> the remote endpoint implementation
  */
-public abstract class WebSocketCoreSession<
-        P extends ContainerLifeCycle,
-        C extends WebSocketCoreConnection,
-        L extends WebSocketLocalEndpoint,
-        R extends WebSocketRemoteEndpoint> extends ContainerLifeCycle implements IncomingFrames
+public class WebSocketCoreSession extends ContainerLifeCycle implements IncomingFrames
 {
     // Callbacks
     private Callback onDisconnectCallback = new CompletionCallback()
@@ -71,35 +66,40 @@ public abstract class WebSocketCoreSession<
     };
 
     private final Logger log;
-    protected final C connection;
-    protected final P parentContainer;
 
-    /**
-     * The websocket endpoint objects and endpoints
-     * Not declared final, as they can be decorated later by other libraries (CDI)
-     */
-    private Object wsEndpoint;
-    protected L localEndpoint;
-    protected R remoteEndpoint;
-    private WebSocketPolicy sessionPolicy;
+
+    // TODO the final status of these field does not yet consider decoration (eg CDI).
+    protected final WebSocketPolicy policy;
+    protected final ContainerLifeCycle parentContainer;
+    protected final WebSocketLocalEndpoint localEndpoint;
+    protected final String subprotocol;
+    protected final List<ExtensionConfig> extensions;
+
+    protected WebSocketCoreConnection connection;
+    protected WebSocketRemoteEndpoint remoteEndpoint;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     // Holder for errors during open that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
-    public WebSocketCoreSession(P parentContainer, C connection)
+    public WebSocketCoreSession(ContainerLifeCycle parentContainer,
+                                WebSocketLocalEndpoint localEndpoint,
+                                WebSocketPolicy policy,
+                                String subprotocol,
+                                List<ExtensionConfig> extensions)
     {
         this.log = Log.getLogger(this.getClass());
-        this.parentContainer = parentContainer;
-        this.connection = connection;
+        this.parentContainer = parentContainer;  // TODO not keen on objects adding themselves to containers.
+        this.localEndpoint = localEndpoint;
+        this.policy = policy;
+        this.subprotocol = subprotocol;
+        this.extensions = extensions;
     }
 
-    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, L localEndpoint, R remoteEndpoint)
+    public void setWebSocketConnection(WebSocketCoreConnection connection)
     {
-        this.wsEndpoint = endpoint;
-        this.sessionPolicy = policy;
-        this.localEndpoint = localEndpoint;
-        this.remoteEndpoint = remoteEndpoint;
+        this.connection = connection;
+        this.remoteEndpoint = new WebSocketRemoteEndpointImpl(connection);
         addBean(this.localEndpoint, true);
         addBean(this.remoteEndpoint, true);
     }
@@ -116,9 +116,17 @@ public abstract class WebSocketCoreSession<
 
     public WebSocketPolicy getPolicy()
     {
-        if (sessionPolicy == null)
-            return connection.getPolicy();
-        return sessionPolicy;
+        return policy;
+    }
+
+    public String getSubprotocol()
+    {
+        return subprotocol;
+    }
+
+    public List<ExtensionConfig> getExtensions()
+    {
+        return extensions;
     }
 
     /**
@@ -226,7 +234,7 @@ public abstract class WebSocketCoreSession<
                 try
                 {
                     // Open WebSocket
-                    localEndpoint.onOpen();
+                    localEndpoint.onOpen(remoteEndpoint);
 
                     // Open connection
                     if (connection.getState().onOpen())
@@ -272,12 +280,12 @@ public abstract class WebSocketCoreSession<
         }
     }
 
-    public C getConnection()
+    public WebSocketCoreConnection getConnection()
     {
         return this.connection;
     }
 
-    public P getParentContainer()
+    public ContainerLifeCycle getParentContainer()
     {
         return this.parentContainer;
     }
@@ -484,6 +492,4 @@ public abstract class WebSocketCoreSession<
         this.connection.disconnect();
         super.doStop();
     }
-
-    public abstract String getSubprotocol();
 }

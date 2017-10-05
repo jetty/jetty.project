@@ -31,21 +31,70 @@ public interface WebSocketLocalEndpoint
     Logger getLog(); // TODO why?
     boolean isOpen(); // TODO Does the endpoint really know this?
 
-    default void onOpen() {}
+    void onOpen(WebSocketRemoteEndpoint remote);
 
-    default void onClose(CloseStatus close) {}
+    void onClose(CloseStatus close);
 
-    default void onFrame(Frame frame) {}
+    void onFrame(Frame frame);
 
-    default void onError(Throwable cause) {}
+    void onError(Throwable cause);
 
-    default void onText(Frame frame, Callback callback) {}
+    void onText(Frame frame, Callback callback);
 
-    default void onBinary(Frame frame, Callback callback) {}
+    void onBinary(Frame frame, Callback callback);
 
-    default void onContinuation(Frame frame, Callback callback) {}
+    void onContinuation(Frame frame, Callback callback);
 
-    default void onPing(ByteBuffer payload) {}
+    void onPing(ByteBuffer payload);
 
-    default void onPong(ByteBuffer payload) {}
+    void onPong(ByteBuffer payload);
+
+    public interface Adaptor extends WebSocketLocalEndpoint
+    {
+        @Override
+        default void onOpen(WebSocketRemoteEndpoint remote)
+        {
+        }
+
+        @Override
+        default void onClose(CloseStatus close)
+        {
+        }
+
+        @Override
+        default void onFrame(Frame frame)
+        {
+        }
+
+        @Override
+        default void onError(Throwable cause)
+        {
+        }
+
+        @Override
+        default void onText(Frame frame, Callback callback)
+        {
+        }
+
+        @Override
+        default void onBinary(Frame frame, Callback callback)
+        {
+        }
+
+        @Override
+        default void onContinuation(Frame frame, Callback callback)
+        {
+        }
+
+        @Override
+        default void onPing(ByteBuffer payload)
+        {
+        }
+
+        @Override
+        default void onPong(ByteBuffer payload)
+        {
+        }
+    }
+
 }

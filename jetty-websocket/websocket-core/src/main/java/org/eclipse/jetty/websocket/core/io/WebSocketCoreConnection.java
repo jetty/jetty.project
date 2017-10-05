@@ -88,13 +88,12 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     private final FrameFlusher flusher;
     private final ExtensionStack extensionStack;
     private final String id;
-    private final UpgradeRequest upgradeRequest;
-    private final UpgradeResponse upgradeResponse;
     private final WebSocketCoreConnectionState connectionState = new WebSocketCoreConnectionState();
     private final AtomicBoolean closeSent = new AtomicBoolean(false);
     private final DecoratedObjectFactory objectFactory;
 
-    private WebSocketCoreSession session;
+    private final WebSocketCoreSession session;
+
     // Path for frames in/out of the connection
     protected OutgoingFrames outgoingFrames;
     protected IncomingFrames incomingFrames;
@@ -109,21 +108,21 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
      * completed successfully before creating this connection.
      * </p>
      */
-    public WebSocketCoreConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
+    public WebSocketCoreConnection(EndPoint endp,
+                                   Executor executor,
+                                   ByteBufferPool bufferPool,
                                    DecoratedObjectFactory decoratedObjectFactory,
-                                   WebSocketPolicy policy, ExtensionStack extensionStack,
-                                   UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
+                                   WebSocketCoreSession session,
+                                   ExtensionStack extensionStack)
     {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
+        Objects.requireNonNull(session, "Session");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
         Objects.requireNonNull(decoratedObjectFactory, "DecoratedObjectFactory");
-        Objects.requireNonNull(policy, "WSPolicy");
         Objects.requireNonNull(extensionStack, "ExtensionStack");
-        // TODO Objects.requireNonNull(upgradeRequest, "UpgradeRequest");
-        // TODO Objects.requireNonNull(upgradeResponse, "UpgradeResponse");
 
         LOG = Log.getLogger(this.getClass());
         this.bufferPool = bufferPool;
@@ -134,11 +133,11 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
                 endp.getLocalAddress().getPort(),
                 endp.getRemoteAddress().getAddress().getHostAddress(),
                 endp.getRemoteAddress().getPort());
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
 
-        this.policy = policy;
+        this.policy = session.getPolicy();
         this.extensionStack = extensionStack;
+        this.session = session;
+        this.incomingFrames = session;
 
         this.generator = new Generator(policy, bufferPool);
         this.parser = new Parser(policy, bufferPool, this);
@@ -155,12 +154,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         this.extensionStack.setNextOutgoing(flusher);
 
         this.outgoingFrames = extensionStack;
-    }
-
-    public void setSession(WebSocketCoreSession session)
-    {
-        this.session = session;
-        this.incomingFrames = session;
     }
 
     public ExtensionStack getExtensionStack()
@@ -250,16 +243,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         return getEndPoint().getRemoteAddress();
     }
 
-    public UpgradeRequest getUpgradeRequest()
-    {
-        return upgradeRequest;
-    }
-
-    public UpgradeResponse getUpgradeResponse()
-    {
-        return upgradeResponse;
-    }
-
     public boolean isOpen()
     {
         if (LOG.isDebugEnabled())
@@ -341,14 +324,11 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
 
     public boolean isSecure()
     {
-        if (upgradeRequest == null)
-        {
-            throw new IllegalStateException("No valid UpgradeRequest yet");
-        }
-
-        URI requestURI = upgradeRequest.getRequestURI();
-
-        return "wss".equalsIgnoreCase(requestURI.getScheme());
+        // TODO this did look at the scheme, but there may be a situation
+        // where wss is converte to ws, but yet we trust it is secure (eg ssl offloading)
+        // so we should really just look at the original request to see if it is secure
+        // or have it passed in?
+        return false;
     }
 
     public WebSocketCoreConnectionState getState()

@@ -16,32 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.server;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Logger;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-public class DummyLocalEndpoint implements WebSocketLocalEndpoint.Adaptor
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+
+public interface Handshaker
 {
-    private boolean open = false;
-
-    @Override
-    public Logger getLog()
-    {
-        return null;
-    }
-
-    @Override
-    public boolean isOpen()
-    {
-        return open;
-    }
-
-    @Override
-    public void onOpen(WebSocketRemoteEndpoint remote)
-    {
-        open = true;
-    }
+    boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }

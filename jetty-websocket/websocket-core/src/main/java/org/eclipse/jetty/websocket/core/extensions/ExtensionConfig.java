@@ -42,6 +42,7 @@ public class ExtensionConfig
      */
     public static ExtensionConfig parse(String parameterizedName)
     {
+        // TODO look up immutable common configurations in a Trie cache
         return new ExtensionConfig(parameterizedName);
     }
 
@@ -123,6 +124,7 @@ public class ExtensionConfig
         return parameters.toString();
     }
 
+    // TODO ExtensionsConfig fully immutable
     private final String name;
     private final Map<String, String> parameters;
 
@@ -228,18 +230,24 @@ public class ExtensionConfig
         this.parameters.putAll(other.parameters);
     }
 
+    @Deprecated
     public final void setParameter(String key)
     {
+        // TODO make ExtensionsConfig immutable
         parameters.put(key,null);
     }
 
+    @Deprecated
     public final void setParameter(String key, int value)
     {
+        // TODO make ExtensionsConfig immutable
         parameters.put(key,Integer.toString(value));
     }
 
+    @Deprecated
     public final void setParameter(String key, String value)
     {
+        // TODO make ExtensionsConfig immutable
         parameters.put(key,value);
     }
 
