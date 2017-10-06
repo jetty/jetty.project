@@ -24,7 +24,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;
+import org.eclipse.jetty.util.thread.ExecutorSizedThreadPool;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -57,7 +57,7 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     {
         this.id = id;
         this.bufferPool = bufferPool;
-        this.executor = new ExecutorThreadPool();
+        this.executor = new ExecutorSizedThreadPool();
         this.ioState.addListener(this);
     }
 
