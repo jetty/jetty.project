@@ -479,12 +479,12 @@ abstract public class WriteFlusher
                 case IDLE:
                 case FAILED:
                     if (DEBUG)
-                        LOG.debug("ignored: {} {}", this, cause);
+                        LOG.debug("ignored: " + this, cause);
                     return false;
 
                 case PENDING:
                     if (DEBUG)
-                        LOG.debug("failed: {} {}", this, cause);
+                        LOG.debug("failed: " + this, cause);
 
                     PendingState pending = (PendingState)current;
                     if (updateState(pending,__IDLE))
@@ -493,7 +493,7 @@ abstract public class WriteFlusher
 
                 default:
                     if (DEBUG)
-                        LOG.debug("failed: {} {}", this, cause);
+                        LOG.debug("failed: " + this, cause);
 
                     if (updateState(current,new FailedState(cause)))
                         return false;
