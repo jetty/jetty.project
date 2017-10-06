@@ -391,7 +391,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             }
                             else
                             {
-                                failure.addSuppressed(x);
+                                if (failure != x)
+                                    failure.addSuppressed(x);
                                 minimalErrorResponse(failure);
                             }
                         }
