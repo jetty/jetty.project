@@ -21,8 +21,6 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
@@ -129,7 +127,7 @@ public abstract class FillInterest
     public boolean onFail(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFail {} {}",this,cause);
+            LOG.debug("onFail " + this, cause);
         Callback callback = _interested.get();
         if (callback != null && _interested.compareAndSet(callback, null))
         {
