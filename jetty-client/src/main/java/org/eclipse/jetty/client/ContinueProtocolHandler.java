@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpStatus;
 
 /**
  * <p>A protocol handler that handles the 100 response code.</p>
@@ -49,8 +50,12 @@ public class ContinueProtocolHandler implements ProtocolHandler
     @Override
     public boolean accept(Request request, Response response)
     {
-        HttpConversation conversation = ((HttpRequest)request).getConversation();
-        return conversation.getAttribute(ATTRIBUTE) == null;
+        if (response.getStatus() == HttpStatus.CONTINUE_100)
+        {
+            HttpConversation conversation = ((HttpRequest)request).getConversation();
+            return conversation.getAttribute(ATTRIBUTE) == null;
+        }
+        return false;
     }
 
     @Override
