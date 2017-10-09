@@ -27,6 +27,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -42,9 +43,11 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -697,5 +700,32 @@ public class HttpClientContinueTest extends AbstractTest
                 Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
             }
         }
+    }
+
+    @Test
+    public void test_NoExpect_Respond100Continue() throws Exception
+    {
+        start(new AbstractHandler.ErrorDispatchHandler()
+        {
+            @Override
+            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                jettyRequest.setHandled(true);
+                // Force a 100 Continue response.
+                jettyRequest.getHttpChannel().sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
+                // Echo the content.
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        byte[] bytes = new byte[1024];
+        new Random().nextBytes(bytes);
+        ContentResponse response = client.newRequest(newURI())
+                .content(new BytesContentProvider(bytes))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertArrayEquals(bytes, response.getContent());
     }
 }

@@ -24,8 +24,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 
 /**
  * <p>A protocol handler that handles the 100 response code.</p>
@@ -51,10 +49,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
     @Override
     public boolean accept(Request request, Response response)
     {
-        boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
         HttpConversation conversation = ((HttpRequest)request).getConversation();
-        boolean handled100 = conversation.getAttribute(ATTRIBUTE) != null;
-        return expect100 && !handled100;
+        return conversation.getAttribute(ATTRIBUTE) == null;
     }
 
     @Override
