@@ -743,7 +743,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return committing;
     }
 
-    protected boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
+    public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
     {
         try(Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
         {
