@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -40,25 +32,30 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class SslContextFactoryTest
 {
-
     private SslContextFactory cf;
 
     @Before
     public void setUp() throws Exception
     {
         cf = new SslContextFactory();
-        
+
         java.security.cert.CertPathBuilder certPathBuilder = java.security.cert.CertPathBuilder.getInstance("PKIX");
-        java.security.cert.PKIXRevocationChecker revocationChecker = (java.security.cert.PKIXRevocationChecker) certPathBuilder.getRevocationChecker();
+        java.security.cert.PKIXRevocationChecker revocationChecker = (java.security.cert.PKIXRevocationChecker)certPathBuilder.getRevocationChecker();
         revocationChecker.setOptions(java.util.EnumSet.of(
-            java.security.cert.PKIXRevocationChecker.Option.valueOf("PREFER_CRLS"),
-            java.security.cert.PKIXRevocationChecker.Option.valueOf("SOFT_FAIL"),
-            java.security.cert.PKIXRevocationChecker.Option.valueOf("NO_FALLBACK")));
+                java.security.cert.PKIXRevocationChecker.Option.valueOf("PREFER_CRLS"),
+                java.security.cert.PKIXRevocationChecker.Option.valueOf("SOFT_FAIL"),
+                java.security.cert.PKIXRevocationChecker.Option.valueOf("NO_FALLBACK")));
         cf.setPkixCertPathChecker(revocationChecker);
-        
     }
 
     @Test
@@ -68,10 +65,10 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("keypwd");
 
         cf.start();
-        
+
         cf.dump(System.out, "");
     }
-    
+
     @Test
     public void testNoTsFileKs() throws Exception
     {
@@ -80,7 +77,7 @@ public class SslContextFactoryTest
 
         cf.start();
 
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
@@ -96,21 +93,21 @@ public class SslContextFactoryTest
 
         cf.start();
 
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
     public void testNoTsNoKs() throws Exception
     {
         cf.start();
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
     public void testTrustAll() throws Exception
     {
         cf.start();
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
@@ -126,7 +123,7 @@ public class SslContextFactoryTest
 
         cf.start();
 
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
@@ -143,7 +140,7 @@ public class SslContextFactoryTest
 
         cf.start();
 
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
@@ -163,9 +160,9 @@ public class SslContextFactoryTest
             cf.start();
             Assert.fail();
         }
-        catch(java.security.UnrecoverableKeyException e)
+        catch (java.security.UnrecoverableKeyException e)
         {
-            Assert.assertThat(e.toString(),Matchers.containsString("UnrecoverableKeyException"));
+            Assert.assertThat(e.toString(), Matchers.containsString("UnrecoverableKeyException"));
         }
     }
 
@@ -186,9 +183,9 @@ public class SslContextFactoryTest
             cf.start();
             Assert.fail();
         }
-        catch(IOException e)
+        catch (IOException e)
         {
-            Assert.assertThat(e.toString(),Matchers.containsString("java.io.IOException: Keystore was tampered with, or password was incorrect"));
+            Assert.assertThat(e.toString(), Matchers.containsString("java.io.IOException: Keystore was tampered with, or password was incorrect"));
         }
     }
 
@@ -203,7 +200,7 @@ public class SslContextFactoryTest
         }
         catch (IllegalStateException e)
         {
-            Assert.assertThat(e.toString(),Matchers.containsString("IllegalStateException: no valid keystore"));
+            Assert.assertThat(e.toString(), Matchers.containsString("IllegalStateException: no valid keystore"));
         }
     }
 
@@ -222,7 +219,7 @@ public class SslContextFactoryTest
     @Test
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
-        cf.setIncludeCipherSuites(".*ECDHE.*",".*WIBBLE.*");
+        cf.setIncludeCipherSuites(".*ECDHE.*", ".*WIBBLE.*");
 
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();
@@ -235,12 +232,12 @@ public class SslContextFactoryTest
     @Test
     public void testProtocolAndCipherSettingsAreNPESafe()
     {
-    	assertNotNull(cf.getExcludeProtocols());
-    	assertNotNull(cf.getIncludeProtocols());
-    	assertNotNull(cf.getExcludeCipherSuites());
-    	assertNotNull(cf.getIncludeCipherSuites());
+        assertNotNull(cf.getExcludeProtocols());
+        assertNotNull(cf.getIncludeProtocols());
+        assertNotNull(cf.getExcludeCipherSuites());
+        assertNotNull(cf.getIncludeCipherSuites());
     }
-    
+
     @Test
     public void testSNICertificates() throws Exception
     {
@@ -249,36 +246,54 @@ public class SslContextFactoryTest
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        
+
         cf.start();
-        
-        assertThat(cf.getAliases(),containsInAnyOrder("jetty","other","san","wild"));
-        
-        assertThat(cf.getX509("jetty").getHosts(),containsInAnyOrder("jetty.eclipse.org"));
+
+        assertThat(cf.getAliases(), containsInAnyOrder("jetty", "other", "san", "wild"));
+
+        assertThat(cf.getX509("jetty").getHosts(), containsInAnyOrder("jetty.eclipse.org"));
         assertTrue(cf.getX509("jetty").getWilds().isEmpty());
         assertTrue(cf.getX509("jetty").matches("JETTY.Eclipse.Org"));
         assertFalse(cf.getX509("jetty").matches("m.jetty.eclipse.org"));
         assertFalse(cf.getX509("jetty").matches("eclipse.org"));
-        
-        assertThat(cf.getX509("other").getHosts(),containsInAnyOrder("www.example.com"));
+
+        assertThat(cf.getX509("other").getHosts(), containsInAnyOrder("www.example.com"));
         assertTrue(cf.getX509("other").getWilds().isEmpty());
         assertTrue(cf.getX509("other").matches("www.example.com"));
         assertFalse(cf.getX509("other").matches("eclipse.org"));
-        
-        assertThat(cf.getX509("san").getHosts(),containsInAnyOrder("www.san.com","m.san.com"));
+
+        assertThat(cf.getX509("san").getHosts(), containsInAnyOrder("www.san.com", "m.san.com"));
         assertTrue(cf.getX509("san").getWilds().isEmpty());
         assertTrue(cf.getX509("san").matches("www.san.com"));
         assertTrue(cf.getX509("san").matches("m.san.com"));
         assertFalse(cf.getX509("san").matches("other.san.com"));
         assertFalse(cf.getX509("san").matches("san.com"));
         assertFalse(cf.getX509("san").matches("eclipse.org"));
-        
+
         assertTrue(cf.getX509("wild").getHosts().isEmpty());
-        assertThat(cf.getX509("wild").getWilds(),containsInAnyOrder("domain.com"));
+        assertThat(cf.getX509("wild").getWilds(), containsInAnyOrder("domain.com"));
         assertTrue(cf.getX509("wild").matches("domain.com"));
         assertTrue(cf.getX509("wild").matches("www.domain.com"));
         assertTrue(cf.getX509("wild").matches("other.domain.com"));
         assertFalse(cf.getX509("wild").matches("foo.bar.domain.com"));
         assertFalse(cf.getX509("wild").matches("other.com"));
+    }
+
+    @Test
+    public void testNonDefaultKeyStoreTypeUsedForTrustStore() throws Exception
+    {
+        cf = new SslContextFactory();
+        cf.setKeyStoreResource(Resource.newSystemResource("keystore.p12"));
+        cf.setKeyStoreType("pkcs12");
+        cf.setKeyStorePassword("storepwd");
+        cf.start();
+        cf.stop();
+
+        cf = new SslContextFactory();
+        cf.setKeyStoreResource(Resource.newSystemResource("keystore.jce"));
+        cf.setKeyStoreType("jceks");
+        cf.setKeyStorePassword("storepwd");
+        cf.start();
+        cf.stop();
     }
 }

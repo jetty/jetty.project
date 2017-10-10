@@ -143,7 +143,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     private String _certAlias;
     private Resource _trustStoreResource;
     private String _trustStoreProvider;
-    private String _trustStoreType = "JKS";
+    private String _trustStoreType;
     private boolean _needClientAuth = false;
     private boolean _wantClientAuth = false;
     private Password _keyStorePassword;
