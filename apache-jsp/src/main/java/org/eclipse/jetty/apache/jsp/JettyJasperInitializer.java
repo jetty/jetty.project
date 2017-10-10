@@ -27,11 +27,9 @@ import java.util.List;
 import javax.servlet.ServletContext;
 
 import org.apache.jasper.servlet.JasperInitializer;
-import org.apache.jasper.servlet.TldPreScanned;
 import org.apache.jasper.servlet.TldScanner;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
-
 import org.xml.sax.SAXException;
 
 /**
@@ -105,7 +103,7 @@ public class JettyJasperInitializer extends JasperInitializer
         if (tldUrls != null)
         {
             if (LOG.isDebugEnabled()) LOG.debug("Tld pre-scan detected");
-            return new TldPreScanned(context,namespaceAware,validate,blockExternal,tldUrls);
+            return new JettyTldPreScanned(context,namespaceAware,validate,blockExternal,tldUrls);
         }
         
         if (LOG.isDebugEnabled()) LOG.debug("Defaulting to jasper tld scanning");
