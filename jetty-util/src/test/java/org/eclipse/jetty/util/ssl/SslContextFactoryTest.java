@@ -278,4 +278,22 @@ public class SslContextFactoryTest
         assertFalse(cf.getX509("wild").matches("foo.bar.domain.com"));
         assertFalse(cf.getX509("wild").matches("other.com"));
     }
+
+    @Test
+    public void testNonDefaultKeyStoreTypeUsedForTrustStore() throws Exception
+    {
+        cf = new SslContextFactory();
+        cf.setKeyStoreResource(Resource.newSystemResource("keystore.p12"));
+        cf.setKeyStoreType("pkcs12");
+        cf.setKeyStorePassword("storepwd");
+        cf.start();
+        cf.stop();
+
+        cf = new SslContextFactory();
+        cf.setKeyStoreResource(Resource.newSystemResource("keystore.jce"));
+        cf.setKeyStoreType("jceks");
+        cf.setKeyStorePassword("storepwd");
+        cf.start();
+        cf.stop();
+    }
 }
