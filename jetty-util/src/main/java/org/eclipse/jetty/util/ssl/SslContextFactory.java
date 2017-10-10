@@ -665,16 +665,16 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     /**
-     * @return The type of the trust store (default "JKS")
+     * @return The type of the trust store (defaults to type of the key store if unspecified)
      */
     @ManagedAttribute("The trustStore type")
     public String getTrustStoreType()
     {
-        return _trustStoreType;
+        return _trustStoreType != null ? _trustStoreType : _keyStoreType;
     }
 
     /**
-     * @param trustStoreType The type of the trust store (default "JKS")
+     * @param trustStoreType The type of the trust store
      */
     public void setTrustStoreType(String trustStoreType)
     {
