@@ -48,6 +48,7 @@ import org.eclipse.jetty.websocket.tests.UntrustedWSServer;
 import org.eclipse.jetty.websocket.tests.UntrustedWSSession;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -337,6 +338,7 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
+    @Ignore("Needs review")
     public void testClient_IdleTimeout() throws Exception
     {
         // Set client timeout
@@ -474,6 +476,7 @@ public class ClientCloseHandshakeTest
      * </pre>
      */
     @Test
+    @Ignore("Needs review")
     public void testWriteException() throws Exception
     {
         // Set client timeout

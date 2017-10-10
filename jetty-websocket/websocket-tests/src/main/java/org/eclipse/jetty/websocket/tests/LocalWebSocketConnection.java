@@ -31,7 +31,9 @@ import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.rules.TestName;
 
@@ -71,6 +73,11 @@ public class LocalWebSocketConnection implements LogicalConnection
     public Executor getExecutor()
     {
         return executor;
+    }
+
+    @Override
+    public void onLocalClose(CloseInfo close)
+    {
     }
 
     @Override
@@ -145,6 +152,11 @@ public class LocalWebSocketConnection implements LogicalConnection
 
     @Override
     public void setMaxIdleTimeout(long ms)
+    {
+    }
+
+    @Override
+    public void setSession(WebSocketSession session)
     {
     }
 

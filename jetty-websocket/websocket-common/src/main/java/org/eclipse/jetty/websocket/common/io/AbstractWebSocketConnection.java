@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
@@ -28,6 +29,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -40,14 +42,16 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.FrameCallback;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.Parser;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
 /**
@@ -57,17 +61,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 {
     private class Flusher extends FrameFlusher
     {
-        private Flusher(int bufferSize, Generator generator, EndPoint endpoint)
+        private Flusher(ByteBufferPool bufferPool, Generator generator, EndPoint endpoint)
         {
-            super(generator,endpoint,bufferSize,8);
+            super(bufferPool,generator,endpoint,getPolicy().getMaxBinaryMessageBufferSize(),8);
         }
 
         @Override
-        protected void onFailure(Throwable x)
+        public void onCompleteFailure(Throwable failure)
         {
-            notifyError(x);
+            super.onCompleteFailure(failure);
+            notifyError(failure);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Write flush failure", failure);
+            session.notifyClose(new CloseInfo(StatusCode.ABNORMAL, "Write Flush Failure"));
+            disconnect();
         }
     }
+
+    private static final AtomicLong ID_GEN = new AtomicLong(0);
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
@@ -83,8 +94,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final AtomicBoolean closed = new AtomicBoolean();
     private final FrameFlusher flusher;
     private final String id;
-    private final ExtensionStack extensionStack;
-    private final List<LogicalConnection.Listener> listeners = new CopyOnWriteArrayList<>();
+    private WebSocketSession session;
+    private ExtensionStack extensionStack;
+    private List<LogicalConnection.Listener> listeners = new CopyOnWriteArrayList<>();
     private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
     private List<ExtensionConfig> extensions;
     private ByteBuffer networkBuffer;
@@ -99,12 +111,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
         LOG = Log.getLogger(AbstractWebSocketConnection.class.getName() + "." + policy.getBehavior());
-
-        this.id = String.format("%s:%d->%s:%d",
-                endp.getLocalAddress().getAddress().getHostAddress(),
-                endp.getLocalAddress().getPort(),
-                endp.getRemoteAddress().getAddress().getHostAddress(),
-                endp.getRemoteAddress().getPort());
+        this.id = Long.toString(ID_GEN.incrementAndGet());
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.extensionStack = extensionStack;
@@ -113,7 +120,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         this.parser = new Parser(policy,bufferPool,this);
         this.extensions = new ArrayList<>();
         this.suspendToken = new AtomicBoolean(false);
-        this.flusher = new Flusher(policy.getOutputBufferSize(),generator,endp);
+        this.flusher = new Flusher(bufferPool,generator,endp);
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
 
@@ -129,16 +136,57 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    public void onLocalClose(CloseInfo close)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Local Close Confirmed {}",close);
+
+        if (close.isAbnormal())
+        {
+            session.notifyClose(close);
+            disconnect();
+        }
+        else
+        {
+            // TODO: ugly - creates a new CloseInfo object later.
+            session.close(close.getStatusCode(), close.getReason());
+        }
+    }
+
+    @Override
+    public void setSession(WebSocketSession session)
+    {
+        this.session = session;
+    }
+
+    @Override
+    public boolean onIdleExpired()
+    {
+        // TODO: handle closing handshake (see HTTP2Connection).
+        return super.onIdleExpired();
+    }
+
+    /**
+     * Jetty Connection Close
+     */
+    @Override
+    public void close()
+    {
+        session.close();
+    }
+
+    @Override
     public void disconnect()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnect()");
-
-        // close FrameFlusher, we cannot write anymore at this point.
-        flusher.close();
-
+            LOG.debug("{} disconnect()",policy.getBehavior());
         closed.set(true);
-        close();
+        flusher.terminate(new EOFException("Disconnected"), false);
+        EndPoint endPoint = getEndPoint();
+        // We need to gently close first, to allow
+        // SSL close alerts to be sent by Jetty
+        endPoint.shutdownOutput();
+        endPoint.close();
     }
 
     @Override
@@ -218,19 +266,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             LOG.debug("onClose()");
 
         closed.set(true);
-
-        flusher.close();
         super.onClose();
-    }
-
-    @Override
-    public boolean onIdleExpired()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onIdleExpired()");
-
-        notifyError(new WebSocketTimeoutException("Connection Idle Timeout"));
-        return true;
     }
 
     @Override

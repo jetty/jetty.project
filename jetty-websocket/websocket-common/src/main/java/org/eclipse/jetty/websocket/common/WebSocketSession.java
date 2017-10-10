@@ -82,6 +82,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     
     private final WebSocketContainerScope containerScope;
     private final WebSocketPolicy policy;
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final URI requestURI;
     private final LogicalConnection connection;
     private final Executor executor;
@@ -95,20 +96,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private Object endpoint;
     
     // Callbacks
-    private FrameCallback onDisconnectCallback = new CompletionCallback()
-    {
-        @Override
-        public void complete()
-        {
-            if (connectionState.onClosed())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ConnectionState: Transition to CLOSED");
-                connection.disconnect();
-            }
-        }
-    };
-    
+
     // Endpoint Functions and MessageSinks
     protected EndpointFunctions endpointFunctions;
     private MessageSink activeMessageSink;
@@ -141,8 +129,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.executor = connection.getExecutor();
         this.outgoingHandler = connection;
         this.policy = connection.getPolicy();
+
+        this.connection.setSession(this);
         
         addBean(this.connection);
+        addBean(endpoint);
     }
     
     public EndpointFunctions newEndpointFunctions(Object endpoint)
@@ -154,50 +145,56 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         connectionState.onConnecting();
     }
+
+    /**
+     * Aborts the active session abruptly.
+     */
+    public void abort(int statusCode, String reason)
+    {
+        close(new CloseInfo(statusCode, reason), new DisconnectCallback());
+    }
     
     @Override
     public void close()
     {
         /* This is assumed to always be a NORMAL closure, no reason phrase */
-        close(StatusCode.NORMAL, null);
+        close(new CloseInfo(StatusCode.NORMAL), null);
     }
     
     @Override
     public void close(CloseStatus closeStatus)
     {
-        close(closeStatus.getCode(), closeStatus.getPhrase());
+        close(new CloseInfo(closeStatus.getCode(),closeStatus.getPhrase()), null);
     }
     
     @Override
     public void close(int statusCode, String reason)
     {
-        close(statusCode, reason, EMPTY);
+        close(new CloseInfo(statusCode, reason), null);
     }
-    
-    private void close(int statusCode, String reason, FrameCallback callback)
-    {
-        close(new CloseInfo(statusCode, reason), callback);
-    }
-    
+
+    /**
+     * CLOSE Primary Entry Point.
+     *
+     * <ul>
+     *   <li>atomically enqueue CLOSE frame + flip flag to reject more frames</li>
+     *   <li>setup CLOSE frame callback: must close flusher</li>
+     * </ul>
+     *
+     * @param closeInfo the close details
+     */
     private void close(CloseInfo closeInfo, FrameCallback callback)
     {
-        connectionState.onClosing(); // always move to (at least) the CLOSING state (might already be past it, which is ok)
-        
-        if (closeSent.compareAndSet(false, true))
+        if (LOG.isDebugEnabled())
+            LOG.debug("close({})", closeInfo);
+
+        if (closed.compareAndSet(false, true))
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Sending Close Frame");
-            CloseFrame closeFrame = closeInfo.asFrame();
-            outgoingHandler.outgoingFrame(closeFrame, callback, BatchMode.OFF);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Close Frame Previously Sent: ignoring: {} [{}]", closeInfo, callback);
-            callback.fail(new WebSocketException("Already closed"));
+            CloseFrame frame = closeInfo.asFrame();
+            connection.outgoingFrame(frame, new OnCloseLocalCallback(callback, connection, closeInfo), BatchMode.OFF);
         }
     }
-    
+
     /**
      * Harsh disconnect
      */
@@ -510,7 +507,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                             CloseFrame closeframe = (CloseFrame) frame;
                             CloseInfo closeInfo = new CloseInfo(closeframe, true);
                             notifyClose(closeInfo);
-                            close(closeInfo, onDisconnectCallback);
+                            close(closeInfo, new DisconnectCallback());
                         }
                         else if (connectionState.onClosed())
                         {
@@ -616,7 +613,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public boolean isOpen()
     {
-        return this.connectionState.get() == AtomicConnectionState.State.OPEN;
+        return !closed.get() && (this.connectionState.get() == AtomicConnectionState.State.OPEN);
     }
     
     @Override
@@ -677,21 +674,21 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         
         if (cause instanceof NotUtf8Exception)
         {
-            close(StatusCode.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
+            close(new CloseInfo(StatusCode.BAD_PAYLOAD, cause.getMessage()), new DisconnectCallback());
         }
         else if (cause instanceof SocketTimeoutException)
         {
             // A path often seen in Windows
-            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(new CloseInfo(StatusCode.SHUTDOWN, cause.getMessage()), new DisconnectCallback());
         }
         else if (cause instanceof IOException)
         {
-            close(StatusCode.PROTOCOL, cause.getMessage(), onDisconnectCallback);
+            close(new CloseInfo(StatusCode.PROTOCOL, cause.getMessage()), new DisconnectCallback());
         }
         else if (cause instanceof SocketException)
         {
             // A path unique to Unix
-            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(new CloseInfo(StatusCode.SHUTDOWN, cause.getMessage()), new DisconnectCallback());
         }
         else if (cause instanceof CloseException)
         {
@@ -708,15 +705,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
                 case StatusCode.POLICY_VIOLATION:
                 case StatusCode.SERVER_ERROR:
                 {
-                    callback = onDisconnectCallback;
+                    callback = new DisconnectCallback();
                 }
             }
             
-            close(ce.getStatusCode(), ce.getMessage(), callback);
+            close(new CloseInfo(ce.getStatusCode(), ce.getMessage()), callback);
         }
         else if (cause instanceof WebSocketTimeoutException)
         {
-            close(StatusCode.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(new CloseInfo(StatusCode.SHUTDOWN, cause.getMessage()), new DisconnectCallback());
         }
         else
         {
@@ -985,5 +982,61 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         void onOpened(WebSocketSession session);
         
         void onClosed(WebSocketSession session);
+    }
+
+    public static class OnCloseLocalCallback implements FrameCallback
+    {
+        private final FrameCallback wrapped;
+        private final LogicalConnection connection;
+        private final CloseInfo close;
+
+        public OnCloseLocalCallback(FrameCallback callback, LogicalConnection connection, CloseInfo close)
+        {
+            this.wrapped = callback;
+            this.connection = connection;
+            this.close = close;
+        }
+
+        @Override
+        public void succeed()
+        {
+            try
+            {
+                if (wrapped != null)
+                {
+                    wrapped.succeed();
+                }
+            }
+            finally
+            {
+                connection.onLocalClose(close);
+            }
+        }
+
+        @Override
+        public void fail(Throwable cause)
+        {
+            try
+            {
+                if (wrapped != null)
+                {
+                    wrapped.fail(cause);
+                }
+            }
+            finally
+            {
+                connection.onLocalClose(close);
+            }
+        }
+    }
+
+    public class DisconnectCallback extends CompletionCallback
+    {
+        @Override
+        public void complete()
+        {
+            connectionState.onClosed();
+            disconnect();
+        }
     }
 }

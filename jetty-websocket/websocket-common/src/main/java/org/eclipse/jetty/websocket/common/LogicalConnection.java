@@ -38,7 +38,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
          */
         void onError(Throwable cause);
     }
-    
+
+    /**
+     * Called to indicate a close frame was successfully sent to the remote.
+     * @param close the close details
+     */
+    void onLocalClose(CloseInfo close);
+
     /**
      * Terminate the connection (no close frame sent)
      */
@@ -116,6 +122,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
      *            the number of milliseconds of idle timeout
      */
     void setMaxIdleTimeout(long ms);
+
+    /**
+     * Associate the Active Session with the connection.
+     *
+     * @param session the session for this connection
+     */
+    void setSession(WebSocketSession session);
 
     /**
      * Suspend a the incoming read events on the connection.

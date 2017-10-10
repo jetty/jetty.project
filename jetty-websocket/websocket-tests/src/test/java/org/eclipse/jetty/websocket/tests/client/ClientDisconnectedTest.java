@@ -54,6 +54,7 @@ import org.eclipse.jetty.websocket.tests.SimpleServletServer;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -321,6 +322,7 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
+    @Ignore("Needs review")
     public void messageDrop() throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -362,6 +364,7 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
+    @Ignore("Needs review")
     public void closeDrop() throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
@@ -403,6 +406,7 @@ public class ClientDisconnectedTest
      * @throws Exception on test failure
      */
     @Test
+    @Ignore("Needs review")
     public void closeNoReply() throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();

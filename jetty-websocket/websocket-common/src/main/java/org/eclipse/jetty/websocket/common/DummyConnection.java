@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.api.FrameCallback;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.LogicalConnection;
 
 public class DummyConnection implements LogicalConnection
 {
@@ -45,15 +44,26 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
+    public void setSession(WebSocketSession session)
+    {
+    }
+
+    @Override
+    public void onLocalClose(CloseInfo close)
+    {
+
+    }
+
+    @Override
     public void disconnect()
     {
     }
-    
+
     @Override
     public void fillInterested()
     {
     }
-    
+
     @Override
     public ByteBufferPool getBufferPool()
     {
@@ -89,13 +99,13 @@ public class DummyConnection implements LogicalConnection
     {
         return 0;
     }
-    
+
     @Override
     public WebSocketPolicy getPolicy()
     {
         return policy;
     }
-    
+
     @Override
     public InetSocketAddress getRemoteAddress()
     {
