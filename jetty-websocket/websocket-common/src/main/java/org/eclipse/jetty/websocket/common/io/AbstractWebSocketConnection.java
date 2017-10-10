@@ -114,6 +114,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     private static final Logger LOG = Log.getLogger(AbstractWebSocketConnection.class);
+    private static final AtomicLong ID_GEN = new AtomicLong(0);
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
@@ -139,11 +140,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         super(endp,executor);
-        this.id = String.format("%s:%d->%s:%d",
-                endp.getLocalAddress().getAddress().getHostAddress(),
-                endp.getLocalAddress().getPort(),
-                endp.getRemoteAddress().getAddress().getHostAddress(),
-                endp.getRemoteAddress().getPort());
+
+        this.id = Long.toString(ID_GEN.incrementAndGet());
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);
