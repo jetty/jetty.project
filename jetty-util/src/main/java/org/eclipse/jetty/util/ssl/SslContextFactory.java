@@ -665,12 +665,12 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     /**
-     * @return The type of the trust store (defaults to type of the key store if unspecified)
+     * @return The type of the trust store
      */
     @ManagedAttribute("The trustStore type")
     public String getTrustStoreType()
     {
-        return _trustStoreType != null ? _trustStoreType : _keyStoreType;
+        return _trustStoreType;
     }
 
     /**
@@ -1077,19 +1077,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
      */
     protected KeyStore loadTrustStore(Resource resource) throws Exception
     {
-        String type = getTrustStoreType();
-        String provider = getTrustStoreProvider();
-        String passwd = Objects.toString(_trustStorePassword, null);
-        if (resource == null || resource.equals(_keyStoreResource))
-        {
+        String type = Objects.toString(getTrustStoreType(), getKeyStoreType());
+        String provider = Objects.toString(getTrustStoreProvider(), getKeyStoreProvider());
+        String passwd = Objects.toString(_trustStorePassword, Objects.toString(_keyStorePassword, null));
+        if (resource == null)
             resource = _keyStoreResource;
-            if (type == null)
-                type = _keyStoreType;
-            if (provider == null)
-                provider = _keyStoreProvider;
-            if (passwd == null)
-                passwd = Objects.toString(_keyStorePassword, null);
-        }
         return CertificateUtils.getKeyStore(resource, type, provider, passwd);
     }
 
