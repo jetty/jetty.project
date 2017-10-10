@@ -30,7 +30,9 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
+import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState;
 
 public class DummyConnection implements LogicalConnection
@@ -44,12 +46,12 @@ public class DummyConnection implements LogicalConnection
     }
 
     @Override
-    public void close()
+    public void setSession(WebSocketSession session)
     {
     }
 
     @Override
-    public void close(int statusCode, String reason)
+    public void onLocalClose(CloseInfo close)
     {
     }
 

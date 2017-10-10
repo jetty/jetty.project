@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutorSizedThreadPool;
 import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.ConnectionState;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.junit.rules.TestName;
 
@@ -73,18 +73,14 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     }
 
     @Override
-    public void close()
+    public void setSession(WebSocketSession session)
     {
-        close(StatusCode.NORMAL,null);
     }
 
     @Override
-    public void close(int statusCode, String reason)
+    public void onLocalClose(CloseInfo closeInfo)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("close({}, {})",statusCode,reason);
-        CloseInfo close = new CloseInfo(statusCode,reason);
-        ioState.onCloseLocal(close);
+        ioState.onCloseLocal(closeInfo);
     }
 
     public void connect()

@@ -180,7 +180,7 @@ public class Parser
         return (flagsInUse & 0x10) != 0;
     }
 
-    protected void notifyFrame(final Frame f)
+    protected void notifyFrame(final Frame f) throws WebSocketException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} Notify {}",policy.getBehavior(),getIncomingFramesHandler());
@@ -221,23 +221,12 @@ public class Parser
         }
         catch (WebSocketException e)
         {
-            notifyWebSocketException(e);
+            throw e;
         }
         catch (Throwable t)
         {
-            LOG.warn(t);
-            notifyWebSocketException(new WebSocketException(t));
+            throw new WebSocketException(t);
         }
-    }
-
-    protected void notifyWebSocketException(WebSocketException e)
-    {
-        LOG.warn(e);
-        if (incomingFramesHandler == null)
-        {
-            return;
-        }
-        incomingFramesHandler.incomingError(e);
     }
 
     public void parse(ByteBuffer buffer) throws WebSocketException
@@ -265,8 +254,6 @@ public class Parser
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
-            // let session know
-            notifyWebSocketException(e);
             // need to throw for proper close behavior in connection
             throw e;
         }
@@ -274,11 +261,8 @@ public class Parser
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
-            // let session know
-            WebSocketException e = new WebSocketException(t);
-            notifyWebSocketException(e);
             // need to throw for proper close behavior in connection
-            throw e;
+            throw new WebSocketException(t);
         }
     }
 

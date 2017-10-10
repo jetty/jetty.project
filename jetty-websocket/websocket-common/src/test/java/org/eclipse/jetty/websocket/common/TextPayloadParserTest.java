@@ -28,17 +28,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TextPayloadParserTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Test
     public void testFrameTooLargeDueToPolicy() throws Exception
     {
@@ -63,19 +67,15 @@ public class TextPayloadParserTest
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
+
+        expectedException.expect(MessageTooLargeException.class);
         parser.parseQuietly(buf);
-
-        capture.assertHasErrors(MessageTooLargeException.class,1);
-        capture.assertHasNoFrames();
-
-        MessageTooLargeException err = (MessageTooLargeException)capture.getErrors().poll();
-        Assert.assertThat("Error.closeCode",err.getStatusCode(),is(StatusCode.MESSAGE_TOO_LARGE));
     }
 
     @Test
     public void testLongMaskedText() throws Exception
     {
-        StringBuffer sb = new StringBuffer(); ;
+        StringBuffer sb = new StringBuffer();
         for (int i = 0; i < 3500; i++)
         {
             sb.append("Hell\uFF4f Big W\uFF4Frld ");

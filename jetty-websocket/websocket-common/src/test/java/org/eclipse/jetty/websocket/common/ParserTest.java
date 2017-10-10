@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -39,10 +41,15 @@ import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class ParserTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     /**
      * Similar to the server side 5.15 testcase. A normal 2 fragment text text message, followed by another continuation.
      */
@@ -61,11 +68,9 @@ public class ParserTest
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
+        expectedException.expect(ProtocolException.class);
+        expectedException.expectMessage(containsString("CONTINUATION frame without prior !FIN"));
         parser.parseQuietly(completeBuf);
-
-        capture.assertErrorCount(1);
-        capture.assertHasFrame(OpCode.TEXT,1);
-        capture.assertHasFrame(OpCode.CONTINUATION,1);
     }
 
     /**
@@ -83,10 +88,10 @@ public class ParserTest
         UnitParser parser = new UnitParser();
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parseQuietly(completeBuf);
 
-        capture.assertErrorCount(1);
-        capture.assertHasFrame(OpCode.TEXT,1); // fragment 1
+        expectedException.expect(ProtocolException.class);
+        expectedException.expectMessage(containsString("Unexpected TEXT frame"));
+        parser.parseQuietly(completeBuf);
     }
 
     /**

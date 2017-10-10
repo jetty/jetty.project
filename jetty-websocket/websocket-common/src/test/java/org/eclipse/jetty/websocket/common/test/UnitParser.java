@@ -58,10 +58,6 @@ public class UnitParser extends Parser
         {
             parse(buf);
         }
-        catch (Exception ignore)
-        {
-            /* ignore */
-        }
     }
 
     public void parseSlowly(ByteBuffer buf, int segmentSize)

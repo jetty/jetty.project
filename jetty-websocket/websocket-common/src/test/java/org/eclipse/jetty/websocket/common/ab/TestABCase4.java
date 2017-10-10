@@ -23,16 +23,19 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
-import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TestABCase4
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
@@ -46,25 +49,13 @@ public class TestABCase4
 
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        try (StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            try
-            {
-                parser.parse(expected);
-            }
-            catch (ProtocolException ignore)
-            {
-                // ignore
-            }
+            expectedException.expect(ProtocolException.class);
+            parser.parse(expected);
         }
-
-        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
-
-        Throwable known = capture.getErrors().poll();
-
-        Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 11"));
     }
 
     @Test
@@ -78,25 +69,13 @@ public class TestABCase4
 
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        try (StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            try
-            {
-                parser.parse(expected);
-            }
-            catch (ProtocolException ignore)
-            {
-                // ignore
-            }
+            expectedException.expect(ProtocolException.class);
+            parser.parse(expected);
         }
-
-        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
-
-        Throwable known = capture.getErrors().poll();
-
-        Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 12"));
     }
 
     @Test
@@ -110,25 +89,13 @@ public class TestABCase4
 
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        try (StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            try
-            {
-                parser.parse(expected);
-            }
-            catch (ProtocolException ignore)
-            {
-                // ignore
-            }
+            expectedException.expect(ProtocolException.class);
+            parser.parse(expected);
         }
-
-        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
-
-        Throwable known = capture.getErrors().poll();
-
-        Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 3"));
     }
 
     @Test
@@ -142,24 +109,12 @@ public class TestABCase4
 
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
-        try (StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Parser parser = new UnitParser(policy);
             parser.setIncomingFramesHandler(capture);
-            try
-            {
-                parser.parse(expected);
-            }
-            catch (ProtocolException ignore)
-            {
-                // ignore
-            }
+            expectedException.expect(ProtocolException.class);
+            parser.parse(expected);
         }
-
-        Assert.assertEquals("error on undefined opcode",1,capture.getErrorCount(WebSocketException.class));
-
-        Throwable known = capture.getErrors().poll();
-
-        Assert.assertTrue("undefined option should be in message",known.getMessage().contains("Unknown opcode: 4"));
     }
 }

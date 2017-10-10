@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
@@ -39,11 +40,16 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class TestABCase2
 {
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
     public void testGenerate125OctetPingCase2_4()
@@ -315,9 +321,10 @@ public class TestABCase2
         UnitParser parser = new UnitParser(policy);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
-        parser.parseQuietly(expected);
 
-        Assert.assertEquals("error should be returned for too large of ping payload",1,capture.getErrorCount(ProtocolException.class));
+        expectedException.expect(ProtocolException.class);
+        expectedException.expectMessage(containsString("Invalid control frame payload length"));
+        parser.parseQuietly(expected);
     }
 
 }
