@@ -575,7 +575,8 @@ public class Session implements SessionHandler.SessionIf
     {
         try (Lock lock = _lock.lock())
         {
-            return (int)(_sessionData.getMaxInactiveMs()/1000);
+            long maxInactiveMs = _sessionData.getMaxInactiveMs();
+            return (int)(maxInactiveMs < 0 ? -1 : maxInactiveMs/1000);
         }
     }
 
