@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[configuring-security-authentication]]
-=== Authentication
+=== Authentication and Authorization
 
 There are two aspects to securing a web application(or context) within the Jetty server:
 
@@ -459,3 +459,58 @@ You can then define roles that should be able to perform these protected methods
 ----
 
 In the above example, only users with an `admin` role will be able to perform `DELETE` or `POST` methods.
+
+===== Configuring Authorization with Context XML Files
+
+While the examples above show configuration of Authorization in a `web.xml` file, they can also be configured as part of the link#link:#deployable-descriptor-file[context xml file] for a web application.
+This is especially helpful if authorization needs change over time and need updated without re-packaging the whole web app.
+
+To do this, we add a section for security constraints into the context xml file for our web app as part of the `securityHandler`.
+In the example below, a `HashLoginService` is defined with authorization being granted too `foo/*` paths to users with the `admin` and `manager` roles.
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id="testWebapp" class="org.eclipse.jetty.webapp.WebAppContext">
+  <Get name="securityHandler">
+    <Set name="realmName">Test Realm</Set>
+    <Set name="authMethod">BASIC</Set>
+    <Call name="addConstraintMapping">
+      <Arg>
+         <New class="org.eclipse.jetty.security.ConstraintMapping">
+            <Set name="pathSpec">/foo/*</Set>
+            <Set name="constraint">
+              <New class="org.eclipse.jetty.util.security.Constraint">
+                  <Set name="name">Foo Auth</Set>
+                  <Set name="authenticate">true</Set>
+                  <Set name="roles">
+                    <Array type="java.lang.String">
+                      <Item>admin</Item>
+                      <Item>manager</Item>
+                    </Array>
+                  </Set>
+              </New>
+            </Set>
+         </New>
+      </Arg>
+    </Call>
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name">Test Realm</Set>
+        <Set name="config">/src/tmp/small-security-test/realm.properties</Set>
+      </New>
+    </Set>
+  </Get>
+</Configure>
+----
+
+If roles changed in the future, administrators could easily change this context xml file without having to edit the contents of the web app at all.
+
+==== Authentication and Authorization with Embedded Jetty
+
+In addition to the distribution, security can be defined as part of an embedded implementation as well.
+Below is an example which, like the one above, sets up a server with a `HashLoginService` and adds security constraints to restrict access based on roles.
+
+[source, java, subs="{sub-order}"]
+----
+include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/SecuredHelloHandler.java[]
+----
