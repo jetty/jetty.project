@@ -31,18 +31,16 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public abstract class HttpConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
-    private static final HttpField CHUNKED_FIELD = new HttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
 
     private final HttpDestination destination;
     private int idleTimeoutGuard;
@@ -145,7 +143,7 @@ public abstract class HttpConnection implements Connection
         {
             StringBuilder cookies = null;
             if (uri != null)
-                cookies = convertCookies(cookieStore.get(uri), null);
+                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
             cookies = convertCookies(request.getCookies(), cookies);
             if (cookies != null)
                 request.header(HttpHeader.COOKIE.asString(), cookies.toString());
@@ -158,13 +156,12 @@ public abstract class HttpConnection implements Connection
 
     private StringBuilder convertCookies(List<HttpCookie> cookies, StringBuilder builder)
     {
-        for (int i = 0; i < cookies.size(); ++i)
+        for (HttpCookie cookie : cookies)
         {
             if (builder == null)
                 builder = new StringBuilder();
             if (builder.length() > 0)
                 builder.append("; ");
-            HttpCookie cookie = cookies.get(i);
             builder.append(cookie.getName()).append("=").append(cookie.getValue());
         }
         return builder;

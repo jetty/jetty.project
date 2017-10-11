@@ -27,11 +27,16 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
-public class EmptyServerHandler extends AbstractHandler
+public class EmptyServerHandler extends AbstractHandler.ErrorDispatchHandler
 {
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    protected final void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        baseRequest.setHandled(true);
+        jettyRequest.setHandled(true);
+        service(target, jettyRequest, request, response);
+    }
+
+    protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
     }
 }

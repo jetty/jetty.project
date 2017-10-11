@@ -21,7 +21,11 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -31,14 +35,17 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HttpCookieTest extends AbstractHttpClientServerTest
 {
+    private static final Cookie[] EMPTY_COOKIES = new Cookie[0];
+
     public HttpCookieTest(SslContextFactory sslContextFactory)
     {
         super(sslContextFactory);
@@ -49,13 +56,12 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
     {
         final String name = "foo";
         final String value = "bar";
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.addCookie(new Cookie(name, value));
-                baseRequest.setHandled(true);
             }
         });
 
@@ -79,12 +85,11 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
     {
         final String name = "foo";
         final String value = "bar";
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 Cookie[] cookies = request.getCookies();
                 Assert.assertNotNull(cookies);
                 Assert.assertEquals(1, cookies.length);
@@ -108,12 +113,11 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
     @Test
     public void test_CookieWithoutValue() throws Exception
     {
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.addHeader("Set-Cookie", "");
             }
         });
@@ -130,12 +134,11 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
     {
         final String name = "foo";
         final String value = "bar";
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 Cookie[] cookies = request.getCookies();
                 Assert.assertNotNull(cookies);
                 Assert.assertEquals(1, cookies.length);
@@ -151,5 +154,519 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void test_SetCookieWithoutPath_RequestURIWithOneSegment() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue = "1";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue);
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                        case "/foo":
+                        case "/foo/bar":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @Test
+    public void test_SetCookieWithoutPath_RequestURIWithTwoSegments() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue = "1";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo/bar".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue);
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                        case "/foo":
+                        case "/foobar":
+                            Assert.assertEquals(target, 0, cookies.length);
+                            break;
+                        case "/foo/":
+                        case "/foo/bar":
+                        case "/foo/bar/baz":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo/bar")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar", "/foo/bar/baz").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @Test
+    public void test_SetCookieWithLongerPath() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue = "1";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue);
+                    cookie.setPath("/foo/bar");
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                        case "/foo":
+                        case "/foo/barbaz":
+                            Assert.assertEquals(target, 0, cookies.length);
+                            break;
+                        case "/foo/bar":
+                        case "/foo/bar/":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/bar", "/foo/bar/", "/foo/barbaz").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @Test
+    public void test_SetCookieWithShorterPath() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue = "1";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo/bar".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue);
+                    cookie.setPath("/foo");
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                        case "/foobar":
+                            Assert.assertEquals(target, 0, cookies.length);
+                            break;
+                        case "/foo":
+                        case "/foo/":
+                        case "/foo/bar":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo/bar")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @Test
+    public void test_TwoSetCookieWithSameNameSamePath() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue1 = "1";
+        String cookieValue2 = "2";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue1);
+                    cookie.setPath("/foo");
+                    response.addCookie(cookie);
+                    cookie = new Cookie(cookieName, cookieValue2);
+                    cookie.setPath("/foo");
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                            Assert.assertEquals(target, 0, cookies.length);
+                            break;
+                        case "/foo":
+                        case "/foo/bar":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue2, cookie.getValue());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @Test
+    public void test_TwoSetCookieWithSameNameDifferentPath() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue1 = "1";
+        String cookieValue2 = "2";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue1);
+                    cookie.setPath("/foo");
+                    response.addCookie(cookie);
+                    cookie = new Cookie(cookieName, cookieValue2);
+                    cookie.setPath("/bar");
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                            Assert.assertEquals(target, 0, cookies.length);
+                            break;
+                        case "/foo":
+                        case "/foo/bar":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie1 = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie1.getName());
+                            Assert.assertEquals(target, cookieValue1, cookie1.getValue());
+                            break;
+                        case "/bar":
+                        case "/bar/foo":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie2 = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie2.getName());
+                            Assert.assertEquals(target, cookieValue2, cookie2.getValue());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/bar", "/bar", "/bar/foo").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @Test
+    public void test_TwoSetCookieWithSameNamePath1PrefixOfPath2() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue1 = "1";
+        String cookieValue2 = "2";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue1);
+                    cookie.setPath("/foo");
+                    response.addCookie(cookie);
+                    cookie = new Cookie(cookieName, cookieValue2);
+                    cookie.setPath("/foo/bar");
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                            Assert.assertEquals(target, 0, cookies.length);
+                            break;
+                        case "/foo":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue1, cookie.getValue());
+                            break;
+                        case "/foo/bar":
+                            Assert.assertEquals(target, 2, cookies.length);
+                            Cookie cookie1 = cookies[0];
+                            Cookie cookie2 = cookies[1];
+                            Assert.assertEquals(target, cookieName, cookie1.getName());
+                            Assert.assertEquals(target, cookieName, cookie2.getName());
+                            Set<String> values = new HashSet<>();
+                            values.add(cookie1.getValue());
+                            values.add(cookie2.getValue());
+                            Assert.assertThat(target, values, Matchers.containsInAnyOrder(cookieValue1, cookieValue2));
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/bar").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @Test
+    public void test_CookiePathWithTrailingSlash() throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue = "1";
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int r = request.getIntHeader(headerName);
+                if ("/foo/bar".equals(target) && r == 0)
+                {
+                    Cookie cookie = new Cookie(cookieName, cookieValue);
+                    cookie.setPath("/foo/");
+                    response.addCookie(cookie);
+                }
+                else
+                {
+                    Cookie[] cookies = Optional.ofNullable(request.getCookies()).orElse(EMPTY_COOKIES);
+                    switch (target)
+                    {
+                        case "/":
+                        case "/foo":
+                        case "/foobar":
+                            Assert.assertEquals(target, 0, cookies.length);
+                            break;
+                        case "/foo/":
+                        case "/foo/bar":
+                            Assert.assertEquals(target, 1, cookies.length);
+                            Cookie cookie = cookies[0];
+                            Assert.assertEquals(target, cookieName, cookie.getName());
+                            Assert.assertEquals(target, cookieValue, cookie.getValue());
+                            break;
+                        default:
+                            Assert.fail();
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .path("/foo/bar")
+                .header(headerName, "0")
+                .timeout(5, TimeUnit.SECONDS));
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path(path)
+                    .header(headerName, "1")
+                    .timeout(5, TimeUnit.SECONDS));
+            Assert.assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    private ContentResponse send(org.eclipse.jetty.client.api.Request request)
+    {
+        try
+        {
+            return request.send();
+        }
+        catch (RuntimeException x)
+        {
+            throw x;
+        }
+        catch (Exception x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 }
