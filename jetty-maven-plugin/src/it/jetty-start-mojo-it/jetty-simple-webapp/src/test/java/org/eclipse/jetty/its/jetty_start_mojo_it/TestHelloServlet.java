@@ -19,6 +19,11 @@
 
 package org.eclipse.jetty.its.jetty_start_mojo_it;
 
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.LineNumberReader;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,8 +37,8 @@ public class TestHelloServlet
     public void hello_servlet()
         throws Exception
     {
-        int port = Integer.getInteger( "jetty.runPort" );
-        System.out.println( "port used:" + port );
+        int port = getPort();
+        Assert.assertTrue(port > 0);
         HttpClient httpClient = new HttpClient();
         try
         {
@@ -41,13 +46,9 @@ public class TestHelloServlet
 
             String response = httpClient.GET( "http://localhost:" + port + "/hello?name=beer" ).getContentAsString();
 
-            System.out.println( "httpResponse:" + response );
-
             Assert.assertEquals( "hello beer", response.trim() );
 
             response = httpClient.GET( "http://localhost:" + port + "/ping?name=beer" ).getContentAsString();
-
-            System.out.println( "httpResponse:" + response );
 
             Assert.assertEquals( "pong beer", response.trim() );
         }
@@ -56,4 +57,37 @@ public class TestHelloServlet
             httpClient.stop();
         }
     }
+    public int getPort()
+    throws Exception
+    {
+        int attempts = 20;
+        int port = -1;
+        String s = System.getProperty("jetty.port.file");
+        Assert.assertNotNull(s);
+        File f = new File(s);
+        while (true)
+        {
+            if (f.exists())
+            {
+                try (FileReader r = new FileReader(f);
+                     LineNumberReader lnr = new LineNumberReader(r);
+                    )
+                {   
+                    s = lnr.readLine();
+                    Assert.assertNotNull(s);
+                    port = Integer.parseInt(s.trim());
+                }
+                break;
+            }
+            else
+            {
+                if (--attempts < 0)
+                    break;
+                else
+                    Thread.currentThread().sleep(100);
+            }
+        }        
+        return port;
+    }
+
 }

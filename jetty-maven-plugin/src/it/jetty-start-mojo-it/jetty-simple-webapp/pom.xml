@@ -14,6 +14,10 @@
 
   <name>Jetty :: Simple :: Webapp</name>
 
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-start-port.txt</jetty.port.file>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -63,7 +67,7 @@
         <version>2.20</version>
         <configuration>
           <systemPropertyVariables>
-            <jetty.runPort>@jetty.runPort@</jetty.runPort>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -78,9 +82,13 @@
               <goal>start</goal>
             </goals>
             <configuration>
-              <httpConnector>
-                <port>@jetty.runPort@</port>
-              </httpConnector>
+               <systemProperties>
+                <systemProperty>
+                  <name>jetty.port.file</name>
+                  <value>${jetty.port.file}</value>
+                </systemProperty>
+               </systemProperties>
+               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>

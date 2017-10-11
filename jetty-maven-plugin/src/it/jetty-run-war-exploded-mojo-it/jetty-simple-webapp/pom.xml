@@ -14,6 +14,10 @@
 
   <name>Jetty :: Simple :: Webapp</name>
 
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-run-war-exploded-port.txt</jetty.port.file>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -64,7 +68,7 @@
         <configuration>
           <skip>true</skip>
           <systemPropertyVariables>
-            <jetty.runPort>@jetty.runPort@</jetty.runPort>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -74,7 +78,7 @@
         <version>2.20</version>
         <configuration>
           <systemPropertyVariables>
-            <jetty.runPort>@jetty.runPort@</jetty.runPort>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
           </systemPropertyVariables>
           <includes>
             <include>**/*TestHelloServlet*</include>
@@ -107,9 +111,13 @@
             </goals>
             <configuration>
               <nonBlocking>true</nonBlocking>
-              <httpConnector>
-                <port>@jetty.runPort@</port>
-              </httpConnector>
+              <systemProperties>
+                <systemProperty>
+                  <name>jetty.port.file</name>
+                  <value>${jetty.port.file}</value>
+                </systemProperty>
+              </systemProperties>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>

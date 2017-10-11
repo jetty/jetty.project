@@ -15,8 +15,8 @@
   <name>Jetty :: Simple :: Webapp</name>
 
   <properties>
-    <jetty.runPort>@jetty.runPort@</jetty.runPort>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
+    <jetty.port.file>${project.build.directory}/jetty-run-forked-port.txt</jetty.port.file>
   </properties>
 
   <dependencies>
@@ -36,6 +36,13 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>@project.version@</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <version>4.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -68,7 +75,7 @@
         <version>2.20</version>
         <configuration>
           <systemPropertyVariables>
-            <jetty.runPort>@jetty.runPort@</jetty.runPort>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -89,8 +96,11 @@
             <configuration>
               <nonBlocking>true</nonBlocking>
               <waitForChild>false</waitForChild>
-              <jettyXml>${project.build.directory}/config/jetty.xml</jettyXml>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
               <jvmArgs>${jetty.jvmArgs}</jvmArgs>
+              <jettyProperties>
+               <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>
+              </jettyProperties>
             </configuration>
           </execution>
           <!--
@@ -102,32 +112,6 @@
             </goals>
           </execution>
           -->
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>3.0.2</version>
-        <executions>
-          <execution>
-            <id>copy-resources-jetty</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/config</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${basedir}/src/config/</directory>
-                  <filtering>true</filtering>
-                  <includes>
-                    <include>**/**</include>
-                  </includes>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
     </plugins>
