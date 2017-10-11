@@ -327,11 +327,10 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             start(new EmptyServerHandler()
             {
                 @Override
-                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
                     try
                     {
-                        super.handle(target, baseRequest, request, response);
                         if (request.getDispatcherType() != DispatcherType.ERROR)
                             IO.copy(request.getInputStream(), response.getOutputStream());
                     }

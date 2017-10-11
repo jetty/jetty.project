@@ -22,6 +22,7 @@ import java.net.CookieManager;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -72,6 +73,38 @@ public class HttpCookieStore implements CookieStore
     public boolean removeAll()
     {
         return delegate.removeAll();
+    }
+
+    public static List<HttpCookie> matchPath(URI uri, List<HttpCookie> cookies)
+    {
+        if (cookies == null || cookies.isEmpty())
+            return Collections.emptyList();
+        List<HttpCookie> result = new ArrayList<>(4);
+        String path = uri.getPath();
+        if (path == null || path.trim().isEmpty())
+            path = "/";
+        for (HttpCookie cookie : cookies)
+        {
+            String cookiePath = cookie.getPath();
+            if (cookiePath == null)
+            {
+                result.add(cookie);
+            }
+            else
+            {
+                // RFC 6265, section 5.1.4, path matching algorithm.
+                if (path.equals(cookiePath))
+                {
+                    result.add(cookie);
+                }
+                else if (path.startsWith(cookiePath))
+                {
+                    if (cookiePath.endsWith("/") || path.charAt(cookiePath.length()) == '/')
+                        result.add(cookie);
+                }
+            }
+        }
+        return result;
     }
 
     public static class Empty implements CookieStore
