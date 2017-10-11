@@ -24,8 +24,15 @@
             </Item>
           </Array>
         </Arg>
+        <Call name="addLifeCycleListener">
+          <Arg>
+            <New class="org.eclipse.jetty.maven.plugin.ServerConnectorListener">
+              <Set name="fileName"><Property name="jetty.port.file" default="port.txt"/></Set>
+            </New>
+          </Arg>
+        </Call>
         <Set name="host"><Property name="jetty.host" /></Set>
-        <Set name="port"><Property name="jetty.port" default="${jetty.runPort}" /></Set>
+        <Set name="port"><Property name="jetty.port" default="0" />0</Set>
         <Set name="idleTimeout">30000</Set>
       </New>
     </Arg>

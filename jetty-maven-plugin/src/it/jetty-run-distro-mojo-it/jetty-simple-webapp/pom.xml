@@ -15,7 +15,7 @@
   <name>Jetty :: Simple :: Webapp</name>
 
   <properties>
-    <jetty.runPort>@jetty.runPort@</jetty.runPort>
+    <jetty.port.file>${project.build.directory}/jetty-run-distro-port.txt</jetty.port.file>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
   </properties>
 
@@ -68,7 +68,7 @@
         <version>2.20</version>
         <configuration>
           <systemPropertyVariables>
-            <jetty.runPort>@jetty.runPort@</jetty.runPort>
+            <jetty.port.file>${jetty.port.file}</jetty.port.file>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -87,50 +87,18 @@
               <goal>run-distro</goal>
             </goals>
             <configuration>
+              <jettyBase>${basedir}/src/base</jettyBase>
               <jettyProperties>
                 <jettyProperty>jetty.server.dumpAfterStart=true</jettyProperty>
-                <jettyProperty>jetty.http.port=@jetty.runPort@</jettyProperty>
+                <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>
+                <jettyProperty>jetty.http.port=0</jettyProperty>
               </jettyProperties>
               <waitForChild>false</waitForChild>
               <modules>
                 <module>jsp</module>
                 <module>jstl</module>
+                <module>testmod</module>
               </modules>
-            </configuration>
-          </execution>
-          <!--
-          <execution>
-            <id>stop-jetty</id>
-            <phase>test</phase>
-            <goals>
-              <goal>stop</goal>
-            </goals>
-          </execution>
-          -->
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>3.0.2</version>
-        <executions>
-          <execution>
-            <id>copy-resources-jetty</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/config</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${basedir}/src/config/</directory>
-                  <filtering>true</filtering>
-                  <includes>
-                    <include>**/**</include>
-                  </includes>
-                </resource>
-              </resources>
             </configuration>
           </execution>
         </executions>
