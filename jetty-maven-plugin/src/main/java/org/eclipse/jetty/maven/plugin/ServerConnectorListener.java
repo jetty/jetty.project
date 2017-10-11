@@ -87,12 +87,11 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
-     * @param filePath the filePath to set
+     * @param name the file name to set
      */
     public void setFileName(String name)
     {
         
-System.err.println("FILE NAME="+name);
         _fileName = name;
     }
 
