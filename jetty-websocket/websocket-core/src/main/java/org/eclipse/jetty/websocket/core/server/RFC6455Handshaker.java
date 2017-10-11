@@ -178,6 +178,7 @@ public final class RFC6455Handshaker implements Handshaker
                 .newSession(baseRequest,
                             request,
                             connectionFactory.getPolicy(),
+                            connectionFactory.getBufferPool(),
                             extensions,
                             subprotocols);
         if (session==null)
@@ -216,7 +217,7 @@ public final class RFC6455Handshaker implements Handshaker
         baseResponse.getHttpFields().add(ConnectionUpgrade);
         baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_ACCEPT, AcceptHash.hashKey(key));
         baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
-                                         ExtensionConfig.toHeaderValue(connection.getExtensionStack().getNegotiatedExtensions()));
+                                         ExtensionConfig.toHeaderValue(session.getExtensionStack().getNegotiatedExtensions()));
         String subprotocol = session.getSubprotocol();
         if (subprotocol!=null)
             baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,subprotocol);
@@ -229,7 +230,7 @@ public final class RFC6455Handshaker implements Handshaker
 
         try
         {
-            connection.getExtensionStack().start();
+            session.getExtensionStack().start();
         }
         catch (Exception e)
         {

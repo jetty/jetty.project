@@ -79,6 +79,6 @@ public class DummyConnection extends WebSocketCoreConnection
 
     public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, WebSocketCoreSession session, ExtensionStack extensionStack)
     {
-        super(endp, executor, bufferPool, session, extensionStack);
+        super(endp, executor, bufferPool, session);
     }
 }

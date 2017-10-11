@@ -79,8 +79,22 @@ public class WebSocketCoreConnectionState
     
     public boolean onClosing()
     {
-        State orig = state.getAndUpdate(prev -> State.CLOSING);
-        return orig == State.CONNECTED || orig == State.OPEN;
+        while(true)
+        {
+            State s = state.get();
+            switch(s)
+            {
+                case CONNECTING:
+                case CONNECTED:
+                case OPEN:
+                    if (state.compareAndSet(s,State.CLOSING))
+                        return true;
+                    break;
+                case CLOSING:
+                case CLOSED:
+                    return false;
+            }
+        }
     }
     
     public boolean onConnected()
@@ -103,4 +117,22 @@ public class WebSocketCoreConnectionState
     {
         return String.format("%s[%s]", this.getClass().getSimpleName(), state.get());
     }
+
+
+    public boolean isOpen()
+    {
+        State s = state.get();
+        if (s==null)
+            return false;
+        switch(s)
+        {
+            case CONNECTING:
+            case CONNECTED:
+            case OPEN:
+                return true;
+            default:
+                return false;
+        }
+    }
+
 }

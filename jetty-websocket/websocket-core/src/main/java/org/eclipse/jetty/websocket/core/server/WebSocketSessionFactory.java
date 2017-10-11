@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
@@ -37,6 +38,7 @@ public interface WebSocketSessionFactory
             Request baseRequest,
             ServletRequest request,
             WebSocketPolicy policy,
+            ByteBufferPool bufferPool,
             List<ExtensionConfig> extensions,
             List<String> subprotocols);
 }

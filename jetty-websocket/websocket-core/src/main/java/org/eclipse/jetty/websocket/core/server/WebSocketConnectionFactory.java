@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.server;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -53,4 +54,6 @@ public interface WebSocketConnectionFactory extends ConnectionFactory
     {
         return Collections.singletonList(getProtocol());
     }
+
+    ByteBufferPool getBufferPool();
 }

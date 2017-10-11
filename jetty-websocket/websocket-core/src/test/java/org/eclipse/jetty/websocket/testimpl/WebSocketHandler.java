@@ -95,10 +95,9 @@ public class WebSocketHandler extends HandlerWrapper
 
     static class TestWebSocketConnectionFactory extends ContainerLifeCycle implements WebSocketConnectionFactory
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
         WebSocketExtensionRegistry extensionRegistry = new WebSocketExtensionRegistry();
-        DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER,extensionRegistry);
+        ByteBufferPool bufferPool = new MappedByteBufferPool();
 
         @Override
         public WebSocketPolicy getPolicy()
@@ -109,23 +108,26 @@ public class WebSocketHandler extends HandlerWrapper
         @Override
         public WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, WebSocketCoreSession session)
         {
-            ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
-            extensionStack.negotiate(objectFactory, policy, bufferPool, session.getExtensions());
-
             return new WebSocketCoreConnection(
                     endPoint,
                     connector.getExecutor(),
                     bufferPool,
-                    session,
-                    extensionStack);
+                    session);
+        }
+
+        @Override
+        public ByteBufferPool getBufferPool()
+        {
+            return bufferPool;
         }
     }
 
     static class TestWebSocketSessionFactory extends ContainerLifeCycle implements WebSocketSessionFactory
     {
+        DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
 
         @Override
-        public WebSocketCoreSession newSession(Request baseRequest, ServletRequest request, WebSocketPolicy policy, List<ExtensionConfig> extensions, List<String> subprotocols)
+        public WebSocketCoreSession newSession(Request baseRequest, ServletRequest request, WebSocketPolicy policy, ByteBufferPool bufferPool, List<ExtensionConfig> extensions, List<String> subprotocols)
         {
             // TODO abstract the creation of a local Endpoint
             WebSocketLocalEndpoint localEndpoint = new WebSocketLocalEndpoint.Adaptor()
@@ -181,8 +183,11 @@ public class WebSocketHandler extends HandlerWrapper
 
             String subprotocol = subprotocols.isEmpty()?null:subprotocols.get(0);
 
+            ExtensionStack extensionStack = new ExtensionStack(policy.getExtensionRegistry());
+            extensionStack.negotiate(objectFactory, policy, bufferPool, extensions);
+
             WebSocketCoreSession session =
-                    new WebSocketCoreSession(this,localEndpoint,policy,subprotocol,extensions);
+                    new WebSocketCoreSession(this,localEndpoint,policy,extensionStack,subprotocol);
 
             return session;
         }
