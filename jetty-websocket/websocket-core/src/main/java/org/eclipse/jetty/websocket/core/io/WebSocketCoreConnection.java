@@ -58,17 +58,24 @@ import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
  */
 public class WebSocketCoreConnection extends AbstractConnection implements Parser.Handler, IncomingFrames, OutgoingFrames, SuspendToken, Connection.UpgradeTo, Dumpable
 {
-    private class Flusher extends FrameFlusher
+    private class Flusher extends FrameFlusher implements OutgoingFrames
     {
         private Flusher(int bufferSize, Generator generator, EndPoint endpoint)
         {
-            super(generator, endpoint, bufferSize, 8);
+            super(bufferPool, generator, endpoint, bufferSize, 8);
         }
 
         @Override
-        protected void onFailure(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
+            super.onCompleteFailure(x);
             session.processError(x);
+        }
+
+        @Override
+        public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+        {
+            this.enqueue(frame,callback,batchMode);
         }
     }
 
@@ -86,7 +93,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final FrameFlusher flusher;
+    private final Flusher flusher;
     private final ExtensionStack extensionStack;
     private final String id;
     private final WebSocketCoreConnectionState connectionState = new WebSocketCoreConnectionState();

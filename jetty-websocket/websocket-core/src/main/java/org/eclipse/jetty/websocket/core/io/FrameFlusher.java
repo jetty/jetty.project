@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.io;
 
-import java.io.EOFException;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -33,223 +31,314 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.Generator;
+import java.nio.channels.ClosedChannelException;
 
-/**
- * Interface for working with bytes destined for {@link EndPoint#write(org.eclipse.jetty.util.Callback, ByteBuffer...)}
- */
-public class FrameFlusher implements OutgoingFrames
+import org.eclipse.jetty.io.ByteBufferPool;
+
+public class FrameFlusher extends IteratingCallback
 {
-    private class Flusher extends IteratingCallback
+    public static final BinaryFrame FLUSH_FRAME = new BinaryFrame();
+    private static final Logger LOG = Log.getLogger(FrameFlusher.class);
+
+    private final ByteBufferPool bufferPool;
+    private final EndPoint endPoint;
+    private final int bufferSize;
+    private final Generator generator;
+    private final int maxGather;
+    private final Deque<FrameEntry> queue = new ArrayDeque<>();
+    private final List<FrameEntry> entries;
+    private final List<ByteBuffer> buffers;
+    private boolean closed;
+    private Throwable terminated;
+    private ByteBuffer aggregate;
+    private BatchMode batchMode;
+
+    public FrameFlusher(ByteBufferPool bufferPool, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
-        private final List<FrameEntry> entries;
-        private final List<ByteBuffer> buffers;
-        private ByteBuffer aggregate;
-        private BatchMode batchMode;
+        this.bufferPool = bufferPool;
+        this.endPoint = endPoint;
+        this.bufferSize = bufferSize;
+        this.generator = Objects.requireNonNull(generator);
+        this.maxGather = maxGather;
+        this.entries = new ArrayList<>(maxGather);
+        this.buffers = new ArrayList<>((maxGather * 2) + 1);
+    }
 
-        public Flusher(int maxGather)
+    public void enqueue(Frame frame, Callback callback, BatchMode batchMode)
+    {
+        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
+
+        Throwable closed;
+        synchronized (this)
         {
-            entries = new ArrayList<>(maxGather);
-            buffers = new ArrayList<>((maxGather * 2) + 1);
+            closed = terminated;
+            if (closed == null)
+            {
+                byte opCode = frame.getOpCode();
+                if (opCode == OpCode.PING || opCode == OpCode.PONG)
+                    queue.offerFirst(entry);
+                else
+                    queue.offerLast(entry);
+            }
         }
 
-        private Action batch()
+        if (closed == null)
+            iterate();
+        else
+            notifyCallbackFailure(callback, closed);
+    }
+
+    @Override
+    protected Action process() throws Throwable
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Flushing {}", this);
+
+        int space = aggregate == null ? bufferSize : BufferUtil.space(aggregate);
+        BatchMode currentBatchMode = BatchMode.AUTO;
+        synchronized (this)
         {
-            if (aggregate == null)
+            if (closed)
+                return Action.SUCCEEDED;
+
+            if (terminated != null)
+                throw terminated;
+
+            while (!queue.isEmpty() && entries.size() <= maxGather)
             {
-                aggregate = generator.getBufferPool().acquire(bufferSize,true);
-                BufferUtil.clearToFill(aggregate);
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("{} acquired aggregate buffer {}",FrameFlusher.this,aggregate);
-                }
-            }
+                FrameEntry entry = queue.poll();
+                currentBatchMode = BatchMode.max(currentBatchMode, entry.batchMode);
 
-            // Do not allocate the iterator here.
-            for (int i = 0; i < entries.size(); ++i)
-            {
-                FrameEntry entry = entries.get(i);
-
-                entry.generateHeaderBytes(aggregate);
-
-                ByteBuffer payload = entry.frame.getPayload();
-                if (BufferUtil.hasContent(payload))
-                {
-                    BufferUtil.put(payload, aggregate);
-                }
-            }
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{} aggregated {} frames in {}: {}", FrameFlusher.this, entries.size(), aggregate, entries);
-            }
-            succeeded();
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            // This IteratingCallback never completes.
-        }
-
-        @Override
-        public void onCompleteFailure(Throwable x)
-        {
-            for (FrameEntry entry : entries)
-            {
-                notifyCallbackFailure(entry.callback,x);
-                entry.release();
-            }
-            entries.clear();
-            failure = x;
-            onFailure(x);
-        }
-
-        private Action flush()
-        {
-            if (!BufferUtil.isEmpty(aggregate))
-            {
-                aggregate.flip();
-                buffers.add(aggregate);
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("{} flushing aggregate {}",FrameFlusher.this,aggregate);
-                }
-            }
-
-            // Do not allocate the iterator here.
-            for (int i = 0; i < entries.size(); ++i)
-            {
-                FrameEntry entry = entries.get(i);
-                // Skip the "synthetic" frame used for flushing.
+                // Force flush if we need to.
                 if (entry.frame == FLUSH_FRAME)
-                {
-                    continue;
-                }
-                buffers.add(entry.generateHeaderBytes());
-                ByteBuffer payload = entry.frame.getPayload();
-                if (BufferUtil.hasContent(payload))
-                {
-                    buffers.add(payload);
-                }
-            }
+                    currentBatchMode = BatchMode.OFF;
 
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{} flushing {} frames: {}",FrameFlusher.this,entries.size(),entries);
-            }
+                int payloadLength = BufferUtil.length(entry.frame.getPayload());
+                int approxFrameLength = Generator.MAX_HEADER_LENGTH + payloadLength;
 
-            if (buffers.isEmpty())
+                // If it is a "big" frame, avoid copying into the aggregate buffer.
+                if (approxFrameLength > (bufferSize >> 2))
+                    currentBatchMode = BatchMode.OFF;
+
+                // If the aggregate buffer overflows, do not batch.
+                space -= approxFrameLength;
+                if (space <= 0)
+                    currentBatchMode = BatchMode.OFF;
+
+                entries.add(entry);
+            }
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} processing {} entries: {}", this, entries.size(), entries);
+
+        if (entries.isEmpty())
+        {
+            if (batchMode != BatchMode.AUTO)
             {
+                // Nothing more to do, release the aggregate buffer if we need to.
+                // Releasing it here rather than in succeeded() allows for its reuse.
                 releaseAggregate();
-                // We may have the FLUSH_FRAME to notify.
-                succeedEntries();
                 return Action.IDLE;
             }
 
-            endpoint.write(this,buffers.toArray(new ByteBuffer[buffers.size()]));
-            buffers.clear();
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected Action process() throws Exception
-        {
-            BatchMode currentBatchMode = BatchMode.AUTO;
-
-            try (Locker.Lock l = lock.lock())
-            {
-                int space = aggregate == null?bufferSize:BufferUtil.space(aggregate);
-                while ((entries.size() <= maxGather) && !queue.isEmpty())
-                {
-                    FrameEntry entry = queue.poll();
-                    currentBatchMode = BatchMode.max(currentBatchMode,entry.batchMode);
-
-                    // Force flush if we need to.
-                    if (entry.frame == FLUSH_FRAME)
-                    {
-                        currentBatchMode = BatchMode.OFF;
-                    }
-
-                    int payloadLength = BufferUtil.length(entry.frame.getPayload());
-                    int approxFrameLength = Generator.MAX_HEADER_LENGTH + payloadLength;
-
-                    // If it is a "big" frame, avoid copying into the aggregate buffer.
-                    if (approxFrameLength > (bufferSize >> 2))
-                    {
-                        currentBatchMode = BatchMode.OFF;
-                    }
-
-                    // If the aggregate buffer overflows, do not batch.
-                    space -= approxFrameLength;
-                    if (space <= 0)
-                    {
-                        currentBatchMode = BatchMode.OFF;
-                    }
-
-                    entries.add(entry);
-                }
-            }
-
             if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{} processing {} entries: {}",FrameFlusher.this,entries.size(),entries);
-            }
+                LOG.debug("{} auto flushing", this);
 
-            if (entries.isEmpty())
-            {
-                if (batchMode != BatchMode.AUTO)
-                {
-                    // Nothing more to do, release the aggregate buffer if we need to.
-                    // Releasing it here rather than in succeeded() allows for its reuse.
-                    releaseAggregate();
-                    return Action.IDLE;
-                }
-
-                LOG.debug("{} auto flushing",FrameFlusher.this);
-                return flush();
-            }
-
-            batchMode = currentBatchMode;
-
-            return currentBatchMode == BatchMode.OFF?flush():batch();
+            return flush();
         }
 
-        private void releaseAggregate()
+        batchMode = currentBatchMode;
+
+        return currentBatchMode == BatchMode.OFF ? flush() : batch();
+    }
+
+    private Action batch()
+    {
+        if (aggregate == null)
         {
-            if ((aggregate != null) && BufferUtil.isEmpty(aggregate))
-            {
-                generator.getBufferPool().release(aggregate);
-                aggregate = null;
-            }
+            aggregate = bufferPool.acquire(bufferSize, true);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} acquired aggregate buffer {}", this, aggregate);
         }
 
-        @Override
-        public void succeeded()
+        for (FrameEntry entry : entries)
         {
+            entry.generateHeaderBytes(aggregate);
+
+            ByteBuffer payload = entry.frame.getPayload();
+            if (BufferUtil.hasContent(payload))
+                BufferUtil.append(aggregate, payload);
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} aggregated {} frames: {}", this, entries.size(), entries);
+
+        // We just aggregated the entries, so we need to succeed their callbacks.
+        succeeded();
+
+        return Action.SCHEDULED;
+    }
+
+    private Action flush()
+    {
+        if (!BufferUtil.isEmpty(aggregate))
+        {
+            buffers.add(aggregate);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} flushing aggregate {}", this, aggregate);
+        }
+
+        for (FrameEntry entry : entries)
+        {
+            // Skip the "synthetic" frame used for flushing.
+            if (entry.frame == FLUSH_FRAME)
+                continue;
+
+            buffers.add(entry.generateHeaderBytes());
+            ByteBuffer payload = entry.frame.getPayload();
+            if (BufferUtil.hasContent(payload))
+                buffers.add(payload);
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} flushing {} frames: {}", this, entries.size(), entries);
+
+        if (buffers.isEmpty())
+        {
+            releaseAggregate();
+            // We may have the FLUSH_FRAME to notify.
             succeedEntries();
-            super.succeeded();
+            return Action.IDLE;
         }
 
-        private void succeedEntries()
+        endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
+        buffers.clear();
+        return Action.SCHEDULED;
+    }
+
+    private int getQueueSize()
+    {
+        synchronized (this)
         {
-            if(LOG.isDebugEnabled())
-                LOG.debug("succeedEntries()");
-            
-            // Do not allocate the iterator here.
-            for (int i = 0; i < entries.size(); ++i)
-            {
-                FrameEntry entry = entries.get(i);
-                notifyCallbackSuccess(entry.callback);
-                entry.release();
-            }
-            entries.clear();
+            return queue.size();
         }
+    }
+
+    @Override
+    public void succeeded()
+    {
+        succeedEntries();
+        super.succeeded();
+    }
+
+    private void succeedEntries()
+    {
+        for (FrameEntry entry : entries)
+        {
+            notifyCallbackSuccess(entry.callback);
+            entry.release();
+            if (entry.frame.getOpCode() == OpCode.CLOSE)
+            {
+                terminate(new ClosedChannelException(), true);
+                endPoint.shutdownOutput();
+            }
+        }
+        entries.clear();
+    }
+
+    @Override
+    public void onCompleteFailure(Throwable failure)
+    {
+        releaseAggregate();
+
+        Throwable closed;
+        synchronized (this)
+        {
+            closed = terminated;
+            if (closed == null)
+                terminated = failure;
+            entries.addAll(queue);
+            queue.clear();
+        }
+
+        for (FrameEntry entry : entries)
+        {
+            notifyCallbackFailure(entry.callback, failure);
+            entry.release();
+        }
+        entries.clear();
+    }
+
+    private void releaseAggregate()
+    {
+        if (BufferUtil.isEmpty(aggregate))
+        {
+            bufferPool.release(aggregate);
+            aggregate = null;
+        }
+    }
+
+    void terminate(Throwable cause, boolean close)
+    {
+        Throwable reason;
+        synchronized (this)
+        {
+            closed = close;
+            reason = terminated;
+            if (reason == null)
+                terminated = cause;
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {}", reason == null ? "Terminating" : "Terminated", this);
+        if (reason == null && !close)
+            iterate();
+    }
+
+    protected void notifyCallbackSuccess(Callback callback)
+    {
+        try
+        {
+            if (callback != null)
+            {
+                callback.succeeded();
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying success of callback " + callback, x);
+        }
+    }
+
+    protected void notifyCallbackFailure(Callback callback, Throwable failure)
+    {
+        try
+        {
+            if (callback != null)
+            {
+                callback.failed(failure);
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[queueSize=%d,aggregateSize=%d,terminated=%s]",
+                             getClass().getSimpleName(),
+                             hashCode(),
+                             getQueueSize(),
+                             aggregate == null ? 0 : aggregate.position(),
+                             terminated);
     }
 
     private class FrameEntry
@@ -273,7 +362,9 @@ public class FrameFlusher implements OutgoingFrames
 
         private void generateHeaderBytes(ByteBuffer buffer)
         {
-            generator.generateHeaderBytes(frame,buffer);
+            int pos = BufferUtil.flipToFill(buffer);
+            generator.generateHeaderBytes(frame, buffer);
+            BufferUtil.flipToFlush(buffer,pos);
         }
 
         private void release()
@@ -288,164 +379,7 @@ public class FrameFlusher implements OutgoingFrames
         @Override
         public String toString()
         {
-            return String.format("%s[%s,%s,%s,%s]",getClass().getSimpleName(),frame,callback,batchMode,failure);
+            return String.format("%s[%s,%s,%s,%s]", getClass().getSimpleName(), frame, callback, batchMode, terminated);
         }
-    }
-
-    private static final Logger LOG = Log.getLogger(FrameFlusher.class);
-    public static final BinaryFrame FLUSH_FRAME = new BinaryFrame();
-    private final EndPoint endpoint;
-    private final int bufferSize;
-    private final Generator generator;
-    private final int maxGather;
-    private final Locker lock = new Locker();
-    private final Deque<FrameEntry> queue = new ArrayDeque<>();
-    private final Flusher flusher;
-    private boolean closed = false;
-    private volatile Throwable failure;
-
-    public FrameFlusher(Generator generator, EndPoint endpoint, int bufferSize, int maxGather)
-    {
-        this.endpoint = endpoint;
-        this.bufferSize = bufferSize;
-        this.generator = Objects.requireNonNull(generator);
-        this.maxGather = maxGather;
-        this.flusher = new Flusher(maxGather);
-    }
-
-    public void close()
-    {
-        List<FrameEntry> entries = null;
-        
-        try(Locker.Lock l = lock.lock())
-        {
-            if (!closed)
-            {
-                closed = true;
-                LOG.debug("{} closing",this);
-
-                entries = new ArrayList<>();
-                entries.addAll(queue);
-                queue.clear();
-            }
-        }
-
-        // Notify outside sync block.
-        if (entries != null)
-        {
-            EOFException eof = new EOFException("Connection has been closed locally");
-            flusher.failed(eof);
-            for (FrameEntry entry : entries)
-            {
-                notifyCallbackFailure(entry.callback,eof);
-            }
-        }
-    }
-
-    @Override
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
-    {
-        FrameEntry entry = new FrameEntry(frame,callback,batchMode);
-        Throwable failed = null;
-        try (Locker.Lock l = lock.lock())
-        {
-            if (closed)
-            {
-                failed = new EOFException("Connection has been closed locally");
-            }
-            else if (flusher.isFailed())
-            {
-                failed = failure==null?new IOException():failure;
-            }
-            else
-            {
-                switch (frame.getOpCode())
-                {
-                    case OpCode.PING:
-                    {
-                        // Prepend PINGs so they are processed first.
-                        queue.offerFirst(entry);
-                        break;
-                    }
-                    case OpCode.CLOSE:
-                    {
-                        // There may be a chance that other frames are
-                        // added after this close frame, but we will
-                        // fail them later to keep it simple here.
-                        closed = true;
-                        queue.offer(entry);
-                        break;
-                    }
-                    default:
-                    {
-                        queue.offer(entry);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (failed!=null)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{} failed {}",this,failed);
-            }
-            notifyCallbackFailure(callback,failed);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{} queued {}",this,entry);
-            }
-
-            flusher.iterate();
-        }
-    }
-
-    protected void notifyCallbackFailure(Callback callback, Throwable failure)
-    {
-        try
-        {
-            if (callback != null)
-            {
-                callback.failed(failure);
-            }
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying failure of callback " + callback,x);
-        }
-    }
-
-    protected void notifyCallbackSuccess(Callback callback)
-    {
-        try
-        {
-            if (callback != null)
-            {
-                callback.succeeded();
-            }
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying success of callback " + callback,x);
-        }
-    }
-
-    protected void onFailure(Throwable x)
-    {
-        LOG.warn(x);
-    }
-
-    @Override
-    public String toString()
-    {
-        ByteBuffer aggregate = flusher.aggregate;
-        return String.format("%s[queueSize=%d,aggregateSize=%d,failure=%s]",getClass().getSimpleName(),queue.size(),aggregate == null?0:aggregate.position(),
-                failure);
     }
 }
