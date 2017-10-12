@@ -99,7 +99,7 @@ public class ClientDisconnectedTest
         {
             LOG.debug("onOpen({})", sess);
             // Test failure due to unhandled exception
-            // this should trigger a fast-fail closure during open/connect
+            // this should trigger a fast-fail closure during onOpen/connect
             throw new RuntimeException("Intentional FastFail");
         }
     }
@@ -397,7 +397,7 @@ public class ClientDisconnectedTest
     /**
      * The connection has performed handshake successfully.
      * <p>
-     *     Client sends close handshake, remote never replies (but leaves connection open)
+     *     Client sends close handshake, remote never replies (but leaves connection onOpen)
      * </p>
      *
      * @throws Exception on test failure

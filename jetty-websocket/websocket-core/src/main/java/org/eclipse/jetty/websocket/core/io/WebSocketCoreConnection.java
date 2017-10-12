@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.core.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -33,71 +32,42 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketCoreConnection extends AbstractConnection implements Parser.Handler, IncomingFrames, OutgoingFrames, SuspendToken, Connection.UpgradeTo, Dumpable
+public class WebSocketCoreConnection extends AbstractConnection implements Parser.Handler, SuspendToken, Connection.UpgradeTo, Dumpable, OutgoingFrames
 {
-    private class Flusher extends FrameFlusher
-    {
-        private Flusher(int bufferSize, Generator generator, EndPoint endpoint)
-        {
-            super(generator, endpoint, bufferSize, 8);
-        }
-
-        @Override
-        protected void onFailure(Throwable x)
-        {
-            session.processError(x);
-        }
-    }
+    private final Logger LOG = Log.getLogger(this.getClass());
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
      */
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
-    private final Logger LOG;
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
+
     // Connection level policy (before the session and local endpoint has been created)
     private final WebSocketPolicy policy;
     private final AtomicBoolean suspendToken;
-    private final AtomicBoolean closed = new AtomicBoolean();
-    private final FrameFlusher flusher;
-    private final ExtensionStack extensionStack;
+    private final Flusher flusher;
     private final String id;
-    private final UpgradeRequest upgradeRequest;
-    private final UpgradeResponse upgradeResponse;
-    private final WebSocketCoreConnectionState connectionState = new WebSocketCoreConnectionState();
-    private final AtomicBoolean closeSent = new AtomicBoolean(false);
-    private final DecoratedObjectFactory objectFactory;
 
     private WebSocketCoreSession session;
-    // Path for frames in/out of the connection
-    protected OutgoingFrames outgoingFrames;
-    protected IncomingFrames incomingFrames;
+
     // Read / Parse variables
     private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
     private ByteBuffer networkBuffer;
@@ -109,36 +79,28 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
      * completed successfully before creating this connection.
      * </p>
      */
-    public WebSocketCoreConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
-                                   DecoratedObjectFactory decoratedObjectFactory,
-                                   WebSocketPolicy policy, ExtensionStack extensionStack,
-                                   UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
+    public WebSocketCoreConnection(EndPoint endp,
+                                   Executor executor,
+                                   ByteBufferPool bufferPool,
+                                   WebSocketCoreSession session)
     {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
+        Objects.requireNonNull(session, "Session");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
-        Objects.requireNonNull(decoratedObjectFactory, "DecoratedObjectFactory");
-        Objects.requireNonNull(policy, "WSPolicy");
-        Objects.requireNonNull(extensionStack, "ExtensionStack");
-        Objects.requireNonNull(upgradeRequest, "UpgradeRequest");
-        Objects.requireNonNull(upgradeResponse, "UpgradeResponse");
 
-        LOG = Log.getLogger(this.getClass());
         this.bufferPool = bufferPool;
-        this.objectFactory = decoratedObjectFactory;
 
         this.id = String.format("%s:%d->%s:%d",
                 endp.getLocalAddress().getAddress().getHostAddress(),
                 endp.getLocalAddress().getPort(),
                 endp.getRemoteAddress().getAddress().getHostAddress(),
                 endp.getRemoteAddress().getPort());
-        this.upgradeRequest = upgradeRequest;
-        this.upgradeResponse = upgradeResponse;
 
-        this.policy = policy;
-        this.extensionStack = extensionStack;
+        this.policy = session.getPolicy();
+        this.session = session;
 
         this.generator = new Generator(policy, bufferPool);
         this.parser = new Parser(policy, bufferPool, this);
@@ -147,20 +109,8 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
 
-        this.extensionStack.setPolicy(this.policy);
-        this.extensionStack.configure(this.parser);
-        this.extensionStack.configure(this.generator);
-
-        this.extensionStack.setNextIncoming(this);
-        this.extensionStack.setNextOutgoing(flusher);
-
-        this.outgoingFrames = extensionStack;
-    }
-
-    public void setSession(WebSocketCoreSession session)
-    {
-        this.session = session;
-        this.incomingFrames = session;
+        this.parser.configureFromExtensions(session.getExtensionStack().getExtensions());
+        this.generator.configureFromExtensions(session.getExtensionStack().getExtensions());
     }
 
     @Override
@@ -169,24 +119,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         return super.getExecutor();
     }
 
-    public void close(CloseStatus closeStatus, Callback callback)
-    {
-        connectionState.onClosing(); // always move to (at least) the CLOSING state (might already be past it, which is ok)
-
-        if (closeSent.compareAndSet(false, true))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Sending Close Frame");
-            CloseFrame closeFrame = new CloseFrame().setPayload(closeStatus);
-            outgoingFrames.outgoingFrame(closeFrame, callback, BatchMode.OFF);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Close Frame Previously Sent: ignoring: {} [{}]", closeStatus, callback);
-            callback.failed(new WebSocketException("Already closed"));
-        }
-    }
 
     public void disconnect()
     {
@@ -196,7 +128,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         // close FrameFlusher, we cannot write anymore at this point.
         flusher.close();
 
-        closed.set(true);
         close();
     }
 
@@ -220,11 +151,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         return getEndPoint().getIdleTimeout();
     }
 
-    public DecoratedObjectFactory getObjectFactory()
-    {
-        return objectFactory;
-    }
-
     public Parser getParser()
     {
         return parser;
@@ -245,22 +171,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         return getEndPoint().getRemoteAddress();
     }
 
-    public UpgradeRequest getUpgradeRequest()
-    {
-        return upgradeRequest;
-    }
-
-    public UpgradeResponse getUpgradeResponse()
-    {
-        return upgradeResponse;
-    }
-
-    public boolean isOpen()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("isOpen() = {}", !closed.get());
-        return !closed.get();
-    }
 
     /**
      * Physical connection disconnect.
@@ -272,8 +182,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onClose() of physical connection");
-
-        closed.set(true);
 
         flusher.close();
         super.onClose();
@@ -297,7 +205,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        extensionStack.incomingFrame(frame, new Callback()
+        session.getExtensionStack().incomingFrame(frame, new Callback()
         {
             @Override
             public void succeeded()
@@ -332,37 +240,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         }
 
         return true;
-    }
-
-    public boolean isSecure()
-    {
-        if (upgradeRequest == null)
-        {
-            throw new IllegalStateException("No valid UpgradeRequest yet");
-        }
-
-        URI requestURI = upgradeRequest.getRequestURI();
-
-        return "wss".equalsIgnoreCase(requestURI.getScheme());
-    }
-
-    public WebSocketCoreConnectionState getState()
-    {
-        return connectionState;
-    }
-
-    /**
-     * Incoming Raw Frames from Parser (after ExtensionStack)
-     */
-    @Override
-    public void incomingFrame(Frame frame, Callback callback)
-    {
-        if(LOG.isDebugEnabled())
-        {
-            LOG.debug("incomingFrame({}, {})", frame, callback);
-        }
-
-        incomingFrames.incomingFrame(frame, callback);
     }
 
     private ByteBuffer getNetworkBuffer()
@@ -418,7 +295,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         try
         {
             fillAndParseScope.set(true);
-            while (isOpen())
+            while (getEndPoint().isOpen())
             {
                 if (suspendToken.get())
                 {
@@ -492,12 +369,9 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onOpen() of physical connection");
+            LOG.debug("onOpen() {}",this);
 
-        if(connectionState.onConnecting())
-        {
-            session.open();
-        }
+        session.onOpen();
         super.onOpen();
     }
 
@@ -509,19 +383,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     {
         session.processError(new SocketTimeoutException("Timeout on Read"));
         return false;
-    }
-
-    /**
-     * Frame from API, User, or Internal implementation destined for network.
-     */
-    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("outgoingFrame({}, {})", frame, callback);
-        }
-
-        outgoingFrames.outgoingFrame(frame, callback, batchMode);
     }
 
     @Override
@@ -586,14 +447,13 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x[%s,%s,f=%s,g=%s,p=%s]",
+        return String.format("%s@%x[%s,p=%s,f=%s,g=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
                 getPolicy().getBehavior(),
-                isOpen() ? "OPEN" : "CLOSED",
+                parser,
                 flusher,
-                generator,
-                parser);
+                generator);
     }
 
     @Override
@@ -647,5 +507,27 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         }
 
         setInitialBuffer(prefilled);
+    }
+
+    @Override
+    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    {
+        flusher.enqueue(frame,callback,batchMode);
+    }
+
+
+    private class Flusher extends FrameFlusher
+    {
+        private Flusher(int bufferSize, Generator generator, EndPoint endpoint)
+        {
+            super(bufferPool, generator, endpoint, bufferSize, 8);
+        }
+
+        @Override
+        public void onCompleteFailure(Throwable x)
+        {
+            super.onCompleteFailure(x);
+            session.processError(x);
+        }
     }
 }

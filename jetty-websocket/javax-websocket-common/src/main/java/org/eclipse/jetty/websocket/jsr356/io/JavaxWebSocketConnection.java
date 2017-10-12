@@ -26,8 +26,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 public class JavaxWebSocketConnection extends WebSocketCoreConnection

@@ -28,11 +28,11 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public interface WebSocketLocalEndpoint
 {
-    Logger getLog();
+    Logger getLog(); // TODO why?
 
-    boolean isOpen();
-    
-    void onOpen();
+    boolean isOpen(); // TODO Can the endpoint really know this?
+
+    void onOpen(WebSocketRemoteEndpoint remote);
 
     void onClose(CloseStatus close);
 
@@ -43,10 +43,59 @@ public interface WebSocketLocalEndpoint
     void onText(Frame frame, Callback callback);
 
     void onBinary(Frame frame, Callback callback);
-    
+
     void onContinuation(Frame frame, Callback callback);
-    
+
     void onPing(ByteBuffer payload);
 
     void onPong(ByteBuffer payload);
+
+    public interface Adaptor extends WebSocketLocalEndpoint
+    {
+        @Override
+        default void onOpen(WebSocketRemoteEndpoint remote)
+        {
+        }
+
+        @Override
+        default void onClose(CloseStatus close)
+        {
+        }
+
+        @Override
+        default void onFrame(Frame frame)
+        {
+        }
+
+        @Override
+        default void onError(Throwable cause)
+        {
+        }
+
+        @Override
+        default void onText(Frame frame, Callback callback)
+        {
+        }
+
+        @Override
+        default void onBinary(Frame frame, Callback callback)
+        {
+        }
+
+        @Override
+        default void onContinuation(Frame frame, Callback callback)
+        {
+        }
+
+        @Override
+        default void onPing(ByteBuffer payload)
+        {
+        }
+
+        @Override
+        default void onPong(ByteBuffer payload)
+        {
+        }
+    }
+
 }

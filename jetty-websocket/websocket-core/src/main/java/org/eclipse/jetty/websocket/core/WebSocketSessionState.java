@@ -16,14 +16,14 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.io;
+package org.eclipse.jetty.websocket.core;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Atomic Connection State
  */
-public class WebSocketCoreConnectionState
+public class WebSocketSessionState
 {
     /**
      * Connection states as outlined in <a href="https://tools.ietf.org/html/rfc6455">RFC6455</a>.
@@ -32,6 +32,7 @@ public class WebSocketCoreConnectionState
     {
         /** [RFC] Initial state of a connection, the upgrade request / response is in progress */
         CONNECTING,
+
         /**
          * [Impl] Intermediate state between CONNECTING and OPEN, used to indicate that a upgrade request/response is successful, but the end-user provided socket's
          * onOpen code has yet to run.
@@ -40,8 +41,9 @@ public class WebSocketCoreConnectionState
          * </p>
          */
         CONNECTED,
+
         /**
-         * [RFC] The websocket connection is established and open.
+         * [RFC] The websocket connection is established and onOpen.
          * <p>
          * This indicates that the Upgrade has succeed, and the end-user provided socket's onOpen code has completed.
          * <p>
@@ -49,6 +51,7 @@ public class WebSocketCoreConnectionState
          * </p>
          */
         OPEN,
+
         /**
          * [RFC] The websocket closing handshake is started.
          * <p>
@@ -56,6 +59,7 @@ public class WebSocketCoreConnectionState
          * </p>
          */
         CLOSING,
+
         /**
          * [RFC] The websocket connection is closed.
          * <p>
@@ -65,7 +69,7 @@ public class WebSocketCoreConnectionState
         CLOSED
     }
     
-    private AtomicReference<State> state = new AtomicReference<>();
+    private AtomicReference<State> state = new AtomicReference<>(State.CONNECTING);
     
     public State get()
     {
@@ -79,23 +83,34 @@ public class WebSocketCoreConnectionState
     
     public boolean onClosing()
     {
-        State orig = state.getAndUpdate(prev -> State.CLOSING);
-        return orig == State.CONNECTED || orig == State.OPEN;
+        while(true)
+        {
+            State s = state.get();
+            switch(s)
+            {
+                case CONNECTING:
+                case CONNECTED:
+                case OPEN:
+                    if (state.compareAndSet(s,State.CLOSING))
+                        return true;
+                    break;
+                case CLOSING:
+                case CLOSED:
+                    return false;
+            }
+        }
     }
     
-    public boolean onConnected()
+    public void onConnected()
     {
-        return state.compareAndSet(State.CONNECTING, State.CONNECTED);
+        if (!state.compareAndSet(State.CONNECTING, State.CONNECTED))
+            throw new IllegalStateException(state.get().toString());
     }
-    
-    public boolean onConnecting()
+
+    public void onOpen()
     {
-        return state.compareAndSet(null, State.CONNECTING);
-    }
-    
-    public boolean onOpen()
-    {
-        return state.compareAndSet(State.CONNECTED, State.OPEN);
+        if (!state.compareAndSet(State.CONNECTED, State.OPEN))
+            throw new IllegalStateException(state.get().toString());
     }
     
     @Override
@@ -103,4 +118,21 @@ public class WebSocketCoreConnectionState
     {
         return String.format("%s[%s]", this.getClass().getSimpleName(), state.get());
     }
+
+
+    public boolean isOpen()
+    {
+        State s = state.get();
+        switch(s)
+        {
+            case CONNECTING:
+                return false;
+            case CONNECTED:
+            case OPEN:
+                return true;
+            default:
+                return false;
+        }
+    }
+
 }

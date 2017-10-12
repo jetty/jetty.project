@@ -132,7 +132,7 @@ public class JsrSessionTest
         session.addMessageHandler(String.class, (msg) -> received.add(msg));
         
         session.connect();
-        session.open();
+        session.onOpen();
     
         FrameCallback callback = new FrameCallback.Adapter();
         
@@ -164,7 +164,7 @@ public class JsrSessionTest
         });
     
         session.connect();
-        session.open();
+        session.onOpen();
         
         FrameCallback callback = new FrameCallback.Adapter();
         

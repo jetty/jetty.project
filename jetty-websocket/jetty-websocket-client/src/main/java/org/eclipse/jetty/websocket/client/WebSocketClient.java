@@ -52,7 +52,6 @@ import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 
 public class WebSocketClient extends ContainerLifeCycle implements SessionListener
 {

@@ -23,8 +23,6 @@ import java.util.Map;
 
 import javax.websocket.HandshakeResponse;
 
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-
 public class JavaxWebSocketHandshakeResponse implements HandshakeResponse
 {
     private final Map<String, List<String>> headers;

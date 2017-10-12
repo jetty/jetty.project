@@ -48,7 +48,6 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
@@ -80,9 +79,9 @@ public class JavaxWebSocketSession<
     private JavaxWebSocketAsyncRemote asyncRemote;
     private JavaxWebSocketBasicRemote basicRemote;
     /**
-     * Optional Future to trigger when the session is opened (or fails to open).
+     * Optional Future to trigger when the session is opened (or fails to onOpen).
      * Most commonly used from client implementations that want a future to
-     * base connect + open success against (like JSR-356 client)
+     * base connect + onOpen success against (like JSR-356 client)
      */
     private CompletableFuture<JavaxWebSocketSession<P,C,L,R>> openFuture;
 
@@ -440,7 +439,7 @@ public class JavaxWebSocketSession<
     @Override
     public Set<Session> getOpenSessions()
     {
-        // TODO: maintain internal Set of open sessions
+        // TODO: maintain internal Set of onOpen sessions
         Set<Session> sessions = new HashSet<>();
         sessions.addAll(getBeans(JavaxWebSocketSession.class));
         return sessions;

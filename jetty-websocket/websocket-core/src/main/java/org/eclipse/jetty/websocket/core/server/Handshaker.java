@@ -16,17 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.sockets;
+package org.eclipse.jetty.websocket.core.server;
 
-import javax.websocket.OnOpen;
-import javax.websocket.server.ServerEndpoint;
+import java.io.IOException;
 
-@ServerEndpoint(value="/echo/onOpen")
-public class BasicOpenSocket extends TrackingSocket
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+
+public interface Handshaker
 {
-    @OnOpen
-    public void onOpen()
-    {
-        openLatch.countDown();
-    }
+    boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }

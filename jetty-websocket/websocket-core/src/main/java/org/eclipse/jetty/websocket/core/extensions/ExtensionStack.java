@@ -63,19 +63,12 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         this.factory = factory;
     }
 
-    public void configure(Generator generator)
-    {
-        generator.configureFromExtensions(extensions);
-    }
-
-    public void configure(Parser parser)
-    {
-        parser.configureFromExtensions(extensions);
-    }
-
     @Override
     protected void doStart() throws Exception
     {
+        if (extensions==null)
+            throw new IllegalStateException("Extensions not negotiated!");
+
         super.doStart();
 
         // Wire up Extensions
@@ -89,11 +82,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
                 Extension ext = exts.next();
                 ext.setNextOutgoingFrames(nextOutgoing);
                 nextOutgoing = ext;
-                
-                if (ext instanceof LifeCycle)
-                {
-                    addBean(ext,true);
-                }
+                addBean(ext);
             }
 
             // Connect incomingFrames
@@ -114,6 +103,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         IncomingFrames websocket = getLastIncoming();
         OutgoingFrames network = getLastOutgoing();
 
+        // TODO use the utility methods for this
         out.append(indent).append(" +- Stack").append(System.lineSeparator());
         out.append(indent).append("     +- Network  : ").append(network.toString()).append(System.lineSeparator());
         for (Extension ext : extensions)
@@ -210,6 +200,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     @Override
     public void incomingFrame(Frame frame, Callback callback)
     {
+        if (!isRunning())
+            throw new IllegalStateException(getState());
         nextIncoming.incomingFrame(frame, callback);
     }
 
@@ -282,6 +274,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     @Override
     public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
     {
+        if (!isRunning())
+            throw new IllegalStateException(getState());
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
         if (LOG.isDebugEnabled())
             LOG.debug("Queuing {}",entry);

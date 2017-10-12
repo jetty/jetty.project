@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,6 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 /**
@@ -33,6 +37,14 @@ import org.eclipse.jetty.websocket.core.util.QuoteUtil;
  */
 public class ExtensionConfig
 {
+    private static Trie<ExtensionConfig> CACHE = new ArrayTrie<>(512);
+    static
+    {
+        CACHE.put("identity",new ExtensionConfig("identity"));
+        CACHE.put("permessage-deflate",new ExtensionConfig("permessage-deflate"));
+        CACHE.put("permessage-deflate; client_max_window_bits",new ExtensionConfig("permessage-deflate; client_max_window_bits"));
+    }
+
     /**
      * Parse a single parameterized name.
      * 
@@ -42,6 +54,9 @@ public class ExtensionConfig
      */
     public static ExtensionConfig parse(String parameterizedName)
     {
+        ExtensionConfig config = CACHE.get(parameterizedName);
+        if (config!=null)
+            return config;
         return new ExtensionConfig(parameterizedName);
     }
 
@@ -137,6 +152,13 @@ public class ExtensionConfig
         this.parameters.putAll(copy.parameters);
     }
 
+    public ExtensionConfig(String name, Map<String,String> parameters)
+    {
+        this.name = name;
+        this.parameters = new HashMap<>();
+        this.parameters.putAll(parameters);
+    }
+
     public ExtensionConfig(String parameterizedName)
     {
         Iterator<String> extListIter = QuoteUtil.splitAt(parameterizedName,";");
@@ -203,7 +225,7 @@ public class ExtensionConfig
 
     public final Set<String> getParameterKeys()
     {
-        return parameters.keySet();
+        return Collections.unmodifiableSet(parameters.keySet());
     }
 
     /**
@@ -213,35 +235,9 @@ public class ExtensionConfig
      */
     public final Map<String, String> getParameters()
     {
-        return parameters;
+        return Collections.unmodifiableMap(parameters);
     }
 
-    /**
-     * Initialize the parameters on this config from the other configuration.
-     * 
-     * @param other
-     *            the other configuration.
-     */
-    public final void init(ExtensionConfig other)
-    {
-        this.parameters.clear();
-        this.parameters.putAll(other.parameters);
-    }
-
-    public final void setParameter(String key)
-    {
-        parameters.put(key,null);
-    }
-
-    public final void setParameter(String key, int value)
-    {
-        parameters.put(key,Integer.toString(value));
-    }
-
-    public final void setParameter(String key, String value)
-    {
-        parameters.put(key,value);
-    }
 
     @Override
     public String toString()

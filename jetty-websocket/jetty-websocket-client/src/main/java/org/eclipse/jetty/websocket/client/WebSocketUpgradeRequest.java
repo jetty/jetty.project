@@ -62,7 +62,6 @@ import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.handshake.AcceptHash;
 import org.eclipse.jetty.websocket.core.handshake.UpgradeException;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 
 public class WebSocketUpgradeRequest extends HttpRequest implements UpgradeRequest, CompleteListener, HttpConnectionUpgrader
 {

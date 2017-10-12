@@ -22,7 +22,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value="/echo/open/session")
+@ServerEndpoint(value="/echo/onOpen/session")
 public class BasicOpenSessionSocket extends TrackingSocket
 {
     @OnOpen

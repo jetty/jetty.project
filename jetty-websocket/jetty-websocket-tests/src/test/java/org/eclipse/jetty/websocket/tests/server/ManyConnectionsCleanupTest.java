@@ -215,7 +215,7 @@ public class ManyConnectionsCleanupTest
             LOG.debug("onWebSocketConnect({})", sess);
             calls.incrementAndGet();
             // Test failure due to unhandled exception
-            // this should trigger a fast-fail closure during open/connect
+            // this should trigger a fast-fail closure during onOpen/connect
             throw new RuntimeException("Intentional FastFail");
         }
     }
@@ -257,7 +257,7 @@ public class ManyConnectionsCleanupTest
     }
     
     /**
-     * Test session tracking (open + close + cleanup) (bug #474936)
+     * Test session tracking (onOpen + close + cleanup) (bug #474936)
      *
      * @throws Exception on test failure
      */
@@ -290,10 +290,10 @@ public class ManyConnectionsCleanupTest
         
         String incomingMessage;
         incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("Should only have 1 open session", incomingMessage, containsString("calls=" + ((iterationCount * 2) + 1)));
+        assertThat("Should only have 1 onOpen session", incomingMessage, containsString("calls=" + ((iterationCount * 2) + 1)));
         
         incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("Should only have 1 open session", incomingMessage, containsString("openSessions.size=1\n"));
+        assertThat("Should only have 1 onOpen session", incomingMessage, containsString("openSessions.size=1\n"));
         
         clientSocket.awaitCloseEvent("Client");
         clientSocket.assertCloseStatus("Client", StatusCode.NORMAL, anything());

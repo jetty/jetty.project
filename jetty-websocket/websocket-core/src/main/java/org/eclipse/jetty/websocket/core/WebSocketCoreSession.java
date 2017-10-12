@@ -18,14 +18,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State;
-import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State.CLOSED;
+import static org.eclipse.jetty.websocket.core.WebSocketSessionState.State;
+import static org.eclipse.jetty.websocket.core.WebSocketSessionState.State.CLOSED;
 
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,89 +37,103 @@ import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
-import org.eclipse.jetty.websocket.core.util.CompletionCallback;
+import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 
 /**
  * The Core WebSocket Session.
  *
- * @param <P> the parent container
- * @param <C> the connection implementation
- * @param <L> the local endpoint implementation
- * @param <R> the remote endpoint implementation
  */
-public abstract class WebSocketCoreSession<
-        P extends ContainerLifeCycle,
-        C extends WebSocketCoreConnection,
-        L extends WebSocketLocalEndpoint,
-        R extends WebSocketRemoteEndpoint> extends ContainerLifeCycle implements IncomingFrames
+public class WebSocketCoreSession extends ContainerLifeCycle implements IncomingFrames
 {
-    // Callbacks
-    private Callback onDisconnectCallback = new CompletionCallback()
-    {
-        @Override
-        public void complete()
-        {
-            if (connection.getState().onClosed())
-            {
-                if (log.isDebugEnabled())
-                    log.debug("ConnectionState: Transition to CLOSED");
-                connection.disconnect();
-            }
-        }
-    };
+    private final Logger LOG = Log.getLogger(this.getClass());
 
-    private final Logger log;
-    protected final C connection;
-    protected final P parentContainer;
+    private final WebSocketSessionState state = new WebSocketSessionState();
+    private final WebSocketPolicy policy;
+    private final ContainerLifeCycle parentContainer;
+    private final WebSocketLocalEndpoint localEndpoint;
+    private final ExtensionStack extensionStack;
+    private final String subprotocol;
 
-    /**
-     * The websocket endpoint objects and endpoints
-     * Not declared final, as they can be decorated later by other libraries (CDI)
-     */
-    private Object wsEndpoint;
-    protected L localEndpoint;
-    protected R remoteEndpoint;
-    private WebSocketPolicy sessionPolicy;
+    private WebSocketCoreConnection connection;
+    private WebSocketRemoteEndpointImpl remoteEndpoint;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
-    // Holder for errors during open that are reported in doStart later
+    // Holder for errors during onOpen that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
-    public WebSocketCoreSession(P parentContainer, C connection)
+    public WebSocketCoreSession(ContainerLifeCycle parentContainer,
+                                WebSocketLocalEndpoint localEndpoint,
+                                WebSocketPolicy policy,
+                                ExtensionStack extensionStack,
+                                String subprotocol)
     {
-        this.log = Log.getLogger(this.getClass());
-        this.parentContainer = parentContainer;
-        this.connection = connection;
+        this.parentContainer = parentContainer;  // TODO not keen on objects adding themselves to containers.
+        this.localEndpoint = localEndpoint;
+        this.policy = policy;
+        this.extensionStack = extensionStack;
+        this.subprotocol = subprotocol;
+        addBean(extensionStack,true);
+        extensionStack.setNextIncoming(new IncomingState());
+        extensionStack.setNextOutgoing(new OutgoingState());
     }
 
-    public void setWebSocketEndpoint(Object endpoint, WebSocketPolicy policy, L localEndpoint, R remoteEndpoint)
+    public void setWebSocketConnection(WebSocketCoreConnection connection)
     {
-        this.wsEndpoint = endpoint;
-        this.sessionPolicy = policy;
-        this.localEndpoint = localEndpoint;
-        this.remoteEndpoint = remoteEndpoint;
+        this.connection = connection;
+        this.remoteEndpoint = new WebSocketRemoteEndpointImpl(
+                new OutgoingFrames()
+                {
+                    @Override
+                    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+                    {
+                        if (policy.getBehavior() == WebSocketBehavior.CLIENT && frame instanceof WebSocketFrame)
+                        {
+                            WebSocketFrame wsFrame = (WebSocketFrame) frame;
+                            byte mask[] = new byte[4];
+                            ThreadLocalRandom.current().nextBytes(mask); // TODO secure random?
+                            wsFrame.setMask(mask);
+                        }
+                        extensionStack.outgoingFrame(frame, callback, batchMode);
+                    }
+                });
+
         addBean(this.localEndpoint, true);
         addBean(this.remoteEndpoint, true);
     }
 
+    public ExtensionStack getExtensionStack()
+    {
+        return extensionStack;
+    }
+
+
     public void close(int statusCode, String reason, Callback callback)
     {
-        connection.close(new CloseStatus(statusCode, reason), callback);
+        close(new CloseStatus(statusCode, reason), callback);
     }
 
     public void close(CloseStatus closeStatus, Callback callback)
     {
-        connection.close(closeStatus, callback);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sending Close Frame");
+        CloseFrame closeFrame = new CloseFrame().setPayload(closeStatus);
+        extensionStack.outgoingFrame(closeFrame, callback, BatchMode.OFF);
     }
 
     public WebSocketPolicy getPolicy()
     {
-        if (sessionPolicy == null)
-            return connection.getPolicy();
-        return sessionPolicy;
+        return policy;
+    }
+
+    public String getSubprotocol()
+    {
+        return subprotocol;
     }
 
     /**
@@ -147,21 +162,21 @@ public abstract class WebSocketCoreSession<
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
-            close(WebSocketConstants.BAD_PAYLOAD, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.BAD_PAYLOAD, cause.getMessage(), Callback.NOOP);
         }
         else if (cause instanceof SocketTimeoutException)
         {
             // A path often seen in Windows
-            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), Callback.NOOP);
         }
         else if (cause instanceof IOException)
         {
-            close(WebSocketConstants.PROTOCOL, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.PROTOCOL, cause.getMessage(), Callback.NOOP);
         }
         else if (cause instanceof SocketException)
         {
             // A path unique to Unix
-            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), Callback.NOOP);
         }
         else if (cause instanceof CloseException)
         {
@@ -178,7 +193,7 @@ public abstract class WebSocketCoreSession<
                 case WebSocketConstants.POLICY_VIOLATION:
                 case WebSocketConstants.SERVER_ERROR:
                 {
-                    callback = onDisconnectCallback;
+                    callback = Callback.NOOP;
                 }
             }
 
@@ -186,11 +201,11 @@ public abstract class WebSocketCoreSession<
         }
         else if (cause instanceof WebSocketTimeoutException)
         {
-            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), onDisconnectCallback);
+            close(WebSocketConstants.SHUTDOWN, cause.getMessage(), Callback.NOOP);
         }
         else
         {
-            log.warn("Unhandled Error (closing connection)", cause);
+            LOG.warn("Unhandled Error (closing connection)", cause);
 
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
@@ -206,78 +221,77 @@ public abstract class WebSocketCoreSession<
     /**
      * Open/Activate the session
      */
-    public void open()
+    public void onOpen()
     {
-        if (log.isDebugEnabled())
-            log.debug("{}.open()", this.getClass().getSimpleName());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}.onOpen()", this.getClass().getSimpleName());
 
         try
         {
+            start();
+
             // Upgrade success
-            if (connection.getState().onConnected())
+            state.onConnected();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("ConnectionState: Transition to CONNECTED");
+
+            // Connect remoteEndpoint
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}.onOpen() remoteEndpoint={}", this.getClass().getSimpleName(), remoteEndpoint);
+
+            try
             {
-                if (log.isDebugEnabled())
-                    log.debug("ConnectionState: Transition to CONNECTED");
+                // Open WebSocket
+                remoteEndpoint.open();
+                localEndpoint.onOpen(remoteEndpoint);
 
-                // Connect remoteEndpoint
-                if (log.isDebugEnabled())
-                    log.debug("{}.open() remoteEndpoint={}", this.getClass().getSimpleName(), remoteEndpoint);
+                // Open connection
+                state.onOpen();
+                parentContainer.addManaged(this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ConnectionState: Transition to OPEN");
 
-                try
-                {
-                    // Open WebSocket
-                    localEndpoint.onOpen();
-
-                    // Open connection
-                    if (connection.getState().onOpen())
-                    {
-                        parentContainer.addManaged(this);
-
-                        if (log.isDebugEnabled())
-                            log.debug("ConnectionState: Transition to OPEN");
-                    }
-                }
-                catch (Throwable t)
-                {
-                    localEndpoint.getLog().warn("Error during OPEN", t);
-                    processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
-                }
-                finally
-                {
-                    notifyOpen();
-                }
-
-                /* Perform fillInterested outside of onConnected / onOpen.
-                 *
-                 * This is to allow for 2 specific scenarios.
-                 *
-                 * 1) Fast Close
-                 *    When an end users WSEndpoint.onOpen() calls
-                 *    the Session.close() method.
-                 *    This is a state transition of CONNECTING -> CONNECTED -> CLOSING
-                 * 2) Fast Fail
-                 *    When an end users WSEndpoint.onOpen() throws an Exception.
-                 */
-                connection.fillInterested();
             }
-            else
+            catch (Throwable t)
             {
-                throw new IllegalStateException("Unexpected state [" + connection.getState().get() + "] when attempting to transition to CONNECTED");
+                localEndpoint.getLog().warn("Error during OPEN", t);
+                processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
             }
+            finally
+            {
+                notifyOpen();
+            }
+
+            /* Perform fillInterested outside of onConnected / onOpen.
+             *
+             * This is to allow for 2 specific scenarios.
+             *
+             * 1) Fast Close
+             *    When an end users WSEndpoint.onOpen() calls
+             *    the Session.close() method.
+             *    This is a state transition of CONNECTING -> CONNECTED -> CLOSING
+             * 2) Fast Fail
+             *    When an end users WSEndpoint.onOpen() throws an Exception.
+             */
+
+            // TODO what if we are going to start without read interest?  (eg reactive stream???)
+            connection.fillInterested();
+
         }
         catch (Throwable t)
         {
-            log.warn(t);
+            LOG.warn(t); // TODO log and handle is normally too verbose
             processError(t);
         }
     }
 
-    public C getConnection()
+    public WebSocketCoreConnection getConnection()
     {
         return this.connection;
     }
 
-    public P getParentContainer()
+    public ContainerLifeCycle getParentContainer()
     {
         return this.parentContainer;
     }
@@ -292,138 +306,12 @@ public abstract class WebSocketCoreSession<
         return this.connection.getBufferPool();
     }
 
-    @Override
-    public void incomingFrame(Frame frame, Callback callback)
-    {
-        try
-        {
-            State state = connection.getState().get();
-            if (log.isDebugEnabled())
-            {
-                log.debug("incomingFrame({}, {}) - connectionState={}, localEndpoint={}",
-                        frame, callback, state, localEndpoint);
-            }
-            if (state != CLOSED)
-            {
-                // For endpoints that want to see raw frames.
-                localEndpoint.onFrame(frame);
-
-                byte opcode = frame.getOpCode();
-                switch (opcode)
-                {
-                    case OpCode.CLOSE:
-                    {
-
-                        if (connection.getState().onClosing())
-                        {
-                            if (log.isDebugEnabled())
-                                log.debug("ConnectionState: Transition to CLOSING");
-                            CloseFrame closeframe = (CloseFrame) frame;
-                            CloseStatus closeStatus = closeframe.getCloseStatus();
-                            notifyClose(closeStatus);
-                            close(closeStatus, onDisconnectCallback);
-                        }
-                        else if (connection.getState().onClosed())
-                        {
-                            if (log.isDebugEnabled())
-                                log.debug("ConnectionState: Transition to CLOSED");
-                            CloseFrame closeframe = (CloseFrame) frame;
-                            CloseStatus closeStatus = closeframe.getCloseStatus();
-                            notifyClose(closeStatus);
-                            parentContainer.removeBean(this);
-                            connection.disconnect();
-                        }
-                        else
-                        {
-                            if (log.isDebugEnabled())
-                                log.debug("ConnectionState: {} - Close Frame Received", state);
-                        }
-
-                        callback.succeeded();
-                        return;
-                    }
-                    case OpCode.PING:
-                    {
-                        if (log.isDebugEnabled())
-                            log.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
-
-                        ByteBuffer pongBuf;
-                        if (frame.hasPayload())
-                        {
-                            pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
-                            BufferUtil.put(frame.getPayload().slice(), pongBuf);
-                            BufferUtil.flipToFlush(pongBuf, 0);
-                        }
-                        else
-                        {
-                            pongBuf = ByteBuffer.allocate(0);
-                        }
-
-                        localEndpoint.onPing(frame.getPayload());
-                        callback.succeeded();
-
-                        try
-                        {
-                            remoteEndpoint.sendPong(pongBuf, Callback.NOOP);
-                        }
-                        catch (Throwable t)
-                        {
-                            if (log.isDebugEnabled())
-                                log.debug("Unable to send pong", t);
-                        }
-                        break;
-                    }
-                    case OpCode.PONG:
-                    {
-                        if (log.isDebugEnabled())
-                            log.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
-
-                        localEndpoint.onPong(frame.getPayload());
-                        callback.succeeded();
-                        break;
-                    }
-                    case OpCode.BINARY:
-                    {
-                        localEndpoint.onBinary(frame, callback);
-                        // Let endpoint method handle callback
-                        return;
-                    }
-                    case OpCode.TEXT:
-                    {
-                        localEndpoint.onText(frame, callback);
-                        // Let endpoint method handle callback
-                        return;
-                    }
-                    case OpCode.CONTINUATION:
-                    {
-                        localEndpoint.onContinuation(frame, callback);
-                        // Let endpoint method handle callback
-                        return;
-                    }
-                    default:
-                    {
-                        if (log.isDebugEnabled())
-                            log.debug("Unhandled OpCode: {}", opcode);
-                    }
-                }
-            }
-            else
-            {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding post EOF frame - {}", frame);
-            }
-        }
-        catch (Throwable t)
-        {
-            callback.failed(t);
-        }
-    }
 
     public void notifyClose(CloseStatus closeStatus)
     {
-        if (log.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
-            log.debug("notifyClose({}) closeNotified={}", closeStatus, closeNotified.get());
+            LOG.debug("notifyClose({}) closeNotified={}", closeStatus, closeNotified.get());
         }
 
         // only notify once
@@ -451,7 +339,7 @@ public abstract class WebSocketCoreSession<
     }
 
     /**
-     * Event triggered when the open has completed (successfully or with error).
+     * Event triggered when the onOpen has completed (successfully or with error).
      */
     protected void notifyOpen()
     {
@@ -466,9 +354,9 @@ public abstract class WebSocketCoreSession<
      */
     protected void notifyError(Throwable cause)
     {
-        if (log.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
-            log.debug("notifyError({}) closeNotified={}", cause, closeNotified.get());
+            LOG.debug("notifyError({}) closeNotified={}", cause, closeNotified.get());
         }
 
         // only notify once
@@ -483,5 +371,141 @@ public abstract class WebSocketCoreSession<
     {
         this.connection.disconnect();
         super.doStop();
+    }
+
+    @Override
+    public void incomingFrame(Frame frame, Callback callback)
+    {
+        extensionStack.incomingFrame(frame, callback);
+    }
+
+
+    private class IncomingState implements IncomingFrames
+    {
+        @Override
+        public void incomingFrame(Frame frame, Callback callback)
+        {
+            try
+            {
+                State state = WebSocketCoreSession.this.state.get();
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("incomingFrame({}, {}) - connectionState={}, localEndpoint={}",
+                              frame, callback, state, localEndpoint);
+                }
+                if (state != CLOSED)
+                {
+                    // For endpoints that want to see raw frames.
+                    localEndpoint.onFrame(frame);
+
+                    byte opcode = frame.getOpCode();
+                    switch (opcode)
+                    {
+                        case OpCode.CLOSE:
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("ConnectionState: Close frame received");
+                            CloseFrame closeframe = (CloseFrame)frame;
+                            CloseStatus closeStatus = closeframe.getCloseStatus();
+                            notifyClose(closeStatus);
+                            close(closeStatus, Callback.NOOP);
+                            
+                            callback.succeeded();
+                            return;
+                        }
+                        case OpCode.PING:
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
+
+                            ByteBuffer pongBuf;
+                            if (frame.hasPayload())
+                            {
+                                pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
+                                BufferUtil.put(frame.getPayload().slice(), pongBuf);
+                                BufferUtil.flipToFlush(pongBuf, 0);
+                            }
+                            else
+                            {
+                                pongBuf = ByteBuffer.allocate(0);
+                            }
+
+                            localEndpoint.onPing(frame.getPayload());
+                            callback.succeeded();
+
+                            try
+                            {
+                                remoteEndpoint.sendPong(pongBuf, Callback.NOOP);
+                            }
+                            catch (Throwable t)
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Unable to send pong", t);
+                            }
+                            break;
+                        }
+                        case OpCode.PONG:
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
+
+                            localEndpoint.onPong(frame.getPayload());
+                            callback.succeeded();
+                            break;
+                        }
+                        case OpCode.BINARY:
+                        {
+                            localEndpoint.onBinary(frame, callback);
+                            // Let endpoint method handle callback
+                            return;
+                        }
+                        case OpCode.TEXT:
+                        {
+                            localEndpoint.onText(frame, callback);
+                            // Let endpoint method handle callback
+                            return;
+                        }
+                        case OpCode.CONTINUATION:
+                        {
+                            localEndpoint.onContinuation(frame, callback);
+                            // Let endpoint method handle callback
+                            return;
+                        }
+                        default:
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Unhandled OpCode: {}", opcode);
+                        }
+                    }
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Discarding post EOF frame - {}", frame);
+                }
+            }
+            catch (Throwable t)
+            {
+                callback.failed(t);
+            }
+        }
+    }
+
+    private class OutgoingState implements OutgoingFrames
+    {
+        @Override
+        public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+        {
+            if (frame instanceof CloseFrame)
+            {
+                if (!state.onClosing())
+                {
+                    callback.failed(new IOException("Already Closed or Closing"));
+                    return;
+                }
+            }
+
+            connection.outgoingFrame(frame,callback,batchMode);
+        }
     }
 }

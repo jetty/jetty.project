@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
-
 /**
  * Listener for Handshake/Upgrade events.
  */

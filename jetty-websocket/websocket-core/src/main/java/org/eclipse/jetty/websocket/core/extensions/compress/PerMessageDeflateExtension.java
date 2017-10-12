@@ -19,6 +19,8 @@
 package org.eclipse.jetty.websocket.core.extensions.compress;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.DataFormatException;
 
 import org.eclipse.jetty.util.Callback;
@@ -132,7 +134,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     public void setConfig(final ExtensionConfig config)
     {
         configRequested = new ExtensionConfig(config);
-        configNegotiated = new ExtensionConfig(config.getName());
+        Map<String,String> params_negotiated = new HashMap<>();
         
         for (String key : config.getParameterKeys())
         {
@@ -148,7 +150,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
                 case "client_no_context_takeover":
                 {
-                    configNegotiated.setParameter("client_no_context_takeover");
+                    params_negotiated.put("client_no_context_takeover",null);
                     switch (getPolicy().getBehavior())
                     {
                         case CLIENT:
@@ -162,7 +164,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
                 case "server_no_context_takeover":
                 {
-                    configNegotiated.setParameter("server_no_context_takeover");
+                    params_negotiated.put("client_no_context_takeover",null);
                     switch (getPolicy().getBehavior())
                     {
                         case CLIENT:
@@ -180,7 +182,8 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
             }
         }
-        
+
+        configNegotiated = new ExtensionConfig(config.getName(),params_negotiated);
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.setConfig(configNegotiated);

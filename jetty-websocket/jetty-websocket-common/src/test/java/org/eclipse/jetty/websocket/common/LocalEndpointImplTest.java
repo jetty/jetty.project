@@ -59,8 +59,6 @@ import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeResponse;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 import org.eclipse.jetty.websocket.core.util.EventQueue;
 import org.junit.AfterClass;

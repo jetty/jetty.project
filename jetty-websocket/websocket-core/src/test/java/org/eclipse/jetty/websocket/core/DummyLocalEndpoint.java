@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Logger;
 
-public class DummyLocalEndpoint implements WebSocketLocalEndpoint
+public class DummyLocalEndpoint implements WebSocketLocalEndpoint.Adaptor
 {
     private boolean open = false;
 
@@ -40,56 +40,8 @@ public class DummyLocalEndpoint implements WebSocketLocalEndpoint
     }
 
     @Override
-    public void onOpen()
+    public void onOpen(WebSocketRemoteEndpoint remote)
     {
         open = true;
-    }
-
-    @Override
-    public void onClose(CloseStatus close)
-    {
-
-    }
-
-    @Override
-    public void onFrame(Frame frame)
-    {
-
-    }
-
-    @Override
-    public void onError(Throwable cause)
-    {
-
-    }
-
-    @Override
-    public void onText(Frame frame, Callback callback)
-    {
-
-    }
-
-    @Override
-    public void onBinary(Frame frame, Callback callback)
-    {
-
-    }
-
-    @Override
-    public void onContinuation(Frame frame, Callback callback)
-    {
-
-    }
-
-    @Override
-    public void onPing(ByteBuffer payload)
-    {
-
-    }
-
-    @Override
-    public void onPong(ByteBuffer payload)
-    {
-
     }
 }

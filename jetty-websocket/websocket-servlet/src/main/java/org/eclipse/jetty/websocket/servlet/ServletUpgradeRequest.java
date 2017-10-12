@@ -39,7 +39,6 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 
 /**
  * Servlet specific {@link UpgradeRequest} implementation.

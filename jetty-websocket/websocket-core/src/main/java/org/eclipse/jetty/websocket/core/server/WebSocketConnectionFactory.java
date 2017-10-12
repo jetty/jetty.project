@@ -16,38 +16,44 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.websocket.core.server;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executor;
+import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
-public class WebSocketServerConnection extends WebSocketCoreConnection implements Connection.UpgradeTo
+public interface WebSocketConnectionFactory extends ConnectionFactory
 {
-    public WebSocketServerConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool,
-                                     DecoratedObjectFactory decoratedObjectFactory,
-                                     WebSocketPolicy policy, ExtensionStack extensionStack,
-                                     UpgradeRequest upgradeRequest, UpgradeResponse upgradeResponse)
-    {
-        super(endp,executor, bufferPool, decoratedObjectFactory, policy, extensionStack, upgradeRequest, upgradeResponse);
-    }
-    
+    WebSocketPolicy getPolicy();
+
+    WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, WebSocketCoreSession session);
+
     @Override
-    public InetSocketAddress getLocalAddress()
+    default Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return getEndPoint().getLocalAddress();
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public InetSocketAddress getRemoteAddress()
+    default String getProtocol()
     {
-        return getEndPoint().getRemoteAddress();
+        return "ws";
     }
+
+    @Override
+    default List<String> getProtocols()
+    {
+        return Collections.singletonList(getProtocol());
+    }
+
+    ByteBufferPool getBufferPool();
 }

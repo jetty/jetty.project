@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.util.QuoteUtil;
 
 public class UpgradeRequestAdapter implements UpgradeRequest

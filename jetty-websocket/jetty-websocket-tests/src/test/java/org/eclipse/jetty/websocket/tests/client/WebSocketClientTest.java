@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSessionImpl;
-import org.eclipse.jetty.websocket.core.handshake.UpgradeRequest;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.UntrustedWSEndpoint;
@@ -134,7 +133,7 @@ public class WebSocketClientTest
         // Verify Client Session
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         assertThat("Client Session", clientSession, notNullValue());
-        assertThat("Client Session.open", clientSession.isOpen(), is(true));
+        assertThat("Client Session.onOpen", clientSession.isOpen(), is(true));
         assertThat("Client Session.upgradeRequest", clientSession.getUpgradeRequest(), notNullValue());
         assertThat("Client Session.upgradeRequest", clientSession.getUpgradeResponse(), notNullValue());
         

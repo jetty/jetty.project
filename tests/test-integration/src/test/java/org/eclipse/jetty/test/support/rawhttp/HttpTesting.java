@@ -186,7 +186,7 @@ public class HttpTesting
     /**
      * Open a socket.
      * 
-     * @return the open socket.
+     * @return the onOpen socket.
      * @throws IOException
      */
     public Socket open() throws IOException
@@ -359,7 +359,7 @@ public class HttpTesting
 
 
     /**
-     * Send a data (as request) to open socket.
+     * Send a data (as request) to onOpen socket.
      * 
      * @param sock
      *            the socket to send the request to

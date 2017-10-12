@@ -396,7 +396,7 @@ public class ClientConnectTest
                 clientSession.getUpgradeResponse().getHeader("Transfer-Encoding"),
                 nullValue());
         
-        assertThat("Client open event occurred",
+        assertThat("Client onOpen event occurred",
                 clientSocket.openLatch.await(Defaults.OPEN_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS),
                 is(true));
         clientSession.close();
