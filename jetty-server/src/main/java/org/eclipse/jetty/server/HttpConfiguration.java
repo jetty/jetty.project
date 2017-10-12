@@ -67,6 +67,7 @@ public class HttpConfiguration
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
     private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
+    private boolean _notifyRemoteAsyncErrors = true;
 
     /**
      * <p>An interface that allows a request object to be customized 
@@ -127,6 +128,7 @@ public class HttpConfiguration
         _maxErrorDispatches=config._maxErrorDispatches;
         _minRequestDataRate=config._minRequestDataRate;
         _cookieCompliance=config._cookieCompliance;
+        _notifyRemoteAsyncErrors=config._notifyRemoteAsyncErrors;
     }
     
     /**
@@ -506,6 +508,23 @@ public class HttpConfiguration
     public boolean isCookieCompliance(CookieCompliance compliance)
     {
         return _cookieCompliance.equals(compliance);
+    }
+
+    /**
+     * @param notifyRemoteAsyncErrors whether remote errors, when detected, are notified to async applications
+     */
+    public void setNotifyRemoteAsyncErrors(boolean notifyRemoteAsyncErrors)
+    {
+        this._notifyRemoteAsyncErrors = notifyRemoteAsyncErrors;
+    }
+
+    /**
+     * @return whether remote errors, when detected, are notified to async applications
+     */
+    @ManagedAttribute("Whether remote errors, when detected, are notified to async applications")
+    public boolean isNotifyRemoteAsyncErrors()
+    {
+        return _notifyRemoteAsyncErrors;
     }
 
     @Override
