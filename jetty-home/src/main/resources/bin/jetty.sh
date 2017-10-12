@@ -129,7 +129,7 @@ running()
 started()
 {
   # wait for 60s to see "STARTED" in PID file, needs jetty-started.xml as argument
-  for T in 1 2 3 4 5 6 7 9 10 11 12 13 14 15
+  for (( T = 1; T <= 15; T++ ))
   do
     sleep 4
     [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
