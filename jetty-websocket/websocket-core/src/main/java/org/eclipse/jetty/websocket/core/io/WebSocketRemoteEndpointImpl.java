@@ -69,7 +69,7 @@ public class WebSocketRemoteEndpointImpl implements Closeable, WebSocketRemoteEn
     }
 
     /**
-     * Internally open the RemoteEndpoint
+     * Internally onOpen the RemoteEndpoint
      */
     public void open()
     {
@@ -344,7 +344,7 @@ public class WebSocketRemoteEndpointImpl implements Closeable, WebSocketRemoteEn
     {
         if (!open.get())
         {
-            throw new WebSocketException("WSRemoteImpl not open");
+            throw new WebSocketException("WSRemoteImpl not onOpen");
         }
     }
 

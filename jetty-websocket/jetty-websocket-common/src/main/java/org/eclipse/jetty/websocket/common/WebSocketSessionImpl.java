@@ -151,10 +151,10 @@ public class WebSocketSessionImpl<
     }
 
     @Override
-    public void open()
+    public void onOpen()
     {
         remoteEndpoint.open();
-        super.open();
+        super.onOpen();
     }
 
     @Override

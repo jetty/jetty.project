@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State;
-import static org.eclipse.jetty.websocket.core.io.WebSocketCoreConnectionState.State.CLOSED;
+import static org.eclipse.jetty.websocket.core.WebSocketSessionState.State;
+import static org.eclipse.jetty.websocket.core.WebSocketSessionState.State.CLOSED;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -49,36 +49,38 @@ import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
  * The Core WebSocket Session.
  *
  */
-public class WebSocketCoreSession extends ContainerLifeCycle
+public class WebSocketCoreSession extends ContainerLifeCycle implements IncomingFrames
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
+    private final WebSocketSessionState state = new WebSocketSessionState();
     private final WebSocketPolicy policy;
     private final ContainerLifeCycle parentContainer;
     private final WebSocketLocalEndpoint localEndpoint;
-    private final ExtensionStack extensions;
+    private final ExtensionStack extensionStack;
     private final String subprotocol;
 
     private WebSocketCoreConnection connection;
     private WebSocketRemoteEndpointImpl remoteEndpoint;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
-    // Holder for errors during open that are reported in doStart later
+    // Holder for errors during onOpen that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
     public WebSocketCoreSession(ContainerLifeCycle parentContainer,
                                 WebSocketLocalEndpoint localEndpoint,
                                 WebSocketPolicy policy,
-                                ExtensionStack extensions,
+                                ExtensionStack extensionStack,
                                 String subprotocol)
     {
         this.parentContainer = parentContainer;  // TODO not keen on objects adding themselves to containers.
         this.localEndpoint = localEndpoint;
         this.policy = policy;
-        this.extensions = extensions;
+        this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
-
-        extensions.setNextIncoming(new LocalEndpointHolder());
+        addBean(extensionStack,true);
+        extensionStack.setNextIncoming(new IncomingState());
+        extensionStack.setNextOutgoing(new OutgoingState());
     }
 
     public void setWebSocketConnection(WebSocketCoreConnection connection)
@@ -97,7 +99,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle
                             ThreadLocalRandom.current().nextBytes(mask); // TODO secure random?
                             wsFrame.setMask(mask);
                         }
-                        extensions.outgoingFrame(frame,callback,batchMode);
+                        extensionStack.outgoingFrame(frame, callback, batchMode);
                     }
                 });
 
@@ -107,7 +109,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle
 
     public ExtensionStack getExtensionStack()
     {
-        return extensions;
+        return extensionStack;
     }
 
 
@@ -121,7 +123,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("Sending Close Frame");
         CloseFrame closeFrame = new CloseFrame().setPayload(closeStatus);
-        extensions.outgoingFrame(closeFrame, callback, BatchMode.OFF);
+        extensionStack.outgoingFrame(closeFrame, callback, BatchMode.OFF);
     }
 
     public WebSocketPolicy getPolicy()
@@ -219,65 +221,63 @@ public class WebSocketCoreSession extends ContainerLifeCycle
     /**
      * Open/Activate the session
      */
-    public void open()
+    public void onOpen()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}.open()", this.getClass().getSimpleName());
+            LOG.debug("{}.onOpen()", this.getClass().getSimpleName());
 
         try
         {
+            start();
+
             // Upgrade success
-            if (connection.getState().onConnected())
+            state.onConnected();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("ConnectionState: Transition to CONNECTED");
+
+            // Connect remoteEndpoint
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}.onOpen() remoteEndpoint={}", this.getClass().getSimpleName(), remoteEndpoint);
+
+            try
             {
+                // Open WebSocket
+                remoteEndpoint.open();
+                localEndpoint.onOpen(remoteEndpoint);
+
+                // Open connection
+                state.onOpen();
+                parentContainer.addManaged(this);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("ConnectionState: Transition to CONNECTED");
+                    LOG.debug("ConnectionState: Transition to OPEN");
 
-                // Connect remoteEndpoint
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}.open() remoteEndpoint={}", this.getClass().getSimpleName(), remoteEndpoint);
-
-                try
-                {
-                    // Open WebSocket
-                    remoteEndpoint.open();
-                    localEndpoint.onOpen(remoteEndpoint);
-
-                    // Open connection
-                    if (connection.getState().onOpen())
-                    {
-                        parentContainer.addManaged(this);
-
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("ConnectionState: Transition to OPEN");
-                    }
-                }
-                catch (Throwable t)
-                {
-                    localEndpoint.getLog().warn("Error during OPEN", t);
-                    processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
-                }
-                finally
-                {
-                    notifyOpen();
-                }
-
-                /* Perform fillInterested outside of onConnected / onOpen.
-                 *
-                 * This is to allow for 2 specific scenarios.
-                 *
-                 * 1) Fast Close
-                 *    When an end users WSEndpoint.onOpen() calls
-                 *    the Session.close() method.
-                 *    This is a state transition of CONNECTING -> CONNECTED -> CLOSING
-                 * 2) Fast Fail
-                 *    When an end users WSEndpoint.onOpen() throws an Exception.
-                 */
-                connection.fillInterested();
             }
-            else
+            catch (Throwable t)
             {
-                throw new IllegalStateException("Unexpected state [" + connection.getState().get() + "] when attempting to transition to CONNECTED");
+                localEndpoint.getLog().warn("Error during OPEN", t);
+                processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
             }
+            finally
+            {
+                notifyOpen();
+            }
+
+            /* Perform fillInterested outside of onConnected / onOpen.
+             *
+             * This is to allow for 2 specific scenarios.
+             *
+             * 1) Fast Close
+             *    When an end users WSEndpoint.onOpen() calls
+             *    the Session.close() method.
+             *    This is a state transition of CONNECTING -> CONNECTED -> CLOSING
+             * 2) Fast Fail
+             *    When an end users WSEndpoint.onOpen() throws an Exception.
+             */
+
+            // TODO what if we are going to start without read interest?  (eg reactive stream???)
+            connection.fillInterested();
+
         }
         catch (Throwable t)
         {
@@ -339,7 +339,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle
     }
 
     /**
-     * Event triggered when the open has completed (successfully or with error).
+     * Event triggered when the onOpen has completed (successfully or with error).
      */
     protected void notifyOpen()
     {
@@ -373,15 +373,21 @@ public class WebSocketCoreSession extends ContainerLifeCycle
         super.doStop();
     }
 
+    @Override
+    public void incomingFrame(Frame frame, Callback callback)
+    {
+        extensionStack.incomingFrame(frame, callback);
+    }
 
-    private class LocalEndpointHolder implements IncomingFrames
+
+    private class IncomingState implements IncomingFrames
     {
         @Override
         public void incomingFrame(Frame frame, Callback callback)
         {
             try
             {
-                State state = connection.getState().get();
+                State state = WebSocketCoreSession.this.state.get();
                 if (LOG.isDebugEnabled())
                 {
                     LOG.debug("incomingFrame({}, {}) - connectionState={}, localEndpoint={}",
@@ -482,6 +488,24 @@ public class WebSocketCoreSession extends ContainerLifeCycle
             {
                 callback.failed(t);
             }
+        }
+    }
+
+    private class OutgoingState implements OutgoingFrames
+    {
+        @Override
+        public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+        {
+            if (frame instanceof CloseFrame)
+            {
+                if (!state.onClosing())
+                {
+                    callback.failed(new IOException("Already Closed or Closing"));
+                    return;
+                }
+            }
+
+            connection.outgoingFrame(frame,callback,batchMode);
         }
     }
 }

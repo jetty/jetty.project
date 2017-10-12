@@ -228,14 +228,6 @@ public final class RFC6455Handshaker implements Handshaker
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={}", connection, session);
 
-        try
-        {
-            session.getExtensionStack().start();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
         baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
     }

@@ -173,9 +173,9 @@ public interface Session extends Closeable
     UpgradeResponse getUpgradeResponse();
 
     /**
-     * Return true if and only if the underlying socket is open.
+     * Return true if and only if the underlying socket is onOpen.
      * 
-     * @return whether the session is open
+     * @return whether the session is onOpen
      */
     boolean isOpen();
 

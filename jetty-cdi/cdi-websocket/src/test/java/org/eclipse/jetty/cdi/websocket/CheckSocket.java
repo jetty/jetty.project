@@ -48,7 +48,7 @@ public class CheckSocket extends WebSocketAdapter
 
     public void awaitOpen(int timeout, TimeUnit timeunit) throws InterruptedException
     {
-        assertTrue("Timeout waiting for open",openLatch.await(timeout,timeunit));
+        assertTrue("Timeout waiting for onOpen",openLatch.await(timeout,timeunit));
     }
 
     public BlockingQueue<String> getTextMessages()

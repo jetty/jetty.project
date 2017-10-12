@@ -24,7 +24,6 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -33,30 +32,22 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
-import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.frames.CloseFrame;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketCoreConnection extends AbstractConnection implements Parser.Handler, SuspendToken, Connection.UpgradeTo, Dumpable
+public class WebSocketCoreConnection extends AbstractConnection implements Parser.Handler, SuspendToken, Connection.UpgradeTo, Dumpable, OutgoingFrames
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
@@ -74,7 +65,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     private final AtomicBoolean suspendToken;
     private final Flusher flusher;
     private final String id;
-    private final WebSocketCoreConnectionState connectionState = new WebSocketCoreConnectionState();
 
     private WebSocketCoreSession session;
 
@@ -119,9 +109,8 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
 
-        session.getExtensionStack().configure(this.parser);
-        session.getExtensionStack().configure(this.generator);
-        session.getExtensionStack().setNextOutgoing(flusher);
+        this.parser.configureFromExtensions(session.getExtensionStack().getExtensions());
+        this.generator.configureFromExtensions(session.getExtensionStack().getExtensions());
     }
 
     @Override
@@ -182,13 +171,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         return getEndPoint().getRemoteAddress();
     }
 
-    public boolean isOpen()
-    {
-        boolean open = connectionState.isOpen();
-        if (LOG.isDebugEnabled())
-            LOG.debug("isOpen() = {}", open);
-        return open;
-    }
 
     /**
      * Physical connection disconnect.
@@ -260,20 +242,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         return true;
     }
 
-    public boolean isSecure()
-    {
-        // TODO this did look at the scheme, but there may be a situation
-        // where wss is converte to ws, but yet we trust it is secure (eg ssl offloading)
-        // so we should really just look at the original request to see if it is secure
-        // or have it passed in?
-        return false;
-    }
-
-    public WebSocketCoreConnectionState getState()
-    {
-        return connectionState;
-    }
-
     private ByteBuffer getNetworkBuffer()
     {
         synchronized (this)
@@ -327,7 +295,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         try
         {
             fillAndParseScope.set(true);
-            while (isOpen())
+            while (getEndPoint().isOpen())
             {
                 if (suspendToken.get())
                 {
@@ -401,12 +369,9 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onOpen() of physical connection");
+            LOG.debug("onOpen() {}",this);
 
-        if(connectionState.onConnecting())
-        {
-            session.open();
-        }
+        session.onOpen();
         super.onOpen();
     }
 
@@ -482,14 +447,13 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x[%s,%s,f=%s,g=%s,p=%s]",
+        return String.format("%s@%x[%s,p=%s,f=%s,g=%s]",
                 getClass().getSimpleName(),
                 hashCode(),
                 getPolicy().getBehavior(),
-                isOpen() ? "OPEN" : "CLOSED",
+                parser,
                 flusher,
-                generator,
-                parser);
+                generator);
     }
 
     @Override
@@ -545,8 +509,14 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         setInitialBuffer(prefilled);
     }
 
+    @Override
+    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+    {
+        flusher.enqueue(frame,callback,batchMode);
+    }
 
-    private class Flusher extends FrameFlusher implements OutgoingFrames
+
+    private class Flusher extends FrameFlusher
     {
         private Flusher(int bufferSize, Generator generator, EndPoint endpoint)
         {
@@ -558,67 +528,6 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
         {
             super.onCompleteFailure(x);
             session.processError(x);
-        }
-
-        @Override
-        public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
-        {
-            if (frame instanceof CloseFrame)
-            {
-                if (connectionState.onClosing())
-                    callback = new ClosingCallback(callback);
-                else
-                {
-                    callback.failed(new IOException("Already Closed or Closing"));
-                    return;
-                }
-            }
-            this.enqueue(frame,callback,batchMode);
-        }
-    }
-
-
-    private class ClosingCallback extends Callback.Nested
-    {
-        public ClosingCallback(Callback callback)
-        {
-            super(callback);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            try
-            {
-                super.succeeded();
-            }
-            finally
-            {
-                complete();
-            }
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            try
-            {
-                super.failed(x);
-            }
-            catch (Exception e)
-            {
-                complete();
-            }
-        }
-
-        public void complete()
-        {
-            if (getState().onClosed())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ConnectionState: Transition to CLOSED");
-                disconnect();
-            }
         }
     }
 }

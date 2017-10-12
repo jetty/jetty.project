@@ -262,7 +262,7 @@ public class ClientCloseTest
         }
 
         // client lifecycle stop
-        // every open client should send a close frame
+        // every onOpen client should send a close frame
         client.stop();
 
         // clients send close frames (code 1001, shutdown)

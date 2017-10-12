@@ -79,9 +79,9 @@ public class JavaxWebSocketSession<
     private JavaxWebSocketAsyncRemote asyncRemote;
     private JavaxWebSocketBasicRemote basicRemote;
     /**
-     * Optional Future to trigger when the session is opened (or fails to open).
+     * Optional Future to trigger when the session is opened (or fails to onOpen).
      * Most commonly used from client implementations that want a future to
-     * base connect + open success against (like JSR-356 client)
+     * base connect + onOpen success against (like JSR-356 client)
      */
     private CompletableFuture<JavaxWebSocketSession<P,C,L,R>> openFuture;
 
@@ -439,7 +439,7 @@ public class JavaxWebSocketSession<
     @Override
     public Set<Session> getOpenSessions()
     {
-        // TODO: maintain internal Set of open sessions
+        // TODO: maintain internal Set of onOpen sessions
         Set<Session> sessions = new HashSet<>();
         sessions.addAll(getBeans(JavaxWebSocketSession.class));
         return sessions;

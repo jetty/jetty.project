@@ -266,7 +266,7 @@ public class BrowserSocket
 
         if (!session.isOpen())
         {
-            LOG.debug("Not open");
+            LOG.debug("Not onOpen");
             return;
         }
 

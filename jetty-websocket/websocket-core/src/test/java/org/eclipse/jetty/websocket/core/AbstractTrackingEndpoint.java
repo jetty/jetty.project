@@ -77,7 +77,7 @@ public abstract class AbstractTrackingEndpoint<T>
     
     public void assertNotOpened(String prefix)
     {
-        assertTrue(prefix + " open event should not have occurred", openLatch.getCount() > 0);
+        assertTrue(prefix + " onOpen event should not have occurred", openLatch.getCount() > 0);
     }
     
     public void awaitCloseEvent(String prefix) throws InterruptedException

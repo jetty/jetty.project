@@ -133,7 +133,7 @@ public class WebSocketClientTest
         // Verify Client Session
         Session clientSession = clientConnectFuture.get(Defaults.CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         assertThat("Client Session", clientSession, notNullValue());
-        assertThat("Client Session.open", clientSession.isOpen(), is(true));
+        assertThat("Client Session.onOpen", clientSession.isOpen(), is(true));
         assertThat("Client Session.upgradeRequest", clientSession.getUpgradeRequest(), notNullValue());
         assertThat("Client Session.upgradeRequest", clientSession.getUpgradeResponse(), notNullValue());
         
