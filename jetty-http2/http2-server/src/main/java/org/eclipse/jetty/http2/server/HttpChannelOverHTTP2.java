@@ -409,7 +409,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
             {
                 if (handle)
                     handleWithContext();
-                else
+                else if (getHttpConfiguration().isNotifyRemoteAsyncErrors())
                     getState().asyncError(failure);
                 callback.succeeded();
             }
