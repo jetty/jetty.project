@@ -21,18 +21,13 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * The interface a WSConnection has to the local WebSocket Endpoint.
  */
 public interface WebSocketLocalEndpoint
 {
-    Logger getLog(); // TODO why?
-
-    boolean isOpen(); // TODO Can the endpoint really know this?
-
-    void onOpen(WebSocketRemoteEndpoint remote);
+    void onOpen();
 
     void onClose(CloseStatus close);
 
@@ -50,10 +45,10 @@ public interface WebSocketLocalEndpoint
 
     void onPong(ByteBuffer payload);
 
-    public interface Adaptor extends WebSocketLocalEndpoint
+    interface Adaptor extends WebSocketLocalEndpoint
     {
         @Override
-        default void onOpen(WebSocketRemoteEndpoint remote)
+        default void onOpen()
         {
         }
 

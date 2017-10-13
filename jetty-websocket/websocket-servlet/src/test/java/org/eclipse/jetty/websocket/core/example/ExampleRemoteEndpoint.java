@@ -16,15 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.example;
 
-public class DummyLocalEndpoint implements WebSocketLocalEndpoint.Adaptor
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketSessionState;
+import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
+
+class ExampleRemoteEndpoint extends WebSocketRemoteEndpointImpl
 {
-    private boolean open = false;
-
-    @Override
-    public void onOpen()
+    public ExampleRemoteEndpoint(OutgoingFrames outgoing)
     {
-        open = true;
+        super(outgoing);
     }
 }

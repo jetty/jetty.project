@@ -16,17 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core.example.impl;
 
-import java.io.IOException;
+import javax.servlet.ServletContext;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Connector;
 
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-
-public interface Handshaker
+public final class ContextConnectorConfiguration
 {
-    boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    public static <T> T lookup(Class<T> clazz, ServletContext context, Connector connector)
+    {
+        T t = null;
+        if (context!=null)
+            t = (T)context.getAttribute(clazz.getCanonicalName());
+        if (t==null)
+            t = connector.getBean(clazz);
+        return t;
+    }
 }

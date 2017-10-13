@@ -16,15 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.example.impl;
 
-public class DummyLocalEndpoint implements WebSocketLocalEndpoint.Adaptor
+import java.io.IOException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
+
+public interface Handshaker
 {
-    private boolean open = false;
-
-    @Override
-    public void onOpen()
-    {
-        open = true;
-    }
+    boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }

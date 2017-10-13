@@ -18,13 +18,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
-public class DummyLocalEndpoint implements WebSocketLocalEndpoint.Adaptor
+/**
+ * The Alt interface a WebSocketCoreSession has to the Local WebSocket Endpoint.
+ */
+public interface WebSocketLocalEndpointAlt
 {
-    private boolean open = false;
+    void onOpen();
 
-    @Override
-    public void onOpen()
-    {
-        open = true;
-    }
+    void onClose(CloseStatus close);
+
+    void onFrame(Frame frame);
+
+    void onError(Throwable cause);
 }

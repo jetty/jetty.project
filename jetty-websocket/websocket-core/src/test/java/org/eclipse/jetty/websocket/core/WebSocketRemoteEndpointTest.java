@@ -45,7 +45,6 @@ public class WebSocketRemoteEndpointTest
     private WebSocketRemoteEndpoint newWSRemote(OutgoingFramesCapture framesCapture)
     {
         WebSocketRemoteEndpointImpl remote = new WebSocketRemoteEndpointImpl(framesCapture);
-        remote.open();
         return remote;
     }
 

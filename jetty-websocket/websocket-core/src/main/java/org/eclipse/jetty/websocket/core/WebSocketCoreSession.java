@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,10 +39,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
-import org.eclipse.jetty.websocket.core.io.WebSocketRemoteEndpointImpl;
 
 /**
  * The Core WebSocket Session.
@@ -57,11 +54,11 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
     private final WebSocketPolicy policy;
     private final ContainerLifeCycle parentContainer;
     private final WebSocketLocalEndpoint localEndpoint;
+    private WebSocketRemoteEndpoint remoteEndpoint;
     private final ExtensionStack extensionStack;
     private final String subprotocol;
 
     private WebSocketCoreConnection connection;
-    private WebSocketRemoteEndpointImpl remoteEndpoint;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     // Holder for errors during onOpen that are reported in doStart later
@@ -69,12 +66,14 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
 
     public WebSocketCoreSession(ContainerLifeCycle parentContainer,
                                 WebSocketLocalEndpoint localEndpoint,
+                                WebSocketRemoteEndpoint remoteEndpoint,
                                 WebSocketPolicy policy,
                                 ExtensionStack extensionStack,
                                 String subprotocol)
     {
         this.parentContainer = parentContainer;  // TODO not keen on objects adding themselves to containers.
         this.localEndpoint = localEndpoint;
+        this.remoteEndpoint = remoteEndpoint;
         this.policy = policy;
         this.extensionStack = extensionStack;
         this.subprotocol = subprotocol;
@@ -83,25 +82,30 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         extensionStack.setNextOutgoing(new OutgoingState());
     }
 
+    public WebSocketRemoteEndpoint getRemote()
+    {
+        return remoteEndpoint;
+    }
+
     public void setWebSocketConnection(WebSocketCoreConnection connection)
     {
         this.connection = connection;
-        this.remoteEndpoint = new WebSocketRemoteEndpointImpl(
-                new OutgoingFrames()
-                {
-                    @Override
-                    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
-                    {
-                        if (policy.getBehavior() == WebSocketBehavior.CLIENT && frame instanceof WebSocketFrame)
-                        {
-                            WebSocketFrame wsFrame = (WebSocketFrame) frame;
-                            byte mask[] = new byte[4];
-                            ThreadLocalRandom.current().nextBytes(mask); // TODO secure random?
-                            wsFrame.setMask(mask);
-                        }
-                        extensionStack.outgoingFrame(frame, callback, batchMode);
-                    }
-                });
+//        this.remoteEndpoint = new WebSocketRemoteEndpointImpl(
+//                new OutgoingFrames()
+//                {
+//                    @Override
+//                    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
+//                    {
+//                        if (policy.getBehavior() == WebSocketBehavior.CLIENT && frame instanceof WebSocketFrame)
+//                        {
+//                            WebSocketFrame wsFrame = (WebSocketFrame) frame;
+//                            byte mask[] = new byte[4];
+//                            ThreadLocalRandom.current().nextBytes(mask); // TODO secure random? (do not reuse previous frame's mask, all 0's invalid)
+//                            wsFrame.setMask(mask);
+//                        }
+//                        extensionStack.outgoingFrame(frame, callback, batchMode);
+//                    }
+//                });
 
         addBean(this.localEndpoint, true);
         addBean(this.remoteEndpoint, true);
@@ -123,6 +127,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         if (LOG.isDebugEnabled())
             LOG.debug("Sending Close Frame");
         CloseFrame closeFrame = new CloseFrame().setPayload(closeStatus);
+        // TODO: should go to RemoteEndpoint.sendClose()
         extensionStack.outgoingFrame(closeFrame, callback, BatchMode.OFF);
     }
 
@@ -145,7 +150,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
     {
         synchronized (pendingError)
         {
-            if (!localEndpoint.isOpen())
+            if (!state.isOpen())
             {
                 // this is a *really* fast fail, before the Session has even started.
                 pendingError.compareAndSet(null, t);
@@ -243,19 +248,19 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
             try
             {
                 // Open WebSocket
-                remoteEndpoint.open();
-                localEndpoint.onOpen(remoteEndpoint);
+                // TODO: need listener for session is about to be opened (for CDI and JSR356 Decode/Encoder init)
+                localEndpoint.onOpen();
 
                 // Open connection
                 state.onOpen();
                 parentContainer.addManaged(this);
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
-
             }
             catch (Throwable t)
             {
-                localEndpoint.getLog().warn("Error during OPEN", t);
+                // TODO: should log under application's localendpoint logger id
+                LOG.warn("Error during OPEN", t);
                 processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
             }
             finally
@@ -506,6 +511,8 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
             }
 
             connection.outgoingFrame(frame,callback,batchMode);
+
+            // TODO: (Somewhere) CDI Session Scope deactivated here (when close completed)
         }
     }
 }

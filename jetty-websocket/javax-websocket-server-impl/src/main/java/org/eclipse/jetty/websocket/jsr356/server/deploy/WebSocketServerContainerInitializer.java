@@ -334,3 +334,25 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         }
     }
 }
+
+
+
+/*
+
+ HTTP ::                  WebSocket ::
+   Application Scope    / Container Scope
+     Servlet Scope
+       Request Scope
+         Upgrade Scope  / Handshake Scope (Configurators too)
+                            Session Scope (Local Endpoint too)
+                              Message Scope
+
+
+ Jetty Native
+    Client
+    Server
+ JSR356
+    Client
+    Server
+
+ */

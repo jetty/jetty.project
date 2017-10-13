@@ -16,15 +16,18 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.servlet;
 
-public class DummyLocalEndpoint implements WebSocketLocalEndpoint.Adaptor
+import java.io.IOException;
+
+public interface WebSocketHandshake
 {
-    private boolean open = false;
-
-    @Override
-    public void onOpen()
-    {
-        open = true;
-    }
+    /**
+     * Formulate a WebSocket upgrade handshake response.
+     * 
+     * @param request the request
+     * @param response the response
+     * @throws IOException if unable to handshake
+     */
+    void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException;
 }

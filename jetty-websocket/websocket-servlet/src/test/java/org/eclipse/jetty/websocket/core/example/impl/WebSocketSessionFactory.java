@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core.example.impl;
 
 import java.util.List;
 
@@ -24,13 +24,9 @@ import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 public interface WebSocketSessionFactory
 {

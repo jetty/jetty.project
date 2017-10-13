@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.websocket.core.io;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -30,7 +28,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketRemoteEndpoint;
-import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
@@ -43,7 +40,7 @@ import org.eclipse.jetty.websocket.core.frames.WebSocketFrame;
 /**
  * Represents the remote websocket endpoint, with facilities to send WebSocketFrames
  */
-public class WebSocketRemoteEndpointImpl implements Closeable, WebSocketRemoteEndpoint
+public class WebSocketRemoteEndpointImpl implements WebSocketRemoteEndpoint
 {
     public enum MsgType
     {
@@ -60,29 +57,11 @@ public class WebSocketRemoteEndpointImpl implements Closeable, WebSocketRemoteEn
     private final OutgoingFrames outgoing;
     protected final SharedBlockingCallback blocker = new SharedBlockingCallback();
     private final AtomicInteger msgState = new AtomicInteger();
-    private AtomicBoolean open = new AtomicBoolean(false);
     private volatile BatchMode batchMode = BatchMode.AUTO;
 
     public WebSocketRemoteEndpointImpl(OutgoingFrames outgoing)
     {
         this.outgoing = outgoing;
-    }
-
-    /**
-     * Internally onOpen the RemoteEndpoint
-     */
-    public void open()
-    {
-        open.set(true);
-    }
-
-    /**
-     * Internally close the RemoteEndpoint to further use.
-     */
-    @Override
-    public void close()
-    {
-        open.set(false);
     }
 
     /**
@@ -342,10 +321,7 @@ public class WebSocketRemoteEndpointImpl implements Closeable, WebSocketRemoteEn
 
     private void assertIsOpen()
     {
-        if (!open.get())
-        {
-            throw new WebSocketException("WSRemoteImpl not onOpen");
-        }
+        // TODO: assert that the Session is open
     }
 
     protected boolean lockMsg(MsgType type)
