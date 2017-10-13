@@ -141,7 +141,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.executor = executor;
         this.bufferPool = bufferPool;
 
-        this.creator = this;
+        this.creator = this; // TODO: unset creator?
         this.contextClassloader = Thread.currentThread().getContextClassLoader();
         this.extensionRegistry = new WebSocketExtensionRegistry();
         this.localEndpointFactory = new LocalEndpointFactory();

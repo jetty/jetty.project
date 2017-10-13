@@ -25,14 +25,13 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.example.impl.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.core.example.impl.WebSocketSessionFactory;
 
-class ExampleWebSocketSessionFactory extends ContainerLifeCycle implements WebSocketSessionFactory
+class ExampleWebSocketSessionFactory implements WebSocketSessionFactory
 {
     DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
 
@@ -40,8 +39,6 @@ class ExampleWebSocketSessionFactory extends ContainerLifeCycle implements WebSo
     public WebSocketCoreSession newSession(Request baseRequest, ServletRequest request, WebSocketPolicy policy,
                                            ByteBufferPool bufferPool, List<ExtensionConfig> extensions, List<String> subprotocols)
     {
-        String subprotocol = subprotocols.isEmpty()?null:subprotocols.get(0);
-
         ExtensionStack extensionStack = new ExtensionStack(policy.getExtensionRegistry());
         extensionStack.negotiate(objectFactory, policy, bufferPool, extensions);
 
@@ -49,7 +46,7 @@ class ExampleWebSocketSessionFactory extends ContainerLifeCycle implements WebSo
         ExampleRemoteEndpoint remoteEndpoint = new ExampleRemoteEndpoint(extensionStack);
 
         WebSocketCoreSession session =
-                new WebSocketCoreSession(this,localEndpoint,remoteEndpoint,policy,extensionStack,subprotocol);
+                new WebSocketCoreSession(localEndpoint,remoteEndpoint,policy,extensionStack);
 
         localEndpoint.setSession(session);
         return session;

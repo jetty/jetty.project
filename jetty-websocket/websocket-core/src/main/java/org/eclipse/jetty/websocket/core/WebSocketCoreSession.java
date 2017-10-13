@@ -25,9 +25,12 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -48,15 +51,14 @@ import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
  */
 public class WebSocketCoreSession extends ContainerLifeCycle implements IncomingFrames
 {
-    private final Logger LOG = Log.getLogger(this.getClass());
+    private Logger LOG = Log.getLogger(this.getClass());
 
     private final WebSocketSessionState state = new WebSocketSessionState();
     private final WebSocketPolicy policy;
-    private final ContainerLifeCycle parentContainer;
     private final WebSocketLocalEndpoint localEndpoint;
-    private WebSocketRemoteEndpoint remoteEndpoint;
+    private final WebSocketRemoteEndpoint remoteEndpoint;
     private final ExtensionStack extensionStack;
-    private final String subprotocol;
+    private final List<Listener> listeners = new ArrayList<>();
 
     private WebSocketCoreConnection connection;
 
@@ -64,49 +66,18 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
     // Holder for errors during onOpen that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
-    public WebSocketCoreSession(ContainerLifeCycle parentContainer,
-                                WebSocketLocalEndpoint localEndpoint,
+    public WebSocketCoreSession(WebSocketLocalEndpoint localEndpoint,
                                 WebSocketRemoteEndpoint remoteEndpoint,
                                 WebSocketPolicy policy,
-                                ExtensionStack extensionStack,
-                                String subprotocol)
+                                ExtensionStack extensionStack)
     {
-        this.parentContainer = parentContainer;  // TODO not keen on objects adding themselves to containers.
         this.localEndpoint = localEndpoint;
         this.remoteEndpoint = remoteEndpoint;
         this.policy = policy;
         this.extensionStack = extensionStack;
-        this.subprotocol = subprotocol;
         addBean(extensionStack,true);
         extensionStack.setNextIncoming(new IncomingState());
         extensionStack.setNextOutgoing(new OutgoingState());
-    }
-
-    public WebSocketRemoteEndpoint getRemote()
-    {
-        return remoteEndpoint;
-    }
-
-    public void setWebSocketConnection(WebSocketCoreConnection connection)
-    {
-        this.connection = connection;
-//        this.remoteEndpoint = new WebSocketRemoteEndpointImpl(
-//                new OutgoingFrames()
-//                {
-//                    @Override
-//                    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
-//                    {
-//                        if (policy.getBehavior() == WebSocketBehavior.CLIENT && frame instanceof WebSocketFrame)
-//                        {
-//                            WebSocketFrame wsFrame = (WebSocketFrame) frame;
-//                            byte mask[] = new byte[4];
-//                            ThreadLocalRandom.current().nextBytes(mask); // TODO secure random? (do not reuse previous frame's mask, all 0's invalid)
-//                            wsFrame.setMask(mask);
-//                        }
-//                        extensionStack.outgoingFrame(frame, callback, batchMode);
-//                    }
-//                });
-
         addBean(this.localEndpoint, true);
         addBean(this.remoteEndpoint, true);
     }
@@ -116,19 +87,34 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         return extensionStack;
     }
 
+    public WebSocketRemoteEndpoint getRemote()
+    {
+        return remoteEndpoint;
+    }
+
+    public WebSocketLocalEndpoint getLocal()
+    {
+        return localEndpoint;
+    }
+
+    public void setWebSocketConnection(WebSocketCoreConnection connection)
+    {
+        this.connection = connection;
+    }
+
+    public void addSessionListener(Listener listener)
+    {
+        listeners.add(listener);
+    }
 
     public void close(int statusCode, String reason, Callback callback)
     {
-        close(new CloseStatus(statusCode, reason), callback);
+        getRemote().sendClose(statusCode, reason, callback);
     }
 
     public void close(CloseStatus closeStatus, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Sending Close Frame");
-        CloseFrame closeFrame = new CloseFrame().setPayload(closeStatus);
-        // TODO: should go to RemoteEndpoint.sendClose()
-        extensionStack.outgoingFrame(closeFrame, callback, BatchMode.OFF);
+        getRemote().sendClose(closeStatus.getCode(), closeStatus.getReason(), callback);
     }
 
     public WebSocketPolicy getPolicy()
@@ -136,33 +122,24 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         return policy;
     }
 
-    public String getSubprotocol()
-    {
-        return subprotocol;
-    }
-
     /**
      * Process an Error event seen by the Session and/or Connection
      *
-     * @param t the raw cause
+     * @param cause the cause
      */
-    public void processError(Throwable t)
+    public void processError(Throwable cause)
     {
         synchronized (pendingError)
         {
             if (!state.isOpen())
             {
                 // this is a *really* fast fail, before the Session has even started.
-                pendingError.compareAndSet(null, t);
+                pendingError.compareAndSet(null, cause);
                 return;
             }
         }
 
-        Throwable cause = getInvokedCause(t);
-
-        notifyError(cause);
-
-        // Forward Errors to User WebSocket Object
+        // Forward Errors to Local WebSocket EndPoint
         localEndpoint.onError(cause);
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
@@ -224,7 +201,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
     }
 
     /**
-     * Open/Activate the session
+     * Open/Activate the session.
      */
     public void onOpen()
     {
@@ -248,57 +225,50 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
             try
             {
                 // Open WebSocket
-                // TODO: need listener for session is about to be opened (for CDI and JSR356 Decode/Encoder init)
+                // Session is about to be opened (used by CDI and JSR356 Decoder init)
+                notifySessionListeners((listener)-> listener.onInit(this));
                 localEndpoint.onOpen();
 
                 // Open connection
                 state.onOpen();
-                parentContainer.addManaged(this);
+                // Session is now Open (used by container APIs for session tracking)
+                notifySessionListeners((listener)-> listener.onOpened(this));
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
             }
             catch (Throwable t)
             {
-                // TODO: should log under application's localendpoint logger id
                 LOG.warn("Error during OPEN", t);
                 processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
             }
-            finally
-            {
-                notifyOpen();
-            }
 
-            /* Perform fillInterested outside of onConnected / onOpen.
+            /* Perform fillInterested outside of OPENING attempt.
+             *
+             * State transition of CONNECTING -> CONNECTED -> OPENING -> CLOSING (not OPEN)
              *
              * This is to allow for 2 specific scenarios.
              *
              * 1) Fast Close
-             *    When an end users WSEndpoint.onOpen() calls
-             *    the Session.close() method.
-             *    This is a state transition of CONNECTING -> CONNECTED -> CLOSING
+             *    When an end user's WSEndpoint.onOpen() is called.
+             *    That method calls session.close() method, or
+             *    session.getRemote().sendClose()
              * 2) Fast Fail
-             *    When an end users WSEndpoint.onOpen() throws an Exception.
+             *    When an end users WSEndpoint.onOpen() is called.
+             *    That method throws an (unhandled) Throwable.
              */
 
             // TODO what if we are going to start without read interest?  (eg reactive stream???)
             connection.fillInterested();
-
         }
         catch (Throwable t)
         {
-            LOG.warn(t); // TODO log and handle is normally too verbose
-            processError(t);
+            processError(t); // Handle error
         }
     }
 
     public WebSocketCoreConnection getConnection()
     {
         return this.connection;
-    }
-
-    public ContainerLifeCycle getParentContainer()
-    {
-        return this.parentContainer;
     }
 
     public Executor getExecutor()
@@ -310,7 +280,6 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
     {
         return this.connection.getBufferPool();
     }
-
 
     public void notifyClose(CloseStatus closeStatus)
     {
@@ -324,12 +293,26 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         {
             localEndpoint.onClose(closeStatus);
         }
+
+        // Session is officially closed / handshake completed (CDI and API Containers use this)
+        // TODO: this should be somewhere else, more centralized, so that even abnormal (non frame) closes can trigger it
+        notifySessionListeners((listener)-> listener.onClosed(WebSocketCoreSession.this));
+
     }
 
-    protected Throwable getInvokedCause(Throwable t)
+    public void notifySessionListeners(Consumer<Listener> consumer)
     {
-        // Unwrap any invoker exceptions here.
-        return t;
+        for (Listener listener : listeners)
+        {
+            try
+            {
+                consumer.accept(listener);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     @Override
@@ -338,37 +321,9 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         Throwable pending = pendingError.get();
         if (pending != null)
         {
-            notifyError(pending);
+            processError(pending);
         }
         super.doStart();
-    }
-
-    /**
-     * Event triggered when the onOpen has completed (successfully or with error).
-     */
-    protected void notifyOpen()
-    {
-        // override to trigger behavior
-    }
-
-    /**
-     * When an error has been produced (and unwrapped in some cases), this
-     * method is called to process the error at the local endpoint.
-     *
-     * @param cause the cause of the error
-     */
-    protected void notifyError(Throwable cause)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("notifyError({}) closeNotified={}", cause, closeNotified.get());
-        }
-
-        // only notify once
-        if (closeNotified.compareAndSet(false, true))
-        {
-            localEndpoint.onError(cause);
-        }
     }
 
     @Override
@@ -384,6 +339,26 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         extensionStack.incomingFrame(frame, callback);
     }
 
+    interface Listener
+    {
+        /**
+         * When the session is about to go into service (step before OPENING/OPEN)
+         * @param session the session about to go into service.
+         */
+        void onInit(WebSocketCoreSession session);
+
+        /**
+         * When the session is officially OPEN.
+         * @param session the session that is now OPEN.
+         */
+        void onOpened(WebSocketCoreSession session);
+
+        /**
+         * When the session is officially CLOSED.
+         * @param session the session that is now CLOSED.
+         */
+        void onClosed(WebSocketCoreSession session);
+    }
 
     private class IncomingState implements IncomingFrames
     {
@@ -512,7 +487,6 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
 
             connection.outgoingFrame(frame,callback,batchMode);
 
-            // TODO: (Somewhere) CDI Session Scope deactivated here (when close completed)
         }
     }
 }
