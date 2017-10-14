@@ -56,9 +56,9 @@ class ExampleFrameHandler implements FrameHandler
     public void onFrame(WebSocketChannel channel, Frame frame, Callback callback)
     {
         WebSocketUpgradeHandler.LOG.debug("onFrame {} {}", frame,channel);
-        if (frame.getOpCode() == OpCode.TEXT)
+        if (frame instanceof TextFrame)
         {
-            channel.outgoingFrame(new TextFrame().setPayload("ECHO: "+BufferUtil.toUTF8String(frame.getPayload())),
+            channel.outgoingFrame(new TextFrame().setPayload("ECHO: "+((TextFrame)frame).getPayloadAsUTF8()),
             callback,
             BatchMode.OFF);
         }

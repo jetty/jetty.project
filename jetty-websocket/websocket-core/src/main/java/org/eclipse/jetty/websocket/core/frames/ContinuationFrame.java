@@ -28,6 +28,11 @@ public class ContinuationFrame extends DataFrame
     {
         super(OpCode.CONTINUATION);
     }
+    
+    public ContinuationFrame(ContinuationFrame frame)
+    {
+        super(frame,true);
+    }
 
     public ContinuationFrame setPayload(ByteBuffer buf)
     {

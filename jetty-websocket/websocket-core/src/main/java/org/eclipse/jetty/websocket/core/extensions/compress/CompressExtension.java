@@ -35,8 +35,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.extensions.AbstractExtension;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.DataFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public abstract class CompressExtension extends AbstractExtension
@@ -129,7 +132,15 @@ public abstract class CompressExtension extends AbstractExtension
 
     protected void forwardIncoming(Frame frame, Callback callback, ByteAccumulator accumulator)
     {
-        DataFrame newFrame = new DataFrame(frame);
+        
+        DataFrame newFrame = 
+            (frame instanceof BinaryFrame) ? new BinaryFrame((BinaryFrame)frame) :
+            (frame instanceof ContinuationFrame) ? new ContinuationFrame((ContinuationFrame)frame) :
+            (frame instanceof TextFrame) ? new TextFrame((TextFrame)frame) :
+            new DataFrame(frame);
+            
+        
+        new DataFrame(frame);
         // Unset RSV1 since it's not compressed anymore.
         newFrame.setRsv1(false);
 

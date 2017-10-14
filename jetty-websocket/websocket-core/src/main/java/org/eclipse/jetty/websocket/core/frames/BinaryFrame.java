@@ -28,6 +28,11 @@ public class BinaryFrame extends DataFrame
     {
         super(OpCode.BINARY);
     }
+    
+    public BinaryFrame(BinaryFrame frame)
+    {
+        super(frame);
+    }
 
     public BinaryFrame setPayload(ByteBuffer buf)
     {

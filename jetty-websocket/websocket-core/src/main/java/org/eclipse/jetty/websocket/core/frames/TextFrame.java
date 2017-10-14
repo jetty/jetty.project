@@ -29,6 +29,11 @@ public class TextFrame extends DataFrame
     {
         super(OpCode.TEXT);
     }
+    
+    public TextFrame(TextFrame frame)
+    {
+        super(frame);
+    }
 
     @Override
     public Type getType()
