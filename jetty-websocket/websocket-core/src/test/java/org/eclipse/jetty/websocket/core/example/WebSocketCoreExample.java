@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.websocket.core.example.impl.WebSocketSessionFactory;
+import org.eclipse.jetty.websocket.core.server.WebSocketChannelFactory;
 
 public class WebSocketCoreExample
 {
@@ -49,9 +49,9 @@ public class WebSocketCoreExample
 
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
-        context.setAttribute(WebSocketSessionFactory.class.getName(), new ExampleWebSocketSessionFactory());
+        context.setAttribute(WebSocketChannelFactory.class.getName(), new ExampleChannelFactory());
 
-        ExampleWebSocketHandler handler = new ExampleWebSocketHandler();
+        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler();
         context.setHandler(handler);
         handler.setHandler(new AbstractHandler()
         {

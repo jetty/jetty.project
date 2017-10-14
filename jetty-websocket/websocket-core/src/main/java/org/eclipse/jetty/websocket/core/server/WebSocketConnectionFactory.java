@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.example.impl;
+package org.eclipse.jetty.websocket.core.server;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,15 +26,15 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
 public interface WebSocketConnectionFactory extends ConnectionFactory
 {
     WebSocketPolicy getPolicy();
 
-    WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, WebSocketCoreSession session);
+    WebSocketConnection newConnection(Connector connector, EndPoint endPoint, WebSocketChannel session);
 
     @Override
     default Connection newConnection(Connector connector, EndPoint endPoint)

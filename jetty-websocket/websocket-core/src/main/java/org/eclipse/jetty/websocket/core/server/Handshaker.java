@@ -16,14 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.server;
 
-import org.eclipse.jetty.util.Callback;
+import java.io.IOException;
 
-/**
- * The Alt interface a WebSocketCoreSession has to the Remote WebSocket Endpoint.
- */
-public interface WebSocketRemoteEndpointAlt
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
+
+public interface Handshaker
 {
-    void sendFrame(Frame frame, Callback callback);
+    boolean upgradeRequest(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException;
 }

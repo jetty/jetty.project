@@ -40,14 +40,14 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.Parser;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
-public class WebSocketCoreConnection extends AbstractConnection implements Parser.Handler, SuspendToken, Connection.UpgradeTo, Dumpable, OutgoingFrames
+public class WebSocketConnection extends AbstractConnection implements Parser.Handler, SuspendToken, Connection.UpgradeTo, Dumpable, OutgoingFrames
 {
     private final Logger LOG = Log.getLogger(this.getClass());
 
@@ -66,7 +66,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
     private final Flusher flusher;
     private final String id;
 
-    private WebSocketCoreSession session;
+    private WebSocketChannel session;
 
     // Read / Parse variables
     private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
@@ -79,10 +79,10 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
      * completed successfully before creating this connection.
      * </p>
      */
-    public WebSocketCoreConnection(EndPoint endp,
+    public WebSocketConnection(EndPoint endp,
                                    Executor executor,
                                    ByteBufferPool bufferPool,
-                                   WebSocketCoreSession session)
+                                   WebSocketChannel session)
     {
         super(endp, executor);
 
@@ -480,7 +480,7 @@ public class WebSocketCoreConnection extends AbstractConnection implements Parse
             return false;
         if (getClass() != obj.getClass())
             return false;
-        WebSocketCoreConnection other = (WebSocketCoreConnection) obj;
+        WebSocketConnection other = (WebSocketConnection) obj;
         EndPoint endp = getEndPoint();
         EndPoint otherEndp = other.getEndPoint();
         if (endp == null)

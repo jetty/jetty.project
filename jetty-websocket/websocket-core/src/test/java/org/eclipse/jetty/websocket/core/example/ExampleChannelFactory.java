@@ -25,31 +25,28 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.example.impl.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.server.WebSocketChannelFactory;
 
-class ExampleWebSocketSessionFactory implements WebSocketSessionFactory
+class ExampleChannelFactory implements WebSocketChannelFactory
 {
     DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
 
     @Override
-    public WebSocketCoreSession newSession(Request baseRequest, ServletRequest request, WebSocketPolicy policy,
+    public WebSocketChannel newChannel(Request baseRequest, ServletRequest request, WebSocketPolicy policy,
                                            ByteBufferPool bufferPool, List<ExtensionConfig> extensions, List<String> subprotocols)
     {
         ExtensionStack extensionStack = new ExtensionStack(policy.getExtensionRegistry());
         extensionStack.negotiate(objectFactory, policy, bufferPool, extensions);
 
-        ExampleLocalEndpoint localEndpoint = new ExampleLocalEndpoint();
-        ExampleRemoteEndpoint remoteEndpoint = new ExampleRemoteEndpoint(extensionStack);
-
-        WebSocketCoreSession session =
-                new WebSocketCoreSession(localEndpoint,remoteEndpoint,policy,extensionStack);
-
-        localEndpoint.setSession(session);
-        return session;
+        FrameHandler handler = new ExampleFrameHandler();
+        String subprotocol = (subprotocols==null || subprotocols.isEmpty())?null:subprotocols.get(0);
+        
+        return new WebSocketChannel(handler,policy,extensionStack,subprotocol);
     }
 
 }

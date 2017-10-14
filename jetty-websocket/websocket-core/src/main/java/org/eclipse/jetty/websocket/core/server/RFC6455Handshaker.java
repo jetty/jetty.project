@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.example.impl;
+package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -41,10 +41,10 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.handshake.AcceptHash;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
 public final class RFC6455Handshaker implements Handshaker
 {
@@ -74,8 +74,8 @@ public final class RFC6455Handshaker implements Handshaker
         HttpChannel channel = baseRequest.getHttpChannel();
         Connector connector = channel.getConnector();
 
-        WebSocketSessionFactory sessionFactory = ContextConnectorConfiguration
-                .lookup(WebSocketSessionFactory.class, context, connector);
+        WebSocketChannelFactory sessionFactory = ContextConnectorConfiguration
+                .lookup(WebSocketChannelFactory.class, context, connector);
         if (sessionFactory==null)
         {
             if (LOG.isDebugEnabled())
@@ -172,8 +172,8 @@ public final class RFC6455Handshaker implements Handshaker
                 :subprotocolCSVs.getValues();
 
         // Create a session using the default policy from the connector
-        WebSocketCoreSession session = sessionFactory
-                .newSession(baseRequest,
+        WebSocketChannel session = sessionFactory
+                .newChannel(baseRequest,
                             request,
                             connectionFactory.getPolicy(),
                             connectionFactory.getBufferPool(),
@@ -199,7 +199,7 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         // Create a connection
-        WebSocketCoreConnection connection = connectionFactory.newConnection(connector,channel.getEndPoint(),session);
+        WebSocketConnection connection = connectionFactory.newConnection(connector,channel.getEndPoint(),session);
         if (connection==null)
         {
             if (LOG.isDebugEnabled())

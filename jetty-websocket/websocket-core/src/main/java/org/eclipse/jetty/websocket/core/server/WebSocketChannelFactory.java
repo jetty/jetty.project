@@ -16,18 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.server;
 
-/**
- * The Alt interface a WebSocketCoreSession has to the Local WebSocket Endpoint.
- */
-public interface WebSocketLocalEndpointAlt
+import java.util.List;
+
+import javax.servlet.ServletRequest;
+
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
+
+public interface WebSocketChannelFactory
 {
-    void onOpen();
-
-    void onClose(CloseStatus close);
-
-    void onFrame(Frame frame);
-
-    void onError(Throwable cause);
+    WebSocketChannel newChannel(
+            Request baseRequest,
+            ServletRequest request,
+            WebSocketPolicy policy,
+            ByteBufferPool bufferPool,
+            List<ExtensionConfig> extensions,
+            List<String> subprotocols);
 }

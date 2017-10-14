@@ -24,11 +24,11 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
-import org.eclipse.jetty.websocket.core.example.impl.WebSocketConnectionFactory;
+import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
+import org.eclipse.jetty.websocket.core.server.WebSocketConnectionFactory;
 
 class ExampleWebSocketConnectionFactory extends ContainerLifeCycle implements WebSocketConnectionFactory
 {
@@ -43,9 +43,9 @@ class ExampleWebSocketConnectionFactory extends ContainerLifeCycle implements We
     }
 
     @Override
-    public WebSocketCoreConnection newConnection(Connector connector, EndPoint endPoint, WebSocketCoreSession session)
+    public WebSocketConnection newConnection(Connector connector, EndPoint endPoint, WebSocketChannel session)
     {
-        return new WebSocketCoreConnection(
+        return new WebSocketConnection(
                 endPoint,
                 connector.getExecutor(),
                 bufferPool,

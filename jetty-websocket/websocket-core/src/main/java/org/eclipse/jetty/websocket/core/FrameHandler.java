@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-public class DummyLocalEndpoint implements WebSocketLocalEndpoint.Adaptor
-{
-    private boolean open = false;
+import org.eclipse.jetty.util.Callback;
 
-    @Override
-    public void onOpen()
-    {
-        open = true;
-    }
+public interface FrameHandler
+{
+    void onOpen(WebSocketChannel channel);
+    void onFrame(WebSocketChannel channel, Frame frame, Callback callback);
+    void onClose(WebSocketChannel channel, CloseStatus close);
+    void onError(WebSocketChannel channel, Throwable cause);
 }

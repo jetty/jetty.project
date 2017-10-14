@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.eclipse.jetty.websocket.core.WebSocketSessionState.State;
-import static org.eclipse.jetty.websocket.core.WebSocketSessionState.State.CLOSED;
+import static org.eclipse.jetty.websocket.core.WebSocketChannelState.State;
+import static org.eclipse.jetty.websocket.core.WebSocketChannelState.State.CLOSED;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -42,44 +42,44 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
-import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
 /**
  * The Core WebSocket Session.
  *
  */
-public class WebSocketCoreSession extends ContainerLifeCycle implements IncomingFrames
+public class WebSocketChannel extends ContainerLifeCycle implements IncomingFrames, OutgoingFrames
 {
     private Logger LOG = Log.getLogger(this.getClass());
 
-    private final WebSocketSessionState state = new WebSocketSessionState();
+    private final WebSocketChannelState state = new WebSocketChannelState();
     private final WebSocketPolicy policy;
-    private final WebSocketLocalEndpoint localEndpoint;
-    private final WebSocketRemoteEndpoint remoteEndpoint;
+    private final FrameHandler handler;
     private final ExtensionStack extensionStack;
+    private final String subprotocol;
     private final List<Listener> listeners = new ArrayList<>();
 
-    private WebSocketCoreConnection connection;
+    private WebSocketConnection connection;
 
     private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     // Holder for errors during onOpen that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
-    public WebSocketCoreSession(WebSocketLocalEndpoint localEndpoint,
-                                WebSocketRemoteEndpoint remoteEndpoint,
-                                WebSocketPolicy policy,
-                                ExtensionStack extensionStack)
+    public WebSocketChannel(FrameHandler handler,
+    		WebSocketPolicy policy,
+    		ExtensionStack extensionStack,
+    		String subprotocol)
     {
-        this.localEndpoint = localEndpoint;
-        this.remoteEndpoint = remoteEndpoint;
+        this.handler = handler;
         this.policy = policy;
         this.extensionStack = extensionStack;
+        this.subprotocol = subprotocol;
         addBean(extensionStack,true);
         extensionStack.setNextIncoming(new IncomingState());
         extensionStack.setNextOutgoing(new OutgoingState());
-        addBean(this.localEndpoint, true);
-        addBean(this.remoteEndpoint, true);
+        addBean(handler, true);
     }
 
     public ExtensionStack getExtensionStack()
@@ -87,17 +87,17 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         return extensionStack;
     }
 
-    public WebSocketRemoteEndpoint getRemote()
+    public FrameHandler getHandler()
     {
-        return remoteEndpoint;
+        return handler;
     }
 
-    public WebSocketLocalEndpoint getLocal()
+    public String getSubprotocol()
     {
-        return localEndpoint;
+        return subprotocol;
     }
-
-    public void setWebSocketConnection(WebSocketCoreConnection connection)
+    
+    public void setWebSocketConnection(WebSocketConnection connection)
     {
         this.connection = connection;
     }
@@ -109,12 +109,12 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
 
     public void close(int statusCode, String reason, Callback callback)
     {
-        getRemote().sendClose(statusCode, reason, callback);
+        outgoingFrame(new CloseFrame().setPayload(statusCode, reason), callback, BatchMode.OFF);
     }
 
     public void close(CloseStatus closeStatus, Callback callback)
     {
-        getRemote().sendClose(closeStatus.getCode(), closeStatus.getReason(), callback);
+        close(closeStatus.getCode(), closeStatus.getReason(), callback);
     }
 
     public WebSocketPolicy getPolicy()
@@ -140,7 +140,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         }
 
         // Forward Errors to Local WebSocket EndPoint
-        localEndpoint.onError(cause);
+        handler.onError(this,cause);
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
@@ -206,7 +206,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}.onOpen()", this.getClass().getSimpleName());
+            LOG.debug("onOpen() {}", this);
 
         try
         {
@@ -218,20 +218,16 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
             if (LOG.isDebugEnabled())
                 LOG.debug("ConnectionState: Transition to CONNECTED");
 
-            // Connect remoteEndpoint
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}.onOpen() remoteEndpoint={}", this.getClass().getSimpleName(), remoteEndpoint);
-
             try
             {
-                // Open WebSocket
                 // Session is about to be opened (used by CDI and JSR356 Decoder init)
                 notifySessionListeners((listener)-> listener.onInit(this));
-                localEndpoint.onOpen();
 
                 // Open connection
                 state.onOpen();
+
                 // Session is now Open (used by container APIs for session tracking)
+                handler.onOpen(this);
                 notifySessionListeners((listener)-> listener.onOpened(this));
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
@@ -242,21 +238,6 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
                 processError(new CloseException(WebSocketConstants.SERVER_ERROR, t));
             }
 
-            /* Perform fillInterested outside of OPENING attempt.
-             *
-             * State transition of CONNECTING -> CONNECTED -> OPENING -> CLOSING (not OPEN)
-             *
-             * This is to allow for 2 specific scenarios.
-             *
-             * 1) Fast Close
-             *    When an end user's WSEndpoint.onOpen() is called.
-             *    That method calls session.close() method, or
-             *    session.getRemote().sendClose()
-             * 2) Fast Fail
-             *    When an end users WSEndpoint.onOpen() is called.
-             *    That method throws an (unhandled) Throwable.
-             */
-
             // TODO what if we are going to start without read interest?  (eg reactive stream???)
             connection.fillInterested();
         }
@@ -266,7 +247,7 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         }
     }
 
-    public WebSocketCoreConnection getConnection()
+    public WebSocketConnection getConnection()
     {
         return this.connection;
     }
@@ -291,12 +272,12 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         // only notify once
         if (closeNotified.compareAndSet(false, true))
         {
-            localEndpoint.onClose(closeStatus);
+            handler.onClose(this,closeStatus);
         }
 
         // Session is officially closed / handshake completed (CDI and API Containers use this)
         // TODO: this should be somewhere else, more centralized, so that even abnormal (non frame) closes can trigger it
-        notifySessionListeners((listener)-> listener.onClosed(WebSocketCoreSession.this));
+        notifySessionListeners((listener)-> listener.onClosed(WebSocketChannel.this));
 
     }
 
@@ -339,25 +320,31 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         extensionStack.incomingFrame(frame, callback);
     }
 
+    @Override
+    public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode) 
+    {
+        extensionStack.outgoingFrame(frame,callback,batchMode);
+    }
+
     interface Listener
     {
         /**
          * When the session is about to go into service (step before OPENING/OPEN)
          * @param session the session about to go into service.
          */
-        void onInit(WebSocketCoreSession session);
+        void onInit(WebSocketChannel session);
 
         /**
          * When the session is officially OPEN.
          * @param session the session that is now OPEN.
          */
-        void onOpened(WebSocketCoreSession session);
+        void onOpened(WebSocketChannel session);
 
         /**
          * When the session is officially CLOSED.
          * @param session the session that is now CLOSED.
          */
-        void onClosed(WebSocketCoreSession session);
+        void onClosed(WebSocketChannel session);
     }
 
     private class IncomingState implements IncomingFrames
@@ -367,17 +354,14 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
         {
             try
             {
-                State state = WebSocketCoreSession.this.state.get();
+                State state = WebSocketChannel.this.state.get();
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("incomingFrame({}, {}) - connectionState={}, localEndpoint={}",
-                              frame, callback, state, localEndpoint);
+                    LOG.debug("incomingFrame({}, {}) - connectionState={}, handler={}",
+                              frame, callback, state, handler);
                 }
                 if (state != CLOSED)
                 {
-                    // For endpoints that want to see raw frames.
-                    localEndpoint.onFrame(frame);
-
                     byte opcode = frame.getOpCode();
                     switch (opcode)
                     {
@@ -410,12 +394,11 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
                                 pongBuf = ByteBuffer.allocate(0);
                             }
 
-                            localEndpoint.onPing(frame.getPayload());
                             callback.succeeded();
 
                             try
                             {
-                                remoteEndpoint.sendPong(pongBuf, Callback.NOOP);
+                                outgoingFrame(new PongFrame().setPayload(pongBuf),Callback.NOOP,BatchMode.OFF);
                             }
                             catch (Throwable t)
                             {
@@ -429,32 +412,12 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
                             if (LOG.isDebugEnabled())
                                 LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
 
-                            localEndpoint.onPong(frame.getPayload());
                             callback.succeeded();
                             break;
                         }
-                        case OpCode.BINARY:
-                        {
-                            localEndpoint.onBinary(frame, callback);
-                            // Let endpoint method handle callback
-                            return;
-                        }
-                        case OpCode.TEXT:
-                        {
-                            localEndpoint.onText(frame, callback);
-                            // Let endpoint method handle callback
-                            return;
-                        }
-                        case OpCode.CONTINUATION:
-                        {
-                            localEndpoint.onContinuation(frame, callback);
-                            // Let endpoint method handle callback
-                            return;
-                        }
                         default:
                         {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Unhandled OpCode: {}", opcode);
+                        	handler.onFrame(WebSocketChannel.this, frame, callback);
                         }
                     }
                 }
@@ -489,4 +452,5 @@ public class WebSocketCoreSession extends ContainerLifeCycle implements Incoming
 
         }
     }
+
 }

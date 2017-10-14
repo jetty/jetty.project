@@ -30,12 +30,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.example.impl.Handshaker;
-import org.eclipse.jetty.websocket.core.example.impl.RFC6455Handshaker;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
+import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 
-public class ExampleWebSocketHandler extends HandlerWrapper
+public class WebSocketUpgradeHandler extends HandlerWrapper
 {
-    final static Logger LOG = Log.getLogger(ExampleWebSocketHandler.class);
+    final static Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

@@ -26,11 +26,11 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
-public class DummyConnection extends WebSocketCoreConnection
+public class DummyConnection extends WebSocketConnection
 {
     public static class Builder
     {
@@ -77,7 +77,7 @@ public class DummyConnection extends WebSocketCoreConnection
         }
     }
 
-    public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, WebSocketCoreSession session, ExtensionStack extensionStack)
+    public DummyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, WebSocketChannel session, ExtensionStack extensionStack)
     {
         super(endp, executor, bufferPool, session);
     }
