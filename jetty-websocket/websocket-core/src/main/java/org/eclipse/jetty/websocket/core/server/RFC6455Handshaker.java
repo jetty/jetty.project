@@ -71,12 +71,12 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         ServletContext context = baseRequest.getServletContext();
-        HttpChannel channel = baseRequest.getHttpChannel();
-        Connector connector = channel.getConnector();
+        HttpChannel httpChannel = baseRequest.getHttpChannel();
+        Connector connector = httpChannel.getConnector();
 
-        WebSocketChannelFactory sessionFactory = ContextConnectorConfiguration
+        WebSocketChannelFactory channelFactory = ContextConnectorConfiguration
                 .lookup(WebSocketChannelFactory.class, context, connector);
-        if (sessionFactory==null)
+        if (channelFactory==null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded no session factory {}", baseRequest);
@@ -91,7 +91,6 @@ public final class RFC6455Handshaker implements Handshaker
                 LOG.debug("not upgraded no connection factory {}", baseRequest);
             return false;
         }
-
 
         boolean upgrade = false;
         QuotedCSV connectionCSVs = null;
@@ -171,27 +170,27 @@ public final class RFC6455Handshaker implements Handshaker
                 ? Collections.emptyList()
                 :subprotocolCSVs.getValues();
 
-        // Create a session using the default policy from the connector
-        WebSocketChannel session = sessionFactory
+        // Create a channel using the default policy from the connector
+        WebSocketChannel wsChannel = channelFactory
                 .newChannel(baseRequest,
                             request,
                             connectionFactory.getPolicy(),
                             connectionFactory.getBufferPool(),
                             extensions,
                             subprotocols);
-        if (session==null)
+        if (wsChannel==null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no session {}", baseRequest);
+                LOG.debug("not upgraded no channel {}", baseRequest);
             return false;
         }
-        if (session.getPolicy()==null)
+        if (wsChannel.getPolicy()==null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded no policy {}", baseRequest);
             return false;
         }
-        if (subprotocols.size()>0 && session.getSubprotocol()==null)
+        if (subprotocols.size()>0 && wsChannel.getSubprotocol()==null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded no subprotocol from {} {}", subprotocols, baseRequest);
@@ -199,14 +198,14 @@ public final class RFC6455Handshaker implements Handshaker
         }
 
         // Create a connection
-        WebSocketConnection connection = connectionFactory.newConnection(connector,channel.getEndPoint(),session);
+        WebSocketConnection connection = connectionFactory.newConnection(connector,httpChannel.getEndPoint(),wsChannel);
         if (connection==null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded no connection {}", baseRequest);
         }
 
-        session.setWebSocketConnection(connection);
+        wsChannel.setWebSocketConnection(connection);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();
@@ -215,8 +214,8 @@ public final class RFC6455Handshaker implements Handshaker
         baseResponse.getHttpFields().add(ConnectionUpgrade);
         baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_ACCEPT, AcceptHash.hashKey(key));
         baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
-                                         ExtensionConfig.toHeaderValue(session.getExtensionStack().getNegotiatedExtensions()));
-        String subprotocol = session.getSubprotocol();
+                                         ExtensionConfig.toHeaderValue(wsChannel.getExtensionStack().getNegotiatedExtensions()));
+        String subprotocol = wsChannel.getSubprotocol();
         if (subprotocol!=null)
             baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,subprotocol);
         baseResponse.flushBuffer();
@@ -224,7 +223,7 @@ public final class RFC6455Handshaker implements Handshaker
 
         // upgrade
         if (LOG.isDebugEnabled())
-            LOG.debug("upgrade connection={} session={}", connection, session);
+            LOG.debug("upgrade connection={} session={}", connection, wsChannel);
 
         baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
