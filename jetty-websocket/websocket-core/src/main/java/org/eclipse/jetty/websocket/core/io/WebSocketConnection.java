@@ -80,14 +80,14 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
      * </p>
      */
     public WebSocketConnection(EndPoint endp,
-                                   Executor executor,
-                                   ByteBufferPool bufferPool,
-                                   WebSocketChannel session)
+                               Executor executor,
+                               ByteBufferPool bufferPool,
+                               WebSocketChannel channel)
     {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
-        Objects.requireNonNull(session, "Session");
+        Objects.requireNonNull(channel, "Channel");
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
@@ -99,8 +99,8 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                 endp.getRemoteAddress().getAddress().getHostAddress(),
                 endp.getRemoteAddress().getPort());
 
-        this.policy = session.getPolicy();
-        this.session = session;
+        this.policy = channel.getPolicy();
+        this.session = channel;
 
         this.generator = new Generator(policy, bufferPool);
         this.parser = new Parser(policy, bufferPool, this);
@@ -109,8 +109,8 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         this.setInputBufferSize(policy.getInputBufferSize());
         this.setMaxIdleTimeout(policy.getIdleTimeout());
 
-        this.parser.configureFromExtensions(session.getExtensionStack().getExtensions());
-        this.generator.configureFromExtensions(session.getExtensionStack().getExtensions());
+        this.parser.configureFromExtensions(channel.getExtensionStack().getExtensions());
+        this.generator.configureFromExtensions(channel.getExtensionStack().getExtensions());
     }
 
     @Override

@@ -30,23 +30,30 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.core.server.WebSocketChannelFactory;
 
 class ExampleChannelFactory implements WebSocketChannelFactory
 {
     DecoratedObjectFactory objectFactory = new DecoratedObjectFactory();
+    WebSocketExtensionRegistry extensionRegistry = new WebSocketExtensionRegistry();
 
     @Override
-    public WebSocketChannel newChannel(Request baseRequest, ServletRequest request, WebSocketPolicy policy,
-                                           ByteBufferPool bufferPool, List<ExtensionConfig> extensions, List<String> subprotocols)
+    public WebSocketChannel newChannel(
+            Request baseRequest,
+            ServletRequest request, 
+            WebSocketPolicy candidatePolicy,                               
+            ByteBufferPool bufferPool,
+            List<ExtensionConfig> extensions, 
+            List<String> subprotocols)
     {
-        ExtensionStack extensionStack = new ExtensionStack(policy.getExtensionRegistry());
-        extensionStack.negotiate(objectFactory, policy, bufferPool, extensions);
+        ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
+        extensionStack.negotiate(objectFactory, candidatePolicy, bufferPool, extensions);
 
         FrameHandler handler = new ExampleFrameHandler();
         String subprotocol = (subprotocols==null || subprotocols.isEmpty())?null:subprotocols.get(0);
         
-        return new WebSocketChannel(handler,policy,extensionStack,subprotocol);
+        return new WebSocketChannel(handler,candidatePolicy,extensionStack,subprotocol);
     }
 
 }

@@ -33,7 +33,7 @@ public interface WebSocketChannelFactory
     WebSocketChannel newChannel(
             Request baseRequest,
             ServletRequest request,
-            WebSocketPolicy policy,
+            WebSocketPolicy candidatePolicy,
             ByteBufferPool bufferPool,
             List<ExtensionConfig> extensions,
             List<String> subprotocols);

@@ -32,8 +32,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketConnectionFactory;
 
 class ExampleWebSocketConnectionFactory extends ContainerLifeCycle implements WebSocketConnectionFactory
 {
-    WebSocketExtensionRegistry extensionRegistry = new WebSocketExtensionRegistry();
-    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER,extensionRegistry);
+    WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
     ByteBufferPool bufferPool = new MappedByteBufferPool();
 
     @Override
@@ -43,13 +42,13 @@ class ExampleWebSocketConnectionFactory extends ContainerLifeCycle implements We
     }
 
     @Override
-    public WebSocketConnection newConnection(Connector connector, EndPoint endPoint, WebSocketChannel session)
+    public WebSocketConnection newConnection(Connector connector, EndPoint endPoint, WebSocketChannel channel)
     {
         return new WebSocketConnection(
                 endPoint,
                 connector.getExecutor(),
                 bufferPool,
-                session);
+                channel);
     }
 
     @Override

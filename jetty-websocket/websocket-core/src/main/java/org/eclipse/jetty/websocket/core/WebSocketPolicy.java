@@ -111,9 +111,6 @@ public class WebSocketPolicy
      */
     private int outputBufferSize = 4 * KB;
 
-
-    private WebSocketExtensionRegistry extensionRegistry;
-
     /**
      * Behavior of the websockets
      */
@@ -121,13 +118,7 @@ public class WebSocketPolicy
     
     public WebSocketPolicy(WebSocketBehavior behavior)
     {
-        this(behavior,new WebSocketExtensionRegistry());
-    }
-
-    public WebSocketPolicy(WebSocketBehavior behavior,WebSocketExtensionRegistry extensionRegistry)
-    {
         this.behavior = behavior;
-        this.extensionRegistry = extensionRegistry;
     }
 
     private void assertLessThan(String name, long size, String otherName, long otherSize)
@@ -172,7 +163,7 @@ public class WebSocketPolicy
 
     public WebSocketPolicy clonePolicy()
     {
-        WebSocketPolicy clone = new WebSocketPolicy(this.behavior,this.extensionRegistry);
+        WebSocketPolicy clone = new WebSocketPolicy(this.behavior);
         clone.idleTimeout = this.idleTimeout;
         clone.maxTextMessageSize = this.maxTextMessageSize;
         clone.maxTextMessageBufferSize = this.maxTextMessageBufferSize;
@@ -467,12 +458,7 @@ public class WebSocketPolicy
 
         this.maxTextMessageSize = Math.max(-1, size);
     }
-
-    public WebSocketExtensionRegistry getExtensionRegistry()
-    {
-        return extensionRegistry;
-    }
-
+    
     @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String toString()
@@ -483,7 +469,6 @@ public class WebSocketPolicy
         builder.append(",textSize=").append(maxTextMessageSize);
         builder.append(",binarySize=").append(maxBinaryMessageSize);
         builder.append(",idleTimeout=").append(idleTimeout);
-        builder.append(",registry=").append(extensionRegistry);
         builder.append("]");
         return builder.toString();
     }
