@@ -329,7 +329,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         try
                         {
                             _request.setDispatcherType(DispatcherType.REQUEST);
-                            notifyRequestBeforeDispatch(_request);
+                            notifyBeforeDispatch(_request);
 
                             List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
                             if (!customizers.isEmpty())
@@ -345,9 +345,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (!_request.isHandled())
                                 getServer().handle(this);
                         }
+                        catch (Throwable x)
+                        {
+                            notifyDispatchFailure(_request, x);
+                            throw x;
+                        }
                         finally
                         {
-                            notifyRequestAfterDispatch(_request);
+                            notifyAfterDispatch(_request);
                             _request.setDispatcherType(null);
                         }
                         break;
@@ -361,12 +366,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         try
                         {
                             _request.setDispatcherType(DispatcherType.ASYNC);
-                            notifyRequestBeforeDispatch(_request);
+                            notifyBeforeDispatch(_request);
                             getServer().handleAsync(this);
+                        }
+                        catch (Throwable x)
+                        {
+                            notifyDispatchFailure(_request, x);
+                            throw x;
                         }
                         finally
                         {
-                            notifyRequestAfterDispatch(_request);
+                            notifyAfterDispatch(_request);
                             _request.setDispatcherType(null);
                         }
                         break;
@@ -387,12 +397,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             try
                             {
                                 _request.setDispatcherType(DispatcherType.ERROR);
-                                notifyRequestBeforeDispatch(_request);
+                                notifyBeforeDispatch(_request);
                                 getServer().handle(this);
+                            }
+                            catch (Throwable x)
+                            {
+                                notifyDispatchFailure(_request, x);
+                                throw x;
                             }
                             finally
                             {
-                                notifyRequestAfterDispatch(_request);
+                                notifyAfterDispatch(_request);
                                 _request.setDispatcherType(null);
                             }
                         }
@@ -865,14 +880,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         notifyEvent1(listener -> listener::onRequestBegin, request);
     }
 
-    private void notifyRequestBeforeDispatch(Request request)
+    private void notifyBeforeDispatch(Request request)
     {
-        notifyEvent1(listener -> listener::onRequestBeforeDispatch, request);
+        notifyEvent1(listener -> listener::onBeforeDispatch, request);
     }
 
-    private void notifyRequestAfterDispatch(Request request)
+    private void notifyDispatchFailure(Request request, Throwable failure)
     {
-        notifyEvent1(listener -> listener::onRequestAfterDispatch, request);
+        notifyEvent2(listener -> listener::onDispatchFailure, request, failure);
+    }
+
+    private void notifyAfterDispatch(Request request)
+    {
+        notifyEvent1(listener -> listener::onAfterDispatch, request);
     }
 
     private void notifyRequestContent(Request request, ByteBuffer content)
@@ -998,7 +1018,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public interface Listener
     {
         /**
-         * Invoked just after the HTTP request line has been parsed.
+         * Invoked just after the HTTP request line and headers have been parsed.
          *
          * @param request the request object
          */
@@ -1011,7 +1031,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onRequestBeforeDispatch(Request request)
+        public default void onBeforeDispatch(Request request)
+        {
+        }
+
+        /**
+         * Invoked when the application threw an exception.
+         *
+         * @param request the request object
+         * @param failure the exception thrown by the application
+         */
+        public default void onDispatchFailure(Request request, Throwable failure)
         {
         }
 
@@ -1020,7 +1050,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onRequestAfterDispatch(Request request)
+        public default void onAfterDispatch(Request request)
         {
         }
 
