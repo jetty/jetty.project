@@ -323,6 +323,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     @Override
     public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode) 
     {
+        // TODO, what is the mutual exclusion contract here? is this thread safe from here?
         extensionStack.outgoingFrame(frame,callback,batchMode);
     }
 
@@ -392,6 +393,9 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
 
     private class OutgoingState implements OutgoingFrames
     {
+        // TODO check sufficient mutually exclusion and memory barriers from channel.outgoingFrame
+        byte partial = -1;
+        
         @Override
         public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
         {
@@ -404,8 +408,25 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                 }
             }
 
+            // TODO This needs to be reviewed against RFC for possible interleavings
+            switch(partial)
+            {
+                case OpCode.BINARY:
+                case OpCode.TEXT:
+                    if (frame.getOpCode()!=OpCode.CONTINUATION)
+                        callback.failed(new IllegalStateException());
+                    if (frame.isFin())
+                        partial = -1;
+                    break;
+                case -1:
+                    if (!frame.isFin())
+                        partial = frame.getOpCode();
+                    break;
+                default:
+                    callback.failed(new IllegalStateException());       
+            }
+            
             connection.outgoingFrame(frame,callback,batchMode);
-
         }
     }
 
