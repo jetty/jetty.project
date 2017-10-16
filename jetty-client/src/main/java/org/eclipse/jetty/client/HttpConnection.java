@@ -221,6 +221,25 @@ public abstract class HttpConnection implements Connection
 
     public boolean onIdleTimeout(long idleTimeout)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Idle timeout - {}", this);
+
+        boolean close = true;
+        IdleTimeoutListener listener = getHttpClient().getBean(IdleTimeoutListener.class);
+        if (listener != null)
+        {
+            Connection connection = tryActivate();
+            if (connection != null)
+            {
+                close = notifyIdleTimeout(listener, connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Idle timeout {} by listener {} - {}", close ? "confirmed" : "ignored", listener, this);
+            }
+        }
+
+        if (!close)
+            return false;
+
         synchronized (this)
         {
             if (idleTimeoutGuard == 0)
@@ -242,9 +261,36 @@ public abstract class HttpConnection implements Connection
         }
     }
 
+    protected Connection tryActivate()
+    {
+        if (getHttpDestination().tryActivate(this))
+            return this;
+        return null;
+    }
+
+    protected boolean notifyIdleTimeout(IdleTimeoutListener listener, Connection connection)
+    {
+        try
+        {
+            return listener.onIdleTimeout(connection);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            return true;
+        }
+    }
+
     @Override
     public String toString()
     {
         return String.format("%s@%h", getClass().getSimpleName(), this);
+    }
+
+    @FunctionalInterface
+    public interface IdleTimeoutListener
+    {
+        public boolean onIdleTimeout(Connection connection);
     }
 }

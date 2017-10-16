@@ -168,6 +168,35 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements S
     }
 
     @Override
+    protected boolean tryActivate(Connection connection)
+    {
+        boolean result = false;
+        lock();
+        try
+        {
+            Iterator<Holder> iterator = idleConnections.iterator();
+            while (iterator.hasNext())
+            {
+                Holder holder = iterator.next();
+                if (holder.connection == connection)
+                {
+                    iterator.remove();
+                    muxedConnections.put(connection, holder);
+                    result = true;
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            unlock();
+        }
+        if (result)
+            active(connection);
+        return result;
+    }
+
+    @Override
     public boolean release(Connection connection)
     {
         boolean closed = isClosed();

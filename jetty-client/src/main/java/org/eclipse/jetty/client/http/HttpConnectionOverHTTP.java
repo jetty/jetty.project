@@ -216,6 +216,15 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         }
 
         @Override
+        protected Connection tryActivate()
+        {
+            HttpConnectionOverHTTP connection = HttpConnectionOverHTTP.this;
+            if (getHttpDestination().tryActivate(connection))
+                return connection;
+            return null;
+        }
+
+        @Override
         public void close()
         {
             HttpConnectionOverHTTP.this.close();

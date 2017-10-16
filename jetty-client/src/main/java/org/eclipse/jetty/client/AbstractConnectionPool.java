@@ -138,6 +138,11 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 
     protected abstract Connection activate();
 
+    protected boolean tryActivate(Connection connection)
+    {
+        return false;
+    }
+
     protected Connection active(Connection connection)
     {
         if (LOG.isDebugEnabled())

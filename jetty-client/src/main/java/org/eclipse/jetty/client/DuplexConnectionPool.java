@@ -155,6 +155,26 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         return active(connection);
     }
 
+    @Override
+    protected boolean tryActivate(Connection connection)
+    {
+        boolean result;
+        lock();
+        try
+        {
+            result = idleConnections.remove(connection);
+            if (result)
+                activeConnections.add(connection);
+        }
+        finally
+        {
+            unlock();
+        }
+        if (result)
+            active(connection);
+        return result;
+    }
+
     public boolean release(Connection connection)
     {
         boolean closed = isClosed();

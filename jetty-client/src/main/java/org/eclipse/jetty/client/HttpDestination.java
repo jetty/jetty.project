@@ -221,6 +221,16 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         send();
     }
 
+    public boolean tryActivate(Connection connection)
+    {
+        if (connectionPool instanceof AbstractConnectionPool)
+        {
+            AbstractConnectionPool pool = (AbstractConnectionPool)connectionPool;
+            return pool.tryActivate(connection);
+        }
+        return false;
+    }
+
     @Override
     public void failed(Throwable x)
     {

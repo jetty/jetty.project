@@ -323,6 +323,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         }
 
         @Override
+        protected Connection tryActivate()
+        {
+            HttpConnectionOverFCGI connection = HttpConnectionOverFCGI.this;
+            if (getHttpDestination().tryActivate(connection))
+                return connection;
+            return null;
+        }
+
+        @Override
         public void close()
         {
             HttpConnectionOverFCGI.this.close();
