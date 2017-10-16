@@ -362,64 +362,20 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                 }
                 if (state != CLOSED)
                 {
-                    byte opcode = frame.getOpCode();
-                    switch (opcode)
+                    if (frame.getOpCode() == OpCode.CLOSE)
                     {
-                        case OpCode.CLOSE:
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ConnectionState: Close frame received");
-                            CloseFrame closeframe = (CloseFrame)frame;
-                            CloseStatus closeStatus = closeframe.getCloseStatus();
-                            notifyClose(closeStatus);
-                            close(closeStatus, Callback.NOOP);
-                            
-                            callback.succeeded();
-                            return;
-                        }
-                        case OpCode.PING:
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("PING: {}", BufferUtil.toDetailString(frame.getPayload()));
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("ConnectionState: Close frame received");
+                        CloseFrame closeframe = (CloseFrame)frame;
+                        CloseStatus closeStatus = closeframe.getCloseStatus();
+                        notifyClose(closeStatus);
+                        close(closeStatus, Callback.NOOP);
 
-                            ByteBuffer pongBuf;
-                            if (frame.hasPayload())
-                            {
-                                pongBuf = ByteBuffer.allocate(frame.getPayload().remaining());
-                                BufferUtil.put(frame.getPayload().slice(), pongBuf);
-                                BufferUtil.flipToFlush(pongBuf, 0);
-                            }
-                            else
-                            {
-                                pongBuf = ByteBuffer.allocate(0);
-                            }
-
-                            callback.succeeded();
-
-                            try
-                            {
-                                outgoingFrame(new PongFrame().setPayload(pongBuf),Callback.NOOP,BatchMode.OFF);
-                            }
-                            catch (Throwable t)
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Unable to send pong", t);
-                            }
-                            break;
-                        }
-                        case OpCode.PONG:
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("PONG: {}", BufferUtil.toDetailString(frame.getPayload()));
-
-                            callback.succeeded();
-                            break;
-                        }
-                        default:
-                        {
-                        	handler.onFrame(WebSocketChannel.this, frame, callback);
-                        }
+                        callback.succeeded();
+                        return;
                     }
+
+                    handler.onFrame(WebSocketChannel.this, frame, callback);
                 }
                 else
                 {

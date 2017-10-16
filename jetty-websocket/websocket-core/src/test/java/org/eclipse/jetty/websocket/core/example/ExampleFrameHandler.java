@@ -19,19 +19,24 @@
 package org.eclipse.jetty.websocket.core.example;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.AbstractFrameHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
-class ExampleFrameHandler implements FrameHandler
+class ExampleFrameHandler extends AbstractFrameHandler
 {
+    private static Logger LOG = Log.getLogger(ExampleFrameHandler.class);
+
     @Override
     public void onOpen(WebSocketChannel channel)
     {        
-        WebSocketUpgradeHandler.LOG.debug("onOpen {}", channel);
+        LOG.info("onOpen {}", channel);
+        super.onOpen(channel);
         channel.outgoingFrame(new TextFrame().setPayload("Opened!"),
         new Callback()
         {
@@ -48,30 +53,28 @@ class ExampleFrameHandler implements FrameHandler
             }
         },
         BatchMode.OFF);
+        
     }
 
     @Override
-    public void onFrame(WebSocketChannel channel, Frame frame, Callback callback)
+    public void onText(WebSocketChannel channel, String payload, Callback callback)
     {
-        WebSocketUpgradeHandler.LOG.debug("onFrame {} {}", frame,channel);
-        if (frame instanceof TextFrame)
-        {
-            channel.outgoingFrame(new TextFrame().setPayload("ECHO: "+((TextFrame)frame).getPayloadAsUTF8()),
-            callback,
-            BatchMode.OFF);
-        }
+        LOG.info("onText {} {}", payload,channel);
+        channel.outgoingFrame(new TextFrame().setPayload("ECHO: "+payload),
+                callback,
+                BatchMode.OFF);
     }
-
+    
     @Override
     public void onClose(WebSocketChannel channel, CloseStatus close)
     {
-        WebSocketUpgradeHandler.LOG.debug("onClose");
+        LOG.info("onClose");
         
     }
 
     @Override
     public void onError(WebSocketChannel channel, Throwable cause)
     {
-        WebSocketUpgradeHandler.LOG.warn("onError",cause);
+        LOG.warn("onError",cause);
     }
 }
