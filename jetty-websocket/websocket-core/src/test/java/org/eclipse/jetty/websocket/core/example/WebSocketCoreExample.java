@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.core.server.WebSocketChannelFactory;
+import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
 public class WebSocketCoreExample
 {

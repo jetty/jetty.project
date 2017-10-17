@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
+import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
 class ExampleFrameHandler extends AbstractFrameHandler
 {
@@ -43,13 +44,13 @@ class ExampleFrameHandler extends AbstractFrameHandler
             @Override
             public void succeeded()
             {
-                WebSocketUpgradeHandler.LOG.debug("onOpen write!");
+                LOG.debug("onOpen write!");
             }
 
             @Override
             public void failed(Throwable x)
             {
-                WebSocketUpgradeHandler.LOG.warn(x);
+                LOG.warn(x);
             }
         },
         BatchMode.OFF);
