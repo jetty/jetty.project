@@ -106,6 +106,7 @@ public class RequestTest
         _server.setHandler(_handler);
         
         ErrorHandler errors = new ErrorHandler();
+        errors.setServer(_server);
         errors.setShowStacks(true);
         _server.addBean(errors);
         _server.start();
@@ -1398,6 +1399,42 @@ public class RequestTest
         assertEquals("__utmz", cookies.get(0).getName());
         assertEquals("14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html", cookies.get(0).getValue());
 
+    }
+    
+    @Test
+    public void testBadCookies() throws Exception
+    {
+        final ArrayList<Cookie> cookies = new ArrayList<>();
+
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
+            {
+                javax.servlet.http.Cookie[] ca = request.getCookies();
+                if (ca!=null)
+                    cookies.addAll(Arrays.asList(ca));
+                response.getOutputStream().println("Hello World");
+                return true;
+            }
+        };
+
+        String response;
+
+        cookies.clear();
+        response=_connector.getResponses(
+                    "GET / HTTP/1.1\n"+
+                    "Host: whatever\n"+
+                    "Cookie: path=value\n" +
+                    "Cookie: name=value\n" +
+                    "Connection: close\n"+
+                    "\n"
+        );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(1,cookies.size());
+        assertEquals("name", cookies.get(0).getName());
+        assertEquals("value", cookies.get(0).getValue());
+        
     }
 
     @Ignore("No longer relevant")
