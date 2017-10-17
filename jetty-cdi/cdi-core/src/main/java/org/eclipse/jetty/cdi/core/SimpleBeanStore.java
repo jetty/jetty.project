@@ -28,6 +28,7 @@ import javax.enterprise.context.spi.Contextual;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+@Deprecated
 public class SimpleBeanStore
 {
     private static final Logger LOG = Log.getLogger(SimpleBeanStore.class);

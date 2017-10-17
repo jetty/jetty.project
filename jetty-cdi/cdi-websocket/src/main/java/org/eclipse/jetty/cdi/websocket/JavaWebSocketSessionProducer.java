@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Producer of {@link javax.websocket.Session} instances
  */
+@Deprecated
 public class JavaWebSocketSessionProducer
 {
     private static final Logger LOG = Log.getLogger(JavaWebSocketSessionProducer.class);

@@ -39,6 +39,7 @@ import javax.inject.Scope;
 @Target({ ElementType.TYPE, ElementType.FIELD, ElementType.METHOD })
 @Inherited
 @Documented
+@Deprecated
 public @interface WebSocketScope
 {
 

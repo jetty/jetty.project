@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.api.Session;
  * <p>
  * A CDI Context definition for how CDI will use objects defined to belong to the WebSocketScope
  */
+@Deprecated
 public class WebSocketScopeContext implements Context
 {
     private static final Logger LOG = Log.getLogger(WebSocketScopeContext.class);

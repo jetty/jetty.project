@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Register the various WebSocket specific components for CDI
  */
+@Deprecated
 public class WebSocketScopeExtension implements Extension
 {
     private static final Logger LOG = Log.getLogger(WebSocketScopeExtension.class);

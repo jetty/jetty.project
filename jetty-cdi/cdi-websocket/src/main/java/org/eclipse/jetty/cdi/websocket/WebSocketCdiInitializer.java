@@ -29,6 +29,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 
+@Deprecated
 public class WebSocketCdiInitializer implements ServletContainerInitializer
 {
     public static void configureContext(ServletContextHandler context) throws ServletException

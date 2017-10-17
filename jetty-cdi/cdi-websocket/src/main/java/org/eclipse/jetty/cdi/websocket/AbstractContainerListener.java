@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 /**
  * Abstract implementation of listener that needs both Container events and LifeCycle events
  */
+@Deprecated
 public abstract class AbstractContainerListener implements LifeCycle.Listener, Container.InheritedListener
 {
     @Override

@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
+@Deprecated
 public class WebSocketCdiListener extends AbstractContainerListener
 {
     static final Logger LOG = Log.getLogger(WebSocketCdiListener.class);

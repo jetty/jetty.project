@@ -27,6 +27,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 /**
  * Perform some basic weld configuration of WebAppContext
  */
+@Deprecated
 public class WeldDeploymentBinding implements AppLifeCycle.Binding
 {
     public String[] getBindingTargets()
