@@ -1422,10 +1422,10 @@ public class RequestTest
         String response;
 
         cookies.clear();
-        response=_connector.getResponses(
+        response=_connector.getResponse(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "Cookie: path=value\n" +
+                    "Cookie: Path=value\n" +
                     "Cookie: name=value\n" +
                     "Connection: close\n"+
                     "\n"
