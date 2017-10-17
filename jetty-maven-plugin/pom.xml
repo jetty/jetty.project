@@ -11,7 +11,7 @@
   <description>Jetty maven plugins</description>
   <properties>
     <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>3.4</pluginToolsVersion>
+    <pluginToolsVersion>3.5</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
   </properties>
   <build>

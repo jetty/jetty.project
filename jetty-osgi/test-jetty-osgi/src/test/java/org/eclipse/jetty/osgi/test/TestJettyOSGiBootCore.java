@@ -91,9 +91,9 @@ public class TestJettyOSGiBootCore
     {
         List<Option> res = new ArrayList<Option>();
         
-        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
-        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).version("5.0.1").start());
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).version("5.0.1").start());
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).version("5.0.1").start());
         res.add(mavenBundle().groupId( "org.apache.aries" ).artifactId( "org.apache.aries.util" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).versionAsInProject().start());
 
