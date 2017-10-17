@@ -471,7 +471,7 @@ public class AnnotationParser
             return new MyFieldVisitor(_handlers, _ci, access, fieldName, fieldType, signature, value);
         }
     }
-
+    
     /**
      * Add a class as having been parsed.
      * 
@@ -653,7 +653,7 @@ public class AnnotationParser
      * Parse all classes in a directory
      * 
      * @param handlers the set of handlers to look for classes in 
-     * @param dir the resource directory to look for classes
+     * @param root the resource directory to look for classes
      * @param resolver the class name resolver
      * @throws Exception if unable to parse
      */
@@ -860,6 +860,7 @@ public class AnnotationParser
      * Parse a single entry in a jar file
      * 
      * @param handlers the handlers to look for classes in  
+     * @param jar The jar from which entry was obtained
      * @param entry the entry in the potentially MultiRelease jar resource to parse
      * @param resolver the class name resolver
      * @throws Exception if unable to parse
