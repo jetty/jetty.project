@@ -15,13 +15,6 @@
   </properties>
 
   <modules>
-    <module>cdi-core</module>
-    <module>cdi-servlet</module>
-    <module>cdi-full-servlet</module>
-    <module>cdi-websocket</module>
-    <module>test-cdi-webapp</module>
-    <!-- deprecated
-    <module>test-cdi-it</module>
-     -->
+    <module>cdi-2</module>
   </modules>
 </project>

@@ -815,7 +815,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super.setServer(server);
         if (server != null)
         {
-            if (_systemClasses.isEmpty())
+            if (__dftSystemClasses.equals(_systemClasses))
             {
                 Object systemClasses = server.getAttribute(SERVER_SYS_CLASSES);
                 if (systemClasses instanceof String[])
@@ -824,13 +824,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                     _systemClasses.add(((ClasspathPattern)systemClasses).getPatterns());
             }
 
-            if (_serverClasses.isEmpty())
+            if (__dftServerClasses.equals(_serverClasses))
             {
                 Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
                 if (serverClasses instanceof String[])
                     serverClasses = new ClasspathPattern((String[])serverClasses);
                 if (serverClasses instanceof ClasspathPattern)
-                    _systemClasses.add(((ClasspathPattern)serverClasses).getPatterns());
+                    _serverClasses.add(((ClasspathPattern)serverClasses).getPatterns());
             }
         }
     }

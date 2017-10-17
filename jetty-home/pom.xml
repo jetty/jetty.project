@@ -458,7 +458,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.cdi</groupId>
-      <artifactId>cdi-servlet</artifactId>
+      <artifactId>cdi-2</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

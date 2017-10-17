@@ -815,6 +815,7 @@ public class AnnotationParser
 
             MultiException me = new MultiException();
             // TODO do not force version 8 once ASM can scan 9
+            // TODO support a different target for quickstart generation
             MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),8,false);
             jarFile.stream().forEach(e->
             {

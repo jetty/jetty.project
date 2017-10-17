@@ -152,21 +152,6 @@
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.cdi</groupId>
-        <artifactId>cdi-core</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.cdi</groupId>
-        <artifactId>cdi-full-servlet</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.cdi</groupId>
-        <artifactId>cdi-servlet</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
         <version>10.0.0-SNAPSHOT</version>

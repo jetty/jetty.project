@@ -141,9 +141,10 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
 
     # This is equivalent to 'mvn release:prepare'
     if proceedyn "Update project.versions for $VER_RELEASE? (Y/n)" y; then
-        mvn org.codehaus.mojo:versions-maven-plugin:2.1:set \
+        mvn org.codehaus.mojo:versions-maven-plugin:2.5:set \
             -DoldVersion="$VER_CURRENT" \
-            -DnewVersion="$VER_RELEASE"
+            -DnewVersion="$VER_RELEASE" \
+            -DprocessAllModules=true 
     fi
     if proceedyn "Commit $VER_RELEASE updates? (Y/n)" y; then
         git commit -a -m "Updating to version $VER_RELEASE"
