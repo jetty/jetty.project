@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,17 +33,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarInputStream;
 
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.JarScanner;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -74,30 +70,11 @@ public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
 
-    private static final int JVM_MAJOR_VER;
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM5; //compatibility of api
     
     protected Map<String, List<String>> _parsedClassNames = new ConcurrentHashMap<>();
-
-    static
-    {
-        // Determine JVM spec version
-        // Using guidance from http://openjdk.java.net/jeps/223
-        String jvmSpecVer = System.getProperty("java.vm.specification.version");
-
-        if (jvmSpecVer.indexOf('.') >= 0)
-        {
-            // Old spec version (Java 1.8 and older)
-            String parts[] = jvmSpecVer.split("\\.");
-            JVM_MAJOR_VER = Integer.parseInt(parts[1]);
-        }
-        else
-        {
-            // Newer spec version (Java 9+)
-            JVM_MAJOR_VER = Integer.parseInt(jvmSpecVer);
-        }
-    }
-
+    private final int _javaPlatform;
+    
     /**
      * Convert internal name to simple name
      * 
@@ -497,6 +474,24 @@ public class AnnotationParser
         }
     }
 
+    public AnnotationParser()
+    {
+        this(JavaVersion.VERSION.getPlatform());
+    }
+
+    /**
+     * @param javaPlatform The target java version or 0 for the current runtime.
+     */
+    public AnnotationParser(int javaPlatform)
+    {
+        if (javaPlatform==0)
+            javaPlatform = JavaVersion.VERSION.getPlatform();
+        // TODO can only support 8 until ASM 6 is available
+        if (javaPlatform!=8)
+            LOG.warn("Annotation parsing only supports java8 until ASM6 upgrade");
+        _javaPlatform = 8;
+    }
+    
     /**
      * Add a class as having been parsed.
      * 
@@ -814,9 +809,7 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            // TODO do not force version 8 once ASM can scan 9
-            // TODO support a different target for quickstart generation
-            MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),8,false);
+            MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),_javaPlatform,false);
             jarFile.stream().forEach(e->
             {
                 try

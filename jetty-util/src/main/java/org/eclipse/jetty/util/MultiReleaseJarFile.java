@@ -38,7 +38,7 @@ public class MultiReleaseJarFile
     private static final String META_INF_VERSIONS = "META-INF/versions/";
 
     private final JarFile jarFile;
-    private final int majorVersion;
+    private final int platform;
     private final boolean multiRelease;
 
     /* Map to hold unversioned name to VersionedJarEntry */
@@ -50,23 +50,23 @@ public class MultiReleaseJarFile
      */
     public MultiReleaseJarFile(File file) throws IOException
     {
-        this(file,JavaVersion.VERSION.getMajor(),false);
+        this(file,JavaVersion.VERSION.getPlatform(),false);
     }
 
     /**
      * Construct a multi release jar file
      * @param file The file to open
-     * @param majorVersion The major JVM version to apply when selecting a version.
+     * @param javaPlatform The  JVM platform to apply when selecting a version.
      * @param includeDirectories true if any directory entries should not be ignored
      * @throws IOException if the jar file cannot be read
      */
-    public MultiReleaseJarFile(File file, int majorVersion, boolean includeDirectories) throws IOException
+    public MultiReleaseJarFile(File file, int javaPlatform, boolean includeDirectories) throws IOException
     {
         if (file==null || !file.exists() || !file.canRead() || file.isDirectory())
             throw new IllegalArgumentException("bad jar file: "+file);
 
         jarFile = new JarFile(file,true,JarFile.OPEN_READ);
-        this.majorVersion = majorVersion;
+        this.platform = javaPlatform;
 
         Manifest manifest = jarFile.getManifest();
         if (manifest==null)
@@ -110,7 +110,7 @@ public class MultiReleaseJarFile
      */
     public int getVersion()
     {
-        return majorVersion;
+        return platform;
     }
 
     /**
@@ -230,7 +230,7 @@ public class MultiReleaseJarFile
         boolean isApplicable()
         {
             if (multiRelease)
-               return this.version>=0 && this.version <= majorVersion && name.length()>0;
+               return this.version>=0 && this.version <= platform && name.length()>0;
             return this.version==0;
         }
 

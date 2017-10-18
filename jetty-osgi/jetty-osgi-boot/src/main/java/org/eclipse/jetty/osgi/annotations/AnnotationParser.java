@@ -46,6 +46,10 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
     private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<Resource, Bundle>();
     private ConcurrentHashMap<Bundle,URI> _bundleToUri = new ConcurrentHashMap<Bundle, URI>();
     
+    public AnnotationParser(int javaPlatform)
+    {
+        super(javaPlatform);
+    }
     
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.
