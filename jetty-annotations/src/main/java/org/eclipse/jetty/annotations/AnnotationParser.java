@@ -492,6 +492,24 @@ public class AnnotationParser
         _javaPlatform = 8;
     }
     
+    public AnnotationParser()
+    {
+        this(JavaVersion.VERSION.getPlatform());
+    }
+
+    /**
+     * @param javaPlatform The target java version or 0 for the current runtime.
+     */
+    public AnnotationParser(int javaPlatform)
+    {
+        if (javaPlatform==0)
+            javaPlatform = JavaVersion.VERSION.getPlatform();
+        // TODO can only support 8 until ASM 6 is available
+        if (javaPlatform!=8)
+            LOG.warn("Annotation parsing only supports java8 until ASM6 upgrade");
+        _javaPlatform = 8;
+    }
+    
     /**
      * Add a class as having been parsed.
      * 
