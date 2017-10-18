@@ -27,7 +27,7 @@
             </goals>
             <configuration>
               <includes>**</includes>
-              <excludes>**/MANIFEST.MF,META-INF/*.RSA,META-INF/*.DSA,META-INF/*.SF</excludes>
+              <excludes>**/MANIFEST.MF,META-INF/*.RSA,META-INF/*.DSA,META-INF/*.SF,module-info.class</excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
