@@ -33,6 +33,7 @@ import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.resource.Resource;
+import org.objectweb.asm.Opcodes;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
@@ -50,7 +51,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
     
     public AnnotationParser(int javaPlatform)
     {
-        super(javaPlatform);
+        super(javaPlatform, Opcodes.ASM5);
     }
     
     /**
