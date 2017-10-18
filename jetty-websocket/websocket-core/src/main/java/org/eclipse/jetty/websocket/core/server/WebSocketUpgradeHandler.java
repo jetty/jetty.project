@@ -43,14 +43,12 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
             LOG.debug("handle {} handshaker={}",baseRequest,handshaker);
         if (handshaker!=null && handshaker.upgradeRequest(baseRequest, request, response))
             return;
-        super.handle(target,baseRequest,request,response);
+        if (!baseRequest.isHandled())
+            super.handle(target,baseRequest,request,response);
     }
 
     protected Handshaker getHandshaker(Request baseRequest)
     {
-        HttpField version = baseRequest.getHttpFields().getField(HttpHeader.SEC_WEBSOCKET_VERSION);
-        if (version !=null && version.getIntValue()== RFC6455Handshaker.VERSION)
-            return new RFC6455Handshaker();
-        return null;
+        return baseRequest.getHttpChannel().getConnector().getBean(Handshaker.class);
     }
 }

@@ -25,91 +25,36 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class WebSocketChannelState
 {
-    /**
-     * Connection states as outlined in <a href="https://tools.ietf.org/html/rfc6455">RFC6455</a>.
-     */
-    public enum State
+    private static class State
     {
-        /** [RFC] Initial state of a connection, the upgrade request / response is in progress */
-        CONNECTING,
-
-        /**
-         * [Impl] Intermediate state between CONNECTING and OPEN, used to indicate that a upgrade request/response is successful, but the end-user provided socket's
-         * onOpen code has yet to run.
-         * <p>
-         * This state is to allow the local socket to initiate messages and frames, but to NOT start reading yet.
-         * </p>
-         */
-        CONNECTED,
-
-        /**
-         * [RFC] The websocket connection is established and onOpen.
-         * <p>
-         * This indicates that the Upgrade has succeed, and the end-user provided socket's onOpen code has completed.
-         * <p>
-         * It is now time to start reading from the remote endpoint.
-         * </p>
-         */
-        OPEN,
-
-        /**
-         * [RFC] The websocket closing handshake is started.
-         * <p>
-         * This can be considered a half-closed state.
-         * </p>
-         */
-        CLOSING,
-
-        /**
-         * [RFC] The websocket connection is closed.
-         * <p>
-         * Connection should be disconnected and no further reads or writes should occur.
-         * </p>
-         */
-        CLOSED
-    }
-    
-    private AtomicReference<State> state = new AtomicReference<>(State.CONNECTING);
-    
-    public State get()
-    {
-        return state.get();
-    }
-    
-    public boolean onClosed()
-    {
-        return state.compareAndSet(State.CLOSING, State.CLOSED);
-    }
-    
-    public boolean onClosing()
-    {
-        while(true)
+        final boolean inOpen;
+        final boolean outOpen;
+        final CloseStatus closeStatus;
+        
+        State(boolean inOpen,boolean outOpen,CloseStatus closeStatus)
         {
-            State s = state.get();
-            switch(s)
-            {
-                case CONNECTING:
-                case CONNECTED:
-                case OPEN:
-                    if (state.compareAndSet(s,State.CLOSING))
-                        return true;
-                    break;
-                case CLOSING:
-                case CLOSED:
-                    return false;
-            }
+            this.inOpen = inOpen;
+            this.outOpen = outOpen;
+            this.closeStatus = closeStatus;
         }
     }
     
+    private static final State CONNECTING = new State(false,false,null);
+    private static final State CONNECTED = new State(true,true,null);
+    private static final State OPEN = new State(true,true,null);
+    
+    private AtomicReference<State> state = new AtomicReference<>(CONNECTING);
+    
+        
     public void onConnected()
     {
-        if (!state.compareAndSet(State.CONNECTING, State.CONNECTED))
+        if (!state.compareAndSet(CONNECTING, CONNECTED))
             throw new IllegalStateException(state.get().toString());
     }
 
     public void onOpen()
     {
-        if (!state.compareAndSet(State.CONNECTED, State.OPEN))
+        if (!state.compareAndSet(CONNECTED, OPEN))
             throw new IllegalStateException(state.get().toString());
     }
     
@@ -119,20 +64,81 @@ public class WebSocketChannelState
         return String.format("%s[%s]", this.getClass().getSimpleName(), state.get());
     }
 
-
     public boolean isOpen()
     {
         State s = state.get();
-        switch(s)
+        return s.inOpen || s.outOpen;
+    }
+    
+    public boolean isClosed()
+    {
+        State s = state.get();
+        return !s.inOpen && !s.outOpen;
+    }
+    
+    public boolean isInOpen()
+    {
+        return state.get().inOpen;
+    }
+
+    public boolean isOutOpen()
+    {
+        return state.get().outOpen;
+    }
+    
+    public CloseStatus getCloseStatus()
+    {
+        return state.get().closeStatus;
+    }
+    
+    public boolean onCloseIn(CloseStatus closeStatus)
+    {
+        while(true)
         {
-            case CONNECTING:
+            State s = state.get();
+            
+            if (!s.inOpen)
                 return false;
-            case CONNECTED:
-            case OPEN:
-                return true;
-            default:
-                return false;
+            
+            if (s.outOpen)
+            {
+                State closedIn = new State(false,true,closeStatus);
+                if (state.compareAndSet(s,closedIn))
+                    return true;
+            }
+            else
+            {
+                State closed = new State(false,false,closeStatus);
+                if (state.compareAndSet(s,closed))
+                    return true;
+            }
         }
     }
+
+    public boolean onCloseOut(CloseStatus closeStatus)
+    {
+        while(true)
+        {
+            State s = state.get();
+            
+            if (!s.outOpen)
+                return false;
+            
+            if (s.inOpen)
+            {
+                State closedOut = new State(true,false,closeStatus);
+                if (state.compareAndSet(s,closedOut))
+                    return true;
+            }
+            else
+            {
+                State closed = new State(false,false,closeStatus);
+                if (state.compareAndSet(s,closed))
+                    return true;
+            }
+        }
+    }
+
+
 
 }

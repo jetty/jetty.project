@@ -19,9 +19,7 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.Executor;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnection;
@@ -41,8 +41,11 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.NegotiateMessage;
+import org.eclipse.jetty.websocket.core.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.WebSocketChannel;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.handshake.AcceptHash;
 import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
@@ -74,8 +77,8 @@ public final class RFC6455Handshaker implements Handshaker
         HttpChannel httpChannel = baseRequest.getHttpChannel();
         Connector connector = httpChannel.getConnector();
 
-        WebSocketChannelFactory channelFactory = ContextConnectorConfiguration
-                .lookup(WebSocketChannelFactory.class, context, connector);
+        FrameHandlerFactory channelFactory = ContextConnectorConfiguration
+                .lookup(FrameHandlerFactory.class, context, connector);
         if (channelFactory==null)
         {
             if (LOG.isDebugEnabled())
@@ -83,23 +86,19 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        WebSocketConnectionFactory connectionFactory = ContextConnectorConfiguration
-                .lookup(WebSocketConnectionFactory.class, context, connector);
-        if (connectionFactory==null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no connection factory {}", baseRequest);
-            return false;
-        }
-
+        
+        NegotiateMessage.Request upgradeRequest = new NegotiateMessage.Request(request.getMethod(),request.getRequestURI(),request.getProtocol());
+        NegotiateMessage.Response upgradeResponse = new NegotiateMessage.Response();
+        
+        boolean version = false;
         boolean upgrade = false;
         QuotedCSV connectionCSVs = null;
         String key = null;
-        QuotedCSV extensionCSVs = null;
-        QuotedCSV subprotocolCSVs = null;
 
         for (HttpField field : baseRequest.getHttpFields())
         {
+            upgradeRequest.addHeader(field.getName(),field.getValue());
+            
             if (field.getHeader()!=null)
             {
                 switch(field.getHeader())
@@ -120,21 +119,10 @@ public final class RFC6455Handshaker implements Handshaker
                         key = field.getValue();
                         break;
 
-                    case SEC_WEBSOCKET_EXTENSIONS:
-                        if (extensionCSVs==null)
-                            extensionCSVs = new QuotedCSV();
-                        extensionCSVs.addValue(field.getValue());
-                        break;
-
-                    case SEC_WEBSOCKET_SUBPROTOCOL:
-                        if (subprotocolCSVs==null)
-                            subprotocolCSVs = new QuotedCSV();
-                        subprotocolCSVs.addValue(field.getValue());
-                        break;
-
                     case SEC_WEBSOCKET_VERSION:
                         if (field.getIntValue()!=VERSION)
                             return false;
+                        version = true;
                         break;
 
                     default:
@@ -142,6 +130,13 @@ public final class RFC6455Handshaker implements Handshaker
             }
         }
 
+        if (!version)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded no version header {}", baseRequest);
+            return false;
+        }
+        
         if (!upgrade)
         {
             if (LOG.isDebugEnabled())
@@ -163,49 +158,62 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        List<ExtensionConfig> extensions = extensionCSVs == null
-                ? Collections.emptyList()
-                :extensionCSVs.getValues().stream().map(ExtensionConfig::parse).collect(Collectors.toList());
-        List<String> subprotocols = subprotocolCSVs == null
-                ? Collections.emptyList()
-                :subprotocolCSVs.getValues();
-
-        // Create a channel using the default policy from the connector
-        WebSocketChannel wsChannel = channelFactory
-                .newChannel(baseRequest,
-                            request,
-                            connectionFactory.getPolicy(),
-                            connectionFactory.getBufferPool(),
-                            extensions,
-                            subprotocols);
-        if (wsChannel==null)
+        // Create instance of policy that may be mutated by factory
+        WebSocketPolicy policy =  ContextConnectorConfiguration
+                .lookup(WebSocketPolicy.class, context, connector);
+        policy = policy==null ? new WebSocketPolicy(WebSocketBehavior.SERVER)
+                : policy.clonePolicy();
+        
+        
+        // Negotiate the FrameHandler
+        FrameHandler handler = channelFactory.newFrameHandler(
+                upgradeRequest,
+                upgradeResponse,
+                policy,
+                connector.getByteBufferPool());
+        
+        // update response headers
+        upgradeResponse.getHeaders().entrySet().forEach(e->{e.getValue().forEach(v->response.addHeader(e.getKey(),v));});
+        
+        // Handle error responses
+        if (upgradeResponse.isError())
+        {
+            baseRequest.setHandled(true);
+            response.sendError(upgradeResponse.getErrorCode(),upgradeResponse.getErrorReason());
+            return false;
+        }
+        
+        // Check for handler
+        if (handler==null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded no channel {}", baseRequest);
             return false;
         }
-        if (wsChannel.getPolicy()==null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no policy {}", baseRequest);
-            return false;
-        }
-        if (subprotocols.size()>0 && wsChannel.getSubprotocol()==null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded no subprotocol from {} {}", subprotocols, baseRequest);
-            return false;
-        }
 
+        // Check subprotocol negotiated
+        String subprotocol = upgradeResponse.getSubprotocol();
+        if (upgradeRequest.getOfferedSubprotocols().size()>0 && subprotocol==null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded no subprotocol from {} {}", upgradeRequest.getOfferedSubprotocols(), baseRequest);
+            return false;
+        }
+        
+        
+
+        // Create the Channel
+        WebSocketChannel channel = new WebSocketChannel(handler,policy,upgradeResponse.getExtensionStack(),subprotocol);
+        
         // Create a connection
-        WebSocketConnection connection = connectionFactory.newConnection(connector,httpChannel.getEndPoint(),wsChannel);
+        WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(),connector.getExecutor(),connector.getByteBufferPool(),channel);                
         if (connection==null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded no connection {}", baseRequest);
         }
-
-        wsChannel.setWebSocketConnection(connection);
+        
+        channel.setWebSocketConnection(connection);
 
         // send upgrade response
         Response baseResponse = baseRequest.getResponse();
@@ -213,19 +221,19 @@ public final class RFC6455Handshaker implements Handshaker
         baseResponse.getHttpFields().add(UpgradeWebSocket);
         baseResponse.getHttpFields().add(ConnectionUpgrade);
         baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_ACCEPT, AcceptHash.hashKey(key));
-        baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
-                                         ExtensionConfig.toHeaderValue(wsChannel.getExtensionStack().getNegotiatedExtensions()));
-        String subprotocol = wsChannel.getSubprotocol();
-        if (subprotocol!=null)
-            baseResponse.getHttpFields().add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,subprotocol);
         baseResponse.flushBuffer();
         baseRequest.setHandled(true);
 
         // upgrade
         if (LOG.isDebugEnabled())
-            LOG.debug("upgrade connection={} session={}", connection, wsChannel);
+            LOG.debug("upgrade connection={} session={}", connection, channel);
 
         baseRequest.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         return true;
+    }
+
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, WebSocketChannel wsChannel)
+    {
+        return new WebSocketConnection(endPoint,executor,byteBufferPool,wsChannel);
     }
 }

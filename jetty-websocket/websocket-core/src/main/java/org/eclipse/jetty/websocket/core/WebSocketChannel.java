@@ -18,22 +18,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import static org.eclipse.jetty.websocket.core.WebSocketChannelState.State;
-import static org.eclipse.jetty.websocket.core.WebSocketChannelState.State.CLOSED;
-
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -42,7 +33,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.core.frames.CloseFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
-import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 import org.eclipse.jetty.websocket.core.io.WebSocketConnection;
 
@@ -59,11 +49,9 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     private final FrameHandler handler;
     private final ExtensionStack extensionStack;
     private final String subprotocol;
-    private final List<Listener> listeners = new ArrayList<>();
 
     private WebSocketConnection connection;
 
-    private final AtomicBoolean closeNotified = new AtomicBoolean(false);
     // Holder for errors during onOpen that are reported in doStart later
     private AtomicReference<Throwable> pendingError = new AtomicReference<>();
 
@@ -80,6 +68,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         extensionStack.setNextIncoming(new IncomingState());
         extensionStack.setNextOutgoing(new OutgoingState());
         addBean(handler, true);
+        handler.setWebSocketChannel(this);
     }
 
     public ExtensionStack getExtensionStack()
@@ -97,18 +86,20 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         return subprotocol;
     }
     
+    public Object getAttachment()
+    {
+        return null; // TODO
+    }
+    
     public void setWebSocketConnection(WebSocketConnection connection)
     {
         this.connection = connection;
     }
 
-    public void addSessionListener(Listener listener)
-    {
-        listeners.add(listener);
-    }
-
     public void close(int statusCode, String reason, Callback callback)
     {
+        // TODO guard for multiple closes?
+
         outgoingFrame(new CloseFrame().setPayload(statusCode, reason), callback, BatchMode.OFF);
     }
 
@@ -140,7 +131,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         }
 
         // Forward Errors to Local WebSocket EndPoint
-        handler.onError(this,cause);
+        handler.onError(cause);
 
         if (cause instanceof Utf8Appendable.NotUtf8Exception)
         {
@@ -220,15 +211,9 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
 
             try
             {
-                // Session is about to be opened (used by CDI and JSR356 Decoder init)
-                notifySessionListeners((listener)-> listener.onInit(this));
-
-                // Open connection
+                // Open connection and handler
                 state.onOpen();
-
-                // Session is now Open (used by container APIs for session tracking)
-                handler.onOpen(this);
-                notifySessionListeners((listener)-> listener.onOpened(this));
+                handler.onOpen();                
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
             }
@@ -262,40 +247,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         return this.connection.getBufferPool();
     }
 
-    public void notifyClose(CloseStatus closeStatus)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("notifyClose({}) closeNotified={}", closeStatus, closeNotified.get());
-        }
-
-        // only notify once
-        if (closeNotified.compareAndSet(false, true))
-        {
-            handler.onClose(this,closeStatus);
-        }
-
-        // Session is officially closed / handshake completed (CDI and API Containers use this)
-        // TODO: this should be somewhere else, more centralized, so that even abnormal (non frame) closes can trigger it
-        notifySessionListeners((listener)-> listener.onClosed(WebSocketChannel.this));
-
-    }
-
-    public void notifySessionListeners(Consumer<Listener> consumer)
-    {
-        for (Listener listener : listeners)
-        {
-            try
-            {
-                consumer.accept(listener);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Exception while invoking listener " + listener, x);
-            }
-        }
-    }
-
     @Override
     protected void doStart() throws Exception
     {
@@ -323,29 +274,39 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     @Override
     public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode) 
     {
+        if (frame instanceof CloseFrame)
+        {
+            if (!state.onCloseOut(((CloseFrame)frame).getCloseStatus()))
+            {
+                callback.failed(new IOException("Already Closed or Closing"));
+                return;
+            }
+            
+            if (state.isClosed())
+                callback = new Callback.Nested(callback)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        super.succeeded();
+                        handler.onClosed(state.getCloseStatus());
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        super.failed(x);
+                        handler.onClosed(state.getCloseStatus());
+                    }
+               
+                };
+              
+        }
+
         // TODO, what is the mutual exclusion contract here? is this thread safe from here?
+        // TODO should throw pending write exception to allow only one.  APIs must coordinate
+  
         extensionStack.outgoingFrame(frame,callback,batchMode);
-    }
-
-    interface Listener
-    {
-        /**
-         * When the session is about to go into service (step before OPENING/OPEN)
-         * @param session the session about to go into service.
-         */
-        void onInit(WebSocketChannel session);
-
-        /**
-         * When the session is officially OPEN.
-         * @param session the session that is now OPEN.
-         */
-        void onOpened(WebSocketChannel session);
-
-        /**
-         * When the session is officially CLOSED.
-         * @param session the session that is now CLOSED.
-         */
-        void onClosed(WebSocketChannel session);
     }
 
     private class IncomingState implements IncomingFrames
@@ -355,28 +316,62 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         {
             try
             {
-                State state = WebSocketChannel.this.state.get();
+                
                 if (LOG.isDebugEnabled())
                 {
                     LOG.debug("incomingFrame({}, {}) - connectionState={}, handler={}",
                               frame, callback, state, handler);
                 }
-                if (state != CLOSED)
+                if (state.isInOpen())
                 {
+                    // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("ConnectionState: Close frame received");
-                        CloseFrame closeframe = (CloseFrame)frame;
-                        CloseStatus closeStatus = closeframe.getCloseStatus();
-                        notifyClose(closeStatus);
-                        close(closeStatus, Callback.NOOP);
+                        if (!state.onCloseIn(((CloseFrame)frame).getCloseStatus()))
+                        {
+                            callback.failed(new IOException("already closed"));
+                        }
+                    }           
+                    
+                    // Handle the frame
+                    handler.onFrame(frame, callback);
+                   
+                    // Ensure outbound close sent
+                    if (frame.getOpCode() == OpCode.CLOSE )
+                    {
+                        if (state.isOutOpen())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("ConnectionState: Sending Close response");
+                            CloseFrame closeframe = (CloseFrame)frame;
+                            CloseStatus closeStatus = closeframe.getCloseStatus();
 
-                        callback.succeeded();
-                        return;
+                            close(closeStatus, new Callback.Nested(callback)
+                            {
+                                @Override
+                                public void succeeded()
+                                {
+                                    super.succeeded();
+                                    handler.onClosed(state.getCloseStatus());
+                                }
+
+                                @Override
+                                public void failed(Throwable x)
+                                {
+                                    super.failed(x);
+                                    handler.onClosed(state.getCloseStatus());
+                                }
+                           
+                            });
+                            return;
+                        }
+                        else
+                        {
+                            // Do we need to wait for a flush?
+                            handler.onClosed(state.getCloseStatus());
+                        }
                     }
 
-                    handler.onFrame(WebSocketChannel.this, frame, callback);
                 }
                 else
                 {
@@ -399,15 +394,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         @Override
         public void outgoingFrame(Frame frame, Callback callback, BatchMode batchMode)
         {
-            if (frame instanceof CloseFrame)
-            {
-                if (!state.onClosing())
-                {
-                    callback.failed(new IOException("Already Closed or Closing"));
-                    return;
-                }
-            }
-
             // TODO This needs to be reviewed against RFC for possible interleavings
             switch(partial)
             {

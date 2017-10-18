@@ -36,14 +36,26 @@ public class AbstractFrameHandler implements FrameHandler
     private byte partial = 0;
     private Utf8StringBuffer utf8Buffer;
     private ByteBuffer byteBuffer;
+    private WebSocketChannel channel;
 
     @Override
-    public void onOpen(WebSocketChannel channel)
+    public void setWebSocketChannel(WebSocketChannel channel)
+    {
+        this.channel = channel;
+    }
+    
+    public WebSocketChannel getWebSocketChannel()
+    {
+        return channel;
+    }
+    
+    @Override
+    public void onOpen()
     {
     }
 
     @Override
-    public void onFrame(WebSocketChannel channel, Frame frame, Callback callback)
+    public void onFrame(Frame frame, Callback callback)
     {
         byte opcode = frame.getOpCode();
         if (LOG.isDebugEnabled())
@@ -51,26 +63,27 @@ public class AbstractFrameHandler implements FrameHandler
         switch (opcode)
         {
             case OpCode.PING:
-                onPing(channel,frame,callback);
+                onPing(frame,callback);
                 break;
          
             case OpCode.PONG:
-                onPing(channel,frame,callback);
+                onPing(frame,callback);
                 break;
                 
             case OpCode.TEXT:
+                // TODO is this the right abstract assembly model? should there be one?
                 if (frame.isFin())
-                    onText(channel,((TextFrame)frame).getPayloadAsUTF8(),callback);
+                    onText(((TextFrame)frame).getPayloadAsUTF8(),callback);
                 else
-                    onPartialText(channel,frame,callback);
+                    onPartialText(frame,callback);
                 break;
                 
             case OpCode.BINARY:
-
+                // TODO is this the right abstract assembly model? should there be one?
                 if (frame.isFin())
-                    onBinary(channel,frame.getPayload(),callback);
+                    onBinary(frame.getPayload(),callback);
                 else
-                    onPartialBinary(channel,frame,callback);
+                    onPartialBinary(frame,callback);
                 break;
                 
                 
@@ -78,31 +91,31 @@ public class AbstractFrameHandler implements FrameHandler
                 switch(partial)
                 {
                     case OpCode.TEXT:
-                        onPartialText(channel,frame,callback);
+                        onPartialText(frame,callback);
                         break;
                         
                     case OpCode.BINARY:
-                        onPartialBinary(channel,frame,callback);
+                        onPartialBinary(frame,callback);
                         
                     default:
                         callback.failed(new IllegalStateException());
                         
                 }
                 break;
+                
+            case OpCode.CLOSE:
+                onClose(frame,callback);
+                break;
         }
     }
 
+
     @Override
-    public void onClose(WebSocketChannel channel, CloseStatus close)
+    public void onError(Throwable cause)
     {
     }
 
-    @Override
-    public void onError(WebSocketChannel channel, Throwable cause)
-    {
-    }
-
-    public void onPing(WebSocketChannel channel, Frame frame, Callback callback)
+    public void onPing(Frame frame, Callback callback)
     {
         ByteBuffer pongBuf;
         if (frame.hasPayload())
@@ -129,22 +142,22 @@ public class AbstractFrameHandler implements FrameHandler
     }
     
 
-    public void onPong(WebSocketChannel channel, Frame frame, Callback callback)
+    public void onPong(Frame frame, Callback callback)
     {
         callback.succeeded();
     }
 
-    public void onText(WebSocketChannel channel, String payload, Callback callback)
+    public void onText(String payload, Callback callback)
     {
         callback.succeeded();
     }
 
-    public void onBinary(WebSocketChannel channel, ByteBuffer payload, Callback callback)
+    public void onBinary(ByteBuffer payload, Callback callback)
     {
         callback.succeeded();
     }
 
-    public void onPartialText(WebSocketChannel channel, Frame frame, Callback callback)
+    public void onPartialText(Frame frame, Callback callback)
     {
         if (utf8Buffer==null)
             utf8Buffer = new Utf8StringBuffer(frame.getPayloadLength()*2);
@@ -159,7 +172,7 @@ public class AbstractFrameHandler implements FrameHandler
             partial = -1;
             String text = utf8Buffer.toString();
             utf8Buffer.reset();
-            onText(channel,text,callback);
+            onText(text,callback);
         }
         else
         {
@@ -168,13 +181,13 @@ public class AbstractFrameHandler implements FrameHandler
         }
     }
 
-    public void onPartialBinary(WebSocketChannel channel, Frame frame, Callback callback)
+    public void onPartialBinary(Frame frame, Callback callback)
     {
         // TODO use the pool?
         if (byteBuffer==null)
             byteBuffer = BufferUtil.allocate(frame.getPayloadLength()*2);
               
-        // TODO enforce a max size from policy
+        // TODO enforce a max size from policy?
         BufferUtil.append(byteBuffer,frame.getPayload());
 
         if (frame.isFin())
@@ -182,7 +195,7 @@ public class AbstractFrameHandler implements FrameHandler
             partial = -1;
             ByteBuffer payload = byteBuffer;
             byteBuffer = null;
-            onBinary(channel,payload,callback);
+            onBinary(payload,callback);
         }
         else
         {
@@ -190,6 +203,16 @@ public class AbstractFrameHandler implements FrameHandler
             callback.succeeded();
         }
     }
-    
+
+    public void onClose(Frame frame, Callback callback)
+    {
+        callback.succeeded();
+    }
+
+    @Override
+    public void onClosed(CloseStatus closeStatus)
+    {
+        
+    }
 
 }

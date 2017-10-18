@@ -18,23 +18,16 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import java.util.List;
-
-import javax.servlet.ServletRequest;
-
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.websocket.core.WebSocketChannel;
+import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.NegotiateMessage;
 import org.eclipse.jetty.websocket.core.WebSocketPolicy;
-import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
-public interface WebSocketChannelFactory
+public interface FrameHandlerFactory
 {
-    WebSocketChannel newChannel(
-            Request baseRequest,
-            ServletRequest request,
+    FrameHandler newFrameHandler(
+            NegotiateMessage.Request negotiateRequest,
+            NegotiateMessage.Response negotiateResponse,
             WebSocketPolicy candidatePolicy,
-            ByteBufferPool bufferPool,
-            List<ExtensionConfig> extensions,
-            List<String> subprotocols);
+            ByteBufferPool bufferPool);
 }
