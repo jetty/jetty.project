@@ -74,7 +74,62 @@ public class AnnotationParser
     
     protected Map<String, List<String>> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
+    private int _asmVersion;
     
+    
+    /**
+     * Determine the runtime version of asm.
+     * @return the org.objectweb.asm.Opcode matching the runtime version of asm.
+     */
+    public static int asmVersion ()
+    {
+        int asmVersion = ASM_OPCODE_VERSION;
+        Package asm = Package.getPackage("org.objectweb.asm");
+        if (asm == null)
+            LOG.warn("Unknown asm runtime version, assuming version {}", asmVersion);
+        else
+        {
+            String s = asm.getImplementationVersion();
+            if (s==null)
+                LOG.warn("Unknown asm runtime version, assuming version {}", asmVersion);
+            else
+            {
+                int dot = s.indexOf('.');
+                s = s.substring(0, (dot < 0 ? s.length() : dot)).trim();
+                try
+                {
+                    int v = Integer.parseInt(s);
+                    switch (v)
+                    {
+                        case 4:
+                        {
+                            asmVersion = Opcodes.ASM4;
+                            break;
+                        }
+                        case 5:
+                        {
+                            asmVersion = Opcodes.ASM5;
+                            break;
+                        }
+                        case 6:
+                        {
+                            asmVersion = Opcodes.ASM6;
+                            break;
+                        }
+                        default:
+                        {
+                            LOG.warn("Unrecognized runtime asm version, assuming {}", asmVersion);
+                        }
+                    }
+                }
+                catch (NumberFormatException e)
+                {
+                    LOG.warn("Unable to parse runtime asm version, assuming version {}", asmVersion);
+                }
+            }
+        }
+        return asmVersion;
+    }
     /**
      * Convert internal name to simple name
      * 
@@ -350,9 +405,10 @@ public class AnnotationParser
                                final String name,
                                final String methodDesc,
                                final String signature,
-                               final String[] exceptions)
+                               final String[] exceptions,
+                               final int asmVersion)
         {
-            super(ASM_OPCODE_VERSION);
+            super(asmVersion);
             _handlers = handlers;
             _mi = new MethodInfo(classInfo, name, access, methodDesc,signature, exceptions);
         }
@@ -385,9 +441,10 @@ public class AnnotationParser
                               final String fieldName,
                               final String fieldType,
                               final String signature,
-                              final Object value)
+                              final Object value,
+                              final int asmVersion)
         {
-            super(ASM_OPCODE_VERSION);
+            super(asmVersion);
             _handlers = handlers;
             _fieldInfo = new FieldInfo(classInfo, fieldName, access, fieldType, signature, value);
         }
@@ -411,13 +468,15 @@ public class AnnotationParser
      */
     public class MyClassVisitor extends ClassVisitor
     {
+        int _asmVersion;
         final Resource _containingResource;
         final Set<? extends Handler> _handlers;
         ClassInfo _ci;
         
-        public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource)
+        public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource, int asmVersion)
         {
-            super(ASM_OPCODE_VERSION);
+            super(asmVersion);
+            _asmVersion = asmVersion;
             _handlers = handlers;
             _containingResource = containingResource;
         }
@@ -457,7 +516,7 @@ public class AnnotationParser
                                           final String signature,
                                           final String[] exceptions)
         {
-            return new MyMethodVisitor(_handlers, _ci, access, name, methodDesc, signature, exceptions);
+            return new MyMethodVisitor(_handlers, _ci, access, name, methodDesc, signature, exceptions, _asmVersion);
         }
 
         /**
@@ -470,7 +529,7 @@ public class AnnotationParser
                                         final String signature,
                                         final Object value)
         {
-            return new MyFieldVisitor(_handlers, _ci, access, fieldName, fieldType, signature, value);
+            return new MyFieldVisitor(_handlers, _ci, access, fieldName, fieldType, signature, value, _asmVersion);
         }
     }
 
@@ -484,9 +543,21 @@ public class AnnotationParser
      */
     public AnnotationParser(int javaPlatform)
     {
+        _asmVersion = asmVersion();
         if (javaPlatform==0)
             javaPlatform = JavaVersion.VERSION.getPlatform();
         _javaPlatform = javaPlatform;
+    }
+    
+    
+    public AnnotationParser(int javaPlatform, int asmVersion)
+    {
+        if (javaPlatform==0)
+            javaPlatform = JavaVersion.VERSION.getPlatform();
+        _javaPlatform = javaPlatform;
+        if (asmVersion==0)
+            asmVersion = ASM_OPCODE_VERSION;
+        _asmVersion = asmVersion;
     }
     
     /**
@@ -867,7 +938,7 @@ public class AnnotationParser
     protected void scanClass (Set<? extends Handler> handlers, Resource containingResource, InputStream is) throws IOException
     {
         ClassReader reader = new ClassReader(is);
-        reader.accept(new MyClassVisitor(handlers, containingResource), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
+        reader.accept(new MyClassVisitor(handlers, containingResource, _asmVersion), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
     }
     
     /**
