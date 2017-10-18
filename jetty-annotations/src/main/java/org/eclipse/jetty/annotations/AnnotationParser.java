@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
@@ -72,7 +73,8 @@ public class AnnotationParser
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM5; //compatibility of api
     
     protected Map<String, List<String>> _parsedClassNames = new ConcurrentHashMap<>();
-
+    private final int _javaPlatform;
+    
     /**
      * Convert internal name to simple name
      * 
@@ -472,6 +474,24 @@ public class AnnotationParser
         }
     }
     
+    public AnnotationParser()
+    {
+        this(JavaVersion.VERSION.getPlatform());
+    }
+
+    /**
+     * @param javaPlatform The target java version or 0 for the current runtime.
+     */
+    public AnnotationParser(int javaPlatform)
+    {
+        if (javaPlatform==0)
+            javaPlatform = JavaVersion.VERSION.getPlatform();
+        // TODO can only support 8 until ASM 6 is available
+        if (javaPlatform!=8)
+            LOG.warn("Annotation parsing only supports java8 until ASM6 upgrade");
+        _javaPlatform = 8;
+    }
+    
     /**
      * Add a class as having been parsed.
      * 
@@ -835,10 +855,7 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            
-            // TODO do not force version 8 once ASM can scan 9
-            // TODO support a different target for quickstart generation
-            MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),8,false);
+            MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),_javaPlatform,false);
             jarFile.stream().forEach(e->
             {
                 try

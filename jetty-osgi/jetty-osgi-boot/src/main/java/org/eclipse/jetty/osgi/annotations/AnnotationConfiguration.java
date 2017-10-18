@@ -74,9 +74,9 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * This parser scans the bundles using the OSGi APIs instead of assuming a jar.
      */
     @Override
-    protected org.eclipse.jetty.annotations.AnnotationParser createAnnotationParser()
+    protected org.eclipse.jetty.annotations.AnnotationParser createAnnotationParser(int javaTargetVersion)
     {
-        return new AnnotationParser();
+        return new AnnotationParser(javaTargetVersion);
     }
     
     /**
