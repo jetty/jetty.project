@@ -53,7 +53,7 @@ public class TextFrame extends DataFrame
     {
         if (payload == null)
         {
-            return null;
+            return "";
         }
         return BufferUtil.toUTF8String(payload);
     }

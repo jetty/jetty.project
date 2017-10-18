@@ -67,13 +67,23 @@ public class AbstractFrameHandler implements FrameHandler
                 break;
          
             case OpCode.PONG:
-                onPing(frame,callback);
+                onPong(frame,callback);
                 break;
                 
             case OpCode.TEXT:
                 // TODO is this the right abstract assembly model? should there be one?
                 if (frame.isFin())
-                    onText(((TextFrame)frame).getPayloadAsUTF8(),callback);
+                {
+                    if (utf8Buffer==null)
+                        utf8Buffer = new Utf8StringBuffer(Math.max(1024,frame.getPayloadLength()*2));
+
+                    if (frame.hasPayload())
+                         utf8Buffer.append(frame.getPayload());
+
+                    String text = utf8Buffer.toString();
+                    utf8Buffer.reset();
+                    onText(text,callback);
+                }
                 else
                     onPartialText(frame,callback);
                 break;
@@ -160,12 +170,10 @@ public class AbstractFrameHandler implements FrameHandler
     public void onPartialText(Frame frame, Callback callback)
     {
         if (utf8Buffer==null)
-            utf8Buffer = new Utf8StringBuffer(frame.getPayloadLength()*2);
-        
-        // TODO handle encoding errors 
-        // TODO enforce a max size from policy
-        
-        utf8Buffer.append(frame.getPayload());
+            utf8Buffer = new Utf8StringBuffer(Math.max(1024,frame.getPayloadLength()*2));
+
+        if (frame.hasPayload())
+             utf8Buffer.append(frame.getPayload());
 
         if (frame.isFin())
         {
@@ -185,10 +193,10 @@ public class AbstractFrameHandler implements FrameHandler
     {
         // TODO use the pool?
         if (byteBuffer==null)
-            byteBuffer = BufferUtil.allocate(frame.getPayloadLength()*2);
+            byteBuffer = BufferUtil.allocate(Math.max(1024,frame.getPayloadLength()*2));
               
-        // TODO enforce a max size from policy?
-        BufferUtil.append(byteBuffer,frame.getPayload());
+        if (frame.hasPayload())
+            BufferUtil.append(byteBuffer,frame.getPayload());
 
         if (frame.isFin())
         {

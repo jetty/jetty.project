@@ -18,11 +18,14 @@
 
 package org.eclipse.jetty.websocket.core.example;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractFrameHandler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
@@ -35,6 +38,7 @@ class ExampleFrameHandler extends AbstractFrameHandler
     {        
         LOG.info("onOpen {}", getWebSocketChannel());
         super.onOpen();
+        /*
         getWebSocketChannel().outgoingFrame(new TextFrame().setPayload("Opened!"),
         new Callback()
         {
@@ -51,16 +55,26 @@ class ExampleFrameHandler extends AbstractFrameHandler
             }
         },
         BatchMode.OFF);
-        
+        */
     }
 
     @Override
     public void onText(String payload, Callback callback)
     {
-        LOG.info("onText {} {}", payload,getWebSocketChannel());
-        getWebSocketChannel().outgoingFrame(new TextFrame().setPayload("ECHO: "+payload),
+        LOG.info("onText {} {}", payload.length(),getWebSocketChannel());
+        getWebSocketChannel().outgoingFrame(new TextFrame().setPayload(payload),
                 callback,
                 BatchMode.OFF);
+    }
+    
+    @Override
+    public void onBinary(ByteBuffer payload, Callback callback)
+    {
+        LOG.info("onBinary {} {}", payload==null?0:payload.remaining(),getWebSocketChannel());
+        BinaryFrame echo = new BinaryFrame();
+        if (payload!=null)
+            echo.setPayload(payload);
+        getWebSocketChannel().outgoingFrame(echo,callback,BatchMode.OFF);
     }
     
     @Override

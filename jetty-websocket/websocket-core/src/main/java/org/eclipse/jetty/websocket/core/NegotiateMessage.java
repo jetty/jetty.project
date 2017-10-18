@@ -33,6 +33,11 @@ public class NegotiateMessage
         headers.computeIfAbsent(name,k->new ArrayList<>()).add(value);
     }
     
+    public void deleteHeader(String name)
+    {
+        headers.remove(name);
+    }
+    
     public String getHeader(String name)
     {
         List<String> list = headers.get(name);
@@ -82,7 +87,10 @@ public class NegotiateMessage
         
         public List<String> getOfferedSubprotocols()
         {
-            return headers.get(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
+            List<String> offered = headers.get(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString());
+            if (offered==null)
+                return Collections.emptyList();
+            return offered;
         }
 
     }
@@ -111,9 +119,11 @@ public class NegotiateMessage
         public void setExtensionStack(ExtensionStack extensionStack)
         {
             this.extensionStack = extensionStack;
-            setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),
-                    ExtensionConfig.toHeaderValue(extensionStack.getNegotiatedExtensions()));
-            headers.entrySet().forEach(System.err::println);
+            if (extensionStack.hasNegotiatedExtensions())
+                setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),
+                        ExtensionConfig.toHeaderValue(extensionStack.getNegotiatedExtensions()));
+            else
+                deleteHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString());
         }
 
         public void updateExtensionStackFromHeaders()
