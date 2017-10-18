@@ -171,4 +171,4 @@ This is typically used to pass a request to a link:{JDURL}/org/eclipse/jetty/ser
 [[more-about-handlers]]
 ==== More About Handlers
 
-See the link:{JDURL}/[latest Jetty Source XRef] and the link:{JDURL}/[latest Jetty JavaDoc] for detailed information on each Jetty handler.
+See the link:{JDURL}/[latest Jetty JavaDoc] for detailed information on each Jetty handler.
