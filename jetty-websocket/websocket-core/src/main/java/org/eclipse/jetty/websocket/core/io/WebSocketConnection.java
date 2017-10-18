@@ -66,7 +66,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     private final Flusher flusher;
     private final String id;
 
-    private WebSocketChannel session;
+    private WebSocketChannel channel;
 
     // Read / Parse variables
     private AtomicBoolean fillAndParseScope = new AtomicBoolean(false);
@@ -100,7 +100,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                 endp.getRemoteAddress().getPort());
 
         this.policy = channel.getPolicy();
-        this.session = channel;
+        this.channel = channel;
 
         this.generator = new Generator(policy, bufferPool);
         this.parser = new Parser(policy, bufferPool, this);
@@ -193,7 +193,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
 
-        session.processError(new WebSocketTimeoutException("Connection Idle Timeout"));
+        channel.processError(new WebSocketTimeoutException("Connection Idle Timeout"));
         return true;
     }
 
@@ -205,7 +205,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
 
-        session.getExtensionStack().incomingFrame(frame, new Callback()
+        channel.getExtensionStack().incomingFrame(frame, new Callback()
         {
             @Override
             public void succeeded()
@@ -229,7 +229,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
                 parser.release(frame);
 
                 // notify session & endpoint
-                session.processError(cause);
+                channel.processError(cause);
             }
         });
 
@@ -292,9 +292,10 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
 
     private void fillAndParse()
     {
+        if(!fillAndParseScope.compareAndSet(false,true))
+            return;
         try
         {
-            fillAndParseScope.set(true);
             while (getEndPoint().isOpen())
             {
                 if (suspendToken.get())
@@ -304,7 +305,10 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
 
                 ByteBuffer nBuffer = getNetworkBuffer();
 
-                if (!parser.parse(nBuffer)) return;
+                if (!parser.parse(nBuffer)) 
+                {
+                    return;
+                }
 
                 // Shouldn't reach this point if buffer has un-parsed bytes
                 assert (!nBuffer.hasRemaining());
@@ -330,7 +334,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         }
         catch (Throwable t)
         {
-            session.processError(t);
+            channel.processError(t);
         }
         finally
         {
@@ -371,7 +375,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen() {}",this);
 
-        session.onOpen();
+        channel.onOpen();
         super.onOpen();
     }
 
@@ -381,7 +385,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
     @Override
     protected boolean onReadTimeout()
     {
-        session.processError(new SocketTimeoutException("Timeout on Read"));
+        channel.processError(new SocketTimeoutException("Timeout on Read"));
         return false;
     }
 
@@ -527,7 +531,7 @@ public class WebSocketConnection extends AbstractConnection implements Parser.Ha
         public void onCompleteFailure(Throwable x)
         {
             super.onCompleteFailure(x);
-            session.processError(x);
+            channel.processError(x);
         }
     }
 }
