@@ -382,6 +382,19 @@
       <version>${slf4j-version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>5.0.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>5.0.1</version>
+      <scope>test</scope>
+    </dependency>
+    
   </dependencies>
   <build>
     <plugins>
