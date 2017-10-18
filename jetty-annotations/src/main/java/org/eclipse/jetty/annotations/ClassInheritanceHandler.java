@@ -48,16 +48,18 @@ public class ClassInheritanceHandler extends AbstractHandler
     {
         try
         {
+            //Don't scan Object
+            if ("java.lang.Object".equals(classInfo.getClassName()))
+                return;
+            
             for (int i=0; classInfo.getInterfaces() != null && i < classInfo.getInterfaces().length;i++)
             {
                 addToInheritanceMap(classInfo.getInterfaces()[i], classInfo.getClassName());
-                //_inheritanceMap.add (classInfo.getInterfaces()[i], classInfo.getClassName());
             }
             //To save memory, we don't record classes that only extend Object, as that can be assumed
             if (!"java.lang.Object".equals(classInfo.getSuperName()))
             {
                 addToInheritanceMap(classInfo.getSuperName(), classInfo.getClassName());
-                //_inheritanceMap.add(classInfo.getSuperName(), classInfo.getClassName());
             }
         }
         catch (Exception e)
