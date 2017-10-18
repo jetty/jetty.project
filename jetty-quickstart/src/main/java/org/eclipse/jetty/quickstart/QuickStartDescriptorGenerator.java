@@ -72,6 +72,10 @@ import org.eclipse.jetty.xml.XmlAppendable;
  * <p>
  * Generate an effective web.xml from a WebAppContext, including all components 
  * from web.xml, web-fragment.xmls annotations etc.
+ * <p>
+ * If generating quickstart for a different java platform than the current running
+ * platform, then the org.eclipse.jetty.annotations.javaTargetPlatform attribute
+ * should be set on the Context with the platform number of the target JVM (eg 8).
  */
 public class QuickStartDescriptorGenerator
 {
