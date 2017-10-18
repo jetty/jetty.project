@@ -125,12 +125,6 @@ public class NegotiateMessage
             else
                 deleteHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString());
         }
-
-        public void updateExtensionStackFromHeaders()
-        {
-            // TODO check ExtensionStack against the SEC_WEBSOCKET_EXTENSIONS, which may have been
-            // mutated since setExtensionStack was called
-        }
         
         public void sendError(int code, String reason)
         {            

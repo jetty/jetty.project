@@ -39,23 +39,22 @@ class ExampleFrameHandlerFactory implements FrameHandlerFactory
     WebSocketExtensionRegistry extensionRegistry = new WebSocketExtensionRegistry();
 
     @Override
-    public FrameHandler newFrameHandler(Request negotiateRequest, Response negotiateResponse, WebSocketPolicy candidatePolicy, ByteBufferPool bufferPool)
+    public FrameHandler newFrameHandler(Request negotiateRequest, Response negotiateResponse, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {        
-        // Initial Negotiation of extensions (see update below)
-        List<ExtensionConfig> offeredExtensions = negotiateRequest.getOfferedExtensions();
-        ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
-        extensionStack.negotiate(objectFactory, candidatePolicy, bufferPool, offeredExtensions);
-        negotiateResponse.setExtensionStack(extensionStack);
-        
         // Finalize negotiations in API layer involves:
+        //  + MAY mutate the policy
         //  + MAY read request and set response headers
         //  + MAY reject with sendError semantics
         //  + MAY change extensions by mutating response headers
         //  + MUST pick subprotocol
         //  + MUST return the FrameHandler
         
+        
         // Examples of those steps are below:
 
+        //  + MAY mutate the policy
+        policy.setIdleTimeout(policy.getIdleTimeout()+1);
+        
         //  + MAY read request and set response headers
         String special = negotiateRequest.getHeader("MySpecialHeader");
         if (special!=null)
@@ -71,7 +70,10 @@ class ExampleFrameHandlerFactory implements FrameHandlerFactory
             
         //  + MAY change extensions by mutating response headers
         // negotiateResponse.addHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(),"@identity");
-        negotiateResponse.updateExtensionStackFromHeaders();
+        List<ExtensionConfig> offeredExtensions = negotiateRequest.getOfferedExtensions();
+        ExtensionStack extensionStack = new ExtensionStack(extensionRegistry);
+        extensionStack.negotiate(objectFactory, policy, bufferPool, offeredExtensions);
+        negotiateResponse.setExtensionStack(extensionStack);
         
         //  + MUST pick subprotocol
         List<String> subprotocols = negotiateRequest.getOfferedSubprotocols();

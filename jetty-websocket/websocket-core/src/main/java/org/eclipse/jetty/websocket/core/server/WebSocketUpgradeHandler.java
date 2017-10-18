@@ -49,6 +49,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
 
     protected Handshaker getHandshaker(Request baseRequest)
     {
+        // TODO This needs to be a factory so a handshaker can be obtained for either HTTP/1 or HTTP/2
         return baseRequest.getHttpChannel().getConnector().getBean(Handshaker.class);
     }
 }
