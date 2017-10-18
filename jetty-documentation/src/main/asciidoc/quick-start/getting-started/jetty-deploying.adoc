@@ -64,7 +64,7 @@ The demo-base/webapps directory contains the following deployable and auxiliary 
 `test-spec.xml`::
   A context configuration file that configures `test-spec.war`. 
   Additional configuration includes setting up some objects in the naming space that can be referenced by annotations.
-`xref-proxy.war`::
-  A demonstration web application that uses a transparent proxy to serve the Jetty source link:{JDURL}/[xref] from the http://www.eclipse.org/jetty[Eclipse Jetty website].
+`javadoc-proxy.war`::
+  A demonstration web application that uses a transparent proxy to serve the Jetty source link:{JDURL}/[Javadoc] from the http://www.eclipse.org/jetty[Eclipse Jetty website].
 `example-moved.xml`::
   A demonstration context configuration file that shows how to use the link:#moved-context-handler[`MovedContextHandler`] to redirect from one path to another.
