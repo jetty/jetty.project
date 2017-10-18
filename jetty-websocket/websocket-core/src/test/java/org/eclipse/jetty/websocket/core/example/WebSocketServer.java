@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.RFC6455Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
-public class WebSocketCoreExample
+public class WebSocketServer
 {
     public static void main(String[] args) throws Exception
     {
