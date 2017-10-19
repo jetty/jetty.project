@@ -60,6 +60,12 @@ public class Utf8StringBuffer extends Utf8Appendable
         _buffer.setLength(0);
     }
 
+    @Override
+    public String getPartialString()
+    {
+        return _buffer.toString();
+    }
+
     public StringBuffer getStringBuffer()
     {
         checkState();
