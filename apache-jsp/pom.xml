@@ -83,12 +83,6 @@
       <artifactId>apache-jsp</artifactId>
     </dependency>
 
-    <!-- Eclipse Java Compiler (for JSP Compilation) -->
-    <dependency>
-      <groupId>org.eclipse.jdt.core.compiler</groupId>
-      <artifactId>ecj</artifactId>
-    </dependency>
-
     <!-- Running in jetty needs annotations -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
