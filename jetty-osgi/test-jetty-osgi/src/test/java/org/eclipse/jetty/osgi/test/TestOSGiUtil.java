@@ -129,7 +129,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jdt.core.compiler").artifactId("ecj").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
         return res;
     }
