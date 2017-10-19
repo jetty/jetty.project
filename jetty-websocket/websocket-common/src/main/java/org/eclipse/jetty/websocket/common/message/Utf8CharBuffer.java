@@ -30,6 +30,10 @@ import org.eclipse.jetty.util.Utf8Appendable;
  */
 public class Utf8CharBuffer extends Utf8Appendable
 {
+    // TODO this class does not correctly implement the Appendable contract.
+    // The length is currently the capacity, but it should be the number of characters
+    // appended!  It also violates the jetty standard of leaving buffers in flush mode.
+    
     /**
      * Convenience method to wrap a ByteBuffer with a {@link Utf8CharBuffer}
      * 
@@ -58,6 +62,13 @@ public class Utf8CharBuffer extends Utf8Appendable
     public void append(int c)
     {
         buffer.append((char)c);
+    }
+    
+    @Override 
+    public void reset()
+    {
+        clear();
+        super.reset();
     }
 
     public void clear()
@@ -96,6 +107,13 @@ public class Utf8CharBuffer extends Utf8Appendable
     {
         return buffer.remaining();
     }
+    
+
+    @Override
+    public String getPartialString()
+    {
+        return buffer.toString();
+    }
 
     @Override
     public String toString()
@@ -109,4 +127,5 @@ public class Utf8CharBuffer extends Utf8Appendable
         str.append("]");
         return str.toString();
     }
+
 }
