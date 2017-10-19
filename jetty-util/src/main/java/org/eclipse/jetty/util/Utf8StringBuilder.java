@@ -61,6 +61,12 @@ public class Utf8StringBuilder extends Utf8Appendable
         _buffer.setLength(0);
     }
 
+    @Override
+    public String getPartialString()
+    {
+        return _buffer.toString();
+    }
+
     public StringBuilder getStringBuilder()
     {
         checkState();

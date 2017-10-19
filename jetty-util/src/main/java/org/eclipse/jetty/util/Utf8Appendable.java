@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.lang.reflect.GenericArrayType;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.Log;
@@ -176,7 +177,12 @@ public abstract class Utf8Appendable
             throw new RuntimeException(e);
         }
     }
-
+    
+    public void append(byte[] b)
+    {
+        append(b,0,b.length);
+    }
+    
     public void append(byte[] b, int offset, int length)
     {
         try
@@ -285,6 +291,27 @@ public abstract class Utf8Appendable
         }
     }
     
+    /**
+     * @return The UTF8 so far decoded, ignoring partial code points 
+     */
+    public abstract String getPartialString();
+
+
+    /**
+     * Take the partial string an reset in internal buffer, but retain
+     * partial code points.
+     * @return The UTF8 so far decoded, ignoring partial code points 
+     */
+    public String takePartialString()
+    {
+        String partial = getPartialString();
+        int save = _state; 
+        reset();
+        _state = save;
+        return partial;
+    }
+    
+    
     public String toReplacedString()
     {
         if (!isUtf8SequenceComplete())
@@ -305,4 +332,5 @@ public abstract class Utf8Appendable
         }
         return _appendable.toString();
     }
+
 }
