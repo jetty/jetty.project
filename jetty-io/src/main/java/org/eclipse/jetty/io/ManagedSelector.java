@@ -418,10 +418,10 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     private EndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
-        _selectorManager.endPointOpened(endPoint);
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
         selectionKey.attach(endPoint);
+        _selectorManager.endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", endPoint);

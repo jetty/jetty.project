@@ -195,11 +195,12 @@ public class LocalConnector extends AbstractConnector
         if (LOG.isDebugEnabled())
             LOG.debug("accepting {}", acceptorID);
         LocalEndPoint endPoint = _connects.take();
-        endPoint.onOpen();
-        onEndPointOpened(endPoint);
 
         Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
         endPoint.setConnection(connection);
+        
+        endPoint.onOpen();
+        onEndPointOpened(endPoint);
 
         connection.onOpen();
     }
