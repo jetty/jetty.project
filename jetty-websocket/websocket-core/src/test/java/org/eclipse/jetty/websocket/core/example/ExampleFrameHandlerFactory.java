@@ -47,7 +47,7 @@ class ExampleFrameHandlerFactory implements FrameHandlerFactory
         //  + MAY reject with sendError semantics
         //  + MAY change extensions by mutating response headers
         //  + MUST pick subprotocol
-        //  + MUST return the FrameHandler
+        //  + MUST return the FrameHandler or null or exception?
         
         
         // Examples of those steps are below:
@@ -80,7 +80,7 @@ class ExampleFrameHandlerFactory implements FrameHandlerFactory
         String subprotocol = (subprotocols==null || subprotocols.isEmpty())?null:subprotocols.get(0);
         negotiateResponse.setSubprotocol(subprotocol);
 
-        //  + MUST return the FrameHandler
+        //  + MUST return the FrameHandler or null or exception?
         return new ExampleFrameHandler();
     }
 

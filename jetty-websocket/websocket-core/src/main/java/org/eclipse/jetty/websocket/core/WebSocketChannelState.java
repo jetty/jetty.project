@@ -64,6 +64,8 @@ public class WebSocketChannelState
         return String.format("%s[%s]", this.getClass().getSimpleName(), state.get());
     }
 
+    // TODO remove
+    @Deprecated
     public boolean isOpen()
     {
         State s = state.get();

@@ -52,9 +52,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
 
     private WebSocketConnection connection;
 
-    // Holder for errors during onOpen that are reported in doStart later
-    private AtomicReference<Throwable> pendingError = new AtomicReference<>();
-
     public WebSocketChannel(FrameHandler handler,
     		WebSocketPolicy policy,
     		ExtensionStack extensionStack,
@@ -120,16 +117,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
      */
     public void processError(Throwable cause)
     {
-        synchronized (pendingError)
-        {
-            if (!state.isOpen())
-            {
-                // this is a *really* fast fail, before the Session has even started.
-                pendingError.compareAndSet(null, cause);
-                return;
-            }
-        }
-
         // Forward Errors to Local WebSocket EndPoint
         handler.onError(cause);
 
@@ -248,17 +235,6 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
-        Throwable pending = pendingError.get();
-        if (pending != null)
-        {
-            processError(pending);
-        }
-        super.doStart();
-    }
-
-    @Override
     protected void doStop() throws Exception
     {
         this.connection.disconnect();
@@ -331,6 +307,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                         {
                             callback.failed(new IOException("already closed"));
                         }
+                        // TODO wrap callback to trigger action after close handling complete
                     }           
                     
                     // Handle the frame
@@ -346,6 +323,8 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                             CloseFrame closeframe = (CloseFrame)frame;
                             CloseStatus closeStatus = closeframe.getCloseStatus();
 
+                            // TODO replace with completing callback baseclass
+                            // TODO look at why close status is not actually sent (see 7.9.6 ???)
                             close(closeStatus, new Callback.Nested(callback)
                             {
                                 @Override
