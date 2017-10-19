@@ -708,7 +708,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public String toString()
     {
-        return this.getClass().getName()+"@"+Integer.toHexString(hashCode());
+        return String.format("%s[%s]", super.toString(), getVersion());
     }
 
     /* ------------------------------------------------------------ */
