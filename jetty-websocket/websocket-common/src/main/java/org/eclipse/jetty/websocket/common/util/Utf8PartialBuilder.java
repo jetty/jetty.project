@@ -30,14 +30,13 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
  * A call to {@link #toPartialString(ByteBuffer)} will return the section of the String from the start to the last
  * completed UTF8 sequence. Leaving incomplete sequences for a subsequent call to complete.
  */
+@Deprecated
 public class Utf8PartialBuilder
 {
-    private StringBuilder str;
-    private Utf8Appendable utf8;
+    private final Utf8StringBuilder utf8 = new Utf8StringBuilder();
 
     public Utf8PartialBuilder()
     {
-        reset();
     }
 
     public String toPartialString(ByteBuffer buf)
@@ -48,21 +47,6 @@ public class Utf8PartialBuilder
             return "";
         }
         utf8.append(buf);
-        String ret = str.toString();
-        str.setLength(0);
-        return ret;
-    }
-    
-    public void reset()
-    {
-        this.str = new StringBuilder();
-        this.utf8 = new Utf8Appendable(str)
-        {
-            @Override
-            public int length()
-            {
-                return str.length();
-            }
-        };
+        return utf8.takePartialString();
     }
 }
