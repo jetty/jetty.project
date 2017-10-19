@@ -27,11 +27,13 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+@ManagedObject
 public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 {
     private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);

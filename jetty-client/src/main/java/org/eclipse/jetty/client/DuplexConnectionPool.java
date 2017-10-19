@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-@ManagedObject("The connection pool")
+@ManagedObject
 public class DuplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(DuplexConnectionPool.class);
