@@ -526,15 +526,27 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             String knownMethod = "";
             for (StackTraceElement t : trace)
             {
-                if ("idleJobPoll".equals(t.getMethodName()))
+                if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().endsWith("QueuedThreadPool"))
                 {
                     knownMethod = "IDLE ";
                     break;
                 }
                 
-                if ("preallocatedWait".equals(t.getMethodName()))
+                if ("reservedWait".equals(t.getMethodName()) && t.getClassName().endsWith("ReservedThread"))
                 {
-                    knownMethod = "PREALLOCATED ";
+                    knownMethod = "RESERVED ";
+                    break;
+                }
+                
+                if ("select".equals(t.getMethodName()) && t.getClassName().endsWith("SelectorProducer"))
+                {
+                    knownMethod = "SELECTING ";
+                    break;
+                }
+                
+                if ("accept".equals(t.getMethodName()) && t.getClassName().contains("ServerConnector"))
+                {
+                    knownMethod = "ACCEPTING ";
                     break;
                 }
             }
