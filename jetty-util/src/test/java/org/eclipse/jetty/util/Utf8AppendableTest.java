@@ -242,9 +242,7 @@ public class Utf8AppendableTest
 
         utf8.append(TypeUtil.fromHexString(seq1));
         String ret1 = utf8.takePartialString();
-        
         String ret2 = utf8.takePartialString();
-
         utf8.append(TypeUtil.fromHexString(seq2));
         String ret3 = utf8.takePartialString();
         
