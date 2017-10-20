@@ -634,7 +634,7 @@ public class HttpURI
     /* ------------------------------------------------------------ */
     public void decodeQueryTo(MultiMap<String> parameters)
     {
-        if (_query==_fragment)
+        if (_query==null)
             return;
         UrlEncoded.decodeUtf8To(_query,parameters);
     }
@@ -648,7 +648,7 @@ public class HttpURI
     /* ------------------------------------------------------------ */
     public void decodeQueryTo(MultiMap<String> parameters, Charset encoding) throws UnsupportedEncodingException
     {
-        if (_query==_fragment)
+        if (_query==null)
             return;
 
         if (encoding==null || StandardCharsets.UTF_8.equals(encoding))
