@@ -32,8 +32,8 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.FrameCallback;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.JsrServerEndpointFunctions;
 import org.eclipse.jetty.websocket.tests.jsr356.sockets.TrackingSocket;
 import org.junit.Test;
@@ -41,7 +41,7 @@ import org.junit.Test;
 public class JsrServerEndpointFunctions_OnMessage_TextStreamTest extends AbstractJsrEndpointFunctionsTest
 {
     @SuppressWarnings("Duplicates")
-    private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<EndpointFunctions, Void> func) throws Exception
+    private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<WebSocketLocalEndpoint, Void> func) throws Exception
     {
         // Establish endpoint function
         JsrServerEndpointFunctions endpointFunctions = new JsrServerEndpointFunctions(

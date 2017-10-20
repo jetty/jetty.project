@@ -29,15 +29,14 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
+import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.WSServer;
 import org.eclipse.jetty.websocket.tests.jsr356.AbstractJsrTrackingEndpoint;
@@ -103,7 +102,8 @@ public class EndpointViaConfigTest
     @Rule
     public TestingDir testdir = new TestingDir();
 
-    public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
+    @Rule
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     @Test
     public void testEcho() throws Exception
@@ -123,7 +123,7 @@ public class EndpointViaConfigTest
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
 
-            WebSocketClient client = new WebSocketClient(bufferPool);
+            WebSocketClientImpl client = new WebSocketClientImpl(bufferPool);
             try
             {
                 client.start();

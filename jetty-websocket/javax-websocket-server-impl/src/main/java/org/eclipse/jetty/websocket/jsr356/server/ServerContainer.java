@@ -41,14 +41,14 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
-import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.jsr356.client.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.client.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.impl.NativeWebSocketConfiguration;
+import org.eclipse.jetty.websocket.servlet.impl.WebSocketServerFactory;
 
 @ManagedObject("JSR356 Server Container")
 public class ServerContainer extends ClientContainer implements javax.websocket.server.ServerContainer
@@ -197,13 +197,13 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     
     private void assertIsValidEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
-        EndpointFunctions endpointFunctions = null;
+        WebSocketLocalEndpoint endpointFunctions = null;
         try
         {
             // Test that endpoint can be instantiated
             Object endpoint = config.getEndpointClass().newInstance();
             
-            // Establish an EndpointFunctions to test validity of Endpoint declaration
+            // Establish an WSLocalEndpoint to test validity of Endpoint declaration
             AvailableEncoders availableEncoders = new AvailableEncoders(config);
             AvailableDecoders availableDecoders = new AvailableDecoders(config);
             Map<String, String> pathParameters = new HashMap<>();
@@ -239,7 +239,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             {
                 try
                 {
-                    // Dispose of EndpointFunctions
+                    // Dispose of WSLocalEndpoint
                     endpointFunctions.stop();
                 }
                 catch (Exception ignore)
@@ -251,12 +251,12 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     }
     
     @Override
-    public EndpointFunctions newJsrEndpointFunction(Object endpoint,
-                                                    WebSocketPolicy sessionPolicy,
-                                                    AvailableEncoders availableEncoders,
-                                                    AvailableDecoders availableDecoders,
-                                                    Map<String, String> pathParameters,
-                                                    EndpointConfig config)
+    public WebSocketLocalEndpoint newJsrEndpointFunction(Object endpoint,
+                                                         WebSocketPolicy sessionPolicy,
+                                                         AvailableEncoders availableEncoders,
+                                                         AvailableDecoders availableDecoders,
+                                                         Map<String, String> pathParameters,
+                                                         EndpointConfig config)
     {
         return new JsrServerEndpointFunctions(endpoint,
                 sessionPolicy,

@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.servlet.impl.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 public class SimpleServletServer extends LocalServer implements LocalFuzzer.Provider

@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.tests.client.jsr356;
 
 import static org.hamcrest.Matchers.nullValue;
 
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

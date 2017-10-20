@@ -29,19 +29,19 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 /**
- * A wrapper for {@link org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection} to
+ * A wrapper for {@link WebSocketCoreConnection} to
  * allow for untrusted behaviors, such as arbitrary writes and flushes on network.
  */
 public class UntrustedWSConnection
 {
     private static final Logger LOG = Log.getLogger(UntrustedWSConnection.class);
-    private final AbstractWebSocketConnection internalConnection;
+    private final WebSocketCoreConnection internalConnection;
     private final SharedBlockingCallback writeBlocker;
     
-    public UntrustedWSConnection(AbstractWebSocketConnection connection)
+    public UntrustedWSConnection(WebSocketCoreConnection connection)
     {
         this.internalConnection = connection;
         this.writeBlocker = new SharedBlockingCallback();

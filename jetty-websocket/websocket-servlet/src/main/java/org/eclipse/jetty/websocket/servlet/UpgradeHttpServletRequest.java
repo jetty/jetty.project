@@ -48,6 +48,9 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
+/**
+ * An immutable, feature limited, HttpServletRequest that will not be recycled by Jetty.
+ */
 public class UpgradeHttpServletRequest implements HttpServletRequest
 {
     private static final String UNSUPPORTED_WITH_WEBSOCKET_UPGRADE = "Feature unsupported with a Upgraded to WebSocket HttpServletRequest";

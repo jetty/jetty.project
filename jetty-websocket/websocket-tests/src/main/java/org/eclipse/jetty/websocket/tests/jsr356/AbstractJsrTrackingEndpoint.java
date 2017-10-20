@@ -38,7 +38,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.core.CloseInfo;
 import org.eclipse.jetty.websocket.tests.DataUtils;
 import org.eclipse.jetty.websocket.tests.Defaults;
 import org.hamcrest.Matcher;
@@ -94,7 +94,7 @@ public abstract class AbstractJsrTrackingEndpoint extends Endpoint
     
     public void assertNotOpened(String prefix)
     {
-        assertTrue(prefix + " open event should not have occurred", openLatch.getCount() > 0);
+        assertTrue(prefix + " onOpen event should not have occurred", openLatch.getCount() > 0);
     }
     
     public void awaitCloseEvent(String prefix) throws InterruptedException

@@ -57,8 +57,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.api.WSURI;
+import org.eclipse.jetty.websocket.jsr356.client.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.Test;
@@ -250,7 +250,7 @@ public class DelayedStartClientOnServerTest
             
             List<String> threadNames = getThreadNames(server, (ContainerLifeCycle)container);
             assertNoHttpClientPoolThreads(threadNames);
-            assertThat("Threads", threadNames, hasItem(containsString("WebSocketContainer@")));
+            assertThat("Threads", threadNames, hasItem(containsString("Jsr356Client@")));
         }
         finally
         {
@@ -384,6 +384,10 @@ public class DelayedStartClientOnServerTest
             {
                 QueuedThreadPool qtp = (QueuedThreadPool) executor;
                 threadNames.add(qtp.getName());
+            }
+            else
+            {
+                System.err.println("### Executor: " + executor);
             }
         }
         

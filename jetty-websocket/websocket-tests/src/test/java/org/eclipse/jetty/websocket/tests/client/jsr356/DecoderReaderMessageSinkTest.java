@@ -34,12 +34,12 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.common.frames.ContinuationFrame;
-import org.eclipse.jetty.websocket.common.frames.TextFrame;
-import org.eclipse.jetty.websocket.common.function.EndpointFunctions;
-import org.eclipse.jetty.websocket.common.io.CompletableFutureFrameCallback;
+import org.eclipse.jetty.websocket.core.WebSocketLocalEndpoint;
+import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
+import org.eclipse.jetty.websocket.core.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.CompletableFutureCallback;
 import org.eclipse.jetty.websocket.common.io.FutureFrameCallback;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.messages.DecodedReaderMessageSink;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -89,7 +89,7 @@ public class DecoderReaderMessageSinkTest
         }
     }
     
-    private EndpointFunctions<JsrSession> dummyFunctions = new DummyEndpointFunctions();
+    private WebSocketLocalEndpoint<JavaxWebSocketSession> dummyFunctions = new DummyEndpointFunctions();
     
     @Test
     public void testDecoderReader() throws Exception
@@ -113,7 +113,7 @@ public class DecoderReaderMessageSinkTest
         
         FutureFrameCallback callback1 = new FutureFrameCallback();
         FutureFrameCallback callback2 = new FutureFrameCallback();
-        CompletableFutureFrameCallback finCallback = new CompletableFutureFrameCallback();
+        CompletableFutureCallback finCallback = new CompletableFutureCallback();
         
         sink.accept(new TextFrame().setPayload("Hello.\n").setFin(false), callback1);
         sink.accept(new ContinuationFrame().setPayload("Is this thing on?\n").setFin(false), callback2);

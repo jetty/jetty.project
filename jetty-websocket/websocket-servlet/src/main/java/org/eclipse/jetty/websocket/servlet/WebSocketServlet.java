@@ -26,10 +26,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
  * <p>
@@ -41,8 +37,8 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * <pre>
  * package my.example;
  * 
- * import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
- * import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+ * import WebSocketServlet;
+ * import WebSocketServletFactory;
  * 
  * public class MyEchoServlet extends WebSocketServlet
  * {
@@ -63,9 +59,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * 
  * <p>
  * <b>Configuration / Init-Parameters:</b><br>
- * Note: If you use the {@link WebSocket &#064;WebSocket} annotation, these configuration settings can be specified on a per WebSocket basis, vs a per Servlet
- * basis.
- * 
+ *
  * <dl>
  * <dt>maxIdleTime</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
@@ -108,34 +102,32 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         try
         {
-            WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+            ServletContext ctx = getServletContext();
+            factory = WebSocketServletFactory.Loader.load(ctx);
 
             String max = getInitParameter("maxIdleTime");
             if (max != null)
             {
-                policy.setIdleTimeout(Long.parseLong(max));
+                factory.getPolicy().setIdleTimeout(Long.parseLong(max));
             }
 
             max = getInitParameter("maxTextMessageSize");
             if (max != null)
             {
-                policy.setMaxTextMessageSize(Integer.parseInt(max));
+                factory.getPolicy().setMaxTextMessageSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("maxBinaryMessageSize");
             if (max != null)
             {
-                policy.setMaxBinaryMessageSize(Integer.parseInt(max));
+                factory.getPolicy().setMaxBinaryMessageSize(Integer.parseInt(max));
             }
 
             max = getInitParameter("inputBufferSize");
             if (max != null)
             {
-                policy.setInputBufferSize(Integer.parseInt(max));
+                factory.getPolicy().setInputBufferSize(Integer.parseInt(max));
             }
-    
-            ServletContext ctx = getServletContext();
-            factory = WebSocketServletFactory.Loader.load(ctx, policy);
 
             configure(factory);
             

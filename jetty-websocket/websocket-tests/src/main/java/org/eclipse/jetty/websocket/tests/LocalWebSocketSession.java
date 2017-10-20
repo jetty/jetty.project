@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
 import org.eclipse.jetty.websocket.common.function.CommonEndpointFunctions;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.junit.rules.TestName;

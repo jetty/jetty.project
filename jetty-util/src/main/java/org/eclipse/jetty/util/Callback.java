@@ -109,8 +109,27 @@ public interface Callback extends Invocable
             }
         };
     }
+    
+    class Completing implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            completed();
+        }
 
-    class Nested implements Callback
+        @Override
+        public void failed(Throwable x)
+        {
+            completed();
+        }
+        
+        public void completed()
+        {
+        }  
+    }
+        
+    class Nested extends Completing
     {
         private final Callback callback;
 
@@ -132,13 +151,27 @@ public interface Callback extends Invocable
         @Override
         public void succeeded()
         {
-            callback.succeeded();
+            try
+            {
+                callback.succeeded();
+            }
+            finally
+            {
+                completed();
+            }
         }
 
         @Override
         public void failed(Throwable x)
         {
-            callback.failed(x);
+            try
+            {
+                callback.failed(x);
+            }
+            finally
+            {
+                completed();
+            }
         }
 
         @Override

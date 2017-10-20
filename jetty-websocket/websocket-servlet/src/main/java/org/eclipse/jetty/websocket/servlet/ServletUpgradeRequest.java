@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.websocket.servlet;
 
-import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -40,9 +37,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.WebSocketConstants;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.core.extensions.ExtensionConfig;
 
 /**
  * Servlet specific {@link UpgradeRequest} implementation.
@@ -83,18 +79,11 @@ public class ServletUpgradeRequest implements UpgradeRequest
         throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
     }
 
-    @Override
-    public void clearHeaders()
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
-    }
-
     public void complete()
     {
         request.complete();
     }
 
-    @SuppressWarnings("unused")
     public X509Certificate[] getCertificates()
     {
         return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
@@ -146,7 +135,7 @@ public class ServletUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public Map<String, List<String>> getHeaders()
+    public Map<String, List<String>> getHeaderMap()
     {
         return request.getHeaders();
     }
@@ -250,7 +239,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return request.getMethod();
     }
 
-    @Override
     public String getOrigin()
     {
         return getHeader("Origin");
@@ -272,16 +260,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return parameterMap;
     }
     
-    /**
-     * @return the principal
-     * @deprecated use {@link #getUserPrincipal()} instead
-     */
-    @Deprecated
-    public Principal getPrincipal()
-    {
-        return getUserPrincipal();
-    }
-
     @Override
     public String getProtocolVersion()
     {
@@ -378,7 +356,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
      * Note: this is equivalent to {@link HttpServletRequest#getSession(boolean)}
      * and will not create a new HttpSession.
      */
-    @Override
     public HttpSession getSession()
     {
         return request.getSession(false);
@@ -424,13 +401,11 @@ public class ServletUpgradeRequest implements UpgradeRequest
         return false;
     }
     
-    @Override
     public boolean isOrigin(String test)
     {
         return test.equalsIgnoreCase(getOrigin());
     }
 
-    @Override
     public boolean isSecure()
     {
         return this.secure;
@@ -502,12 +477,6 @@ public class ServletUpgradeRequest implements UpgradeRequest
     public void setServletAttribute(String name, Object value)
     {
         request.setAttribute(name, value);
-    }
-
-    @Override
-    public void setSession(Object session)
-    {
-        throw new UnsupportedOperationException(CANNOT_MODIFY_SERVLET_REQUEST);
     }
 
     @Override

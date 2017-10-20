@@ -28,9 +28,9 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.DummyConnection;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.jsr356.client.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
+import org.eclipse.jetty.websocket.jsr356.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jsr356.encoders.AvailableEncoders;
@@ -77,13 +77,13 @@ public abstract class AbstractJsrEndpointFunctionsTest
         uriParams = new HashMap<>();
     }
     
-    public JsrSession newSession(Object websocket)
+    public JavaxWebSocketSession newSession(Object websocket)
     {
         String id = this.getClass().getSimpleName();
         URI requestURI = URI.create("ws://localhost/" + id);
         DummyConnection connection = new DummyConnection(clientPolicy);
         ClientEndpointConfig config = new EmptyClientEndpointConfig();
         ConfiguredEndpoint ei = new ConfiguredEndpoint(websocket, config);
-        return new JsrSession(container, id, requestURI, ei, connection);
+        return new JavaxWebSocketSession(container, id, requestURI, ei, connection);
     }
 }

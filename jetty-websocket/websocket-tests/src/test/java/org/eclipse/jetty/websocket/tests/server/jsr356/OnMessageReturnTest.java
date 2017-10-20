@@ -31,13 +31,12 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.client.impl.WebSocketClientImpl;
+import org.eclipse.jetty.websocket.tests.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.tests.TrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.WSServer;
 import org.junit.Rule;
@@ -83,7 +82,8 @@ public class OnMessageReturnTest
     @Rule
     public TestingDir testdir = new TestingDir();
 
-    public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
+    @Rule
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     @Test
     public void testEchoReturn() throws Exception
@@ -100,7 +100,7 @@ public class OnMessageReturnTest
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
 
-            WebSocketClient client = new WebSocketClient(bufferPool);
+            WebSocketClientImpl client = new WebSocketClientImpl(bufferPool);
             try
             {
                 client.start();

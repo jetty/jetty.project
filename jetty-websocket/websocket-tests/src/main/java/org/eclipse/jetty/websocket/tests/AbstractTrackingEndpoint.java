@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.CloseInfo;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 
@@ -42,7 +42,7 @@ public abstract class AbstractTrackingEndpoint<T>
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
-    public AtomicReference<CloseInfo> closeInfo = new AtomicReference<>();
+    public AtomicReference<CloseStatus> closeInfo = new AtomicReference<>();
     public AtomicReference<Throwable> closeStack = new AtomicReference<>();
     public AtomicReference<Throwable> error = new AtomicReference<>();
     
@@ -54,9 +54,9 @@ public abstract class AbstractTrackingEndpoint<T>
     
     public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
     {
-        CloseInfo close = closeInfo.get();
+        CloseStatus close = closeInfo.get();
         assertThat(prefix + " close info", close, Matchers.notNullValue());
-        assertThat(prefix + " received close code", close.getStatusCode(), Matchers.is(expectedCloseStatusCode));
+        assertThat(prefix + " received close code", close.getCode(), Matchers.is(expectedCloseStatusCode));
         assertThat(prefix + " received close reason", close.getReason(), reasonMatcher);
     }
     
@@ -78,7 +78,7 @@ public abstract class AbstractTrackingEndpoint<T>
     
     public void assertNotOpened(String prefix)
     {
-        assertTrue(prefix + " open event should not have occurred", openLatch.getCount() > 0);
+        assertTrue(prefix + " onOpen event should not have occurred", openLatch.getCount() > 0);
     }
     
     public void awaitCloseEvent(String prefix) throws InterruptedException
@@ -112,7 +112,7 @@ public abstract class AbstractTrackingEndpoint<T>
         {
             LOG.debug("onWSClose({}, {})", statusCode, reason);
         }
-        CloseInfo close = new CloseInfo(statusCode, reason);
+        CloseStatus close = new CloseStatus(statusCode, reason);
         if (closeInfo.compareAndSet(null, close) == false)
         {
             LOG.warn("onClose should only happen once - Original Close: " + closeInfo.get(), closeStack.get());

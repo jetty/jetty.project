@@ -32,15 +32,15 @@ import javax.servlet.http.HttpServletResponse;
 public class BiConsumerServiceServlet extends HttpServlet
 {
     private final BiConsumer<HttpServletRequest, HttpServletResponse> consumer;
-    
+
     public BiConsumerServiceServlet(BiConsumer<HttpServletRequest, HttpServletResponse> consumer)
     {
         this.consumer = consumer;
     }
-    
+
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        this.consumer.accept(req,resp);
+        this.consumer.accept(req, resp);
     }
 }

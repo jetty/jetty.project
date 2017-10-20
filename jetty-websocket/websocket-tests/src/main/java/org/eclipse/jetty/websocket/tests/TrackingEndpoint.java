@@ -31,13 +31,13 @@ import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketFrameListener;
+import org.eclipse.jetty.websocket.api.listeners.WebSocketListener;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
-import org.eclipse.jetty.websocket.common.WebSocketFrame;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
+import org.eclipse.jetty.websocket.core.WebSocketFrame;
+import org.eclipse.jetty.websocket.core.WebSocketSession;
+import org.eclipse.jetty.websocket.core.io.WebSocketCoreConnection;
 
 public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSession> implements WebSocketListener, WebSocketFrameListener
 {
@@ -117,19 +117,19 @@ public class TrackingEndpoint extends AbstractTrackingEndpoint<WebSocketSession>
         messageQueue.offer(text);
     }
     
-    public AbstractWebSocketConnection getConnection()
+    public WebSocketCoreConnection getConnection()
     {
         LogicalConnection connection = this.session.getConnection();
-        if (connection instanceof AbstractWebSocketConnection)
+        if (connection instanceof WebSocketCoreConnection)
         {
-            return (AbstractWebSocketConnection) connection;
+            return (WebSocketCoreConnection) connection;
         }
         return null;
     }
     
     public EndPoint getJettyEndPoint()
     {
-        AbstractWebSocketConnection connection = getConnection();
+        WebSocketCoreConnection connection = getConnection();
         if (connection != null)
         {
             return connection.getEndPoint();

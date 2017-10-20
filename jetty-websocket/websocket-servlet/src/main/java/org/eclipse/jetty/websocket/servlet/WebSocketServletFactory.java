@@ -26,9 +26,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.core.WebSocketPolicy;
+import org.eclipse.jetty.websocket.core.extensions.WebSocketExtensionRegistry;
 
 /**
  * Basic WebSocketServletFactory for working with Jetty-based WebSocketServlets
@@ -38,15 +37,15 @@ public interface WebSocketServletFactory
     class Loader
     {
         final static String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
-        
-        public static WebSocketServletFactory load(ServletContext ctx, WebSocketPolicy policy)
+
+        public static WebSocketServletFactory load(ServletContext ctx)
         {
             try
             {
                 Class<? extends WebSocketServletFactory> wsClazz =
                         (Class<? extends WebSocketServletFactory>) Class.forName(DEFAULT_IMPL,true,Thread.currentThread().getContextClassLoader());
-                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{ServletContext.class, WebSocketPolicy.class});
-                return ctor.newInstance(ctx, policy);
+                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{ServletContext.class});
+                return ctor.newInstance(ctx);
             }
             catch (ClassNotFoundException e)
             {
@@ -58,22 +57,20 @@ public interface WebSocketServletFactory
             }
         }
     }
-    
+
     boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException;
     
     boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
+
     void start() throws Exception;
     void stop() throws Exception;
     
     WebSocketCreator getCreator();
     
-    ExtensionFactory getExtensionFactory();
+    WebSocketExtensionRegistry getExtensionRegistry();
     
     /**
      * Get the base policy in use for WebSockets.
-     * <p>
-     * Note: individual WebSocket implementations can override some of the values in here by using the {@link WebSocket &#064;WebSocket} annotation.
      *
      * @return the base policy
      */

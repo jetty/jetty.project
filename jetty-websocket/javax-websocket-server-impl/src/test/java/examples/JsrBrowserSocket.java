@@ -223,7 +223,7 @@ public class JsrBrowserSocket
         if (session.isOpen() == false)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Not open");
+                LOG.debug("Not onOpen");
             return;
         }
 
