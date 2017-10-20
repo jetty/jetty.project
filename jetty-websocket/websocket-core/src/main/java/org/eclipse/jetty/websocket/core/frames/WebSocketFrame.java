@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 
 /**
@@ -373,13 +374,15 @@ public abstract class WebSocketFrame implements Frame
     {
         StringBuilder b = new StringBuilder();
         b.append(OpCode.name((byte)(finRsvOp & 0x0F)));
+        b.append('@');
+        b.append(Integer.toHexString(super.hashCode()));
         b.append('[');
         b.append("len=").append(getPayloadLength());
         b.append(",fin=").append((finRsvOp & 0x80) != 0);
         b.append(",rsv=");
-        b.append(((finRsvOp & 0x40) != 0)?'1':'.');
-        b.append(((finRsvOp & 0x20) != 0)?'1':'.');
-        b.append(((finRsvOp & 0x10) != 0)?'1':'.');
+        b.append(((finRsvOp & 0x40) != 0)?'1':'0');
+        b.append(((finRsvOp & 0x20) != 0)?'1':'0');
+        b.append(((finRsvOp & 0x10) != 0)?'1':'0');
         b.append(",masked=").append(masked);
         b.append(']');
         return b.toString();

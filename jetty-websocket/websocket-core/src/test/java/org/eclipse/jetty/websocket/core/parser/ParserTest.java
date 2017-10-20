@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Generator;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
@@ -1584,4 +1585,30 @@ public class ParserTest
         WebSocketFrame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         Assert.assertThat("TextFrame.payload",txt.getPayloadAsUTF8(),is(expectedText));
     }
+
+    @Test
+    public void testParse_Autobahn_7_9_3() throws Exception
+    {       
+        ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("8882c2887e61c164"));
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        ParserCapture capture = parse(policy, buf);
+        
+        capture.assertHasFrame(OpCode.CLOSE,1);
+        CloseFrame frame = (CloseFrame)capture.framesQueue.poll();
+        Assert.assertThat(frame.getCloseStatus().getCode(),is(1004));
+    }
+
+
+    @Test
+    public void testParse_Autobahn_7_9_6() throws Exception
+    {       
+        ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("88824c49cb474fbf"));
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        ParserCapture capture = parse(policy, buf);
+        
+        capture.assertHasFrame(OpCode.CLOSE,1);
+        CloseFrame frame = (CloseFrame)capture.framesQueue.peek();
+        Assert.assertThat(frame.getCloseStatus().getCode(),is(1014));
+    }
+    
 }

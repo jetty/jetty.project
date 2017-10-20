@@ -23,17 +23,17 @@ import org.eclipse.jetty.http.HttpHeader;
 public final class WebSocketConstants
 {
     // Core use Close Status Codes
-    public static final int NORMAL = 1000;
-    public static final int SHUTDOWN = 1001;
-    public static final int PROTOCOL = 1002;
-    public static final int BAD_DATA = 1003;
-    public static final int NO_CODE = 1005;
-    public static final int NO_CLOSE = 1006;
-    public static final int BAD_PAYLOAD = 1007;
-    public static final int POLICY_VIOLATION = 1008;
-    public static final int MESSAGE_TOO_LARGE = 1009;
-    public static final int SERVER_ERROR = 1011;
-    public static final int FAILED_TLS_HANDSHAKE = 1015;
+    public static final int NORMAL = CloseStatus.NORMAL;
+    public static final int SHUTDOWN = CloseStatus.SHUTDOWN;
+    public static final int PROTOCOL = CloseStatus.PROTOCOL;
+    public static final int BAD_DATA = CloseStatus.BAD_DATA;
+    public static final int NO_CODE = CloseStatus.NO_CODE;
+    public static final int NO_CLOSE = CloseStatus.NO_CLOSE;
+    public static final int BAD_PAYLOAD = CloseStatus.BAD_PAYLOAD;
+    public static final int POLICY_VIOLATION = CloseStatus.POLICY_VIOLATION;
+    public static final int MESSAGE_TOO_LARGE = CloseStatus.MESSAGE_TOO_LARGE;
+    public static final int SERVER_ERROR = CloseStatus.SERVER_ERROR;
+    public static final int FAILED_TLS_HANDSHAKE = CloseStatus.FAILED_TLS_HANDSHAKE;
 
     // Request / Response Header Names
     public static final String SEC_WEBSOCKET_EXTENSIONS = HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString();

@@ -216,4 +216,12 @@ public class CloseFrame extends ControlFrame
         // All others are allowed
         return true;
     }
+
+    @Override
+    public String toString()
+    {
+        return super.toString()+getCloseStatus();
+    }
+    
+    
 }

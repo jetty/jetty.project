@@ -27,21 +27,29 @@ public class WebSocketChannelState
 {
     private static class State
     {
+        final String name;
         final boolean inOpen;
         final boolean outOpen;
         final CloseStatus closeStatus;
         
-        State(boolean inOpen,boolean outOpen,CloseStatus closeStatus)
+        State(String name, boolean inOpen,boolean outOpen,CloseStatus closeStatus)
         {
+            this.name = name;
             this.inOpen = inOpen;
             this.outOpen = outOpen;
             this.closeStatus = closeStatus;
         }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("%s{i=%b o=%b c=%d}",name,inOpen,outOpen,closeStatus==null?-1:closeStatus.getCode());
+        }
     }
     
-    private static final State CONNECTING = new State(false,false,null);
-    private static final State CONNECTED = new State(true,true,null);
-    private static final State OPEN = new State(true,true,null);
+    private static final State CONNECTING = new State("CONNECTING",false,false,null);
+    private static final State CONNECTED = new State("CONNECTED",true,true,null);
+    private static final State OPEN = new State("OPEN",true,true,null);
     
     private AtomicReference<State> state = new AtomicReference<>(CONNECTING);
     
@@ -100,17 +108,17 @@ public class WebSocketChannelState
             State s = state.get();
             
             if (!s.inOpen)
-                return false;
+                throw new IllegalStateException(state.get().toString());
             
             if (s.outOpen)
             {
-                State closedIn = new State(false,true,closeStatus);
+                State closedIn = new State("OCLOSED",false,true,closeStatus);
                 if (state.compareAndSet(s,closedIn))
-                    return true;
+                    return false;
             }
             else
             {
-                State closed = new State(false,false,closeStatus);
+                State closed = new State("CLOSED",false,false,closeStatus);
                 if (state.compareAndSet(s,closed))
                     return true;
             }
@@ -124,17 +132,17 @@ public class WebSocketChannelState
             State s = state.get();
             
             if (!s.outOpen)
-                return false;
+                throw new IllegalStateException(state.get().toString());
             
             if (s.inOpen)
             {
-                State closedOut = new State(true,false,closeStatus);
+                State closedOut = new State("ICLOSED",true,false,closeStatus);
                 if (state.compareAndSet(s,closedOut))
-                    return true;
+                    return false;
             }
             else
             {
-                State closed = new State(false,false,closeStatus);
+                State closed = new State("CLOSED",false,false,closeStatus);
                 if (state.compareAndSet(s,closed))
                     return true;
             }

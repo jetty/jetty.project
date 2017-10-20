@@ -26,14 +26,18 @@ import org.eclipse.jetty.util.Utf8StringBuffer;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.frames.BinaryFrame;
+import org.eclipse.jetty.websocket.core.frames.CloseFrame;
+import org.eclipse.jetty.websocket.core.frames.ContinuationFrame;
 import org.eclipse.jetty.websocket.core.frames.OpCode;
+import org.eclipse.jetty.websocket.core.frames.PingFrame;
 import org.eclipse.jetty.websocket.core.frames.PongFrame;
 import org.eclipse.jetty.websocket.core.frames.TextFrame;
 import org.eclipse.jetty.websocket.core.io.BatchMode;
 
 public class AbstractFrameHandler implements FrameHandler
 {
-    private Logger LOG = Log.getLogger(this.getClass());
+    private Logger LOG = Log.getLogger(AbstractFrameHandler.class);
     private byte partial = 0;
     private Utf8StringBuilder utf8;
     private ByteBuffer byteBuffer;
@@ -64,27 +68,27 @@ public class AbstractFrameHandler implements FrameHandler
         switch (opcode)
         {
             case OpCode.PING:
-                onPing(frame,callback);
+                onPing((PingFrame)frame,callback);
                 break;
          
             case OpCode.PONG:
-                onPong(frame,callback);
+                onPong((PongFrame)frame,callback);
                 break;
                 
             case OpCode.TEXT:
-                onText(frame,callback);
+                onText((TextFrame)frame,callback);
                 break;
                 
             case OpCode.BINARY:
-                onBinary(frame,callback);
+                onBinary((BinaryFrame)frame,callback);
                 break;
                 
             case OpCode.CONTINUATION:
-                onContinuation(frame,callback);
+                onContinuation((ContinuationFrame)frame,callback);
                 break;
                 
             case OpCode.CLOSE:
-                onClose(frame,callback);
+                onClose((CloseFrame)frame,callback);
                 break;
         }
     }
@@ -94,7 +98,7 @@ public class AbstractFrameHandler implements FrameHandler
     {
     }
 
-    public void onPing(Frame frame, Callback callback)
+    public void onPing(PingFrame frame, Callback callback)
     {
         ByteBuffer pongBuf;
         if (frame.hasPayload())
@@ -120,12 +124,12 @@ public class AbstractFrameHandler implements FrameHandler
         }
     }
 
-    public void onPong(Frame frame, Callback callback)
+    public void onPong(PongFrame frame, Callback callback)
     {
         callback.succeeded();
     }
     
-    public void onText(Frame frame, Callback callback)
+    public void onText(TextFrame frame, Callback callback)
     {
         if (utf8==null)
             utf8 = new Utf8StringBuilder(Math.max(1024,frame.getPayloadLength()*2));
@@ -148,7 +152,7 @@ public class AbstractFrameHandler implements FrameHandler
         callback.succeeded();
     }
     
-    public void onBinary(Frame frame, Callback callback)
+    public void onBinary(BinaryFrame frame, Callback callback)
     {
         if (frame.isFin())
         {
@@ -176,7 +180,7 @@ public class AbstractFrameHandler implements FrameHandler
         callback.succeeded();
     }
 
-    public void onContinuation(Frame frame, Callback callback)
+    public void onContinuation(ContinuationFrame frame, Callback callback)
     {
         switch(partial)
         {
@@ -208,15 +212,42 @@ public class AbstractFrameHandler implements FrameHandler
     }
 
 
-    public void onClose(Frame frame, Callback callback)
+    public void onClose(CloseFrame frame, Callback callback)
     {
-        callback.succeeded();
+        CloseStatus status = frame.getCloseStatus();
+        int respond;
+        String reason;
+        
+        switch(status.getCode())
+        {
+            case CloseStatus.NORMAL:
+            case CloseStatus.SHUTDOWN:
+            case CloseStatus.PROTOCOL:
+            case CloseStatus.BAD_DATA:
+            case CloseStatus.BAD_PAYLOAD:
+            case CloseStatus.POLICY_VIOLATION:
+            case CloseStatus.MESSAGE_TOO_LARGE:
+            case CloseStatus.EXTENSION_ERROR:
+                respond = 0;
+                reason = null;
+                break;
+
+            default:
+                respond = WebSocketConstants.PROTOCOL;
+                reason = "invalid "+status.getCode()+" close received";
+                break;
+
+        }
+        
+        if (respond>0)
+            channel.close(respond,reason,callback);
+        else
+            callback.succeeded();
     }
 
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        
     }
 
 }

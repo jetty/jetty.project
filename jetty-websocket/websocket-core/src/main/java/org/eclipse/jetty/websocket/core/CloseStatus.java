@@ -27,6 +27,19 @@ import org.eclipse.jetty.websocket.core.frames.ControlFrame;
  */
 public class CloseStatus
 {
+    public static final int NORMAL = 1000;
+    public static final int SHUTDOWN = 1001;
+    public static final int PROTOCOL = 1002;
+    public static final int BAD_DATA = 1003;
+    public static final int NO_CODE = 1005;
+    public static final int NO_CLOSE = 1006;
+    public static final int BAD_PAYLOAD = 1007;
+    public static final int POLICY_VIOLATION = 1008;
+    public static final int MESSAGE_TOO_LARGE = 1009;
+    public static final int EXTENSION_ERROR = 1010;
+    public static final int SERVER_ERROR = 1011;
+    public static final int FAILED_TLS_HANDSHAKE = 1015;
+    
     public static final int MAX_REASON_PHRASE = ControlFrame.MAX_CONTROL_PAYLOAD - 2;
 
     /**
@@ -100,5 +113,11 @@ public class CloseStatus
     public String getReason()
     {
         return reason;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("{%03d,%s}",code,reason);
     }
 }

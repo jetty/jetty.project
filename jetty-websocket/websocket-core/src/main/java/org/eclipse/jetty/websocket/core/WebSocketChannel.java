@@ -252,13 +252,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
     {
         if (frame instanceof CloseFrame)
         {
-            if (!state.onCloseOut(((CloseFrame)frame).getCloseStatus()))
-            {
-                callback.failed(new IOException("Already Closed or Closing"));
-                return;
-            }
-            
-            if (state.isClosed())
+            if (state.onCloseOut(((CloseFrame)frame).getCloseStatus()))
             {
                 callback = new Callback.Nested(callback)
                 {
@@ -281,55 +275,41 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
         {
             try
             {
-                
                 if (LOG.isDebugEnabled())
-                {
                     LOG.debug("incomingFrame({}, {}) - connectionState={}, handler={}",
                               frame, callback, state, handler);
-                }
+                
                 if (state.isInOpen())
                 {
                     // Handle inbound close
                     if (frame.getOpCode() == OpCode.CLOSE)
                     {
-                        if (!state.onCloseIn(((CloseFrame)frame).getCloseStatus()))
+                        if (state.onCloseIn(((CloseFrame)frame).getCloseStatus()))
                         {
-                            callback.failed(new IOException("already closed"));
+                            handler.onClosed(state.getCloseStatus());
+                            return;
                         }
-                        // TODO wrap callback to trigger action after close handling complete
-                    }           
+
+                        CloseFrame closeframe = (CloseFrame)frame;
+                        CloseStatus closeStatus = closeframe.getCloseStatus();
+                        callback = new Callback.Nested(callback)
+                        {
+                            @Override
+                            public void completed()
+                            {
+                                if (state.isOutOpen())
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("ConnectionState: sending close response {}",closeStatus);
+                                    close(closeStatus, Callback.NOOP);
+                                    return;
+                                }
+                            }
+                        };
+                    }
                     
                     // Handle the frame
                     handler.onFrame(frame, callback);
-                   
-                    // Ensure outbound close sent
-                    if (frame.getOpCode() == OpCode.CLOSE )
-                    {
-                        if (state.isOutOpen())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ConnectionState: Sending Close response");
-                            CloseFrame closeframe = (CloseFrame)frame;
-                            CloseStatus closeStatus = closeframe.getCloseStatus();
-
-                            // TODO look at why close status is not actually sent (see 7.9.6 ???)
-                            close(closeStatus, new Callback.Nested(callback)
-                            {
-                                @Override
-                                public void completed()
-                                {
-                                    handler.onClosed(state.getCloseStatus());
-                                }
-                            });
-                            return;
-                        }
-                        else
-                        {
-                            // Do we need to wait for a flush?
-                            handler.onClosed(state.getCloseStatus());
-                        }
-                    }
-
                 }
                 else
                 {
