@@ -472,10 +472,10 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
-          cd "$JETTY_BASE"
-          exec ${RUN_CMD[*]} start-log-file="$JETTY_START_LOG" > /dev/null &
+          cd \"$JETTY_BASE\"
+          exec ${RUN_CMD[*]} start-log-file=\"$JETTY_START_LOG\" > /dev/null &
           disown \$!
-          echo \$! > '$JETTY_PID'"
+          echo \$! > \"$JETTY_PID\""
       else
         "${RUN_CMD[@]}" > /dev/null &
         disown $!
