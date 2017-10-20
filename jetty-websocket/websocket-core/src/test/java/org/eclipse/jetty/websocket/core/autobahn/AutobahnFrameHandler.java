@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core.autobahn;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -35,10 +36,15 @@ class AutobahnFrameHandler extends AbstractFrameHandler
 {
     private static Logger LOG = Log.getLogger(AutobahnFrameHandler.class);
 
+    private AtomicBoolean open = new AtomicBoolean(false);
+    
     @Override
     public void onOpen()
     {        
         LOG.info("onOpen {}", getWebSocketChannel());
+        
+        if (!open.compareAndSet(false,true))
+            throw new IllegalStateException();
         super.onOpen();
     }
 
@@ -75,17 +81,23 @@ class AutobahnFrameHandler extends AbstractFrameHandler
         }
     }
     
+    
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
         LOG.info("onClosed {}",closeStatus);  
+        if (!open.compareAndSet(true,false))
+            throw new IllegalStateException();
     }
 
     @Override
     public void onError(Throwable cause)
     {
-        if (cause instanceof WebSocketTimeoutException)
+        if (cause instanceof WebSocketTimeoutException && open.get())
+        {
             LOG.warn("timeout!");
+            open.set(false);
+        }
         else
             LOG.warn("onError",cause);
     }

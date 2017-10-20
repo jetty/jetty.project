@@ -260,6 +260,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                     public void completed()
                     {
                         handler.onClosed(state.getCloseStatus());
+                        connection.close();
                     }
                 };
             }
@@ -287,6 +288,7 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                         if (state.onCloseIn(((CloseFrame)frame).getCloseStatus()))
                         {
                             handler.onClosed(state.getCloseStatus());
+                            connection.close();
                             return;
                         }
 
@@ -297,8 +299,10 @@ public class WebSocketChannel extends ContainerLifeCycle implements IncomingFram
                             @Override
                             public void completed()
                             {
+                                // was a close sent by the handler?
                                 if (state.isOutOpen())
                                 {
+                                    // No!
                                     if (LOG.isDebugEnabled())
                                         LOG.debug("ConnectionState: sending close response {}",closeStatus);
                                     close(closeStatus, Callback.NOOP);

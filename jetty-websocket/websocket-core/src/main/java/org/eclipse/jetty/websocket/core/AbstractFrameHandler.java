@@ -214,12 +214,17 @@ public class AbstractFrameHandler implements FrameHandler
 
     public void onClose(CloseFrame frame, Callback callback)
     {
-        CloseStatus status = frame.getCloseStatus();
         int respond;
-        String reason;
+        String reason=null;
         
-        switch(status.getCode())
+        int code = frame.hasPayload() ? frame.getCloseStatus().getCode() : -1;
+        
+        switch(code)
         {
+            case -1:
+                respond = CloseStatus.NORMAL;
+                break;
+                
             case CloseStatus.NORMAL:
             case CloseStatus.SHUTDOWN:
             case CloseStatus.PROTOCOL:
@@ -228,15 +233,21 @@ public class AbstractFrameHandler implements FrameHandler
             case CloseStatus.POLICY_VIOLATION:
             case CloseStatus.MESSAGE_TOO_LARGE:
             case CloseStatus.EXTENSION_ERROR:
+            case CloseStatus.SERVER_ERROR:
                 respond = 0;
-                reason = null;
                 break;
 
             default:
-                respond = WebSocketConstants.PROTOCOL;
-                reason = "invalid "+status.getCode()+" close received";
+                if (code>=3000 && code<=4999)
+                {
+                    respond = code;
+                }
+                else
+                {
+                    respond = WebSocketConstants.PROTOCOL;
+                    reason = "invalid "+code+" close received";
+                }
                 break;
-
         }
         
         if (respond>0)
