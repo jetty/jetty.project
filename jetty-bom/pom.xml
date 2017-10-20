@@ -403,7 +403,7 @@
         <version>9.4.8-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-servlet</artifactId>
         <version>9.4.8-SNAPSHOT</version>
       </dependency>
