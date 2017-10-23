@@ -18,7 +18,7 @@
 === Hot Deployment
 
 Jetty allows for deploying an arbitrary context or web application by monitoring a directory for changes.
-If a web application or a context descriptor is added to the directory, Jetty's DeploymentManager (DM) deploys a new context.
+If a web application or a context descriptor is added to the directory, Jetty's `DeploymentManager` (DM) deploys a new context.
 If a context descriptor is touched or updated, the DM stops, reconfigures, and redeploys its context.
 If a context is removed, the DM stops it and removes it from the server.
 
@@ -31,39 +31,32 @@ scanInterval::
   A value of `0` disables the continuous hot deployment scan, Web Applications will be deployed on startup only.
 
 The default location for this configuration is in the `${jetty.home}/etc/jetty-deploy.xml` file.
+To modify it as part of the Jetty distribution, first enable the `deploy` module.
+Once it is enabled, you can edit these properties in either the `$JETTY_BASE/start.d/deploy.ini` or `$JETTY_BASE/start.ini` file, depending on link:#start-vs-startd[how your implementation is configured.]
 
-[source, xml, subs="{sub-order}"]
+[source, screen, subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+# ---------------------------------------
+# Module: deploy
+# Enables webapplication deployment from the webapps directory.
+# ---------------------------------------
+--module=deploy
 
-<Configure id="Server" class="org.eclipse.jetty.server.Server">
+# Monitored directory name (relative to $jetty.base)
+# jetty.deploy.monitoredDir=webapps
+# - OR -
+# Monitored directory path (fully qualified)
+# jetty.deploy.monitoredPath=/var/www/webapps
 
-  <Call name="addBean">
-    <Arg>
-      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-        <Set name="contexts">
-          <Ref refid="Contexts" />
-        </Set>
-        <Call name="setContextAttribute">
-          <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-          <Arg>.*/[^/]*servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\.jar$</Arg>
-        </Call>
+# Defaults Descriptor for all deployed webapps
+# jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault.xml
 
-        <Call id="webappprovider" name="addAppProvider">
-          <Arg>
-            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-              <Set name="monitoredDirName"><Property name="jetty.base" default="." />/<Property name="jetty.deploy.monitoredDir" deprecated="jetty.deploy.monitoredDirName" default="webapps"/></Set>
-              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
-              <Set name="scanInterval"><Property name="jetty.deploy.scanInterval" default="1"/></Set>
-              <Set name="extractWars"><Property name="jetty.deploy.extractWars" default="true"/></Set>
-            </New>
-          </Arg>
-        </Call>
-      </New>
-    </Arg>
-  </Call>
-</Configure>
+# Monitored directory scan period (seconds)
+# jetty.deploy.scanInterval=1
+
+# Whether to extract *.war files
+# jetty.deploy.extractWars=true
 ----
 
 See xref:default-web-app-provider[] for more configuration details.
