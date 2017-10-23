@@ -455,7 +455,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class DumpKeys implements Runnable
+    private class DumpKeys extends NonBlockingAction
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final List<Object> _dumps;
