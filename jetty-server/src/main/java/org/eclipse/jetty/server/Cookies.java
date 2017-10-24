@@ -122,16 +122,23 @@ public class Cookies extends CookieCutter
     @Override
     protected void addCookie(String name, String value, String domain, String path, int version, String comment)
     {
-        Cookie cookie = new Cookie(name,value);
-        if (domain!=null)
-            cookie.setDomain(domain);
-        if (path!=null)
-            cookie.setPath(path);
-        if (version>0)
-            cookie.setVersion(version);
-        if (comment!=null)
-            cookie.setComment(comment);
-        _cookieList.add(cookie);
+        try
+        {
+            Cookie cookie = new Cookie(name,value);
+            if (domain!=null)
+                cookie.setDomain(domain);
+            if (path!=null)
+                cookie.setPath(path);
+            if (version>0)
+                cookie.setVersion(version);
+            if (comment!=null)
+                cookie.setComment(comment);
+            _cookieList.add(cookie);
+        }
+        catch(Exception e)
+        {
+            LOG.debug(e);
+        }
     }
 
 }
