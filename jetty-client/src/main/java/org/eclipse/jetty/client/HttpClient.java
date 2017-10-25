@@ -123,6 +123,7 @@ public class HttpClient extends ContainerLifeCycle
     private final ProxyConfiguration proxyConfig = new ProxyConfiguration();
     private final HttpClientTransport transport;
     private final SslContextFactory sslContextFactory;
+    private String name = getClass().getSimpleName() + "@" + hashCode();
     private AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private CookieManager cookieManager;
     private CookieStore cookieStore;
@@ -196,8 +197,6 @@ public class HttpClient extends ContainerLifeCycle
         if (sslContextFactory != null)
             addBean(sslContextFactory);
 
-        String name = HttpClient.class.getSimpleName() + "@" + hashCode();
-
         if (executor == null)
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -205,7 +204,7 @@ public class HttpClient extends ContainerLifeCycle
             executor = threadPool;
         }
         addBean(executor);
-        
+
         if (byteBufferPool == null)
             byteBufferPool = new MappedByteBufferPool(2048,
                 executor instanceof ThreadPool.SizedThreadPool
@@ -257,6 +256,24 @@ public class HttpClient extends ContainerLifeCycle
         authenticationStore.clearAuthenticationResults();
 
         super.doStop();
+    }
+
+    /**
+     * Sets the name used to identify resources created by this HttpClient.
+     * Should be set before {@link #doStart()}.
+     * @param name the name to use for this HttpClient
+     */
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    /**
+     * @return the name for this HttpClient
+     */
+    public String getName()
+    {
+        return name;
     }
 
     /**
