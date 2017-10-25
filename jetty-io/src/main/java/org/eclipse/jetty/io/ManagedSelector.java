@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -472,16 +473,33 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (selector != null && selector.isOpen())
             {
                 Set<SelectionKey> keys = selector.keys();
-                _dumps.add(selector + " keys=" + keys.size());
+                AtomicInteger cancelled = new AtomicInteger();
+                AtomicInteger excepted = new AtomicInteger();
+
+                _dumps.add(new Object()
+                {
+                    @Override
+                    public String toString()
+                    {
+                        return String.format("%s keys=%d cancelled=%d excepted=%d",selector,keys.size(),cancelled.get(),excepted.get());
+                    }
+                });
+                                                
                 for (SelectionKey key : keys)
                 {
                     try
                     {
                         _dumps.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
                     }
+                    catch (CancelledKeyException cke)
+                    {
+                        LOG.ignore(cke);
+                        cancelled.incrementAndGet();
+                    }
                     catch (Throwable x)
                     {
                         LOG.ignore(x);
+                        excepted.incrementAndGet();
                     }
                 }
             }
@@ -604,7 +622,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CreateEndPoint extends NonBlockingAction implements Closeable
+    private class CreateEndPoint implements Runnable, Closeable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
