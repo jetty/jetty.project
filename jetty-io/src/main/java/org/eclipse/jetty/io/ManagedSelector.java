@@ -159,7 +159,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (connect.timeout.cancel())
                 {
                     key.interestOps(0);
-                    return new CreateEndPoint(channel, key, InvocationType.BLOCKING)
+                    return new CreateEndPoint(channel, key)
                     {
                         @Override
                         protected void failed(Throwable failure)
@@ -199,18 +199,17 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private EndPoint createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
+    private void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
-        endPoint.onOpen();
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
         selectionKey.attach(endPoint);
+        endPoint.onOpen();
         _selectorManager.endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", endPoint);
-        return endPoint;
     }
 
     public void destroyEndPoint(final EndPoint endPoint)
@@ -594,7 +593,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             try
             {
                 final SelectionKey key = channel.register(_selector, 0, attachment);
-                submit(new CreateEndPoint(channel, key, InvocationType.NON_BLOCKING));
+                submit(new CreateEndPoint(channel, key));
             }
             catch (Throwable x)
             {
@@ -608,13 +607,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
-        private final InvocationType invocationType;
 
-        public CreateEndPoint(SelectableChannel channel, SelectionKey key, InvocationType invocationType)
+        public CreateEndPoint(SelectableChannel channel, SelectionKey key)
         {
             this.channel = channel;
             this.key = key;
-            this.invocationType = invocationType;
         }
 
         @Override
@@ -629,12 +626,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 LOG.debug(x);
                 failed(x);
             }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return invocationType;
         }
 
         @Override
