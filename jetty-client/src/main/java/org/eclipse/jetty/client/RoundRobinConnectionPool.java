@@ -21,12 +21,10 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -35,7 +33,6 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
 {
     private final List<Entry> entries;
     private int index;
-    private long liveTimeout;
 
     public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
@@ -43,17 +40,6 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
         entries = new ArrayList<>(maxConnections);
         for (int i = 0; i < maxConnections; ++i)
             entries.add(new Entry());
-    }
-
-    @ManagedAttribute("The timeout, in milliseconds, after which a live connection may be closed")
-    public long getLiveTimeout()
-    {
-        return liveTimeout;
-    }
-
-    public void setLiveTimeout(long liveTimeout)
-    {
-        this.liveTimeout = liveTimeout;
     }
 
     @Override
@@ -66,7 +52,6 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
                 if (entry.connection == null)
                 {
                     entry.connection = connection;
-                    entry.createdTime = System.nanoTime();
                     break;
                 }
             }
@@ -128,7 +113,6 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
     public boolean release(Connection connection)
     {
         boolean active = false;
-        boolean removed = false;
         synchronized (this)
         {
             for (Entry entry : entries)
@@ -137,29 +121,12 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
                 {
                     entry.active = false;
                     active = true;
-                    long timeout = getLiveTimeout();
-                    if (timeout > 0)
-                    {
-                        long live = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - entry.createdTime);
-                        if (live >= timeout)
-                        {
-                            entry.reset();
-                            removed = true;
-                        }
-                    }
                     break;
                 }
             }
         }
         if (active)
-        {
             released(connection);
-            if (removed)
-            {
-                removed(connection);
-                return false;
-            }
-        }
         return idle(connection, isClosed());
     }
 
@@ -231,14 +198,12 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool
         private Connection connection;
         private boolean active;
         private long used;
-        private long createdTime;
 
         private void reset()
         {
             connection = null;
             active = false;
             used = 0;
-            createdTime = 0;
         }
 
         @Override
