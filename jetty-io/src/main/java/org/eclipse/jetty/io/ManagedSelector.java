@@ -202,10 +202,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private EndPoint createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
-        endPoint.onOpen();
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
         selectionKey.attach(endPoint);
+        
+        endPoint.onOpen();
         _selectorManager.endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
         if (LOG.isDebugEnabled())
