@@ -341,19 +341,23 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (selector != null && selector.isOpen())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Selector loop waiting on select");
+                        LOG.debug("Selector {} waiting on select", selector);
                     int selected = selector.select();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Selector loop woken up from select, {}/{} selected", selected, selector.keys().size());
+                        LOG.debug("Selector {} woken up from select, {}/{} selected", selector, selected, selector.keys().size());
 
+                    int actions;
                     try (Locker.Lock lock = _locker.lock())
                     {
                         // finished selecting
                         _selecting = false;
+                        actions = _actions.size();
                     }
 
                     _keys = selector.selectedKeys();
                     _cursor = _keys.iterator();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Selector {} processing {} keys, {} actions", selector, _keys.size(), actions);
 
                     return true;
                 }
