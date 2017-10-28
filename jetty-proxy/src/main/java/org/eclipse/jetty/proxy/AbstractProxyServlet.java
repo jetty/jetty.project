@@ -445,7 +445,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected boolean expects100Continue(HttpServletRequest request)
     {
-        return HttpHeaderValue.CONTINUE.asString().equals(request.getHeader(HttpHeader.EXPECT.asString()));
+        return HttpHeaderValue.CONTINUE.is(request.getHeader(HttpHeader.EXPECT.asString()));
     }
 
     protected void copyRequestHeaders(HttpServletRequest clientRequest, Request proxyRequest)
