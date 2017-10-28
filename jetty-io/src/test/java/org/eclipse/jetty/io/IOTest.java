@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -35,6 +38,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +52,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -486,5 +492,62 @@ public class IOTest
 
         for (int i=0;i<buffers.length;i++)
             assertEquals(0,buffers[i].remaining());
+    }
+    
+    
+    @Test
+    public void testSelectorWakeup() throws Exception
+    {
+        ServerSocketChannel connector = ServerSocketChannel.open();
+        connector.bind(null);
+        InetSocketAddress addr=(InetSocketAddress)connector.getLocalAddress();
+        
+        SocketChannel client = SocketChannel.open();
+        client.connect(new InetSocketAddress("127.0.0.1",addr.getPort()));
+
+        SocketChannel server = connector.accept();
+        server.configureBlocking(false);
+        
+        Selector selector = Selector.open();
+        SelectionKey key = server.register(selector,SelectionKey.OP_READ);
+        
+        assertThat(key,notNullValue());
+        assertThat(selector.selectNow(), is(0));
+        
+        client.write(BufferUtil.toBuffer("X"));
+        assertThat(selector.select(), is(1));
+        assertThat(key.readyOps(), is(SelectionKey.OP_READ));
+        assertThat(selector.selectedKeys(), Matchers.contains(key));
+
+        assertThat(selector.select(), is(0));
+        assertThat(key.readyOps(), is(SelectionKey.OP_READ));
+        assertThat(selector.selectedKeys(), Matchers.contains(key));
+
+        client.write(BufferUtil.toBuffer("X"));
+        selector.selectedKeys().clear();
+        assertThat(selector.select(), is(1));
+        assertThat(key.readyOps(), is(SelectionKey.OP_READ));
+        assertThat(selector.selectedKeys(), Matchers.contains(key));
+        
+        ByteBuffer buf = BufferUtil.allocate(1024);
+        int p = BufferUtil.flipToFill(buf);
+        assertThat(server.read(buf),is(2));
+        BufferUtil.flipToFlush(buf,p);
+        
+        selector.wakeup();
+        selector.selectedKeys().clear();
+        assertThat(selector.select(), is(0));
+        assertThat(selector.selectedKeys().size(),is(0));
+        
+        client.write(BufferUtil.toBuffer("X"));
+        selector.wakeup();
+        selector.selectedKeys().clear();
+        assertThat(selector.select(), is(1));
+        assertThat(selector.selectedKeys().size(),is(1));
+        
+        p = BufferUtil.flipToFill(buf);
+        assertThat(server.read(buf),is(1));
+        BufferUtil.flipToFlush(buf,p);
+
     }
 }

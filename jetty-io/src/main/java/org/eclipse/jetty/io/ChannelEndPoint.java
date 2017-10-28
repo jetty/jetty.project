@@ -429,7 +429,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             _selector.submit(_runUpdateKey);
     }
 
-
     @Override
     public String toEndPointString()
     {
