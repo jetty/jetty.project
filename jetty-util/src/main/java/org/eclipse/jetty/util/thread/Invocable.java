@@ -25,6 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
@@ -186,4 +187,13 @@ public interface Invocable
         return InvocationType.BLOCKING;
     }
     
+    public abstract class NonBlocking implements Runnable, Invocable
+    {
+        @Override
+        public final InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+    }
+
 }
