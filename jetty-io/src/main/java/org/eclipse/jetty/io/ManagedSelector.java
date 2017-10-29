@@ -618,7 +618,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CreateEndPoint implements Runnable, Invocable, Closeable
+    private class CreateEndPoint extends Invocable.NonBlocking implements Closeable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
