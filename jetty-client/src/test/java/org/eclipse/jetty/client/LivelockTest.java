@@ -25,18 +25,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class LivelockTest
@@ -61,19 +58,20 @@ public class LivelockTest
     @After
     public void after() throws Exception
     {
-        client.stop();
-        server.stop();
+        if (client != null)
+            client.stop();
+        if (server != null)
+            server.stop();
     }
 
     @Test
-    @Slow
     public void testLivelock() throws Exception
     {
         // This test applies a moderate connect/request load (5/s) over 5 seconds,
-        // with a connect timeout of 100, so any delayed connects will be detected.
-        // NonBlocking runnables are submitted to both the client and server 
+        // with a connect timeout of 1000, so any delayed connects will be detected.
+        // NonBlocking actions are submitted to both the client and server
         // ManagedSelectors that submit themselves in an attempt to cause a live lock
-        // as there will always be an action available to run
+        // as there will always be an action available to run.
         
         int count = 25;
         HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
@@ -96,7 +94,7 @@ public class LivelockTest
             @Override 
             public void run()
             {
-                try { Thread.sleep(10);} catch(Exception e) {}
+                sleep(10);
                 if (busy.get())
                     clientSelector.submit(this); 
             }
@@ -109,13 +107,15 @@ public class LivelockTest
             @Override 
             public void run()
             {
-                try { Thread.sleep(10);} catch(Exception e) {}
+                sleep(10);
                 if (busy.get())
                     serverSelector.submit(this); 
             }
         };
         serverSelector.submit(serverLivelock);
-        
+
+        int requestRate = 5;
+        long pause = 1000 / requestRate;
         CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
@@ -126,9 +126,23 @@ public class LivelockTest
                         if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
                             latch.countDown();
                     });
-            Thread.sleep(200);
+            sleep(pause);
         }
-        Assert.assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(2 * pause * count, TimeUnit.MILLISECONDS));
+
+        // Exit the livelocks.
         busy.set(false);
+    }
+
+    private void sleep(long time)
+    {
+        try
+        {
+            Thread.sleep(time);
+        }
+        catch (InterruptedException x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 }
