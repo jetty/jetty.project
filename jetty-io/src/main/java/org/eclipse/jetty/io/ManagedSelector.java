@@ -69,7 +69,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private Selector _selector;
     private long _actionTime = -1;
 
-
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
         _selectorManager = selectorManager;
@@ -305,11 +304,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
         private Runnable nextAction()
         {
-            Runnable action;
             long now = System.nanoTime();
+            Selector selector = null;
+            Runnable action = null;
             try (Locker.Lock lock = _locker.lock())
             {
-                
                 // It is important to avoid live-lock (busy blocking) here.  If too many actions
                 // are submitted, this can indefinitely defer selection happening.   Similarly if 
                 // we give too much priority to selection, it may prevent actions from being run.
@@ -317,30 +316,38 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // so that this method will fall through to selection if more than MAX_ACTION_PERIOD_MS
                 // is spent running actions.  The time period is cleared whenever a selection occurs,
                 // so that a full period can be spent on actions after every select.
-                
-                if (_actionTime==-1)
-                    _actionTime = now;
-                else if ((now-_actionTime)>TimeUnit.MILLISECONDS.toNanos(100) && _actions.size()>0)
+
+                if (_actionTime == -1)
                 {
-                    // Too long spent handling actions, give selection a go by,
-                    // immediate wakeup (as if remaining action were just added).
-                    _selector.wakeup();
+                    _actionTime = now;
+                }
+                else if ((now - _actionTime) > TimeUnit.MILLISECONDS.toNanos(MAX_ACTION_PERIOD_MS) && _actions.size() > 0)
+                {
+                    // Too much time spent handling actions, give selection a go,
+                    // immediately waking up (as if remaining action were just added).
+                    selector = _selector;
                     _selecting = false;
                     _actionTime = -1;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("force select q={}",_actions.size());
-                    return null;
+                        LOG.debug("Forcing selection, actions={}",_actions.size());
                 }
-                
-                action = _actions.poll();
-                if (action == null)
+
+                if (selector == null)
                 {
-                    // No more actions, so we time to do some selecting
-                    _selecting = true;
-                    _actionTime = -1;
+                    action = _actions.poll();
+                    if (action == null)
+                    {
+                        // No more actions, so we time to do some selecting
+                        _selecting = true;
+                        _actionTime = -1;
+                    }
                 }
-                return action;
             }
+
+            if (selector != null)
+                selector.wakeup();
+
+            return action;
         }
 
         private boolean select()
@@ -611,7 +618,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CreateEndPoint implements Runnable, Invocable, Closeable
+    private class CreateEndPoint extends Invocable.NonBlocking implements Closeable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
