@@ -20,7 +20,6 @@ package org.eclipse.jetty.util;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
@@ -44,7 +43,7 @@ import java.util.TimerTask;
  * Old files are retained for a number of days before being deleted.
  * </p>
  */
-public class RolloverFileOutputStream extends FilterOutputStream
+public class RolloverFileOutputStream extends OutputStream
 {
     private static Timer __rollover;
     
@@ -53,6 +52,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     final static String ROLLOVER_FILE_BACKUP_FORMAT = "HHmmssSSS";
     final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
+    private volatile OutputStream _out;
     private RollTask _rollTask;
     private SimpleDateFormat _fileBackupFormat;
     private SimpleDateFormat _fileDateFormat;
@@ -154,8 +154,6 @@ public class RolloverFileOutputStream extends FilterOutputStream
         ZonedDateTime now)
             throws IOException
     {
-        super(null);
-
         if (dateFormat==null)
             dateFormat=ROLLOVER_FILE_DATE_FORMAT;
         _fileDateFormat = new SimpleDateFormat(dateFormat);
@@ -256,20 +254,20 @@ public class RolloverFileOutputStream extends FilterOutputStream
 
             // Is this a rollover file?
             String filename=file.getName();
-            int i=filename.toLowerCase(Locale.ENGLISH).indexOf(YYYY_MM_DD);
-            if (i>=0)
+            int datePattern=filename.toLowerCase(Locale.ENGLISH).indexOf(YYYY_MM_DD);
+            if (datePattern>=0)
             {
                 file=new File(dir,
-                        filename.substring(0,i)+
+                        filename.substring(0,datePattern)+
                         _fileDateFormat.format(new Date(now.toInstant().toEpochMilli()))+
-                        filename.substring(i+YYYY_MM_DD.length()));
+                        filename.substring(datePattern+YYYY_MM_DD.length()));
             }
 
             if (file.exists()&&!file.canWrite())
                 throw new IOException("Cannot write log file "+file);
 
             // Do we need to change the output stream?
-            if (out==null || i>=0)
+            if (_out==null || datePattern>=0)
             {
                 // Yep
                 oldFile = _file;
@@ -280,8 +278,8 @@ public class RolloverFileOutputStream extends FilterOutputStream
                     backupFile = new File(file.toString()+"."+_fileBackupFormat.format(new Date(now.toInstant().toEpochMilli())));
                     file.renameTo(backupFile);
                 }
-                OutputStream oldOut=out;
-                out=new FileOutputStream(file.toString(),_append);
+                OutputStream oldOut=_out;
+                _out=new FileOutputStream(file.toString(),_append);
                 if (oldOut!=null)
                     oldOut.close();
                 //if(log.isDebugEnabled())log.debug("Opened "+_file);
@@ -292,6 +290,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
             rollover(oldFile,backupFile,newFile);
     }
 
+    /* ------------------------------------------------------------ */
     /** This method is called whenever a log file is rolled over
      * @param oldFile  The original filename or null if this is the first creation
      * @param backupFile The backup filename or null if the filename is dated.
@@ -335,11 +334,17 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
+    public void write(int b) throws IOException
+    {
+        _out.write(b);
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public void write (byte[] buf)
         throws IOException
     {
-        out.write (buf);
+        _out.write (buf);
     }
 
     /* ------------------------------------------------------------ */
@@ -347,23 +352,35 @@ public class RolloverFileOutputStream extends FilterOutputStream
     public void write (byte[] buf, int off, int len)
         throws IOException
     {
-        out.write (buf, off, len);
+        _out.write (buf, off, len);
     }
 
+    /* ------------------------------------------------------------ */
+    public void flush() throws IOException
+    {
+        _out.flush();
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public void close()
         throws IOException
     {
-        synchronized(RolloverFileOutputStream.class)
+        synchronized(this)
         {
-            try{super.close();}
+            try
+            {
+                _out.close();
+            }
             finally
             {
-                out=null;
+                _out=null;
                 _file=null;
             }
-    
+        }
+
+        synchronized(RolloverFileOutputStream.class)
+        {
             if (_rollTask != null)
             {
                 _rollTask.cancel();
