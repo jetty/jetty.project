@@ -44,6 +44,10 @@ import java.util.TimerTask;
  * Old files are retained for a number of days before being deleted.
  * </p>
  */
+/**
+ * @author gregw
+ *
+ */
 public class RolloverFileOutputStream extends FilterOutputStream
 {
     private static Timer __rollover;
@@ -128,7 +132,8 @@ public class RolloverFileOutputStream extends FilterOutputStream
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them. 0 to retain forever.
      * @param zone the timezone for the output
-     * @param dateFormat The format for the date file substitution. The default is "yyyy_MM_dd". 
+     * @param dateFormat The format for the date file substitution. The default is "yyyy_MM_dd". If set to the
+     * empty string, the file is rolledover to the same filename, with the current file being renamed to the backup filename.
      * @param backupFormat The format for the file extension of backup files. The default is "HHmmssSSS". 
      * @throws IOException if unable to create output
      */
@@ -179,13 +184,14 @@ public class RolloverFileOutputStream extends FilterOutputStream
         _append=append;
         _retainDays=retainDays;
         
+        // Calculate Today's Midnight, based on Configured TimeZone (will be in past, even if by a few milliseconds)
+        setFile(now);  
+        
         synchronized(RolloverFileOutputStream.class)
         {
             if (__rollover==null)
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
-    
-            // Calculate Today's Midnight, based on Configured TimeZone (will be in past, even if by a few milliseconds)
-            setFile(now);        
+          
             // This will schedule the rollover event to the next midnight
             scheduleNextRollover(now);
         }
@@ -236,46 +242,69 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
-    synchronized void setFile(ZonedDateTime now)
+    void setFile(ZonedDateTime now)
         throws IOException
     {
-        // Check directory
-        File file = new File(_filename);
-        _filename=file.getCanonicalPath();
-        file=new File(_filename);
-        File dir= new File(file.getParent());
-        if (!dir.isDirectory() || !dir.canWrite())
-            throw new IOException("Cannot write log directory "+dir);
-            
-        // Is this a rollover file?
-        String filename=file.getName();
-        int i=filename.toLowerCase(Locale.ENGLISH).indexOf(YYYY_MM_DD);
-        if (i>=0)
+        File oldFile = null;
+        File newFile = null;
+        File backupFile = null;
+        synchronized (this)
         {
-            file=new File(dir,
-                          filename.substring(0,i)+
-                          _fileDateFormat.format(new Date(now.toInstant().toEpochMilli()))+
-                          filename.substring(i+YYYY_MM_DD.length()));
-        }
-            
-        if (file.exists()&&!file.canWrite())
-            throw new IOException("Cannot write log file "+file);
+            // Check directory
+            File file = new File(_filename);
+            _filename=file.getCanonicalPath();
+            file=new File(_filename);
+            File dir= new File(file.getParent());
+            if (!dir.isDirectory() || !dir.canWrite())
+                throw new IOException("Cannot write log directory "+dir);
 
-        // Do we need to change the output stream?
-        if (out==null || !file.equals(_file))
-        {
-            // Yep
-            _file=file;
-            if (!_append && file.exists())
-                file.renameTo(new File(file.toString()+"."+_fileBackupFormat.format(new Date(now.toInstant().toEpochMilli()))));
-            OutputStream oldOut=out;
-            out=new FileOutputStream(file.toString(),_append);
-            if (oldOut!=null)
-                oldOut.close();
-            //if(log.isDebugEnabled())log.debug("Opened "+_file);
+            // Is this a rollover file?
+            String filename=file.getName();
+            int i=filename.toLowerCase(Locale.ENGLISH).indexOf(YYYY_MM_DD);
+            if (i>=0)
+            {
+                file=new File(dir,
+                        filename.substring(0,i)+
+                        _fileDateFormat.format(new Date(now.toInstant().toEpochMilli()))+
+                        filename.substring(i+YYYY_MM_DD.length()));
+            }
+
+            if (file.exists()&&!file.canWrite())
+                throw new IOException("Cannot write log file "+file);
+
+            // Do we need to change the output stream?
+            if (out==null || i>=0)
+            {
+                // Yep
+                oldFile = _file;
+                _file=file;
+                newFile = _file;
+                if (!_append && file.exists())
+                {
+                    backupFile = new File(file.toString()+"."+_fileBackupFormat.format(new Date(now.toInstant().toEpochMilli())));
+                    file.renameTo(backupFile);
+                }
+                OutputStream oldOut=out;
+                out=new FileOutputStream(file.toString(),_append);
+                if (oldOut!=null)
+                    oldOut.close();
+                //if(log.isDebugEnabled())log.debug("Opened "+_file);
+            }
         }
+        
+        if (newFile!=null)
+            rollover(oldFile,backupFile,newFile);
     }
 
+    /** This method is called whenever a log file is rolled over
+     * @param oldFile  The original filename or null if this is the first creation
+     * @param backupFile The backup filename or null if the filename is dated.
+     * @param newFile The new filename that is now being used for logging
+     */
+    protected void rollover(File oldFile, File backupFile, File newFile)
+    {
+    }
+    
     /* ------------------------------------------------------------ */
     void removeOldFiles(ZonedDateTime now)
     {
@@ -354,12 +383,12 @@ public class RolloverFileOutputStream extends FilterOutputStream
         {
             try
             {
+                ZonedDateTime now = ZonedDateTime.now(_fileDateFormat.getTimeZone().toZoneId());
+                RolloverFileOutputStream.this.setFile(now);
+                RolloverFileOutputStream.this.removeOldFiles(now);
                 synchronized(RolloverFileOutputStream.class)
                 {
-                    ZonedDateTime now = ZonedDateTime.now(_fileDateFormat.getTimeZone().toZoneId());
-                    RolloverFileOutputStream.this.setFile(now);
                     RolloverFileOutputStream.this.scheduleNextRollover(now);
-                    RolloverFileOutputStream.this.removeOldFiles(now);
                 }
             }
             catch(Throwable t)
