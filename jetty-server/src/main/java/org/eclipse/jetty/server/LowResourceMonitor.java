@@ -63,8 +63,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * {@link #getLowResourcesIdleTimeout()} to all connections again.  Once the low resources state is
  * cleared, the idle timeout is reset to the connector default given by {@link Connector#getIdleTimeout()}.
  * <p>
- * If {@link #setAcceptingInLowResources(boolean)} is set to true, then no new connections are accepted
- * when in low resources state.
+ * If {@link #setAcceptingInLowResources(boolean)} is set to false (Default is true), then no new connections 
+ * are accepted when in low resources state.
  */
 @ManagedObject ("Monitor for low resource conditions and activate a low resource mode if detected")
 public class LowResourceMonitor extends AbstractLifeCycle
@@ -350,12 +350,13 @@ public class LowResourceMonitor extends AbstractLifeCycle
             if (connector instanceof AbstractConnector)
             {
                 AbstractConnector c = (AbstractConnector)connector;
-                if (c.isAccepting())
+                if (!isAcceptingInLowResources() && c.isAccepting())
                 {
                     _acceptingConnectors.add(c);
                     c.setAccepting(false);
                 }
             }
+            
             for (EndPoint endPoint : connector.getConnectedEndPoints())
                 endPoint.setIdleTimeout(_lowResourcesIdleTimeout);
         }
