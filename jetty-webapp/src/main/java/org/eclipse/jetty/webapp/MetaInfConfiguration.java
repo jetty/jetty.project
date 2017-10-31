@@ -618,6 +618,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (web_inf_lib.exists() && web_inf_lib.isDirectory())
         {
             String[] files=web_inf_lib.list();
+            if (files != null)
+            {
+                Arrays.sort(files);
+            }
             for (int f=0;files!=null && f<files.length;f++)
             {
                 try
