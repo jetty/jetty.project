@@ -52,7 +52,7 @@ public class RolloverFileOutputStream extends OutputStream
     final static String ROLLOVER_FILE_BACKUP_FORMAT = "HHmmssSSS";
     final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
-    private volatile OutputStream _out;
+    private OutputStream _out;
     private RollTask _rollTask;
     private SimpleDateFormat _fileBackupFormat;
     private SimpleDateFormat _fileDateFormat;
@@ -144,7 +144,8 @@ public class RolloverFileOutputStream extends OutputStream
         this(filename,append,retainDays,zone,dateFormat,backupFormat,ZonedDateTime.now(zone.toZoneId()));
     }
     
-    
+
+    /* ------------------------------------------------------------ */
     RolloverFileOutputStream(String filename,
         boolean append,
         int retainDays,
@@ -185,10 +186,10 @@ public class RolloverFileOutputStream extends OutputStream
         {
             if (__rollover==null)
                 __rollover=new Timer(RolloverFileOutputStream.class.getName(),true);
-          
-            // This will schedule the rollover event to the next midnight
-            scheduleNextRollover(now);
         }
+
+        // This will schedule the rollover event to the next midnight
+        scheduleNextRollover(now);
     }
 
     /* ------------------------------------------------------------ */
@@ -212,7 +213,10 @@ public class RolloverFileOutputStream extends OutputStream
 
         // Schedule next rollover event to occur, based on local machine's Unix Epoch milliseconds
         long delay = midnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli();
-        __rollover.schedule(_rollTask,delay);
+        synchronized(RolloverFileOutputStream.class)
+        {
+            __rollover.schedule(_rollTask,delay);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -336,29 +340,41 @@ public class RolloverFileOutputStream extends OutputStream
     /* ------------------------------------------------------------ */
     public void write(int b) throws IOException
     {
-        _out.write(b);
+        synchronized(this)
+        {
+            _out.write(b);
+        }
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void write (byte[] buf)
-        throws IOException
+            throws IOException
     {
-        _out.write (buf);
+        synchronized(this)
+        {
+            _out.write (buf);
+        }
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void write (byte[] buf, int off, int len)
-        throws IOException
+            throws IOException
     {
-        _out.write (buf, off, len);
+        synchronized(this)
+        {
+            _out.write (buf, off, len);
+        }
     }
 
     /* ------------------------------------------------------------ */
     public void flush() throws IOException
     {
-        _out.flush();
+        synchronized(this)
+        {
+            _out.flush();
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -399,10 +415,7 @@ public class RolloverFileOutputStream extends OutputStream
                 ZonedDateTime now = ZonedDateTime.now(_fileDateFormat.getTimeZone().toZoneId());
                 RolloverFileOutputStream.this.setFile(now);
                 RolloverFileOutputStream.this.removeOldFiles(now);
-                synchronized(RolloverFileOutputStream.class)
-                {
-                    RolloverFileOutputStream.this.scheduleNextRollover(now);
-                }
+                RolloverFileOutputStream.this.scheduleNextRollover(now);
             }
             catch(Throwable t)
             {
