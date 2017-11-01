@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -59,6 +58,7 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
+    private static final long MAX_ACTION_PERIOD_MS = Long.getLong("org.eclipse.jetty.io.ManagedSelector.MAX_ACTION_PERIOD_MS",100);
 
     private final Locker _locker = new Locker();
     private boolean _selecting = false;
@@ -67,6 +67,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private final int _id;
     private final ExecutionStrategy _strategy;
     private Selector _selector;
+    private long _actionTime = -1;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -134,6 +135,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         try (Locker.Lock lock = _locker.lock())
         {
             _actions.offer(change);
+            
             if (_selecting)
             {
                 selector = _selector;
@@ -293,7 +295,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (action != null)
                     return action;
 
-                update();
+                updateKeys();
 
                 if (!select())
                     return null;
@@ -302,35 +304,50 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
         private Runnable nextAction()
         {
-            while (true)
+            long now = System.nanoTime();
+            Selector selector = null;
+            Runnable action = null;
+            try (Locker.Lock lock = _locker.lock())
             {
-                Runnable action;
-                try (Locker.Lock lock = _locker.lock())
+                // It is important to avoid live-lock (busy blocking) here.  If too many actions
+                // are submitted, this can indefinitely defer selection happening.   Similarly if 
+                // we give too much priority to selection, it may prevent actions from being run.
+                // The solution implemented here is to put a maximum time limit on handling actions
+                // so that this method will fall through to selection if more than MAX_ACTION_PERIOD_MS
+                // is spent running actions.  The time period is cleared whenever a selection occurs,
+                // so that a full period can be spent on actions after every select.
+
+                if (_actionTime == -1)
+                {
+                    _actionTime = now;
+                }
+                else if ((now - _actionTime) > TimeUnit.MILLISECONDS.toNanos(MAX_ACTION_PERIOD_MS) && _actions.size() > 0)
+                {
+                    // Too much time spent handling actions, give selection a go,
+                    // immediately waking up (as if remaining action were just added).
+                    selector = _selector;
+                    _selecting = false;
+                    _actionTime = -1;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Forcing selection, actions={}",_actions.size());
+                }
+
+                if (selector == null)
                 {
                     action = _actions.poll();
                     if (action == null)
                     {
-                        // No more actions, so we need to select
+                        // No more actions, so we time to do some selecting
                         _selecting = true;
-                        return null;
+                        _actionTime = -1;
                     }
                 }
-
-                if (Invocable.getInvocationType(action)==InvocationType.BLOCKING)
-                    return action;
-
-                try
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Running action {}", action);
-                    // Running the change may queue another action.
-                    action.run();
-                }
-                catch (Throwable x)
-                {
-                    LOG.debug("Could not run action " + action, x);
-                }
             }
+
+            if (selector != null)
+                selector.wakeup();
+
+            return action;
         }
 
         private boolean select()
@@ -341,19 +358,23 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (selector != null && selector.isOpen())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Selector loop waiting on select");
+                        LOG.debug("Selector {} waiting on select", selector);
                     int selected = selector.select();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Selector loop woken up from select, {}/{} selected", selected, selector.keys().size());
+                        LOG.debug("Selector {} woken up from select, {}/{} selected", selector, selected, selector.keys().size());
 
+                    int actions;
                     try (Locker.Lock lock = _locker.lock())
                     {
                         // finished selecting
                         _selecting = false;
+                        actions = _actions.size();
                     }
 
                     _keys = selector.selectedKeys();
                     _cursor = _keys.iterator();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Selector {} processing {} keys, {} actions", selector, _keys.size(), actions);
 
                     return true;
                 }
@@ -424,8 +445,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             return null;
         }
 
-        private void update()
+        private void updateKeys()
         {
+            // Do update keys for only previously selected keys.
+            // This will update only those keys whose selection did not cause an
+            // updateKeys action to be submitted.
             for (SelectionKey key : _keys)
                 updateKey(key);
             _keys.clear();
@@ -445,16 +469,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private abstract static class NonBlockingAction implements Runnable, Invocable
-    {
-        @Override
-        public final InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-    }
-
-    private class DumpKeys extends NonBlockingAction
+    private class DumpKeys extends Invocable.NonBlocking
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final List<Object> _dumps;
@@ -500,7 +515,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Acceptor extends NonBlockingAction implements Selectable, Closeable
+    class Acceptor extends Invocable.NonBlocking implements Selectable, Closeable
     {
         private final SelectableChannel _channel;
         private SelectionKey _key;
@@ -569,7 +584,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Accept extends NonBlockingAction implements Closeable
+    class Accept extends Invocable.NonBlocking implements Closeable
     {
         private final SelectableChannel channel;
         private final Object attachment;
@@ -603,7 +618,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CreateEndPoint implements Runnable, Invocable, Closeable
+    private class CreateEndPoint extends Invocable.NonBlocking implements Closeable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
@@ -642,7 +657,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Connect extends NonBlockingAction
+    class Connect extends Invocable.NonBlocking
     {
         private final AtomicBoolean failed = new AtomicBoolean();
         private final SelectableChannel channel;
@@ -680,7 +695,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class ConnectTimeout extends NonBlockingAction
+    private class ConnectTimeout extends Invocable.NonBlocking
     {
         private final Connect connect;
 
@@ -702,7 +717,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CloseEndPoints extends NonBlockingAction
+    private class CloseEndPoints extends Invocable.NonBlocking
     {
         private final CountDownLatch _latch = new CountDownLatch(1);
         private CountDownLatch _allClosed;
@@ -768,7 +783,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CloseSelector extends NonBlockingAction
+    private class CloseSelector extends Invocable.NonBlocking
     {
         private CountDownLatch _latch = new CountDownLatch(1);
 
@@ -794,7 +809,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class DestroyEndPoint extends NonBlockingAction implements Closeable
+    private class DestroyEndPoint extends Invocable.NonBlocking implements Closeable
     {
         private final EndPoint endPoint;
 
