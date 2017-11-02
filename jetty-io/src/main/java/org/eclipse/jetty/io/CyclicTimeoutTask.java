@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.io;
 
+import static java.lang.Long.MAX_VALUE;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,7 +36,7 @@ public abstract class CyclicTimeoutTask
 {
     private final Scheduler _scheduler;
     private final AtomicReference<Schedule> _scheduled = new AtomicReference<>();
-    private final AtomicLong _expireAtNanos = new AtomicLong(-1L);
+    private final AtomicLong _expireAtNanos = new AtomicLong(Long.MAX_VALUE);
     private volatile Scheduler.Task _task;
 
 
@@ -56,7 +58,7 @@ public abstract class CyclicTimeoutTask
         long now = System.nanoTime();
         long expireAtNanos = now + units.toNanos(delay);
     
-        if (!_expireAtNanos.compareAndSet(-1,expireAtNanos))
+        if (!_expireAtNanos.compareAndSet(MAX_VALUE,expireAtNanos))
             throw new IllegalStateException("Timeout pending");
     
         Schedule schedule = _scheduled.get();
@@ -72,7 +74,7 @@ public abstract class CyclicTimeoutTask
         while(true)
         {
             long expireAt = _expireAtNanos.get();
-            if (expireAt==-1)
+            if (expireAt==MAX_VALUE)
                 return false;
 
             if (_expireAtNanos.compareAndSet(expireAt,expireAtNanos))
@@ -88,7 +90,7 @@ public abstract class CyclicTimeoutTask
     
     public boolean cancel()
     {
-        return _expireAtNanos.getAndSet(-1)!=-1;
+        return _expireAtNanos.getAndSet(MAX_VALUE)!=MAX_VALUE;
     }
     
     protected abstract void onTimeoutExpired();
@@ -127,22 +129,26 @@ public abstract class CyclicTimeoutTask
             {
                 long now = System.nanoTime();
                 long expireAt = _expireAtNanos.get();
-                if (expireAt==-1)
+                if (expireAt==MAX_VALUE)
                     return;
 
                 if (expireAt<now)
                 {
-                    if (!_expireAtNanos.compareAndSet(expireAt,-1))
-                        continue;
-                    _scheduled.compareAndSet(this,_next);
-                    onTimeoutExpired();
-                    return;
+                    if (_expireAtNanos.compareAndSet(expireAt,MAX_VALUE) &&
+                        _scheduled.compareAndSet(this,_next))
+                    {
+                        onTimeoutExpired();
+                        return;
+                    }
                 }
-                
-                Schedule next = _next;
-                if (next==null || next._scheduledAt>expireAt)
-                    next = new Schedule(now,expireAt,next);
-                _scheduled.compareAndSet(this,next);
+                else
+                {
+                    Schedule next = _next;
+                    if (next==null || next._scheduledAt>expireAt)
+                        next = new Schedule(now,expireAt,next);
+                    if (_scheduled.compareAndSet(this,next))
+                        return;
+                }
             }
         }
     }
