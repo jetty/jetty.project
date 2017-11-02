@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
@@ -43,6 +45,7 @@ public abstract class HttpConnection implements Connection
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private final HttpDestination destination;
+    private final TimeoutCompleteListener timeout;
     private int idleTimeoutGuard;
     private long idleTimeoutStamp;
 
@@ -50,6 +53,7 @@ public abstract class HttpConnection implements Connection
     {
         this.destination = destination;
         this.idleTimeoutStamp = System.nanoTime();
+        this.timeout = new TimeoutCompleteListener(destination.getHttpClient().getScheduler());
     }
 
     public HttpClient getHttpClient()
@@ -68,12 +72,8 @@ public abstract class HttpConnection implements Connection
         HttpRequest httpRequest = (HttpRequest)request;
 
         ArrayList<Response.ResponseListener> listeners = new ArrayList<>(httpRequest.getResponseListeners());
-        if (httpRequest.getTimeout() > 0)
-        {
-            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(httpRequest);
-            timeoutListener.schedule(getHttpClient().getScheduler());
-            listeners.add(timeoutListener);
-        }
+        
+        httpRequest.sent();
         if (listener != null)
             listeners.add(listener);
 
@@ -179,6 +179,14 @@ public abstract class HttpConnection implements Connection
 
     protected SendFailure send(HttpChannel channel, HttpExchange exchange)
     {
+        long nanoTime = System.nanoTime();
+        long timeoutInMs = exchange.getRequest().timeoutIn(nanoTime,MILLISECONDS);
+        if (timeoutInMs>=0)
+        {
+            exchange.getResponseListeners().add(timeout);
+            timeout.schedule(exchange.getRequest());
+        }
+        
         // Forbid idle timeouts for the time window where
         // the request is associated to the channel and sent.
         // Use a counter to support multiplexed requests.
