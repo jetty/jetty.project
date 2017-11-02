@@ -133,7 +133,7 @@ You can add extra classpaths to Jetty in several ways.
 [[classpaths-using-start-jar]]
 ===== Using `start.jar`
 
-If you are using xref:advanced-start-features[], at startup the jetty runtime automatically loads option Jars from the top level `$jetty.home/lib` directory. The default settings include:
+If you are using `start.jar` via the Jetty distribution, at startup the Jetty runtime automatically loads option Jars from the top level `$jetty.home/lib` directory. The default settings include:
 
 * Adding Jars under `$jetty.home/lib/ext` to the system classpath.
 You can place additional Jars here.
