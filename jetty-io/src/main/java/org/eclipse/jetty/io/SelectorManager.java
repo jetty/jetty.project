@@ -29,6 +29,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -58,8 +59,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
+    private final AtomicInteger _selectorIndex = new AtomicInteger();
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private long _selectorIndex;
     private int _reservedThreads = -1;
     private ThreadPoolBudget.Lease _lease;
 
@@ -212,11 +213,10 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         // The ++ increment here is not atomic, but it does not matter,
         // so long as the value changes sometimes, then connections will
         // be distributed over the available selectors.
-        long s = _selectorIndex++;
-        int index = (int)(s % getSelectorCount());
+        int index = _selectorIndex.updateAndGet(i->(i+1)%_selectors.length);
         ManagedSelector candidate2 = _selectors[index];
 
-        if (candidate1 == null || candidate1.size() >= candidate2.size() * 2)
+        if (candidate1 == null || candidate1.size() > candidate2.size())
             return candidate2;
         return candidate1;
     }
