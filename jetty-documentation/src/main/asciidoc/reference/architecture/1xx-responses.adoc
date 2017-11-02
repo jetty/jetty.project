@@ -14,13 +14,13 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-[[1xx-responses]]
+[[jetty-1xx-responses]]
 === Managing 1xx Responses
 
 The http://www.ietf.org/rfc/rfc2616.txt[HTTP RFC] allows for 1xx informational responses to be sent before a real content response. 
 Unfortunately the servlet specification does not provide a way for these to be sent, so Jetty has had to provide non-standard handling of these headers.
 
-[[100-continue]]
+[[jetty-100-continue]]
 ==== 100 Continue
 
 The 100 Continue response should be sent by the server when a client sends a request with a Expect: 100-continue header, as the client will not send the body of the request until the 100 continue response has been sent.
@@ -30,7 +30,7 @@ The intent of this feature is to allow a server to inspect the headers and to te
 Jetty achieves this by waiting until the input stream or reader is obtained by the filter/servlet, before sending the 100 continues response. 
 Thus a filter/servlet may inspect the headers of a request before getting the input stream and send an error response (or redirect etc.) rather than the 100 continues.
 
-[[102-processing]]
+[[jetty-102-processing]]
 ==== 102 Processing
 
 http://www.ietf.org/rfc/rfc2518.txt[RFC 2518] defines the 102 processing response that can be sent "when the server has a reasonable expectation that the request will take significant time to complete.
