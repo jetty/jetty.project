@@ -87,9 +87,9 @@ public class MultiReleaseJarFile
 
             if (entry.inner)
             {
-                VersionedJarEntry outer = map.get(entry.outer);
+                VersionedJarEntry outer = entry.outer==null?null:map.get(entry.outer);
 
-                if (entry.outer==null || outer.version!= entry.version)
+                if (entry.outer==null || outer==null || outer.version!= entry.version)
                     i.remove();
             }
         }
