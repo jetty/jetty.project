@@ -78,6 +78,7 @@ public class HttpRequest implements Request
     private HttpVersion version = HttpVersion.HTTP_1_1;
     private long idleTimeout;
     private long timeout;
+    private long sentTimestampNanos;
     private ContentProvider content;
     private boolean followRedirects;
     private List<HttpCookie> cookies;
@@ -695,34 +696,42 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
-        TimeoutCompleteListener timeoutListener = null;
-        try
-        {
-            if (getTimeout() > 0)
-            {
-                timeoutListener = new TimeoutCompleteListener(this);
-                timeoutListener.schedule(client.getScheduler());
-                responseListeners.add(timeoutListener);
-            }
-            send(this, listener);
-        }
-        catch (Throwable x)
-        {
-            // Do not leak the scheduler task if we
-            // can't even start sending the request.
-            if (timeoutListener != null)
-                timeoutListener.cancel();
-            throw x;
-        }
+        send(this, listener);
     }
 
+    void sent()
+    {
+        sentTimestampNanos = System.nanoTime();
+    }
+    
     private void send(HttpRequest request, Response.CompleteListener listener)
     {
         if (listener != null)
             responseListeners.add(listener);
+        sent();
         client.send(request, responseListeners);
     }
 
+    /**
+     * Get the time until the current request timeout fires
+     * @param nanotime The current nanotime 
+     * @param units The units of the time to return
+     * @return The time until the current request timeout fires;
+     * or 0 if the timeout has expired; or -1 if no timeout applies
+     */
+    public long timeoutIn(long nanotime, TimeUnit units)
+    {
+        long timeoutMs = getTimeout();
+        if (timeoutMs<=0 || sentTimestampNanos==0)
+            return -1;
+        long now = TimeUnit.NANOSECONDS.toMillis(nanotime);
+        long expires = TimeUnit.NANOSECONDS.toMillis(sentTimestampNanos)+timeoutMs;
+        if (expires<=now)
+            return 0;
+
+        return TimeUnit.MILLISECONDS.convert(expires-now,units);
+    }
+    
     protected List<Response.ResponseListener> getResponseListeners()
     {
         return responseListeners;
