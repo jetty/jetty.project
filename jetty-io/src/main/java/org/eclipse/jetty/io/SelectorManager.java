@@ -94,14 +94,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
-        _selectorIndexUpdate = new IntUnaryOperator()
-        {   
-            @Override
-            public int applyAsInt(int index)
-            {
-                return (index+1)%_selectors.length;
-            }
-        };
+        _selectorIndexUpdate = index -> (index+1)%_selectors.length;
     }
 
     @ManagedAttribute("The Executor")
