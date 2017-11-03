@@ -212,9 +212,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
             return false;
 
         ReservedThread thread = _stack.pop();
-        if (thread==null && task!=STOP)
+        if (thread==null)
         {
-            startReservedThread();
+            if (task!=STOP)
+                startReservedThread();
             return false;
         }
 
