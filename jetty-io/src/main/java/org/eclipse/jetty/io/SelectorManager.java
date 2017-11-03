@@ -189,7 +189,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     private ManagedSelector chooseSelector(SelectableChannel channel)
     {
-        System.err.println(_selectorIndex.get());
         return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
     }
 
