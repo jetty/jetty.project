@@ -20,7 +20,6 @@ package org.eclipse.jetty.io;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
@@ -30,6 +29,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -60,6 +60,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private final AtomicInteger _selectorIndex = new AtomicInteger();
+    private final IntUnaryOperator _selectorIndexUpdate;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private int _reservedThreads = -1;
     private ThreadPoolBudget.Lease _lease;
@@ -93,6 +94,14 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         this.executor = executor;
         this.scheduler = scheduler;
         _selectors = new ManagedSelector[selectors];
+        _selectorIndexUpdate = new IntUnaryOperator()
+        {   
+            @Override
+            public int applyAsInt(int index)
+            {
+                return (index+1)%_selectors.length;
+            }
+        };
     }
 
     @ManagedAttribute("The Executor")
@@ -180,45 +189,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
 
     private ManagedSelector chooseSelector(SelectableChannel channel)
     {
-        // Ideally we would like to have all connections from the same client end
-        // up on the same selector (to try to avoid smearing the data from a single
-        // client over all cores), but because of proxies, the remote address may not
-        // really be the client - so we have to hedge our bets to ensure that all
-        // channels don't end up on the one selector for a proxy.
-        ManagedSelector candidate1 = null;
-        if (channel != null)
-        {
-            try
-            {
-                if (channel instanceof SocketChannel)
-                {
-                    SocketAddress remote = ((SocketChannel)channel).getRemoteAddress();
-                    if (remote instanceof InetSocketAddress)
-                    {
-                        byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
-                        if (addr != null)
-                        {
-                            int s = addr[addr.length - 1] & 0xFF;
-                            candidate1 = _selectors[s % getSelectorCount()];
-                        }
-                    }
-                }
-            }
-            catch (IOException x)
-            {
-                LOG.ignore(x);
-            }
-        }
-
-        // The ++ increment here is not atomic, but it does not matter,
-        // so long as the value changes sometimes, then connections will
-        // be distributed over the available selectors.
-        int index = _selectorIndex.updateAndGet(i->(i+1)%_selectors.length);
-        ManagedSelector candidate2 = _selectors[index];
-
-        if (candidate1 == null || candidate1.size() > candidate2.size())
-            return candidate2;
-        return candidate1;
+        System.err.println(_selectorIndex.get());
+        return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
     }
 
     /**
