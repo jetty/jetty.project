@@ -1,4 +1,16 @@
-jetty-9.3.22-SNAPSHOT
+jetty-9.3.23-SNAPSHOT
+
+jetty-9.3.22.v20171030 - 30 October 2017
+ + 1213 Upgrade to ASM Version 6.0_ALPHA for JDK9
+ + 1692 Annotation scanning should ignore `module-info.class` files
+ + 1705 Rejected executions in QueuedThreadPool can lead to memory leaks
+ + 1797 JEP 238 - Multi-Release JAR files break bytecode scanning
+ + 1814 Move JavaVersion to jetty-util for future Java 9 support requirements
+ + 1901 Reimplement PathWatcher as scanner
+ + 1912 AbstractConnector EndPoint leak for failed SSL connections
+ + 1914 jetty client fails to parse response with RFC2045 conformant
+   Content-Type: charset="utf-8"
+ + 1928 Backport #1705 to jetty-9.3.x
 
 jetty-9.3.21.v20170918 - 18 September 2017
  + 487 JDK 9 build compatibility
@@ -23,8 +35,8 @@ jetty-9.3.21.v20170918 - 18 September 2017
  + 1750 PoolingHttpDestination creates ConnectionPool twice
  + 1759 HTTP/2: producer can block in onReset
  + 1790 HTTP/2: 100% CPU usage seen during close/shutdown of endpoint
- + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy
-   with CONNECT
+ + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy with
+   CONNECT
 
 jetty-9.3.20.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption
