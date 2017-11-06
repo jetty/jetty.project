@@ -366,7 +366,7 @@
           <descriptors>
             <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
           </descriptors>
-          <tarLongFileMode>gnu</tarLongFileMode>
+          <tarLongFileMode>posix</tarLongFileMode>
           <appendAssemblyId>false</appendAssemblyId>
         </configuration>
         <executions>
