@@ -312,7 +312,7 @@ link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-server/src/main/config/etc/jetty-alpn.
 ==== Constructing a ServerConnector
 
 The services a link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] instance uses are set by constructor injection and once instantiated cannot be changed.
-Many of the services may be defaulted with null or 0 values so that a reasonable default is used, thus for most purposes only the Server and the connection factories need to be passed to the connector constructor. In Jetty XML (that is, in link:{SRCDIR}/jetty-server/src/main/config/etc/jetty-http.xml[`jetty-http.xml`]) you can do this by:
+Many of the services may be defaulted with null or 0 values so that a reasonable default is used, thus for most purposes only the Server and the connection factories need to be passed to the connector constructor. In Jetty XML (that is, in link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-http.xml[`jetty-http.xml`]) you can do this by:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -393,7 +393,7 @@ Jetty attempts to gently close all TCP/IP connections with proper half close sem
 
 The link:{JDURL}/org/eclipse/jetty/server/HttpConfiguration.html[`HttpConfiguration`] class holds the configuration for link:{JDURL}/org/eclipse/jetty/server/HttpChannel.html[`HttpChannel`]s, which you can create 1:1 with each HTTP connection or 1:n on a multiplexed HTTP/2 connection.
 Thus a `HttpConfiguration` object is injected into both the HTTP and HTTP/2 connection factories.
-To avoid duplicate configuration, the standard Jetty distribution creates the common `HttpConfiguration` instance in link:{SRCDIR}/jetty-server/src/main/config/etc/jetty.xml[`jetty.xml`], which is a `Ref` element then used in link:{SRCDIR}/jetty-server/src/main/config/etc/jetty-http.xml[`jetty-http.xml`], link:{SRCDIR}/jetty-server/src/main/config/etc/jetty-https.xml[`jetty-https.xml`] and in link:{SRCDIR}/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml[`jetty-http2.xml`].
+To avoid duplicate configuration, the standard Jetty distribution creates the common `HttpConfiguration` instance in link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty.xml[`jetty.xml`], which is a `Ref` element then used in link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-http.xml[`jetty-http.xml`], link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-https.xml[`jetty-https.xml`] and in link:{GITBROWSEURL}/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml[`jetty-http2.xml`].
 
 A typical configuration of link:{JDURL}/org/eclipse/jetty/server/HttpConfiguration.html[HttpConfiguration] is:
 
