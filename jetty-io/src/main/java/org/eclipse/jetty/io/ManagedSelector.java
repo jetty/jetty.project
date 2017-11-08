@@ -495,7 +495,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     }
                     catch (Throwable x)
                     {
-                        LOG.ignore(x);
+                        _dumps.add(String.format("SelectionKey@%x[%s]", key.hashCode(), x));
                     }
                 }
             }
