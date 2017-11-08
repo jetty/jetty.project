@@ -916,18 +916,20 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),_javaPlatform,false);
-            jarFile.stream().forEach(e->
+            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),_javaPlatform,false))
             {
-                try
+                jarFile.stream().forEach(e->
                 {
-                    parseJarEntry(handlers, jarResource, e, resolver);
-                }
-                catch (Exception ex)
-                {
-                    me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
-                }
-            });
+                    try
+                    {
+                        parseJarEntry(handlers, jarResource, e, resolver);
+                    }
+                    catch (Exception ex)
+                    {
+                        me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
+                    }
+                });
+            }
             me.ifExceptionThrow();
         }
     }
