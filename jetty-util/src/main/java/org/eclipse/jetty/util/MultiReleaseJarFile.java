@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.jar.JarEntry;
@@ -33,7 +35,7 @@ import java.util.stream.Stream;
 /**
  * <p>Utility class to handle a Multi Release Jar file</p>
  */
-public class MultiReleaseJarFile
+public class MultiReleaseJarFile implements Closeable
 {
     private static final String META_INF_VERSIONS = "META-INF/versions/";
 
@@ -84,12 +86,10 @@ public class MultiReleaseJarFile
         {
             Map.Entry<String,VersionedJarEntry> e = i.next();
             VersionedJarEntry entry = e.getValue();
-
             if (entry.inner)
             {
                 VersionedJarEntry outer = entry.outer==null?null:map.get(entry.outer);
-
-                if (entry.outer==null || outer==null || outer.version!= entry.version)
+                if (outer==null || outer.version!=entry.version)
                     i.remove();
             }
         }
@@ -128,6 +128,13 @@ public class MultiReleaseJarFile
     public VersionedJarEntry getEntry(String name)
     {
         return entries.get(name);
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        if (jarFile!=null)
+            jarFile.close();
     }
 
     @Override
@@ -172,8 +179,8 @@ public class MultiReleaseJarFile
             this.entry = entry;
             this.name = name;
             this.version = v;
-            this.inner = name.contains("$") && name.toLowerCase().endsWith(".class");
-            this.outer = inner ? name.substring(0, name.indexOf('$')) + name.substring(name.length() - 6, name.length()) : null;
+            this.inner = name.contains("$") && name.toLowerCase(Locale.ENGLISH).endsWith(".class");
+            this.outer = inner ? name.substring(0, name.indexOf('$')) + ".class" : null;
         }
 
         /**
