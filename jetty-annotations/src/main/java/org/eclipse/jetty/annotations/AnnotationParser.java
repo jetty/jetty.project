@@ -69,14 +69,12 @@ import org.objectweb.asm.Opcodes;
 public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
-
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM6; //compatibility of api
     
     protected Map<String, List<String>> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
     private int _asmVersion;
-    
-    
+
     /**
      * Determine the runtime version of asm.
      * @return the org.objectweb.asm.Opcode matching the runtime version of asm.
@@ -130,6 +128,7 @@ public class AnnotationParser
         }
         return asmVersion;
     }
+
     /**
      * Convert internal name to simple name
      * 
@@ -357,37 +356,31 @@ public class AnnotationParser
         @Override
         public void handle(ClassInfo classInfo)
         {
-           //no-op
         }
 
         @Override
         public void handle(MethodInfo methodInfo)
         {
-            // no-op           
         }
 
         @Override
         public void handle(FieldInfo fieldInfo)
         {
-            // no-op 
         }
 
         @Override
         public void handle(ClassInfo info, String annotationName)
         {
-            // no-op 
         }
 
         @Override
         public void handle(MethodInfo info, String annotationName)
         {
-            // no-op            
         }
 
         @Override
         public void handle(FieldInfo info, String annotationName)
         {
-            // no-op
         }
     }
 
@@ -621,21 +614,21 @@ public class AnnotationParser
 
         if (!resolver.isExcluded(className))
         {
-        	if (!isParsed(className) || resolver.shouldOverride(className))
-        	{
-        		String tmp = className;
-        		className = className.replace('.', '/')+".class";
-        		URL resource = Loader.getResource(this.getClass(),className);
-        		if (resource!= null)
-        		{
-        			Resource r = Resource.newResource(resource);
-        			addParsedClass(tmp, r);
-        			try (InputStream is = r.getInputStream())
-        			{
-        				scanClass(handlers, null, is);
-        			}
-        		}
-        	}
+            if (!isParsed(className) || resolver.shouldOverride(className))
+            {
+                String tmp = className;
+                className = className.replace('.', '/')+".class";
+                URL resource = Loader.getResource(this.getClass(),className);
+                if (resource!= null)
+                {
+                    Resource r = Resource.newResource(resource);
+                    addParsedClass(tmp, r);
+                    try (InputStream is = r.getInputStream())
+                    {
+                        scanClass(handlers, null, is);
+                    }
+                }
+            }
         }
     }
 
@@ -654,23 +647,23 @@ public class AnnotationParser
         Class<?> cz = clazz;
         while (cz != Object.class)
         {
-        	if (!resolver.isExcluded(cz.getName()))
-        	{
-        		if (!isParsed(cz.getName()) || resolver.shouldOverride(cz.getName()))
-        		{
-        			String nameAsResource = cz.getName().replace('.', '/')+".class";
-        			URL resource = Loader.getResource(this.getClass(),nameAsResource);
-        			if (resource!= null)
-        			{
-        				Resource r = Resource.newResource(resource);
-        				addParsedClass(clazz.getName(), r);
-        				try (InputStream is =  r.getInputStream())
-        				{
-        					scanClass(handlers, null, is);
-        				}
-        			}
-        		}
-        	}
+            if (!resolver.isExcluded(cz.getName()))
+            {
+                if (!isParsed(cz.getName()) || resolver.shouldOverride(cz.getName()))
+                {
+                    String nameAsResource = cz.getName().replace('.', '/')+".class";
+                    URL resource = Loader.getResource(this.getClass(),nameAsResource);
+                    if (resource!= null)
+                    {
+                        Resource r = Resource.newResource(resource);
+                        addParsedClass(clazz.getName(), r);
+                        try (InputStream is =  r.getInputStream())
+                        {
+                            scanClass(handlers, null, is);
+                        }
+                    }
+                }
+            }
 
             if (visitSuperClasses)
                 cz = cz.getSuperclass();
@@ -713,21 +706,21 @@ public class AnnotationParser
         {
             try
             {
-            	if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
-            	{
-            		String name = s;
-            		s = s.replace('.', '/')+".class";
-            		URL resource = Loader.getResource(this.getClass(),s);
-            		if (resource!= null)
-            		{
-            			Resource r = Resource.newResource(resource);
-            			addParsedClass(name, r);
-            			try (InputStream is = r.getInputStream())
-            			{
-            				scanClass(handlers, null, is);
-            			}
-            		}
-            	}
+                if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
+                {
+                    String name = s;
+                    s = s.replace('.', '/')+".class";
+                    URL resource = Loader.getResource(this.getClass(),s);
+                    if (resource!= null)
+                    {
+                        Resource r = Resource.newResource(resource);
+                        addParsedClass(name, r);
+                        try (InputStream is = r.getInputStream())
+                        {
+                            scanClass(handlers, null, is);
+                        }
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -767,33 +760,33 @@ public class AnnotationParser
                 String name = r.getName();
                 if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
                 {
-                	File file = r.getFile();                                      
-                	if (isValidClassFileName((file==null?null:file.getName())))
-                	{
-                		Path classpath = rootFile.toPath().relativize(file.toPath());
-                		String str = classpath.toString();
-                		str = str.substring(0, str.lastIndexOf(".class")).replace('/', '.').replace('\\', '.');
+                    File file = r.getFile();                                      
+                    if (isValidClassFileName((file==null?null:file.getName())))
+                    {
+                        Path classpath = rootFile.toPath().relativize(file.toPath());
+                        String str = classpath.toString();
+                        str = str.substring(0, str.lastIndexOf(".class")).replace('/', '.').replace('\\', '.');
 
-                		try
-                		{
-                			if (LOG.isDebugEnabled())
-                				LOG.debug("Scanning class {}", r);
-                			addParsedClass(str, r);
-                			try (InputStream is=r.getInputStream())
-                			{
-                				scanClass(handlers, Resource.newResource(file.getParentFile()), is);
-                			}
-                		}                  
-                		catch (Exception ex)
-                		{
-                			if (LOG.isDebugEnabled()) LOG.debug("Error scanning file "+file, ex);
-                			me.add(new RuntimeException("Error scanning file "+file,ex));
-                		}
-                	}
-                	else
-                	{
-                		if (LOG.isDebugEnabled()) LOG.debug("Skipping scan on invalid file {}", file);
-                	}
+                        try
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Scanning class {}", r);
+                            addParsedClass(str, r);
+                            try (InputStream is=r.getInputStream())
+                            {
+                                scanClass(handlers, Resource.newResource(file.getParentFile()), is);
+                            }
+                        }                  
+                        catch (Exception ex)
+                        {
+                            if (LOG.isDebugEnabled()) LOG.debug("Error scanning file "+file, ex);
+                            me.add(new RuntimeException("Error scanning file "+file,ex));
+                        }
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled()) LOG.debug("Skipping scan on invalid file {}", file);
+                    }
                 }
             }
         }
@@ -935,10 +928,8 @@ public class AnnotationParser
                     me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
                 }
             });
-
-            
             me.ifExceptionThrow();
-        }        
+        }
     }
 
     /**
@@ -964,19 +955,19 @@ public class AnnotationParser
         //check file is a valid class file name
         if (isValidClassFileName(name) && isValidClassFilePath(name))
         {
-        	String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-        	if ((resolver == null)
-        			||
-        			(!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
-        	{
-        		addParsedClass(shortName, Resource.newResource("jar:"+jar.getURI()+"!/"+entry.getNameInJar()));
-        		if (LOG.isDebugEnabled())
-        			LOG.debug("Scanning class from jar {}!/{}", jar, entry);
-        		try (InputStream is = entry.getInputStream())
-        		{
-        			scanClass(handlers, jar, is);
-        		}
-        	}
+            String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+            if ((resolver == null)
+                    ||
+                    (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+            {
+                addParsedClass(shortName, Resource.newResource("jar:"+jar.getURI()+"!/"+entry.getNameInJar()));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Scanning class from jar {}!/{}", jar, entry);
+                try (InputStream is = entry.getInputStream())
+                {
+                    scanClass(handlers, jar, is);
+                }
+            }
         }
     }
 
