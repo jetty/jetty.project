@@ -137,7 +137,7 @@ jetty-distribution-{VERSION}/
 
 It might seem strange or undesirable to unpack the first portion of the jetty-distribution directory name too.
 But starting with Jetty 9 the split between `${jetty.home}` and `${jetty.base}` allows for easier upgrades of Jetty itself while isolating your webapp specific configuration.
-For more information on the Jetty home and base concepts see the section on managing a Jetty installation <<startup-base-and-home, earlier in this Chapter.>>
+For more information on the Jetty home and base concepts see the section on managing a Jetty installation link:#startup-base-and-home[earlier in this Chapter.]
 
 The `/opt/jetty/temp` directory is created as a durable place for Jetty to use for temp and working directories.
 Many Unix systems will periodically clean out the /tmp directory, this behavior is undesired in a Servlet container and has been known to cause problems.

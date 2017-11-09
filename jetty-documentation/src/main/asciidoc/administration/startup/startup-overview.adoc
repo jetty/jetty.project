@@ -59,7 +59,7 @@ Modules::
   Modules also use their dependencies to control the ordering of libraries and XML files.
   There are several module files included with the Jetty distribution that cover the most common server features, such as HTTP, HTTPS, SSL, Logging, Annotations...etc.
   These module files should *only* be edited if you are making structural changes to the way the feature will perform.
-  For more information, refer to the section on <<startup-modules,managing startup modules>> later in this chapter.
+  For more information, refer to the section on link:#startup-modules[managing startup modules] later in this chapter.
 XML Files::
   XML files in either Jetty IoC or Spring format instantiate the actual POJO components of the server.
   This includes all major components such as connectors, keystores, session managers, and data sources.
