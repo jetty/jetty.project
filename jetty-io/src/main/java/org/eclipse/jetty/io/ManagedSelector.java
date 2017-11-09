@@ -75,7 +75,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _id = id;
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
-        _strategy = new EatWhatYouKill(producer,executor,_selectorManager.getBean(ReservedThreadExecutor.class));            
+        Scheduler scheduler = selectorManager.getScheduler();
+        _strategy = new EatWhatYouKill(producer,executor,_selectorManager.getBean(ReservedThreadExecutor.class),scheduler);
         addBean(_strategy,true);
         setStopTimeout(5000);
     }
@@ -219,6 +220,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         submit(new DestroyEndPoint(endPoint));
     }
 
+    private int getActionSize()
+    {
+        try (Locker.Lock lock = _locker.lock())
+        {
+            return _actions.size();
+        }
+    }
+
     @Override
     public String dump()
     {
@@ -249,11 +258,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     public String toString()
     {
         Selector selector = _selector;
-        return String.format("%s id=%s keys=%d selected=%d",
+        return String.format("%s id=%s keys=%d selected=%d actions=%d",
                 super.toString(),
                 _id,
                 selector != null && selector.isOpen() ? selector.keys().size() : -1,
-                selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
+                selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1,
+                getActionSize());
     }
 
     /**
