@@ -16,7 +16,10 @@
 package org.eclipse.jetty.servlets;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -74,7 +77,17 @@ public class CrossOriginFilterBenchmark
     @Param({"0", "1", "2", "3", "4"})
     public int arg;
 
+    @SuppressWarnings("unchecked")
+    private static final Collection<String>[] TREE_SETS = Stream.of(cases)
+                                                     .map(TreeSet::new)
+                                                     .toArray(Collection[]::new);
 
+    @SuppressWarnings("unchecked")
+    private static final Collection<String>[] HASHSET_SETS = Stream.of(cases)
+                                                     .map(HashSet::new)
+                                                     .toArray(Collection[]::new);
+
+    
     @Benchmark
     public boolean pattern_hit()  
     {
@@ -102,6 +115,30 @@ public class CrossOriginFilterBenchmark
     public boolean contains_miss()  
     {
         return cases[arg].contains(MISS_METHOD); 
+    }
+    
+    @Benchmark
+    public boolean treeset_contains_hits()  
+    {
+        return TREE_SETS[arg].contains(HIT_METHOD[arg]);
+    }
+    
+    @Benchmark
+    public boolean treeset_contains_miss()  
+    {
+        return TREE_SETS[arg].contains(MISS_METHOD); 
+    }
+    
+    @Benchmark
+    public boolean hashset_contains_hits()  
+    {
+        return HASHSET_SETS[arg].contains(HIT_METHOD[arg]);
+    }
+    
+    @Benchmark
+    public boolean hashset_contains_miss()  
+    {
+        return HASHSET_SETS[arg].contains(MISS_METHOD); 
     }
     
     public static void main(String[] args) throws RunnerException 
