@@ -519,9 +519,9 @@ public class CrossOriginFilter implements Filter
     static Pattern patternize(final List<String> strings) 
     {
         final StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < strings.size(); ++i)
+        for (String string : strings)
         {
-            final String string = strings.get(i).trim();
+            string = string.trim();
             if (string.isEmpty()) break;
             
             if (builder.length() == 0) 
