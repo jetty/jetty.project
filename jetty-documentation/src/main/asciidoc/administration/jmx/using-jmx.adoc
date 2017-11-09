@@ -179,7 +179,7 @@ This is especially important when binding the RMI server host to the loopback ad
 
 ===== Enabling JMX Remote Access in Standalone Jetty Server
 
-Similarly to <<jmx-standalone-jetty,enabling JMX in a standalone Jetty server>>, you enable the `jmx-remote` module:
+Similarly to link:#jmx-standalone-jetty[enabling JMX in a standalone Jetty server], you enable the `jmx-remote` module:
 
 [source, screen, subs="{sub-order}"]
 ----
@@ -350,7 +350,7 @@ Then you setup the local port forwarding with the SSH tunnel:
 $ ssh -L 1099:localhost:1099 <user>@<machine_host>
 ----
 
-Now you can use JConsole or JMC to connect to `localhost:1099` on your local computer. 
+Now you can use JConsole or JMC to connect to `localhost:1099` on your local computer.
 The traffic will be forwarded to `machine_host` and when there, SSH will forward the traffic to `localhost:1099`, which is exactly where the `ConnectorServer` listens.
 
 When you configure `ConnectorServer` in this way, you must set the system property `-Djava.rmi.server.hostname=localhost`, on the server.

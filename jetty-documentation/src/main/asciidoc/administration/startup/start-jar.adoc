@@ -103,7 +103,7 @@ Instructs `start.jar` to use each line of the specified file as arguments on the
 Enables debugging output of the startup procedure.
 +
 *Note*: This does not set up debug logging for Jetty itself.
-For information on logging, please see the section on <<configuring-jetty-logging, Configuring Jetty Logging.>>
+For information on logging, please see the section on link:#configuring-jetty-logging[Configuring Jetty Logging.]]
 --start-log-file=<filename>::
 Sends all startup output to the filename specified.
 Filename is relative to `${jetty.base}`.
