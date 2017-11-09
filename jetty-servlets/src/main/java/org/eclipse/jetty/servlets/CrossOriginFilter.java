@@ -62,8 +62,17 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Allowed origins can therefore be more complex expressions such as
  * https?://*.domain.[a-z]{3} that matches http or https, multiple subdomains
- * and any 3 letter top-level domain (.com, .net, .org, etc.).</dd>
- * 
+ * and any 3 letter top-level domain (.com, .net, .org, etc.).
+ * <p>
+ * Won't be used if <b>allowedOriginsRegex</b> is declared.
+ * </dd>
+ * <p>
+ * <dt>allowedOriginsRegex</dt>
+ * <dd>a new line separated list of origins regular expressions that are
+ * allowed to access the resources. There is no default value, meaning only
+ * <b>allowedOrigins</b> will match.
+ * </dd>
+ * <p>
  * <dt>allowedTimingOrigins</dt>
  * <dd>a comma separated list of origins that are
  * allowed to time the resource. Default value is the empty string, meaning
@@ -71,7 +80,15 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * The check whether the timing header is set, will be performed only if
  * the user gets general access to the resource using the <b>allowedOrigins</b>.
- *
+ * <p>
+ * Won't be used if <b>allowedTimingOriginsRegex</b> is declared.
+ * </dd>
+ * <dt>allowedTimingOriginsRegex</dt>
+ * <dd>a new line separated list of origins regular expressions that are
+ * allowed to time the resource. There is no default value, meaning only
+ * <b>allowedTimingOrigins</b> will match.
+ * </dd>
+ * <p>
  * <dt>allowedMethods</dt>
  * <dd>a comma separated list of HTTP methods that
  * are allowed to be used when accessing the resources. Default value is
@@ -138,7 +155,9 @@ public class CrossOriginFilter implements Filter
     public static final String TIMING_ALLOW_ORIGIN_HEADER = "Timing-Allow-Origin";
     // Implementation constants
     public static final String ALLOWED_ORIGINS_PARAM = "allowedOrigins";
+    public static final String ALLOWED_ORIGINS_REGEX_PARAM = "allowedOriginsRegex";
     public static final String ALLOWED_TIMING_ORIGINS_PARAM = "allowedTimingOrigins";
+    public static final String ALLOWED_TIMING_ORIGINS_REGEX_PARAM = "allowedTimingOriginsRegex";
     public static final String ALLOWED_METHODS_PARAM = "allowedMethods";
     public static final String ALLOWED_HEADERS_PARAM = "allowedHeaders";
     public static final String PREFLIGHT_MAX_AGE_PARAM = "preflightMaxAge";
@@ -170,9 +189,13 @@ public class CrossOriginFilter implements Filter
         String allowedOriginsConfig = config.getInitParameter(ALLOWED_ORIGINS_PARAM);
         String allowedTimingOriginsConfig = config.getInitParameter(ALLOWED_TIMING_ORIGINS_PARAM);
         
-        anyOriginAllowed = generateAllowedOrigins(allowedOrigins, allowedOriginsConfig, DEFAULT_ALLOWED_ORIGINS);
-        anyTimingOriginAllowed = generateAllowedOrigins(allowedTimingOrigins, allowedTimingOriginsConfig, DEFAULT_ALLOWED_TIMING_ORIGINS);
-
+        generateAllowedOriginsFromRegex(allowedOrigins, config.getInitParameter(ALLOWED_ORIGINS_REGEX_PARAM));
+        if(allowedOrigins.isEmpty())
+            anyOriginAllowed = generateAllowedOrigins(allowedOrigins, allowedOriginsConfig, DEFAULT_ALLOWED_ORIGINS);
+        generateAllowedOriginsFromRegex(allowedTimingOrigins, config.getInitParameter(ALLOWED_TIMING_ORIGINS_REGEX_PARAM));
+        if(allowedTimingOrigins.isEmpty())
+            anyTimingOriginAllowed = generateAllowedOrigins(allowedTimingOrigins, allowedTimingOriginsConfig, DEFAULT_ALLOWED_TIMING_ORIGINS);
+        
         String allowedMethodsConfig = config.getInitParameter(ALLOWED_METHODS_PARAM);
         if (allowedMethodsConfig == null)
             allowedMethods.addAll(DEFAULT_ALLOWED_METHODS);
@@ -258,6 +281,21 @@ public class CrossOriginFilter implements Filter
             }
         }
         return false;
+    }
+    
+    static void generateAllowedOriginsFromRegex(final List<Pattern> allowedOriginStore, final String allowedOriginsConfigRegex) 
+    {
+        if (allowedOriginsConfigRegex == null)
+            return;
+        
+        for (String allowedOrigin : allowedOriginsConfigRegex.split("\n"))
+        {
+            allowedOrigin = allowedOrigin.trim();
+            if (allowedOrigin.length() > 0)
+            {
+                allowedOriginStore.add(Pattern.compile(allowedOrigin));
+            }
+        }
     }
     
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException

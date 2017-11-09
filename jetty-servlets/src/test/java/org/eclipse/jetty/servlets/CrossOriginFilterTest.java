@@ -149,6 +149,31 @@ public class CrossOriginFilterTest
         Assert.assertTrue(response.contains("Vary"));
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
+    
+    @Test
+    public void testSimpleRequestWithRegexMatchingOrigin() throws Exception
+    {
+        FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
+        String origin = "http://subdomain.example.com";
+        filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_REGEX_PARAM, "https?://.*[.]example[.]com");
+        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
+
+        String request = "" +
+        "GET / HTTP/1.1\r\n" +
+        "Host: localhost\r\n" +
+        "Connection: close\r\n" +
+        "Origin: " + origin + "\r\n" +
+        "\r\n";
+        String response = tester.getResponses(request);
+        Assert.assertTrue(response.contains("HTTP/1.1 200"));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));
+        Assert.assertTrue(response.contains("Vary"));
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+    }
 
     @Test
     public void testSimpleRequestWithMatchingWildcardOriginAndMultipleSubdomains() throws Exception
@@ -568,6 +593,28 @@ public class CrossOriginFilterTest
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
 
+    
+    /**
+     * Tests the inner workings of the pair generateAllowedOrigins - originMatches
+     */
+    @Test
+    public void testGenerateAllowedOriginsFromRegex() 
+    {
+        final List<Pattern> allowedOrigins = new LinkedList<>();
+        CrossOriginFilter.generateAllowedOriginsFromRegex(allowedOrigins, 
+               "  foo[.]bar  \r\n"
+             + "  (dev|stage|prod).example.org  \n"
+             + "    \n");
+        Assert.assertEquals(2, allowedOrigins.size());
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "example.org"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "foo.bar"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "prod.example.org"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "dev.example.orglala"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "xxfoo.bar"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "foo.barxx"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , ""));
+    }
+    
     /**
      * Tests the inner workings of the pair generateAllowedOrigins - originMatches
      */
