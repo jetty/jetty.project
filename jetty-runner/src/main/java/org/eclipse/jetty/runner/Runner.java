@@ -166,8 +166,8 @@ public class Runner
         System.err.println(" --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard");
         System.err.println(" --host name|ip                      - interface to listen on (default is all interfaces)");
         System.err.println(" --port n                            - port to listen on (default 8080)");
-        System.err.println(" --stop-port n                       - port to listen for stop command (or -DSTOP.PORT)");
-        System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY)");
+        System.err.println(" --stop-port n                       - port to listen for stop command (or -DSTOP.PORT=n)");
+        System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY=n)");
         System.err.println(" [--jar file]*n                      - each tuple specifies an extra jar to be added to the classloader");
         System.err.println(" [--lib dir]*n                       - each tuple specifies an extra directory of jars to be added to the classloader");
         System.err.println(" [--classes dir]*n                   - each tuple specifies an extra directory of classes to be added to the classloader");
