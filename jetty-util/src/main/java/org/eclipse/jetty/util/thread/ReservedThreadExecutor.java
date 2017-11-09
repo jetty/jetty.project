@@ -272,7 +272,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
                 _waiting.get());
     }
 
-    private class ReservedThread extends ConcurrentStack.Node implements Runnable
+    private class ReservedThread extends ConcurrentStack.Node<ReservedThread> implements Runnable
     {
         private final Locker _locker = new Locker();
         private final Condition _wakeup = _locker.newCondition();

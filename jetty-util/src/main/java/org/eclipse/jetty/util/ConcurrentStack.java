@@ -21,54 +21,52 @@ package org.eclipse.jetty.util;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * ConcurrentStack
- *
- * Nonblocking stack using variation of Treiber's algorithm
- * that allows for reduced garbage
+ * <p>Nonblocking stack using variation of Treiber's algorithm
+ * that allows for reduced garbage.</p>
  */
 public class ConcurrentStack<I>
 {
-    private final NodeStack<Holder> stack = new NodeStack<>();
+    private final NodeStack<Holder<I>> stack = new NodeStack<>();
 
     public void push(I item)
     {
-        stack.push(new Holder(item));
+        stack.push(new Holder<>(item));
     }
 
     public I pop()
     {
         Holder<I> holder = stack.pop();
-        if (holder==null)
+        if (holder == null)
             return null;
         return holder.item;
     }
 
-    private static class Holder<I> extends Node
+    public static class Node<E extends Node<E>>
     {
-        final I item;
+        E next;
+    }
 
-        Holder(I item)
+    private static class Holder<I> extends Node<Holder<I>>
+    {
+        private final I item;
+
+        private Holder(I item)
         {
             this.item = item;
         }
     }
 
-    public static class Node
+    public static class NodeStack<N extends Node<N>>
     {
-        Node next;
-    }
-
-    public static class NodeStack<N extends Node>
-    {
-        AtomicReference<Node> stack = new AtomicReference<Node>();
+        private final AtomicReference<N> stack = new AtomicReference<>();
 
         public void push(N node)
         {
-            while(true)
+            while (true)
             {
-                Node top = stack.get();
+                N top = stack.get();
                 node.next = top;
-                if (stack.compareAndSet(top,node))
+                if (stack.compareAndSet(top, node))
                     break;
             }
         }
@@ -77,13 +75,13 @@ public class ConcurrentStack<I>
         {
             while (true)
             {
-                Node top = stack.get();
-                if (top==null)
+                N top = stack.get();
+                if (top == null)
                     return null;
-                if (stack.compareAndSet(top,top.next))
+                if (stack.compareAndSet(top, top.next))
                 {
                     top.next = null;
-                    return (N)top;
+                    return top;
                 }
             }
         }
