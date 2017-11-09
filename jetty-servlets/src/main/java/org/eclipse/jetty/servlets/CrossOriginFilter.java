@@ -514,7 +514,7 @@ public class CrossOriginFilter implements Filter
     /** 
      * creates a pattern to match any of a list of  string
      * If the input list is ["foo, "bar"] it will generate
-     * a Pattern for the regex "(\\Efoo\\E|\\Ebar\\E) 
+     * a Pattern for the regex "(\\Qfoo\\E|\\Qbar\\E) 
      */
     static Pattern patternize(final List<String> strings) 
     {
