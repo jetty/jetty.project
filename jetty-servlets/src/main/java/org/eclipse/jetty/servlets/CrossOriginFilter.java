@@ -521,8 +521,8 @@ public class CrossOriginFilter implements Filter
         final StringBuilder builder = new StringBuilder();
         for (int i = 0; i < strings.size(); ++i)
         {
-            final String string = strings.get(i);
-            if (string.trim().isEmpty()) break;
+            final String string = strings.get(i).trim();
+            if (string.isEmpty()) break;
             
             if (builder.length() == 0) 
                 builder.append('(');
