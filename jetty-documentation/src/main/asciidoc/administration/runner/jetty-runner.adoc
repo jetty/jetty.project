@@ -200,7 +200,7 @@ To link:#how-to-configure-connectors[configure a https connector], use a Jetty x
 ....
 
 ===== Configuring Stop
-You can configure a port number for jetty to listen on for a stop command, so you are able to stop it from a different terminal.
+You can configure a port number for Jetty to listen on for a stop command, so you are able to stop it from a different terminal.
 This requires the use of a "secret" key, to prevent malicious or accidental termination.
 Use the `--stop-port` and `--stop-key` (or `-DSTOP.PORT=`  and `-DSTOP.KEY=`, respectively) parameters as arguments to the `jetty-runner`:
 
