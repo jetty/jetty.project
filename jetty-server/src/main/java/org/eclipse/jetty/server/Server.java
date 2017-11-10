@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -67,6 +68,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+
 
 /* ------------------------------------------------------------ */
 /** Jetty HTTP Servlet Server.
@@ -343,7 +345,10 @@ public class Server extends HandlerWrapper implements Attributes
         //Start a thread waiting to receive "stop" commands.
         ShutdownMonitor.getInstance().start(); // initialize
 
-        LOG.info("jetty-" + getVersion());
+        String gitHash = Jetty.GIT_HASH;
+        String timestamp = Jetty.BUILD_TIMESTAMP;
+
+        LOG.info("jetty-{}, build timestamp: {}, git hash: {}", getVersion(), timestamp, gitHash);
         if (!Jetty.STABLE)
         {
             LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
