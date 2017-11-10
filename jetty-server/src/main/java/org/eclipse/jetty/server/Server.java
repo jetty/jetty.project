@@ -370,8 +370,7 @@ public class Server extends HandlerWrapper implements Attributes
         String gitHash = Jetty.GIT_HASH;
         String timestamp = Jetty.BUILD_TIMESTAMP;
 
-        LOG.info("jetty-{}", getVersion());
-        LOG.info("build timestamp: {}, git hash: {}", timestamp, gitHash);
+        LOG.info("jetty-{}, build timestamp: {}, git hash: {}", getVersion(), timestamp, gitHash);
         if (!Jetty.STABLE)
         {
             LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");

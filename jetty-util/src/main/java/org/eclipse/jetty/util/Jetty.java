@@ -39,7 +39,7 @@ public class Jetty
      * a formatted build timestamp with pattern yyyy-MM-dd'T'HH:mm:ssXXX
      */
     public static final String BUILD_TIMESTAMP;
-    private static Properties BUILD_PROPERTIES = new Properties( );
+    private static final Properties __buildProperties = new Properties( );
 
     static
     {
@@ -48,20 +48,19 @@ public class Jetty
             try (InputStream inputStream = //
                      Jetty.class.getResourceAsStream( "/org/eclipse/jetty/version/build.properties" ))
             {
-                BUILD_PROPERTIES.load( inputStream );
+                __buildProperties.load( inputStream );
             }
         }
         catch ( Exception e )
         {
-            // ignore this
             LOG.ignore( e );
         }
 
-        GIT_HASH = BUILD_PROPERTIES.getProperty( "buildNumber", "unknown" );
+        GIT_HASH = __buildProperties.getProperty( "buildNumber", "unknown" );
         System.setProperty( "jetty.git.hash" , GIT_HASH );
-        BUILD_TIMESTAMP = formatTimestamp(BUILD_PROPERTIES.getProperty( "timestamp", "unknown" ));
+        BUILD_TIMESTAMP = formatTimestamp( __buildProperties.getProperty( "timestamp", "unknown" ));
 
-        // olamy using BUILD_PROPERTIES.getProperty("version") will contain version from the pom
+        // using __buildProperties.getProperty("version") will contain version from the pom
 
         Package pkg = Jetty.class.getPackage();
         if (pkg != null &&
@@ -91,6 +90,7 @@ public class Jetty
         }
         catch ( NumberFormatException e )
         {
+            LOG.debug( e );
             return "unknown";
         }
     }
