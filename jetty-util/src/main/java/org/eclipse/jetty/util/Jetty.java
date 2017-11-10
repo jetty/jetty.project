@@ -18,14 +18,50 @@
 
 package org.eclipse.jetty.util;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Properties;
+
 public class Jetty
 {
+    private static final Logger LOG = Log.getLogger( Jetty.class);
+
     public static final String VERSION;
     public static final String POWERED_BY;
     public static final boolean STABLE;
+    public static final String GIT_HASH;
+
+    /**
+     * a formatted build timestamp with pattern yyyy-MM-dd'T'HH:mm:ssXXX
+     */
+    public static final String BUILD_TIMESTAMP;
+    private static final Properties __buildProperties = new Properties( );
 
     static
     {
+        try
+        {
+            try (InputStream inputStream = //
+                     Jetty.class.getResourceAsStream( "/org/eclipse/jetty/version/build.properties" ))
+            {
+                __buildProperties.load( inputStream );
+            }
+        }
+        catch ( Exception e )
+        {
+            LOG.ignore( e );
+        }
+
+        GIT_HASH = __buildProperties.getProperty( "buildNumber", "unknown" );
+        System.setProperty( "jetty.git.hash" , GIT_HASH );
+        BUILD_TIMESTAMP = formatTimestamp( __buildProperties.getProperty( "timestamp", "unknown" ));
+
+        // using __buildProperties.getProperty("version") will contain version from the pom
+
         Package pkg = Jetty.class.getPackage();
         if (pkg != null &&
                 "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) &&
@@ -42,6 +78,21 @@ public class Jetty
 
     private Jetty()
     {
+    }
+
+
+    private static String formatTimestamp( String timestamp )
+    {
+        try
+        {
+            return new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ssXXX" )
+                .format( new Date( Long.valueOf( timestamp ) ) );
+        }
+        catch ( NumberFormatException e )
+        {
+            LOG.debug( e );
+            return "unknown";
+        }
     }
     
 }
