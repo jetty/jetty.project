@@ -53,18 +53,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +87,6 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _dumpBeforeStop=false;
     private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
-    private Properties buildProperties = new Properties( );
 
     private final Locker _dateLocker = new Locker();
     private volatile DateField _dateField;
@@ -100,19 +96,6 @@ public class Server extends HandlerWrapper implements Attributes
     public Server()
     {
         this((ThreadPool)null);
-        try
-        {
-            try (InputStream inputStream = Server.class.getResourceAsStream( "/org/eclipse/jetty/build.properties" ))
-            {
-                buildProperties.load( inputStream );
-            }
-        }
-        catch ( Exception e )
-        {
-            // ignore this
-            LOG.ignore( e );
-        }
-
     }
 
     /* ------------------------------------------------------------ */
@@ -384,10 +367,8 @@ public class Server extends HandlerWrapper implements Attributes
         //Start a thread waiting to receive "stop" commands.
         ShutdownMonitor.getInstance().start(); // initialize
 
-        String gitHash = buildProperties.getProperty( "buildNumber", "unknown" );
-        String timestamp = formatTimestamp(buildProperties.getProperty( "timestamp", "unknown" ));
-
-        System.setProperty( "jetty.git.hash" , gitHash);
+        String gitHash = Jetty.GIT_HASH;
+        String timestamp = Jetty.BUILD_TIMESTAMP;
 
         LOG.info("jetty-{}", getVersion());
         LOG.info("build timestamp: {}, git hash: {}", timestamp, gitHash);
@@ -428,19 +409,6 @@ public class Server extends HandlerWrapper implements Attributes
         mex.ifExceptionThrow();
 
         LOG.info(String.format("Started @%dms",Uptime.getUptime()));
-    }
-
-    private String formatTimestamp( String timestamp )
-    {
-        try
-        {
-            return new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ssXXX" )
-                .format( new Date( Long.valueOf( timestamp ) ) );
-        }
-        catch ( NumberFormatException e )
-        {
-            return "unknown";
-        }
     }
 
     @Override
