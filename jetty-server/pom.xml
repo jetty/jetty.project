@@ -13,6 +13,12 @@
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -32,6 +38,35 @@
         <configuration>
           <onlyAnalyze>org.eclipse.jetty.server.*</onlyAnalyze>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <executions>
+          <!--
+          <execution>
+            <id>create-noncanonicalrev</id>
+            <goals>
+              <goal>create-timestamp</goal>
+            </goals>
+            <configuration>
+              <timestampFormat>'NON-CANONICAL_'yyyy-MM-dd'T'HH:mm:ssXXX_'${user.name}'</timestampFormat>
+              <timestampPropertyName>nonCanonicalRevision</timestampPropertyName>
+            </configuration>
+          </execution>
+          -->
+          <execution>
+            <id>create-buildnumber</id>
+            <goals>
+              <goal>create</goal>
+            </goals>
+            <configuration>
+              <doCheck>false</doCheck>
+              <doUpdate>false</doUpdate>
+              <revisionOnScmFailure>${nonCanonicalRevision}</revisionOnScmFailure>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
