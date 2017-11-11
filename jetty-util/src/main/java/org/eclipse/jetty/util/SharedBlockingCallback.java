@@ -52,7 +52,6 @@ public class SharedBlockingCallback
 
     private static Throwable IDLE = new ConstantThrowable("IDLE");
     private static Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
-
     private static Throwable FAILED = new ConstantThrowable("FAILED");
 
     private final ReentrantLock _lock = new ReentrantLock();
@@ -60,14 +59,14 @@ public class SharedBlockingCallback
     private final Condition _complete = _lock.newCondition();
     private Blocker _blocker = new Blocker();
 
-    protected long getIdleTimeout()
+    protected long getBlockingTimeout()
     {
         return -1;
     }
 
     public Blocker acquire() throws IOException
     {
-        long idle = getIdleTimeout();
+        long idle = getBlockingTimeout();
         _lock.lock();
         try
         {
@@ -100,6 +99,14 @@ public class SharedBlockingCallback
         LOG.warn("Blocker not complete {}",blocker);
         if (LOG.isDebugEnabled())
             LOG.debug(new Throwable());
+    }
+
+    protected void preBlock()
+    {
+    }
+
+    protected void postBlock()
+    {
     }
     
     /**
@@ -186,10 +193,11 @@ public class SharedBlockingCallback
          */
         public void block() throws IOException
         {
-            long idle = getIdleTimeout();
+            long idle = getBlockingTimeout();
             _lock.lock();
             try
             {
+                preBlock();
                 while (_state == null)
                 {
                     if (idle > 0)
@@ -231,6 +239,7 @@ public class SharedBlockingCallback
             }
             finally
             {
+                postBlock();
                 _lock.unlock();
             }
         }

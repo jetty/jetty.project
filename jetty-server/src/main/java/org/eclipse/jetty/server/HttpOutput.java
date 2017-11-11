@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.server;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.RequestDispatcher;
@@ -120,7 +123,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static Logger LOG = Log.getLogger(HttpOutput.class);
 
     private final HttpChannel _channel;
-    private final SharedBlockingCallback _writeBlocker;
+    private final WriteBlocker _writeBlocker;
     private Interceptor _interceptor;
 
     /**
@@ -920,6 +923,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _written = 0;
         _writeListener = null;
         _onError = null;
+        _writeBlocker._blockingTimeoutBudget = 0;
         reopen();
     }
 
@@ -1058,6 +1062,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.ignore(x);
         }
     }
+    
+    private long getBlockingTimeout()
+    {
+        long timeout = _channel.getHttpConfiguration().getBlockingTimeout();
+        if (timeout==0)
+            timeout = _channel.getIdleTimeout();
+        return timeout;
+    }
+
 
     @Override
     public String toString()
@@ -1359,22 +1372,47 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private static class WriteBlocker extends SharedBlockingCallback
+    private class WriteBlocker extends SharedBlockingCallback
     {
         private final HttpChannel _channel;
+        private long _blockingTimeoutBudget;
+        private long _blockedAt;
+        private Blocker _blocker;
 
         private WriteBlocker(HttpChannel channel)
         {
             _channel = channel;
         }
+        
+        @Override
+        public Blocker acquire() throws IOException
+        {
+            _blocker = super.acquire();
+            return _blocker;
+        }
 
         @Override
-        protected long getIdleTimeout()
+        protected void preBlock()
         {
-            long blockingTimeout = _channel.getHttpConfiguration().getBlockingTimeout();
-            if (blockingTimeout == 0)
-                return _channel.getIdleTimeout();
-            return blockingTimeout;
+            _blockedAt = System.nanoTime();
+
+            if (_blockingTimeoutBudget<0 && HttpOutput.this.getBlockingTimeout()>0)
+                _blocker.failed(new TimeoutException(String.format("HttpOutput Blocking timeout %d ms",HttpOutput.this.getBlockingTimeout())));
+        }
+
+        @Override
+        protected void postBlock()
+        {
+            _blockingTimeoutBudget = _blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-_blockedAt);
+        }
+
+        @Override
+        protected long getBlockingTimeout()
+        {
+            // Setup blocking only if not async
+            if (!isAsync() && _blockingTimeoutBudget<=0)
+                _blockingTimeoutBudget = HttpOutput.this.getBlockingTimeout();
+            return _blockingTimeoutBudget;
         }
     }
 }

@@ -134,7 +134,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     private long _firstByteTimeStamp = -1;
     private long _contentArrived;
     private long _contentConsumed;
-    private long _blockTimeoutBudget;
+    private long _blockingTimeoutBudget;
     private boolean _waitingForContent;
     private Interceptor _interceptor;
 
@@ -166,7 +166,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             _contentArrived = 0;
             _contentConsumed = 0;
             _firstByteTimeStamp = -1;
-            _blockTimeoutBudget = 0;
+            _blockingTimeoutBudget = 0;
             _waitingForContent = false;
             if (_interceptor instanceof Destroyable)
                 ((Destroyable)_interceptor).destroy();
@@ -245,7 +245,10 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private long getBlockingTimeout()
     {
-        return getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+        long timeout = getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+        if (timeout==0)
+            timeout = getHttpChannelState().getHttpChannel().getIdleTimeout();
+        return timeout;
     }
 
     @Override
@@ -265,8 +268,8 @@ public class HttpInput extends ServletInputStream implements Runnable
         synchronized (_inputQ)
         {
             // Setup blocking only if not async
-            if (!isAsync() && _blockTimeoutBudget<=0)
-                _blockTimeoutBudget = getBlockingTimeout();
+            if (!isAsync() && _blockingTimeoutBudget<=0)
+                _blockingTimeoutBudget = getBlockingTimeout();
 
             // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
@@ -538,9 +541,15 @@ public class HttpInput extends ServletInputStream implements Runnable
             _channelState.getHttpChannel().onBlockWaitForContent();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} blocking for content timeout={}", this, _blockTimeoutBudget);
-            if (_blockTimeoutBudget > 0)
-                _inputQ.wait(_blockTimeoutBudget);
+                LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,getBlockingTimeout());
+            if (getBlockingTimeout() > 0)
+            {
+                if (_blockingTimeoutBudget<0)
+                    _channelState.getHttpChannel()
+                    .onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", getBlockingTimeout())));
+                else
+                    _inputQ.wait(_blockingTimeoutBudget);
+            }
             else
                 _inputQ.wait();
         }
@@ -550,11 +559,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         finally
         {
-            _blockTimeoutBudget = _blockTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start);
-
-            if (getBlockingTimeout()>0 && _blockTimeoutBudget<=0)
-                _channelState.getHttpChannel()
-                .onBlockWaitForContentFailure(new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout())));
+            _blockingTimeoutBudget = _blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start);
         }
     }
 
