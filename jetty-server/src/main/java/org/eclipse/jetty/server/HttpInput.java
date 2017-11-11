@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -132,7 +134,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     private long _firstByteTimeStamp = -1;
     private long _contentArrived;
     private long _contentConsumed;
-    private long _blockUntil;
+    private long _blockTimeoutBudget;
     private boolean _waitingForContent;
     private Interceptor _interceptor;
 
@@ -164,7 +166,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             _contentArrived = 0;
             _contentConsumed = 0;
             _firstByteTimeStamp = -1;
-            _blockUntil = 0;
+            _blockTimeoutBudget = 0;
             _waitingForContent = false;
             if (_interceptor instanceof Destroyable)
                 ((Destroyable)_interceptor).destroy();
@@ -262,16 +264,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l;
         synchronized (_inputQ)
         {
-            if (!isAsync())
-            {
-                // Setup blocking only if not async
-                if (_blockUntil == 0)
-                {
-                    long blockingTimeout = getBlockingTimeout();
-                    if (blockingTimeout > 0)
-                        _blockUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(blockingTimeout);
-                }
-            }
+            // Setup blocking only if not async
+            if (!isAsync() && _blockTimeoutBudget<=0)
+                _blockTimeoutBudget = getBlockingTimeout();
 
             // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
@@ -536,40 +531,30 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     protected void blockForContent() throws IOException
     {
+        long start = System.nanoTime();
         try
         {
             _waitingForContent = true;
             _channelState.getHttpChannel().onBlockWaitForContent();
 
-            boolean loop = false;
-            long timeout = 0;
-            while (true)
-            {
-                if (_blockUntil != 0)
-                {
-                    timeout = TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime());
-                    if (timeout <= 0)
-                        throw new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout()));
-                }
-
-                // This method is called from a loop, so we just
-                // need to check the timeout before and after waiting.
-                if (loop)
-                    break;
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} blocking for content timeout={}", this, timeout);
-                if (timeout > 0)
-                    _inputQ.wait(timeout);
-                else
-                    _inputQ.wait();
-
-                loop = true;
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} blocking for content timeout={}", this, _blockTimeoutBudget);
+            if (_blockTimeoutBudget > 0)
+                _inputQ.wait(_blockTimeoutBudget);
+            else
+                _inputQ.wait();
         }
         catch (Throwable x)
         {
             _channelState.getHttpChannel().onBlockWaitForContentFailure(x);
+        }
+        finally
+        {
+            _blockTimeoutBudget = _blockTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start);
+
+            if (getBlockingTimeout()>0 && _blockTimeoutBudget<=0)
+                _channelState.getHttpChannel()
+                .onBlockWaitForContentFailure(new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout())));
         }
     }
 
