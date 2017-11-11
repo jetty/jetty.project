@@ -143,8 +143,8 @@ Server opts:
  --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard
  --host name|ip                      - interface to listen on (default is all interfaces)
  --port n                            - port to listen on (default 8080)
- --stop-port n                       - port to listen for stop command
- --stop-key n                        - security string for stop command (required if --stop-port is present)
+ --stop-port n                       - port to listen for stop command (or -DSTOP.PORT=n)
+ --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY=n)
  [--jar file]*n                      - each tuple specifies an extra jar to be added to the classloader
  [--lib dir]*n                       - each tuple specifies an extra directory of jars to be added to the classloader
  [--classes dir]*n                   - each tuple specifies an extra directory of classes to be added to the classloader
@@ -200,14 +200,13 @@ To link:#how-to-configure-connectors[configure a https connector], use a Jetty x
 ....
 
 ===== Configuring Stop
-You can configure a port number for jetty to listen on for a stop command, so you are able to stop it from a different terminal.
+You can configure a port number for Jetty to listen on for a stop command, so you are able to stop it from a different terminal.
 This requires the use of a "secret" key, to prevent malicious or accidental termination.
-Use the `--stop-port` and `--stop-key` parameters as arguments to the `jetty-runner`:
+Use the `--stop-port` and `--stop-key` (or `-DSTOP.PORT=`  and `-DSTOP.KEY=`, respectively) parameters as arguments to the `jetty-runner`:
 
 [source, screen, subs="{sub-order}"]
 ....
 > java -jar jetty-runner.jar --stop-port 8181 --stop-key abc123
-
 ....
 
 Then, to stop Jetty from a different terminal, you need to supply the same port and key information.
@@ -216,7 +215,7 @@ Here's how to use a Jetty installation to perform a stop:
 
 [source, screen, subs="{sub-order}"]
 ....
-> java -jar start.jar --stop-port 8181 --stop-key abc123 --stop
+> java -jar start.jar -DSTOP.PORT=8181 -DSTOP.KEY=abc123 --stop
 ....
 
 ===== Configuring the Container Classpath

@@ -15,7 +15,7 @@
 //  ========================================================================
 
 [[sessions-usecases]]
-=== Use Cases
+=== Session Use Cases
 
 ==== Clustering with a Sticky Load Balancer
 
@@ -58,3 +58,36 @@ For various reasons it might not be possible for the `SessionDataStore` to re-re
 One scenario is that the session stores a serialized object in it's attributes, and after a redeployment there in an incompatible class change.
 Using the setter `SessionCache.setRemoveUnloadableSessions(true)` will allow the `SessionDataStore` to delete the unreadable session from persistent storage.
 This can be useful from preventing the scavenger from continually generating errors on the same expired, but un-restorable, session.
+
+==== Configuring Sessions via Jetty XML
+
+With the provided session modules, there is no need to configure a context xml or `jetty-web.xml` file for sessions.
+That said, if a user wishes to configure sessions this way, it is possible using link:#jetty-xml-syntax[Jetty IoC XML format.]
+
+Below is an example of how you could configure a the link:#configuring-sessions-file-system[`FileSessionDataStore`], but the same concept would apply to any of the *SessionDataStores discussed in this chapter:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Call id="sh" name="getSessionHandler">
+    <Set name="sessionCache">
+      <New class="org.eclipse.jetty.server.session.DefaultSessionCache">
+        <Arg><Ref id="sh"/></Arg>
+        <Set name="sessionDataStore">
+           <New class="org.eclipse.jetty.server.session.FileSessionDataStore">
+             <Set name="storeDir">/tmp/sessions</Set>
+           </New>
+        </Set>
+      </New>
+    </Set>
+  </Call>
+</Configure>
+----
+
+The example above functions in either a `jetty-web.xml` file or a link:#using-basic-descriptor-files[context xml descriptor file.]
+
+____
+[NOTE]
+If you explicitly configure the `SessionCache` and `SessionDataStore` for a `SessionHandler` in a context xml file or `jetty-web.xml` file, any session modules you already have enabled are ignored. 
+So, for example, if you had enabled the `session-store-gcloud module` for your sever, you could force a particular webapp to use the `FileSessionDataStore` by explicitly configuring it in either a context xml file or a `jetty-web.xml` file as shown above.
+____

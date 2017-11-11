@@ -52,7 +52,7 @@ Use curl as follows:
 
 The link:#embedding[Embedding Jetty] section contains many examples of writing against the Jetty API.
 This tutorial uses a simple HelloWorld handler with a main method to run the server.
-You can either link:{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/HelloWorld.java[download] or create in an editor the file `HelloWorld.java` with the following content:
+You can either link:{GITBROWSEURL}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/HelloWorld.java[download] or create in an editor the file `HelloWorld.java` with the following content:
 
 [source, java, subs="{sub-order}"]
 ----

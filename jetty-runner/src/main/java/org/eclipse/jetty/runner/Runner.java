@@ -166,8 +166,8 @@ public class Runner
         System.err.println(" --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard");
         System.err.println(" --host name|ip                      - interface to listen on (default is all interfaces)");
         System.err.println(" --port n                            - port to listen on (default 8080)");
-        System.err.println(" --stop-port n                       - port to listen for stop command");
-        System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present)");
+        System.err.println(" --stop-port n                       - port to listen for stop command (or -DSTOP.PORT=n)");
+        System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY=n)");
         System.err.println(" [--jar file]*n                      - each tuple specifies an extra jar to be added to the classloader");
         System.err.println(" [--lib dir]*n                       - each tuple specifies an extra directory of jars to be added to the classloader");
         System.err.println(" [--classes dir]*n                   - each tuple specifies an extra directory of classes to be added to the classloader");
@@ -239,8 +239,8 @@ public class Runner
         boolean contextPathSet = false;
         int port = __defaultPort;
         String host = null;
-        int stopPort = 0;
-        String stopKey = null;
+        int stopPort = Integer.getInteger( "STOP.PORT", 0 );
+        String stopKey = System.getProperty("STOP.KEY", null);
 
         boolean runnerServerInitialized = false;
 
@@ -297,6 +297,18 @@ public class Runner
                     _statsPropFile = ("unsecure".equalsIgnoreCase(_statsPropFile) ? null : _statsPropFile);
                     break;
                 default:
+                    // process system property type argument so users can use in second args part
+                    if ( args[i].startsWith( "-D" ) ){
+                        String[] sysProps = args[i].substring(2).split("=",2);
+                        if("STOP.KEY".equals( sysProps[0] )){
+                            stopKey = sysProps[1];
+                            break;
+                        } else if("STOP.PORT".equals( sysProps[0] )){
+                            stopPort = Integer.valueOf(sysProps[1]);
+                            break;
+                        }
+                    }
+
 // process contexts
 
                     if (!runnerServerInitialized) // log handlers not registered, server maybe not created, etc

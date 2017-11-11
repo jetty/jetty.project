@@ -78,6 +78,30 @@ Additional Startup Commands - `[exec]`::
 The `[exec]` section is used to define additional parameters specific to the module.
 These commands are added to the server startup.
 
+[[custom-module-properties]]
+==== Module Properties
+
+Properties are used to parameterize:
+
+* XML files using the `<Property name="pname"/>` element
+* Module files using the `${pname}` syntax
+
+Properties and System Properties may be set on the command line, in a ini file or in a `[ini]` section of a module using the following syntax.
+
+`name=value`;;
+Set a property that can be expanded in XML files with the <Property> element.
+
+`name+=value`;;
+Append value to an existing property value.
+
+`name+=,value`;;
+Append value to an existing property value, using a comma separator if needed.
+
+`name?=value`;;
+Set a property only if it is not already set.
+
+If any of the previous formats is preceded by `-D`, then a system property is set as well as a start property.
+
 [[custom-module-location]]
 ==== Location of Modules
 Jetty comes with dozens of modules as part of the distribution package.

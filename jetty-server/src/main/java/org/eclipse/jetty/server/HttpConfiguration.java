@@ -232,7 +232,8 @@ public class HttpConfiguration
     /**
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
      * to the total operation (as opposed to the idle timeout that applies to the time no 
-     * data is being sent).</p>
+     * data is being sent). This applies only to blocking operations and does not affect
+     * asynchronous read and write.</p>
      *
      * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
@@ -246,7 +247,8 @@ public class HttpConfiguration
     /**
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
      * to the total operation (as opposed to the idle timeout that applies to the time no 
-     * data is being sent).</p>
+     * data is being sent).This applies only to blocking operations and does not affect
+     * asynchronous read and write.</p>
      *
      * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.

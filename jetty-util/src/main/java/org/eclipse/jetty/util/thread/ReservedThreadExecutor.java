@@ -63,6 +63,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     private final ConcurrentStack.NodeStack<ReservedThread> _stack;
     private final AtomicInteger _size = new AtomicInteger();
     private final AtomicInteger _pending = new AtomicInteger();
+    private final AtomicInteger _waiting = new AtomicInteger();
 
     private ThreadPoolBudget.Lease _lease;
     private Object _owner;
@@ -144,6 +145,12 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
         return _pending.get();
     }
 
+    @ManagedAttribute(value = "waiting reserved threads", readonly = true)
+    public int getWaiting()
+    {
+        return _waiting.get();
+    }
+
     @ManagedAttribute(value = "idletimeout in MS", readonly = true)
     public long getIdleTimeoutMs()
     {
@@ -212,9 +219,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
             return false;
 
         ReservedThread thread = _stack.pop();
-        if (thread==null && task!=STOP)
+        if (thread==null)
         {
-            startReservedThread();
+            if (task!=STOP)
+                startReservedThread();
             return false;
         }
 
@@ -255,9 +263,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     @Override
     public String toString()
     {
-        if (_owner==null)
-            return String.format("%s@%x{s=%d/%d,p=%d}",this.getClass().getSimpleName(),hashCode(),_size.get(),_capacity,_pending.get());
-        return String.format("%s@%s{s=%d/%d,p=%d}",this.getClass().getSimpleName(),_owner,_size.get(),_capacity,_pending.get());
+        return String.format("%s@%s{s=%d/%d,p=%d,w=%d}",
+                getClass().getSimpleName(),
+                _owner != null ? _owner : Integer.toHexString(hashCode()),
+                _size.get(),
+                _capacity,
+                _pending.get(),
+                _waiting.get());
     }
 
     private class ReservedThread extends ConcurrentStack.Node implements Runnable
@@ -300,6 +312,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
                     {
                         try
                         {
+                            _waiting.incrementAndGet();
                             if (_idleTime == 0)
                                 _wakeup.await();
                             else
@@ -308,6 +321,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
                         catch (InterruptedException e)
                         {
                             LOG.ignore(e);
+                        }
+                        finally
+                        {
+                            _waiting.decrementAndGet();
                         }
                     }
                     task = _task;
