@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
@@ -157,8 +156,8 @@ public class CrossOriginFilter implements Filter
     private boolean anyOriginAllowed;
     private boolean anyTimingOriginAllowed;
     private boolean anyHeadersAllowed;
-    private List<String> allowedOrigins = new ArrayList<String>();
-    private List<String> allowedTimingOrigins = new ArrayList<String>();
+    private List<Pattern> allowedOrigins = new ArrayList<Pattern>();
+    private List<Pattern> allowedTimingOrigins = new ArrayList<Pattern>();
     private List<String> allowedMethods = new ArrayList<String>();
     private List<String> allowedHeaders = new ArrayList<String>();
     private List<String> exposedHeaders = new ArrayList<String>();
@@ -234,7 +233,7 @@ public class CrossOriginFilter implements Filter
         }
     }
 
-    private boolean generateAllowedOrigins(List<String> allowedOriginStore, String allowedOriginsConfig, String defaultOrigin) 
+    static boolean generateAllowedOrigins(List<Pattern> allowedOriginStore, String allowedOriginsConfig, String defaultOrigin) 
     {
         if (allowedOriginsConfig == null)
             allowedOriginsConfig = defaultOrigin;
@@ -250,7 +249,11 @@ public class CrossOriginFilter implements Filter
                 }
                 else
                 {
-                    allowedOriginStore.add(allowedOrigin);
+                    final String s = allowedOrigin.contains("*")
+                                    ? parseAllowedWildcardOriginToRegex(allowedOrigin)
+                                    : Pattern.quote(allowedOrigin)
+                                    ;
+                    allowedOriginStore.add(Pattern.compile(s));
                 }
             }
         }
@@ -328,7 +331,7 @@ public class CrossOriginFilter implements Filter
         return true;
     }
 
-    private boolean originMatches(List<String> allowedOrigins, String originList)
+    static boolean originMatches(final List<Pattern> allowedOrigins, final String originList)
     {
         if (originList.trim().length() == 0)
             return false;
@@ -339,31 +342,17 @@ public class CrossOriginFilter implements Filter
             if (origin.trim().length() == 0)
                 continue;
 
-            for (String allowedOrigin : allowedOrigins)
+            for (final Pattern allowedOrigin : allowedOrigins)
             {
-                if (allowedOrigin.contains("*"))
-                {
-                    Matcher matcher = createMatcher(origin, allowedOrigin);
-                    if (matcher.matches())
-                        return true;
-                }
-                else if (allowedOrigin.equals(origin))
-                {
+                if (allowedOrigin.matcher(origin).matches())
                     return true;
-                }
             }
         }
         return false;
     }
 
-    private Matcher createMatcher(String origin, String allowedOrigin)
-    {
-        String regex = parseAllowedWildcardOriginToRegex(allowedOrigin);
-        Pattern pattern = Pattern.compile(regex);
-        return pattern.matcher(origin);
-    }
 
-    private String parseAllowedWildcardOriginToRegex(String allowedOrigin)
+    private static String parseAllowedWildcardOriginToRegex(String allowedOrigin)
     {
         String regex = allowedOrigin.replace(".", "\\.");
         return regex.replace("*", ".*"); // we want to be greedy here to match multiple subdomains, thus we use .*

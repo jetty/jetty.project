@@ -20,8 +20,11 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -565,6 +568,21 @@ public class CrossOriginFilterTest
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
 
+    /**
+     * Tests the inner workings of the pair generateAllowedOrigins - originMatches
+     */
+    @Test
+    public void testOriginMatches() 
+    {
+        final List<Pattern> allowedOrigins = new LinkedList<>();
+        Assert.assertFalse(CrossOriginFilter.generateAllowedOrigins(allowedOrigins, "  foo.bar  , *.foo  ", "*"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "example.org"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "foo.bar"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "example.foo"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "xxfoo.bar"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "foo.barxx"));
+    }
+    
     public static class ResourceServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
