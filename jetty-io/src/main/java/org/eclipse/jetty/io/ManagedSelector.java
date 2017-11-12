@@ -58,7 +58,6 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
-    private static final long MAX_ACTION_PERIOD_MS = Long.getLong("org.eclipse.jetty.io.ManagedSelector.MAX_ACTION_PERIOD_MS",100);
 
     private final Locker _locker = new Locker();
     private boolean _selecting = false;
@@ -67,7 +66,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private final int _id;
     private final ExecutionStrategy _strategy;
     private Selector _selector;
-    private long _actionTime = -1;
+    private int _actionCount;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -304,7 +303,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
         private Runnable nextAction()
         {
-            long now = System.nanoTime();
             Selector selector = null;
             Runnable action = null;
             try (Locker.Lock lock = _locker.lock())
@@ -312,38 +310,43 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // It is important to avoid live-lock (busy blocking) here.  If too many actions
                 // are submitted, this can indefinitely defer selection happening.   Similarly if 
                 // we give too much priority to selection, it may prevent actions from being run.
-                // The solution implemented here is to put a maximum time limit on handling actions
-                // so that this method will fall through to selection if more than MAX_ACTION_PERIOD_MS
-                // is spent running actions.  The time period is cleared whenever a selection occurs,
-                // so that a full period can be spent on actions after every select.
-
-                if (_actionTime == -1)
+                // The solution implemented here is to only process the number of actions that were
+                // originally in the action queue before attempting a select
+                                
+                if (_actionCount==1 && _actions.size()>0)
                 {
-                    _actionTime = now;
-                }
-                else if ((now - _actionTime) > TimeUnit.MILLISECONDS.toNanos(MAX_ACTION_PERIOD_MS) && _actions.size() > 0)
-                {
-                    // Too much time spent handling actions, give selection a go,
-                    // immediately waking up (as if remaining action were just added).
-                    selector = _selector;
-                    _selecting = false;
-                    _actionTime = -1;
+                    // handled enough actions for now, give selection a go
+                    _actionCount = 0;
+                    
+                    if (_actions.size()==0)
+                        _selecting = true;
+                    else
+                    {
+                        // there are still more actions to handle, so
+                        // immediately wake up (as if remaining action were just added).
+                        selector = _selector;
+                        _selecting = false;
+                    }
                     if (LOG.isDebugEnabled())
                         LOG.debug("Forcing selection, actions={}",_actions.size());
                 }
-
-                if (selector == null)
+                else
                 {
+                    // Calculate how many actions we are prepared to handle before selection
+                    _actionCount = _actionCount>0?(_actionCount-1):_actions.size();
+                    
                     action = _actions.poll();
                     if (action == null)
                     {
                         // No more actions, so we time to do some selecting
                         _selecting = true;
-                        _actionTime = -1;
+                        _actionCount = 0;
                     }
                 }
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("action={}",action);
             if (selector != null)
                 selector.wakeup();
 
