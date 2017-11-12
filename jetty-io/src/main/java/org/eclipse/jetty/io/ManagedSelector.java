@@ -319,6 +319,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     _actionCount = 0;
                     
                     if (_actions.size()==0)
+                        // This was the last action anyway, so select normally
                         _selecting = true;
                     else
                     {
