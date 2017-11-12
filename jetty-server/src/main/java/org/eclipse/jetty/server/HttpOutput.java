@@ -1396,7 +1396,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _blockedAt = System.nanoTime();
 
-            if (_blockingTimeoutBudget<0 && HttpOutput.this.getBlockingTimeout()>0)
+            if (_blockingTimeoutBudget<=0 && HttpOutput.this.getBlockingTimeout()>0)
                 _blocker.failed(new TimeoutException(String.format("HttpOutput Blocking timeout %d ms",HttpOutput.this.getBlockingTimeout())));
         }
 

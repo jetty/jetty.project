@@ -544,7 +544,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,getBlockingTimeout());
             if (getBlockingTimeout() > 0)
             {
-                if (_blockingTimeoutBudget<0)
+                if (_blockingTimeoutBudget<=0)
                     _channelState.getHttpChannel()
                     .onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", getBlockingTimeout())));
                 else
