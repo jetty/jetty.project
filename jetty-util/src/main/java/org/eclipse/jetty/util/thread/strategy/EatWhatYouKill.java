@@ -21,7 +21,6 @@ package org.eclipse.jetty.util.thread.strategy;
 import java.io.Closeable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -35,9 +34,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
-import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>A strategy where the thread that produces will run the resulting task if it
@@ -78,8 +75,6 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private final Producer _producer;
     private final Executor _executor;
     private final ReservedThreadExecutor _producers;
-    private final Scheduler _scheduler;
-    private final long _nonBlockingTaskTimeout = Long.getLong("org.eclipse.jetty.nonBlockingTaskTimeout", 2000);
     private State _state = State.IDLE;
 
     public EatWhatYouKill(Producer producer, Executor executor)
@@ -94,15 +89,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
     public EatWhatYouKill(Producer producer, Executor executor, ReservedThreadExecutor producers)
     {
-        this(producer, executor, producers, null);
-    }
-
-    public EatWhatYouKill(Producer producer, Executor executor, ReservedThreadExecutor producers, Scheduler scheduler)
-    {
         _producer = producer;
         _executor = executor;
         _producers = producers;
-        _scheduler = scheduler;
         addBean(_producer);
         if (LOG.isDebugEnabled())
             LOG.debug("{} created", this);
@@ -255,7 +244,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 try
                 {
                     if (consume)
-                        runTask(task);
+                        task.run();
                     else
                         _executor.execute(task);
                 }
@@ -282,33 +271,6 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         }
 
         return producing;
-    }
-
-    protected void runTask(Runnable task)
-    {
-        Scheduler.Task scheduled = null;
-        if (Invocable.getInvocationType(task) == InvocationType.NON_BLOCKING && _scheduler != null && _nonBlockingTaskTimeout > 0)
-        {
-            scheduled = _scheduler.schedule(() ->
-            {
-                LOG.warn("Non-blocking task {} is taking more than {} ms", task, _nonBlockingTaskTimeout);
-                if (_executor instanceof QueuedThreadPool)
-                {
-                    QueuedThreadPool threadPool = (QueuedThreadPool)_executor;
-                    threadPool.setDetailedDump(true);
-                    LOG.warn("Non-blocking task {} - executor dump{}{}", System.lineSeparator(), threadPool.dump());
-                }
-            }, _nonBlockingTaskTimeout, TimeUnit.MILLISECONDS);
-        }
-        try
-        {
-            task.run();
-        }
-        finally
-        {
-            if (scheduled != null)
-                scheduled.cancel();
-        }
     }
 
     @ManagedAttribute(value = "number of non blocking tasks consumed", readonly = true)

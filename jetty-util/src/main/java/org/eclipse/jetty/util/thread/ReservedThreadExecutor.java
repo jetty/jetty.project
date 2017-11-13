@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 
-import org.eclipse.jetty.util.ConcurrentStack;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -49,7 +49,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     {
         @Override
         public void run()
-        {}
+        {
+        }
 
         @Override
         public String toString()
@@ -60,10 +61,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
 
     private final Executor _executor;
     private final int _capacity;
-    private final ConcurrentStack.NodeStack<ReservedThread> _stack;
+    private final ConcurrentLinkedDeque<ReservedThread> _stack;
     private final AtomicInteger _size = new AtomicInteger();
     private final AtomicInteger _pending = new AtomicInteger();
-    private final AtomicInteger _waiting = new AtomicInteger();
 
     private ThreadPoolBudget.Lease _lease;
     private Object _owner;
@@ -96,7 +96,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     {
         _executor = executor;
         _capacity = reservedThreads(executor,capacity);
-        _stack = new ConcurrentStack.NodeStack<>();
+        _stack = new ConcurrentLinkedDeque<>();
         _owner = owner;
 
         LOG.debug("{}",this);
@@ -145,12 +145,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
         return _pending.get();
     }
 
-    @ManagedAttribute(value = "waiting reserved threads", readonly = true)
-    public int getWaiting()
-    {
-        return _waiting.get();
-    }
-
     @ManagedAttribute(value = "idletimeout in MS", readonly = true)
     public long getIdleTimeoutMs()
     {
@@ -186,17 +180,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
             _lease.close();
         while(true)
         {
-            ReservedThread thread = _stack.pop();
-            if (thread==null)
-            {
-                super.doStop();
-                return;
-            }
-
+            ReservedThread thread = _stack.pollFirst();
+            if (thread == null)
+                break;
             _size.decrementAndGet();
-
             thread.stop();
         }
+        super.doStop();
     }
 
     @Override
@@ -218,7 +208,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
         if (task==null)
             return false;
 
-        ReservedThread thread = _stack.pop();
+        ReservedThread thread = _stack.pollFirst();
         if (thread==null)
         {
             if (task!=STOP)
@@ -263,16 +253,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
     @Override
     public String toString()
     {
-        return String.format("%s@%s{s=%d/%d,p=%d,w=%d}",
+        return String.format("%s@%x{s=%d/%d,p=%d}@%s",
                 getClass().getSimpleName(),
-                _owner != null ? _owner : Integer.toHexString(hashCode()),
+                hashCode(),
                 _size.get(),
                 _capacity,
                 _pending.get(),
-                _waiting.get());
+                _owner);
     }
 
-    private class ReservedThread extends ConcurrentStack.Node<ReservedThread> implements Runnable
+    private class ReservedThread implements Runnable
     {
         private final Locker _locker = new Locker();
         private final Condition _wakeup = _locker.newCondition();
@@ -302,7 +292,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
                 LOG.debug("{} waiting", this);
 
             Runnable task = null;
-            while (isRunning() && task==null)
+            while (task==null)
             {
                 boolean idle = false;
 
@@ -312,7 +302,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
                     {
                         try
                         {
-                            _waiting.incrementAndGet();
                             if (_idleTime == 0)
                                 _wakeup.await();
                             else
@@ -321,10 +310,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
                         catch (InterruptedException e)
                         {
                             LOG.ignore(e);
-                        }
-                        finally
-                        {
-                            _waiting.decrementAndGet();
                         }
                     }
                     task = _task;
@@ -347,7 +332,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
             if (LOG.isDebugEnabled())
                 LOG.debug("{} task={}", this, task);
 
-            return task==null?STOP:task;
+            return task;
         }
 
         @Override
@@ -355,8 +340,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
         {
             while (isRunning())
             {
-                Runnable task = null;
-
                 // test and increment size BEFORE decrementing pending,
                 // so that we don't have a race starting new pending.
                 while(true)
@@ -384,10 +367,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
 
                 // Insert ourselves in the stack. Size is already incremented, but
                 // that only effects the decision to keep other threads reserved.
-                _stack.push(this);
+                _stack.offerFirst(this);
 
                 // Wait for a task
-                task = reservedWait();
+                Runnable task = reservedWait();
 
                 if (task==STOP)
                     // return on STOP poison pill
