@@ -651,22 +651,19 @@ public class HttpParser
                         if (method!=null && method.asString()!=_methodString)
                         {
                             // TODO See #1966 Case Sensitive Method
-                            if (method.asString()!=_methodString)
+                            switch(_compliance)
                             {
-                                switch(_compliance)
-                                {
-                                    case LEGACY:
-                                        // Legacy correctly allows case sensitive header;
-                                        break;
-                                        
-                                    case RFC2616:
-                                    case RFC7230:
-                                        if (_complianceHandler!=null)
-                                            _complianceHandler.onComplianceViolation(_compliance,HttpCompliance.LEGACY,"case insensitive method "+_methodString);
-                                        _methodString = method.asString();
-                                        break;
-                                }
-                            }                            
+                                case LEGACY:
+                                    // Legacy correctly allows case sensitive header;
+                                    break;
+
+                                case RFC2616:
+                                case RFC7230:
+                                    if (_complianceHandler!=null)
+                                        _complianceHandler.onComplianceViolation(_compliance,HttpCompliance.LEGACY,"case insensitive method "+_methodString);
+                                    _methodString = method.asString();
+                                    break;
+                            }                       
                         }
                         setState(State.SPACE1);
                     }
