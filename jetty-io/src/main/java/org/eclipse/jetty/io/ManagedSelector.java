@@ -312,15 +312,28 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // we give too much priority to selection, it may prevent actions from being run.
                 // The solution implemented here is to only process the number of actions that were
                 // originally in the action queue before attempting a select
-                                
-                if (_actionCount==1 && _actions.size()>0)
+                
+                if (_actionCount==0)
+                {               
+                    // Calculate how many actions we are prepared to handle before selection
+                    _actionCount = _actions.size();
+                    if (_actionCount>0)
+                        action = _actions.poll();
+                    else
+                        _selecting = true;
+                }
+                else if (_actionCount==1)
                 {
-                    // handled enough actions for now, give selection a go
                     _actionCount = 0;
                     
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Forcing selection, actions={}",_actions.size());
+                    
                     if (_actions.size()==0)
-                        // This was the last action anyway, so select normally
+                    {
+                        // This was the last action, so select normally
                         _selecting = true;
+                    }
                     else
                     {
                         // there are still more actions to handle, so
@@ -328,26 +341,17 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         selector = _selector;
                         _selecting = false;
                     }
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Forcing selection, actions={}",_actions.size());
                 }
                 else
                 {
-                    // Calculate how many actions we are prepared to handle before selection
-                    _actionCount = _actionCount>0?(_actionCount-1):_actions.size();
-                    
+                    _actionCount--;
                     action = _actions.poll();
-                    if (action == null)
-                    {
-                        // No more actions, so we time to do some selecting
-                        _selecting = true;
-                        _actionCount = 0;
-                    }
                 }
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("action={}",action);
+                LOG.debug("action={} wakeup={}",action,selector!=null);
+            
             if (selector != null)
                 selector.wakeup();
 

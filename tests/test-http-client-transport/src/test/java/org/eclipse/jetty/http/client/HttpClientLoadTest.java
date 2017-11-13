@@ -229,12 +229,12 @@ public class HttpClientLoadTest extends AbstractTest
         boolean ssl = isTransportSecure();
 
         // Choose randomly whether to close the connection on the client or on the server
-        boolean clientClose = false;
-        if (!ssl && random.nextInt(100) < 5)
-            clientClose = true;
+        boolean clientClose = true;
+  //      if (!ssl && random.nextInt(100) < 5)
+  //          clientClose = true;
         boolean serverClose = false;
-        if (!ssl && random.nextInt(100) < 5)
-            serverClose = true;
+  //      if (!ssl && random.nextInt(100) < 5)
+  //          serverClose = true;
 
         int maxContentLength = 64 * 1024;
         int contentLength = random.nextInt(maxContentLength) + 1;
