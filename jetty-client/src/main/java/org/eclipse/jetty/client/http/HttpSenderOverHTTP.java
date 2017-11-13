@@ -235,8 +235,6 @@ public class HttpSenderOverHTTP extends HttpSender
                             chunkBuffer == null ? -1 : chunkBuffer.remaining(),
                             contentBuffer == null ? -1 : contentBuffer.remaining(),
                             result, generator);
-                httpConnectionOverHTTP.addBytesOut( BufferUtil.length( headerBuffer ) + BufferUtil.length( contentBuffer ));
-
                 switch (result)
                 {
                     case NEED_HEADER:
@@ -262,6 +260,11 @@ public class HttpSenderOverHTTP extends HttpSender
                             chunkBuffer = BufferUtil.EMPTY_BUFFER;
                         if (contentBuffer == null)
                             contentBuffer = BufferUtil.EMPTY_BUFFER;
+
+                        httpConnectionOverHTTP.addBytesOut( BufferUtil.length(headerBuffer) //
+                                                                + BufferUtil.length(contentBuffer) //
+                                                                + BufferUtil.length(chunkBuffer));
+
                         endPoint.write(this, headerBuffer, chunkBuffer, contentBuffer);
                         generated = true;
                         return Action.SCHEDULED;

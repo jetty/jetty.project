@@ -743,7 +743,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case FLUSH:
                     {
-                        HttpConnection.this.bytesOut.add( BufferUtil.length( _header ) + BufferUtil.length( _content ) );
+                        HttpConnection.this.bytesOut.add(BufferUtil.length(_header) //
+                                                             + BufferUtil.length(_content)
+                                                             + BufferUtil.length(chunk));
                         // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
                         if (_head || _generator.isNoContent())
                         {

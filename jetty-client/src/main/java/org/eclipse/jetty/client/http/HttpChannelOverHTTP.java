@@ -40,8 +40,8 @@ public class HttpChannelOverHTTP extends HttpChannel
     private final HttpConnectionOverHTTP connection;
     private final HttpSenderOverHTTP sender;
     private final HttpReceiverOverHTTP receiver;
-    private final LongAdder _inMessages = new LongAdder();
-    private final LongAdder _outMessages = new LongAdder();
+    private final LongAdder inMessages = new LongAdder();
+    private final LongAdder outMessages = new LongAdder();
 
     public HttpChannelOverHTTP(HttpConnectionOverHTTP connection)
     {
@@ -85,7 +85,7 @@ public class HttpChannelOverHTTP extends HttpChannel
         if (exchange != null)
         {
             sender.send( exchange );
-            _outMessages.add( 1 );
+            outMessages.increment();
         }
     }
 
@@ -133,7 +133,7 @@ public class HttpChannelOverHTTP extends HttpChannel
 
     public void receive()
     {
-        _inMessages.add(1);
+        inMessages.increment();
         receiver.receive();
     }
 
@@ -189,12 +189,12 @@ public class HttpChannelOverHTTP extends HttpChannel
 
     protected long getMessagesIn()
     {
-        return _inMessages.longValue();
+        return inMessages.longValue();
     }
 
     protected long getMessagesOut()
     {
-        return _outMessages.longValue();
+        return outMessages.longValue();
     }
 
     @Override
