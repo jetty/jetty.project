@@ -332,7 +332,7 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected String legacyString(String orig, String cached)
+    protected String caseInsenstiveString(String orig, String cached)
     {                   
         return (_compliance!=LEGACY || orig.equals(cached) || complianceViolation(RFC2616,"case sensitive"))?cached:orig;
     }
@@ -648,8 +648,26 @@ public class HttpParser
                         _length=_string.length();
                         _methodString=takeString();
                         HttpMethod method=HttpMethod.CACHE.get(_methodString);
-                        if (method!=null)
-                            _methodString=legacyString(_methodString,method.asString());
+                        if (method!=null && method.asString()!=_methodString)
+                        {
+                            // TODO See #1966 Case Sensitive Method
+                            if (method.asString()!=_methodString)
+                            {
+                                switch(_compliance)
+                                {
+                                    case LEGACY:
+                                        // Legacy correctly allows case sensitive header;
+                                        break;
+                                        
+                                    case RFC2616:
+                                    case RFC7230:
+                                        if (_complianceHandler!=null)
+                                            _complianceHandler.onComplianceViolation(_compliance,HttpCompliance.LEGACY,"case insensitive method "+_methodString);
+                                        _methodString = method.asString();
+                                        break;
+                                }
+                            }                            
+                        }
                         setState(State.SPACE1);
                     }
                     else if (b < SPACE)
@@ -931,7 +949,7 @@ public class HttpParser
                         _host=true;
                         if (!(_field instanceof HostPortHttpField) && _valueString!=null && !_valueString.isEmpty())
                         {
-                            _field=new HostPortHttpField(_header,legacyString(_headerString,_header.asString()),_valueString);
+                            _field=new HostPortHttpField(_header,caseInsenstiveString(_headerString,_header.asString()),_valueString);
                             add_to_connection_trie=_connectionFields!=null;
                         }
                       break;
@@ -961,7 +979,7 @@ public class HttpParser
                 if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
                 {
                     if (_field==null)
-                        _field=new HttpField(_header,legacyString(_headerString,_header.asString()),_valueString);
+                        _field=new HttpField(_header,caseInsenstiveString(_headerString,_header.asString()),_valueString);
                     _connectionFields.put(_field);
                 }
             }
@@ -1154,13 +1172,13 @@ public class HttpParser
                                     {
                                         // Have to get the fields exactly from the buffer to match case
                                         String fn=field.getName();
-                                        n=legacyString(BufferUtil.toString(buffer,buffer.position()-1,fn.length(),StandardCharsets.US_ASCII),fn);
+                                        n=caseInsenstiveString(BufferUtil.toString(buffer,buffer.position()-1,fn.length(),StandardCharsets.US_ASCII),fn);
                                         String fv=field.getValue();
                                         if (fv==null)
                                             v=null;
                                         else
                                         {
-                                            v=legacyString(BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StandardCharsets.ISO_8859_1),fv);
+                                            v=caseInsenstiveString(BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StandardCharsets.ISO_8859_1),fv);
                                             field=new HttpField(field.getHeader(),n,v);
                                         }
                                     }
