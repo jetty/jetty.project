@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -50,8 +51,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
 
-    private final AtomicLong bytesIn = new AtomicLong();
-    private final AtomicLong bytesOut = new AtomicLong();
+    private final LongAdder bytesIn = new LongAdder();
+    private final LongAdder bytesOut = new LongAdder();
 
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
@@ -79,24 +80,24 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public long getBytesIn()
     {
-        return bytesIn.get();
+        return bytesIn.longValue();
     }
 
     protected void addBytesIn(long bytesIn)
     {
-        this.bytesIn.addAndGet( bytesIn );
+        this.bytesIn.add( bytesIn );
     }
 
     @Override
     public long getBytesOut()
     {
-        return bytesOut.get();
+        return bytesOut.longValue();
     }
 
 
     protected void addBytesOut(long bytesOut)
     {
-        this.bytesOut.addAndGet( bytesOut );
+        this.bytesOut.add( bytesOut );
     }
 
     @Override

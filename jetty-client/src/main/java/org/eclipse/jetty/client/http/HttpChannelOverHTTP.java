@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client.http;
 
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.HttpChannel;
