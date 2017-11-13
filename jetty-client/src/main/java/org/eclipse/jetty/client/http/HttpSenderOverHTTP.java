@@ -59,7 +59,7 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
-            new HeadersCallback(exchange, content, callback).iterate();
+            new HeadersCallback(exchange, content, callback, getHttpChannel()).iterate();
         }
         catch (Throwable x)
         {
@@ -191,17 +191,19 @@ public class HttpSenderOverHTTP extends HttpSender
         private final HttpExchange exchange;
         private final Callback callback;
         private final MetaData.Request metaData;
+        private final HttpChannelOverHTTP httpChannelOverHTTP;
         private ByteBuffer headerBuffer;
         private ByteBuffer chunkBuffer;
         private ByteBuffer contentBuffer;
         private boolean lastContent;
         private boolean generated;
 
-        public HeadersCallback(HttpExchange exchange, HttpContent content, Callback callback)
+        public HeadersCallback(HttpExchange exchange, HttpContent content, Callback callback, HttpChannelOverHTTP httpChannelOverHTTP)
         {
             super(false);
             this.exchange = exchange;
             this.callback = callback;
+            this.httpChannelOverHTTP = httpChannelOverHTTP;
 
             HttpRequest request = exchange.getRequest();
             ContentProvider requestContent = request.getContent();
@@ -233,6 +235,11 @@ public class HttpSenderOverHTTP extends HttpSender
                             chunkBuffer == null ? -1 : chunkBuffer.remaining(),
                             contentBuffer == null ? -1 : contentBuffer.remaining(),
                             result, generator);
+                if (BufferUtil.hasContent(headerBuffer))
+                    httpChannelOverHTTP.getHttpConnection().addBytesOut(headerBuffer.remaining() );
+                if (BufferUtil.hasContent(contentBuffer))
+                    httpChannelOverHTTP.getHttpConnection().addBytesOut(contentBuffer.remaining() );
+
                 switch (result)
                 {
                     case NEED_HEADER:

@@ -23,6 +23,7 @@ import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -49,6 +50,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
 
+    private final AtomicLong bytesIn = new AtomicLong();
+    private final AtomicLong bytesOut = new AtomicLong();
+
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
         super(endPoint, destination.getHttpClient().getExecutor());
@@ -70,6 +74,41 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     public HttpDestinationOverHTTP getHttpDestination()
     {
         return (HttpDestinationOverHTTP)delegate.getHttpDestination();
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return bytesIn.get();
+    }
+
+    protected void addBytesIn(long bytesIn)
+    {
+        this.bytesIn.addAndGet( bytesIn );
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return bytesOut.get();
+    }
+
+
+    protected void addBytesOut(long bytesOut)
+    {
+        this.bytesOut.addAndGet( bytesOut );
+    }
+
+    @Override
+    public long getMessagesIn()
+    {
+        return getHttpChannel().getMessagesIn();
+    }
+
+    @Override
+    public long getMessagesOut()
+    {
+        return getHttpChannel().getMessagesOut();
     }
 
     @Override

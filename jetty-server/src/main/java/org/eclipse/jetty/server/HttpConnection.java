@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
@@ -72,6 +73,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final boolean _recordHttpComplianceViolations;
+    private final AtomicLong bytesIn = new AtomicLong();
+    private final AtomicLong bytesOut = new AtomicLong();
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -229,6 +232,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
+                bytesIn.addAndGet( filled );
 
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
@@ -519,7 +523,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         if(_sendCallback.reset(info,head,content,lastContent,callback))
+        {
             _sendCallback.iterate();
+        }
     }
 
 
@@ -563,6 +569,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void blockingReadFailure(Throwable e)
     {
         _blockingReadCallback.failed(e);
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return bytesIn.get();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return bytesOut.get();
     }
 
     @Override
@@ -698,6 +716,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         BufferUtil.toSummaryString(_content),
                         _lastContent,
                         _generator.getState());
+                if (BufferUtil.hasContent(_header))
+                    HttpConnection.this.bytesOut.addAndGet(_header.remaining() );
+                if (BufferUtil.hasContent(_content))
+                    HttpConnection.this.bytesOut.addAndGet(_content.remaining() );
 
                 switch (result)
                 {
@@ -759,6 +781,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         {
                             succeeded(); // nothing to write
                         }
+
                         return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client.http;
 
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
@@ -39,6 +40,8 @@ public class HttpChannelOverHTTP extends HttpChannel
     private final HttpConnectionOverHTTP connection;
     private final HttpSenderOverHTTP sender;
     private final HttpReceiverOverHTTP receiver;
+    private final AtomicLong _inMessages = new AtomicLong();
+    private final AtomicLong _outMessages = new AtomicLong();
 
     public HttpChannelOverHTTP(HttpConnectionOverHTTP connection)
     {
@@ -80,7 +83,10 @@ public class HttpChannelOverHTTP extends HttpChannel
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-            sender.send(exchange);
+        {
+            sender.send( exchange );
+            _outMessages.incrementAndGet();
+        }
     }
 
     @Override
@@ -127,6 +133,7 @@ public class HttpChannelOverHTTP extends HttpChannel
 
     public void receive()
     {
+        _inMessages.incrementAndGet();
         receiver.receive();
     }
 
@@ -178,6 +185,16 @@ public class HttpChannelOverHTTP extends HttpChannel
             else
                 release();
         }
+    }
+
+    protected long getMessagesIn()
+    {
+        return _inMessages.get();
+    }
+
+    protected long getMessagesOut()
+    {
+        return _outMessages.get();
     }
 
     @Override
