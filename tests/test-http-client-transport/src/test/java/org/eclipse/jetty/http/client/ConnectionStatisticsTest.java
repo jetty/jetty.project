@@ -47,7 +47,7 @@ public class ConnectionStatisticsTest extends AbstractTest
     @Test
     public void testConnectionStatistics() throws Exception
     {
-        Assume.assumeThat(transport, Matchers.isOneOf(Transport.H2C, Transport.H2));
+        Assume.assumeThat(transport, Matchers.isOneOf( Transport.HTTP, Transport.H2C, Transport.H2));
 
         start(new AbstractHandler()
         {
