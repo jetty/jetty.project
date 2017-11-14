@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLException;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -434,12 +435,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testBlockingTimeoutRead() throws Exception
     {
-        _httpConfiguration.setBlockingTimeout(750L);
+        long blockingTimeout = 750L;
+        int soTimeout = 10000;
+        _httpConfiguration.setBlockingTimeout(blockingTimeout);
         
         ReadForeverHandler handler = new ReadForeverHandler();
         configureServer(handler);
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
+        client.setSoTimeout(soTimeout);
         InputStream is=client.getInputStream();
         Assert.assertFalse(client.isClosed());
 
@@ -482,8 +485,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         
         long duration=System.currentTimeMillis() - start;
-        Assert.assertThat(duration,Matchers.greaterThan(500L));
-        Assert.assertThat(duration,Matchers.lessThan(10000L));
+        Assert.assertThat(duration,Matchers.greaterThan(blockingTimeout/2));
+        Assert.assertThat(duration,Matchers.lessThan((long)soTimeout));
         
         try
         {
@@ -542,11 +545,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testBlockingTimeoutWrite() throws Exception
     {
-        _httpConfiguration.setBlockingTimeout(750L);
+        long blockingTimeout = 750L;
+        int soTimeout = 10000;
+        _httpConfiguration.setBlockingTimeout(blockingTimeout);
         WriteForeverHandler handler = new WriteForeverHandler();
         configureServer(handler);
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
+        client.setSoTimeout(soTimeout);
 
         Assert.assertFalse(client.isClosed());
 
@@ -584,8 +589,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
        
         long end=System.currentTimeMillis();
         long duration = end-start;
-        Assert.assertThat(duration,Matchers.greaterThan(500L));
-        Assert.assertThat(duration,Matchers.lessThan(10000L));
+        Assert.assertThat(duration,Matchers.greaterThan(blockingTimeout/2));
+        Assert.assertThat(duration,Matchers.lessThan((long)soTimeout));
         Assert.assertNotNull(handler.cause);
         Assert.assertThat(handler.cause.getCause(),Matchers.instanceOf(TimeoutException.class));
     }
@@ -833,8 +838,15 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
+        {            
             baseRequest.setHandled(true);
+
+            if (baseRequest.getDispatcherType()!=DispatcherType.REQUEST)
+            {
+                response.sendError(500);
+                return;
+            }
+            
             response.setStatus(200);
             InputStream in = request.getInputStream();
             byte[] buffer = new byte[64*1024];
@@ -843,7 +855,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 while(true)
                 {
-                    if (in.read(buffer)<0)
+                    int l = in.read(buffer);
+                    if (l<0)
                         break;
                 }
             }

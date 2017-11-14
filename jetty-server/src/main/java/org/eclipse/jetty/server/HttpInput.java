@@ -141,6 +141,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public HttpInput(HttpChannelState state)
     {
         _channelState = state;
+        _blockingTimeoutBudget = _channelState.getHttpChannel().getBlockingTimeout();
     }
 
     protected HttpChannelState getHttpChannelState()
@@ -166,7 +167,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             _contentArrived = 0;
             _contentConsumed = 0;
             _firstByteTimeStamp = -1;
-            _blockingTimeoutBudget = 0;
+            _blockingTimeoutBudget = _channelState.getHttpChannel().getBlockingTimeout();
             _waitingForContent = false;
             if (_interceptor instanceof Destroyable)
                 ((Destroyable)_interceptor).destroy();
@@ -259,10 +260,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l;
         synchronized (_inputQ)
         {
-            // Setup blocking only if not async
-            if (!isAsync() && _blockingTimeoutBudget<=0)
-                _blockingTimeoutBudget = getHttpChannelState().getHttpChannel().getBlockingTimeout();
-
             // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
@@ -276,32 +273,43 @@ public class HttpInput extends ServletInputStream implements Runnable
                 }
             }
 
+            long timeout = isAsync()?-1:getHttpChannelState().getHttpChannel().getBlockingTimeout();
+
             // Consume content looking for bytes to read
             while (true)
             {
-                Content item = nextContent();
-                if (item != null)
+                long start = timeout>0?System.nanoTime():0;
+                
+                try
                 {
-                    l = get(item,b,off,len);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} read {} from {}",this,l,item);
+                    Content item = nextContent();
+                    if (item != null)
+                    {
+                        l = get(item,b,off,len);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} read {} from {}",this,l,item);
 
-                    // Consume any following poison pills
-                    if (item.isEmpty())
-                        nextInterceptedContent();
-                    break;
-                }
-
-                // No content, so should we block?
-                if (!_state.blockForContent(this))
-                {
-                    // Not blocking, so what should we return?
-                    l = _state.noContent();
+                        // Consume any following poison pills
+                        if (item.isEmpty())
+                            nextInterceptedContent();
+                        break;
+                    }
                     
-                    if (l<0)
-                        // If EOF do we need to wake for allDataRead callback?
-                        wake = _channelState.onReadEof();
-                    break;
+                    // No content, so should we block?
+                    if (!_state.blockForContent(this))
+                    {
+                        // Not blocking, so what should we return?
+                        l = _state.noContent();                        
+                        if (l<0)
+                            // If EOF do we need to wake for allDataRead callback?
+                            wake = _channelState.onReadEof();
+                        break;
+                    }
+                }
+                finally
+                {
+                    if (timeout>0)
+                        _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start));
                 }
             }
         }
@@ -524,10 +532,16 @@ public class HttpInput extends ServletInputStream implements Runnable
      *
      * @throws IOException if the wait is interrupted
      */
-    protected void blockForContent() throws IOException
+    protected boolean blockForContent() throws IOException
     {   
-        long timeout = getHttpChannelState().getHttpChannel().getBlockingTimeout();
-        long start = System.nanoTime();
+        long timeout = isAsync()?-1:getHttpChannelState().getHttpChannel().getBlockingTimeout();
+        
+        if (timeout>0 && _blockingTimeoutBudget==0)
+        {
+            _channelState.getHttpChannel().onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", timeout)));
+            return false;
+        }
+
         try
         {
             if (!_waitingForContent)
@@ -538,9 +552,10 @@ public class HttpInput extends ServletInputStream implements Runnable
             
             if (LOG.isDebugEnabled())
                 LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,timeout);
+            LOG.info("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,timeout);
             
             // looping for spurious timeouts is handled externally to this method
-            if (timeout > 0)
+            if (_blockingTimeoutBudget > 0)
                 _inputQ.wait(_blockingTimeoutBudget);
             else
                 _inputQ.wait();
@@ -549,15 +564,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             _channelState.getHttpChannel().onBlockWaitForContentFailure(x);
         }
-        finally
-        {
-            if (timeout>0)
-            {
-                _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start));
-                if (_blockingTimeoutBudget==0)
-                    _channelState.getHttpChannel().onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", timeout)));
-            }
-        }
+        return true;
     }
 
     /**
@@ -1068,8 +1075,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public boolean blockForContent(HttpInput input) throws IOException
         {
-            input.blockForContent();
-            return true;
+            return input.blockForContent();
         }
 
         @Override

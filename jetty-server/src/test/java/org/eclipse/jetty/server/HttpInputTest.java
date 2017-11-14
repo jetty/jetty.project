@@ -143,10 +143,10 @@ public class HttpInputTest
             }
 
             @Override
-            protected void blockForContent() throws IOException
+            protected boolean blockForContent() throws IOException
             {
                 _history.add("blockForContent");
-                super.blockForContent();
+                return super.blockForContent();
             }
         };
     }
