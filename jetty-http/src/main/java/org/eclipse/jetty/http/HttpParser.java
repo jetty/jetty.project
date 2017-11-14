@@ -648,7 +648,7 @@ public class HttpParser
                         _length=_string.length();
                         _methodString=takeString();
                         HttpMethod method=HttpMethod.CACHE.get(_methodString);
-                        if (method!=null && method.asString()!=_methodString)
+                        if (method!=null && !method.asString().equals(_methodString))
                         {
                             // TODO See #1966 Case Sensitive Method
                             switch(_compliance)
@@ -661,7 +661,7 @@ public class HttpParser
                                 case RFC7230:
                                     if (_complianceHandler!=null)
                                         _complianceHandler.onComplianceViolation(_compliance,HttpCompliance.LEGACY,"case insensitive method "+_methodString);
-                                    _methodString = method.asString();
+                                    _methodString = method.asString();  // TODO This is not correct by the RFC
                                     break;
                             }                       
                         }
