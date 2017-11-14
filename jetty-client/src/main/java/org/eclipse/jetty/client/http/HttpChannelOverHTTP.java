@@ -84,8 +84,8 @@ public class HttpChannelOverHTTP extends HttpChannel
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
         {
-            sender.send( exchange );
             outMessages.increment();
+            sender.send( exchange );
         }
     }
 
