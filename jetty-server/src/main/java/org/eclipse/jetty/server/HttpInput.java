@@ -295,6 +295,19 @@ public class HttpInput extends ServletInputStream implements Runnable
                         break;
                     }
                     
+                    // Update and check the budget before blocking
+                    if (timeout>0)
+                    {
+                        _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start));
+                        start = System.nanoTime();
+                        if (_blockingTimeoutBudget==0)
+                        {
+                            TimeoutException expired = new TimeoutException("Blocking input timeout: "+timeout+"ms");
+                            _channelState.getHttpChannel().onBlockWaitForContentFailure(expired);
+                            return _state.noContent();
+                        }
+                    }
+                    
                     // No content, so should we block?
                     if (!_state.blockForContent(this))
                     {
@@ -532,16 +545,8 @@ public class HttpInput extends ServletInputStream implements Runnable
      *
      * @throws IOException if the wait is interrupted
      */
-    protected boolean blockForContent() throws IOException
+    protected void blockForContent() throws IOException
     {   
-        long timeout = isAsync()?-1:getHttpChannelState().getHttpChannel().getBlockingTimeout();
-        
-        if (timeout>0 && _blockingTimeoutBudget==0)
-        {
-            _channelState.getHttpChannel().onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", timeout)));
-            return false;
-        }
-
         try
         {
             if (!_waitingForContent)
@@ -551,8 +556,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             
             if (LOG.isDebugEnabled())
-                LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,timeout);
-            LOG.info("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,timeout);
+                LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,getHttpChannelState().getHttpChannel().getBlockingTimeout());
             
             // looping for spurious timeouts is handled externally to this method
             if (_blockingTimeoutBudget > 0)
@@ -564,7 +568,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             _channelState.getHttpChannel().onBlockWaitForContentFailure(x);
         }
-        return true;
     }
 
     /**
@@ -1075,7 +1078,8 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public boolean blockForContent(HttpInput input) throws IOException
         {
-            return input.blockForContent();
+            input.blockForContent();
+            return true;
         }
 
         @Override
