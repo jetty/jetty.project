@@ -568,12 +568,18 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             line=is.readLine();
 
         long start=System.currentTimeMillis();
-        while(true)
+        try
         {
-            Thread.sleep(10);
-            line=is.readLine();
-            if (line==null)
-                break;
+            while(true)
+            {
+                Thread.sleep(10);
+                line=is.readLine();
+                if (line==null)
+                    break;
+            }
+        }
+        catch(SSLException e)
+        {
         }
        
         long end=System.currentTimeMillis();

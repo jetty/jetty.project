@@ -530,17 +530,20 @@ public class HttpInput extends ServletInputStream implements Runnable
         long start = System.nanoTime();
         try
         {
-            _waitingForContent = true;
-            _channelState.getHttpChannel().onBlockWaitForContent();
-
+            if (!_waitingForContent)
+            {
+                _waitingForContent = true;
+                _channelState.getHttpChannel().onBlockWaitForContent();
+            }
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,timeout);
             
-            // TODO Spurious wakeups not handled. Can result in read pending from onBlockWaitForContent above
+            // looping for spurious timeouts is handled externally to this method
             if (timeout > 0)
                 _inputQ.wait(_blockingTimeoutBudget);
             else
-                _inputQ.wait();            
+                _inputQ.wait();
         }
         catch (Throwable x)
         {
@@ -548,10 +551,11 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         finally
         {
-            _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start));
-            if (_blockingTimeoutBudget==0)
-            {    
-                _channelState.getHttpChannel().onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", timeout)));
+            if (timeout>0)
+            {
+                _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start));
+                if (_blockingTimeoutBudget==0)
+                    _channelState.getHttpChannel().onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", timeout)));
             }
         }
     }
