@@ -261,10 +261,10 @@ public class HttpSenderOverHTTP extends HttpSender
                         if (contentBuffer == null)
                             contentBuffer = BufferUtil.EMPTY_BUFFER;
 
-                        httpConnectionOverHTTP.addBytesOut( BufferUtil.length(headerBuffer) //
-                                                                + BufferUtil.length(contentBuffer) //
-                                                                + BufferUtil.length(chunkBuffer));
-
+                        httpConnectionOverHTTP.addBytesOut( BufferUtil.length(headerBuffer)
+                                                          + BufferUtil.length(chunkBuffer)
+                                                          + BufferUtil.length(contentBuffer));
+                        
                         endPoint.write(this, headerBuffer, chunkBuffer, contentBuffer);
                         generated = true;
                         return Action.SCHEDULED;

@@ -84,7 +84,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     protected void addBytesIn(long bytesIn)
     {
-        this.bytesIn.add( bytesIn );
+        this.bytesIn.add(bytesIn);
     }
 
     @Override
@@ -96,7 +96,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     protected void addBytesOut(long bytesOut)
     {
-        this.bytesOut.add( bytesOut );
+        this.bytesOut.add(bytesOut);
     }
 
     @Override

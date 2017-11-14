@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.HttpCompliance;
@@ -233,7 +232,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
-                bytesIn.add( filled );
+                if (filled>0)
+                    bytesIn.add(filled);
 
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
@@ -743,45 +743,58 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case FLUSH:
                     {
-                        HttpConnection.this.bytesOut.add(BufferUtil.length(_header) //
-                                                             + BufferUtil.length(_content)
-                                                             + BufferUtil.length(chunk));
                         // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
                         if (_head || _generator.isNoContent())
                         {
                             BufferUtil.clear(chunk);
                             BufferUtil.clear(_content);
                         }
-
-                        // If we have a header
+                        
+                        byte gather_write = 0;
+                        long bytes = 0;
                         if (BufferUtil.hasContent(_header))
                         {
-                            if (BufferUtil.hasContent(_content))
-                            {
-                                if (BufferUtil.hasContent(chunk))
-                                    getEndPoint().write(this, _header, chunk, _content);
-                                else
-                                    getEndPoint().write(this, _header, _content);
-                            }
-                            else
+                            gather_write += 4;
+                            bytes += _header.remaining();
+                        }
+                        if (BufferUtil.hasContent(chunk))
+                        {
+                            gather_write += 2;
+                            bytes += chunk.remaining();
+                        }
+                        if (BufferUtil.hasContent(_content))
+                        {
+                            gather_write += 1;
+                            bytes += _content.remaining();
+                        }
+                        HttpConnection.this.bytesOut.add(bytes);
+                        switch(gather_write)
+                        {
+                            case 7:
+                                getEndPoint().write(this, _header, chunk, _content);
+                                break;
+                            case 6:
+                                getEndPoint().write(this, _header, chunk);
+                                break;
+                            case 5:
+                                getEndPoint().write(this, _header, _content);
+                                break;
+                            case 4:
                                 getEndPoint().write(this, _header);
-                        }
-                        else if (BufferUtil.hasContent(chunk))
-                        {
-                            if (BufferUtil.hasContent(_content))
+                                break;
+                            case 3:
                                 getEndPoint().write(this, chunk, _content);
-                            else
+                                break;
+                            case 2:
                                 getEndPoint().write(this, chunk);
+                                break;
+                            case 1:
+                                getEndPoint().write(this, _content);
+                                break;
+                            default:
+                                succeeded();        
                         }
-                        else if (BufferUtil.hasContent(_content))
-                        {
-                            getEndPoint().write(this, _content);
-                        }
-                        else
-                        {
-                            succeeded(); // nothing to write
-                        }
-
+                      
                         return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
