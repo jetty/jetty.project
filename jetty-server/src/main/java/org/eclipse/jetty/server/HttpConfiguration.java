@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HTTP Configuration.
@@ -46,6 +48,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("HTTP Configuration")
 public class HttpConfiguration
 {
+    private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
+
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
 
     private final List<Customizer> _customizers=new CopyOnWriteArrayList<>();
@@ -231,41 +235,32 @@ public class HttpConfiguration
 
     /**
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total time to read/write the entire HTTP message content (as opposed to the idle 
-     * timeout that applies to the time no data is being sent). This applies only to blocking 
-     * operations and does not affect asynchronous read and write.</p>
+     * to the total duration within calls to read/write for the entire HTTP message content, 
+     * which may span many calls to read/write. This applies only to blocking 
+     * read/writes and does not affect asynchronous read/writes.</p>
      *
-     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout (if set) plus 1s; &gt;0 for a timeout in ms applied to the total blocking operation.
+     * @return -1 for no blocking timeout (default), 0 (deprecated) for a blocking timeout equal to the 
+     * idle timeout (if set) plus 1s or &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     @ManagedAttribute("Total timeout in ms for blocking I/O operations.")
     public long getBlockingTimeout()
     {
         return _blockingTimeout;
     }
-
-    /**
-     * @return The value of the {@link #getBlockingTimeout()} with 0 value resolved to the 
-     * {@link #getIdleTimeout()}(if set) plus 1 second.
-     */
-    public long getBlockingTimeoutValue()
-    {
-        if (_blockingTimeout==0 && _idleTimeout>0)
-            return _idleTimeout+1000;
-        return _blockingTimeout;
-    }
     
     /**
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total time to read/write the entire HTTP message content (as opposed to the idle 
-     * timeout that applies to the time no data is being sent).This applies only to blocking 
-     * operations and does not affect asynchronous read and write.</p>
+     * to the total duration within calls to read/write for the entire HTTP message content, 
+     * which may span many calls to read/write. This applies only to blocking 
+     * read/writes and does not affect asynchronous read/writes.</p>
      *
-     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout (if set) plus 1s; &gt;0 for a timeout in ms applied to the total blocking operation.
+     * @param blockingTimeout -1 for no blocking timeout (default), 0 (deprecated) for a blocking timeout equal to the 
+     * idle timeout (if set) plus 1s or &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     public void setBlockingTimeout(long blockingTimeout)
     {
+        if (blockingTimeout==0)
+            LOG.warn("Deprecated blockingTimeout==0");
         _blockingTimeout = blockingTimeout;
     }
 

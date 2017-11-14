@@ -66,20 +66,20 @@ public class SharedBlockingCallback
 
     public Blocker acquire() throws IOException
     {
-        long idle = getBlockingTimeout();
         _lock.lock();
         try
         {
+            // TODO review the need to wait here. It was added to support
+            // multiple websocket writers, but other implementations tend just
+            // to throw a Write Pending exception. See 430242
             while (_blocker._state != IDLE)
             {
-                if (idle>0 && (idle < Long.MAX_VALUE/2))
-                {
-                    // Wait a little bit longer than the blocker might block
-                    if (!_idle.await(idle*2,TimeUnit.MILLISECONDS))
-                        throw new IOException(new TimeoutException());
-                }
-                else
-                    _idle.await();
+                if (_blocker._state instanceof BlockerTimeoutException)
+                    throw new IOException(_blocker._state);
+                
+                // We can wait forever here as the other usage of this SBCB will
+                // must eventually close (or timeout is configured infinite anyway)
+                _idle.await();
             }
             _blocker._state = null;
             return _blocker;
@@ -200,13 +200,9 @@ public class SharedBlockingCallback
                 preBlock();
                 while (_state == null)
                 {
-                    if (idle > 0)
+                    if (idle >= 0)
                     {
-                        // Waiting here may compete with the idle timeout mechanism,
-                        // so here we wait a little bit longer to favor the normal
-                        // idle timeout mechanism that will call failed(Throwable).
-                        long excess = Math.min(idle / 2, 1000);
-                        if (!_complete.await(idle + excess, TimeUnit.MILLISECONDS))
+                        if (!_complete.await(idle, TimeUnit.MILLISECONDS))
                         {
                             // Method failed(Throwable) has not been called yet,
                             // so we will synthesize a special TimeoutException.
@@ -264,7 +260,7 @@ public class SharedBlockingCallback
                 {
                     // If the blocker timed itself out, remember the state
                     if (_state instanceof BlockerTimeoutException)
-                        // and create a new Blocker
+                        // and create a new Blocker as the previous Blocker may still be called back.
                         _blocker=new Blocker();
                     else
                         // else reuse Blocker

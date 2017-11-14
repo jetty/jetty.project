@@ -923,7 +923,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _written = 0;
         _writeListener = null;
         _onError = null;
-        _writeBlocker._blockingTimeoutBudget = 0;
+        _writeBlocker.recycle();
         reopen();
     }
 
@@ -1062,12 +1062,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.ignore(x);
         }
     }
-    
-    private long getBlockingTimeoutValue()
-    {
-        return _channel.getHttpConfiguration().getBlockingTimeoutValue();
-    }
-
 
     @Override
     public String toString()
@@ -1374,41 +1368,38 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         private final HttpChannel _channel;
         private long _blockingTimeoutBudget;
         private long _blockedAt;
-        private Blocker _blocker;
+        private boolean _blockingTimeout; 
 
         private WriteBlocker(HttpChannel channel)
         {
             _channel = channel;
+            recycle();
         }
         
-        @Override
-        public Blocker acquire() throws IOException
+        public void recycle()
         {
-            _blocker = super.acquire();
-            return _blocker;
+            _blockedAt = 0;
+            _blockingTimeoutBudget = _channel.getBlockingTimeout();
+            _blockingTimeout = _blockingTimeoutBudget>0;
         }
 
         @Override
         protected void preBlock()
         {
-            _blockedAt = System.nanoTime();
-
-            if (_blockingTimeoutBudget<=0 && HttpOutput.this.getBlockingTimeoutValue()>0)
-                _blocker.failed(new TimeoutException(String.format("HttpOutput Blocking timeout %d ms",HttpOutput.this.getBlockingTimeoutValue())));
+            if (_blockingTimeout)
+                _blockedAt = System.nanoTime();
         }
 
         @Override
         protected void postBlock()
         {
-            _blockingTimeoutBudget = _blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-_blockedAt);
+            if (_blockingTimeout)
+                _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-_blockedAt));
         }
 
         @Override
         protected long getBlockingTimeout()
         {
-            // Setup blocking only if not async
-            if (!isAsync() && _blockingTimeoutBudget<=0)
-                _blockingTimeoutBudget = HttpOutput.this.getBlockingTimeoutValue();
             return _blockingTimeoutBudget;
         }
     }
