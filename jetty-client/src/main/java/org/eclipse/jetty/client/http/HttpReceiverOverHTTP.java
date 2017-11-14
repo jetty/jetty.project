@@ -128,6 +128,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
                 if (read > 0)
                 {
+                    connection.addBytesIn(read);
                     if (parse())
                         return;
                 }
