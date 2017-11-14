@@ -350,7 +350,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoColon2616() throws Exception
+    public void testNoColonLegacy() throws Exception
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.0\r\n" +
@@ -360,7 +360,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC2616);
+        HttpParser parser = new HttpParser(handler,HttpCompliance.LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertTrue(_headerCompleted);
@@ -375,7 +375,7 @@ public class HttpParserTest
         Assert.assertEquals("Other", _hdr[2]);
         Assert.assertEquals("value", _val[2]);
         Assert.assertEquals(2, _headers);
-        Assert.assertThat(_complianceViolation, Matchers.containsString("name only"));
+        Assert.assertThat(_complianceViolation, Matchers.containsString("No colon"));
     }
     
     @Test
@@ -686,7 +686,7 @@ public class HttpParserTest
         parseAll(parser, buffer);
         Assert.assertNull(_bad);
         Assert.assertEquals("GET", _methodOrVersion);
-        Assert.assertThat(_complianceViolation, Matchers.is("case insensitive method gEt"));
+        Assert.assertThat(_complianceViolation, Matchers.containsString("case insensitive method gEt"));
     }
 
     @Test
