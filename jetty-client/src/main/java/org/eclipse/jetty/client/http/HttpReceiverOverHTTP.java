@@ -123,6 +123,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     return;
 
                 int read = endPoint.fill(buffer);
+                connection.addBytesIn( read );
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes {} from {}", read, BufferUtil.toDetailString(buffer), endPoint);
 
