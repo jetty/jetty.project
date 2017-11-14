@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
@@ -72,6 +74,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final boolean _recordHttpComplianceViolations;
+    private final LongAdder bytesIn = new LongAdder();
+    private final LongAdder bytesOut = new LongAdder();
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -229,6 +233,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
+                bytesIn.add( filled );
 
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
@@ -519,7 +524,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         if(_sendCallback.reset(info,head,content,lastContent,callback))
+        {
             _sendCallback.iterate();
+        }
     }
 
 
@@ -563,6 +570,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void blockingReadFailure(Throwable e)
     {
         _blockingReadCallback.failed(e);
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return bytesIn.longValue();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return bytesOut.longValue();
     }
 
     @Override
@@ -724,6 +743,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case FLUSH:
                     {
+                        HttpConnection.this.bytesOut.add(BufferUtil.length(_header) //
+                                                             + BufferUtil.length(_content)
+                                                             + BufferUtil.length(chunk));
                         // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
                         if (_head || _generator.isNoContent())
                         {
@@ -759,6 +781,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         {
                             succeeded(); // nothing to write
                         }
+
                         return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
