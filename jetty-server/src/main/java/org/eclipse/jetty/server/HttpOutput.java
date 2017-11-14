@@ -1063,12 +1063,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
     
-    private long getBlockingTimeout()
+    private long getBlockingTimeoutValue()
     {
-        long timeout = _channel.getHttpConfiguration().getBlockingTimeout();
-        if (timeout==0)
-            timeout = _channel.getIdleTimeout();
-        return timeout;
+        return _channel.getHttpConfiguration().getBlockingTimeoutValue();
     }
 
 
@@ -1396,8 +1393,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _blockedAt = System.nanoTime();
 
-            if (_blockingTimeoutBudget<=0 && HttpOutput.this.getBlockingTimeout()>0)
-                _blocker.failed(new TimeoutException(String.format("HttpOutput Blocking timeout %d ms",HttpOutput.this.getBlockingTimeout())));
+            if (_blockingTimeoutBudget<=0 && HttpOutput.this.getBlockingTimeoutValue()>0)
+                _blocker.failed(new TimeoutException(String.format("HttpOutput Blocking timeout %d ms",HttpOutput.this.getBlockingTimeoutValue())));
         }
 
         @Override
@@ -1411,7 +1408,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             // Setup blocking only if not async
             if (!isAsync() && _blockingTimeoutBudget<=0)
-                _blockingTimeoutBudget = HttpOutput.this.getBlockingTimeout();
+                _blockingTimeoutBudget = HttpOutput.this.getBlockingTimeoutValue();
             return _blockingTimeoutBudget;
         }
     }

@@ -236,7 +236,7 @@ public class HttpConfiguration
      * operations and does not affect asynchronous read and write.</p>
      *
      * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
+     * idle timeout (if set) plus 1s; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     @ManagedAttribute("Total timeout in ms for blocking I/O operations.")
     public long getBlockingTimeout()
@@ -245,13 +245,24 @@ public class HttpConfiguration
     }
 
     /**
+     * @return The value of the {@link #getBlockingTimeout()} with 0 value resolved to the 
+     * {@link #getIdleTimeout()}(if set) plus 1 second.
+     */
+    public long getBlockingTimeoutValue()
+    {
+        if (_blockingTimeout==0 && _idleTimeout>0)
+            return _idleTimeout+1000;
+        return _blockingTimeout;
+    }
+    
+    /**
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
      * to the total time to read/write the entire HTTP message content (as opposed to the idle 
      * timeout that applies to the time no data is being sent).This applies only to blocking 
      * operations and does not affect asynchronous read and write.</p>
      *
      * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
+     * idle timeout (if set) plus 1s; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     public void setBlockingTimeout(long blockingTimeout)
     {

@@ -243,12 +243,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         executor.execute(channel);
     }
 
-    private long getBlockingTimeout()
+    private long getBlockingTimeoutValue()
     {
-        long timeout = getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
-        if (timeout==0)
-            timeout = getHttpChannelState().getHttpChannel().getIdleTimeout();
-        return timeout;
+        return getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeoutValue();
     }
 
     @Override
@@ -269,7 +266,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             // Setup blocking only if not async
             if (!isAsync() && _blockingTimeoutBudget<=0)
-                _blockingTimeoutBudget = getBlockingTimeout();
+                _blockingTimeoutBudget = getBlockingTimeoutValue();
 
             // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
@@ -541,12 +538,12 @@ public class HttpInput extends ServletInputStream implements Runnable
             _channelState.getHttpChannel().onBlockWaitForContent();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,getBlockingTimeout());
-            if (getBlockingTimeout() > 0)
+                LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,getBlockingTimeoutValue());
+            if (getBlockingTimeoutValue() > 0)
             {
                 if (_blockingTimeoutBudget<=0)
                     _channelState.getHttpChannel()
-                    .onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", getBlockingTimeout())));
+                    .onBlockWaitForContentFailure(new TimeoutException(String.format("HttpInput Blocking timeout %d ms", getBlockingTimeoutValue())));
                 else
                     _inputQ.wait(_blockingTimeoutBudget);
             }
