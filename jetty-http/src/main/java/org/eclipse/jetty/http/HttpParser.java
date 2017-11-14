@@ -1271,7 +1271,7 @@ public class HttpParser
                         break;
                     }
                     
-                    if (b==HttpTokens.LINE_FEED && !complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc2616#section-4.2 No colon"))
+                    if (b==HttpTokens.LINE_FEED && !complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc7230#section-3.2 No colon"))
                     {
                         if (_headerString==null)
                         {
