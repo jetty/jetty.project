@@ -549,11 +549,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     {   
         try
         {
-            if (!_waitingForContent)
-            {
-                _waitingForContent = true;
-                _channelState.getHttpChannel().onBlockWaitForContent();
-            }
+            _waitingForContent = true;
+            _channelState.getHttpChannel().onBlockWaitForContent();
             
             if (LOG.isDebugEnabled())
                 LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,getHttpChannelState().getHttpChannel().getBlockingTimeout());
