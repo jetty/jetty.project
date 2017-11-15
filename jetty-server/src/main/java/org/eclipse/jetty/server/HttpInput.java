@@ -538,11 +538,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try
         {
-            if (!_waitingForContent)
-            {
-                _waitingForContent = true;
-                _channelState.getHttpChannel().onBlockWaitForContent();
-            }
+            _waitingForContent = true;
+            _channelState.getHttpChannel().onBlockWaitForContent();
 
             boolean loop = false;
             long timeout = 0;
