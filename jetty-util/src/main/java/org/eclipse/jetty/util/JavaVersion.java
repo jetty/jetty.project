@@ -27,6 +27,9 @@ import java.util.regex.Pattern;
  */
 public class JavaVersion
 {
+    
+    public static final String JAVA_TARGET_PLATFORM = "org.eclipse.jetty.javaTargetPlatform";
+    
     // Copy of version in jetty-start
 
     private static final Pattern PRE_JDK9 = Pattern.compile("1\\.(\\d)(\\.(\\d+)(_(\\d+))?)?(-.+)?");
