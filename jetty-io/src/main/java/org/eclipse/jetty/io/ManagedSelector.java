@@ -58,7 +58,6 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
-    private static final long MAX_ACTION_PERIOD_MS = Long.getLong("org.eclipse.jetty.io.ManagedSelector.MAX_ACTION_PERIOD_MS",100);
 
     private final Locker _locker = new Locker();
     private boolean _selecting = false;
@@ -67,7 +66,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private final int _id;
     private final ExecutionStrategy _strategy;
     private Selector _selector;
-    private long _actionTime = -1;
+    private int _actionCount;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -75,7 +74,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _id = id;
         SelectorProducer producer = new SelectorProducer();
         Executor executor = selectorManager.getExecutor();
-        _strategy = new EatWhatYouKill(producer,executor,_selectorManager.getBean(ReservedThreadExecutor.class));            
+        _strategy = new EatWhatYouKill(producer,executor,_selectorManager.getBean(ReservedThreadExecutor.class));
         addBean(_strategy,true);
         setStopTimeout(5000);
     }
@@ -219,6 +218,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         submit(new DestroyEndPoint(endPoint));
     }
 
+    private int getActionSize()
+    {
+        try (Locker.Lock lock = _locker.lock())
+        {
+            return _actions.size();
+        }
+    }
+
     @Override
     public String dump()
     {
@@ -249,11 +256,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     public String toString()
     {
         Selector selector = _selector;
-        return String.format("%s id=%s keys=%d selected=%d",
+        return String.format("%s id=%s keys=%d selected=%d actions=%d",
                 super.toString(),
                 _id,
                 selector != null && selector.isOpen() ? selector.keys().size() : -1,
-                selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
+                selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1,
+                getActionSize());
     }
 
     /**
@@ -304,7 +312,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
         private Runnable nextAction()
         {
-            long now = System.nanoTime();
             Selector selector = null;
             Runnable action = null;
             try (Locker.Lock lock = _locker.lock())
@@ -312,38 +319,48 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // It is important to avoid live-lock (busy blocking) here.  If too many actions
                 // are submitted, this can indefinitely defer selection happening.   Similarly if 
                 // we give too much priority to selection, it may prevent actions from being run.
-                // The solution implemented here is to put a maximum time limit on handling actions
-                // so that this method will fall through to selection if more than MAX_ACTION_PERIOD_MS
-                // is spent running actions.  The time period is cleared whenever a selection occurs,
-                // so that a full period can be spent on actions after every select.
-
-                if (_actionTime == -1)
-                {
-                    _actionTime = now;
+                // The solution implemented here is to only process the number of actions that were
+                // originally in the action queue before attempting a select
+                
+                if (_actionCount==0)
+                {               
+                    // Calculate how many actions we are prepared to handle before selection
+                    _actionCount = _actions.size();
+                    if (_actionCount>0)
+                        action = _actions.poll();
+                    else
+                        _selecting = true;
                 }
-                else if ((now - _actionTime) > TimeUnit.MILLISECONDS.toNanos(MAX_ACTION_PERIOD_MS) && _actions.size() > 0)
+                else if (_actionCount==1)
                 {
-                    // Too much time spent handling actions, give selection a go,
-                    // immediately waking up (as if remaining action were just added).
-                    selector = _selector;
-                    _selecting = false;
-                    _actionTime = -1;
+                    _actionCount = 0;
+                    
                     if (LOG.isDebugEnabled())
                         LOG.debug("Forcing selection, actions={}",_actions.size());
-                }
-
-                if (selector == null)
-                {
-                    action = _actions.poll();
-                    if (action == null)
+                    
+                    if (_actions.size()==0)
                     {
-                        // No more actions, so we time to do some selecting
+                        // This was the last action, so select normally
                         _selecting = true;
-                        _actionTime = -1;
                     }
+                    else
+                    {
+                        // there are still more actions to handle, so
+                        // immediately wake up (as if remaining action were just added).
+                        selector = _selector;
+                        _selecting = false;
+                    }
+                }
+                else
+                {
+                    _actionCount--;
+                    action = _actions.poll();
                 }
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("action={} wakeup={}",action,selector!=null);
+            
             if (selector != null)
                 selector.wakeup();
 
