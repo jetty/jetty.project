@@ -73,7 +73,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public static final String CONTAINER_INITIALIZER_STARTER = "org.eclipse.jetty.containerInitializerStarter";
     public static final String MULTI_THREADED = "org.eclipse.jetty.annotations.multiThreaded";
     public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.annotations.maxWait";
-    public static final String JAVA_TARGET_PLATFORM = JavaVersion.JAVA_TARGET_PLATFORM;
+    
     
     public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */  
     public static final boolean DEFAULT_MULTI_THREADED = true;
@@ -421,7 +421,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     throws Exception
     {
         int javaPlatform = 0;
-        Object target = context.getAttribute(JAVA_TARGET_PLATFORM);
+        Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
         if (target!=null)
             javaPlatform = Integer.valueOf(target.toString());
         AnnotationParser parser = createAnnotationParser(javaPlatform);

@@ -226,7 +226,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         //if running on jvm 9 or above, we we won't be able to look at the application classloader
         //to extract urls, so we need to examine the classpath instead.
-        if (JavaVersion.VERSION.getMajor() >= 9)
+        if (JavaVersion.VERSION.getPlatform() >= 9)
         {
             tmp = System.getProperty("java.class.path");
             if (tmp != null)
