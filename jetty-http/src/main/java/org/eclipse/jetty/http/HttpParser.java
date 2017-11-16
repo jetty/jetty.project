@@ -22,13 +22,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -157,7 +157,6 @@ public class HttpParser
     private HttpField _field;
     private HttpHeader _header;
     private String _headerString;
-    private HttpHeaderValue _value;
     private String _valueString;
     private int _responseStatus;
     private int _headerBytes;
@@ -173,14 +172,14 @@ public class HttpParser
     private HttpVersion _version;
     private Utf8StringBuilder _uri=new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
-    private long _contentLength;
+    private long _contentLength = -1;
     private long _contentPosition;
     private int _chunkLength;
     private int _chunkPosition;
     private boolean _headResponse;
     private boolean _cr;
     private ByteBuffer _contentChunk;
-    private Trie<HttpField> _connectionFields;
+    private Trie<HttpField> _fieldCache;
 
     private int _length;
     private final StringBuilder _string=new StringBuilder();
@@ -842,10 +841,10 @@ public class HttpParser
                             throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
 
                         // Should we try to cache header fields?
-                        if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize()>0)
+                        if (_fieldCache==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize()>0)
                         {
                             int header_cache = _handler.getHeaderCacheSize();
-                            _connectionFields=new ArrayTernaryTrie<>(header_cache);
+                            _fieldCache=new ArrayTernaryTrie<>(header_cache);
                         }
 
                         setState(State.HEADER);
@@ -913,16 +912,20 @@ public class HttpParser
                         break;
 
                     case TRANSFER_ENCODING:
-                        if (_value==HttpHeaderValue.CHUNKED)
+                        if (HttpHeaderValue.CHUNKED.is(_valueString))
                         {
                             _endOfContent=EndOfContent.CHUNKED_CONTENT;
                             _contentLength=-1;
                         }
                         else
                         {
-                            if (_valueString.endsWith(HttpHeaderValue.CHUNKED.toString()))
+                            List<String> values = new QuotedCSV(_valueString).getValues();
+                            if (values.size()>0 && HttpHeaderValue.CHUNKED.is(values.get(values.size()-1)))
+                            {
                                 _endOfContent=EndOfContent.CHUNKED_CONTENT;
-                            else if (_valueString.contains(HttpHeaderValue.CHUNKED.toString()))
+                                _contentLength=-1;
+                            }
+                            else if (values.stream().anyMatch(HttpHeaderValue.CHUNKED::is))
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad chunking");
                         }
                         break;
@@ -932,15 +935,14 @@ public class HttpParser
                         if (!(_field instanceof HostPortHttpField) && _valueString!=null && !_valueString.isEmpty())
                         {
                             _field=new HostPortHttpField(_header,legacyString(_headerString,_header.asString()),_valueString);
-                            add_to_connection_trie=_connectionFields!=null;
+                            add_to_connection_trie=_fieldCache!=null;
                         }
                       break;
 
                     case CONNECTION:
-                        // Don't cache if not persistent
-                        if (_valueString!=null && _valueString.contains("close"))
-                            _connectionFields=null;
-
+                        // Don't cache headers if not persistent
+                        if (HttpHeaderValue.CLOSE.is(_valueString) || new QuotedCSV(_valueString).getValues().stream().anyMatch(HttpHeaderValue.CLOSE::is))
+                            _fieldCache=null;
                         break;
 
                     case AUTHORIZATION:
@@ -951,18 +953,18 @@ public class HttpParser
                     case COOKIE:
                     case CACHE_CONTROL:
                     case USER_AGENT:
-                        add_to_connection_trie=_connectionFields!=null && _field==null;
+                        add_to_connection_trie=_fieldCache!=null && _field==null;
                         break;
 
                     default: break;
 
                 }
 
-                if (add_to_connection_trie && !_connectionFields.isFull() && _header!=null && _valueString!=null)
+                if (add_to_connection_trie && !_fieldCache.isFull() && _header!=null && _valueString!=null)
                 {
                     if (_field==null)
                         _field=new HttpField(_header,legacyString(_headerString,_header.asString()),_valueString);
-                    _connectionFields.put(_field);
+                    _fieldCache.put(_field);
                 }
             }
             _handler.parsedHeader(_field!=null?_field:new HttpField(_header,_headerString,_valueString));
@@ -970,7 +972,6 @@ public class HttpParser
 
         _headerString=_valueString=null;
         _header=null;
-        _value=null;
         _field=null;
     }
 
@@ -982,7 +983,6 @@ public class HttpParser
 
         _headerString=_valueString=null;
         _header=null;
-        _value=null;
         _field=null;
     }
     
@@ -1141,7 +1141,7 @@ public class HttpParser
                             if (buffer.hasRemaining())
                             {
                                 // Try a look ahead for the known header name and value.
-                                HttpField field=_connectionFields==null?null:_connectionFields.getBest(buffer,-1,buffer.remaining());
+                                HttpField field=_fieldCache==null?null:_fieldCache.getBest(buffer,-1,buffer.remaining());
                                 if (field==null)
                                     field=CACHE.getBest(buffer,-1,buffer.remaining());
 
@@ -1260,7 +1260,6 @@ public class HttpParser
                             _headerString=takeString();
                             _header=HttpHeader.CACHE.get(_headerString);
                         }
-                        _value=null;
                         _string.setLength(0);
                         _valueString="";
                         _length=-1;
@@ -1285,7 +1284,6 @@ public class HttpParser
 
                     if (b==HttpTokens.LINE_FEED)
                     {
-                        _value=null;
                         _string.setLength(0);
                         _valueString="";
                         _length=-1;
@@ -1314,7 +1312,6 @@ public class HttpParser
                     {
                         if (_length > 0)
                         {
-                            _value=null;
                             _valueString=takeString();
                             _length=-1;
                         }
@@ -1700,24 +1697,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public Trie<HttpField> getFieldCache()
     {
-        return _connectionFields;
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    private String getProxyField(ByteBuffer buffer)
-    {
-        _string.setLength(0);
-        _length=0;
-
-        while (buffer.hasRemaining())
-        {
-            // process each character
-            byte ch=next(buffer);
-            if (ch<=' ')
-                return _string.toString();
-            _string.append((char)ch);
-        }
-        throw new BadMessageException();
+        return _fieldCache;
     }
 
     /* ------------------------------------------------------------------------------- */
