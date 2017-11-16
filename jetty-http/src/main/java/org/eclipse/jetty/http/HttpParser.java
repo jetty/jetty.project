@@ -913,6 +913,7 @@ public class HttpParser
                         break;
 
                     case TRANSFER_ENCODING:
+                        // TODO _value not checked against cache
                         if (_value==HttpHeaderValue.CHUNKED)
                         {
                             _endOfContent=EndOfContent.CHUNKED_CONTENT;
@@ -920,6 +921,8 @@ public class HttpParser
                         }
                         else
                         {
+                            // TODO do a proper CSV check
+                            // TODO set contentLength to -1
                             if (_valueString.endsWith(HttpHeaderValue.CHUNKED.toString()))
                                 _endOfContent=EndOfContent.CHUNKED_CONTENT;
                             else if (_valueString.contains(HttpHeaderValue.CHUNKED.toString()))
