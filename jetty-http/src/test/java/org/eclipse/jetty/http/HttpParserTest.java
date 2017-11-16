@@ -802,6 +802,30 @@ public class HttpParserTest
         Assert.assertTrue(_messageCompleted);
     }
 
+
+    @Test
+    public void testBadChunkParse() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET /chunk HTTP/1.0\r\n"
+                        + "Header1: value1\r\n"
+                        + "Transfer-Encoding: chunked, identity\r\n"
+                        + "\r\n"
+                        + "a;\r\n"
+                        + "0123456789\r\n"
+                        + "1a\r\n"
+                        + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
+                        + "0\r\n"
+                        + "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        Assert.assertEquals("GET", _methodOrVersion);
+        Assert.assertEquals("/chunk", _uriOrStatus);
+        Assert.assertEquals("HTTP/1.0", _versionOrReason);
+        Assert.assertThat(_bad,Matchers.containsString("Bad chunking"));
+    }
     @Test
     public void testChunkParseTrailer() throws Exception
     {
