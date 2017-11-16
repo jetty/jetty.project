@@ -45,6 +45,17 @@ public class AntMetaInfConfiguration extends MetaInfConfiguration
     {
         return MetaInfConfiguration.class;
     }
+    
+    
+
+    @Override
+    public void findAndFilterContainerPaths(WebAppContext context) throws Exception
+    {
+        // TODO Auto-generated method stub
+        super.findAndFilterContainerPaths(context);
+    }
+
+
 
     /* ------------------------------------------------------------------------------- */
     @Override
