@@ -19,6 +19,11 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.LongAdder;
@@ -27,6 +32,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -66,7 +72,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 {
     private static final Logger LOG = Log.getLogger(EatWhatYouKill.class);
 
-    private enum State { IDLE, PRODUCING, REPRODUCING }
+    private enum State { IDLE, PENDING, PRODUCING, REPRODUCING }
 
     private final Locker _locker = new Locker();
     private final LongAdder _nonBlocking = new LongAdder();
@@ -76,6 +82,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private final Executor _executor;
     private final ReservedThreadExecutor _producers;
     private State _state = State.IDLE;
+    private Thread _producerThread;
 
     public EatWhatYouKill(Producer producer, Executor executor)
     {
@@ -107,6 +114,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             {
                 case IDLE:
                     execute = true;
+                    _state = State.PENDING;
                     break;
 
                 case PRODUCING:
@@ -136,12 +144,11 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} produce", this);
-        boolean reproduce = true;
-        while(isRunning() && tryProduce(reproduce) && doProduce())
-            reproduce = false;
+        if (tryProduce())
+            doProduce();
     }
 
-    public boolean tryProduce(boolean reproduce)
+    private boolean tryProduce()
     {
         boolean producing = false;
         try (Lock locked = _locker.lock())
@@ -149,15 +156,16 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             switch (_state)
             {
                 case IDLE:
+                case PENDING:
                     // Enter PRODUCING
                     _state = State.PRODUCING;
+                    _producerThread = Thread.currentThread();
                     producing = true;
                     break;
 
                 case PRODUCING:
                     // Keep other Thread producing
-                    if (reproduce)
-                        _state = State.REPRODUCING;
+                    _state = State.REPRODUCING;
                     break;
 
                 default:
@@ -167,7 +175,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         return producing;
     }
 
-    public boolean doProduce()
+    private void doProduce()
     {
         boolean producing = true;
         while (isRunning() && producing)
@@ -178,7 +186,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             {
                 task = _producer.produce();
             }
-            catch(Throwable e)
+            catch (Throwable e)
             {
                 LOG.warn(e);
             }
@@ -190,17 +198,21 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             {
                 try (Lock locked = _locker.lock())
                 {
-                    // Could another one just have been queued with a produce call?
-                    if (_state==State.REPRODUCING)
+                    // Could another task just have been queued with a produce call?
+                    switch (_state)
                     {
-                        _state = State.PRODUCING;
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} IDLE",toStringLocked());
-                        _state = State.IDLE;
-                        producing = false;
+                        case PRODUCING:
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("{} IDLE", toStringLocked());
+                            _state = State.IDLE;
+                            _producerThread = null;
+                            producing = false;
+                            break;
+                        case REPRODUCING:
+                            _state = State.PRODUCING;
+                            break;
+                        default:
+                            throw new IllegalStateException(toStringLocked());
                     }
                 }
             }
@@ -209,7 +221,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 boolean consume;
                 if (Invocable.getInvocationType(task) == InvocationType.NON_BLOCKING)
                 {
-                    // PRODUCE CONSUME (EWYK!)
+                    // PRODUCE CONSUME
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} PC t={}", this, task);
                     consume = true;
@@ -223,7 +235,8 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                         {
                             // EXECUTE PRODUCE CONSUME!
                             // We have executed a new Producer, so we can EWYK consume
-                            _state = State.IDLE;
+                            _state = State.PENDING;
+                            _producerThread = null;
                             producing = false;
                             consume = true;
                             _blocking.increment();
@@ -250,7 +263,10 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 }
                 catch (RejectedExecutionException e)
                 {
-                    LOG.warn(e);
+                    if (isRunning())
+                        LOG.warn(e);
+                    else
+                        LOG.ignore(e);
                     if (task instanceof Closeable)
                     {
                         try
@@ -269,8 +285,6 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 }
             }
         }
-
-        return producing;
     }
 
     @ManagedAttribute(value = "number of non blocking tasks consumed", readonly = true)
@@ -308,6 +322,26 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         _executed.reset();
     }
 
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Thread producerThread;
+        try (Lock locked = _locker.lock())
+        {
+            super.dump(out, indent);
+            producerThread = _producerThread;
+        }
+        if (producerThread != null)
+        {
+            String name = "producer thread: " + producerThread.getId() + "-" + producerThread.getName() + "-" + producerThread.getState();
+            dump(out, indent, Collections.singletonList(new DumpableCollection(name, Arrays.asList(producerThread.getStackTrace()))));
+        }
+        else
+        {
+            dump(out, indent, Collections.singletonList(new DumpableCollection("no producer thread", Collections.emptyList())));
+        }
+    }
+
     public String toString()
     {
         try (Lock locked = _locker.lock())
@@ -339,5 +373,14 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         builder.append(_state);
         builder.append('/');
         builder.append(_producers);
+        builder.append("[nb=");
+        builder.append(getNonBlockingTasksConsumed());
+        builder.append(",c=");
+        builder.append(getBlockingTasksConsumed());
+        builder.append(",e=");
+        builder.append(getBlockingTasksExecuted());
+        builder.append("]");
+        builder.append("@");
+        builder.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
     }
 }
