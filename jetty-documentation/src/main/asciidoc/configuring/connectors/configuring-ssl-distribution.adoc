@@ -17,18 +17,16 @@
 [[jetty-ssl-distribution]]
 === SSL in the Jetty Distribution
 
-==== Configuration
-
 When making use of the Jetty Distribution, enabling SSL support is as easy as activating the appropriate module.
 Jetty provides support for both the native https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html[JSSE] and https://github.com/google/conscrypt/[Conscrypt] SSL implementations.
 
-For native support, simply activate the `ssl` module:
+==== Native SSL Configuration
+
+For native support, simply activate the `ssl` link:#startup-modules[module:]
 
 [source, plain, subs="{sub-order}"]
 ----
 $ cd /path/to/mybase
-$ java -jar ${JETTY_HOME}/start.jar --create-startd
-...
 $ java -jar ${JETTY_HOME}/start.jar --add-to-startd=ssl
 INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
 INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
@@ -57,13 +55,14 @@ jetty.sslContext.keyStorePath::
 jetty.sslContext.keyStorePassword::
   Sets the Password for the `keystore`.
 
-Enabling Conscrypt SSL is just as easy as native SSL - enable both the `conscrypt` and `ssl` modules:
+[[jetty-conscrypt-distribution]]
+==== Conscrypt SSL Configuration
+
+Enabling Conscrypt SSL is just as easy as native SSL - enable both the `conscrypt` and `ssl` link:#startup-modules[modules:]
 
 [source, plain, subs="{sub-order}"]
 ----
 $ cd ${JETTY_HOME}
-$ java -jar ${JETTY_HOME}/start.jar --create-startd
-...
 $ java -jar ../start.jar --add-to-start=ssl,conscrypt
 
 ALERT: There are enabled module(s) with licenses.

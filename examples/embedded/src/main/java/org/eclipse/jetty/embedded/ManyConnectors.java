@@ -89,12 +89,16 @@ public class ManyConnectors
         // including things like choosing the particular certificate out of a
         // keystore to be used.
         
-        Security.addProvider((Provider)ClassLoader.getSystemClassLoader().loadClass("org.conscrypt.OpenSSLProvider").newInstance());
-        
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+
+        // OPTIONAL: Un-comment the following to use Conscrypt for SSL instead of
+        // the native JSSE implementation.
+
+        //Security.addProvider((Provider)ClassLoader.getSystemClassLoader().loadClass("org.conscrypt.OpenSSLProvider").newInstance());
+        //sslContextFactory.setProvider("Conscrypt");
 
         // HTTPS Configuration
         // A new HttpConfiguration object is needed for the next connector and

@@ -716,6 +716,26 @@ The keystore and truststore passwords may also be set using the system propertie
 This is _not_ a recommended usage.
 ____
 
+===== Conscrypt SSL
+
+Jetty also includes support for Google's https://github.com/google/conscrypt/[Conscrypt SSL], which is built on their fork of https://www.openssl.org/[OpenSSL], https://boringssl.googlesource.com/boringssl/[BoringSSL].
+Implementing Conscrypt is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
+
+[source, java, subs="{sub-order}"]
+----
+...
+Security.addProvider((Provider)ClassLoader.getSystemClassLoader().loadClass("org.conscrypt.OpenSSLProvider").newInstance());
+...
+SslContextFactory sslContextFactory = new SslContextFactory();
+sslContextFactory.setKeyStorePath("path/to/keystore");
+sslContextFactory.setKeyStorePassword("CleverKeyStorePassword");
+sslContextFactory.setKeyManagerPassword("OBF:VerySecretManagerPassword");
+sslContextFactory.setProvider("Conscrypt");
+...
+----
+
+If you are using the Jetty Distribution, please see the section on enabling the link:#jetty-conscrypt-distribution[Conscrypt SSL module.]
+
 ==== Configuring SNI
 
 From Java 8, the JVM contains support for the http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name Indicator (SNI)] extension, which allows a SSL connection handshake to indicate one or more DNS names that it applies to.
