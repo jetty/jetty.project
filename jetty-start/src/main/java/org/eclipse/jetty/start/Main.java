@@ -376,8 +376,6 @@ public class Main
         // Get Desired Classpath based on user provided Active Options.
         Classpath classpath = args.getClasspath();
 
-        System.setProperty("java.class.path",classpath.toString());
-
         // Show the usage information and return
         if (args.isHelp())
         {
