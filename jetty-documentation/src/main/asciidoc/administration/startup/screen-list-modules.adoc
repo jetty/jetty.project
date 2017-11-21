@@ -26,13 +26,8 @@ Modules for tag '*':
 --------------------
 
      Module: alpn
-           : Enables the ALPN extension to TLS(SSL) by adding modified classes to
-           : the JVM bootpath.
-           : This modification has a tight dependency on specific recent updates of
-           : Java 1.7 and Java 1.8 (Java versions prior to 1.7u40 are not supported).
-           : The alpn module will use an appropriate alpn-boot jar for your
-           : specific version of Java.
-     Depend: alpn-impl/alpn-${java.version}, ssl
+           : Enables the ALPN (Application Layer Protocol Negotiation) TLS extension.
+     Depend: ssl, alpn-impl/alpn-9
         LIB: lib/jetty-alpn-client-${jetty.version}.jar
         LIB: lib/jetty-alpn-server-${jetty.version}.jar
         XML: etc/jetty-alpn.xml
@@ -54,7 +49,7 @@ Modules for tag '*':
 
      Module: cdi
            : Experimental CDI/Weld integration
-     Depend: jsp, annotations, plus, deploy
+     Depend: deploy, annotations, plus, jsp
         LIB: lib/cdi/*.jar
         LIB: lib/cdi-core-${jetty.version}.jar
         LIB: lib/cdi-servlet-${jetty.version}.jar
@@ -87,6 +82,16 @@ Modules for tag '*':
         JVM: -XX:+UnlockCommercialFeatures
         JVM: -XX:+FlightRecorder
 
+     Module: hazelcast-embedded-sessions
+     Depend: annotations, webapp
+        LIB: lib/hazelcast/*.jar
+        XML: etc/sessions/hazelcast/default.xml
+
+     Module: hazelcast-remote-sessions
+     Depend: annotations, webapp
+        LIB: lib/hazelcast/*.jar
+        XML: etc/sessions/hazelcast/remote.xml
+
      Module: home-base-warning
            : Generates a warning that server has been run from $JETTY_HOME
            : rather than from a $JETTY_BASE.
@@ -118,13 +123,13 @@ Modules for tag '*':
 
      Module: jndi
            : Adds the Jetty JNDI implementation to the classpath.
-     Depend: server
+     Depend: server, mail
         LIB: lib/jetty-jndi-${jetty.version}.jar
         LIB: lib/jndi/*.jar
 
      Module: jsp
            : Enables JSP for all webapplications deployed on the server.
-     Depend: apache-jsp, servlet, annotations
+     Depend: servlet, annotations, apache-jsp
 
      Module: jstl
            : Enables JSTL for all webapplications deployed on the server
@@ -141,11 +146,15 @@ Modules for tag '*':
      Depend: server
         XML: etc/jetty-lowresources.xml
 
+     Module: mail
+           : Adds the javax.mail implementation to the classpath.
+        LIB: lib/mail/*.jar
+
      Module: plus
            : Enables JNDI and resource injection for webapplications
            : and other servlet 3.x features not supported in the core
            : jetty webapps module.
-     Depend: webapp, server, security, jndi
+     Depend: server, security, jndi, webapp, transactions
         LIB: lib/jetty-plus-${jetty.version}.jar
         XML: etc/jetty-plus.xml
 
@@ -169,7 +178,7 @@ Modules for tag '*':
      Module: quickstart
            : Enables the Jetty Quickstart module for rapid
            : deployment of preconfigured webapplications.
-     Depend: server, annotations, plus
+     Depend: server, plus, annotations
         LIB: lib/jetty-quickstart-${jetty.version}.jar
 
      Module: rewrite
@@ -208,6 +217,7 @@ Modules for tag '*':
         LIB: lib/jetty-util-${jetty.version}.jar
         LIB: lib/jetty-io-${jetty.version}.jar
         XML: etc/jetty.xml
+    Enabled: transitive provider of server for ssl
 
      Module: servlet
            : Enables standard Servlet handling.
@@ -236,20 +246,36 @@ Modules for tag '*':
      Depend: server
         LIB: lib/spring/*.jar
 
+     Module: stop
+           : This module causes jetty to stop immediately after starting. This is good for testing configuration and/or precompiling quickstart webapps
+        XML: etc/jetty-stop.xml
+
+     Module: transactions
+           : Puts javax.transaction api on the classpath
+        LIB: lib/transactions/*.jar
+
      Module: webapp
            : Adds support for servlet specification webapplication to the server
            : classpath.  Without this, only Jetty specific handlers may be deployed.
-     Depend: security, servlet
+     Depend: servlet, security
         LIB: lib/jetty-webapp-${jetty.version}.jar
         XML: etc/jetty-webapp.xml
 
      Module: websocket
            : Enable websockets for deployed web applications
-     Depend: annotations
+     Depend: client, annotations
         LIB: lib/websocket/*.jar
 
 Modules for tag '3rdparty':
 ---------------------------
+
+     Module: conscrypt
+           : Installs the Conscrypt JSSE provider
+       Tags: 3rdparty
+     Depend: ssl
+        LIB: lib/conscrypt/**.jar
+        XML: etc/conscrypt.xml
+    Enabled: ${jetty.base}/start.d/conscrypt.ini
 
      Module: gcloud
            : Control GCloud API classpath
@@ -259,32 +285,32 @@ Modules for tag '3rdparty':
      Module: gcloud-datastore
            : Enables GCloud Datastore API and implementation
        Tags: 3rdparty, gcloud
-     Depend: jcl-slf4j, gcloud
+     Depend: gcloud, jcl-slf4j, jul-impl
 
      Module: hawtio
            : Deploys the Hawtio console as a webapplication.
        Tags: 3rdparty
-     Depend: jmx, stats, deploy
+     Depend: stats, deploy, jmx
         XML: etc/hawtio.xml
 
      Module: jamon
            : Deploys the JAMon webapplication
        Tags: 3rdparty
-     Depend: jmx, stats, jsp, deploy
+     Depend: stats, deploy, jmx, jsp
         LIB: lib/jamon/**.jar
         XML: etc/jamon.xml
 
      Module: jminix
            : Deploys the Jminix JMX Console within the server
        Tags: 3rdparty
-     Depend: jmx, stats, jcl-impl, jcl-api
+     Depend: stats, jmx, jcl-api, jcl-impl
         LIB: lib/jminix/**.jar
         XML: etc/jminix.xml
 
      Module: jolokia
            : Deploys the Jolokia console as a web application.
        Tags: 3rdparty
-     Depend: jmx, stats, deploy
+     Depend: stats, deploy, jmx
         XML: etc/jolokia.xml
 
 Modules for tag 'classpath':
@@ -306,6 +332,12 @@ Modules for tag 'classpath':
 Modules for tag 'connector':
 ----------------------------
 
+     Module: connectionlimit
+           : Enable a server wide connection limit
+       Tags: connector
+     Depend: server
+        XML: etc/jetty-connectionlimit.xml
+
      Module: http
            : Enables a HTTP connector on the server.
            : By default HTTP/1 is support, but HTTP2C can
@@ -325,7 +357,7 @@ Modules for tag 'connector':
            : Enables HTTP2 protocol support on the TLS(SSL) Connector,
            : using the ALPN extension to select which protocol to use.
        Tags: connector, http2, http, ssl
-     Depend: alpn, ssl
+     Depend: ssl, alpn
         LIB: lib/http2/*.jar
         XML: etc/jetty-http2.xml
 
@@ -362,6 +394,7 @@ Modules for tag 'connector':
      Depend: server
         XML: etc/jetty-ssl.xml
         XML: etc/jetty-ssl-context.xml
+    Enabled: ${jetty.base}/start.d/ssl.ini
 
      Module: unixsocket
            : Enables a Unix Domain Socket Connector that can receive
@@ -484,53 +517,46 @@ Modules for tag 'logging':
         LIB: resources/
         XML: etc/console-capture.xml
 
-     Module: logging-jcl [logging]
-           : Configure jetty logging to use Java Commons Logging (jcl)
-           : SLF4J is used as the core logging mechanism.
-       Tags: logging
-     Depend: jcl-impl, slf4j-jcl
-        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
-
      Module: logging-jetty [logging]
            : Configure jetty logging mechanism.
            : Provides a ${jetty.base}/resources/jetty-logging.properties.
        Tags: logging
-     Depend: console-capture, resources
+     Depend: resources
 
      Module: logging-jul [logging]
            : Configure jetty logging to use Java Util Logging (jul)
            : SLF4J is used as the core logging mechanism.
        Tags: logging
-     Depend: jul-impl, slf4j-jul
-        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+     Depend: slf4j-jul, jul-impl
+        JVM: -Dorg.eclipse.jetty.util.log.class?=org.eclipse.jetty.util.log.Slf4jLog
 
      Module: logging-log4j [logging]
            : Configure jetty logging to use Log4j Logging
            : SLF4J is used as the core logging mechanism.
        Tags: logging
-     Depend: log4j-impl, slf4j-log4j
-        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+     Depend: slf4j-log4j, log4j-impl
+        JVM: -Dorg.eclipse.jetty.util.log.class?=org.eclipse.jetty.util.log.Slf4jLog
 
      Module: logging-log4j2 [logging]
            : Configure jetty logging to use log4j version 2
            : SLF4J is used as the core logging mechanism.
        Tags: logging
      Depend: slf4j-log4j2, log4j2-impl
-        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+        JVM: -Dorg.eclipse.jetty.util.log.class?=org.eclipse.jetty.util.log.Slf4jLog
 
      Module: logging-logback [logging]
            : Configure jetty logging to use Logback Logging.
            : SLF4J is used as the core logging mechanism.
        Tags: logging
-     Depend: logback-impl, slf4j-logback
-        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+     Depend: slf4j-logback, logback-impl
+        JVM: -Dorg.eclipse.jetty.util.log.class?=org.eclipse.jetty.util.log.Slf4jLog
 
      Module: logging-slf4j [logging]
            : Configure jetty logging to use slf4j.
            : Any slf4j-impl implementation is used
        Tags: logging
      Depend: slf4j-api, slf4j-impl
-        JVM: -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog
+        JVM: -Dorg.eclipse.jetty.util.log.class?=org.eclipse.jetty.util.log.Slf4jLog
 
 Modules for tag 'requestlog':
 -----------------------------
@@ -538,7 +564,7 @@ Modules for tag 'requestlog':
      Module: logback-access [requestlog]
            : Enables logback request log.
        Tags: requestlog, logging, logback
-     Depend: server, logback-core, resources
+     Depend: server, logback-impl, resources
         LIB: lib/logback/logback-access-${logback.version}.jar
         XML: etc/jetty-logback-access.xml
 
@@ -581,23 +607,41 @@ Modules for tag 'session':
      Module: session-store-gcloud [session-store]
            : Enables GCloudDatastore session management.
        Tags: session, gcloud
-     Depend: webapp, sessions, gcloud-datastore, annotations
+     Depend: gcloud-datastore, annotations, webapp, sessions
         LIB: lib/jetty-gcloud-session-manager-${jetty.version}.jar
         XML: etc/sessions/gcloud/session-store.xml
+
+     Module: session-store-hazelcast-embedded [session-store]
+           : Enables session data store in an embedded Hazelcast Map
+       Tags: session
+     Depend: sessions
+        LIB: lib/jetty-hazelcast-${jetty.version}.jar
+        LIB: lib/hazelcast/*.jar
+        XML: etc/sessions/hazelcast/default.xml
+
+     Module: session-store-hazelcast-remote [session-store]
+           : Enables session data store in a remote Hazelcast Map
+       Tags: session
+     Depend: sessions
+        LIB: lib/jetty-hazelcast-${jetty.version}.jar
+        LIB: lib/hazelcast/*.jar
+        XML: etc/sessions/hazelcast/remote.xml
 
      Module: session-store-infinispan-embedded [session-store]
            : Enables session data store in a local Infinispan cache
        Tags: session
-     Depend: sessions, sessions/infinispan/default
+     Depend: sessions
         LIB: lib/jetty-infinispan-${jetty.version}.jar
         LIB: lib/infinispan/*.jar
+        XML: etc/sessions/infinispan/default.xml
 
      Module: session-store-infinispan-remote [session-store]
            : Enables session data store in a remote Infinispan cache
        Tags: session
-     Depend: sessions/infinispan/remote, sessions
+     Depend: sessions
         LIB: lib/jetty-infinispan-${jetty.version}.jar
         LIB: lib/infinispan/*.jar
+        XML: etc/sessions/infinispan/remote.xml
 
      Module: session-store-jdbc [session-store]
            : Enables JDBC peristent/distributed session storage.
@@ -608,10 +652,9 @@ Modules for tag 'session':
      Module: session-store-mongo [session-store]
            : Enables NoSql session management with a MongoDB driver.
        Tags: session
-     Depend: sessions
+     Depend: sessions, sessions/mongo/${connection-type}
         LIB: lib/jetty-nosql-${jetty.version}.jar
         LIB: lib/nosql/*.jar
-        XML: etc/sessions/mongo/session-store.xml
 
      Module: sessions
            : The session management. By enabling this module, it allows

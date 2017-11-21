@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -122,6 +120,8 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     @Override
     public InetSocketAddress getAddress()
     {
+        if (_addr.getPort()==0 && _server.isStarted())
+            return new InetSocketAddress(_addr.getHostString(),_server.getBean(NetworkConnector.class).getLocalPort());
         return _addr;
     }
 
@@ -215,37 +215,25 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         JettyHttpContext context = new JettyHttpContext(this, path, httpHandler);
         HttpSpiContextHandler jettyContextHandler = context.getJettyContextHandler();
 
-        ContextHandlerCollection chc = findContextHandlerCollection(_server.getHandlers());
+        ContextHandlerCollection chc = _server.getChildHandlerByClass(ContextHandlerCollection.class);
+                
         if (chc == null)
             throw new RuntimeException("could not find ContextHandlerCollection, you must configure one");
 
         chc.addHandler(jettyContextHandler);
-        _contexts.put(path, context);
-
-        return context;
-    }
-
-    private ContextHandlerCollection findContextHandlerCollection(Handler[] handlers)
-    {
-        if (handlers == null)
-            return null;
-
-        for (Handler handler : handlers)
+        if (chc.isStarted())
         {
-            if (handler instanceof ContextHandlerCollection)
+            try
             {
-                return (ContextHandlerCollection) handler;
+                jettyContextHandler.start();
             }
-
-            if (handler instanceof HandlerCollection)
+            catch (Exception e)
             {
-                HandlerCollection hc = (HandlerCollection) handler;
-                ContextHandlerCollection chc = findContextHandlerCollection(hc.getHandlers());
-                if (chc != null)
-                    return chc;
+                throw new RuntimeException(e);
             }
         }
-        return null;
+        _contexts.put(path, context);
+        return context;
     }
 
     private void checkIfContextIsFree(String path)
@@ -282,7 +270,18 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     {
         JettyHttpContext context = _contexts.remove(path);
         if (context == null) return;
-        _server.removeBean(context.getJettyContextHandler());
+        HttpSpiContextHandler handler = context.getJettyContextHandler();
+
+        ContextHandlerCollection chc = _server.getChildHandlerByClass(ContextHandlerCollection.class);
+        try
+        {
+            handler.stop();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+        chc.removeHandler(handler);
     }
 
     @Override

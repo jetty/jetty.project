@@ -79,6 +79,10 @@ generateOrigin::
                     If true, the origin attribute will be inserted into each element in quickstart-web.xml.
                     Note that origin attributes will also be generated if debug log level is enabled.
 
+____
+[NOTE]
+If you are using Spring-Boot you must set `generateOrigin` to true.
+____
 
 The origin is either a descriptor eg web.xml,web-fragment.xml,override-web.xml file, or an annotation eg @WebServlet.
 For xml validation each attribute must be unique, and therefore an integer counter is appended to each value.

@@ -69,13 +69,11 @@ import org.objectweb.asm.Opcodes;
 public class AnnotationParser
 {
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
-
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM6; //compatibility of api
     
     protected Map<String, List<String>> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
     private int _asmVersion;
-    
     
     /**
      * Determine the runtime version of asm.
@@ -130,6 +128,7 @@ public class AnnotationParser
         }
         return asmVersion;
     }
+
     /**
      * Convert internal name to simple name
      * 
@@ -357,37 +356,31 @@ public class AnnotationParser
         @Override
         public void handle(ClassInfo classInfo)
         {
-           //no-op
         }
 
         @Override
         public void handle(MethodInfo methodInfo)
         {
-            // no-op           
         }
 
         @Override
         public void handle(FieldInfo fieldInfo)
         {
-            // no-op 
         }
 
         @Override
         public void handle(ClassInfo info, String annotationName)
         {
-            // no-op 
         }
 
         @Override
         public void handle(MethodInfo info, String annotationName)
         {
-            // no-op            
         }
 
         @Override
         public void handle(FieldInfo info, String annotationName)
         {
-            // no-op
         }
     }
 
@@ -877,20 +870,20 @@ public class AnnotationParser
                 LOG.debug("Scanning jar {}", jarResource);
 
             MultiException me = new MultiException();
-            MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),_javaPlatform,false);
-            jarFile.stream().forEach(e->
+            try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(jarResource.getFile(),_javaPlatform,false))
             {
-                try
+                jarFile.stream().forEach(e->
                 {
-                    parseJarEntry(handlers, jarResource, e);
-                }
-                catch (Exception ex)
-                {
-                    me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
-                }
-            });
-
-            
+                    try
+                    {
+                        parseJarEntry(handlers, jarResource, e);
+                    }
+                    catch (Exception ex)
+                    {
+                        me.add(new RuntimeException("Error scanning entry " + e.getName() + " from jar " + jarResource, ex));
+                    }
+                });
+            }
             me.ifExceptionThrow();
         }        
     }

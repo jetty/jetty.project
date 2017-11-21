@@ -103,7 +103,7 @@ Instructs `start.jar` to use each line of the specified file as arguments on the
 Enables debugging output of the startup procedure.
 +
 *Note*: This does not set up debug logging for Jetty itself.
-For information on logging, please see the section on <<configuring-jetty-logging, Configuring Jetty Logging.>>
+For information on logging, please see the section on link:#configuring-jetty-logging[Configuring Jetty Logging.]]
 --start-log-file=<filename>::
 Sends all startup output to the filename specified.
 Filename is relative to `${jetty.base}`.
@@ -208,16 +208,39 @@ The port to use to stop the running Jetty server.
 This is an internal port, opened on localhost, used solely for stopping the running Jetty server.
 Choose a port that you do not use to serve web traffic.
 +
-Required for --stop to function.
+Required for `--stop` to function.
 STOP.KEY=<alphanumeric>;;
 The passphrase defined to stop the server.
 +
-Required for --stop to function.
+Required for `--stop` to function.
 STOP.WAIT=<number>;;
 The time (in seconds) to wait for confirmation that the running Jetty server has stopped.
 If not specified, the stopper waits indefinitely for the server to stop.
 +
 If the time specified elapses, without a confirmation of server stop, then the `--stop` command exits with a non-zero return code.
+
+You can configure a port number for Jetty to listen on for a stop command, so you are able to stop it from a different terminal.
+This requires the use of a "secret" key, to prevent malicious or accidental termination.
+Use the `STOP.PORT` and `STOP.KEY` (or `-DSTOP.PORT=` and `-DSTOP.KEY=`, respectively, which will set these as system parameters) parameters as arguments to the `start.jar`:
+
+[source, screen, subs="{sub-order}"]
+....
+> java -jar ${JETTY_HOME}/start.jar STOP.PORT=1234 STOP.KEY=secretpassword
+....
+
+Then, to stop Jetty from a different terminal, you need to supply this port and key information.
+You can either use a copy of the Jetty distribution, the link:#jetty-maven-plugin[jetty-maven-plugin], the link:#jetty-ant[jetty-ant plugin], or a custom class to accomplish this.
+Here's how to use the Jetty distribution, leveraging `start.jar`, to perform a stop:
+
+[source, screen, subs="{sub-order}"]
+....
+> java -jar start.jar STOP.PORT=8181 STOP.KEY=abc123 --stop
+....
+
+____
+[NOTE]
+To perform a graceful shutdown of Jetty, the `stats` link:#startup-modules[module] *must* be enabled.
+____
 
 ===== Advanced Commands
 

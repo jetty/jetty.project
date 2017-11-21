@@ -59,7 +59,7 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
-            new HeadersCallback(exchange, content, callback).iterate();
+            new HeadersCallback(exchange, content, callback, getHttpChannel().getHttpConnection()).iterate();
         }
         catch (Throwable x)
         {
@@ -191,17 +191,19 @@ public class HttpSenderOverHTTP extends HttpSender
         private final HttpExchange exchange;
         private final Callback callback;
         private final MetaData.Request metaData;
+        private final HttpConnectionOverHTTP httpConnectionOverHTTP;
         private ByteBuffer headerBuffer;
         private ByteBuffer chunkBuffer;
         private ByteBuffer contentBuffer;
         private boolean lastContent;
         private boolean generated;
 
-        public HeadersCallback(HttpExchange exchange, HttpContent content, Callback callback)
+        public HeadersCallback(HttpExchange exchange, HttpContent content, Callback callback, HttpConnectionOverHTTP httpConnectionOverHTTP)
         {
             super(false);
             this.exchange = exchange;
             this.callback = callback;
+            this.httpConnectionOverHTTP = httpConnectionOverHTTP;
 
             HttpRequest request = exchange.getRequest();
             ContentProvider requestContent = request.getContent();
@@ -258,6 +260,11 @@ public class HttpSenderOverHTTP extends HttpSender
                             chunkBuffer = BufferUtil.EMPTY_BUFFER;
                         if (contentBuffer == null)
                             contentBuffer = BufferUtil.EMPTY_BUFFER;
+
+                        httpConnectionOverHTTP.addBytesOut( BufferUtil.length(headerBuffer)
+                                                          + BufferUtil.length(chunkBuffer)
+                                                          + BufferUtil.length(contentBuffer));
+                        
                         endPoint.write(this, headerBuffer, chunkBuffer, contentBuffer);
                         generated = true;
                         return Action.SCHEDULED;

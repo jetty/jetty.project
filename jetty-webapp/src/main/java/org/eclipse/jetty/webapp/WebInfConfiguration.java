@@ -20,6 +20,7 @@ package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.io.IOException;
+
 import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
@@ -48,6 +49,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     protected Resource _preUnpackBaseResource;
 
+
     public WebInfConfiguration()
     {
     }
@@ -61,6 +63,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         //Extract webapp if necessary
         unpack (context);
     }
+
 
     @Override
     public void configure(WebAppContext context) throws Exception

@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
  * This thread listens on the host/port specified by the STOP.HOST/STOP.PORT
  * system parameter (defaults to 127.0.0.1/-1 for not listening) for request
  * authenticated with the key given by the STOP.KEY system parameter
- * (defaults to "eclipse") for admin requests.
+ *  for admin requests.
  * <p>
  * If the stop port is set to zero, then a random port is assigned and the
  * port number is printed to stdout.
@@ -97,7 +97,7 @@ public class ShutdownMonitor
      * Creates a ShutdownMonitor using configuration from the System properties.
      * <p>
      * <code>STOP.PORT</code> = the port to listen on (empty, null, or values less than 0 disable the stop ability)<br>
-     * <code>STOP.KEY</code> = the magic key/passphrase to allow the stop (defaults to "eclipse")<br>
+     * <code>STOP.KEY</code> = the magic key/passphrase to allow the stop<br>
      * <p>
      * Note: server socket will only listen on localhost, and a successful stop will issue a System.exit() call.
      */
@@ -105,7 +105,7 @@ public class ShutdownMonitor
     {
         this.debug = System.getProperty("DEBUG") != null;
         this.host = System.getProperty("STOP.HOST", "127.0.0.1");
-        this.port = Integer.parseInt(System.getProperty("STOP.PORT", "-1"));
+        this.port = Integer.getInteger("STOP.PORT", -1);
         this.key = System.getProperty("STOP.KEY", null);
         this.exitVm = true;
     }

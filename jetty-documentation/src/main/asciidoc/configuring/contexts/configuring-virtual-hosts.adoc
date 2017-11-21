@@ -22,7 +22,7 @@ If the content to be served to the aliases names is link:#different-virtual-host
 
 Virtual hosts are set on a link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[context] by calling the link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html#setVirtualHosts-java.lang.String:A-[`setVirtualHosts`] or link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html#addVirtualHosts-java.lang.String:A-[`addVirtualHost`] method which can be done in several ways:
 
-* Using a link:#deployable-descriptor-file[context XML] file in the webapps directory (see the example in link:{SRCDIR}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/webapps/test.xml[test.xml] in the Jetty distribution).
+* Using a link:#deployable-descriptor-file[context XML] file in the webapps directory (see the example in link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/webapps/test.xml[test.xml] in the Jetty distribution).
 * Creating a link:#deployment-architecture[custom deployer] with a binding to configure virtual hosts for all contexts found in the same `webapps` directory.
 * Calling the link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html#setVirtualHosts-java.lang.String:A-[API] directly on an link:#advanced-embedding[embedded] usage.
 * Using a `WEB-INF/jetty-web.xml` file (now deprecated).
