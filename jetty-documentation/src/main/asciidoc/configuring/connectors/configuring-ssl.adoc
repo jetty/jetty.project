@@ -724,7 +724,7 @@ Implementing Conscrypt is very straightforward process - simply instantiate an i
 [source, java, subs="{sub-order}"]
 ----
 ...
-Security.addProvider((Provider)ClassLoader.getSystemClassLoader().loadClass("org.conscrypt.OpenSSLProvider").newInstance());
+Security.addProvider(new OpenSSLProvider());
 ...
 SslContextFactory sslContextFactory = new SslContextFactory();
 sslContextFactory.setKeyStorePath("path/to/keystore");

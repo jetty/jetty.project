@@ -20,9 +20,9 @@ package org.eclipse.jetty.embedded;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.security.Provider;
 import java.security.Security;
 
+import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -97,7 +97,7 @@ public class ManyConnectors
         // OPTIONAL: Un-comment the following to use Conscrypt for SSL instead of
         // the native JSSE implementation.
 
-        //Security.addProvider((Provider)ClassLoader.getSystemClassLoader().loadClass("org.conscrypt.OpenSSLProvider").newInstance());
+        //Security.addProvider(new OpenSSLProvider());
         //sslContextFactory.setProvider("Conscrypt");
 
         // HTTPS Configuration
