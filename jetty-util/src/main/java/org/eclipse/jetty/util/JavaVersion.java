@@ -27,6 +27,13 @@ import java.util.regex.Pattern;
  */
 public class JavaVersion
 {
+    
+    /**
+     * Context attribute that can be set to target a different version of the jvm than the current runtime.
+     * Acceptable values should correspond to those returned by JavaVersion.getPlatform().
+     */
+    public static final String JAVA_TARGET_PLATFORM = "org.eclipse.jetty.javaTargetPlatform";
+    
     // Copy of version in jetty-start
 
     private static final Pattern PRE_JDK9 = Pattern.compile("1\\.(\\d)(\\.(\\d+)(_(\\d+))?)?(-.+)?");
