@@ -63,12 +63,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
         super(connector, configuration, endPoint, transport);
     }
 
-    @Override
-    protected HttpOutput newHttpOutput()
-    {
-        return new HttpOutput(this,true);
-    }
-
     protected IStream getStream()
     {
         return getHttpTransport().getStream();

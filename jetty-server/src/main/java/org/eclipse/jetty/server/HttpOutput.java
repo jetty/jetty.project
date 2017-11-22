@@ -119,7 +119,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private static Logger LOG = Log.getLogger(HttpOutput.class);
 
-    private final boolean _asyncExecuteChannel;
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlocker;
     private Interceptor _interceptor;
@@ -153,11 +152,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public HttpOutput(HttpChannel channel)
     {
-        this(channel,false);
-    }
-    
-    public HttpOutput(HttpChannel channel, boolean asyncExecuteChannel)
-    {
         _channel = channel;
         _interceptor = channel;
         _writeBlocker = new WriteBlocker(channel);
@@ -169,7 +163,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.warn("OutputAggregationSize {} exceeds bufferSize {}", _commitSize, _bufferSize);
             _commitSize = _bufferSize;
         }
-        _asyncExecuteChannel = asyncExecuteChannel;
     }
 
     public HttpChannel getHttpChannel()
@@ -1082,6 +1075,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
         protected void onCompleteSuccess()
         {
             while (true)
@@ -1100,12 +1099,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         if (_last)
                             closed();
                         if (_channel.getState().onWritePossible())
-                        {
-                            if (_asyncExecuteChannel)
-                                _channel.execute(_channel);
-                            else
-                                _channel.handle();
-                        }
+                            _channel.execute(_channel);
                         break;
 
                     case CLOSED:
