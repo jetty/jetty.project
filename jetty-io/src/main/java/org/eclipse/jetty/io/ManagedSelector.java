@@ -666,6 +666,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         protected void failed(Throwable failure)
         {
             closeNoExceptions(channel);
+            LOG.warn(String.valueOf(failure));
             LOG.debug(failure);
         }
     }
