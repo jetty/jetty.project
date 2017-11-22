@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -60,6 +61,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
         super(connector, configuration, endPoint, transport);
+    }
+
+    @Override
+    protected HttpOutput newHttpOutput()
+    {
+        return new HttpOutput(this,true);
     }
 
     protected IStream getStream()
