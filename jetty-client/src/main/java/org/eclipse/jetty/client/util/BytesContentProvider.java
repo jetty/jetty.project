@@ -54,6 +54,12 @@ public class BytesContentProvider extends AbstractTypedContentProvider
     }
 
     @Override
+    public boolean isRepeatable()
+    {
+        return true;
+    }
+
+    @Override
     public Iterator<ByteBuffer> iterator()
     {
         return new Iterator<ByteBuffer>()

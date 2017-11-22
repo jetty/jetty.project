@@ -49,6 +49,14 @@ public interface ContentProvider extends Iterable<ByteBuffer>
     long getLength();
 
     /**
+     * @return whether the content can be provided more than once
+     */
+    default boolean isRepeatable()
+    {
+        return false;
+    }
+
+    /**
      * An extension of {@link ContentProvider} that provides a content type string
      * to be used as a {@code Content-Type} HTTP header in requests.
      */

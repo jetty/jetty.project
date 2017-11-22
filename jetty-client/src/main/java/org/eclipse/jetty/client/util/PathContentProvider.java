@@ -85,6 +85,12 @@ public class PathContentProvider extends AbstractTypedContentProvider
         return fileSize;
     }
 
+    @Override
+    public boolean isRepeatable()
+    {
+        return true;
+    }
+
     public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
