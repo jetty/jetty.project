@@ -293,10 +293,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
     }
 
-    public boolean process(final Connection connection)
+    public boolean process(Connection connection)
     {
         HttpClient client = getHttpClient();
-        final HttpExchange exchange = getHttpExchanges().poll();
+        HttpExchange exchange = getHttpExchanges().poll();
         if (LOG.isDebugEnabled())
             LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
@@ -313,7 +313,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
         else
         {
-            final Request request = exchange.getRequest();
+            Request request = exchange.getRequest();
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
@@ -343,7 +343,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     request.abort(result.failure);
                 }
             }
-            return getHttpExchanges().peek() != null;
+            return false;
         }
     }
 
