@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.jstl;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,21 +36,14 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
-import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 
 public class JstlTest
 {
@@ -55,8 +53,6 @@ public class JstlTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        Assume.assumeFalse(JDK.IS_9);
-
         // Setup Server
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -139,7 +135,6 @@ public class JstlTest
     }
     
     @Test
-    @Ignore
     public void testCatchTaglib() throws IOException
     {
         HttpURLConnection http = (HttpURLConnection) baseUri.resolve("/catch-taglib.jsp").toURL().openConnection();
