@@ -1,0 +1,127 @@
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
+[[jetty-ssl-distribution]]
+=== SSL in the Jetty Distribution
+
+When making use of the Jetty Distribution, enabling SSL support is as easy as activating the appropriate module.
+Jetty provides support for both the native https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html[JSSE] and https://github.com/google/conscrypt/[Conscrypt] SSL implementations.
+
+==== Native SSL Configuration
+
+For native support, simply activate the `ssl` link:#startup-modules[module:]
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd /path/to/mybase
+$ java -jar ${JETTY_HOME}/start.jar --add-to-startd=ssl
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
+INFO : Base directory was modified
+$ tree
+.
+├── etc
+│   └── keystore
+└── start.d
+    ├── server.ini
+    └── ssl.ini
+----
+
+When you open `start.d/ssl.ini`, you will see several commented properties ready for use when configuring `SslContextFactory` basics.
+
+To highlight some of the more commonly used properties:
+
+jetty.ssl.host::
+  Configures which interfaces the SSL/TLS Connector should listen on.
+jetty.ssl.port::
+  Configures which port the SSL/TLS Connector should listen on.
+jetty.httpConfig.securePort::
+  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
+jetty.sslContext.keyStorePath::
+  Sets the location of the `keystore` that you configured with your certificates.
+jetty.sslContext.keyStorePassword::
+  Sets the Password for the `keystore`.
+
+[[jetty-conscrypt-distribution]]
+==== Conscrypt SSL Configuration
+
+Enabling Conscrypt SSL is just as easy as native SSL - enable both the `conscrypt` and `ssl` link:#startup-modules[modules:]
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd ${JETTY_HOME}
+$ java -jar ../start.jar --add-to-start=ssl,conscrypt
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: conscrypt
+  + Conscrypt is distributed under the Apache Licence 2.0
+  + https://github.com/google/conscrypt/blob/master/LICENSE
+
+Proceed (y/N)? y
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : conscrypt       initialized in ${jetty.base}/start.d/conscrypt.ini
+INFO  : ssl             initialized in ${jetty.base}/start.d/ssl.ini
+MKDIR : ${jetty.base}/lib/conscrypt
+DOWNLD: http://central.maven.org/maven2/org/conscrypt/conscrypt-openjdk-uber/1.0.0.RC9/conscrypt-openjdk-uber-1.0.0.RC9.jar to ${jetty.base}/lib/conscrypt/conscrypt-uber-1.0.0.RC9.jar
+MKDIR : ${jetty.base}/etc
+COPY  : ${jetty.home}/modules/conscrypt/conscrypt.xml to ${jetty.base}/etc/conscrypt.xml
+COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
+INFO  : Base directory was modified
+----
+
+No additional Conscrypt configuration is needed.
+SSL-specific parameters, like `keyStorePath` and `keyStorePassword` can still configured as in the example above, making use of the `${JETTY_BASE}/start.d/ssl.ini` file.
+
+[[two-way-authentication]]
+==== Two Way Authentication
+
+To enable two-way authentication in the Jetty Distribution, you need to enable the both the `ssl` and `https` modules.
+
+[source, plain, subs="{sub-order}"]
+----
+$ cd /path/to/mybase
+$ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl,https
+----
+
+[source%nowrap,ini,linenums]
+.$JETTY_BASE/start.d/ssl.ini
+----
+# Module: ssl
+--module=ssl
+
+jetty.ssl.host=0.0.0.0
+jetty.ssl.port=8583
+jetty.sslContext.keyStorePath=etc/keystore
+jetty.sslContext.trustStorePath=etc/keystore
+jetty.sslContext.keyStorePassword=OBF:
+jetty.sslContext.keyManagerPassword=OBF:
+jetty.sslContext.trustStorePassword=OBF:
+jetty.sslContext.trustStoreType=JKS
+# enable two way authentication
+jetty.sslContext.needClientAuth=true
+----
+
+[source%nowrap,ini,linenums]
+.$JETTY_BASE/start.d/https.ini
+----
+# Module: https
+--module=https
+----

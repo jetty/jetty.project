@@ -716,6 +716,26 @@ The keystore and truststore passwords may also be set using the system propertie
 This is _not_ a recommended usage.
 ____
 
+===== Conscrypt SSL
+
+Jetty also includes support for Google's https://github.com/google/conscrypt/[Conscrypt SSL], which is built on their fork of https://www.openssl.org/[OpenSSL], https://boringssl.googlesource.com/boringssl/[BoringSSL].
+Implementing Conscrypt is very straightforward process - simply instantiate an instance of Conscrypt's `OpenSSLProvider` and set `Conscrypt` as a provider for Jetty's `SslContextFactory`:
+
+[source, java, subs="{sub-order}"]
+----
+...
+Security.addProvider((Provider)ClassLoader.getSystemClassLoader().loadClass("org.conscrypt.OpenSSLProvider").newInstance());
+...
+SslContextFactory sslContextFactory = new SslContextFactory();
+sslContextFactory.setKeyStorePath("path/to/keystore");
+sslContextFactory.setKeyStorePassword("CleverKeyStorePassword");
+sslContextFactory.setKeyManagerPassword("OBF:VerySecretManagerPassword");
+sslContextFactory.setProvider("Conscrypt");
+...
+----
+
+If you are using the Jetty Distribution, please see the section on enabling the link:#jetty-conscrypt-distribution[Conscrypt SSL module.]
+
 ==== Configuring SNI
 
 From Java 8, the JVM contains support for the http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name Indicator (SNI)] extension, which allows a SSL connection handshake to indicate one or more DNS names that it applies to.
@@ -724,90 +744,18 @@ To support this, the `SslContextFactory` is used.
 The `SslContextFactory` will look for multiple X509 certificates within the keystore, each of which may have multiple DNS names (including wildcards) associated with the http://en.wikipedia.org/wiki/SubjectAltName[Subject Alternate Name] extension.
 When using the `SslContextFactory`, the correct certificate is automatically selected if the SNI extension is present in the handshake.
 
-
-==== Configuring SSL in Jetty Distribution
-
-For those of you using the Jetty Distribution, enabling SSL support is as easy as activating the `ssl` module.
-
-An example of this setup:
-
-[source, plain, subs="{sub-order}"]
-----
-$ cd /path/to/mybase
-$ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl
-INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
-INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
-INFO : Base directory was modified
-$ tree
-.
-├── etc
-│   └── keystore
-└── start.d
-    ├── server.ini
-    └── ssl.ini
-----
-
-When you open `start.d/ssl.ini`, you will see several commented properties ready for use when configuring `SslContextFactory` basics.
-
-To highlight some of the more commonly used properties:
-
-jetty.ssl.host::
-  Configures which interfaces the SSL/TLS Connector should listen on.
-jetty.ssl.port::
-  Configures which port the SSL/TLS Connector should listen on.
-jetty.httpConfig.securePort::
-  If a webapp needs to redirect to a secure version of the same resource, then this is the port reported back on the response `location` line (having this be separate is useful if you have something sitting in front of Jetty, such as a Load Balancer or proxy).
-jetty.sslContext.keyStorePath::
-  Sets the location of the `keystore` that you configured with your certificates.
-jetty.sslContext.keyStorePassword::
-  Sets the Password for the `keystore`.
-
-[[two-way-authentication]]
-==== Two Way Authentication
-
-To enable two-way authentication in the Jetty Distribution, you need to enable the both the `ssl` and `https` modules.
-
-[source, plain, subs="{sub-order}"]
-----
-$ cd /path/to/mybase
-$ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl,https
-----
-
-[source%nowrap,ini,linenums]
-.$JETTY_BASE/start.d/ssl.ini
-----
-# Module: ssl
---module=ssl
-
-jetty.ssl.host=0.0.0.0
-jetty.ssl.port=8583
-jetty.sslContext.keyStorePath=etc/keystore
-jetty.sslContext.trustStorePath=etc/keystore
-jetty.sslContext.keyStorePassword=OBF:
-jetty.sslContext.keyManagerPassword=OBF:
-jetty.sslContext.trustStorePassword=OBF:
-jetty.sslContext.trustStoreType=JKS
-# enable two way authentication
-jetty.sslContext.needClientAuth=true
-----
-
-[source%nowrap,ini,linenums]
-.$JETTY_BASE/start.d/https.ini
-----
-# Module: https
---module=https
-----
-
 [[configuring-sslcontextfactory-cipherSuites]]
 ==== Disabling/Enabling Specific Cipher Suites
 
+New cipher suites are always being developed to stay ahead of attacks.
+It's only a matter of time before the best of suites is exploited though, and making sure your server is up-to-date in this regard is paramount for any implementation.
 As an example, to avoid the BEAST attack it is necessary to configure a specific set of cipher suites. This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
 
 ____
 [NOTE]
 It's crucial that you use the _exact_ names of the cipher suites as used/known by the JDK.
 You can get them by obtaining an instance of SSLEngine and call `getSupportedCipherSuites()`.
-Tools like ssllabs.com might report slightly different names which will be ignored.
+Tools like https://www.ssllabs.com/[ssllabs.com] might report slightly different names which will be ignored.
 ____
 
 ____

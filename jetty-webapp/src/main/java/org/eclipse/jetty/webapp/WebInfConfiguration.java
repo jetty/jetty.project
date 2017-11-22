@@ -24,6 +24,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -61,6 +64,84 @@ public class WebInfConfiguration extends AbstractConfiguration
 
     protected Resource _preUnpackBaseResource;
     
+    /**
+     * ContainerPathNameMatcher
+     *
+     * Matches names of jars on the container classpath
+     * against a pattern. If no pattern is specified, no
+     * jars match.
+     */
+    public class ContainerPathNameMatcher extends PatternMatcher
+    {
+        protected final WebAppContext _context;
+        protected final Pattern _pattern;
+
+        public ContainerPathNameMatcher(WebAppContext context, Pattern pattern)
+        {
+            if (context == null)
+                throw new IllegalArgumentException("Context null");
+            _context = context;
+            _pattern = pattern;
+        }
+        
+        
+        public void match (List<URI> uris)
+        throws Exception
+        {
+            if (uris == null)
+                return;
+            match(_pattern, uris.toArray(new URI[uris.size()]), false);
+        }
+        
+       
+        
+        /** 
+         * @see org.eclipse.jetty.util.PatternMatcher#matched(java.net.URI)
+         */
+        @Override
+        public void matched(URI uri) throws Exception
+        {
+            _context.getMetaData().addContainerResource(Resource.newResource(uri));
+        }
+    }
+
+
+    /**
+     * WebAppPathNameMatcher
+     *
+     * Matches names of jars or dirs on the webapp classpath
+     * against a pattern. If there is no pattern, all jars or dirs
+     * will match.
+     */
+    public class WebAppPathNameMatcher extends PatternMatcher
+    {        
+        protected final WebAppContext _context;
+        protected final Pattern _pattern;
+
+        public WebAppPathNameMatcher (WebAppContext context, Pattern pattern)
+        {
+            if (context == null)
+                throw new IllegalArgumentException("Context null");
+            _context=context;
+            _pattern=pattern;
+        }
+        
+        public void match (List<URI> uris)
+        throws Exception
+        {
+            match(_pattern, uris.toArray(new URI[uris.size()]), true);
+        }
+        
+        /** 
+         * @see org.eclipse.jetty.util.PatternMatcher#matched(java.net.URI)
+         */
+        @Override
+        public void matched(URI uri) throws Exception
+        {
+            _context.getMetaData().addWebInfJar(Resource.newResource(uri));
+        }
+        
+    }
 
 
     @Override
@@ -72,79 +153,165 @@ public class WebInfConfiguration extends AbstractConfiguration
         //Extract webapp if necessary
         unpack (context);
 
+        findAndFilterContainerPaths(context);
 
-        //Apply an initial ordering to the jars which governs which will be scanned for META-INF
-        //info and annotations. The ordering is based on inclusion patterns.
-        String tmp = (String)context.getAttribute(WEBINF_JAR_PATTERN);
-        Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
-        tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
+        findAndFilterWebAppPaths(context);
+
+        //No pattern to appy to classes, just add to metadata
+        context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
+    }
+
+    
+    
+    /**
+     * Find jars and directories that are on the container's classpath
+     * and apply an optional filter. The filter is a pattern applied to the
+     * full jar or directory names. If there is no pattern, then no jar
+     * or dir is considered to match.
+     * 
+     * Those jars that do match will be later examined for META-INF 
+     * information and annotations.
+     * 
+     * To find them, examine the classloaders in the hierarchy above the
+     * webapp classloader that are URLClassLoaders. For jdk-9 we also
+     * look at the java.class.path, and the jdk.module.path.
+     * 
+     * @param context the WebAppContext being deployed
+     * @throws Exception
+     */
+    public void findAndFilterContainerPaths (final WebAppContext context)
+    throws Exception
+    {
+        //assume the target jvm is the same as that running
+        int targetPlatform = JavaVersion.VERSION.getPlatform();
+        //allow user to specify target jvm different to current runtime
+        Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
+        if (target!=null)
+            targetPlatform = Integer.valueOf(target.toString()).intValue();
+        
+        //Apply an initial name filter to the jars to select which will be eventually
+        //scanned for META-INF info and annotations. The filter is based on inclusion patterns.
+        String tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
-
-        //Apply ordering to container jars - if no pattern is specified, we won't
-        //match any of the container jars
-        PatternMatcher containerJarNameMatcher = new PatternMatcher ()
-        {
-            public void matched(URI uri) throws Exception
-            {
-                context.getMetaData().addContainerResource(Resource.newResource(uri));
-            }
-        };
+        ContainerPathNameMatcher containerPathNameMatcher = new ContainerPathNameMatcher(context, containerPattern);
+        
         ClassLoader loader = null;
         if (context.getClassLoader() != null)
             loader = context.getClassLoader().getParent();
 
+        List<URI> containerUris = new ArrayList<>();
+        
         while (loader != null && (loader instanceof URLClassLoader))
         {
             URL[] urls = ((URLClassLoader)loader).getURLs();
             if (urls != null)
             {
-                URI[] containerUris = new URI[urls.length];
-                int i=0;
                 for (URL u : urls)
                 {
                     try
                     {
-                        containerUris[i] = u.toURI();
+                        containerUris.add(u.toURI());
                     }
                     catch (URISyntaxException e)
                     {
-                        containerUris[i] = new URI(u.toString().replaceAll(" ", "%20"));
+                        containerUris.add(new URI(u.toString().replaceAll(" ", "%20")));
                     }
-                    i++;
                 }
-                containerJarNameMatcher.match(containerPattern, containerUris, false);
             }
             loader = loader.getParent();
         }
+        
+        if (LOG.isDebugEnabled()) LOG.debug("Matching container urls {}", containerUris);
+        containerPathNameMatcher.match(containerUris);
 
-        //Apply ordering to WEB-INF/lib jars
-        PatternMatcher webInfJarNameMatcher = new PatternMatcher ()
+        //if running on jvm 9 or above, we we won't be able to look at the application classloader
+        //to extract urls, so we need to examine the classpath instead.
+        if (JavaVersion.VERSION.getPlatform() >= 9)
         {
-            @Override
-            public void matched(URI uri) throws Exception
+            tmp = System.getProperty("java.class.path");
+            if (tmp != null)
             {
-                context.getMetaData().addWebInfJar(Resource.newResource(uri));
+                List<URI> cpUris = new ArrayList<>();
+                String[] entries = tmp.split(File.pathSeparator);
+                for (String entry:entries)
+                {
+                    File f = new File(entry);
+                    cpUris.add(f.toURI());
+                }
+                if (LOG.isDebugEnabled()) LOG.debug("Matching java.class.path {}", cpUris);
+                containerPathNameMatcher.match(cpUris);
             }
-        };
+        }
+        
+        //if we're targetting jdk 9 or above, we also need to examine the 
+        //module path
+        if (targetPlatform >= 9)
+        {
+            //TODO need to consider the jdk.module.upgrade.path - how to resolve
+            //which modules will be actually used. If its possible, it can
+            //only be attempted in jetty-10 with jdk-9 specific apis.
+            tmp = System.getProperty("jdk.module.path");
+            if (tmp != null)
+            {
+                List<URI> moduleUris = new ArrayList<>();
+                String[] entries = tmp.split(File.pathSeparator);
+                for (String entry:entries)
+                {
+                    File dir = new File(entry);
+                    File[] files = dir.listFiles();
+                    if (files != null)
+                    {
+                        for (File f:files)
+                        {
+                            moduleUris.add(f.toURI());
+                        }
+                    }
+                        
+                }
+                if (LOG.isDebugEnabled()) LOG.debug("Matching jdk.module.path {}", moduleUris);
+                containerPathNameMatcher.match(moduleUris);
+            }
+        }
+        
+        if (LOG.isDebugEnabled()) LOG.debug("Container paths selected:{}", context.getMetaData().getContainerResources());
+    }
+    
+    
+    /**
+     * Finds the jars that are either physically or virtually in
+     * WEB-INF/lib, and applies an optional filter to their full
+     * pathnames. 
+     * 
+     * The filter selects which jars will later be examined for META-INF
+     * information and annotations. If there is no pattern, then
+     * all jars are considered selected.
+     * 
+     * @param context the WebAppContext being deployed
+     * @throws Exception
+     */
+    public void findAndFilterWebAppPaths (WebAppContext context)
+    throws Exception
+    {
+        String tmp = (String)context.getAttribute(WEBINF_JAR_PATTERN);
+        Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
+        //Apply filter to WEB-INF/lib jars
+        WebAppPathNameMatcher matcher = new WebAppPathNameMatcher(context, webInfPattern);
+        
         List<Resource> jars = findJars(context);
 
         //Convert to uris for matching
-        URI[] uris = null;
         if (jars != null)
         {
-            uris = new URI[jars.size()];
+            List<URI> uris = new ArrayList<>();
             int i=0;
             for (Resource r: jars)
             {
-                uris[i++] = r.getURI();
+                uris.add(r.getURI());
             }
+            matcher.match(uris);
         }
-        webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match
-       
-        //No pattern to appy to classes, just add to metadata
-        context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
-
+    
 
     @Override
     public void configure(WebAppContext context) throws Exception

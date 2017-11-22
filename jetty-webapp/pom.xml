@@ -38,6 +38,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <useManifestOnlyJar>false</useManifestOnlyJar>
           <excludes>
             <exclude>org.eclipse.jetty.webapp.WebAppClassLoaderUrlStreamTest</exclude>
           </excludes>
@@ -70,4 +71,22 @@
       <optional>true</optional>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>jdk9</id>
+      <activation>
+        <jdk>[1.9,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>@{argLine} --module-path src/test/resources/mods</argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

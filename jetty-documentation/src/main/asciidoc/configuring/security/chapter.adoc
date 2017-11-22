@@ -17,10 +17,10 @@
 [[configuring-security]]
 == Configuring Security
 
-include::jetty-home-and-jetty-base.adoc[]
 include::authentication.adoc[]
 include::configuring-form-size.adoc[]
 include::serving-aliased-files.adoc[]
 include::secure-passwords.adoc[]
+include::setting-port80-access-for-non-root-user.adoc[]
 include::jaas-support.adoc[]
 include::spnego-support.adoc[]

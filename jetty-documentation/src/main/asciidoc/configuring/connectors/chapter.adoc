@@ -21,4 +21,4 @@ This chapter discusses various options for configuring Jetty connectors.
 
 include::configuring-connectors.adoc[]
 include::configuring-ssl.adoc[]
-include::setting-port80-access-for-non-root-user.adoc[]
+include::configuring-ssl-distribution.adoc[]
