@@ -130,7 +130,8 @@ public class EmbeddedCdiHandler extends ServletContextHandler
                     || (weldListener instanceof HttpSessionListener)
                     || (weldListener instanceof HttpSessionIdListener))
                 {
-                 getSessionHandler().addEventListener(weldListener);
+                 if (getSessionHandler() != null)
+                     getSessionHandler().addEventListener(weldListener);
                 }
         }
         finally
