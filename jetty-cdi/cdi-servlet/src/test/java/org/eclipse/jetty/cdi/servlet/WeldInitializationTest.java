@@ -67,6 +67,7 @@ public class WeldInitializationTest
         // Add some servlets
         context.addServlet(TimeServlet.class,"/time");
         context.addServlet(RequestInfoServlet.class,"/req-info");
+        context.addServlet(MySessionServlet.class,"/session");
 
         server.start();
 
@@ -117,5 +118,12 @@ public class WeldInitializationTest
             assertThat("Response", resp, containsString("parameters.size = [1]"));
             assertThat("Response", resp, containsString(" param[abc] = [123]"));
         }
+    }
+
+    @Test
+    public void testSessionScoped() throws Exception
+    {
+        HttpURLConnection http = (HttpURLConnection) serverHttpURI.resolve("session").toURL().openConnection();
+        assertThat("response code", http.getResponseCode(), is(200));
     }
 }
