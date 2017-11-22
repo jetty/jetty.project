@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.io;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -26,6 +29,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -54,6 +58,10 @@ abstract public class WriteFlusher
     private static final State __COMPLETING = new CompletingState();
     private final EndPoint _endPoint;
     private final AtomicReference<State> _state = new AtomicReference<>();
+    
+    private int _minDataRate;
+    private long _minDataRateTimeStamp;
+    private long _minDataRateBytes;
 
     static
     {
@@ -321,6 +329,12 @@ abstract public class WriteFlusher
         {
             buffers=flush(buffers);
 
+            if (insufficientDataRate())
+            {
+                callback.failed(new IOException("insufficient data rate <"+_minDataRate+"B/s"));
+                return;
+            }
+            
             // if we are incomplete?
             if (buffers!=null)
             {
@@ -382,7 +396,13 @@ abstract public class WriteFlusher
             ByteBuffer[] buffers = pending.getBuffers();
 
             buffers=flush(buffers);
-
+                
+            if (insufficientDataRate())
+            {
+                pending.fail(new IOException("insufficient data rate <"+_minDataRate+"B/s"));
+                return;
+            }
+                
             // if we are incomplete?
             if (buffers!=null)
             {
@@ -413,6 +433,36 @@ abstract public class WriteFlusher
         }
     }
 
+    private boolean insufficientDataRate()
+    {
+        if (_minDataRate<=0)
+            return false;
+        
+        long period = System.nanoTime() - _minDataRateTimeStamp;
+        
+        // Don't check the data rate until at least one idle timeout 
+        // period has elapsed.
+        if (period<_endPoint.getIdleTimeout())
+            return false;
+        
+        long minimum_data = _minDataRate * NANOSECONDS.toMillis(period) / SECONDS.toMillis(1);
+        if (_minDataRateBytes < minimum_data)
+        {
+            State state = _state.get();
+            switch(state.getType())
+            {
+                case COMPLETING:
+                case WRITING:
+                    return _state.compareAndSet(state,__IDLE);
+                    
+                default:
+                    return false;    
+            }            
+        }
+        
+        return false;
+    }
+    
     /**
      * Flushes the buffers iteratively until no progress is made.
      *
@@ -425,33 +475,49 @@ abstract public class WriteFlusher
         boolean progress=true;
         while(progress && buffers!=null)
         {
-            int before=buffers.length==0?0:buffers[0].remaining();
-            boolean flushed=_endPoint.flush(buffers);
-            int r=buffers.length==0?0:buffers[0].remaining();
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Flushed={} {}/{}+{} {}",flushed,before-r,before,buffers.length-1,this);
-
-            if (flushed)
-                return null;
-
-            progress=before!=r;
-
-            int not_empty=0;
-            while(r==0)
+            // How many bytes to flush
+            long before = 0;
+            for (int i=0;i<buffers.length;i++)
             {
-                if (++not_empty==buffers.length)
-                {
-                    buffers=null;
-                    not_empty=0;
-                    break;
-                }
-                progress=true;
-                r=buffers[not_empty].remaining();
+                before += buffers[i].remaining();
+            }
+            
+            // try flushing 
+            boolean flushed = _endPoint.flush(buffers);
+            
+            // if we flushed them all, we are done
+            if (flushed)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Flushed=true {}/{} {}",before,before,this);
+                if (_minDataRate>0)
+                    _minDataRateBytes+=before;
+                return null;
             }
 
+            // otherwise let's calculate how much progress (if any) was made
+            long after = 0;
+            int not_empty = -1;
+            for (int i=0;i<buffers.length;i++)
+            {
+                int remaining = buffers[i].remaining();
+                if (remaining>0)
+                {
+                    after += remaining;
+                    if (not_empty<0)
+                        not_empty=i;
+                }
+            }
+            progress=before!=after;
+            if (_minDataRate>0)
+                _minDataRateBytes+=before-after;
+            
+            // and compact the buffers array
             if (not_empty>0)
                 buffers=Arrays.copyOfRange(buffers,not_empty,buffers.length);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flushed=false {}/{} {}",before-after,before,buffers.length-1,this);
         }
 
         if (LOG.isDebugEnabled())
