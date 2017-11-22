@@ -1093,7 +1093,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         if (_last)
                             closed();
                         if (_channel.getState().onWritePossible())
-                            _channel.execute(_channel);
+                            _channel.handle();
                         break;
 
                     case CLOSED:
