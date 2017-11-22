@@ -29,6 +29,7 @@ import java.net.URI;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.JettyLogHandler;
@@ -55,7 +56,7 @@ public class WeldInitializationTest
         connector.setPort(0);
         server.addConnector(connector);
 
-        EmbeddedCdiHandler context = new EmbeddedCdiHandler();
+        EmbeddedCdiHandler context = new EmbeddedCdiHandler(ServletContextHandler.SESSIONS);
 
         File baseDir = MavenTestingUtils.getTestResourcesDir();
 

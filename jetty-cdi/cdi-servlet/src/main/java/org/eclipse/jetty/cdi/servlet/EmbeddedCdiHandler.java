@@ -23,6 +23,11 @@ import java.util.Collections;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSessionActivationListener;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionIdListener;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
@@ -119,6 +124,15 @@ public class EmbeddedCdiHandler extends ServletContextHandler
             
             // add the rest of the Weld Listeners
             ctx.addListener(weldListener);
+            if ((weldListener instanceof HttpSessionActivationListener)
+                    || (weldListener instanceof HttpSessionAttributeListener)
+                    || (weldListener instanceof HttpSessionBindingListener)
+                    || (weldListener instanceof HttpSessionListener)
+                    || (weldListener instanceof HttpSessionIdListener))
+                {
+                 if (getSessionHandler() != null)
+                     getSessionHandler().addEventListener(weldListener);
+                }
         }
         finally
         {

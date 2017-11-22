@@ -660,13 +660,10 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         int size = _beans.size();
         for (Collection<?> c : collections)
             size += c.size();
-        if (size == 0)
-            return;
         int i = 0;
         for (Bean b : _beans)
         {
-            i++;
-
+            ++i;
             switch(b._managed)
             {
                 case POJO:
@@ -697,12 +694,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     else
                         dumpObject(out, b._bean);
                     break;
-
             }
         }
-
-        if (i<size)
-            out.append(indent).append(" |\n");
 
         for (Collection<?> c : collections)
         {
@@ -710,7 +703,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             {
                 i++;
                 out.append(indent).append(" +> ");
-
                 if (o instanceof Dumpable)
                     ((Dumpable)o).dump(out, indent + (i == size ? "    " : " |  "));
                 else

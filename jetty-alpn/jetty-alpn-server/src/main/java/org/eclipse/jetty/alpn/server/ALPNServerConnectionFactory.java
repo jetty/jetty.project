@@ -104,6 +104,9 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
                 return connection;
             }
         }
-        throw new IllegalStateException("No ALPNProcessor for " + engine);
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("No ALPNProcessor: {} {}",engine,endPoint);
+        throw new IllegalStateException("Connection rejected: No ALPN Processor for " + engine.getClass().getName() + " from " + processors);
     }
 }

@@ -28,6 +28,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -40,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -227,28 +229,22 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     }
 
     @Override
-    public String dump()
-    {
-        super.dump();
-        return ContainerLifeCycle.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        super.dump(out, indent);
         Selector selector = _selector;
-        if (selector == null || !selector.isOpen())
-            dumpBeans(out, indent);
-        else
+        if (selector != null && selector.isOpen())
         {
-            final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
-            DumpKeys dumpKeys = new DumpKeys(dump);
+            List<Runnable> actions;
+            try (Locker.Lock lock = _locker.lock())
+            {
+                actions = new ArrayList<>(_actions);
+            }
+            List<Object> keys = new ArrayList<>(selector.keys().size());
+            DumpKeys dumpKeys = new DumpKeys(keys);
             submit(dumpKeys);
             dumpKeys.await(5, TimeUnit.SECONDS);
-            if (dump.isEmpty())
-                dumpBeans(out, indent);
-            else
-                dumpBeans(out, indent, dump);
+            dump(out, indent, Arrays.asList(new DumpableCollection("keys", keys), new DumpableCollection("actions", actions)));
         }
     }
 
@@ -512,7 +508,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     }
                     catch (Throwable x)
                     {
-                        _dumps.add(String.format("SelectionKey@%x[%s]", key.hashCode(), x));
+                        _dumps.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
                     }
                 }
             }
@@ -670,6 +666,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         protected void failed(Throwable failure)
         {
             closeNoExceptions(channel);
+            LOG.warn(String.valueOf(failure));
             LOG.debug(failure);
         }
     }

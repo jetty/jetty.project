@@ -29,8 +29,8 @@ The default distribution has a co-mingled `${jetty.home}` and `${jetty.base}` wh
 It is highly encouraged that you learn about the differences in link:#startup-base-and-home[Jetty Base vs Jetty Home] and take full advantage of this setup.
 ____
 
-Enabling a module is a simple process: simply add the `--add-to-start` syntax on the command line.
-Doing this will enable the module and any dependent modules.
+Enabling a module is a simple process: simply add the `--add-to-start=<module-name1>,<module-name2>,...etc.` syntax on the command line.
+Doing this will enable the specified module and any dependent modules.
 
 An example of this with a new, empty, base directory:
 
