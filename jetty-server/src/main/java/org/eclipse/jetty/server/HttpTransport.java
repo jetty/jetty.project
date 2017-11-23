@@ -76,4 +76,15 @@ public interface HttpTransport
      * @return True if direct buffers can be used optimally.
      */
     boolean isOptimizedForDirectBuffers();
+    
+    
+    /**
+     * Set the minimum data rate and start the time period over which
+     * the rate will be calculated. The rate applies to multiple write
+     * operations on this writeFlusher, until #resetMinDataRate() is called
+     * @param bytesPerSecond The minimum data rate in bytes per second
+     */
+    default void setMinDataRate(int bytesPerSecond) {}
+    
+    default public void resetMinDataRate() {}
 }

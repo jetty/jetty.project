@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -101,6 +100,26 @@ abstract public class WriteFlusher
         _endPoint = endPoint;
     }
 
+    /**
+     * Set the minimum data rate and start the time period over which
+     * the rate will be calculated. The rate applies to multiple write
+     * operations on this writeFlusher, until #resetMinDataRate() is called
+     * @param bytesPerSecond The minimum data rate in bytes per second
+     */
+    public void setMinDataRate(int bytesPerSecond)
+    {
+        _minDataRateBytes = 0;
+        _minDataRateTimeStamp = System.nanoTime();
+        _minDataRate = bytesPerSecond;
+    }
+    
+    public void resetMinDataRate()
+    {
+        _minDataRate = 0;
+        _minDataRateBytes = 0;
+        _minDataRateTimeStamp = 0;
+    }
+    
     private enum StateType
     {
         IDLE,

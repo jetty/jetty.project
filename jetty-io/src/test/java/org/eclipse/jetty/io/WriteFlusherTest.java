@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -474,6 +478,104 @@ public class WriteFlusherTest
         {
             content += endPoint.takeOutputString();
             return content;
+        }
+    }
+    
+    @Test
+    public void testOverMinDataRate() throws Exception
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 5);
+        endPoint.setIdleTimeout(1000);
+
+        AtomicBoolean incompleteFlush = new AtomicBoolean();
+        WriteFlusher flusher = new WriteFlusher(endPoint)
+        {
+            @Override
+            protected void onIncompleteFlush()
+            {
+                incompleteFlush.set(true);
+            }
+        };
+        
+        flusher.setMinDataRate(10);
+
+        for (int i=5;i-->0;)
+        {
+            FutureCallback callback = new FutureCallback();
+            flusher.write(callback, BufferUtil.toBuffer("0123456789ABCDE"));
+         
+            assertTrue(incompleteFlush.get());
+            assertThat(endPoint.takeOutputString(),Matchers.is("01234"));
+            
+            Thread.sleep(500);
+            incompleteFlush.set(false);
+            flusher.completeWrite();
+            assertTrue(incompleteFlush.get());
+            assertThat(endPoint.takeOutputString(),Matchers.is("56789"));
+
+            Thread.sleep(500);
+            incompleteFlush.set(false);
+            flusher.completeWrite();
+            assertFalse(incompleteFlush.get());
+            assertThat(endPoint.takeOutputString(),Matchers.is("ABCDE"));
+                        
+            callback.get();
+        }
+    }
+    
+
+    @Test
+    public void testUnderMinDataRate() throws Exception
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 2);
+        endPoint.setIdleTimeout(1000);
+
+        AtomicBoolean incompleteFlush = new AtomicBoolean();
+        WriteFlusher flusher = new WriteFlusher(endPoint)
+        {
+            @Override
+            protected void onIncompleteFlush()
+            {
+                incompleteFlush.set(true);
+            }
+        };
+        
+        flusher.setMinDataRate(10);
+
+        try
+        {
+            for (int i=5;i-->0;)
+            {
+                FutureCallback callback = new FutureCallback();
+                flusher.write(callback, BufferUtil.toBuffer("012345"));
+
+                assertTrue(incompleteFlush.get());
+                assertThat(endPoint.takeOutputString(),Matchers.is("01"));
+
+                Thread.sleep(500);
+                incompleteFlush.set(false);
+                flusher.completeWrite();
+                if (incompleteFlush.get())
+                {
+                    assertThat(endPoint.takeOutputString(),Matchers.is("23"));
+
+                    Thread.sleep(500);
+                    incompleteFlush.set(false);
+                    flusher.completeWrite();
+                    if (incompleteFlush.get())
+                    {
+                        assertThat(endPoint.takeOutputString(),Matchers.is("45"));
+                    }
+                }
+
+                callback.get();
+            }
+            Assert.fail();
+        }
+        catch(ExecutionException ee)
+        {
+            assertTrue(ee.getCause() instanceof IOException);
+            assertThat(ee.getCause().getMessage(),Matchers.containsString("insufficient data rate"));
         }
     }
 }

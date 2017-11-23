@@ -470,12 +470,6 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        protected WriteFlusher getWriteFlusher()
-        {
-            return super.getWriteFlusher();
-        }
-
-        @Override
         protected void onIncompleteFlush()
         {
             // This means that the decrypted endpoint write method was called and not
