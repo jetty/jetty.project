@@ -18,11 +18,12 @@
 === SSL in the Jetty Distribution
 
 When making use of the Jetty Distribution, enabling SSL support is as easy as activating the appropriate module.
-Jetty provides support for both the native https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html[JSSE] and https://github.com/google/conscrypt/[Conscrypt] SSL implementations.
+Jetty supports both the default https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html[JSSE]
+provider and the https://github.com/google/conscrypt/[Conscrypt] provider as SSL implementations.
 
-==== Native SSL Configuration
+==== Default JSSE SSL Configuration
 
-For native support, simply activate the `ssl` link:#startup-modules[module:]
+For the default SSL support, simply activate the `ssl` link:#startup-modules[module]:
 
 [source, plain, subs="{sub-order}"]
 ----
@@ -58,7 +59,7 @@ jetty.sslContext.keyStorePassword::
 [[jetty-conscrypt-distribution]]
 ==== Conscrypt SSL Configuration
 
-Enabling Conscrypt SSL is just as easy as native SSL - enable both the `conscrypt` and `ssl` link:#startup-modules[modules:]
+Enabling Conscrypt SSL is just as easy as default SSL - enable both the `conscrypt` and `ssl` link:#startup-modules[modules]:
 
 [source, plain, subs="{sub-order}"]
 ----
@@ -80,7 +81,7 @@ INFO  : server          transitively enabled, ini template available with --add-
 INFO  : conscrypt       initialized in ${jetty.base}/start.d/conscrypt.ini
 INFO  : ssl             initialized in ${jetty.base}/start.d/ssl.ini
 MKDIR : ${jetty.base}/lib/conscrypt
-DOWNLD: http://central.maven.org/maven2/org/conscrypt/conscrypt-openjdk-uber/1.0.0.RC9/conscrypt-openjdk-uber-1.0.0.RC9.jar to ${jetty.base}/lib/conscrypt/conscrypt-uber-1.0.0.RC9.jar
+DOWNLD: http://central.maven.org/maven2/org/conscrypt/conscrypt-openjdk-uber/1.0.0.RC11/conscrypt-openjdk-uber-1.0.0.RC11.jar to ${jetty.base}/lib/conscrypt/conscrypt-uber-1.0.0.RC11.jar
 MKDIR : ${jetty.base}/etc
 COPY  : ${jetty.home}/modules/conscrypt/conscrypt.xml to ${jetty.base}/etc/conscrypt.xml
 COPY  : ${jetty.home}/modules/ssl/keystore to ${jetty.base}/etc/keystore
@@ -90,10 +91,10 @@ INFO  : Base directory was modified
 No additional Conscrypt configuration is needed.
 SSL-specific parameters, like `keyStorePath` and `keyStorePassword` can still configured as in the example above, making use of the `${JETTY_BASE}/start.d/ssl.ini` file.
 
-[[two-way-authentication]]
-==== Two Way Authentication
+[[client-certificate-authentication]]
+==== Client Certificate Authentication
 
-To enable two-way authentication in the Jetty Distribution, you need to enable the both the `ssl` and `https` modules.
+To enable client certificate authentication in the Jetty Distribution, you need to enable the both the `ssl` and `https` modules.
 
 [source, plain, subs="{sub-order}"]
 ----
@@ -110,12 +111,11 @@ $ java -jar /path/to/jetty-dist/start.jar --add-to-startd=ssl,https
 jetty.ssl.host=0.0.0.0
 jetty.ssl.port=8583
 jetty.sslContext.keyStorePath=etc/keystore
-jetty.sslContext.trustStorePath=etc/keystore
+jetty.sslContext.trustStorePath=etc/truststore
 jetty.sslContext.keyStorePassword=OBF:
 jetty.sslContext.keyManagerPassword=OBF:
 jetty.sslContext.trustStorePassword=OBF:
-jetty.sslContext.trustStoreType=JKS
-# enable two way authentication
+# Enable client certificate authentication.
 jetty.sslContext.needClientAuth=true
 ----
 
