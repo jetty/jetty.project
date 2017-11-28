@@ -305,7 +305,7 @@ link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-https.xml[`jetty-http
 link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty-http-forwarded.xml[`jetty-http-forwarded.xml`]::
   Adds a link:{JDURL}/org/eclipse/jetty/server/ForwardedRequestCustomizer.html[`ForwardedRequestCustomizer`]to the HTTP Connector to process forwarded-for style headers from a proxy.
 link:{GITBROWSEURL}/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml[`jetty-http2.xml`]::
-  Adds a link:{JDURL}/org/eclipse/jetty/http2/server/HTTP2ServerConnectionFactory.html[`Http2ServerConnectionFactory`] to the  link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] configured by `jetty-ssl.xml` to support the http2 protocol. Also prepends either `protonego-alpn.xml` or `protonego-npn.xml` so that the next protocol can be negotiated, which allows the same SSL port to handle multiple protocols.
+  Adds a link:{JDURL}/org/eclipse/jetty/http2/server/HTTP2ServerConnectionFactory.html[`Http2ServerConnectionFactory`] to the  link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] configured by `jetty-ssl.xml` to support the http2 protocol. 
 link:{GITBROWSEURL}/jetty-alpn/jetty-alpn-server/src/main/config/etc/jetty-alpn.xml[`jetty-alpn.xml`]::
   Adds an link:{JDURL}/org/eclipse/jetty/alpn/server/ALPNServerConnectionFactory.html[`ALPNServerConnectionFactory`] to the link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] configured by `jetty-ssl.xml` which allows the one SSL connector to support multiple protocols with the ALPN extension used to select the protocol to be used for each connection.
 
