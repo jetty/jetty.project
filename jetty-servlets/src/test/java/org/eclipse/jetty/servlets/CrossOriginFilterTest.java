@@ -19,9 +19,11 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -565,6 +567,25 @@ public class CrossOriginFilterTest
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
 
+    
+    @Test
+    public void testPatternize()
+    {
+        Pattern p = CrossOriginFilter.patternize(Arrays.asList("GET", "POST", "   "));
+        Assert.assertTrue (CrossOriginFilter.isMethodAllowed(p, "GET"));
+        Assert.assertTrue (CrossOriginFilter.isMethodAllowed(p, "POST"));
+        Assert.assertFalse(CrossOriginFilter.isMethodAllowed(p, "PUT"));
+        Assert.assertFalse(CrossOriginFilter.isMethodAllowed(p, "GETA"));
+        Assert.assertFalse(CrossOriginFilter.isMethodAllowed(p, "AGET"));
+        Assert.assertFalse(CrossOriginFilter.isMethodAllowed(p, ""));
+        
+        
+        p = CrossOriginFilter.patternize(Arrays.asList("  ", "   "));
+        Assert.assertNull(p);
+        Assert.assertFalse(CrossOriginFilter.isMethodAllowed(p, "AGET"));
+        Assert.assertFalse(CrossOriginFilter.isMethodAllowed(p, ""));
+    }
+    
     public static class ResourceServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
