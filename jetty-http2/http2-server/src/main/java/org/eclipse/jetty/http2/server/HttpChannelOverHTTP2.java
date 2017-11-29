@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
