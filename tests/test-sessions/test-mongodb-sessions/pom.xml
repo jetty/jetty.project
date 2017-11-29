@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.8-SNAPSHOT</version>
+    <version>9.4.9-SNAPSHOT</version>
   </parent>
   <artifactId>test-mongodb-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Mongo</name>

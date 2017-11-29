@@ -749,13 +749,16 @@ public class ConstraintTest
 
         response = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
         Assert.assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertThat(response, Matchers.not(Matchers.containsString("JSESSIONID=")));
 
         response = _connector.getResponse("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
         Assert.assertThat(response, Matchers.startsWith("HTTP/1.1 403 Forbidden"));
+        Assert.assertThat(response, Matchers.not(Matchers.containsString("JSESSIONID=")));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
         Assert.assertThat(response, Matchers.containsString(" 302 Found"));
         Assert.assertThat(response, Matchers.containsString("/ctx/testLoginPage"));
+        Assert.assertThat(response, Matchers.containsString("JSESSIONID="));
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n"+
@@ -763,6 +766,7 @@ public class ConstraintTest
                 "\r\n");
         Assert.assertThat(response, Matchers.containsString(" 200 OK"));
         Assert.assertThat(response, Matchers.containsString("URI=/ctx/testLoginPage"));
+        Assert.assertThat(response, Matchers.not(Matchers.containsString("JSESSIONID=" + session)));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -771,6 +775,7 @@ public class ConstraintTest
                 "\r\n" +
                 "j_username=user&j_password=wrong");
         Assert.assertThat(response, Matchers.containsString("Location"));
+        Assert.assertThat(response, Matchers.not(Matchers.containsString("JSESSIONID=" + session)));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -781,18 +786,22 @@ public class ConstraintTest
         Assert.assertThat(response, Matchers.startsWith("HTTP/1.1 302 "));
         Assert.assertThat(response, Matchers.containsString("Location"));
         Assert.assertThat(response, Matchers.containsString("/ctx/auth/info"));
+        Assert.assertThat(response, Matchers.containsString("JSESSIONID="));
+        Assert.assertThat(response, Matchers.not(Matchers.containsString("JSESSIONID=" + session)));
         session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         Assert.assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertThat(response, Matchers.containsString("JSESSIONID=" + session));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         Assert.assertThat(response, Matchers.startsWith("HTTP/1.1 403"));
         Assert.assertThat(response, Matchers.containsString("!role"));
+        Assert.assertThat(response, Matchers.not(Matchers.containsString("JSESSIONID=" + session)));
     }
 
     @Test
