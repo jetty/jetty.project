@@ -1075,6 +1075,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
         protected void onCompleteSuccess()
         {
             while (true)
