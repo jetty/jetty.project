@@ -94,42 +94,32 @@ public class ServletContextHandlerTest
         }
     }
     
-    public static class MySessionListener implements HttpSessionAttributeListener, HttpSessionListener
+    public static class MyTestSessionListener implements HttpSessionAttributeListener, HttpSessionListener
     {
 
         @Override
         public void sessionCreated(HttpSessionEvent se)
         {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void attributeAdded(HttpSessionBindingEvent event)
         {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void attributeRemoved(HttpSessionBindingEvent event)
         {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void attributeReplaced(HttpSessionBindingEvent event)
-        {
-            // TODO Auto-generated method stub
-            
+        {            
         }
         
     }
@@ -163,7 +153,7 @@ public class ServletContextHandlerTest
         root.setSessionHandler(sessions);
         assertNotNull(sessions);
         
-        root.addEventListener(new MySessionListener());
+        root.addEventListener(new MyTestSessionListener());
         sessions.checkSessionAttributeListeners(1);
         sessions.checkSessionIdListeners(0);
         sessions.checkSessionListeners(1);
