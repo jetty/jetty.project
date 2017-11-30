@@ -65,7 +65,8 @@ public class HttpConfiguration
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
-    private long _minRequestDataRate;
+    private int _minRequestDataRate;
+    private int _minResponseDataRate;
     private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
 
@@ -127,6 +128,7 @@ public class HttpConfiguration
         _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
         _maxErrorDispatches=config._maxErrorDispatches;
         _minRequestDataRate=config._minRequestDataRate;
+        _minResponseDataRate=config._minResponseDataRate;
         _cookieCompliance=config._cookieCompliance;
         _notifyRemoteAsyncErrors=config._notifyRemoteAsyncErrors;
     }
@@ -481,20 +483,37 @@ public class HttpConfiguration
     }
 
     /**
-     * @return The minimum request data rate in bytes per second; or &lt;=0 for no limit
+     * @return The minimum request data rate in bytes per second; or &lt;=0 for no limit (default)
      */
     @ManagedAttribute("The minimum request content data rate in bytes per second")
-    public long getMinRequestDataRate()
+    public int getMinRequestDataRate()
     {
         return _minRequestDataRate;
     }
 
     /**
-     * @param bytesPerSecond The minimum request data rate in bytes per second; or &lt;=0 for no limit
+     * @param bytesPerSecond The minimum request data rate in bytes per second; or &lt;=0 for no limit (default)
      */
-    public void setMinRequestDataRate(long bytesPerSecond)
+    public void setMinRequestDataRate(int bytesPerSecond)
     {
         _minRequestDataRate=bytesPerSecond;
+    }
+    
+    /**
+     * @return The minimum response data rate in bytes per second; or &lt;=0 for no limit (default)
+     */
+    @ManagedAttribute("The minimum response content data rate in bytes per second")
+    public int getMinResponseDataRate()
+    {
+        return _minResponseDataRate;
+    }
+
+    /**
+     * @param bytesPerSecond The minimum response data rate in bytes per second; or &lt;=0 for no limit (default)
+     */
+    public void setMinResponseDataRate(int bytesPerSecond)
+    {
+        _minResponseDataRate=bytesPerSecond;
     }
     
     public CookieCompliance getCookieCompliance()

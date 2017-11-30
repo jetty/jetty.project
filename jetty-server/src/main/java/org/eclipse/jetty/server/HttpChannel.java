@@ -272,6 +272,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written=0;
         _trailers=null;
         _oldIdleTimeout=0;
+        _transport.resetMinDataRate();
     }
 
     public void onAsyncWaitForContent()
@@ -773,6 +774,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback, content, complete);
 
             notifyResponseBegin(_request);
+            _transport.setMinDataRate(getHttpConfiguration().getMinResponseDataRate());
 
             // committing write
             _transport.send(info, _request.isHead(), content, complete, committed);

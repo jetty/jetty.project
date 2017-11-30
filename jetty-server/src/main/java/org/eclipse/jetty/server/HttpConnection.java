@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -181,6 +182,26 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public long getMessagesOut()
     {
         return getHttpChannel().getRequests();
+    }
+
+    @Override
+    public void setMinDataRate(int bytesPerSecond)
+    {
+        EndPoint endp = getEndPoint();
+        if (endp instanceof AbstractEndPoint)
+            ((AbstractEndPoint)endp).getWriteFlusher().setMinDataRate(bytesPerSecond);
+        else
+            LOG.warn("minDataRate not supported by "+endp);
+    }
+
+    @Override
+    public void resetMinDataRate()
+    {
+        EndPoint endp = getEndPoint();
+        if (endp instanceof AbstractEndPoint)
+            ((AbstractEndPoint)endp).getWriteFlusher().resetMinDataRate();
+        else
+            LOG.warn("minDataRate not supported by "+endp);
     }
 
     @Override
