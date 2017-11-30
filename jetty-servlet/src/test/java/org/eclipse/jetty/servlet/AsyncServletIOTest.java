@@ -22,7 +22,6 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -41,6 +40,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -77,14 +79,19 @@ public class AsyncServletIOTest
     protected AsyncIOServlet2 _servlet2=new AsyncIOServlet2();
     protected AsyncIOServlet3 _servlet3=new AsyncIOServlet3();
     protected AsyncIOServlet4 _servlet4=new AsyncIOServlet4();
+    protected StolenAsyncReadServlet _servletStolenAsyncRead=new StolenAsyncReadServlet();
     protected int _port;
-    protected Server _server = new Server();
+    protected WrappingQTP _wQTP;
+    protected Server _server;
     protected ServletHandler _servletHandler;
     protected ServerConnector _connector;
 
     @Before
     public void setUp() throws Exception
     {
+        _wQTP = new WrappingQTP();
+        _server = new Server(_wQTP);
+        
         HttpConfiguration http_config = new HttpConfiguration();
         http_config.setOutputBufferSize(4096);
         _connector = new ServerConnector(_server,new HttpConnectionFactory(http_config));
@@ -113,9 +120,13 @@ public class AsyncServletIOTest
         holder4.setAsyncSupported(true);
         _servletHandler.addServletWithMapping(holder4,"/path4/*");
         
+        ServletHolder holder5=new ServletHolder(_servletStolenAsyncRead);
+        holder5.setAsyncSupported(true);
+        _servletHandler.addServletWithMapping(holder5,"/stolen/*");
+        
         _server.start();
         _port=_connector.getLocalPort();
-
+        
         _owp.set(0);
         _oda.set(0);
         _read.set(0);
@@ -787,5 +798,187 @@ public class AsyncServletIOTest
         }
     }
     
+
+    @Test
+    public void testStolenAsyncRead() throws Exception
+    {
+        StringBuilder request = new StringBuilder(512);
+        request.append("POST /ctx/stolen/info HTTP/1.1\r\n")
+        .append("Host: localhost\r\n")
+        .append("Content-Type: text/plain\r\n")
+        .append("Content-Length: 2\r\n")
+        .append("\r\n")
+        .append("1");
+        int port=_port;
+        List<String> list = new ArrayList<>();
+        try (Socket socket = new Socket("localhost",port))
+        {
+            socket.setSoTimeout(10000);
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes(ISO_8859_1));
+            out.flush();
+            
+            // wait until server is ready
+            _servletStolenAsyncRead.ready.await();
+            final CountDownLatch wait = new CountDownLatch(1);
+            
+            // Stop any dispatches until we want them
+            Function<Runnable,Runnable> old = _wQTP.wrapper.getAndSet(r->
+            { 
+                return new Runnable()
+                {
+                    public void run() {
+                        try
+                        {
+                            wait.await();
+                            r.run();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                };
+            });
+
+            // We are an unrelated thread, let's mess with the input stream
+            ServletInputStream sin = _servletStolenAsyncRead.listener.in;
+            sin.setReadListener(_servletStolenAsyncRead.listener);
+            // thread should be dispatched to handle, but held by our wQTP wait.
+            
+            // Let's steal our read
+            Assert.assertTrue(sin.isReady());
+            Assert.assertThat(sin.read(),Matchers.is((int)'1'));
+            Assert.assertFalse(sin.isReady());
+            
+            // let the ODA call go
+            wait.countDown();
+            _wQTP.wrapper.set(old);
+            
+            // ODA should not be called
+            Assert.assertFalse(_servletStolenAsyncRead.oda.await(500,TimeUnit.MILLISECONDS));
+
+            // Send some more data
+            out.write((int)'2');
+            out.flush();
+
+            // ODA should now be called!!
+            Assert.assertTrue(_servletStolenAsyncRead.oda.await(500,TimeUnit.MILLISECONDS));
+            
+            // We can not read some more
+            Assert.assertTrue(sin.isReady());
+            Assert.assertThat(sin.read(),Matchers.is((int)'2'));
+
+            // read EOF
+            Assert.assertTrue(sin.isReady());
+            Assert.assertThat(sin.read(),Matchers.is(-1));
+            
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            
+            // response line
+            String line = in.readLine();
+            LOG.debug("response-line: "+line);
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
+            
+            // Skip headers
+            while (line!=null)
+            {
+                line = in.readLine();
+                LOG.debug("header-line: "+line);
+                if (line.length()==0)
+                    break;
+            }
+            
+        }
+
+        assertTrue(_servletStolenAsyncRead.completed.await(5, TimeUnit.SECONDS));     
+    }
+
+    @SuppressWarnings("serial")
+    public class StolenAsyncReadServlet extends HttpServlet
+    {
+        public CountDownLatch ready = new CountDownLatch(1);
+        public CountDownLatch oda = new CountDownLatch(1);
+        public CountDownLatch completed = new CountDownLatch(1);
+        public volatile StealingListener listener;
+        
+        @Override
+        public void doPost(final HttpServletRequest request, final HttpServletResponse response) throws IOException
+        {
+            listener = new StealingListener(request,response);
+            ready.countDown();
+        }
+
+        public class StealingListener implements ReadListener, AsyncListener
+        {
+            final HttpServletRequest request;
+            final ServletInputStream in;
+            final AsyncContext asyncContext;
+
+            StealingListener(HttpServletRequest request,HttpServletResponse response) throws IOException
+            {
+                asyncContext = request.startAsync();
+                asyncContext.setTimeout(10000L);
+                asyncContext.addListener(this);
+                this.request=request;
+                in = request.getInputStream();
+            }
+
+
+            @Override
+            public void onDataAvailable() throws IOException
+            {
+                oda.countDown();
+            }
+
+            @Override
+            public void onAllDataRead() throws IOException
+            {
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onError(final Throwable t)
+            {
+                t.printStackTrace();
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onComplete(final AsyncEvent event) throws IOException
+            {
+                completed.countDown();
+            }
+
+            @Override
+            public void onTimeout(final AsyncEvent event) throws IOException
+            {
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onError(final AsyncEvent event) throws IOException
+            {
+                asyncContext.complete();
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+
+            }
+        }
+    }
     
+    
+    private class WrappingQTP extends QueuedThreadPool
+    {
+        AtomicReference<Function<Runnable,Runnable>> wrapper = new AtomicReference<Function<Runnable,Runnable>>(r->{return r;});
+        
+        @Override
+        public void execute(Runnable job)
+        {
+            super.execute(wrapper.get().apply(job));
+        }
+    }
 }
