@@ -230,7 +230,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     protected void write(ByteBuffer content, boolean complete, Callback callback)
     {
         if (_firstByteTimeStamp == -1)
-            _firstByteTimeStamp = System.nanoTime();
+        {
+            long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
+            if (minDataRate > 0)
+                _firstByteTimeStamp = System.nanoTime();
+            else
+                _firstByteTimeStamp = Long.MAX_VALUE;
+        }
         _interceptor.write(content, complete, callback);
     }
 
@@ -908,13 +914,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _commitSize = size;
     }
 
+    /**
+     * <p>Invoked when bytes have been flushed to the network.</p>
+     * <p>The number of flushed bytes may be different from the bytes written
+     * by the application if an {@link Interceptor} changed them, for example
+     * by compressing them.</p>
+     *
+     * @param bytes the number of bytes flushed
+     * @throws IOException if the minimum data rate, when set, is not respected
+     * @see org.eclipse.jetty.io.WriteFlusher.Listener
+     */
     public void onFlushed(long bytes) throws IOException
     {
-        if (_firstByteTimeStamp == -1)
+        if (_firstByteTimeStamp == -1 || _firstByteTimeStamp == Long.MAX_VALUE)
             return;
         long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
-        if (minDataRate <= 0)
-            return;
         _flushed += bytes;
         long elapsed = System.nanoTime() - _firstByteTimeStamp;
         long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);

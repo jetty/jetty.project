@@ -169,7 +169,7 @@ public class HTTP2Flusher extends IteratingCallback
             {
                 if (entry.generate(lease))
                 {
-                    if (entry.getDataBytesLeft() > 0)
+                    if (entry.getDataBytesRemaining() > 0)
                         entries.offer(entry);
                 }
                 else
@@ -203,13 +203,15 @@ public class HTTP2Flusher extends IteratingCallback
 
     void onFlushed(long bytes) throws IOException
     {
+        // For the given flushed bytes, we want to only
+        // forward those that belong to data frame content.
         for (Entry entry : actives)
         {
-            int frameBytesLeft = entry.getFrameBytesLeft();
+            int frameBytesLeft = entry.getFrameBytesRemaining();
             if (frameBytesLeft > 0)
             {
                 int update = (int)Math.min(bytes, frameBytesLeft);
-                entry.updateFrameBytes(-update);
+                entry.onFrameBytesFlushed(update);
                 bytes -= update;
                 IStream stream = entry.stream;
                 if (stream != null && !entry.isControl())
@@ -251,13 +253,13 @@ public class HTTP2Flusher extends IteratingCallback
             for (int i = index; i < actives.size(); ++i)
             {
                 Entry entry = actives.get(i);
-                if (entry.getDataBytesLeft() > 0)
+                if (entry.getDataBytesRemaining() > 0)
                     append(entry);
             }
             for (int i = 0; i < index; ++i)
             {
                 Entry entry = actives.get(i);
-                if (entry.getDataBytesLeft() > 0)
+                if (entry.getDataBytesRemaining() > 0)
                     append(entry);
             }
             stalled = null;
@@ -329,11 +331,11 @@ public class HTTP2Flusher extends IteratingCallback
             this.stream = stream;
         }
 
-        public abstract int getFrameBytesLeft();
+        public abstract int getFrameBytesRemaining();
 
-        public abstract void updateFrameBytes(int update);
+        public abstract void onFrameBytesFlushed(int bytesFlushed);
 
-        public int getDataBytesLeft()
+        public int getDataBytesRemaining()
         {
             return 0;
         }

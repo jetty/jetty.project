@@ -563,8 +563,25 @@ abstract public class WriteFlusher
         return String.format("WriteFlusher@%x{%s}->%s", hashCode(), s, s instanceof PendingState ? ((PendingState)s).getCallback() : null);
     }
 
+    /**
+     * <p>A listener of {@link WriteFlusher} events.</p>
+     */
     public interface Listener
     {
+        /**
+         * <p>Invoked when a {@link WriteFlusher} flushed bytes in a non-blocking way,
+         * as part of a - possibly larger - write.</p>
+         * <p>This method may be invoked multiple times, for example when writing a large
+         * buffer: a first flush of bytes, then the connection became TCP congested, and
+         * a subsequent flush of bytes when the connection became writable again.</p>
+         * <p>This method is never invoked concurrently, but may be invoked by different
+         * threads, so implementations may not rely on thread-local variables.</p>
+         * <p>Implementations may throw an {@link IOException} to signal that the write
+         * should fail, for example if the implementation enforces a minimum data rate.</p>
+         *
+         * @param bytes the number of bytes flushed
+         * @throws IOException if the write should fail
+         */
         void onFlushed(long bytes) throws IOException;
     }
 }

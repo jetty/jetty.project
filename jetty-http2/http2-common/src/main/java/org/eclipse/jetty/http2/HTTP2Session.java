@@ -1146,15 +1146,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         @Override
-        public int getFrameBytesLeft()
+        public int getFrameBytesRemaining()
         {
             return frameBytes;
         }
 
         @Override
-        public void updateFrameBytes(int update)
+        public void onFrameBytesFlushed(int bytesFlushed)
         {
-            frameBytes += update;
+            frameBytes -= bytesFlushed;
         }
 
         protected boolean generate(ByteBufferPool.Lease lease)
@@ -1273,26 +1273,26 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         @Override
-        public int getFrameBytesLeft()
+        public int getFrameBytesRemaining()
         {
             return frameBytes;
         }
 
         @Override
-        public void updateFrameBytes(int update)
+        public void onFrameBytesFlushed(int bytesFlushed)
         {
-            frameBytes += update;
+            frameBytes -= bytesFlushed;
         }
 
         @Override
-        public int getDataBytesLeft()
+        public int getDataBytesRemaining()
         {
             return dataBytes;
         }
 
         protected boolean generate(ByteBufferPool.Lease lease)
         {
-            int dataBytes = getDataBytesLeft();
+            int dataBytes = getDataBytesRemaining();
 
             int sessionSendWindow = getSendWindow();
             int streamSendWindow = stream.updateSendWindow(0);
@@ -1324,7 +1324,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
             // Do we have more to send ?
             DataFrame dataFrame = (DataFrame)frame;
-            if (getDataBytesLeft() == 0)
+            if (getDataBytesRemaining() == 0)
             {
                 // Only now we can update the close state
                 // and eventually remove the stream.

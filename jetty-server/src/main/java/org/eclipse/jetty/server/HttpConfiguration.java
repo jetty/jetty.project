@@ -509,6 +509,11 @@ public class HttpConfiguration
     }
 
     /**
+     * <p>Sets an minimum response content data rate.</p>
+     * <p>The value is enforced only approximately - not precisely - due to the fact that
+     * for efficiency reasons buffer writes may be comprised of both response headers and
+     * response content.</p>
+     *
      * @param bytesPerSecond The minimum response data rate in bytes per second; or &lt;=0 for no limit
      */
     public void setMinResponseDataRate(long bytesPerSecond)
