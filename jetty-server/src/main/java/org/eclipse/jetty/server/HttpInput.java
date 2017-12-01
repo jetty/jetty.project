@@ -282,7 +282,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 {
                     long minimum_data = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
                     if (_contentArrived < minimum_data)
-                        throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request data rate < %d B/s",minRequestDataRate));
+                        throw new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,String.format("Request content data rate < %d B/s",minRequestDataRate));
                 }
             }
 
