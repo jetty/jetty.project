@@ -202,6 +202,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _endPoint.setIdleTimeout(timeoutMs);
     }
+    
+    public long getBlockingTimeout()
+    {
+        // TODO remove this logic in Jetty-10
+        long blocking = getHttpConfiguration().getBlockingTimeout();
+        if (blocking==0)
+        {
+            long idle = getIdleTimeout();
+            if (idle>0)
+                return idle + 1000;
+        }
+        return blocking;
+    }
 
     public ByteBufferPool getByteBufferPool()
     {

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -132,13 +134,14 @@ public class HttpInput extends ServletInputStream implements Runnable
     private long _firstByteTimeStamp = -1;
     private long _contentArrived;
     private long _contentConsumed;
-    private long _blockUntil;
+    private long _blockingTimeoutBudget;
     private boolean _waitingForContent;
     private Interceptor _interceptor;
 
     public HttpInput(HttpChannelState state)
     {
         _channelState = state;
+        _blockingTimeoutBudget = _channelState.getHttpChannel().getBlockingTimeout();
     }
 
     protected HttpChannelState getHttpChannelState()
@@ -164,7 +167,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             _contentArrived = 0;
             _contentConsumed = 0;
             _firstByteTimeStamp = -1;
-            _blockUntil = 0;
+            _blockingTimeoutBudget = _channelState.getHttpChannel().getBlockingTimeout();
             _waitingForContent = false;
             if (_interceptor instanceof Destroyable)
                 ((Destroyable)_interceptor).destroy();
@@ -241,11 +244,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         executor.execute(channel);
     }
 
-    private long getBlockingTimeout()
-    {
-        return getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
-    }
-
     @Override
     public int read() throws IOException
     {
@@ -262,17 +260,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         int l;
         synchronized (_inputQ)
         {
-            if (!isAsync())
-            {
-                // Setup blocking only if not async
-                if (_blockUntil == 0)
-                {
-                    long blockingTimeout = getBlockingTimeout();
-                    if (blockingTimeout > 0)
-                        _blockUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(blockingTimeout);
-                }
-            }
-
             // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
@@ -286,32 +273,56 @@ public class HttpInput extends ServletInputStream implements Runnable
                 }
             }
 
+            long timeout = isAsync()?-1:getHttpChannelState().getHttpChannel().getBlockingTimeout();
+
             // Consume content looking for bytes to read
             while (true)
             {
-                Content item = nextContent();
-                if (item != null)
+                long start = timeout>0?System.nanoTime():0;
+                
+                try
                 {
-                    l = get(item,b,off,len);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} read {} from {}",this,l,item);
+                    Content item = nextContent();
+                    if (item != null)
+                    {
+                        l = get(item,b,off,len);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} read {} from {}",this,l,item);
 
-                    // Consume any following poison pills
-                    if (item.isEmpty())
-                        nextInterceptedContent();
-                    break;
-                }
-
-                // No content, so should we block?
-                if (!_state.blockForContent(this))
-                {
-                    // Not blocking, so what should we return?
-                    l = _state.noContent();
+                        // Consume any following poison pills
+                        if (item.isEmpty())
+                            nextInterceptedContent();
+                        break;
+                    }
                     
-                    if (l<0)
-                        // If EOF do we need to wake for allDataRead callback?
-                        wake = _channelState.onReadEof();
-                    break;
+                    // Update and check the budget before blocking
+                    if (timeout>0)
+                    {
+                        _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start));
+                        start = System.nanoTime();
+                        if (_blockingTimeoutBudget==0)
+                        {
+                            TimeoutException expired = new TimeoutException("Blocking input timeout: "+timeout+"ms");
+                            _channelState.getHttpChannel().onBlockWaitForContentFailure(expired);
+                            return _state.noContent();
+                        }
+                    }
+                    
+                    // No content, so should we block?
+                    if (!_state.blockForContent(this))
+                    {
+                        // Not blocking, so what should we return?
+                        l = _state.noContent();                        
+                        if (l<0)
+                            // If EOF do we need to wake for allDataRead callback?
+                            wake = _channelState.onReadEof();
+                        break;
+                    }
+                }
+                finally
+                {
+                    if (timeout>0)
+                        _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-start));
                 }
             }
         }
@@ -535,37 +546,20 @@ public class HttpInput extends ServletInputStream implements Runnable
      * @throws IOException if the wait is interrupted
      */
     protected void blockForContent() throws IOException
-    {
+    {   
         try
         {
             _waitingForContent = true;
             _channelState.getHttpChannel().onBlockWaitForContent();
-
-            boolean loop = false;
-            long timeout = 0;
-            while (true)
-            {
-                if (_blockUntil != 0)
-                {
-                    timeout = TimeUnit.NANOSECONDS.toMillis(_blockUntil - System.nanoTime());
-                    if (timeout <= 0)
-                        throw new TimeoutException(String.format("Blocking timeout %d ms", getBlockingTimeout()));
-                }
-
-                // This method is called from a loop, so we just
-                // need to check the timeout before and after waiting.
-                if (loop)
-                    break;
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} blocking for content timeout={}", this, timeout);
-                if (timeout > 0)
-                    _inputQ.wait(timeout);
-                else
-                    _inputQ.wait();
-
-                loop = true;
-            }
+            
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} blocking for content timeout={}/{}", this, _blockingTimeoutBudget,getHttpChannelState().getHttpChannel().getBlockingTimeout());
+            
+            // looping for spurious timeouts is handled externally to this method
+            if (_blockingTimeoutBudget > 0)
+                _inputQ.wait(_blockingTimeoutBudget);
+            else
+                _inputQ.wait();
         }
         catch (Throwable x)
         {

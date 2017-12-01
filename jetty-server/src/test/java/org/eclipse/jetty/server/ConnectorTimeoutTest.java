@@ -30,8 +30,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLException;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -430,15 +432,17 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     }
     
-    @Test(timeout=60000)
-    @Ignore // TODO make more stable
+    @Test
     public void testBlockingTimeoutRead() throws Exception
     {
-        _httpConfiguration.setBlockingTimeout(750L);
+        long blockingTimeout = 750L;
+        int soTimeout = 10000;
+        _httpConfiguration.setBlockingTimeout(blockingTimeout);
         
-        configureServer(new EchoHandler());
+        ReadForeverHandler handler = new ReadForeverHandler();
+        configureServer(handler);
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
+        client.setSoTimeout(soTimeout);
         InputStream is=client.getInputStream();
         Assert.assertFalse(client.isClosed());
 
@@ -455,7 +459,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         os.flush();
 
         long start = System.currentTimeMillis();
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
             Thread.sleep(300);
             os.write("1".getBytes("utf-8"));
@@ -474,24 +478,28 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             os.write("0\r\n".getBytes("utf-8"));
             os.write("\r\n".getBytes("utf-8"));
             os.flush();   
+            Assert.fail();
         }
         catch(Exception e)
         {
         }
+        
         long duration=System.currentTimeMillis() - start;
-        Assert.assertThat(duration,Matchers.greaterThan(500L));
+        Assert.assertThat(duration,Matchers.greaterThan(blockingTimeout/2));
+        Assert.assertThat(duration,Matchers.lessThan((long)soTimeout));
         
         try
         {
             // read the response
             String response = IO.toString(is);
             Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 "));
-            Assert.assertThat(response,Matchers.containsString("InterruptedIOException"));
         }
         catch(SSLException e)
         {
         }
 
+        Assert.assertNotNull(handler.cause);
+        Assert.assertThat(handler.cause.getCause(),Matchers.instanceOf(TimeoutException.class));
     }
 
     @Test(timeout=60000)
@@ -534,14 +542,16 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
     }
 
-    @Test(timeout=60000)
-    @Ignore // TODO make more stable
+    @Test
     public void testBlockingTimeoutWrite() throws Exception
     {
-        _httpConfiguration.setBlockingTimeout(750L);
-        configureServer(new HugeResponseHandler());
+        long blockingTimeout = 750L;
+        int soTimeout = 10000;
+        _httpConfiguration.setBlockingTimeout(blockingTimeout);
+        WriteForeverHandler handler = new WriteForeverHandler();
+        configureServer(handler);
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
-        client.setSoTimeout(10000);
+        client.setSoTimeout(soTimeout);
 
         Assert.assertFalse(client.isClosed());
 
@@ -563,25 +573,26 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             line=is.readLine();
 
         long start=System.currentTimeMillis();
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class,AbstractConnection.class))
+        try
         {
-            for (int i=0;i<(128*1024);i++)
+            while(true)
             {
-                if (i%1028==0)
-                {
-                    Thread.sleep(20);
-                    // System.err.println("read "+System.currentTimeMillis());
-                }
+                Thread.sleep(10);
                 line=is.readLine();
                 if (line==null)
                     break;
             }
         }
-        catch(Throwable e)
-        {}
+        catch(SSLException e)
+        {
+        }
+       
         long end=System.currentTimeMillis();
         long duration = end-start;
-        Assert.assertThat(duration,Matchers.lessThan(20L*128L));
+        Assert.assertThat(duration,Matchers.greaterThan(blockingTimeout/2));
+        Assert.assertThat(duration,Matchers.lessThan((long)soTimeout));
+        Assert.assertNotNull(handler.cause);
+        Assert.assertThat(handler.cause.getCause(),Matchers.instanceOf(TimeoutException.class));
     }
     
     @Test(timeout=60000)
@@ -777,6 +788,35 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             out.close();
         }
     }
+    
+    protected static class WriteForeverHandler extends AbstractHandler
+    {
+        public Throwable cause;
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            OutputStream out = response.getOutputStream();
+            byte[] buffer = new byte[64*1024];
+            Arrays.fill(buffer,(byte)'x');
+            buffer[buffer.length-2]='\r';
+            buffer[buffer.length-1]='\n';
+            
+            try
+            {
+                while(true)
+                {
+                    out.write(buffer);
+                }
+            }
+            catch(Exception e)
+            {
+                cause = e;
+            }
+        }
+    }
 
     protected static class WaitHandler extends AbstractHandler
     {
@@ -789,6 +829,42 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             try{Thread.sleep(2000);}catch(Exception e){e.printStackTrace();}
             out.write("Hello World\r\n".getBytes());
             out.flush();
+        }
+    }
+    
+    protected static class ReadForeverHandler extends AbstractHandler
+    {
+        public Throwable cause;
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {            
+            baseRequest.setHandled(true);
+
+            if (baseRequest.getDispatcherType()!=DispatcherType.REQUEST)
+            {
+                response.sendError(500);
+                return;
+            }
+            
+            response.setStatus(200);
+            InputStream in = request.getInputStream();
+            byte[] buffer = new byte[64*1024];
+            
+            try
+            {
+                while(true)
+                {
+                    int l = in.read(buffer);
+                    if (l<0)
+                        break;
+                }
+            }
+            catch(Exception e)
+            {
+                cause = e;
+                throw new ServletException(e);
+            }
         }
     }
 }

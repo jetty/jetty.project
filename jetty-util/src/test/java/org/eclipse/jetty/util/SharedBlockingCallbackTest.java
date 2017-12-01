@@ -41,7 +41,7 @@ public class SharedBlockingCallbackTest
     final SharedBlockingCallback sbcb= new SharedBlockingCallback()
     {
         @Override
-        protected long getIdleTimeout()
+        protected long getBlockingTimeout()
         {
             return 150;
         }

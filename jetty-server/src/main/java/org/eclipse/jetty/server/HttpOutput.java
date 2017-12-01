@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -120,7 +122,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static Logger LOG = Log.getLogger(HttpOutput.class);
 
     private final HttpChannel _channel;
-    private final SharedBlockingCallback _writeBlocker;
+    private final WriteBlocker _writeBlocker;
     private Interceptor _interceptor;
 
     /**
@@ -920,6 +922,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _written = 0;
         _writeListener = null;
         _onError = null;
+        _writeBlocker.recycle();
         reopen();
     }
 
@@ -1365,22 +1368,44 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private static class WriteBlocker extends SharedBlockingCallback
+    private class WriteBlocker extends SharedBlockingCallback
     {
         private final HttpChannel _channel;
+        private long _blockingTimeoutBudget;
+        private long _blockedAt;
+        private boolean _blockingTimeout; 
 
         private WriteBlocker(HttpChannel channel)
         {
             _channel = channel;
+            recycle();
+        }
+        
+        public void recycle()
+        {
+            _blockedAt = 0;
+            _blockingTimeoutBudget = _channel.getBlockingTimeout();
+            _blockingTimeout = _blockingTimeoutBudget>0;
         }
 
         @Override
-        protected long getIdleTimeout()
+        protected void preBlock()
         {
-            long blockingTimeout = _channel.getHttpConfiguration().getBlockingTimeout();
-            if (blockingTimeout == 0)
-                return _channel.getIdleTimeout();
-            return blockingTimeout;
+            if (_blockingTimeout)
+                _blockedAt = System.nanoTime();
+        }
+
+        @Override
+        protected void postBlock()
+        {
+            if (_blockingTimeout)
+                _blockingTimeoutBudget = Math.max(0,_blockingTimeoutBudget - NANOSECONDS.toMillis(System.nanoTime()-_blockedAt));
+        }
+
+        @Override
+        protected long getBlockingTimeout()
+        {
+            return _blockingTimeoutBudget;
         }
     }
 }
