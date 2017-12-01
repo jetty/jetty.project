@@ -38,6 +38,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -48,7 +49,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
+public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, WriteFlusher.Listener
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
@@ -83,6 +84,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable
     public long getIdleTimeout()
     {
         return getStream().getIdleTimeout();
+    }
+
+    @Override
+    public void onFlushed(long bytes) throws IOException
+    {
+        getResponse().getHttpOutput().onFlushed(bytes);
     }
 
     public Runnable onRequest(HeadersFrame frame)

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
@@ -167,7 +169,7 @@ public class HTTP2Flusher extends IteratingCallback
             {
                 if (entry.generate(lease))
                 {
-                    if (entry.dataRemaining() > 0)
+                    if (entry.getDataBytesLeft() > 0)
                         entries.offer(entry);
                 }
                 else
@@ -199,6 +201,29 @@ public class HTTP2Flusher extends IteratingCallback
         return Action.SCHEDULED;
     }
 
+    void onFlushed(long bytes) throws IOException
+    {
+        for (Entry entry : actives)
+        {
+            int frameBytesLeft = entry.getFrameBytesLeft();
+            if (frameBytesLeft > 0)
+            {
+                int update = (int)Math.min(bytes, frameBytesLeft);
+                entry.updateFrameBytes(-update);
+                bytes -= update;
+                IStream stream = entry.stream;
+                if (stream != null && !entry.isControl())
+                {
+                    Object channel = stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+                    if (channel instanceof WriteFlusher.Listener)
+                        ((WriteFlusher.Listener)channel).onFlushed(update - Frame.HEADER_LENGTH);
+                }
+                if (bytes == 0)
+                    break;
+            }
+        }
+    }
+
     @Override
     public void succeeded()
     {
@@ -226,13 +251,13 @@ public class HTTP2Flusher extends IteratingCallback
             for (int i = index; i < actives.size(); ++i)
             {
                 Entry entry = actives.get(i);
-                if (entry.dataRemaining() > 0)
+                if (entry.getDataBytesLeft() > 0)
                     append(entry);
             }
             for (int i = 0; i < index; ++i)
             {
                 Entry entry = actives.get(i);
-                if (entry.dataRemaining() > 0)
+                if (entry.getDataBytesLeft() > 0)
                     append(entry);
             }
             stalled = null;
@@ -304,7 +329,11 @@ public class HTTP2Flusher extends IteratingCallback
             this.stream = stream;
         }
 
-        public int dataRemaining()
+        public abstract int getFrameBytesLeft();
+
+        public abstract void updateFrameBytes(int update);
+
+        public int getDataBytesLeft()
         {
             return 0;
         }
@@ -347,6 +376,17 @@ public class HTTP2Flusher extends IteratingCallback
                     return true;
                 default:
                     return false;
+            }
+        }
+
+        private boolean isControl()
+        {
+            switch (frame.getType())
+            {
+                case DATA:
+                    return false;
+                default:
+                    return true;
             }
         }
 

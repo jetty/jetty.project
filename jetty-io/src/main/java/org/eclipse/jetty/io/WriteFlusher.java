@@ -425,33 +425,47 @@ abstract public class WriteFlusher
         boolean progress = true;
         while (progress && buffers != null)
         {
-            int before = buffers.length == 0 ? 0 : buffers[0].remaining();
+            long before = remaining(buffers);
             boolean flushed = _endPoint.flush(buffers);
-            int r = buffers.length == 0 ? 0 : buffers[0].remaining();
+            long after = remaining(buffers);
+            long written = before - after;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Flushed={} {}/{}+{} {}", flushed, before - r, before, buffers.length - 1, this);
+                LOG.debug("Flushed={} written={} remaining={} {}", flushed, written, after, this);
+
+            if (written > 0)
+            {
+                Connection connection = _endPoint.getConnection();
+                if (connection instanceof Listener)
+                    ((Listener)connection).onFlushed(written);
+            }
 
             if (flushed)
                 return null;
 
-            progress = before != r;
+            progress = written > 0;
 
-            int not_empty = 0;
-            while (r == 0)
+            int index = 0;
+            while (true)
             {
-                if (++not_empty == buffers.length)
+                if (index == buffers.length)
                 {
+                    // All buffers consumed.
                     buffers = null;
-                    not_empty = 0;
+                    index = 0;
                     break;
                 }
-                progress = true;
-                r = buffers[not_empty].remaining();
+                else
+                {
+                    int remaining = buffers[index].remaining();
+                    if (remaining > 0)
+                        break;
+                    ++index;
+                    progress = true;
+                }
             }
-
-            if (not_empty > 0)
-                buffers = Arrays.copyOfRange(buffers, not_empty, buffers.length);
+            if (index > 0)
+                buffers = Arrays.copyOfRange(buffers, index, buffers.length);
         }
 
         if (LOG.isDebugEnabled())
@@ -461,6 +475,16 @@ abstract public class WriteFlusher
         // This is probably SSL being unable to flush the encrypted buffer, so return EMPTY_BUFFERS
         // and that will keep this WriteFlusher pending.
         return buffers == null ? EMPTY_BUFFERS : buffers;
+    }
+
+    private long remaining(ByteBuffer[] buffers)
+    {
+        if (buffers == null)
+            return 0;
+        long result = 0;
+        for (ByteBuffer buffer : buffers)
+            result += buffer.remaining();
+        return result;
     }
 
     /**
@@ -537,5 +561,10 @@ abstract public class WriteFlusher
     {
         State s = _state.get();
         return String.format("WriteFlusher@%x{%s}->%s", hashCode(), s, s instanceof PendingState ? ((PendingState)s).getCallback() : null);
+    }
+
+    public interface Listener
+    {
+        void onFlushed(long bytes) throws IOException;
     }
 }

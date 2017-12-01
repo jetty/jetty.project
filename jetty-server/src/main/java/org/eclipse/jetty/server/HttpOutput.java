@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.RequestDispatcher;
@@ -122,12 +123,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlocker;
     private Interceptor _interceptor;
-
-    /**
-     * Bytes written via the write API (excludes bytes written via sendContent). Used to autocommit once content length is written.
-     */
     private long _written;
-
+    private long _flushed;
+    private long _firstByteTimeStamp = -1;
     private ByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -231,6 +229,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     protected void write(ByteBuffer content, boolean complete, Callback callback)
     {
+        if (_firstByteTimeStamp == -1)
+            _firstByteTimeStamp = System.nanoTime();
         _interceptor.write(content, complete, callback);
     }
 
@@ -908,6 +908,22 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _commitSize = size;
     }
 
+    public void onFlushed(long bytes) throws IOException
+    {
+        if (_firstByteTimeStamp == -1)
+            return;
+        long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
+        if (minDataRate <= 0)
+            return;
+        _flushed += bytes;
+        long elapsed = System.nanoTime() - _firstByteTimeStamp;
+        long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
+        if (_flushed < minFlushed)
+            throw new IOException(String.format("Response content data rate < %d B/s", minDataRate));
+    }
+
     public void recycle()
     {
         _interceptor = _channel;
@@ -920,6 +936,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _written = 0;
         _writeListener = null;
         _onError = null;
+        _firstByteTimeStamp = -1;
+        _flushed = 0;
         reopen();
     }
 
