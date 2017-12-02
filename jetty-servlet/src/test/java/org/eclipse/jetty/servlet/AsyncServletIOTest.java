@@ -127,7 +127,7 @@ public class AsyncServletIOTest
         
         _server.start();
         _port=_connector.getLocalPort();
-        
+
         _owp.set(0);
         _oda.set(0);
         _read.set(0);
@@ -824,8 +824,7 @@ public class AsyncServletIOTest
             
             // Stop any dispatches until we want them
             UnaryOperator<Runnable> old = _wQTP.wrapper.getAndSet(r->
-            { 
-                return ()->
+                ()->
                 {
                     try
                     {
@@ -836,8 +835,8 @@ public class AsyncServletIOTest
                     {
                         e.printStackTrace();
                     }
-                };
-            });
+                }
+            );
 
             // We are an unrelated thread, let's mess with the input stream
             ServletInputStream sin = _servletStolenAsyncRead.listener.in;
@@ -886,7 +885,6 @@ public class AsyncServletIOTest
                 if (line.length()==0)
                     break;
             }
-            
         }
 
         assertTrue(_servletStolenAsyncRead.completed.await(5, TimeUnit.SECONDS));     
@@ -903,7 +901,7 @@ public class AsyncServletIOTest
         @Override
         public void doPost(final HttpServletRequest request, final HttpServletResponse response) throws IOException
         {
-            listener = new StealingListener(request,response);
+            listener = new StealingListener(request);
             ready.countDown();
         }
 
@@ -913,7 +911,7 @@ public class AsyncServletIOTest
             final ServletInputStream in;
             final AsyncContext asyncContext;
 
-            StealingListener(HttpServletRequest request,HttpServletResponse response) throws IOException
+            StealingListener(HttpServletRequest request) throws IOException
             {
                 asyncContext = request.startAsync();
                 asyncContext.setTimeout(10000L);
@@ -922,9 +920,8 @@ public class AsyncServletIOTest
                 in = request.getInputStream();
             }
 
-
             @Override
-            public void onDataAvailable() throws IOException
+            public void onDataAvailable()
             {
                 oda.countDown();
             }
@@ -943,35 +940,33 @@ public class AsyncServletIOTest
             }
 
             @Override
-            public void onComplete(final AsyncEvent event) throws IOException
+            public void onComplete(final AsyncEvent event)
             {
                 completed.countDown();
             }
 
             @Override
-            public void onTimeout(final AsyncEvent event) throws IOException
+            public void onTimeout(final AsyncEvent event)
             {
                 asyncContext.complete();
             }
 
             @Override
-            public void onError(final AsyncEvent event) throws IOException
+            public void onError(final AsyncEvent event)
             {
                 asyncContext.complete();
             }
 
             @Override
-            public void onStartAsync(AsyncEvent event) throws IOException
+            public void onStartAsync(AsyncEvent event)
             {
-
             }
         }
     }
     
-    
     private class WrappingQTP extends QueuedThreadPool
     {
-        AtomicReference<UnaryOperator<Runnable>> wrapper = new AtomicReference<UnaryOperator<Runnable>>(UnaryOperator.identity());
+        AtomicReference<UnaryOperator<Runnable>> wrapper = new AtomicReference<>(UnaryOperator.identity());
         
         @Override
         public void execute(Runnable job)
