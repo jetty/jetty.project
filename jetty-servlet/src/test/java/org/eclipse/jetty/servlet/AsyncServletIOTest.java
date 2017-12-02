@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -810,7 +811,6 @@ public class AsyncServletIOTest
         .append("\r\n")
         .append("1");
         int port=_port;
-        List<String> list = new ArrayList<>();
         try (Socket socket = new Socket("localhost",port))
         {
             socket.setSoTimeout(10000);
@@ -823,20 +823,18 @@ public class AsyncServletIOTest
             final CountDownLatch wait = new CountDownLatch(1);
             
             // Stop any dispatches until we want them
-            Function<Runnable,Runnable> old = _wQTP.wrapper.getAndSet(r->
+            UnaryOperator<Runnable> old = _wQTP.wrapper.getAndSet(r->
             { 
-                return new Runnable()
+                return ()->
                 {
-                    public void run() {
-                        try
-                        {
-                            wait.await();
-                            r.run();
-                        }
-                        catch (InterruptedException e)
-                        {
-                            e.printStackTrace();
-                        }
+                    try
+                    {
+                        wait.await();
+                        r.run();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
                     }
                 };
             });
@@ -852,8 +850,8 @@ public class AsyncServletIOTest
             Assert.assertFalse(sin.isReady());
             
             // let the ODA call go
-            wait.countDown();
             _wQTP.wrapper.set(old);
+            wait.countDown();
             
             // ODA should not be called
             Assert.assertFalse(_servletStolenAsyncRead.oda.await(500,TimeUnit.MILLISECONDS));
@@ -973,7 +971,7 @@ public class AsyncServletIOTest
     
     private class WrappingQTP extends QueuedThreadPool
     {
-        AtomicReference<Function<Runnable,Runnable>> wrapper = new AtomicReference<Function<Runnable,Runnable>>(r->{return r;});
+        AtomicReference<UnaryOperator<Runnable>> wrapper = new AtomicReference<UnaryOperator<Runnable>>(UnaryOperator.identity());
         
         @Override
         public void execute(Runnable job)

@@ -244,6 +244,8 @@ public class HttpChannelState
                         case IDLE:
                         case REGISTERED:
                             break;
+                        default:
+                            throw new IllegalStateException(getStatusStringLocked());
                     }
 
                     if (_asyncWritePossible)
@@ -273,6 +275,7 @@ public class HttpChannelState
                             _state=State.ASYNC_WAIT;
                             return Action.NOOP;
                         case NOT_ASYNC:
+                        default:
                             throw new IllegalStateException(getStatusStringLocked());
                     }
 
