@@ -46,6 +46,11 @@ import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.descriptor.JspPropertyGroupDescriptor;
 import javax.servlet.descriptor.TaglibDescriptor;
+import javax.servlet.http.HttpSessionActivationListener;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionIdListener;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -172,6 +177,27 @@ public class ServletContextHandler extends ContextHandler
         
         if (errorHandler!=null)
             setErrorHandler(errorHandler);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Add EventListener
+     * Adds an EventListener to the list. @see org.eclipse.jetty.server.handler.ContextHandler#addEventListener().
+     * Also adds any listeners that are session related to the SessionHandler.
+     * @param listener the listener to add
+     */
+    @Override
+    public void addEventListener(EventListener listener)
+    {
+        super.addEventListener(listener);
+        if ((listener instanceof HttpSessionActivationListener)
+            || (listener instanceof HttpSessionAttributeListener)
+            || (listener instanceof HttpSessionBindingListener)
+            || (listener instanceof HttpSessionListener)
+            || (listener instanceof HttpSessionIdListener))
+        {
+            if (_sessionHandler!=null)
+                _sessionHandler.addEventListener(listener);
+        }
     }
     
     @Override
