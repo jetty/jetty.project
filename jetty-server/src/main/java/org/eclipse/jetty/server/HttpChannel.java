@@ -318,7 +318,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 {
                     case TERMINATED:
                     case WAIT:
+                        // break loop without calling unhandle
                         break loop;
+                        
+                    case NOOP:
+                        // do nothing other than call unhandle
+                        break;
 
                     case DISPATCH:
                     {
