@@ -1,10 +1,27 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2017 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.unixsocket.client;
 
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
-import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
@@ -17,19 +34,15 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.http.HttpSenderOverHTTP;
-import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.unixsocket.UnixSocketEndPoint;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.Channels;
 import java.util.List;
@@ -39,6 +52,8 @@ public class HttpClientTransportOverUnixSockets
     extends HttpClientTransportOverHTTP
 {
     private String _unixSocket;
+
+    private static final Logger LOGGER = Log.getLogger( HttpClientTransportOverUnixSockets.class );
 
     public HttpClientTransportOverUnixSockets( String unixSocket )
     {
@@ -67,7 +82,6 @@ public class HttpClientTransportOverUnixSockets
     public void connect( InetSocketAddress address, Map<String, Object> context )
     {
         // no op
-        System.out.println( "HttpClientTransportOverUnixSockets#connect" );
     }
 
 
@@ -109,7 +123,9 @@ public class HttpClientTransportOverUnixSockets
                 UnixSocketAddress address =
                     new UnixSocketAddress( HttpClientTransportOverUnixSockets.this._unixSocket );
                 UnixSocketChannel channel = UnixSocketChannel.open( address );
-                System.out.println("connected to " + channel.getRemoteSocketAddress());
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug( "connected to {}", channel.getRemoteSocketAddress() );
+
                 InputStreamReader r = new InputStreamReader( Channels.newInputStream( channel ) );
                 HttpConnectionOverUnixSocket httpConnectionOverUnixSocket =
                     new HttpConnectionOverUnixSocket( null, this, null, channel );
@@ -128,19 +144,23 @@ public class HttpClientTransportOverUnixSockets
                     result.clear();
                     l = r.read( result );
                 }
-                System.out.println( "read from server: " + response );
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug( "read from server: {}", response );
+
+                exchange.getResponseListeners().stream().forEach( responseListener -> {
+                    if (responseListener instanceof Response.CompleteListener)
+                    {
+                        ((Response.CompleteListener)responseListener).onComplete( null );
+                    }
+                } );
+
             }
             catch ( IOException e )
             {
                 e.printStackTrace();
             }
 
-//            exchange.getResponseListeners().stream().forEach( responseListener -> {
-//                if (responseListener instanceof Response.CompleteListener)
-//                {
-//                    ((Response.CompleteListener)responseListener).onComplete( null );
-//                }
-//            } );
+
         }
 
         @Override
@@ -154,21 +174,14 @@ public class HttpClientTransportOverUnixSockets
     class HttpConnectionOverUnixSocket
         extends HttpConnectionOverHTTP
     {
-//        public HttpConnectionOverUnixSocket( HttpDestination destination )
-//        {
-//            super( destination );
-//        }
 
         private HttpChannelOverUnixSocket httpChannelOverUnixSocket;
-
-        private UnixSocketChannel channel;
 
         private Delegate delegate;
 
         public HttpConnectionOverUnixSocket( EndPoint endPoint, HttpDestination destination,
                                              Promise<Connection> promise, UnixSocketChannel channel )
         {
-            //new EndPointOverUnixSocket(null, channel);
             super( new  UnixSocketEndPoint(channel, null, null, null), destination, promise );
             httpChannelOverUnixSocket = newHttpChannel();
             this.delegate = new Delegate( destination, httpChannelOverUnixSocket );
@@ -189,7 +202,7 @@ public class HttpClientTransportOverUnixSockets
         @Override
         public void close()
         {
-            System.out.println( "close" );
+            //System.out.println( "close" );
         }
 
         @Override
@@ -211,18 +224,6 @@ public class HttpClientTransportOverUnixSockets
         protected HttpSenderOverHTTP newHttpSender()
         {
             return new HttpSenderOverHTTP(this);
-        }
-
-        @Override
-        public void receive()
-        {
-            super.receive();
-        }
-
-        @Override
-        public void send()
-        {
-            super.send();
         }
     }
 
