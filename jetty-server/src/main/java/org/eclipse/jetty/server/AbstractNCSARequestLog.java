@@ -127,8 +127,9 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
             buf.append(addr);
             buf.append(" - ");
-            Authentication authentication = request.getAuthentication();
-            append(buf,(authentication instanceof Authentication.User)?((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName():null);
+            
+            String auth = getAuthentication(request);
+            append(buf,auth==null?"-":auth);
 
             buf.append(" [");
             if (_logDateCache != null)
@@ -219,6 +220,23 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
         {
             LOG.warn(e);
         }
+    }
+    
+    /**
+     * Extract the user authentication
+     * @param request The request to extract from
+     * @return The string to log for authenticated user.
+     */
+    protected String getAuthentication(Request request)
+    {
+        Authentication authentication = request.getAuthentication();
+        
+        if (authentication instanceof Authentication.User)
+            return ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
+        
+        // TODO extract the user name if it is Authentication.Deferred and return as '?username'
+        
+        return null;
     }
 
     /**
