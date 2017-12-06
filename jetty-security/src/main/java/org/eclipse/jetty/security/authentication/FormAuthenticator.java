@@ -257,22 +257,6 @@ public class FormAuthenticator extends LoginAuthenticator
         if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())) &&!DeferredAuthentication.isDeferred(response))
             return new DeferredAuthentication(this);
 
-        HttpSession session = null;
-        try
-        {
-            session = request.getSession(true);
-        }
-        catch (Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug(e);
-        }
-        
-        //if unable to create a session, user must be
-        //unauthenticated
-        if (session == null)
-            return Authentication.UNAUTHENTICATED;
-
         try
         {
             // Handle a request for authentication.
@@ -283,7 +267,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
                 UserIdentity user = login(username, password, request);
                 LOG.debug("jsecuritycheck {} {}",username,user);
-                session = request.getSession(true);
+                HttpSession session = request.getSession(false);
                 if (user!=null)
                 {                    
                     // Redirect to original request
@@ -337,7 +321,8 @@ public class FormAuthenticator extends LoginAuthenticator
             }
 
             // Look for cached authentication
-            Authentication authentication = (Authentication) session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            HttpSession session = request.getSession(false);
+            Authentication authentication = session == null ? null : (Authentication) session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
             if (authentication != null)
             {
                 // Has authentication been revoked?
@@ -384,11 +369,12 @@ public class FormAuthenticator extends LoginAuthenticator
             // if we can't send challenge
             if (DeferredAuthentication.isDeferred(response))
             {
-                LOG.debug("auth deferred {}",session.getId());
+                LOG.debug("auth deferred {}",session == null ? null : session.getId());
                 return Authentication.UNAUTHENTICATED;
             }
 
             // remember the current URI
+            session = (session != null ? session : request.getSession(true));
             synchronized (session)
             {
                 // But only if it is not set already, or we save every uri that leads to a login form redirect

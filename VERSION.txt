@@ -1,4 +1,79 @@
-jetty-9.4.8-SNAPSHOT
+jetty-9.4.9-SNAPSHOT
+
+jetty-9.4.8.v20171121 - 21 November 2017
+ + 212 HttpClient should support pluggable AuthenticationStore
+ + 215 Add Conscrypt for native ALPN/TLS/SSL
+ + 272 WebSocket hangs in blockingWrite
+ + 487 JDK 9 build compatibility
+ + 901 Overriding SSL context KeyStoreType requires explicit override of
+   TrustStoreType
+ + 922 Implements methods Connection.getBytes[In|Out]()
+ + 1209 IllegalStateException when HTTP/2 push is disabled
+ + 1213 Upgrade to ASM Version 6.0 for JDK9
+ + 1509 Improve GZIPContentDecoder buffer pooling sizing
+ + 1550 Resolve inconsistent Shutdown configuration with Jetty Runner
+ + 1640 Introduce :run-distro goal for local jetty distribution deployment
+ + 1692 Annotation scanning should ignore `module-info.class` files
+ + 1696 Missing stacktraces on debug of WriteFlusher onFail
+ + 1705 Rejected executions in QueuedThreadPool can lead to memory leaks
+ + 1760 Update to apache jasper 8.5.20
+ + 1768 Allow jetty properties to be set for the jetty:run-forked goal
+ + 1782 Using assembly.tarLongFileMode=posix for jetty-home and
+   jetty-distribution assembly
+ + 1797 JEP 238 - Multi-Release JAR files break bytecode scanning
+ + 1806 Improved ReservedThreads idle timeout
+ + 1807 Add new HttpChannel listener and events for metrics libraries
+ + 1814 Move JavaVersion to jetty-util for future Java 9 support requirements
+ + 1818 Improve Infinispan support on JDK 9
+ + 1819 Race condition during annotation parsing
+ + 1823 ResourceHandler with ranged requests does not return Content-Type
+   response header
+ + 1829 OSGi webbundle classes scanned twice
+ + 1833 Request.startAsync requires context path
+ + 1835 Locker is not reentrant on ServerConnector#setConnectionFactories
+ + 1836 Migrate Locker implementation to JVM ReentrantLock implementation
+ + 1841 Reduce contention on ServletHolder
+ + 1845 Allow null User-Agent in HttpClient
+ + 1849 Refactoring of SelectorManager.defaultSchedulers()
+ + 1851 Improve insufficient thread warnings/errors
+ + 1854 Consistent IOException and timeout handling when extracting form
+   parameters
+ + 1856 ResourceHandler without ServletContext throws NPE for welcome files if
+   used directly
+ + 1857 GZIPContentTransformer fails to send entire message if used with
+   BufferedContentTransformer
+ + 1865 Improve Exception on invalid redirect usage
+ + 1867 Improve Exception thrown during Expect 100 Continue
+ + 1868 Need a way to randomly select ports for tests
+ + 1871 JMXify SslContextFactory
+ + 1878 Handle 100 Continue response without Expect header
+ + 1879 'Bad tld url' seen during :jetty-run when running integration tests
+ + 1881 Improve support of WebSocket over Unix Domain Socket
+ + 1885 SessionHandler get/set maxInactiveInterval is not symmetric with
+   negative values
+ + 1888 Implement cookie matching on Path attribute per RFC 6265
+ + 1891 Make HTTP/2 async error notifications configurable
+ + 1892 NPE resulting from bad JEP 238 MultiReleaseJarFile structure
+ + 1893 Add ability to set HttpClient Connection TTL
+ + 1897 Introduce a round-robin connection pool for HttpClient
+ + 1900 Update to CDI 2.0 for cdi module
+ + 1901 Reimplement PathWatcher as scanner
+ + 1909 Update to Apache Jasper 8.5.23
+ + 1910 Remove unused jetty-jsp module
+ + 1912 AbstractConnector EndPoint leak for failed SSL connections
+ + 1914 HttpClient fails to parse Content-Type response header with RFC 2045
+   charset="utf-8" syntax
+ + 1919 Review LowResourceMonitor
+ + 1920 Connect Timeouts with NonBlocking CreateEndPoint
+ + 1924 ManagedSelector can livelock under high load
+ + 1931 Expose RolloverOutputStream for pluggable behaviour
+ + 1933 Use CLASSPATH for scanning java9 system classes
+ + 1956 Store and report build information of Jetty
+ + 1958 Blocking Timeout has different behavior in HttpInput vs HttpOutput
+ + 1970 ManagedSelector can lose selector thread under high concurrent load
+ + 1980 PushCacheFilter does not push TLS offloaded HTTP/2 requests
+ + 1981 Loading resource content failed
+ + 1984 Remove jetty-client dependency in jetty-rewrite
 
 jetty-9.4.7.v20170914 - 14 September 2017
  + 215 Consider native ALPN/SSL provider
@@ -93,8 +168,8 @@ jetty-9.4.7.v20170914 - 14 September 2017
  + 1814 Move JavaVersion to jetty-util for future Java 9 support requirements
  + 1816 HttpClientTest.testClientCannotValidateServerCertificate() hangs with
    JDK 9
- + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy
-   with CONNECT
+ + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy with
+   CONNECT
 
 jetty-9.3.22.v20171030 - 30 October 2017
  + 1213 Upgrade to ASM Version 6.0_ALPHA for JDK9
@@ -159,8 +234,8 @@ jetty-9.3.21.v20170918 - 18 September 2017
  + 1750 PoolingHttpDestination creates ConnectionPool twice
  + 1759 HTTP/2: producer can block in onReset
  + 1790 HTTP/2: 100% CPU usage seen during close/shutdown of endpoint
- + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy
-   with CONNECT
+ + 475546 ClosedChannelException when connection to HTTPS over HTTP proxy with
+   CONNECT
 
 jetty-9.4.6.v20170531 - 31 May 2017
  + 523 TLS close behaviour breaking session resumption

@@ -231,14 +231,15 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements Executo
         {
             while (true)
             {
+                // Not atomic, but there is a re-check in ReservedThread.run().
                 int pending = _pending.get();
-                if (pending >= _capacity)
+                int size = _size.get();
+                if (pending + size >= _capacity)
                     return;
                 if (_pending.compareAndSet(pending, pending + 1))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} startReservedThread p={}", this, pending + 1);
-
                     _executor.execute(new ReservedThread());
                     return;
                 }

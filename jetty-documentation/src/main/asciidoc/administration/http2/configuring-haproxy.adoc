@@ -42,8 +42,6 @@ Alternatively you can download the HAProxy source code and build it on your envi
 ____
 [NOTE]
 HAProxy supports ALPN only if built with OpenSSL 1.0.2 or greater.
-Alternatively, HAProxy supports NPN when built with OpenSSL 1.0.1 or greater.
-You must upgrade OpenSSL if you have a version earlier than 1.0.1.
 Use `haproxy -vv` to know with which OpenSSL version HAProxy has been built.
 ____
 

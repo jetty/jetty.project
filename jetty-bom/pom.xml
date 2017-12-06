@@ -2,7 +2,7 @@
   <groupId>org.eclipse.jetty</groupId>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-bom</artifactId>
-  <version>9.4.8-SNAPSHOT</version>
+  <version>9.4.8.v20171121</version>
   <name>Jetty :: Bom</name>
   <description>Jetty BOM artifact</description>
   <url>http://www.eclipse.org/jetty</url>
@@ -94,323 +94,323 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>apache-jsp</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>apache-jstl</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-openjdk8-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-openjdk8-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-conscrypt-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-conscrypt-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-annotations</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-ant</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.cdi</groupId>
         <artifactId>cdi-core</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.cdi</groupId>
         <artifactId>cdi-full-servlet</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.cdi</groupId>
         <artifactId>cdi-servlet</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-continuation</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-deploy</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-distribution</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
         <type>zip</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.fcgi</groupId>
         <artifactId>fcgi-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.gcloud</groupId>
         <artifactId>jetty-gcloud-session-manager</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-home</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-common</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-hpack</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-http-client-transport</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>http2-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http-spi</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-infinispan</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-hazelcast</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-io</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaas</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jaspi</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jmx</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-jndi</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.memcached</groupId>
         <artifactId>jetty-memcached-sessions</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-nosql</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot-jsp</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot-warurl</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-httpservice</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-plus</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-proxy</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-quickstart</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-rewrite</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-security</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlets</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-spring</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixsocket</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util-ajax</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-webapp</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>javax-websocket-client-impl</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>javax-websocket-server-impl</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-api</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-client</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-common</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-server</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-servlet</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-xml</artifactId>
-        <version>9.4.8-SNAPSHOT</version>
+        <version>9.4.9-SNAPSHOT</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

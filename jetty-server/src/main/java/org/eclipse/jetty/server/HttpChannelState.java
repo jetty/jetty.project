@@ -73,6 +73,7 @@ public class HttpChannelState
      */
     public enum Action
     {
+        NOOP,             // No action 
         DISPATCH,         // handle a normal request dispatch
         ASYNC_DISPATCH,   // handle an async request dispatch
         ERROR_DISPATCH,   // handle a normal error
@@ -243,6 +244,8 @@ public class HttpChannelState
                         case IDLE:
                         case REGISTERED:
                             break;
+                        default:
+                            throw new IllegalStateException(getStatusStringLocked());
                     }
 
                     if (_asyncWritePossible)
@@ -269,14 +272,13 @@ public class HttpChannelState
                         case STARTED:
                         case EXPIRING:
                         case ERRORING:
-                            return Action.WAIT;
+                            _state=State.ASYNC_WAIT;
+                            return Action.NOOP;
                         case NOT_ASYNC:
-                            break;
                         default:
                             throw new IllegalStateException(getStatusStringLocked());
                     }
 
-                    return Action.WAIT;
 
                 case ASYNC_ERROR:
                     return Action.ASYNC_ERROR;
@@ -408,6 +410,7 @@ public class HttpChannelState
                 case DISPATCHED:
                 case ASYNC_IO:
                 case ASYNC_ERROR:
+                case ASYNC_WAIT:
                     break;
 
                 default:

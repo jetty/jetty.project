@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,6 +39,8 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -57,6 +60,44 @@ import org.junit.Test;
 
 public class WebAppContextTest
 {
+    public class MySessionListener implements HttpSessionListener
+    {
+
+        @Override
+        public void sessionCreated(HttpSessionEvent se)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+        
+    }
+    
+    @Test
+    public void testSessionListeners ()
+    throws Exception
+    {
+        Server server = new Server();
+
+        WebAppContext wac = new WebAppContext();
+
+        wac.setServer(server);
+        server.setHandler(wac);
+        wac.addEventListener(new MySessionListener());
+
+        Collection<MySessionListener> listeners = wac.getSessionHandler().getBeans(org.eclipse.jetty.webapp.WebAppContextTest.MySessionListener.class);
+        assertNotNull(listeners);
+        assertEquals(1, listeners.size());
+    }
+    
+    
+    
     @Test
     public void testConfigurationClassesFromDefault ()
     {

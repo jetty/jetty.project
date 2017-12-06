@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>example-async-rest</artifactId>
-    <version>9.4.8-SNAPSHOT</version>
+    <version>9.4.9-SNAPSHOT</version>
   </parent>  
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.example-async-rest</groupId>

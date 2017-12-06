@@ -36,6 +36,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -148,7 +149,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             selector.wakeup();
     }
 
-    private Runnable processConnect(SelectionKey key, final Connect connect)
+    private void execute(Runnable task)
+    {
+        try
+        {
+            _selectorManager.execute(task);
+        }
+        catch (RejectedExecutionException x)
+        {
+            if (task instanceof Closeable)
+                closeNoExceptions((Closeable)task);
+        }
+    }
+
+    private void processConnect(SelectionKey key, final Connect connect)
     {
         SelectableChannel channel = key.channel();
         try
@@ -162,7 +176,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (connect.timeout.cancel())
                 {
                     key.interestOps(0);
-                    return new CreateEndPoint(channel, key)
+                    execute(new CreateEndPoint(channel, key)
                     {
                         @Override
                         protected void failed(Throwable failure)
@@ -170,7 +184,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                             super.failed(failure);
                             connect.failed(failure);
                         }
-                    };
+                    });
                 }
                 else
                 {
@@ -185,7 +199,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         catch (Throwable x)
         {
             connect.failed(x);
-            return null;
         }
     }
 
@@ -217,7 +230,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     public void destroyEndPoint(final EndPoint endPoint)
     {
-        submit(new DestroyEndPoint(endPoint));
+        execute(new DestroyEndPoint(endPoint));
     }
 
     private int getActionSize()
@@ -424,9 +437,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         }
                         else if (key.isConnectable())
                         {
-                            Runnable task = processConnect(key, (Connect)attachment);
-                            if (task != null)
-                                return task;
+                            processConnect(key, (Connect)attachment);
                         }
                         else
                         {
@@ -621,7 +632,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             try
             {
                 final SelectionKey key = channel.register(_selector, 0, attachment);
-                submit(new CreateEndPoint(channel, key));
+                execute(new CreateEndPoint(channel, key));
             }
             catch (Throwable x)
             {
@@ -631,7 +642,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CreateEndPoint implements Runnable, Invocable, Closeable
+    private class CreateEndPoint implements Runnable, Closeable
     {
         private final SelectableChannel channel;
         private final SelectionKey key;
@@ -666,6 +677,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         protected void failed(Throwable failure)
         {
             closeNoExceptions(channel);
+            LOG.warn(String.valueOf(failure));
             LOG.debug(failure);
         }
     }
@@ -822,7 +834,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class DestroyEndPoint implements Runnable, Invocable, Closeable
+    private class DestroyEndPoint implements Runnable, Closeable
     {
         private final EndPoint endPoint;
 

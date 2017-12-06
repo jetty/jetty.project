@@ -52,10 +52,12 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@Ignore
 @RunWith(AdvancedRunner.class)
 public class PathWatcherTest
 {
