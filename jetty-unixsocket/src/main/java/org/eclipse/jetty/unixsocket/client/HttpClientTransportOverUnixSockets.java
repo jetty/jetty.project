@@ -84,7 +84,7 @@ public class HttpClientTransportOverUnixSockets
             }
             
             // Open a unix socket
-            UnixSocketAddress unixAddress = new UnixSocketAddress( HttpClientTransportOverUnixSockets.this._unixSocket );
+            UnixSocketAddress unixAddress = new UnixSocketAddress( this._unixSocket );
             channel = UnixSocketChannel.open( unixAddress );
             
             HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
