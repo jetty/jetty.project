@@ -110,31 +110,6 @@ public class UnixSocketTest
                 method + " / HTTP/1.1\r\n" + "Host: unixsock\r\n" + "Content-Length: " + content_length + "\r\n"
                     + "Connection: close\r\n" + "\r\n";
 
-//
-//            UnixSocketAddress address = new UnixSocketAddress( sockFile.toFile() );
-//            UnixSocketChannel channel = UnixSocketChannel.open( address);
-//            System.out.println("connected to " + channel.getRemoteSocketAddress());
-//            PrintWriter w = new PrintWriter( Channels.newOutputStream( channel));
-//            InputStreamReader r = new InputStreamReader( Channels.newInputStream( channel));
-//            w.print(data);
-//            w.flush();
-//
-//            CharBuffer result = CharBuffer.allocate( 4096);
-//            String total="";
-//            int l = 0;
-//            while (l>=0)
-//            {
-//                if (l>0)
-//                {
-//                    result.flip();
-//                    total += result.toString();
-//                }
-//                result.clear();
-//                l = r.read(result);
-//            }
-//            System.out.println("read from server: " + total);
-
-
             httpClient = new HttpClient( new HttpClientTransportOverUnixSockets( sockFile.toString() ), null );
             httpClient.start();
 

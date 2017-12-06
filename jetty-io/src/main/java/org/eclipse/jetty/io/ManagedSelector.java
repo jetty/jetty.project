@@ -753,7 +753,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             List<EndPoint> end_points = new ArrayList<>();
             for (SelectionKey key : _selector.keys())
             {
-                if (key.isValid())
+                if (key!=null && key.isValid())
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
