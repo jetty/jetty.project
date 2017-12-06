@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.Assert;
 import org.junit.Test;
 
 import javax.servlet.ServletException;
@@ -104,12 +105,6 @@ public class UnixSocketTest
 
             server.start();
 
-            String method = "GET";
-            int content_length = 0;
-            String data =
-                method + " / HTTP/1.1\r\n" + "Host: unixsock\r\n" + "Content-Length: " + content_length + "\r\n"
-                    + "Connection: close\r\n" + "\r\n";
-
             httpClient = new HttpClient( new HttpClientTransportOverUnixSockets( sockFile.toString() ), null );
             httpClient.start();
 
@@ -117,7 +112,9 @@ public class UnixSocketTest
                 .newRequest( "http://localhost" )
                 .send();
 
-            log.info( "response from server:" + contentResponse.getContentAsString() );
+            log.debug( "response from server: {}", contentResponse.getContentAsString() );
+
+            Assert.assertTrue(contentResponse.getContentAsString().contains( "Hello World" ));
 
             httpClient.stop();
         }
