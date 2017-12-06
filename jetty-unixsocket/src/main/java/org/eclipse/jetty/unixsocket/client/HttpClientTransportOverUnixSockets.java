@@ -1,4 +1,4 @@
-package org.eclipse.jetty.client.http;
+package org.eclipse.jetty.unixsocket.client;
 
 import jnr.unixsocket.UnixSocketAddress;
 import jnr.unixsocket.UnixSocketChannel;
@@ -12,6 +12,11 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
+import org.eclipse.jetty.client.http.HttpSenderOverHTTP;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;

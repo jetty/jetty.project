@@ -1,15 +1,12 @@
-package org.eclipse.jetty.client;
+package org.eclipse.jetty.unixsocket;
 
-import jnr.unixsocket.UnixSocketAddress;
-import jnr.unixsocket.UnixSocketChannel;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.http.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.unixsocket.UnixSocketConnector;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 import javax.servlet.ServletException;
@@ -17,10 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.nio.CharBuffer;
-import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,6 +60,7 @@ public class UnixSocketTest
                             r = in.read( buffer );
                         }
                     }
+                    System.out.println( "UnixSocketTest: request received" );
                     baseRequest.setHandled( true );
                     response.setStatus( 200 );
                     response.getWriter().write( "Hello World " + new Date() + "\r\n" );

@@ -100,19 +100,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.github.jnr</groupId>
-      <artifactId>jnr-unixsocket</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-unixsocket</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
