@@ -19,6 +19,7 @@ import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.http.HttpSenderOverHTTP;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.unixsocket.UnixSocketEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -167,7 +168,8 @@ public class HttpClientTransportOverUnixSockets
         public HttpConnectionOverUnixSocket( EndPoint endPoint, HttpDestination destination,
                                              Promise<Connection> promise, UnixSocketChannel channel )
         {
-            super( new EndPointOverUnixSocket(null, channel), destination, promise );
+            //new EndPointOverUnixSocket(null, channel);
+            super( new  UnixSocketEndPoint(channel, null, null, null), destination, promise );
             httpChannelOverUnixSocket = newHttpChannel();
             this.delegate = new Delegate( destination, httpChannelOverUnixSocket );
         }
@@ -197,82 +199,6 @@ public class HttpClientTransportOverUnixSockets
         }
     }
 
-    class EndPointOverUnixSocket extends AbstractEndPoint
-    {
-
-        //private final OutputStream outputStream;
-        private final PrintWriter printWriter;
-
-
-        public EndPointOverUnixSocket( Scheduler scheduler, UnixSocketChannel channel )
-        {
-            super( scheduler );
-            //this.outputStream = Channels.newOutputStream(channel);
-            this.printWriter = new PrintWriter( Channels.newOutputStream( channel ) );
-        }
-
-        @Override
-        public void checkFlush()
-            throws IOException
-        {
-            super.checkFlush();
-        }
-
-        @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            return null;
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            return null;
-        }
-
-        @Override
-        public int fill( ByteBuffer buffer )
-            throws IOException
-        {
-            return 0;
-        }
-
-        @Override
-        public boolean flush( ByteBuffer... buffer )
-            throws IOException
-        {
-            for (ByteBuffer byteBuffer : buffer)
-            {
-                // TODO only debugging must use
-                //BufferUtil.writeTo( byteBuffer, outputStream  );
-                String content = BufferUtil.toString( byteBuffer );
-                //outputStream.write( content.getBytes() );
-                printWriter.print( content );
-            }
-            //outputStream.flush();
-            printWriter.flush();
-            return true;
-        }
-
-        @Override
-        public Object getTransport()
-        {
-            return null;
-        }
-
-        @Override
-        protected void onIncompleteFlush()
-        {
-            System.out.println( "onIncompleteFlush" );
-        }
-
-        @Override
-        protected void needsFillInterest()
-            throws IOException
-        {
-            System.out.println( "needsFillInterest" );
-        }
-    }
 
     class HttpChannelOverUnixSocket extends HttpChannelOverHTTP
     {
@@ -284,7 +210,7 @@ public class HttpClientTransportOverUnixSockets
         @Override
         protected HttpSenderOverHTTP newHttpSender()
         {
-            return new HttpSenderOverUnixSocket(this);
+            return new HttpSenderOverHTTP(this);
         }
 
         @Override
@@ -300,20 +226,6 @@ public class HttpClientTransportOverUnixSockets
         }
     }
 
-
-    class HttpSenderOverUnixSocket extends HttpSenderOverHTTP
-    {
-        public HttpSenderOverUnixSocket( HttpChannelOverHTTP channel )
-        {
-            super( channel );
-        }
-
-        @Override
-        protected void sendHeaders( HttpExchange exchange, HttpContent content, Callback callback )
-        {
-            super.sendHeaders( exchange, content, callback );
-        }
-    }
 
     class Delegate extends HttpConnection
     {

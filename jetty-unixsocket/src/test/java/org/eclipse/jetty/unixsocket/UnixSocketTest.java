@@ -2,12 +2,14 @@ package org.eclipse.jetty.unixsocket;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.junit.Test;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -22,9 +24,15 @@ import java.util.Date;
 public class UnixSocketTest
 {
 
-    public static void main( String... args )
+    //public static void main( String... args )
+    @Test
+    public void test_unix_socket()
         throws Exception
     {
+        if ( OS.IS_WINDOWS)
+        {
+            return;
+        }
         Server server = new Server();
         HttpClient httpClient = null;
 
