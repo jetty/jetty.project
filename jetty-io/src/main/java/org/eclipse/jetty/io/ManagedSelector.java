@@ -30,11 +30,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +65,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private final Locker _locker = new Locker();
     private boolean _selecting = false;
-    private final Queue<Runnable> _actions = new ArrayDeque<>();
+    private final Deque<Runnable> _actions = new ArrayDeque<>();
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
@@ -244,20 +245,27 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
         Selector selector = _selector;
+        List<String> keys = null;
+        List<Runnable> actions = null;
         if (selector != null && selector.isOpen())
         {
-            List<Runnable> actions;
+            DumpKeys dump = new DumpKeys();
             try (Locker.Lock lock = _locker.lock())
             {
                 actions = new ArrayList<>(_actions);
+                _actions.addFirst(dump);
+                _selecting = false;
             }
-            List<Object> keys = new ArrayList<>(selector.keys().size());
-            DumpKeys dumpKeys = new DumpKeys(keys);
-            submit(dumpKeys);
-            dumpKeys.await(5, TimeUnit.SECONDS);
-            dump(out, indent, Arrays.asList(new DumpableCollection("keys", keys), new DumpableCollection("actions", actions)));
+            _selector.wakeup();
+            keys = dump.get(5, TimeUnit.SECONDS);
+            if (keys==null)
+                keys = Collections.singletonList("NO DUMP RESPONSE");
+            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("keys", keys), new DumpableCollection("actions", actions)));
+        }
+        else
+        {
+            dumpBeans(out,indent);
         }
     }
 
@@ -495,46 +503,48 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class DumpKeys extends Invocable.NonBlocking
     {
-        private final CountDownLatch latch = new CountDownLatch(1);
-        private final List<Object> _dumps;
-
-        private DumpKeys(List<Object> dumps)
-        {
-            this._dumps = dumps;
-        }
-
+        private final Exchanger<List<String>> _dump = new Exchanger<>();
+        
         @Override
         public void run()
         {
             Selector selector = _selector;
+            List<String> list = new ArrayList<>(selector.keys().size()+1);
             if (selector != null && selector.isOpen())
             {
                 Set<SelectionKey> keys = selector.keys();
-                _dumps.add(selector + " keys=" + keys.size());
+                list.add(selector + " keys=" + keys.size());
                 for (SelectionKey key : keys)
                 {
                     try
                     {
-                        _dumps.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
+                        list.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
                     }
                     catch (Throwable x)
                     {
-                        _dumps.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
+                        list.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
                     }
                 }
             }
-            latch.countDown();
+            try
+            {
+                _dump.exchange(list,500,TimeUnit.MILLISECONDS);
+            }
+            catch (Exception e)
+            {
+                LOG.ignore(e);
+            }
         }
 
-        public boolean await(long timeout, TimeUnit unit)
+        public List<String> get(long timeout, TimeUnit unit)
         {
             try
             {
-                return latch.await(timeout, unit);
+                return _dump.exchange(null,timeout, unit);
             }
-            catch (InterruptedException x)
+            catch (Exception x)
             {
-                return false;
+                return null;
             }
         }
     }

@@ -38,8 +38,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
-import org.eclipse.jetty.util.thread.Locker;
-import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 
 /**
@@ -74,7 +72,26 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
     private enum State { IDLE, PENDING, PRODUCING, REPRODUCING }
 
-    private final Locker _locker = new Locker();
+    private static String[] __histories;
+    static
+    {
+        if (LOG.isDebugEnabled() || Boolean.getBoolean("org.eclipse.jetty.util.thread.strategy.EatWhatYouKill.HISTORY"))
+        {
+            __histories = new String[4*4];
+            for (State s : State.values())
+            {
+                __histories[s.ordinal()*4+0]=String.format("%s=%s",s,"--");
+                __histories[s.ordinal()*4+1]=String.format("%s=%s",s,"-C");
+                __histories[s.ordinal()*4+2]=String.format("%s=%s",s,"P-");
+                __histories[s.ordinal()*4+3]=String.format("%s=%s",s,"PC");
+            }
+        }
+        else
+        {
+            __histories = null;
+        }
+    }
+    
     private final LongAdder _nonBlocking = new LongAdder();
     private final LongAdder _blocking = new LongAdder();
     private final LongAdder _executed = new LongAdder();
@@ -83,6 +100,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private final ReservedThreadExecutor _producers;
     private State _state = State.IDLE;
     private Thread _producerThread;
+    private int _ancient;
+    private int _history;
+    private Runnable _task;
 
     public EatWhatYouKill(Producer producer, Executor executor)
     {
@@ -101,14 +121,14 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         _producers = producers;
         addBean(_producer);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} created", this);
+            LOG.debug("{} created", this);        
     }
 
     @Override
     public void dispatch()
     {
         boolean execute = false;
-        try (Lock locked = _locker.lock())
+        synchronized(this)
         {
             switch(_state)
             {
@@ -151,7 +171,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     private boolean tryProduce()
     {
         boolean producing = false;
-        try (Lock locked = _locker.lock())
+        synchronized(this)
         {
             switch (_state)
             {
@@ -159,13 +179,20 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 case PENDING:
                     // Enter PRODUCING
                     _state = State.PRODUCING;
-                    _producerThread = Thread.currentThread();
+                    if (__histories!=null)
+                    {
+                        _producerThread = Thread.currentThread();
+                        _ancient = _history;
+                        _history = _state.ordinal()*4;
+                    }
                     producing = true;
                     break;
 
                 case PRODUCING:
                     // Keep other Thread producing
                     _state = State.REPRODUCING;
+                    _ancient = _history;
+                    _history = _history+(State.REPRODUCING.ordinal()-State.PRODUCING.ordinal())*4;
                     break;
 
                 default:
@@ -190,22 +217,16 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             {
                 LOG.warn(e);
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} t={}/{}",this,task,Invocable.getInvocationType(task));
-
+            
             if (task==null)
             {
-                try (Lock locked = _locker.lock())
+                synchronized(this)
                 {
                     // Could another task just have been queued with a produce call?
                     switch (_state)
                     {
                         case PRODUCING:
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("{} IDLE", toStringLocked());
                             _state = State.IDLE;
-                            _producerThread = null;
                             producing = false;
                             break;
                         case REPRODUCING:
@@ -213,6 +234,13 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                             break;
                         default:
                             throw new IllegalStateException(toStringLocked());
+                    }
+                    
+                    if (__histories!=null)
+                    {
+                        _task = task;
+                        _ancient = _history;
+                        _history = _state.ordinal()*4+(producing?2:0); 
                     }
                 }
             }
@@ -222,21 +250,28 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 if (Invocable.getInvocationType(task) == InvocationType.NON_BLOCKING)
                 {
                     // PRODUCE CONSUME
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} PC t={}", this, task);
                     consume = true;
-                    _nonBlocking.increment();
+                    _nonBlocking.increment();  
+
+                    if (__histories!=null)
+                    {
+                        synchronized (this)
+                        {
+                            _task = task;
+                            _ancient = _history;
+                            _history = _state.ordinal()*4+(producing?2:0)+(consume?1:0); 
+                        }
+                    }                  
                 }
                 else
                 {
-                    try (Lock locked = _locker.lock())
+                    synchronized(this)
                     {
                         if (_producers.tryExecute(this))
                         {
                             // EXECUTE PRODUCE CONSUME!
                             // We have executed a new Producer, so we can EWYK consume
                             _state = State.PENDING;
-                            _producerThread = null;
                             producing = false;
                             consume = true;
                             _blocking.increment();
@@ -246,13 +281,20 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                             // PRODUCE EXECUTE CONSUME!
                             consume = false;
                             _executed.increment();
+                        }     
+                        
+                        if (__histories!=null)
+                        {
+                            _task = task;
+                            _ancient = _history;
+                            _history = _state.ordinal()*4+(producing?2:0)+(consume?1:0); 
                         }
                     }
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} {} t={}", this, consume ? "EPC" : "PEC", task);
                 }
 
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} p={} c={} t={}/{}", this, producing, consume, task,Invocable.getInvocationType(task));
+                    
                 // Consume or execute task
                 try
                 {
@@ -308,7 +350,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
-        try (Lock locked = _locker.lock())
+        synchronized(this)
         {
             return _state==State.IDLE;
         }
@@ -325,26 +367,26 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Thread producerThread;
-        try (Lock locked = _locker.lock())
-        {
-            super.dump(out, indent);
-            producerThread = _producerThread;
-        }
-        if (producerThread != null)
-        {
-            String name = "producer thread: " + producerThread.getId() + "-" + producerThread.getName() + "-" + producerThread.getState();
-            dump(out, indent, Collections.singletonList(new DumpableCollection(name, Arrays.asList(producerThread.getStackTrace()))));
-        }
-        else
-        {
-            dump(out, indent, Collections.singletonList(new DumpableCollection("no producer thread", Collections.emptyList())));
+        synchronized(this)
+        { 
+            if (__histories!=null)
+            {
+                Object history = new DumpableCollection("history",__histories[_ancient],__histories[_history]);
+                Object task = new DumpableCollection("last task",Collections.singletonList(_task));
+                Object producer = (_producerThread == null) ? "no producer thread" : new DumpableCollection.DumpableThread("last producer ",_producerThread);
+                
+                dumpBeans(out, indent, Arrays.asList(history,task,producer));
+            }
+            else
+            {
+                dumpBeans(out, indent);
+            }
         }
     }
 
     public String toString()
     {
-        try (Lock locked = _locker.lock())
+        synchronized(this)
         {
             return toStringLocked();
         }

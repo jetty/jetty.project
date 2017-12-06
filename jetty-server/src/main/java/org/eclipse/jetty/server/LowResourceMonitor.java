@@ -21,22 +21,30 @@ package org.eclipse.jetty.server;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 
 
 /**
@@ -85,6 +93,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
     private String _reasons;
     private long _lowStarted;
     private boolean _acceptingInLowResources = true;
+    private boolean _checkSelectors = false;
 
     private final Runnable _monitor = new Runnable()
     {
@@ -181,6 +190,17 @@ public class LowResourceMonitor extends AbstractLifeCycle
         _monitorThreads = monitorThreads;
     }
 
+    @ManagedAttribute("True if selector health is checked")
+    public boolean getCheckSelectors()
+    {
+        return _checkSelectors;
+    }
+
+    public void setCheckSelectors(boolean check)
+    {
+        _checkSelectors = check;
+    }
+    
     @ManagedAttribute("The maximum connections allowed for the monitored connectors before low resource handling is activated")
     public int getMaxConnections()
     {
@@ -267,6 +287,76 @@ public class LowResourceMonitor extends AbstractLifeCycle
         return _server.getConnectors();
     }
 
+    class MSCheck extends Invocable.NonBlocking
+    {
+        final ManagedSelector selector;
+        long checked;
+        long updated = 0;
+        
+        MSCheck(ManagedSelector ms)
+        {
+            checked = System.currentTimeMillis();
+            selector = ms;
+        }
+        
+        public void check()
+        {
+            synchronized (this)
+            {
+                try
+                {
+                    if (updated<checked)
+                    {
+                        // The selector has not responded in time!
+                        LOG.warn("{} check has no response for {}. Last ok check {}",
+                                StdErrLog.timestamp(checked,TimeUnit.MILLISECONDS),
+                                selector,
+                                updated==0?"never":StdErrLog.timestamp(updated,TimeUnit.MILLISECONDS));
+
+                        // Dump the strategy now as that does not need to wait
+                        EatWhatYouKill ewyk = selector.getBean(EatWhatYouKill.class);
+                        if (ewyk!=null)
+                        {
+                            String ewyk_dump = ewyk.dump(); 
+                            LOG.info("Strategy dump on stderr for {}",selector);
+                            System.err.println(ewyk_dump);
+                        }
+                        
+                        // Do a full selector dump in a spawned thread as it may block for waiting for the selector!
+                        // Don't use pooled thread as that may be part of the problem
+                        new Thread(()->
+                        {
+                            String full_dump = selector.dump();
+                            LOG.info("Selector dump on stderr for {}",selector);
+                            System.err.println(full_dump);
+                        }).start();
+                    }
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+                finally
+                {
+                    checked = System.currentTimeMillis();
+                }
+            }
+        }
+
+        @Override
+        public void run()
+        {
+            // Run by the selector thread
+            synchronized (this)
+            {
+                // Use currentTimeMillis to align with StdErrLog timestamps
+                updated = System.currentTimeMillis();
+            }
+        }
+    }
+    
+    Map<ManagedSelector, MSCheck> selectors = new HashMap<>();
+    
     protected void monitor()
     {
         String reasons=null;
@@ -280,6 +370,10 @@ public class LowResourceMonitor extends AbstractLifeCycle
             cause+="S";
         }
 
+        // Set of ManagedSelectors we expect to visit
+        boolean checkSelectors = _checkSelectors;
+        Set<ManagedSelector> keys = checkSelectors?new HashSet<>(selectors.keySet()):null;
+        
         for(Connector connector : getMonitoredOrServerConnectors())
         {
             connections+=connector.getConnectedEndPoints().size();
@@ -294,7 +388,34 @@ public class LowResourceMonitor extends AbstractLifeCycle
                     cause+="T";
                 }
             }
+            
+            // Monitor ManagedSelector health
+            if (checkSelectors && connector instanceof ServerConnector)
+            {
+                ServerConnector sc = (ServerConnector)connector;
+                SelectorManager sm = sc.getSelectorManager();
+                for (ManagedSelector ms : sm.getBeans(ManagedSelector.class))
+                {
+                    keys.remove(ms);
+                    MSCheck check = selectors.get(ms);
+                    if (check==null)
+                    {
+                        check = new MSCheck(ms);
+                        selectors.put(ms,check);
+                    }
+                    else
+                    {
+                        check.check();
+                    }
+                    ms.submit(check);
+                }
+            }
         }
+
+        // Remove any deleted ManagedSelectors
+        if (checkSelectors)
+            for (ManagedSelector ms: keys)
+                selectors.remove(ms);
 
         if (_maxConnections>0 && connections>_maxConnections)
         {
