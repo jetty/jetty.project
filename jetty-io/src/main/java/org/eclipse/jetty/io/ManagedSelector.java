@@ -70,7 +70,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     private final int _id;
     private final ExecutionStrategy _strategy;
     private Selector _selector;
-    private int _actionCount;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -316,7 +315,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (task != null)
                     return task;
 
-                Runnable action = nextAction();
+                Runnable action = runActions();
                 if (action != null)
                     return action;
 
@@ -327,7 +326,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
         }
 
-        private Runnable nextAction()
+        private Runnable runActions()
         {
             Selector selector = null;
             Runnable action = null;
@@ -339,39 +338,52 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // The solution implemented here is to only process the number of actions that were
                 // originally in the action queue before attempting a select
                 
-                if (_actionCount==0)
-                {               
-                    // Calculate how many actions we are prepared to handle before selection
-                    _actionCount = _actions.size();
-                    if (_actionCount>0)
-                        action = _actions.poll();
-                    else
-                        _selecting = true;
-                }
-                else if (_actionCount==1)
+                int actionCount = _actions.size();
+                while(actionCount-->0)
                 {
-                    _actionCount = 0;
-                    
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Forcing selection, actions={}",_actions.size());
-                    
-                    if (_actions.size()==0)
+                    action = _actions.poll();
+
+                    if (Invocable.getInvocationType(action)!=Invocable.InvocationType.NON_BLOCKING)
                     {
-                        // This was the last action, so select normally
-                        _selecting = true;
+                        LOG.warn("Bad action invocation type: "+action);
+                        break;
                     }
-                    else
+                    
+                    try
                     {
-                        // there are still more actions to handle, so
-                        // immediately wake up (as if remaining action were just added).
-                        selector = _selector;
-                        _selecting = false;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("running action {}", action);
+                        action.run();
                     }
+                    catch(Exception e)
+                    {
+                        LOG.warn(e);
+                    }
+                    finally
+                    {
+                        action = null;
+                    }
+                }
+                
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ran actions: {} {}",action, _actions.size());
+
+                if (action!=null)
+                {
+                    // We are running a bad action type, so we will be called by the producer again before selecting
+                    _selecting = false;
+                }
+                else if (_actions.size()==0)
+                {
+                    // This was the last action, so select normally
+                    _selecting = true;
                 }
                 else
                 {
-                    _actionCount--;
-                    action = _actions.poll();
+                    // there are still more actions to handle, so
+                    // immediately wake up (as if remaining action were just added).
+                    selector = _selector;
+                    _selecting = false;
                 }
             }
 
@@ -779,7 +791,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             _latch.countDown();
 
             for (EndPoint endp : end_points)
-                submit(new EndPointCloser(endp, _allClosed));
+                execute(new EndPointCloser(endp, _allClosed));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {} endPoints on {}", size, ManagedSelector.this);
