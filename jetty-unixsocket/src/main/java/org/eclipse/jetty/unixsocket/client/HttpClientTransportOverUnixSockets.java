@@ -147,6 +147,8 @@ public class HttpClientTransportOverUnixSockets
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug( "read from server: {}", response );
 
+
+
                 exchange.getResponseListeners().stream().forEach( responseListener -> {
                     if (responseListener instanceof Response.CompleteListener)
                     {
@@ -157,6 +159,7 @@ public class HttpClientTransportOverUnixSockets
             }
             catch ( IOException e )
             {
+                // TODO cleanup
                 e.printStackTrace();
             }
 
