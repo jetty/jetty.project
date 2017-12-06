@@ -959,6 +959,11 @@
         <version>${slf4j-version}</version>
       </dependency>
       <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-unixsocket</artifactId>
+        <version>0.18</version>
+      </dependency>
+      <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.12</version>
