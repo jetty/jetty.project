@@ -21,8 +21,8 @@ package org.eclipse.jetty.unixsocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-
-import org.eclipse.jetty.util.BufferUtil;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import jnr.enxio.channels.NativeSelectorProvider;
 import jnr.unixsocket.UnixServerSocketChannel;
@@ -42,7 +42,7 @@ public class JnrTest
         Selector serverSelector = NativeSelectorProvider.getInstance().openSelector();
         serverChannel.configureBlocking(false);
         serverChannel.socket().bind(address);
-        SelectionKey acceptKey = serverChannel.register(serverSelector, SelectionKey.OP_ACCEPT, "SERVER");
+        serverChannel.register(serverSelector, SelectionKey.OP_ACCEPT, "SERVER");
         System.err.printf("serverChannel=%s,%n",serverChannel);
         
         UnixSocketChannel client = UnixSocketChannel.open( address );
@@ -67,18 +67,18 @@ public class JnrTest
         selected = serverSelector.selectNow();
         System.err.printf("serverSelected=%d %s%n",selected,serverSelector.selectedKeys());
         
-        ByteBuffer buffer = BufferUtil.allocate(1024);
+        ByteBuffer buffer = ByteBuffer.allocate(32768);
 
-        BufferUtil.clearToFill(buffer);
+        buffer.clear();
         int read = server.read(buffer);
-        BufferUtil.flipToFlush(buffer,0);
+        buffer.flip();
         System.err.printf("server read=%d%n",read);
 
         
         selected = clientSelector.selectNow();
         System.err.printf("clientSelected=%d %s%n",selected,clientSelector.selectedKeys());
         
-        int wrote = client.write(BufferUtil.toBuffer("Hello"));
+        int wrote = client.write(ByteBuffer.wrap("Hello".getBytes(StandardCharsets.ISO_8859_1)));
         System.err.printf("client wrote=%d%n",wrote);
         
         selected = serverSelector.selectNow();
@@ -87,17 +87,17 @@ public class JnrTest
         serverSelector.selectedKeys().clear();
         System.err.printf("key=%s/%s c=%b a=%b r=%b w=%b ch=%s%n",key,key.attachment(),key.isConnectable(),key.isAcceptable(),key.isReadable(),key.isWritable(),key.channel());
 
-        BufferUtil.clearToFill(buffer);
+        buffer.clear();
         read = server.read(buffer);
-        BufferUtil.flipToFlush(buffer,0);
-        System.err.printf("server read=%d '%s'%n",read,BufferUtil.toString(buffer));
+        buffer.flip();
+        System.err.printf("server read=%d '%s'%n",read,new String(buffer.array(),0,buffer.limit(),StandardCharsets.ISO_8859_1));
 
 
         
         selected = clientSelector.selectNow();
         System.err.printf("clientSelected=%d %s%n",selected,clientSelector.selectedKeys());
 
-        wrote = server.write(BufferUtil.toBuffer("Ciao!"));
+        wrote = server.write(ByteBuffer.wrap("Ciao!".getBytes(StandardCharsets.ISO_8859_1)));
         System.err.printf("server wrote=%d%n",wrote);
         
         selected = clientSelector.selectNow();
@@ -111,13 +111,38 @@ public class JnrTest
         clientSelector.selectedKeys().clear();
         System.err.printf("key=%s/%s c=%b a=%b r=%b w=%b ch=%s%n",key,key.attachment(),key.isConnectable(),key.isAcceptable(),key.isReadable(),key.isWritable(),key.channel());
 
-        BufferUtil.clearToFill(buffer);
+        buffer.clear();
         read = client.read(buffer);
-        BufferUtil.flipToFlush(buffer,0);
-        System.err.printf("client read=%d '%s'%n",read,BufferUtil.toString(buffer));
+        buffer.flip();
+        System.err.printf("client read=%d '%s'%n",read,new String(buffer.array(),0,buffer.limit(),StandardCharsets.ISO_8859_1));
 
+        
+        System.err.println("So far so good.... now it gets strange...");
+        
+        
+        // Let's write until flow control hit
 
-        server.close();
+        int size = buffer.capacity();
+        Arrays.fill(buffer.array(),0,size,(byte)'X');
+        long written = 0;
+        while(true)
+        {
+            buffer.position(0).limit(size);
+            wrote = server.write(buffer);
+            
+            System.err.printf("server wrote %d/%d remaining=%d%n",wrote,size,buffer.remaining());
+            
+            if (buffer.remaining()!=(size-wrote))
+                System.err.printf("BUG!!!!!!!!!!!!!!!!%n");
+            
+            if (wrote==0)
+                break;
+            written+=wrote;
+        }
+
+        System.err.printf("server wrote %d before flow control%n",written);
+        
+
 
         selected = clientSelector.selectNow();
         System.err.printf("clientSelected=%d %s%n",selected,clientSelector.selectedKeys());
@@ -125,11 +150,15 @@ public class JnrTest
         clientSelector.selectedKeys().clear();
         System.err.printf("key=%s/%s c=%b a=%b r=%b w=%b ch=%s%n",key,key.attachment(),key.isConnectable(),key.isAcceptable(),key.isReadable(),key.isWritable(),key.channel());
 
-        BufferUtil.clearToFill(buffer);
+        buffer.clear();
+        buffer.limit(32);
         read = client.read(buffer);
-        BufferUtil.flipToFlush(buffer,0);
-        System.err.printf("client read=%d '%s'%n",read,BufferUtil.toString(buffer));
+        buffer.flip();
+        System.err.printf("client read=%d '%s'%n",read,new String(buffer.array(),0,buffer.limit(),StandardCharsets.ISO_8859_1));
 
+
+        server.close();
+        client.close();
                 
     }
     
