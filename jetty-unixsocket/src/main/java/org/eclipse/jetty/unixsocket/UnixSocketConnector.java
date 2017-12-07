@@ -248,8 +248,8 @@ public class UnixSocketConnector extends AbstractConnector
             serverChannel.configureBlocking(getAcceptors()>0);
             serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
             addBean(serverChannel);
-
-            LOG.debug("opened {}",serverChannel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("opened {}",serverChannel);
             _acceptChannel = serverChannel;
         }
     }
@@ -430,9 +430,11 @@ public class UnixSocketConnector extends AbstractConnector
         @Override
         protected SelectableChannel doAccept(SelectableChannel server) throws IOException
         {
-            LOG.debug("doAccept async {}",server);
+            if (LOG.isDebugEnabled())
+                LOG.debug("doAccept async {}",server);
             UnixSocketChannel channel = ((UnixServerSocketChannel)server).accept();
-            LOG.debug("accepted async {}",channel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("accepted async {}",channel);
             return channel;
         }
     }

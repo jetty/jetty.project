@@ -32,7 +32,6 @@ import jnr.unixsocket.UnixSocketChannel;
 
 public class UnixSocketEndPoint extends ChannelEndPoint
 {
-    public final static InetSocketAddress NOIP=new InetSocketAddress(0);
     private static final Logger LOG = Log.getLogger(UnixSocketEndPoint.class);
 
     private final UnixSocketChannel _channel;

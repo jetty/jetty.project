@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.client.http.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
@@ -174,6 +175,30 @@ public class HttpChannelAssociationTest extends AbstractTest
                             protected HttpChannelOverFCGI newHttpChannel(int id, org.eclipse.jetty.client.api.Request request)
                             {
                                 return new HttpChannelOverFCGI(this, getFlusher(), id, request.getIdleTimeout())
+                                {
+                                    @Override
+                                    public boolean associate(HttpExchange exchange)
+                                    {
+                                        return code.test(exchange) && super.associate(exchange);
+                                    }
+                                };
+                            }
+                        };
+                    }
+                };
+            }
+            case UNIX_SOCKET:
+            {
+                return new HttpClientTransportOverUnixSockets( sockFile.toString() ){
+                    @Override
+                    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+                    {
+                        return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                        {
+                            @Override
+                            protected HttpChannelOverHTTP newHttpChannel()
+                            {
+                                return new HttpChannelOverHTTP(this)
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)
