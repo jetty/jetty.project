@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -31,10 +32,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HTTP2Flusher extends IteratingCallback
+public class HTTP2Flusher extends IteratingCallback implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(HTTP2Flusher.class);
 
@@ -105,7 +108,15 @@ public class HTTP2Flusher extends IteratingCallback
         return false;
     }
 
-    public int getQueueSize()
+    private int getWindowQueueSize()
+    {
+        synchronized (this)
+        {
+            return windows.size();
+        }
+    }
+
+    private int getFrameQueueSize()
     {
         synchronized (this)
         {
@@ -289,6 +300,28 @@ public class HTTP2Flusher extends IteratingCallback
     private void closed(Entry entry, Throwable failure)
     {
         entry.failed(failure);
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append(System.lineSeparator());
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[window_queue=%d,frame_queue=%d,actives=%d]",
+                super.toString(),
+                getWindowQueueSize(),
+                getFrameQueueSize(),
+                actives.size());
     }
 
     public static abstract class Entry extends Callback.Nested

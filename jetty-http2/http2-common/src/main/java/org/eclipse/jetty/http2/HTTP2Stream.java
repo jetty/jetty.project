@@ -37,11 +37,13 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class HTTP2Stream extends IdleTimeout implements IStream, Callback
+public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpable
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
@@ -444,6 +446,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
             LOG.info("Failure while notifying listener " + listener, x);
             return true;
         }
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append(System.lineSeparator());
     }
 
     @Override
