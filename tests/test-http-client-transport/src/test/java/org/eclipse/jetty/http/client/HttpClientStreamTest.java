@@ -60,6 +60,7 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -463,7 +464,8 @@ public class HttpClientStreamTest extends AbstractTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // Connect to the wrong port
-        client.newRequest(newURI())
+        client.newRequest("localhost",
+                          (connector instanceof ServerConnector?ServerConnector.class.cast( connector ).getLocalPort():1))
                 .scheme(getScheme())
                 .send(listener);
         Result result = listener.await(5, TimeUnit.SECONDS);
@@ -940,8 +942,8 @@ public class HttpClientStreamTest extends AbstractTest
         final byte[] data = new byte[512];
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
-        client.newRequest("0.0.0.1:"
-                              + ((connector instanceof ServerConnector)?ServerConnector.class.cast( connector ).getLocalPort():"0"))
+        client.newRequest("http://0.0.0.1"
+                              + ((connector instanceof ServerConnector)?":"+ServerConnector.class.cast(connector).getLocalPort():""))
                 .scheme(getScheme())
                 .content(content)
                 .send(result ->
@@ -1028,8 +1030,8 @@ public class HttpClientStreamTest extends AbstractTest
         InputStreamContentProvider content = new InputStreamContentProvider(stream);
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
-        client.newRequest("0.0.0.1:"
-                              + ((connector instanceof ServerConnector)?ServerConnector.class.cast( connector ).getLocalPort():"0"))
+        client.newRequest("http://0.0.0.1"
+                              + ((connector instanceof ServerConnector)?":"+ServerConnector.class.cast(connector).getLocalPort():""))
                 .scheme(getScheme())
                 .content(content)
                 .send(result ->

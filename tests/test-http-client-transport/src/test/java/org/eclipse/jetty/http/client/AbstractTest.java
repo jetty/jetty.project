@@ -71,7 +71,7 @@ public abstract class AbstractTest
         return Transport.values();//new Transport[]{UNIX_SOCKET};// Transport.values();
     }
 
-    private Path sockFile;
+    protected Path sockFile;
 
     @Rule
     public final TestTracker tracker = new TestTracker();

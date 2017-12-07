@@ -51,6 +51,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.log.Log;
@@ -116,6 +117,10 @@ public class HttpClientLoadTest extends AbstractTest
                     }
                 });
                 return clientTransport;
+            }
+            case UNIX_SOCKET:
+            {
+                return new HttpClientTransportOverUnixSockets( sockFile.toString() );
             }
             default:
             {
