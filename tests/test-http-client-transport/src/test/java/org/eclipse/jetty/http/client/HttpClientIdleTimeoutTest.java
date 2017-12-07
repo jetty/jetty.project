@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -138,9 +139,9 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     public void testIdleServerIdleTimeout() throws Exception
     {
         start(new EmptyServerHandler());
-        if (connector instanceof ServerConnector)
+        if (connector instanceof AbstractConnector )
         {
-            ServerConnector.class.cast( connector).setIdleTimeout(idleTimeout);
+            AbstractConnector.class.cast( connector).setIdleTimeout(idleTimeout);
         }
 
         ContentResponse response1 = client.newRequest(newURI()).send();

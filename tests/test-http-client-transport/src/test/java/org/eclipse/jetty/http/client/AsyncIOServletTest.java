@@ -64,6 +64,7 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpInput;
@@ -225,9 +226,8 @@ public class AsyncIOServletTest extends AbstractTest
     @Test
     public void testAsyncReadIdleTimeout() throws Exception
     {
-        if (!(connector instanceof ServerConnector))
+        if (!(connector instanceof AbstractConnector ))
         {
-            // skip test for unix socket
             return;
         }
         int status = 567;
@@ -268,7 +268,7 @@ public class AsyncIOServletTest extends AbstractTest
                 });
             }
         });
-        ServerConnector.class.cast(connector).setIdleTimeout(1000);
+        AbstractConnector.class.cast(connector).setIdleTimeout(1000);
         CountDownLatch closeLatch = new CountDownLatch(1);
         connector.addBean(new Connection.Listener()
         {

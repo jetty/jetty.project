@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -48,9 +49,11 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
@@ -61,6 +64,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.eclipse.jetty.http.client.AbstractTest.Transport.UNIX_SOCKET;
 import static org.junit.Assert.assertThat;
 
 public class HttpClientLoadTest extends AbstractTest
@@ -75,8 +79,15 @@ public class HttpClientLoadTest extends AbstractTest
     }
 
     @Override
-    protected ServerConnector newServerConnector(Server server)
-    {
+    protected Connector newServerConnector( Server server) throws Exception {
+        if (transport == UNIX_SOCKET)
+        {
+            sockFile = Files.createTempFile( "unix", ".sock" );
+            UnixSocketConnector
+                unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));
+            unixSocketConnector.setUnixSocket( sockFile.toString() );
+            return unixSocketConnector;
+        }
         int cores = Runtime.getRuntime().availableProcessors();
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);

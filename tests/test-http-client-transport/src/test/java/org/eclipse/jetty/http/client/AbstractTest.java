@@ -236,7 +236,6 @@ public abstract class AbstractTest
             }
             case UNIX_SOCKET:
             {
-
                 return new HttpClientTransportOverUnixSockets( sockFile.toString() );
             }
             default:
