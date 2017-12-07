@@ -245,7 +245,8 @@ public class HttpClientLoadTest extends AbstractTest
     private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)
     {
         long requestId = requestCount.incrementAndGet();
-        Request request = client.newRequest(host, connector.getLocalPort())
+        Request request = client.newRequest(host,
+                                            (connector instanceof ServerConnector) ? ServerConnector.class.cast(connector).getLocalPort(): 0)
                 .scheme(scheme)
                 .path("/" + requestId)
                 .method(method);

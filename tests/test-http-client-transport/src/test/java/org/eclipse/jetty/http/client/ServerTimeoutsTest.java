@@ -46,6 +46,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -67,7 +68,8 @@ public class ServerTimeoutsTest extends AbstractTest
         if (h2 != null)
             h2.setStreamIdleTimeout(idleTimeout);
         else
-            connector.setIdleTimeout(idleTimeout);
+            if (connector instanceof ServerConnector)
+                ServerConnector.class.cast(connector).setIdleTimeout(idleTimeout);
     }
 
     @Test

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.servlet.http.HttpServlet;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -37,6 +31,7 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -47,6 +42,8 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.unixsocket.UnixSocketConnector;
+import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -56,14 +53,25 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import javax.servlet.http.HttpServlet;
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.eclipse.jetty.http.client.AbstractTest.Transport.UNIX_SOCKET;
+
 @RunWith(Parameterized.class)
 public abstract class AbstractTest
 {
     @Parameterized.Parameters(name = "transport: {0}")
     public static Object[] parameters() throws Exception
     {
-        return Transport.values();
+        return Transport.values();//new Transport[]{UNIX_SOCKET};// Transport.values();
     }
+
+    private Path sockFile;
 
     @Rule
     public final TestTracker tracker = new TestTracker();
@@ -72,7 +80,7 @@ public abstract class AbstractTest
     protected final Transport transport;
     protected SslContextFactory sslContextFactory;
     protected Server server;
-    protected ServerConnector connector;
+    protected Connector connector;
     protected ServletContextHandler context;
     protected String servletPath = "/servlet";
     protected HttpClient client;
@@ -123,11 +131,25 @@ public abstract class AbstractTest
         connector = newServerConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
-        server.start();
+        try
+        {
+            server.start();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
     }
 
-    protected ServerConnector newServerConnector(Server server)
+    protected Connector newServerConnector(Server server) throws Exception
     {
+        if (transport == UNIX_SOCKET)
+        {
+            sockFile = Files.createTempFile( "unix", ".sock" );
+            UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory( transport ));
+            unixSocketConnector.setUnixSocket( sockFile.toString() );
+            return unixSocketConnector;
+        }
         return new ServerConnector(server, provideServerConnectionFactory(transport));
     }
 
@@ -149,6 +171,7 @@ public abstract class AbstractTest
         List<ConnectionFactory> result = new ArrayList<>();
         switch (transport)
         {
+            case UNIX_SOCKET:
             case HTTP:
             {
                 result.add(new HttpConnectionFactory(httpConfig));
@@ -211,6 +234,11 @@ public abstract class AbstractTest
             {
                 return new HttpClientTransportOverFCGI(1, false, "");
             }
+            case UNIX_SOCKET:
+            {
+
+                return new HttpClientTransportOverUnixSockets( sockFile.toString() );
+            }
             default:
             {
                 throw new IllegalArgumentException();
@@ -237,13 +265,18 @@ public abstract class AbstractTest
 
     protected String newURI()
     {
-        return getScheme() + "://localhost:" + connector.getLocalPort();
+        if (connector instanceof  ServerConnector)
+        {
+            return getScheme() + "://localhost:" + ServerConnector.class.cast( connector ).getLocalPort();
+        }
+        return getScheme() + "://localhost";
     }
 
     protected boolean isTransportSecure()
     {
         switch (transport)
         {
+            case UNIX_SOCKET:
             case HTTP:
             case H2C:
             case FCGI:
@@ -277,6 +310,6 @@ public abstract class AbstractTest
 
     protected enum Transport
     {
-        HTTP, HTTPS, H2C, H2, FCGI
+        HTTP, HTTPS, H2C, H2, FCGI, UNIX_SOCKET;
     }
 }
