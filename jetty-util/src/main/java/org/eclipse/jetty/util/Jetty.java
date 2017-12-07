@@ -90,7 +90,7 @@ public class Jetty
         }
         catch ( NumberFormatException e )
         {
-            LOG.debug( e );
+            LOG.ignore( e );
             return "unknown";
         }
     }
