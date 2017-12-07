@@ -131,7 +131,17 @@ public class HttpClientLoadTest extends AbstractTest
             }
             case UNIX_SOCKET:
             {
-                return new HttpClientTransportOverUnixSockets( sockFile.toString() );
+                HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets( sockFile.toString() );
+                clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
+                {
+                    @Override
+                    protected void leaked(LeakDetector.LeakInfo leakInfo)
+                    {
+                        super.leaked(leakInfo);
+                        connectionLeaks.incrementAndGet();
+                    }
+                });
+                return clientTransport;
             }
             default:
             {
