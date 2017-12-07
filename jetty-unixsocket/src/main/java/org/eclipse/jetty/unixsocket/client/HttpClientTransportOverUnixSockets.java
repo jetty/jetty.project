@@ -19,6 +19,7 @@
 package org.eclipse.jetty.unixsocket.client;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.channels.SelectableChannel;
@@ -71,17 +72,9 @@ public class HttpClientTransportOverUnixSockets
         UnixSocketChannel channel = null;
         try
         {
-            // TODO is the the right place for the localhost check?
-            // TODO is there a better way to test for localhost?
-            switch(address.getHostString())
-            {
-                case "localhost":
-                case "127.0.0.1":
-                case "::1":
-                    break;
-                default: 
-                    throw new IOException("UnixSocket cannot connect to "+address.getHostString());
-            }
+            InetAddress inet = address.getAddress();
+            if (!inet.isLoopbackAddress() && !inet.isLinkLocalAddress() && !inet.isSiteLocalAddress())
+                throw new IOException("UnixSocket cannot connect to "+address.getHostString());
             
             // Open a unix socket
             UnixSocketAddress unixAddress = new UnixSocketAddress( this._unixSocket );
@@ -92,10 +85,6 @@ public class HttpClientTransportOverUnixSockets
 
             configure(client, channel);
 
-            // TODO is this needed? Can we do SSL?
-            context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, destination.getHost());
-            context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, destination.getPort());
-
             channel.configureBlocking(false);
             selectorManager.accept(channel, context);            
         }
@@ -103,7 +92,6 @@ public class HttpClientTransportOverUnixSockets
         // UnresolvedAddressException are not IOExceptions.
         catch (Throwable x)
         {
-            LOG.info(x);
             // If IPv6 is not deployed, a generic SocketException "Network is unreachable"
             // exception is being thrown, so we attempt to provide a better error message.
             if (x.getClass() == SocketException.class)

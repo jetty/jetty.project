@@ -68,10 +68,9 @@ public abstract class AbstractTest
     @Parameterized.Parameters(name = "transport: {0}")
     public static Object[] parameters() throws Exception
     {
-        return Transport.values();//new Transport[]{UNIX_SOCKET};// Transport.values();
+        return Transport.values();
     }
 
-    protected Path sockFile;
 
     @Rule
     public final TestTracker tracker = new TestTracker();
@@ -84,6 +83,7 @@ public abstract class AbstractTest
     protected ServletContextHandler context;
     protected String servletPath = "/servlet";
     protected HttpClient client;
+    protected Path sockFile;
 
     public AbstractTest(Transport transport)
     {
@@ -103,6 +103,13 @@ public abstract class AbstractTest
         startClient();
     }
 
+    @After
+    public void after() throws Exception
+    {
+        if (sockFile!=null)
+            Files.deleteIfExists(sockFile);
+    }
+    
     protected void startServer(HttpServlet servlet) throws Exception
     {
         context = new ServletContextHandler();
@@ -146,6 +153,7 @@ public abstract class AbstractTest
         if (transport == UNIX_SOCKET)
         {
             sockFile = Files.createTempFile( "unix", ".sock" );
+            Files.deleteIfExists(sockFile);
             UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory( transport ));
             unixSocketConnector.setUnixSocket( sockFile.toString() );
             return unixSocketConnector;
