@@ -255,7 +255,7 @@ public class UnixSocketConnector extends AbstractConnector
             }
             catch ( IOException e )
             {
-                LOG.info( "cannot bind with" + bindAddress + " - " + acceptQueueSize, e );
+                LOG.info( "cannot bind with" + bindAddress + " - " + acceptQueueSize + " - " + _unixSocket, e );
                 throw e;
             }
             addBean(serverChannel);
