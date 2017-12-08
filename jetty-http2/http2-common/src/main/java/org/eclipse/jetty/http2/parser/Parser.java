@@ -19,7 +19,7 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -117,6 +117,13 @@ public class Parser
                     }
                 }
             }
+        }
+        catch (BadMessageException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            BufferUtil.clear(buffer);
+            notifyConnectionFailure(x.getCode(), x.getReason());
         }
         catch (Throwable x)
         {
