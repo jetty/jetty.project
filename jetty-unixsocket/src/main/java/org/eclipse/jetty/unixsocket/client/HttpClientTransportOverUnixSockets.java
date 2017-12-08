@@ -25,6 +25,8 @@ import java.net.SocketException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -50,6 +52,7 @@ public class HttpClientTransportOverUnixSockets
     private String _unixSocket;
     private SelectorManager selectorManager;
 
+    private UnixSocketChannel channel;
 
     public HttpClientTransportOverUnixSockets( String unixSocket )
     {
@@ -69,7 +72,7 @@ public class HttpClientTransportOverUnixSockets
     @Override
     public void connect( InetSocketAddress address, Map<String, Object> context )
     {
-        UnixSocketChannel channel = null;
+
         try
         {
             InetAddress inet = address.getAddress();
@@ -120,7 +123,6 @@ public class HttpClientTransportOverUnixSockets
             super(client,selectors);
         }
 
-        
         @Override
         protected Selector newSelector() throws IOException
         {
@@ -134,8 +136,30 @@ public class HttpClientTransportOverUnixSockets
             endp.setIdleTimeout(getHttpClient().getIdleTimeout());
             return endp;
         }
-       
+    }
 
-        
+    @Override
+    protected void doStop()
+        throws Exception
+    {
+        super.doStop();
+        try
+        {
+            if (channel != null)
+                channel.close();
+        }
+        catch (IOException xx)
+        {
+            LOG.ignore(xx);
+        }
+
+        try
+        {
+            Files.deleteIfExists( Paths.get(_unixSocket));
+        }
+        catch ( IOException xx )
+        {
+            LOG.ignore(xx);
+        }
     }
 }
