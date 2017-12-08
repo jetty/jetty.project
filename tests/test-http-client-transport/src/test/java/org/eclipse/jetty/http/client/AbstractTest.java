@@ -69,6 +69,7 @@ public abstract class AbstractTest
     public static Object[] parameters() throws Exception
     {
         return Transport.values();
+        //return new Transport[]{Transport.UNIX_SOCKET};//
     }
 
 
