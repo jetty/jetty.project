@@ -74,6 +74,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     @Override
     public void onStreamDestroyed(IStream stream)
     {
+        streamsStalls.remove(stream);
     }
 
     @Override
