@@ -88,9 +88,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
-        if (!startWrite(callback))
-            return;
-        session.frames(this, this, frame, Frame.EMPTY_ARRAY);
+        if (startWrite(callback))
+            session.frames(this, this, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
@@ -102,9 +101,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void data(DataFrame frame, Callback callback)
     {
-        if (!startWrite(callback))
-            return;
-        session.data(this, this, frame);
+        if (startWrite(callback))
+            session.data(this, this, frame);
     }
 
     @Override
@@ -292,8 +290,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         remoteReset = true;
         close();
         session.removeStream(this);
-        callback.succeeded();
-        notifyReset(this, frame);
+        notifyReset(this, frame, callback);
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -377,8 +374,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void close()
     {
-        closeState.set(CloseState.CLOSED);
-        onClose();
+        if (closeState.getAndSet(CloseState.CLOSED) != CloseState.CLOSED)
+            onClose();
     }
 
     @Override
@@ -417,14 +414,14 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
-    private void notifyReset(Stream stream, ResetFrame frame)
+    private void notifyReset(Stream stream, ResetFrame frame, Callback callback)
     {
         final Listener listener = this.listener;
         if (listener == null)
             return;
         try
         {
-            listener.onReset(stream, frame);
+            listener.onReset(stream, frame, callback);
         }
         catch (Throwable x)
         {

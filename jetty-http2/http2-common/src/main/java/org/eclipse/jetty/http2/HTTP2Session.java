@@ -282,7 +282,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         IStream stream = getStream(frame.getStreamId());
         if (stream != null)
-            stream.process(frame, Callback.NOOP);
+            stream.process(frame, new ResetCallback());
         else
             notifyReset(this, frame);
     }
@@ -753,8 +753,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         IStream removed = streams.remove(stream.getId());
         if (removed != null)
         {
-            assert removed == stream;
-
             boolean local = stream.isLocal();
             if (local)
                 localStreamCount.decrementAndGet();
@@ -1326,6 +1324,32 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             promise.failed(x);
+        }
+    }
+
+    private class ResetCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            complete();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        private void complete()
+        {
+            flusher.iterate();
         }
     }
 

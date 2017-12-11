@@ -116,7 +116,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
     }
 
-    private int getFrameQueueSize()
+    public int getFrameQueueSize()
     {
         synchronized (this)
         {
@@ -141,15 +141,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 entry.perform();
             }
 
-            if (!frames.isEmpty())
+            for (Entry entry : frames)
             {
-                for (Entry entry : frames)
-                {
-                    entries.offer(entry);
-                    actives.add(entry);
-                }
-                frames.clear();
+                entries.offer(entry);
+                actives.add(entry);
             }
+            frames.clear();
         }
 
 
@@ -166,11 +163,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {}", entry);
 
-            // If the stream has been reset, don't send the frame.
-            if (entry.reset())
+            // If the stream has been reset or removed, don't send the frame.
+            if (entry.isStale())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Resetting {}", entry);
+                    LOG.debug("Stale {}", entry);
                 continue;
             }
 
@@ -328,7 +325,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     {
         protected final Frame frame;
         protected final IStream stream;
-        private boolean reset;
 
         protected Entry(Frame frame, IStream stream, Callback callback)
         {
@@ -346,7 +342,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         private void complete()
         {
-            if (reset)
+            if (!isProtocol() && stream != null && stream.isReset())
                 failed(new EofException("reset"));
             else
                 succeeded();
@@ -363,23 +359,31 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             super.failed(x);
         }
 
-        private boolean reset()
+        private boolean isStale()
         {
-            return this.reset = stream != null && stream.isReset() && !isProtocol();
+            return !isProtocol() && stream != null && (stream.isReset() || stream.getSession().getStream(stream.getId()) == null);
         }
 
         private boolean isProtocol()
         {
             switch (frame.getType())
             {
+                case DATA:
+                case HEADERS:
+                case PUSH_PROMISE:
+                case CONTINUATION:
+                    return false;
                 case PRIORITY:
                 case RST_STREAM:
+                case SETTINGS:
+                case PING:
                 case GO_AWAY:
                 case WINDOW_UPDATE:
+                case PREFACE:
                 case DISCONNECT:
                     return true;
                 default:
-                    return false;
+                    throw new IllegalStateException();
             }
         }
 
