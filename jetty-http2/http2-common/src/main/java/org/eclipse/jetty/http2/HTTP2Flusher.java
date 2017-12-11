@@ -342,7 +342,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         private void complete()
         {
-            if (!isProtocol() && stream != null && stream.isReset())
+            if (isStale())
                 failed(new EofException("reset"));
             else
                 succeeded();
@@ -361,7 +361,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         private boolean isStale()
         {
-            return !isProtocol() && stream != null && (stream.isReset() || stream.getSession().getStream(stream.getId()) == null);
+            return !isProtocol() && stream != null && stream.isReset();
         }
 
         private boolean isProtocol()
