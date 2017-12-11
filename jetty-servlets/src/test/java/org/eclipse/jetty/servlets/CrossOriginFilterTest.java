@@ -20,8 +20,11 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
@@ -128,6 +131,31 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://subdomain.example.com";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "http://*.example.com");
+        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
+
+        String request = "" +
+        "GET / HTTP/1.1\r\n" +
+        "Host: localhost\r\n" +
+        "Connection: close\r\n" +
+        "Origin: " + origin + "\r\n" +
+        "\r\n";
+        String response = tester.getResponses(request);
+        Assert.assertTrue(response.contains("HTTP/1.1 200"));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));
+        Assert.assertTrue(response.contains("Vary"));
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+    }
+    
+    @Test
+    public void testSimpleRequestWithRegexMatchingOrigin() throws Exception
+    {
+        FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
+        String origin = "http://subdomain.example.com";
+        filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_REGEX_PARAM, "https?://.*[.]example[.]com");
         tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -565,6 +593,43 @@ public class CrossOriginFilterTest
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
 
+    
+    /**
+     * Tests the inner workings of the pair generateAllowedOrigins - originMatches
+     */
+    @Test
+    public void testGenerateAllowedOriginsFromRegex() 
+    {
+        final List<Pattern> allowedOrigins = new LinkedList<>();
+        CrossOriginFilter.generateAllowedOriginsFromRegex(allowedOrigins, 
+               "  foo[.]bar  \r\n"
+             + "  (dev|stage|prod).example.org  \n"
+             + "    \n");
+        Assert.assertEquals(2, allowedOrigins.size());
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "example.org"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "foo.bar"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "prod.example.org"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "dev.example.orglala"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "xxfoo.bar"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "foo.barxx"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , ""));
+    }
+    
+    /**
+     * Tests the inner workings of the pair generateAllowedOrigins - originMatches
+     */
+    @Test
+    public void testOriginMatches() 
+    {
+        final List<Pattern> allowedOrigins = new LinkedList<>();
+        Assert.assertFalse(CrossOriginFilter.generateAllowedOrigins(allowedOrigins, "  foo.bar  , *.foo  ", "*"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "example.org"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "foo.bar"));
+        Assert.assertTrue (CrossOriginFilter.originMatches(allowedOrigins , "example.foo"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "xxfoo.bar"));
+        Assert.assertFalse(CrossOriginFilter.originMatches(allowedOrigins , "foo.barxx"));
+    }
+    
     public static class ResourceServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
