@@ -409,7 +409,7 @@
   </dependencies>
   <build>
     <plugins>
-        <!-- downgrading to version 2.18 here as there's a known JVM crash issue with the 2.19.x series -->
+      <!-- upgrading to version 2.20.1 for jdk9 support -->
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.20.1</version>
