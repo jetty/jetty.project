@@ -638,12 +638,22 @@ public class HttpClient extends ContainerLifeCycle
         this.byteBufferPool = byteBufferPool;
     }
 
+    /**
+     * @return the name of this HttpClient
+     */
     @ManagedAttribute("The name of this HttpClient")
     public String getName()
     {
         return name;
     }
 
+    /**
+     * <p>Sets the name of this HttpClient.</p>
+     * <p>The name is also used to generate the JMX ObjectName of this HttpClient
+     * and must be set before the registration of the HttpClient MBean in the MBeanServer.</p>
+     *
+     * @param name the name of this HttpClient
+     */
     public void setName(String name)
     {
         this.name = name;
