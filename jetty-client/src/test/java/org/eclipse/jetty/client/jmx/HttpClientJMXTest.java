@@ -26,6 +26,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,17 +36,35 @@ public class HttpClientJMXTest
     @Test
     public void testHttpClientName() throws Exception
     {
-        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+        String name = "foo";
         HttpClient httpClient = new HttpClient();
-        httpClient.addBean(mbeanContainer);
+        httpClient.setName(name);
         httpClient.start();
 
-        String domain = HttpClient.class.getPackage().getName();
-        ObjectName pattern = new ObjectName(domain + ":type=" + HttpClient.class.getSimpleName().toLowerCase(Locale.ENGLISH) + ",*");
-        Set<ObjectName> objectNames = mbeanServer.queryNames(pattern, null);
-        Assert.assertEquals(1, objectNames.size());
-        ObjectName objectName = objectNames.iterator().next();
-        Assert.assertEquals(httpClient.getName(), objectName.getKeyProperty("context"));
+        try
+        {
+            MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+            // Adding MBeanContainer as a bean will trigger the registration of MBeans.
+            httpClient.addBean(mbeanContainer);
+
+            String domain = HttpClient.class.getPackage().getName();
+            ObjectName pattern = new ObjectName(domain + ":type=" + HttpClient.class.getSimpleName().toLowerCase(Locale.ENGLISH) + ",*");
+            Set<ObjectName> objectNames = mbeanServer.queryNames(pattern, null);
+            Assert.assertEquals(1, objectNames.size());
+            ObjectName objectName = objectNames.iterator().next();
+            Assert.assertEquals(name, objectName.getKeyProperty("context"));
+
+            // Verify that the context is inherited by the descendant components.
+            domain = SelectorManager.class.getPackage().getName();
+            pattern = new ObjectName(domain + ":*");
+            objectNames = mbeanServer.queryNames(pattern, null);
+            for (ObjectName oName : objectNames)
+                Assert.assertEquals(name, oName.getKeyProperty("context"));
+        }
+        finally
+        {
+            httpClient.stop();
+        }
     }
 }
