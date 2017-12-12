@@ -27,6 +27,20 @@
                     <release>9</release>
                 </configuration>
             </plugin>
+            <plugin>
+              <groupId>org.apache.felix</groupId>
+              <artifactId>maven-bundle-plugin</artifactId>
+              <extensions>true</extensions>
+                  <configuration>
+                    <instructions>
+                      <Bundle-Description>JDK9 Client ALPN</Bundle-Description>
+                      <Export-Package>*</Export-Package>
+                      <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                      <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Client</Provide-Capability>
+                      <_nouses>true</_nouses>
+                    </instructions>
+                  </configuration>
+            </plugin>
         </plugins>
     </build>
 
