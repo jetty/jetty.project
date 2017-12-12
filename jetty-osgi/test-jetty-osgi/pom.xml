@@ -409,10 +409,8 @@
   </dependencies>
   <build>
     <plugins>
-      <!-- upgrading to version 2.20.1 for jdk9 support -->
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.20.1</version>
         <configuration>
           <skipTests>true</skipTests>
         </configuration>
