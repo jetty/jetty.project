@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -157,4 +158,45 @@ public class HeadersGenerateParseTest
             Assert.assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
         }
     }
+
+    @Test
+    public void testHeaderTooLarge()
+    {
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+
+        int streamId = 13;
+        HttpFields fields = new HttpFields();
+        fields.put("header", "header field too large");
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields);
+
+        final AtomicInteger errorRef = new AtomicInteger();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                errorRef.set(error);
+            }
+        }, 4096, 10);
+
+        // Iterate a few times to be sure generator and parser are properly reset.
+        for (int i = 0; i < 2; ++i)
+        {
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
+            generator.generateHeaders(lease, streamId, metaData, priorityFrame, true);
+
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(buffer);
+                }
+            }
+
+            Assert.assertEquals(431, errorRef.get());
+            errorRef.set(0);
+        }
+    }
+
 }
