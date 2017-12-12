@@ -35,7 +35,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
@@ -70,6 +73,36 @@ public class TestAnnotationParser
                 return;
             foundClasses.add(info.getClassName());
         }
+    }
+    
+    
+    public static class DuplicateClassScanHandler extends AnnotationParser.AbstractHandler
+    {
+        private Map<String, List<String>> _classMap = new ConcurrentHashMap();
+
+        /** 
+         * @see org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler#handle(org.eclipse.jetty.annotations.AnnotationParser.ClassInfo, java.lang.String)
+         */
+        @Override
+        public void handle(ClassInfo info)
+        {
+            List<String> list = new CopyOnWriteArrayList<>();
+            Resource r = info.getContainingResource();
+            list.add((r==null?"":r.toString()));
+            
+            List<String> existing = _classMap.putIfAbsent(info.getClassName(), list);
+            if (existing != null)
+            {
+                existing.addAll(list);
+            }
+        }
+        
+        
+        public List<String> getParsedList(String classname)
+        {
+            return _classMap.get(classname);
+        }
+        
     }
 
     @Rule
@@ -219,10 +252,11 @@ public class TestAnnotationParser
         Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar"));
         Resource testJar2 = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest_copy.jar"));
         AnnotationParser parser = new AnnotationParser();
-        Set<Handler> emptySet = Collections.emptySet();
-        parser.parse(emptySet, testJar);
-        parser.parse(emptySet, testJar2);
-        List<String> locations = parser.getParsedLocations("org.acme.ClassOne");
+        DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
+        Set<Handler> handlers = Collections.singleton(handler);
+        parser.parse(handlers, testJar);
+        parser.parse(handlers, testJar2);        
+        List<String> locations = handler.getParsedList("org.acme.ClassOne");
         Assert.assertNotNull(locations);
         Assert.assertEquals(2, locations.size());
         Assert.assertTrue(!(locations.get(0).equals(locations.get(1))));
@@ -235,10 +269,11 @@ public class TestAnnotationParser
         Resource testJar = Resource.newResource(MavenTestingUtils.getTestResourceFile("tinytest.jar"));
         File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
         AnnotationParser parser = new AnnotationParser();
-        Set<Handler> emptySet = Collections.emptySet();
-        parser.parse(emptySet, testJar);
-        parser.parse(emptySet, Resource.newResource(testClasses));
-        List<String> locations = parser.getParsedLocations("org.acme.ClassOne");
+        DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
+        Set<Handler> handlers = Collections.singleton(handler);
+        parser.parse(handlers, testJar);
+        parser.parse(handlers, Resource.newResource(testClasses));        
+        List<String>locations = handler.getParsedList("org.acme.ClassOne");
         Assert.assertNotNull(locations);
         Assert.assertEquals(2, locations.size());
         Assert.assertTrue(!(locations.get(0).equals(locations.get(1))));
