@@ -115,28 +115,58 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
-        CloseEndPoints close_endps = new CloseEndPoints();
-        submit(close_endps);
-        close_endps.await(getStopTimeout());
-        CloseSelector close_selector = new CloseSelector();
-        submit(close_selector);
-        close_selector.await(getStopTimeout());
+        
+        CloseAction close = new CloseAction();
+        submit(close);
+        if (getStopTimeout()>0)
+            close.await(getStopTimeout());
 
         super.doStop();
+        
+        try (Locker.Lock lock = _locker.lock())
+        {
+            if (_selector!=null && _selector.isOpen())
+                _selector.wakeup();
+
+            _actions.stream().filter(CloseAction.class::isInstance).forEach(a->a.run());
+            _actions.clear();
+        }
         
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}", this);
     }
 
-    public void submit(Runnable change)
+    @Deprecated
+    public void submit(Runnable action)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Queued change {} on {}", change, this);
+            LOG.debug("DEPRECATED! Queued change {} on {}", action, this);
 
         Selector selector = null;
         try (Locker.Lock lock = _locker.lock())
         {
-            _actions.offer(change);
+            _actions.offer(action);
+            
+            if (_selecting)
+            {
+                selector = _selector;
+                // To avoid the extra select wakeup.
+                _selecting = false;
+            }
+        }
+        if (selector != null)
+            selector.wakeup();
+    }
+    
+    public void submit(Action action)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queued change {} on {}", action, this);
+
+        Selector selector = null;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            _actions.offer(action);
             
             if (_selecting)
             {
@@ -492,8 +522,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             return String.format("%s@%x", getClass().getSimpleName(), hashCode());
         }
     }
-
-    private class DumpKeys extends Invocable.NonBlocking
+    
+    public abstract static class Action extends Invocable.NonBlocking {}
+    
+    private class DumpKeys extends Action
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final List<Object> _dumps;
@@ -539,7 +571,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Acceptor extends Invocable.NonBlocking implements Selectable, Closeable
+    class Acceptor extends Action implements Selectable, Closeable
     {
         private final SelectableChannel _channel;
         private SelectionKey _key;
@@ -608,7 +640,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Accept extends Invocable.NonBlocking implements Closeable
+    class Accept extends Action implements Closeable
     {
         private final SelectableChannel channel;
         private final Object attachment;
@@ -682,7 +714,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Connect extends Invocable.NonBlocking
+    class Connect extends Action
     {
         private final AtomicBoolean failed = new AtomicBoolean();
         private final SelectableChannel channel;
@@ -742,82 +774,39 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CloseEndPoints extends Invocable.NonBlocking
-    {
-        private final CountDownLatch _latch = new CountDownLatch(1);
-        private CountDownLatch _allClosed;
-
-        @Override
-        public void run()
-        {
-            List<EndPoint> end_points = new ArrayList<>();
-            for (SelectionKey key : _selector.keys())
-            {
-                if (key.isValid())
-                {
-                    Object attachment = key.attachment();
-                    if (attachment instanceof EndPoint)
-                        end_points.add((EndPoint)attachment);
-                }
-            }
-
-            int size = end_points.size();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Closing {} endPoints on {}", size, ManagedSelector.this);
-
-            _allClosed = new CountDownLatch(size);
-            _latch.countDown();
-
-            for (EndPoint endp : end_points)
-                submit(new EndPointCloser(endp, _allClosed));
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Closed {} endPoints on {}", size, ManagedSelector.this);
-        }
-
-        public boolean await(long timeout)
-        {
-            try
-            {
-                return _latch.await(timeout, TimeUnit.MILLISECONDS) &&
-                        _allClosed.await(timeout, TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException x)
-            {
-                return false;
-            }
-        }
-    }
-
-    private class EndPointCloser implements Runnable
-    {
-        private final EndPoint _endPoint;
-        private final CountDownLatch _latch;
-
-        private EndPointCloser(EndPoint endPoint, CountDownLatch latch)
-        {
-            _endPoint = endPoint;
-            _latch = latch;
-        }
-
-        @Override
-        public void run()
-        {
-            closeNoExceptions(_endPoint.getConnection());
-            _latch.countDown();
-        }
-    }
-
-    private class CloseSelector extends Invocable.NonBlocking
+    private class CloseAction extends Action
     {
         private CountDownLatch _latch = new CountDownLatch(1);
 
         @Override
         public void run()
         {
-            Selector selector = _selector;
+            int count = 0;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing endPoints on {}", ManagedSelector.this);
+            for (SelectionKey key : _selector.keys())
+            {
+                if (key.isValid())
+                {
+                    Object attachment = key.attachment();
+                    if (attachment instanceof EndPoint)
+                    {
+                        EndPoint endp = ((EndPoint)attachment);
+                        count++;
+                        if (endp.getConnection()!=null)
+                            closeNoExceptions(endp.getConnection());
+                        else
+                            closeNoExceptions(endp);
+                    }                        
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closed {} endPoints on {}", count, ManagedSelector.this);                
+            
+            closeNoExceptions(_selector);
             _selector = null;
-            closeNoExceptions(selector);
+            
             _latch.countDown();
         }
 

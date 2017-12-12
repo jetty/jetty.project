@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.EOFException;
@@ -55,6 +56,166 @@ import org.junit.runner.RunWith;
 @RunWith(AdvancedRunner.class)
 public class GracefulStopTest 
 {
+    /**
+     * Test of standard graceful timeout mechanism when a block request does
+     * not complete
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testSleepNotGraceful() throws Exception
+    {
+        Server server= new Server();
+        server.setStopTimeout(0);
+        
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        WaitHandler handler = new WaitHandler();
+        server.setHandler(handler);
+
+        server.start();
+        final int port=connector.getLocalPort();
+        Socket client = new Socket("127.0.0.1", port);
+        client.setSoTimeout(10000);
+        client.getOutputStream().write((
+                "GET / HTTP/1.0\r\n"+
+                "Host: localhost:"+port+"\r\n" +
+                "Content-Type: plain/text\r\n" +
+                "\r\n"
+                ).getBytes());
+        client.getOutputStream().flush();
+        handler.latch.await();
+
+        long start = System.nanoTime();
+        server.stop();
+        long stop = System.nanoTime();
+        
+        // No Graceful wait
+        assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),lessThan(1000L));
+
+        // Connection closed
+        while(true)
+        {
+            int r = client.getInputStream().read();
+            if (r==-1)
+                break;
+        }
+
+        // Thread interrupted
+        assertTrue(handler.complete.await(1000,TimeUnit.MILLISECONDS));
+        
+        if (!client.isClosed())
+            client.close();
+    }
+
+    /**
+     * Test of standard graceful timeout mechanism when a block request does
+     * not complete
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testSleepTinyGraceful() throws Exception
+    {
+        Server server= new Server();
+        server.setStopTimeout(1);
+        
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        WaitHandler handler = new WaitHandler();
+        server.setHandler(handler);
+
+        server.start();
+        final int port=connector.getLocalPort();
+        Socket client = new Socket("127.0.0.1", port);
+        client.setSoTimeout(10000);
+        client.getOutputStream().write((
+                "GET / HTTP/1.0\r\n"+
+                "Host: localhost:"+port+"\r\n" +
+                "Content-Type: plain/text\r\n" +
+                "\r\n"
+                ).getBytes());
+        client.getOutputStream().flush();
+        handler.latch.await();
+
+        long start = System.nanoTime();
+        server.stop();
+        long stop = System.nanoTime();
+        
+        // No Graceful wait
+        assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),lessThan(1000L));
+
+        // Connection closed
+        while(true)
+        {
+            int r = client.getInputStream().read();
+            if (r==-1)
+                break;
+        }
+
+        // Thread interrupted
+        assertTrue(handler.complete.await(1000,TimeUnit.MILLISECONDS));
+        
+        if (!client.isClosed())
+            client.close();
+    }
+
+    /**
+     * Test of standard graceful timeout mechanism when a block request does
+     * not complete
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testSleepGraceful() throws Exception
+    {
+        Server server= new Server();
+        server.setStopTimeout(10000);
+        
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        WaitHandler handler = new WaitHandler(1000);
+        server.setHandler(handler);
+
+        server.start();
+        final int port=connector.getLocalPort();
+        Socket client = new Socket("127.0.0.1", port);
+        client.setSoTimeout(5000);
+        client.getOutputStream().write((
+                "GET / HTTP/1.0\r\n"+
+                "Host: localhost:"+port+"\r\n" +
+                "Content-Type: plain/text\r\n" +
+                "\r\n"
+                ).getBytes());
+        client.getOutputStream().flush();
+        handler.latch.await();
+
+        long start = System.nanoTime();
+        server.stop();
+        long stop = System.nanoTime();
+        
+        // Graceful wait
+        assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),greaterThan(999L));
+
+        // Connection closed
+        while(true)
+        {
+            int r = client.getInputStream().read();
+            if (r==-1)
+                break;
+        }
+
+        // Thread interrupted
+        assertTrue(handler.complete.await(500,TimeUnit.MILLISECONDS));
+        
+        if (!client.isClosed())
+            client.close();
+    }
+    
+    
     /**
      * Test of standard graceful timeout mechanism when a block request does
      * not complete
@@ -303,6 +464,43 @@ public class GracefulStopTest
             finally
             {
                 handling.set(false);
+            }
+        }
+    }
+
+    static class WaitHandler extends AbstractHandler 
+    {           
+        final long wait;
+        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch complete = new CountDownLatch(1);
+        
+        WaitHandler()
+        {
+            this(100000);
+        }
+        
+        WaitHandler(long wait)
+        {
+            this.wait = wait;
+        }
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                        throws IOException, ServletException 
+        {
+            baseRequest.setHandled(true);
+            latch.countDown();
+            try
+            {
+                Thread.sleep(wait);
+            }
+            catch(InterruptedException x)
+            {
+                // x.printStackTrace();
+            }
+            finally
+            {
+                complete.countDown();
             }
         }
     }

@@ -89,7 +89,7 @@ public class LivelockTest
         AtomicBoolean busy = new AtomicBoolean(true);
 
         ManagedSelector clientSelector = client.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        Runnable clientLivelock = new Invocable.NonBlocking()
+        ManagedSelector.Action clientLivelock = new ManagedSelector.Action()
         {
             @Override 
             public void run()
@@ -102,7 +102,7 @@ public class LivelockTest
         clientSelector.submit(clientLivelock);
         
         ManagedSelector serverSelector = connector.getContainedBeans(ManagedSelector.class).stream().findAny().get();
-        Runnable serverLivelock = new Invocable.NonBlocking()
+        ManagedSelector.Action serverLivelock = new ManagedSelector.Action()
         {
             @Override 
             public void run()

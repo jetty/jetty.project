@@ -95,18 +95,18 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     }
 
-    private final Runnable _runUpdateKey = new RunnableTask("runUpdateKey")
+    private final ManagedSelector.Action _runUpdateKey = new ManagedSelector.Action()
     {
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
         @Override
         public void run()
         {
             updateKey();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("CEP:%s:runUpdateKey",ChannelEndPoint.this);
         }
     };
 
