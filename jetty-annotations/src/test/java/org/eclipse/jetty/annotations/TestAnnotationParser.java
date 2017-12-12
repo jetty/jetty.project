@@ -80,9 +80,6 @@ public class TestAnnotationParser
     {
         private Map<String, List<String>> _classMap = new ConcurrentHashMap();
 
-        /** 
-         * @see org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler#handle(org.eclipse.jetty.annotations.AnnotationParser.ClassInfo, java.lang.String)
-         */
         @Override
         public void handle(ClassInfo info)
         {

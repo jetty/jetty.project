@@ -564,10 +564,11 @@ public class AnnotationParser
      */
     public void addParsedClass (String classname, Resource location)
     {
-        String existing = _parsedClassNames.putIfAbsent(classname, location.toString());
+        String locationStr = location.toString();
+        String existing = _parsedClassNames.putIfAbsent(classname, locationStr);
         
         if (existing != null)
-            LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
+            LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, locationStr);
     }
     
 
