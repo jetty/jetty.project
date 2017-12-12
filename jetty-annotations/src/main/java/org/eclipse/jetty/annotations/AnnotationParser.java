@@ -568,7 +568,10 @@ public class AnnotationParser
         List<String> existing = _parsedClassNames.putIfAbsent(classname, list);
         if (existing != null)
         {
-            existing.addAll(list);
+            synchronized(existing)
+            {
+                existing.addAll(list);
+            }
             LOG.warn("{} scanned from multiple locations: {}", classname, existing);
         }
     }
