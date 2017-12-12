@@ -14,7 +14,7 @@
   <name>Jetty :: ALPN :: OpenJDK8 Client Implementation</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.alpn.java.client</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.alpn.openjdk8.client</bundle-symbolic-name>
   </properties>
 
   <dependencies>
