@@ -116,22 +116,31 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
         
-        CloseAction close = new CloseAction();
-        submit(close);
-        if (getStopTimeout()>0)
-            close.await(getStopTimeout());
-
-        super.doStop();
-        
-        try (Locker.Lock lock = _locker.lock())
+        try
         {
-            if (_selector!=null && _selector.isOpen())
-                _selector.wakeup();
-
-            _actions.stream().filter(CloseAction.class::isInstance).forEach(a->a.run());
-            _actions.clear();
+            CloseAction close = new CloseAction();
+            submit(close);
+            if (getStopTimeout()>0)
+                close.await(getStopTimeout());
         }
-        
+        finally
+        {
+            try
+            {
+                super.doStop();
+            }
+            finally
+            {
+                try (Locker.Lock lock = _locker.lock())
+                {
+                    if (_selector!=null && _selector.isOpen())
+                        _selector.wakeup();
+
+                    _actions.stream().filter(CloseAction.class::isInstance).forEach(a->a.run());
+                    _actions.clear();
+                }
+            }
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}", this);
     }
