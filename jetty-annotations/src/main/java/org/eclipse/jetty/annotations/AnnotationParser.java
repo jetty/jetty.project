@@ -74,7 +74,7 @@ public class AnnotationParser
     /**
      * Map of classnames scanned and the first location from which scan occurred
      */
-    protected Map<String, String> _parsedClassNames = new ConcurrentHashMap<>();
+    protected Map<String, Resource> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
     private int _asmVersion;
     
@@ -564,11 +564,9 @@ public class AnnotationParser
      */
     public void addParsedClass (String classname, Resource location)
     {
-        String locationStr = location.toString();
-        String existing = _parsedClassNames.putIfAbsent(classname, locationStr);
-        
+        Resource existing = _parsedClassNames.putIfAbsent(classname, location);       
         if (existing != null)
-            LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, locationStr);
+            LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
     }
     
 
