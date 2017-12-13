@@ -385,9 +385,9 @@ public class NotAcceptingTest
     }
     
     @Test
-    public void testOpenBeforeStart() throws Exception
+    public void testVerifiedStartSequence() throws Exception
     {
-        server.setOpenNetworkConnectors(true);
+        server.setVerifiedStartSequence(true);
         
         try(ServerSocket alreadyOpened = new ServerSocket(0))
         {
@@ -409,7 +409,6 @@ public class NotAcceptingTest
             ServerConnector connector1 = new ServerConnector(server);
             connector1.setPort(alreadyOpened.getLocalPort());
             server.addConnector(connector1);
-            
             
             // Add a handler to detect if handlers are started
             AtomicBoolean handlerStarted = new AtomicBoolean(false);
