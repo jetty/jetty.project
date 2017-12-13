@@ -426,16 +426,9 @@ public class Server extends HandlerWrapper implements Attributes
                     }
                 });
 
-                if (mex.size()>0)
-                {
-                    // Close any that were open
-                    _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(NetworkConnector::close);
-                    mex.ifExceptionThrow();
-                }
-            }
-
-            if (_verifiedStartSequence)
+                // Throw now if verified start sequence and there was an open exception
                 mex.ifExceptionThrow();
+            }
 
             try
             {
@@ -447,11 +440,11 @@ public class Server extends HandlerWrapper implements Attributes
             catch(Throwable e)
             {
                 mex.add(e);
+                
+                // Throw now if verified start sequence and there was a doStart exception
+                if (_verifiedStartSequence)
+                    mex.ifExceptionThrow();
             }
-
-            // Throw now if verified start sequence
-            if (_verifiedStartSequence)
-                mex.ifExceptionThrow();
                 
             // start connectors last
             for (Connector connector : _connectors)
@@ -468,6 +461,26 @@ public class Server extends HandlerWrapper implements Attributes
 
             mex.ifExceptionThrow();
             LOG.info(String.format("Started @%dms",Uptime.getUptime()));
+        }
+        catch(Throwable x)
+        { 
+            if (_verifiedStartSequence)
+            {
+                // stop any connectors that were opened
+                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(NetworkConnector::close);
+
+                // Stop our components (including connectors
+                try
+                {
+                    super.doStop();
+                }
+                catch(Throwable e)
+                {
+                    x.addSuppressed(e);
+                }
+            }
+
+            throw x;
         }
         finally
         {

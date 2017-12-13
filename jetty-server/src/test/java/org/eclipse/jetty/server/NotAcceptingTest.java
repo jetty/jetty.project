@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -385,7 +386,7 @@ public class NotAcceptingTest
     }
     
     @Test
-    public void testVerifiedStartSequence() throws Exception
+    public void testVerifiedStartSequenceAlreadyOpened() throws Exception
     {
         server.setVerifiedStartSequence(true);
         
@@ -449,8 +450,70 @@ public class NotAcceptingTest
             // Check that handlers were never started
             assertFalse(handlerStarted.get());
             
+            // Check that server components were stopped
+            assertFalse(server.getBean(QueuedThreadPool.class).isStarted());
         }
     }
+    
+    @Test
+    public void testVerifiedStartSequenceBadHandler() throws Exception
+    {
+        server.setVerifiedStartSequence(true);
+
+        // Add a connector that can be opened
+        AtomicInteger opened = new AtomicInteger(0);
+        ServerConnector connector = new ServerConnector(server)
+        {
+            @Override
+            public void open() throws IOException
+            {
+                super.open();
+                opened.set(getLocalPort());
+            }
+
+        };
+        server.addConnector(connector);
+
+
+        // Add a handler that will fail to start
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException, ServletException
+            {                    
+            }
+
+            @Override
+            public void doStart() throws Exception
+            {
+                throw new Exception("Expected failure during start");
+            }
+        });
+
+
+        // try to start the server
+        try
+        {
+            server.start();
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            // expected
+            assertThat(e.getMessage(),containsString("Expected failure during start"));
+        }
+
+        // Check that connector0 was opened OK
+        assertThat(opened.get(),greaterThan(0));
+        // and it is now closed
+        assertFalse(connector.isOpen());
+        assertFalse(connector.isRunning());
+
+        // Check that server components were stopped
+        assertFalse(server.getBean(QueuedThreadPool.class).isStarted());
+    }
+
 
     public static class HelloHandler extends AbstractHandler
     {
