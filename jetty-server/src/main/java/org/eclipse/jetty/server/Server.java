@@ -148,12 +148,12 @@ public class Server extends HandlerWrapper implements Attributes
 
     /**
      * Set if the start sequence is to be verified by in the following stages:
-     * <nl>
+     * <ul>
      * <li>{@link NetworkConnector}s are opened with {@link NetworkConnector#open()} to check ports are
      * available and to reserve them.</li>
      * <li>Start the contained {@link Handler}s and beans.</li>
      * <li>Start the {@link Connector}s
-     * </nl>
+     * </ul>
      * If any failures are encountered at any of the stages, the start sequence is aborted without 
      * running the subsequent stage and reversing closing any open connectors.
      * @param verified If true the start sequence is verified by checking port availability prior
