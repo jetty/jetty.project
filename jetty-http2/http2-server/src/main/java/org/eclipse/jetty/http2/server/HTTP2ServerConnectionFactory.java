@@ -163,12 +163,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onReset(Stream stream, ResetFrame frame)
+        public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             ErrorCode error = ErrorCode.from(frame.getError());
             if (error == null)
                 error = ErrorCode.CANCEL_STREAM_ERROR;
-            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error), Callback.NOOP);
+            getConnection().onStreamFailure((IStream)stream, new EofException("HTTP/2 " + error), callback);
         }
 
         @Override

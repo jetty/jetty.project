@@ -74,6 +74,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     @Override
     public void onStreamDestroyed(IStream stream)
     {
+        streamsStalls.remove(stream);
     }
 
     @Override
@@ -214,13 +215,20 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     @ManagedAttribute(value = "The time, in milliseconds, that the session flow control has stalled", readonly = true)
     public long getSessionStallTime()
     {
-        return TimeUnit.NANOSECONDS.toMillis(sessionStallTime.get());
+        long pastStallTime = sessionStallTime.get();
+        long currentStallTime = sessionStall.get();
+        if (currentStallTime != 0)
+            currentStallTime = System.nanoTime() - currentStallTime;
+        return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 
     @ManagedAttribute(value = "The time, in milliseconds, that the streams flow control has stalled", readonly = true)
     public long getStreamsStallTime()
     {
-        return TimeUnit.NANOSECONDS.toMillis(streamsStallTime.get());
+        long pastStallTime = streamsStallTime.get();
+        long now = System.nanoTime();
+        long currentStallTime = streamsStalls.values().stream().reduce(0L, (result, time) -> now - time);
+        return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 
     @ManagedOperation(value = "Resets the statistics", impact = "ACTION")

@@ -47,7 +47,9 @@
         <configuration>
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
+              <Export-Package>org.eclipse.jetty.alpn.server,*</Export-Package>
               <Import-Package>org.eclipse.jetty.alpn;version="${alpn.majorVersion}.${alpn.minorVersion}.${alpn.incrementalVersion}",*</Import-Package>
+              <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server)";resolution:=optional;cardinality:=multiple</Require-Capability>
             </instructions>
         </configuration>
       </plugin>

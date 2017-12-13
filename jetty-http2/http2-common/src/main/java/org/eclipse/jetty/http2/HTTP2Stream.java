@@ -37,11 +37,13 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class HTTP2Stream extends IdleTimeout implements IStream, Callback
+public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpable
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
@@ -86,9 +88,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
-        if (!startWrite(callback))
-            return;
-        session.frames(this, this, frame, Frame.EMPTY_ARRAY);
+        if (startWrite(callback))
+            session.frames(this, this, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
@@ -100,9 +101,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     @Override
     public void data(DataFrame frame, Callback callback)
     {
-        if (!startWrite(callback))
-            return;
-        session.data(this, this, frame);
+        if (startWrite(callback))
+            session.data(this, this, frame);
     }
 
     @Override
@@ -290,8 +290,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         remoteReset = true;
         close();
         session.removeStream(this);
-        callback.succeeded();
-        notifyReset(this, frame);
+        notifyReset(this, frame, callback);
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -375,8 +374,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
     @Override
     public void close()
     {
-        closeState.set(CloseState.CLOSED);
-        onClose();
+        if (closeState.getAndSet(CloseState.CLOSED) != CloseState.CLOSED)
+            onClose();
     }
 
     @Override
@@ -415,14 +414,14 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
         }
     }
 
-    private void notifyReset(Stream stream, ResetFrame frame)
+    private void notifyReset(Stream stream, ResetFrame frame, Callback callback)
     {
         final Listener listener = this.listener;
         if (listener == null)
             return;
         try
         {
-            listener.onReset(stream, frame);
+            listener.onReset(stream, frame, callback);
         }
         catch (Throwable x)
         {
@@ -444,6 +443,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback
             LOG.info("Failure while notifying listener " + listener, x);
             return true;
         }
+    }
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append(System.lineSeparator());
     }
 
     @Override
