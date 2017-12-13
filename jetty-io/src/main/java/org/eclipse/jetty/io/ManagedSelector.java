@@ -38,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -115,34 +116,58 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
+
+        // Grab a copy of the current selector, so we can force close endpoints later
+        Selector selector;
+        try (Locker.Lock lock = _locker.lock())
+        {
+            selector = _selector;
+        }
+
+        boolean graceful = getStopTimeout()>0;
+        boolean closed = selector==null;
+        if (graceful && !closed)
+        {
+            // Schedule a graceful close
+            GracefulCloseAction close = new GracefulCloseAction();
+            submit(close);
+            closed = close.await(getStopTimeout());
+        }
         
         try
         {
-            CloseAction close = new CloseAction();
-            submit(close);
-            if (getStopTimeout()>0)
-                close.await(getStopTimeout());
+            super.doStop();
         }
         finally
         {
-            try
+            // Really stop the selector
+            try (Locker.Lock lock = _locker.lock())
             {
-                super.doStop();
+                if (selector!=null && selector.isOpen())
+                    selector.wakeup();
+                _selector = null;
             }
-            finally
-            {
-                try (Locker.Lock lock = _locker.lock())
-                {
-                    if (_selector!=null && _selector.isOpen())
-                        _selector.wakeup();
+            Thread.yield();
 
-                    _actions.stream().filter(CloseAction.class::isInstance).forEach(a->a.run());
-                    _actions.clear();
-                }
+            // Close any left over endpoints
+            if (!closed && selector.isOpen())
+            {
+                // close all the endpoints directly
+                selector.keys().stream()
+                .filter(SelectionKey::isValid)
+                .map(SelectionKey::attachment)
+                .filter(EndPoint.class::isInstance)
+                .map(EndPoint.class::cast)
+                .filter(EndPoint::isOpen)
+                .forEach(EndPoint::close);
+                selector.close();
             }
         }
+        
         if (LOG.isDebugEnabled())
-            LOG.debug("Stopped {}", this);
+            LOG.debug("Stopped {} graceful={}", this, graceful);
+        if (graceful && !closed)
+            throw new TimeoutException("Non graceful shutdown of "+this);
     }
 
     @Deprecated
@@ -167,7 +192,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             selector.wakeup();
     }
     
-    public void submit(Action action)
+    protected void submit(Action action)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Queued change {} on {}", action, this);
@@ -783,10 +808,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private class CloseAction extends Action
+    private class GracefulCloseAction extends Action
     {
         private CountDownLatch _latch = new CountDownLatch(1);
-
+        
         @Override
         public void run()
         {
@@ -815,7 +840,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             
             closeNoExceptions(_selector);
             _selector = null;
-            
             _latch.countDown();
         }
 
