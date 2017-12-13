@@ -33,19 +33,8 @@
     <module>test-jetty-osgi-fragment</module>
     <module>test-jetty-osgi-server</module>
     <module>jetty-osgi-alpn</module>
+    <module>test-jetty-osgi</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>jdk8</id>
-      <activation>
-        <jdk>[1.8,1.9)</jdk>
-      </activation>
-      <modules>
-        <module>test-jetty-osgi</module>
-      </modules>
-    </profile>
-  </profiles>
 
   <build>
     <resources>
