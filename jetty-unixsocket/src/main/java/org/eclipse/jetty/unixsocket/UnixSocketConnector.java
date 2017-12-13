@@ -25,6 +25,8 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
@@ -246,10 +248,19 @@ public class UnixSocketConnector extends AbstractConnector
             UnixServerSocketChannel serverChannel = UnixServerSocketChannel.open();
 
             serverChannel.configureBlocking(getAcceptors()>0);
-            serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+            int acceptQueueSize = getAcceptQueueSize();
+            try
+            {
+                serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+            }
+            catch ( IOException e )
+            {
+                LOG.info( "cannot bind with" + bindAddress + " - " + acceptQueueSize + " - " + _unixSocket, e );
+                throw e;
+            }
             addBean(serverChannel);
-
-            LOG.debug("opened {}",serverChannel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("opened {}",serverChannel);
             _acceptChannel = serverChannel;
         }
     }
@@ -276,6 +287,7 @@ public class UnixSocketConnector extends AbstractConnector
                 try
                 {
                     serverChannel.close();
+
                 }
                 catch (IOException e)
                 {
@@ -283,7 +295,14 @@ public class UnixSocketConnector extends AbstractConnector
                 }
             }
 
-            new File(_unixSocket).delete();
+            try
+            {
+                Files.deleteIfExists( Paths.get(_unixSocket));
+            }
+            catch ( IOException e )
+            {
+                LOG.warn(e);
+            }
         }
     }
 
@@ -430,9 +449,11 @@ public class UnixSocketConnector extends AbstractConnector
         @Override
         protected SelectableChannel doAccept(SelectableChannel server) throws IOException
         {
-            LOG.debug("doAccept async {}",server);
+            if (LOG.isDebugEnabled())
+                LOG.debug("doAccept async {}",server);
             UnixSocketChannel channel = ((UnixServerSocketChannel)server).accept();
-            LOG.debug("accepted async {}",channel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("accepted async {}",channel);
             return channel;
         }
     }

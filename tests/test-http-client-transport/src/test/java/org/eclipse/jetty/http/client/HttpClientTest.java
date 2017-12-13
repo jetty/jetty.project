@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
@@ -340,7 +339,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest(newURI())
                 .scheme(getScheme())
                 .method(HttpMethod.OPTIONS)
                 .path("*")
@@ -369,7 +368,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest(newURI())
                 .scheme(getScheme())
                 .method(HttpMethod.OPTIONS)
                 .path("*")
@@ -395,7 +394,7 @@ public class HttpClientTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .onResponseSuccess(response -> latch.countDown())
                 .send(listener);
@@ -436,7 +435,7 @@ public class HttpClientTest extends AbstractTest
         long idleTimeout = 1000;
         client.setIdleTimeout(idleTimeout);
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest(newURI())
                 .scheme(getScheme())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
@@ -466,7 +465,7 @@ public class HttpClientTest extends AbstractTest
         AtomicInteger counter = new AtomicInteger();
         AtomicReference<Callback> callbackRef = new AtomicReference<>();
         AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest(newURI())
                 .scheme(getScheme())
                 .onResponseContentAsync((response, content, callback) ->
                 {
