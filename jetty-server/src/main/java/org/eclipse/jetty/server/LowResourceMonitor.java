@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -392,8 +391,7 @@ public class LowResourceMonitor extends AbstractLifeCycle
             // Monitor ManagedSelector health
             if (checkSelectors && connector instanceof ServerConnector)
             {
-                ServerConnector sc = (ServerConnector)connector;
-                SelectorManager sm = sc.getSelectorManager();
+                SelectorManager sm = ((ServerConnector)connector).getSelectorManager();
                 for (ManagedSelector ms : sm.getBeans(ManagedSelector.class))
                 {
                     keys.remove(ms);

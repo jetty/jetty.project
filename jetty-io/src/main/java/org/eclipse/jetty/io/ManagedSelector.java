@@ -65,10 +65,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private final Locker _locker = new Locker();
     private boolean _selecting = false;
-    private final Deque<Runnable> _actions = new ArrayDeque<>();
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
+    private Deque<Runnable> _actions = new ArrayDeque<>();
+    private Deque<Runnable> _acting = new ArrayDeque<>();
     private Selector _selector;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
@@ -315,9 +316,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (task != null)
                     return task;
 
-                Runnable action = runActions();
-                if (action != null)
-                    return action;
+                runActions();
 
                 updateKeys();
 
@@ -326,10 +325,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
         }
 
-        private Runnable runActions()
+        private void runActions()
         {
-            Selector selector = null;
-            Runnable action = null;
             try (Locker.Lock lock = _locker.lock())
             {
                 // It is important to avoid live-lock (busy blocking) here.  If too many actions
@@ -337,43 +334,39 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // we give too much priority to selection, it may prevent actions from being run.
                 // The solution implemented here is to only process the number of actions that were
                 // originally in the action queue before attempting a select
+                Deque<Runnable> swap = _acting;
+                _acting = _actions;
+                _actions = swap;
+            }
                 
-                int actionCount = _actions.size();
-                while(actionCount-->0)
+            // Run the actions in the swapped out action list
+            for (Runnable action: _acting)
+            {
+                if (Invocable.getInvocationType(action)!=Invocable.InvocationType.NON_BLOCKING)
                 {
-                    action = _actions.poll();
-
-                    if (Invocable.getInvocationType(action)!=Invocable.InvocationType.NON_BLOCKING)
-                    {
-                        LOG.warn("Bad action invocation type: "+action);
-                        break;
-                    }
-                    
-                    try
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("running action {}", action);
-                        action.run();
-                    }
-                    catch(Exception e)
-                    {
-                        LOG.warn(e);
-                    }
-                    finally
-                    {
-                        action = null;
-                    }
+                    LOG.warn("Bad action invocation type: "+action);
                 }
-                
-                if (LOG.isDebugEnabled())
-                    LOG.debug("ran actions: {} {}",action, _actions.size());
 
-                if (action!=null)
+                try
                 {
-                    // We are running a bad action type, so we will be called by the producer again before selecting
-                    _selecting = false;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("running action {}", action);
+                    action.run();
                 }
-                else if (_actions.size()==0)
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+            _acting.clear();
+            
+            // Do we have more actions left
+            Selector selector = null;
+            int actions;
+            try (Locker.Lock lock = _locker.lock())
+            {
+                actions = _actions.size();
+                if (actions==0)
                 {
                     // This was the last action, so select normally
                     _selecting = true;
@@ -388,12 +381,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("action={} wakeup={}",action,selector!=null);
+                LOG.debug("action={} wakeup={}",actions,selector!=null);
             
             if (selector != null)
                 selector.wakeup();
-
-            return action;
         }
 
         private boolean select()
