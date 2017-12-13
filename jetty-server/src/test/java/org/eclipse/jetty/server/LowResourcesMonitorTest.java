@@ -28,7 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -69,9 +72,10 @@ public class LowResourcesMonitorTest
         _lowResourcesMonitor.setLowResourcesIdleTimeout(200);
         _lowResourcesMonitor.setMaxConnections(20);
         _lowResourcesMonitor.setPeriod(900);
+        _lowResourcesMonitor.setCheckSelectors(false);
         _server.addBean(_lowResourcesMonitor);
 
-        _server.start();
+        _server.start();        
     }
     
     @After
@@ -244,5 +248,42 @@ public class LowResourcesMonitorTest
                 Assert.assertEquals(-1,socket1.getInputStream().read());
             }
         }
+    }
+    
+    @Test
+    public void testStuckSelector() throws Exception
+    {
+        // TODO currently this is test needs human inspection of the log output
+        _lowResourcesMonitor.setCheckSelectors(true);
+        Log.getLogger(LowResourceMonitor.class).info("No \"no response\" warning from selector are expected...");
+        Thread.sleep(2400);
+        Log.getLogger(LowResourceMonitor.class).info("Some \"no response\" warnings from selector are expected...");
+        ManagedSelector ms = _connector.getSelectorManager().getBean(ManagedSelector.class);
+        
+        final CountDownLatch latch = new CountDownLatch(1);
+        ms.submit(new Invocable.NonBlocking()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    latch.await();
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+                finally 
+                {
+                }
+            }
+        });
+
+        Thread.sleep(1200);
+        Log.getLogger(LowResourceMonitor.class).info("Full dump of selector expected....");
+        latch.countDown();
+        Thread.sleep(1200);
+        Log.getLogger(LowResourceMonitor.class).info("No more \"no response\" warnings are expected.");
     }
 }

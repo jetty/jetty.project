@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -34,6 +35,12 @@ public class DumpableCollection implements Dumpable
         _name=name;
         _collection=collection;
     }
+    
+    public DumpableCollection(String name,Object... item)
+    {
+        _name=name;
+        _collection=Arrays.asList(item);
+    }
 
     @Override
     public String dump()
@@ -47,5 +54,19 @@ public class DumpableCollection implements Dumpable
         out.append(_name).append("\n");
         if (_collection!=null)
             ContainerLifeCycle.dump(out,indent,_collection);
+    }
+    
+    public static class DumpableThread extends DumpableCollection
+    {
+        public DumpableThread(String prefix,Thread thread)
+        {
+            super(prefix+thread.getId()+"-"+thread.getName()+":"+thread.getState()+"="+thread.getPriority(),
+                    Arrays.asList(thread.getStackTrace()));
+        }
+        
+        public DumpableThread(Thread thread)
+        {
+            this("",thread);
+        }
     }
 }

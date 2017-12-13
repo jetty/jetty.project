@@ -30,11 +30,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -64,12 +65,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private final Locker _locker = new Locker();
     private boolean _selecting = false;
-    private final Queue<Runnable> _actions = new ArrayDeque<>();
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
+    private Deque<Runnable> _actions = new ArrayDeque<>();
+    private Deque<Runnable> _acting = new ArrayDeque<>();
     private Selector _selector;
-    private int _actionCount;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
@@ -244,20 +245,27 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
         Selector selector = _selector;
+        List<String> keys = null;
+        List<Runnable> actions = null;
         if (selector != null && selector.isOpen())
         {
-            List<Runnable> actions;
+            DumpKeys dump = new DumpKeys();
             try (Locker.Lock lock = _locker.lock())
             {
                 actions = new ArrayList<>(_actions);
+                _actions.addFirst(dump);
+                _selecting = false;
             }
-            List<Object> keys = new ArrayList<>(selector.keys().size());
-            DumpKeys dumpKeys = new DumpKeys(keys);
-            submit(dumpKeys);
-            dumpKeys.await(5, TimeUnit.SECONDS);
-            dump(out, indent, Arrays.asList(new DumpableCollection("keys", keys), new DumpableCollection("actions", actions)));
+            _selector.wakeup();
+            keys = dump.get(5, TimeUnit.SECONDS);
+            if (keys==null)
+                keys = Collections.singletonList("NO DUMP RESPONSE");
+            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("keys", keys), new DumpableCollection("actions", actions)));
+        }
+        else
+        {
+            dumpBeans(out,indent);
         }
     }
 
@@ -308,9 +316,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (task != null)
                     return task;
 
-                Runnable action = nextAction();
-                if (action != null)
-                    return action;
+                runActions();
 
                 updateKeys();
 
@@ -319,10 +325,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
         }
 
-        private Runnable nextAction()
+        private void runActions()
         {
-            Selector selector = null;
-            Runnable action = null;
             try (Locker.Lock lock = _locker.lock())
             {
                 // It is important to avoid live-lock (busy blocking) here.  If too many actions
@@ -330,50 +334,57 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 // we give too much priority to selection, it may prevent actions from being run.
                 // The solution implemented here is to only process the number of actions that were
                 // originally in the action queue before attempting a select
+                Deque<Runnable> swap = _acting;
+                _acting = _actions;
+                _actions = swap;
+            }
                 
-                if (_actionCount==0)
-                {               
-                    // Calculate how many actions we are prepared to handle before selection
-                    _actionCount = _actions.size();
-                    if (_actionCount>0)
-                        action = _actions.poll();
-                    else
-                        _selecting = true;
-                }
-                else if (_actionCount==1)
+            // Run the actions in the swapped out action list
+            for (Runnable action: _acting)
+            {
+                if (Invocable.getInvocationType(action)!=Invocable.InvocationType.NON_BLOCKING)
                 {
-                    _actionCount = 0;
-                    
+                    LOG.warn("Bad action invocation type: "+action);
+                }
+
+                try
+                {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Forcing selection, actions={}",_actions.size());
-                    
-                    if (_actions.size()==0)
-                    {
-                        // This was the last action, so select normally
-                        _selecting = true;
-                    }
-                    else
-                    {
-                        // there are still more actions to handle, so
-                        // immediately wake up (as if remaining action were just added).
-                        selector = _selector;
-                        _selecting = false;
-                    }
+                        LOG.debug("running action {}", action);
+                    action.run();
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+            _acting.clear();
+            
+            // Do we have more actions left
+            Selector selector = null;
+            int actions;
+            try (Locker.Lock lock = _locker.lock())
+            {
+                actions = _actions.size();
+                if (actions==0)
+                {
+                    // This was the last action, so select normally
+                    _selecting = true;
                 }
                 else
                 {
-                    _actionCount--;
-                    action = _actions.poll();
+                    // there are still more actions to handle, so
+                    // immediately wake up (as if remaining action were just added).
+                    selector = _selector;
+                    _selecting = false;
                 }
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("action={} wakeup={}",action,selector!=null);
+                LOG.debug("action={} wakeup={}",actions,selector!=null);
             
             if (selector != null)
                 selector.wakeup();
-
-            return action;
         }
 
         private boolean select()
@@ -495,46 +506,48 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class DumpKeys extends Invocable.NonBlocking
     {
-        private final CountDownLatch latch = new CountDownLatch(1);
-        private final List<Object> _dumps;
-
-        private DumpKeys(List<Object> dumps)
-        {
-            this._dumps = dumps;
-        }
-
+        private final Exchanger<List<String>> _dump = new Exchanger<>();
+        
         @Override
         public void run()
         {
             Selector selector = _selector;
+            List<String> list = new ArrayList<>(selector.keys().size()+1);
             if (selector != null && selector.isOpen())
             {
                 Set<SelectionKey> keys = selector.keys();
-                _dumps.add(selector + " keys=" + keys.size());
+                list.add(selector + " keys=" + keys.size());
                 for (SelectionKey key : keys)
                 {
                     try
                     {
-                        _dumps.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
+                        list.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));
                     }
                     catch (Throwable x)
                     {
-                        _dumps.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
+                        list.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
                     }
                 }
             }
-            latch.countDown();
+            try
+            {
+                _dump.exchange(list,500,TimeUnit.MILLISECONDS);
+            }
+            catch (Exception e)
+            {
+                LOG.ignore(e);
+            }
         }
 
-        public boolean await(long timeout, TimeUnit unit)
+        public List<String> get(long timeout, TimeUnit unit)
         {
             try
             {
-                return latch.await(timeout, unit);
+                return _dump.exchange(null,timeout, unit);
             }
-            catch (InterruptedException x)
+            catch (Exception x)
             {
-                return false;
+                return null;
             }
         }
     }
@@ -769,7 +782,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             _latch.countDown();
 
             for (EndPoint endp : end_points)
-                submit(new EndPointCloser(endp, _allClosed));
+                execute(new EndPointCloser(endp, _allClosed));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {} endPoints on {}", size, ManagedSelector.this);
