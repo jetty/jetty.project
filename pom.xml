@@ -25,6 +25,7 @@
     <servlet.schema.version>4.0.0</servlet.schema.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
+    <conscrypt.version>1.0.0.RC11</conscrypt.version>
   </properties>
 
   <licenses>
