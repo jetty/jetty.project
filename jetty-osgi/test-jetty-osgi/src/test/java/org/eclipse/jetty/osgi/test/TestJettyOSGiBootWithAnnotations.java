@@ -53,7 +53,7 @@ import org.osgi.framework.BundleContext;
 
 public class TestJettyOSGiBootWithAnnotations
 {
-    private static final String LOG_LEVEL = "WARN";
+    private static final String LOG_LEVEL = "DEBUG";
 
     @Inject
     BundleContext bundleContext = null;

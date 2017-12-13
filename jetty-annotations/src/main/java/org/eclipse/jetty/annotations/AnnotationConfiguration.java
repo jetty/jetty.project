@@ -491,7 +491,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));
 
             LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
-                    _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
+                    (_containerPathStats==null?-1:_containerPathStats.getTotal()), 
+                    (_webInfLibStats==null?-1:_webInfLibStats.getTotal()), 
+                    (_webInfClassesStats==null?-1:_webInfClassesStats.getTotal()),
                     elapsedMs,
                     context);
         }
@@ -935,7 +937,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (_classInheritanceHandler != null)
             handlers.add(_classInheritanceHandler);
 
-        _containerPathStats = new CounterStatistic();
+        if (LOG.isDebugEnabled())
+            _containerPathStats = new CounterStatistic();
 
         for (Resource r : context.getMetaData().getContainerResources())
         {
@@ -944,9 +947,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 ParserTask task = new ParserTask(parser, handlers, r);
                 _parserTasks.add(task);  
-                _containerPathStats.increment();
                 if (LOG.isDebugEnabled())
+                {
+                    _containerPathStats.increment();
                     task.setStatistic(new TimeStatistic());
+                }
             }
         } 
     }
@@ -969,14 +974,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
         ArrayList<URI> webInfUris = new ArrayList<URI>();
 
         List<Resource> jars = null;
-        
+
         if (context.getMetaData().getOrdering() != null)
             jars = context.getMetaData().getOrderedWebInfJars();
         else
             //No ordering just use the jars in any order
             jars = context.getMetaData().getWebInfJars();
 
-        _webInfLibStats = new CounterStatistic();
+        if (LOG.isDebugEnabled())
+        {
+            if (_webInfLibStats == null)
+                _webInfLibStats = new CounterStatistic();
+        }
 
         for (Resource r : jars)
         {
@@ -1006,9 +1015,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 {
                     ParserTask task = new ParserTask(parser, handlers,r);
                     _parserTasks.add (task);
-                    _webInfLibStats.increment();
                     if (LOG.isDebugEnabled())
+                    {
+                        _webInfLibStats.increment();
                         task.setStatistic(new TimeStatistic());
+                    }
                 }
             }
         }
@@ -1023,7 +1034,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @throws Exception if unable to scan and/or parse
      */
     public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
-    throws Exception
+            throws Exception
     {
         Set<Handler> handlers = new HashSet<Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
@@ -1031,7 +1042,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
             handlers.add(_classInheritanceHandler);
         handlers.addAll(_containerInitializerAnnotationHandlers);
 
-        _webInfClassesStats = new CounterStatistic();
+        if (LOG.isDebugEnabled())
+            _webInfClassesStats = new CounterStatistic();
 
         for (Resource dir : context.getMetaData().getWebInfClassesDirs())
         {
@@ -1039,9 +1051,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 ParserTask task = new ParserTask(parser, handlers, dir);
                 _parserTasks.add(task);
-                _webInfClassesStats.increment();
                 if (LOG.isDebugEnabled())
+                {
+                    _webInfClassesStats.increment();
                     task.setStatistic(new TimeStatistic());
+                }
             }
         }
     }
