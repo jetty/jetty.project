@@ -10,9 +10,6 @@
   <artifactId>jetty-alpn-parent</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: ALPN :: Parent</name>
-  <properties>
-    <conscrypt.version>1.0.0.RC11</conscrypt.version>
-  </properties>
 
   <modules>
     <module>jetty-alpn-server</module>
