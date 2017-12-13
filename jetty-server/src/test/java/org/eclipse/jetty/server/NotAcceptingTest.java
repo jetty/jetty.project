@@ -18,14 +18,21 @@
 
 package org.eclipse.jetty.server;
   
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.net.BindException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -375,6 +382,75 @@ public class NotAcceptingTest
         assertThat(blockingConnector.isAccepting(),is(true));
         assertThat(asyncConnector.isAccepting(),is(true));
         
+    }
+    
+    @Test
+    public void testOpenBeforeStart() throws Exception
+    {
+        server.setOpenNetworkConnectors(true);
+        
+        try(ServerSocket alreadyOpened = new ServerSocket(0))
+        {
+            // Add a connector that can be opened
+            AtomicInteger opened0 = new AtomicInteger(0);
+            ServerConnector connector0 = new ServerConnector(server)
+            {
+                @Override
+                public void open() throws IOException
+                {
+                    super.open();
+                    opened0.set(getLocalPort());
+                }
+                
+            };
+            server.addConnector(connector0);
+            
+            // Add a connector that will fail to open with port in use
+            ServerConnector connector1 = new ServerConnector(server);
+            connector1.setPort(alreadyOpened.getLocalPort());
+            server.addConnector(connector1);
+            
+            
+            // Add a handler to detect if handlers are started
+            AtomicBoolean handlerStarted = new AtomicBoolean(false);
+            server.setHandler(new AbstractHandler()
+            {
+                @Override
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                        throws IOException, ServletException
+                {                    
+                }
+                
+                @Override
+                public void doStart()
+                {
+                    handlerStarted.set(true);
+                }
+            });
+            
+            
+            // try to start the server
+            try
+            {
+                server.start();
+                Assert.fail();
+            }
+            catch (BindException e)
+            {
+                // expected
+                assertThat(e.getMessage(),containsString("Address already in use"));
+            }
+            
+            // Check that connector0 was opened OK
+            assertThat(opened0.get(),greaterThan(0));
+            // and it is now closed
+            assertFalse(connector0.isOpen());
+            assertFalse(connector0.isRunning());
+            
+            // Check that handlers were never started
+            assertFalse(handlerStarted.get());
+            
+        }
     }
 
     public static class HelloHandler extends AbstractHandler

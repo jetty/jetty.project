@@ -85,6 +85,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private boolean _openNetworkConnectors=false;
     private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
 
@@ -134,6 +135,27 @@ public class Server extends HandlerWrapper implements Attributes
         _threadPool=pool!=null?pool:new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+    }
+
+    /**
+     * @return True if {@link NetworkConnector}s are opened with {@link NetworkConnector#open()} during 
+     * start before handlers are started.
+     */
+    public boolean getOpenNetworkConnectors()
+    {
+        return _openNetworkConnectors;
+    }
+
+    /**
+     * Set if {@link NetworkConnector}s are opened with {@link NetworkConnector#open()} before starting
+     * contained {@link Handler}s including contexts.  If any failures are encountered, then the start
+     * will be failed without starting any handlers.
+     * @param openNetworkConnectors If true {@link NetworkConnector}s are opened with {@link NetworkConnector#open()} 
+     * during start before handlers are started.
+     */
+    public void setOpenNetworkConnectors(boolean openNetworkConnectors)
+    {
+        _openNetworkConnectors = openNetworkConnectors;
     }
 
     /* ------------------------------------------------------------ */
@@ -380,8 +402,36 @@ public class Server extends HandlerWrapper implements Attributes
         HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
         MultiException mex=new MultiException();
+        
+
+        // Open network connectors first
+        if (_openNetworkConnectors)
+        {
+            _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector->
+            {
+                try
+                {
+                    connector.open();
+                }
+                catch(Throwable e)
+                {
+                    mex.add(e);
+                }
+            });
+            
+            if (mex.size()>0)
+            {
+                // Close any that were open
+                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(NetworkConnector::close);
+                mex.ifExceptionThrow();
+            }
+        }
+        
         try
         {
+            // Start the server and components, but #start(LifeCycle) is overridden
+            // so that connectors are not started until after all other components are 
+            // started.
             super.doStart();
         }
         catch(Throwable e)

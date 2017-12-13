@@ -82,3 +82,6 @@ etc/jetty.xml
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+
+## Open Network Connectors before starting contexts
+# jetty.server.openNetworkConnectors=false
