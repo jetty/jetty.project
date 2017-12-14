@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpParser.State;
@@ -286,7 +287,7 @@ public class HttpParserTest
         Assert.assertThat(_bad, Matchers.containsString("Header Folding"));
         Assert.assertNull(_complianceViolation);
     }
-    
+
     @Test
     public void testWhiteSpaceInName() throws Exception
     {
@@ -303,7 +304,7 @@ public class HttpParserTest
         Assert.assertThat(_bad, Matchers.notNullValue());
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
     }
-    
+
     @Test
     public void testWhiteSpaceAfterName() throws Exception
     {
@@ -320,7 +321,7 @@ public class HttpParserTest
         Assert.assertThat(_bad, Matchers.notNullValue());
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
     }
-    
+
     @Test
     public void testNoValue() throws Exception
     {
@@ -377,7 +378,58 @@ public class HttpParserTest
         Assert.assertEquals(2, _headers);
         Assert.assertThat(_complianceViolation, Matchers.containsString("No colon"));
     }
-    
+
+    @Test
+    public void testNoneComplientCharsInHeaderNameLegacy() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "HTTP/1.1 204 No Content\r\n" +
+                        "Access-Control-Allow-Headers : Origin\r\n" +
+                        "Other: value\r\n" +
+                        "\r\n");
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
+        parseAll(parser, buffer);
+
+        Assert.assertTrue(_headerCompleted);
+        Assert.assertTrue(_messageCompleted);
+
+        Assert.assertEquals("HTTP/1.1", _methodOrVersion);
+        Assert.assertEquals("204", _uriOrStatus);
+        Assert.assertEquals("No Content", _versionOrReason);
+        Assert.assertEquals(null, _content);
+
+        Assert.assertEquals(2, _headers);
+        System.out.println(Arrays.asList(_hdr));
+        System.out.println(Arrays.asList(_val));
+        Assert.assertEquals("Access-Control-Allow-Headers", _hdr[1]);
+        Assert.assertEquals("Origin", _val[1]);
+        Assert.assertEquals("Other", _hdr[2]);
+        Assert.assertEquals("value", _val[2]);
+
+        Assert.assertThat(_complianceViolation, Matchers.containsString("Invalid token in header name"));
+    }
+
+    @Test
+    public void testNoneComplientCharsInHeaderNameNoLegacy() throws Exception
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "HTTP/1.1 204 No Content\r\n" +
+                        "Access-Control-Allow-Headers : Origin\r\n" +
+                        "Other: value\r\n" +
+                        "\r\n");
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        Assert.assertEquals("HTTP/1.1", _methodOrVersion);
+        Assert.assertEquals("204", _uriOrStatus);
+        Assert.assertEquals("No Content", _versionOrReason);
+        Assert.assertThat(_bad, Matchers.containsString("Illegal character 0x20"));
+    }
+
     @Test
     public void testNoColon7230() throws Exception
     {
@@ -393,7 +445,7 @@ public class HttpParserTest
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
         Assert.assertNull(_complianceViolation);
     }
-    
+
 
     @Test
     public void testHeaderParseDirect() throws Exception
@@ -592,7 +644,7 @@ public class HttpParserTest
         Assert.assertEquals(1, _headers);
         Assert.assertEquals(null, _bad);
     }
-    
+
     @Test
     public void testResponseBufferUpgradeFrom() throws Exception
     {
@@ -603,15 +655,15 @@ public class HttpParserTest
                 "Sec-WebSocket-Accept: 4GnyoUP4Sc1JD+2pCbNYAhFYVVA\r\n" +
                 "\r\n" +
                 "FOOGRADE");
-    
+
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
-    
+
         while (!parser.isState(State.END))
         {
             parser.parseNext(buffer);
         }
-        
+
         Assert.assertThat(BufferUtil.toUTF8String(buffer), Matchers.is("FOOGRADE"));
     }
 
@@ -1366,10 +1418,10 @@ public class HttpParserTest
 
     @Test
     public void testResponseReasonIso8859_1() throws Exception
-    {   
+    {
         ByteBuffer buffer = BufferUtil.toBuffer(
                 "HTTP/1.1 302 déplacé temporairement\r\n"
-                        + "Content-Length: 0\r\n" 
+                        + "Content-Length: 0\r\n"
                         + "\r\n",StandardCharsets.ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();

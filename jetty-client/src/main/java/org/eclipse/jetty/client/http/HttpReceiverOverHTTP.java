@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
@@ -38,7 +39,7 @@ import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
-    private final HttpParser parser = new HttpParser(this);
+    private final HttpParser parser = new HttpParser(this, -1, HttpCompliance.RFC2616);
     private ByteBuffer buffer;
     private boolean shutdown;
 

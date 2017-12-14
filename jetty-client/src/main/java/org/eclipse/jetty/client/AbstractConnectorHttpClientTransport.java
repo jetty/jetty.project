@@ -160,6 +160,7 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
         {
             SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
             endp.setIdleTimeout(client.getIdleTimeout());
+            //TODO: make compliance mode configurable
             return endp;
         }
 

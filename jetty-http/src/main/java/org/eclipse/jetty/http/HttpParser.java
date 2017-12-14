@@ -1287,7 +1287,13 @@ public class HttpParser
                         break;
                     }
 
-                    throw new IllegalCharacterException(_state,b,buffer);
+                    //Ignore all invalid characters
+                    if (complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc7230#section-3.2 Invalid token in header name"))
+                    {
+                        throw new IllegalCharacterException(_state,b,buffer);
+                    }
+
+                    break;
 
                 case VALUE:
                     if (b>HttpTokens.SPACE || b<0)
