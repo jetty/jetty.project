@@ -53,7 +53,7 @@ import org.osgi.framework.BundleContext;
 
 public class TestJettyOSGiBootWithAnnotations
 {
-    private static final String LOG_LEVEL = "DEBUG";
+    private static final String LOG_LEVEL = "WARN";
 
     @Inject
     BundleContext bundleContext = null;
@@ -96,8 +96,6 @@ public class TestJettyOSGiBootWithAnnotations
         xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
         xmlConfigs.append(";");
         xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
-        
-        System.err.println(xmlConfigs);
         
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
         options.add(systemProperty("jetty.http.port").value("0"));
