@@ -1091,7 +1091,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     }
                 }
 
-                if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
+                if (!_certWilds.isEmpty() || _certHosts.size()>1)
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
