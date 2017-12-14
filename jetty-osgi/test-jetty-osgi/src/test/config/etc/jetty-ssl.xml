@@ -31,6 +31,7 @@
   <!-- Create a TLS (SSL) Context Factory  for later reuse           -->
   <!-- ============================================================= -->
   <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+    <Set name="Provider"><SystemProperty name="jetty.sslContext.provider"/></Set>
     <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore"/></Set>
     <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
     <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore"/></Set>
