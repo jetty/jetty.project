@@ -287,7 +287,7 @@ public class HttpParserTest
         Assert.assertThat(_bad, Matchers.containsString("Header Folding"));
         Assert.assertNull(_complianceViolation);
     }
-
+    
     @Test
     public void testWhiteSpaceInName() throws Exception
     {
