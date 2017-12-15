@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import static org.eclipse.jetty.http.HttpCompliance.LEGACY;
+import static org.eclipse.jetty.http.HttpCompliance.WEAK;
 import static org.eclipse.jetty.http.HttpCompliance.RFC2616;
 import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
@@ -82,6 +83,7 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
  * <dl>
  * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
  * <dt>RFC2616</dt><dd>Wrapped headers and HTTP/0.9 supported</dd>
+ * <dt>WEAK</dt><dd>Wrapped headers, HTTP/0.9 supported and a weaker parsing behaviour</dd>
  * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for
  * exact case of header names, bypassing the header caches, which are case insensitive,
  * otherwise equivalent to RFC2616</dd>
@@ -116,6 +118,7 @@ public class HttpParser
         IN_NAME,
         VALUE,
         IN_VALUE,
+        OWS_AFTER_NAME,
     }
     
     // States
@@ -333,7 +336,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     protected String caseInsensitiveHeader(String orig, String normative)
     {                   
-        return (_compliance!=LEGACY || orig.equals(normative) || complianceViolation(RFC2616,"https://tools.ietf.org/html/rfc2616#section-4.2 case sensitive header: "+orig))
+        return (_compliance!=LEGACY || orig.equals(normative) || complianceViolation(WEAK,"https://tools.ietf.org/html/rfc2616#section-4.2 case sensitive header: "+orig))
                 ?normative:orig;
     }
     
@@ -658,6 +661,7 @@ public class HttpParser
                                     // Legacy correctly allows case sensitive header;
                                     break;
 
+                                case WEAK:
                                 case RFC2616:
                                 case RFC7230:
                                     if (!method.asString().equals(_methodString) && _complianceHandler!=null)
@@ -1244,6 +1248,22 @@ public class HttpParser
                     break;
 
                 case IN_NAME:
+                    if (b>HttpTokens.SPACE && b!=HttpTokens.COLON)
+                    {
+                        if (_header!=null)
+                        {
+                            setString(_header.asString());
+                            _header=null;
+                            _headerString=null;
+                        }
+
+                        _string.append((char)b);
+                        _length=_string.length();
+                        break;
+                    }
+
+                    // Fallthrough
+                case OWS_AFTER_NAME:
                     if (b==HttpTokens.COLON)
                     {
                         if (_headerString==null)
@@ -1256,23 +1276,8 @@ public class HttpParser
                         setState(FieldState.VALUE);
                         break;
                     }
-
-                    if (b>HttpTokens.SPACE)
-                    {
-                        if (_header!=null)
-                        {
-                            setString(_header.asString());
-                            _header=null;
-                            _headerString=null;
-                        }
-
-                        _string.append((char)b);
-                        if (b>HttpTokens.SPACE)
-                            _length=_string.length();
-                        break;
-                    }
                     
-                    if (b==HttpTokens.LINE_FEED && !complianceViolation(RFC7230,"https://tools.ietf.org/html/rfc7230#section-3.2 No colon"))
+                    if (b==HttpTokens.LINE_FEED && !complianceViolation(RFC2616,"https://tools.ietf.org/html/rfc2616#section-4.2 No colon"))
                     {
                         if (_headerString==null)
                         {
@@ -1284,6 +1289,13 @@ public class HttpParser
                         _length=-1;
 
                         setState(FieldState.FIELD);
+                        break;
+                    }
+
+                    //Ignore trailing whitespaces
+                    if (b==HttpTokens.SPACE && !complianceViolation(RFC2616,"https://tools.ietf.org/html/rfc2616#section-4.2 Invalid token in header name"))
+                    {
+                        setState(FieldState.OWS_AFTER_NAME);
                         break;
                     }
 
