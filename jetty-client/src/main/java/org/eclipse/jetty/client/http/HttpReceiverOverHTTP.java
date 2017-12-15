@@ -39,13 +39,15 @@ import org.eclipse.jetty.util.CompletableCallback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
-    private final HttpParser parser = new HttpParser(this, -1, HttpCompliance.RFC2616);
+    private final HttpParser parser;
     private ByteBuffer buffer;
     private boolean shutdown;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
+        // TODO: Seems to be not the optimal way to get the compliance mode
+        parser = new HttpParser(this, -1, channel.getHttpDestination().getHttpClient().getHttpCompliance());
     }
 
     @Override

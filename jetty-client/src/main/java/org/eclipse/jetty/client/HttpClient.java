@@ -52,10 +52,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FormContentProvider;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -147,6 +144,7 @@ public class HttpClient extends ContainerLifeCycle
     private boolean removeIdleDestinations = false;
     private boolean connectBlocking = false;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+    private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -970,6 +968,25 @@ public class HttpClient extends ContainerLifeCycle
     @Deprecated
     public void setDispatchIO(boolean dispatchIO)
     {
+    }
+
+    /**
+     * Gets the http compliance mode for parsing http responses.
+     * The default http compliance level is {@link HttpCompliance#RFC7230} which is the latest HTTP/1.1 specification
+     */
+    public HttpCompliance getHttpCompliance()
+    {
+        return httpCompliance;
+    }
+
+    /**
+     * Sets the http compliance mode for parsing http responses.
+     * This affect how weak the {@link HttpParser} parses http responses and which http protocol level is supported
+     * @param httpCompliance The compliance level which is used to actually parse http responses
+     */
+    public void setHttpCompliance(HttpCompliance httpCompliance)
+    {
+        this.httpCompliance = httpCompliance;
     }
 
     /**
