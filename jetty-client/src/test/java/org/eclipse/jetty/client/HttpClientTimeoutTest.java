@@ -40,7 +40,9 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
@@ -53,7 +55,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -462,7 +466,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
                     });
             Assert.fail();
         }
-        catch (Exception expected)
+        catch (Exception ignored)
         {
         }
 
@@ -472,7 +476,67 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         Assert.assertNull(request.getAbortCause());
     }
 
-    private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException
+    @Test
+    public void testIdleTimeoutJustBeforeSendingRequest() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final long idleTimeout = 1000;
+        client = new HttpClient(new HttpClientTransportOverHTTP(1)
+        {
+            @Override
+            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+            {
+                return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                {
+                    @Override
+                    protected HttpChannelOverHTTP newHttpChannel()
+                    {
+                        return new HttpChannelOverHTTP(this)
+                        {
+                            @Override
+                            public boolean associate(HttpExchange exchange)
+                            {
+                                try
+                                {
+                                    // We idle timeout just before the association,
+                                    // we must be able to send the request successfully.
+                                    Thread.sleep(idleTimeout + idleTimeout / 4);
+                                    return super.associate(exchange);
+                                }
+                                catch (InterruptedException e)
+                                {
+                                    return false;
+                                }
+                            }
+                        };
+                    }
+                };
+            }
+        }, sslContextFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        client.setExecutor(clientThreads);
+        client.setIdleTimeout(idleTimeout);
+        client.start();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded())
+                            latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+    }
+
+    private void assumeConnectTimeout(String host, int port, int connectTimeout)
     {
         try (Socket socket = new Socket())
         {
@@ -500,7 +564,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
     {
         private final long timeout;
 
-        public TimeoutHandler(long timeout)
+        private TimeoutHandler(long timeout)
         {
             this.timeout = timeout;
         }

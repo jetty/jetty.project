@@ -19,9 +19,11 @@
 package org.eclipse.jetty.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -40,6 +42,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
+    private final AtomicLong idleTime = new AtomicLong(System.nanoTime());
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Promise<Connection> promise;
@@ -105,13 +108,57 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return closed.get();
     }
 
+    private void send(HttpChannelOverHTTP channel, HttpExchange exchange)
+    {
+        boolean send;
+        while (true)
+        {
+            long idleTime = this.idleTime.get();
+            send = idleTime != Long.MIN_VALUE;
+            if (send && !this.idleTime.compareAndSet(idleTime, System.nanoTime()))
+                continue;
+            break;
+        }
+
+        if (send)
+        {
+            if (channel.associate(exchange))
+                channel.send();
+            else
+                channel.release();
+        }
+        else
+        {
+            // This connection idle timed out before we could send the exchange, retry.
+            HttpDestinationOverHTTP destination = getHttpDestination();
+            destination.send(exchange);
+        }
+    }
+
     @Override
     protected boolean onReadTimeout()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout", this);
-        close(new TimeoutException());
-        return false;
+        while (true)
+        {
+            long idleTime = this.idleTime.get();
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - idleTime);
+            long timeout = getEndPoint().getIdleTimeout();
+            boolean idle = elapsed > timeout + timeout / 2;
+            if (idle)
+            {
+                if (!this.idleTime.compareAndSet(idleTime, Long.MIN_VALUE))
+                    continue;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} idle timeout", this);
+                close(new TimeoutException());
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} idle timeout skipped", this);
+            }
+            return false;
+        }
     }
 
     @Override
@@ -215,10 +262,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             endPoint.setIdleTimeout(request.getIdleTimeout());
 
             // One channel per connection, just delegate the send
-            if (channel.associate(exchange))
-                channel.send();
-            else
-                channel.release();
+            HttpConnectionOverHTTP.this.send(channel, exchange);
         }
 
         @Override
