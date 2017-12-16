@@ -486,37 +486,24 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                if (target.endsWith("/one"))
+                    baseRequest.getHttpChannel().getEndPoint().close();
+                else
+                    baseRequest.setHandled(true);
+            }
+        });
 
         client.setMaxConnectionsPerDestination(1);
-        final long idleTimeout = 1000;
-        client.setIdleTimeout(idleTimeout);
 
-        final CountDownLatch latch = new CountDownLatch(3);
+        final CountDownLatch latch = new CountDownLatch(2);
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .path("/one")
-                .listener(new Request.Listener.Adapter()
-                {
-                    @Override
-                    public void onBegin(Request request)
-                    {
-                        try
-                        {
-                            TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-                        }
-                        catch (InterruptedException x)
-                        {
-                            x.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Request request, Throwable failure)
-                    {
-                        latch.countDown();
-                    }
-                })
                 .onResponseFailure(new Response.FailureListener()
                 {
                     @Override
@@ -541,7 +528,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 })
                 .send(null);
 
-        Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
