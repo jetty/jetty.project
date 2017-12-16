@@ -70,7 +70,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     {
         super.initialize(context);
         _contextString = _context.getCanonicalContextPath()+"_"+_context.getVhost();
-        System.err.println(this+"  SETTING CONTEXT ="+_contextString);
     }
 
     @Override
@@ -115,7 +114,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     /** 
      * Delete a session
      * 
-     * @param the id of the session
+     * @param id session id
      */
     @Override
     public boolean delete(String id) throws Exception
@@ -124,7 +123,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         {
             //remove from our map
             String filename = _sessionFileMap.remove(getIdWithContext(id));
-            System.err.println("Deleting session file "+ filename);
             if (filename == null)
                 return false;
             
@@ -283,19 +281,16 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         File file = null;
         if (_storeDir != null)
         {
-            System.err.println("doStore deleting old "+id);
             delete(id);
                   
             //make a fresh file using the latest session expiry
             String filename = getIdWithContextAndExpiry(data);
             String idWithContext = getIdWithContext(id);
-            System.err.println("do Store new id:filename "+idWithContext+":"+filename);
             file = new File(_storeDir, filename);
 
             try(FileOutputStream fos = new FileOutputStream(file,false))
             {
                 save(fos, id, data);
-                System.err.println("doStore updating map with "+idWithContext+":"+filename);
                 _sessionFileMap.put(idWithContext, filename);
             }
             catch (Exception e)
@@ -320,7 +315,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     public void initializeStore ()
     throws Exception
     {
-        System.err.println(this+" Initializing store");
         if (_storeDir == null)
             throw new IllegalStateException("No file store specified");
 
@@ -339,7 +333,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 .forEach(p->{
                     String filename = p.getFileName().toString();
                     String sessionIdWithContext = getIdWithContextFromFilename(filename);
-                    System.err.println("Session id="+sessionIdWithContext+" from "+filename);
                     if (sessionIdWithContext != null)
                     {
                         //handle multiple session files existing for the same session: remove all
@@ -347,7 +340,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                         String existing = _sessionFileMap.putIfAbsent(sessionIdWithContext, filename);
                         if (existing != null)
                         {
-                            System.err.println("New = "+filename+" but existing="+existing);
                             //if there was a prior filename, work out which has the most
                             //recent modify time
                             try
@@ -355,8 +347,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                                 Path existingPath = _storeDir.toPath().resolve(existing);
                                 FileTime existingFileTime = Files.getLastModifiedTime(existingPath);
                                 FileTime thisFileTime = Files.getLastModifiedTime(p);
-                                System.err.println(existing+" lmt="+existingFileTime);
-                                System.err.println(filename+" lmt="+thisFileTime);
                                 int comparison = thisFileTime.compareTo(existingFileTime);
                                 if (comparison == 0)
                                     me.add(new IllegalStateException(existingPath+" and "+p+" have same lastmodify time")); //fail startup
@@ -366,11 +356,9 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                                     _sessionFileMap.put(sessionIdWithContext, p.getFileName().toString());
                                     //delete the old file
                                     Files.delete(existingPath);
-                                    System.err.println("Replaced "+existing+" with "+p);
                                 }
                                 else
                                 {
-                                    System.err.println("Removing older session file "+p);
                                     Files.delete(p);
                                 }
                             }
@@ -379,8 +367,6 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                                 me.add(e);
                             }
                         }
-                        else
-                            System.err.println("Added "+filename);
                     }
                 });
                 me.ifExceptionThrow();
@@ -538,10 +524,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
        
         //Also needs to be for our context
         String context = getContextFromFilename(filename);
-        System.err.println("TESTING "+context+" against contextString "+_contextString);
         if (context == null)
             return false;
-        System.err.println("return:"+_contextString.equals(context));
         return (_contextString.equals(context));
     }
 
