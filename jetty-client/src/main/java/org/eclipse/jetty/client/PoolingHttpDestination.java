@@ -159,12 +159,9 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
                     if (LOG.isDebugEnabled())
                         LOG.debug("Send failed {} for {}", result, exchange);
                     if (result.retry)
-                    {
-                        if (enqueue(getHttpExchanges(), exchange))
-                            return true;
-                    }
-
-                    request.abort(result.failure);
+                        send(exchange);
+                    else
+                        request.abort(result.failure);
                 }
             }
             return getHttpExchanges().peek() != null;

@@ -184,9 +184,12 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         int port = request.getPort();
         if (port >= 0 && getPort() != port)
             throw new IllegalArgumentException("Invalid request port " + port + " for destination " + this);
+        send(new HttpExchange(this, request, listeners));
+    }
 
-        HttpExchange exchange = new HttpExchange(this, request, listeners);
-
+    public void send(HttpExchange exchange)
+    {
+        HttpRequest request = exchange.getRequest();
         if (client.isRunning())
         {
             if (enqueue(exchanges, exchange))

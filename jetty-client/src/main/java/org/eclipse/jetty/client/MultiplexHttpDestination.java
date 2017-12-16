@@ -147,11 +147,9 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
                             LOG.debug("Send failed {} for {}", result, exchange);
                         requestsPerConnection.decrementAndGet();
                         if (result.retry)
-                        {
-                            if (enqueue(getHttpExchanges(), exchange))
-                                return true;
-                        }
-                        request.abort(result.failure);
+                            send(exchange);
+                        else
+                            request.abort(result.failure);
                     }
                 }
                 return getHttpExchanges().peek() != null;
