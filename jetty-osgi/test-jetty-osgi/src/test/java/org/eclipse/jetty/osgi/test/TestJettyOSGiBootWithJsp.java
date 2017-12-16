@@ -86,7 +86,10 @@ public class TestJettyOSGiBootWithJsp
         xmlConfigs.append(";");
         if (ssl)
         {
+
             xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
+            xmlConfigs.append(";");
+            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
             xmlConfigs.append(";");
             xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
             xmlConfigs.append(";");
@@ -129,7 +132,6 @@ public class TestJettyOSGiBootWithJsp
     @Test
     public void testJspDump() throws Exception
     {
-        // TestOSGiUtil.debugBundles(bundleContext);
         HttpClient client = new HttpClient();
         try
         {
