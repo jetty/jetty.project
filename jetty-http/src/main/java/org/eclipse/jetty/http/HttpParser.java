@@ -36,7 +36,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 import static org.eclipse.jetty.http.HttpCompliance.LEGACY;
-import static org.eclipse.jetty.http.HttpCompliance.WEAK;
 import static org.eclipse.jetty.http.HttpCompliance.RFC2616;
 import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
@@ -156,7 +155,7 @@ public class HttpParser
     private final ResponseHandler _responseHandler;
     private final ComplianceHandler _complianceHandler;
     private final int _maxHeaderBytes;
-    private final HttpCompliance _compliance;
+    private final EnumSet<HttpRFC> _compliances;
     private HttpField _field;
     private HttpHeader _header;
     private String _headerString;
@@ -290,23 +289,24 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public HttpParser(RequestHandler handler,int maxHeaderBytes,HttpCompliance compliance)
     {
-        _handler=handler;
-        _requestHandler=handler;
-        _responseHandler=null;
-        _maxHeaderBytes=maxHeaderBytes;
-        _compliance=compliance==null?compliance():compliance;
-        _complianceHandler=(ComplianceHandler)(handler instanceof ComplianceHandler?handler:null);
+        this(handler,null,maxHeaderBytes,(compliance==null?compliance():compliance).sections());
     }
 
     /* ------------------------------------------------------------------------------- */
     public HttpParser(ResponseHandler handler,int maxHeaderBytes,HttpCompliance compliance)
     {
-        _handler=handler;
-        _requestHandler=null;
-        _responseHandler=handler;
+        this(null,handler,maxHeaderBytes,(compliance==null?compliance():compliance).sections());
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    private HttpParser(RequestHandler requestHandler,ResponseHandler responseHandler,int maxHeaderBytes,EnumSet<HttpRFC> compliances)
+    {
+        _handler=requestHandler!=null?requestHandler:responseHandler;
+        _requestHandler=requestHandler;
+        _responseHandler=responseHandler;
         _maxHeaderBytes=maxHeaderBytes;
-        _compliance=compliance==null?compliance():compliance;
-        _complianceHandler=(ComplianceHandler)(handler instanceof ComplianceHandler?handler:null);
+        _compliances=compliances;
+        _complianceHandler=(ComplianceHandler)(_handler instanceof ComplianceHandler?_handler:null);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -334,10 +334,20 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
+    protected void handleViolation(HttpRFC section,String reason)
+    {
+        if (_complianceHandler!=null)
+            _complianceHandler.onComplianceViolation(section,reason);
+    }
+
+    /* ------------------------------------------------------------------------------- */
     protected String caseInsensitiveHeader(String orig, String normative)
     {                   
-        return (_compliance!=LEGACY || orig.equals(normative) || complianceViolation(WEAK,"https://tools.ietf.org/html/rfc2616#section-4.2 case sensitive header: "+orig))
-                ?normative:orig;
+        if (_compliances.contains(HttpRFC.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME))
+            return normative;
+        if (orig.equals(normative))
+            handleViolation(HttpRFC.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME,orig);
+        return orig;
     }
     
     /* ------------------------------------------------------------------------------- */
@@ -651,27 +661,24 @@ public class HttpParser
                         _length=_string.length();
                         _methodString=takeString();
 
-                        // TODO #1966 This cache lookup is case insensitive when it should be case sensitive by RFC2616, RFC7230
-                        HttpMethod method=HttpMethod.CACHE.get(_methodString);
-                        if (method!=null)
+                        if (!_compliances.contains(HttpRFC.RFC7230_3_1_1_METHOD_CASE_SENSITIVE))
                         {
-                            switch(_compliance)
-                            {
-                                case LEGACY:
-                                    // Legacy correctly allows case sensitive header;
-                                    break;
-
-                                case WEAK:
-                                case RFC2616:
-                                case RFC7230:
-                                    if (!method.asString().equals(_methodString) && _complianceHandler!=null)
-                                        _complianceHandler.onComplianceViolation(_compliance,HttpCompliance.LEGACY,
-                                                "https://tools.ietf.org/html/rfc7230#section-3.1.1 case insensitive method "+_methodString);
-                                    // TODO Good to used cached version for faster equals checking, but breaks case sensitivity because cache is insensitive
-                                    _methodString = method.asString();  
-                                    break;
-                            }                       
+                            HttpMethod method=HttpMethod.CACHE.get(_methodString);
+                            if (method!=null)
+                                _methodString = method.asString();
                         }
+                        else
+                        {
+                            HttpMethod method=HttpMethod.INSENSITIVE_CACHE.get(_methodString);
+                            
+                            if (method!=null)
+                            {
+                                if (!method.asString().equals(_methodString))
+                                    handleViolation(HttpRFC.RFC7230_3_1_1_METHOD_CASE_SENSITIVE,_methodString);
+                                _methodString = method.asString();
+                            }
+                        }
+                        
                         setState(State.SPACE1);
                     }
                     else if (b < SPACE)
@@ -957,7 +964,7 @@ public class HttpParser
                         _host=true;
                         if (!(_field instanceof HostPortHttpField) && _valueString!=null && !_valueString.isEmpty())
                         {
-                            _field=new HostPortHttpField(_header,caseInsensitiveHeader(_headerString,_header.asString()),_valueString);
+                            _field=new HostPortHttpField(_header,caseInsensitiveHeaderX(_headerString,_header.asString()),_valueString);
                             add_to_connection_trie=_fieldCache!=null;
                         }
                       break;
@@ -986,7 +993,7 @@ public class HttpParser
                 if (add_to_connection_trie && !_fieldCache.isFull() && _header!=null && _valueString!=null)
                 {
                     if (_field==null)
-                        _field=new HttpField(_header,caseInsensitiveHeader(_headerString,_header.asString()),_valueString);
+                        _field=new HttpField(_header,_headerString,_valueString);
                     _fieldCache.put(_field);
                 }
             }
@@ -1173,7 +1180,7 @@ public class HttpParser
                                     final String n;
                                     final String v;
 
-                                    if (_compliance==LEGACY)
+                                    if (!_compliances.contains(HttpRFC.RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME))
                                     {
                                         // Have to get the fields exactly from the buffer to match case
                                         String fn=field.getName();
@@ -1829,7 +1836,13 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public interface ComplianceHandler extends HttpHandler
     {
+        @Deprecated
         public void onComplianceViolation(HttpCompliance compliance,HttpCompliance required,String reason);
+        
+        public default void onComplianceViolation(HttpRFC violation, String details)
+        {
+            
+        }
     }
 
     /* ------------------------------------------------------------------------------- */

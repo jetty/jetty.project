@@ -18,17 +18,44 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.EnumSet;
 
 /**
  * HTTP compliance modes:
  * <dl>
  * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
  * <dt>RFC2616</dt><dd>Wrapped/Continued headers and HTTP/0.9 supported</dd>
- * <dt>WEAK</dt><dd>Wrapped/Continued headers, HTTP/0.9 supported and make the parser more acceptable against miss
- * formatted requests/responses</dd>
  * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for
- * exact case of header names, bypassing the header caches, which are case insensitive, 
- * otherwise equivalent to WEAK</dd>
+ * exact case of header names, bypassing the header caches, which are case insensitive.</dd>
  * </dl>
  */
-public enum HttpCompliance { LEGACY, WEAK, RFC2616, RFC7230 }
+public enum HttpCompliance 
+{ 
+    LEGACY(EnumSet.noneOf(HttpRFC.class)), 
+    RFC2616(EnumSet.complementOf(EnumSet.of(
+            HttpRFC.RFC7230_3_2_4_WS_AFTER_FIELD_NAME,
+            HttpRFC.RFC7230_3_2_4_NO_FOLDING,
+            HttpRFC.RFC7230_A2_NO_HTTP_9))), 
+    RFC7230(EnumSet.allOf(HttpRFC.class)), 
+    ;
+    
+    final EnumSet<HttpRFC> _sections;
+    
+    HttpCompliance(EnumSet<HttpRFC> sections)
+    {
+        _sections = sections;
+    }
+    
+    public EnumSet<HttpRFC> sections()
+    {
+        return _sections;
+    }
+
+    public EnumSet<HttpRFC> excluding(EnumSet<HttpRFC> exclusions)
+    {
+        EnumSet<HttpRFC> sections =  EnumSet.copyOf(_sections);
+        sections.removeAll(exclusions);
+        return sections;
+    }
+    
+}
