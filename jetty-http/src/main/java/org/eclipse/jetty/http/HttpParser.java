@@ -193,16 +193,21 @@ public class HttpParser
         CACHE.put(new HttpField(HttpHeader.CONNECTION,HttpHeaderValue.UPGRADE));
         CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip, deflate"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip, deflate, br"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip,deflate,sdch"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE,"en-US,en;q=0.5"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE,"en-GB,en-US;q=0.8,en;q=0.6"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_LANGUAGE,"en-AU,en;q=0.9,it-IT;q=0.8,it;q=0.7,en-GB;q=0.6,en-US;q=0.5"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT_CHARSET,"ISO-8859-1,utf-8;q=0.7,*;q=0.3"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT,"*/*"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT,"image/png,image/*;q=0.8,*/*;q=0.5"));
         CACHE.put(new HttpField(HttpHeader.ACCEPT,"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT,"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"));
+        CACHE.put(new HttpField(HttpHeader.ACCEPT_RANGES,HttpHeaderValue.BYTES));
         CACHE.put(new HttpField(HttpHeader.PRAGMA,"no-cache"));
         CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"private, no-cache, no-cache=Set-Cookie, proxy-revalidate"));
         CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"no-cache"));
+        CACHE.put(new HttpField(HttpHeader.CACHE_CONTROL,"max-age=0"));
         CACHE.put(new HttpField(HttpHeader.CONTENT_LENGTH,"0"));
         CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"gzip"));
         CACHE.put(new HttpField(HttpHeader.CONTENT_ENCODING,"deflate"));
@@ -964,7 +969,7 @@ public class HttpParser
                         _host=true;
                         if (!(_field instanceof HostPortHttpField) && _valueString!=null && !_valueString.isEmpty())
                         {
-                            _field=new HostPortHttpField(_header,caseInsensitiveHeaderX(_headerString,_header.asString()),_valueString);
+                            _field=new HostPortHttpField(_header,caseInsensitiveHeader(_headerString,_header.asString()),_valueString);
                             add_to_connection_trie=_fieldCache!=null;
                         }
                       break;
@@ -993,7 +998,7 @@ public class HttpParser
                 if (add_to_connection_trie && !_fieldCache.isFull() && _header!=null && _valueString!=null)
                 {
                     if (_field==null)
-                        _field=new HttpField(_header,_headerString,_valueString);
+                        _field=new HttpField(_header,caseInsensitiveHeader(_headerString,_header.asString()),_valueString);
                     _fieldCache.put(_field);
                 }
             }
@@ -1190,7 +1195,8 @@ public class HttpParser
                                             v=null;
                                         else
                                         {
-                                            v=caseInsensitiveHeader(BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StandardCharsets.ISO_8859_1),fv);
+                                            XXX;
+                                            v=BufferUtil.toString(buffer,buffer.position()+fn.length()+1,fv.length(),StandardCharsets.ISO_8859_1);
                                             field=new HttpField(field.getHeader(),n,v);
                                         }
                                     }

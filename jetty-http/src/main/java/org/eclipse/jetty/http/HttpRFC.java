@@ -22,7 +22,7 @@ package org.eclipse.jetty.http;
  */
 public enum HttpRFC 
 {     
-    RFC7230_2_7_3_HOST_CASE_INSENSITIVE("https://tools.ietf.org/html/rfc7230#section-2.7.3","Host is case-insensitive"),
+    CASE_SENSITIVE_FIELD_VALUES("","case-sensitive field values"),
     RFC7230_3_1_1_METHOD_CASE_SENSITIVE("https://tools.ietf.org/html/rfc7230#section-3.1.1","Method is case-sensitive"),
     RFC7230_3_2_FIELD_COLON("https://tools.ietf.org/html/rfc7230#section-3.2","Fields must have a Colon"), 
     RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2","Field name is case-insensitive"),    
