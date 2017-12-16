@@ -1230,6 +1230,7 @@ public class SessionHandler extends ScopedHandler
 
         try
         {
+            System.err.println("INVALIDATING " +id);
             //remove the session and call the destroy listeners
             Session session = removeSession(id, true);
 

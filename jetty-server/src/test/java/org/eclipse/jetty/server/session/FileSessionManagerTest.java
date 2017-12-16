@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.server.session;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Collections;
@@ -129,9 +132,7 @@ public class FileSessionManagerTest
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
         FS.ensureEmpty(testDir);
         ds.setStoreDir(testDir);
-        handler.setSessionIdManager(idmgr);
-        handler.start();
-
+        
         //create a bunch of older files for same session abc
         String name1 =  "100__0.0.0.0_abc";    
         File f1 = new File(testDir, name1);
@@ -140,29 +141,102 @@ public class FileSessionManagerTest
         f1.createNewFile();
 
         Thread.sleep(1100);
-        
         String name2 = "101__0.0.0.0_abc"; 
         File f2 = new File(testDir, name2);
         if (f2.exists())
             Assert.assertTrue(f2.delete());
         f2.createNewFile();
         
-        Thread.sleep(1100);
-        
+        Thread.sleep(1100); 
         String name3 = "102__0.0.0.0_abc";
         File f3 = new File(testDir, name3);
         if (f3.exists())
             Assert.assertTrue(f3.delete());       
         f3.createNewFile();
+        
+        //make a file that is for a different context
+        Thread.sleep(1100); 
+        String name4 = "1099_foo_0.0.0.0_abc";
+        File f4 = new File(testDir, name4);
+        if (f4.exists())
+            Assert.assertTrue(f4.delete());       
+        f4.createNewFile();
+        
+        handler.setSessionIdManager(idmgr);
+        handler.start();
 
-        Thread.sleep(1100);
-        
-        
-        Session session = handler.getSession("abc");
         Assert.assertTrue(!f1.exists()); 
         Assert.assertTrue(!f2.exists());
         Assert.assertTrue(f3.exists());
+        Assert.assertTrue(f4.exists());
     }
+    
+    
+    @Test
+    public void testSameLastModifyOnMultipleSessionFiles() throws Exception
+    {
+        Server server = new Server();
+        SessionHandler handler = new SessionHandler();
+        handler.setServer(server);
+        final DefaultSessionIdManager idmgr = new DefaultSessionIdManager(server);
+        idmgr.setServer(server);
+        server.setSessionIdManager(idmgr);
+        
+        FileSessionDataStore ds = new FileSessionDataStore();
+        ds.setDeleteUnrestorableFiles(false); //turn off deletion of unreadable session files
+        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        handler.setSessionCache(ss);
+        ss.setSessionDataStore(ds);
+        
+        File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
+        FS.ensureEmpty(testDir);
+        ds.setStoreDir(testDir);
+        
+        //create a bunch of files for same session abc
+        String name1 =  "100__0.0.0.0_abc";    
+        File f1 = new File(testDir, name1);
+        if (f1.exists())
+            Assert.assertTrue(f1.delete());
+        f1.createNewFile();
+        
+        Thread.sleep(1100); //wait so the last modify time will be different
+        String name2 = "101__0.0.0.0_abc"; 
+        File f2 = new File(testDir, name2);
+        if (f2.exists())
+            Assert.assertTrue(f2.delete());
+        f2.createNewFile(); 
+        
+        Thread.sleep(1100); //wait so last modify time will be different
+        String name3 = "102__0.0.0.0_abc";
+        File f3 = new File(testDir, name3);
+        if (f3.exists())
+            Assert.assertTrue(f3.delete());       
+        f3.createNewFile();
+        long lastModified = f3.lastModified();
+        
+        
+        //make a file with the same last modify time
+        String name4 = "103__0.0.0.0_abc";
+        File f4 = new File(testDir, name4);
+        if (f4.exists())
+            Assert.assertTrue(f4.delete());
+        f4.createNewFile();
+        f4.setLastModified(lastModified);
+        assertEquals(f3.lastModified(), f4.lastModified());
+
+        try
+        {
+            handler.setSessionIdManager(idmgr);
+            handler.start();
+            fail("Expected IllegalStateException");
+        }
+        catch (IllegalStateException e)
+        {
+            //expected exception
+        }
+    }
+    
+    
 
     
     
@@ -176,24 +250,21 @@ public class FileSessionManagerTest
         idmgr.setServer(server);
         server.setSessionIdManager(idmgr);
       
+        File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
+        FS.ensureEmpty(testDir);
+        String expectedFilename = (System.currentTimeMillis()+ 10000)+"__0.0.0.0_validFile123";
+        
+        Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
+        Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
+        
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         FileSessionDataStore ds = new FileSessionDataStore();
         ss.setSessionDataStore(ds);
         handler.setSessionCache(ss);
         ds.setDeleteUnrestorableFiles(true); //invalid file will be removed
         handler.setSessionIdManager(idmgr);
-      
-        File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-        FS.ensureEmpty(testDir);
-
         ds.setStoreDir(testDir);
         handler.start();
-
-        String expectedFilename = (System.currentTimeMillis()+ 10000)+"__0.0.0.0_validFile123";
-        
-        Assert.assertTrue(new File(testDir, expectedFilename).createNewFile());
-
-        Assert.assertTrue("File should exist!", new File(testDir, expectedFilename).exists());
 
         Session session = handler.getSession("validFile123");
 

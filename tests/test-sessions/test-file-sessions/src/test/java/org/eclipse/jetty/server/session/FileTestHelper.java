@@ -87,6 +87,7 @@ public class FileTestHelper
                 break;
             }
         }
+        
         if (fname != null)
             return new File (_tmpDir, fname);
         return null;

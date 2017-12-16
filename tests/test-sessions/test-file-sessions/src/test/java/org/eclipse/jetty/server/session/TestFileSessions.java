@@ -70,7 +70,7 @@ public class TestFileSessions extends AbstractTestBase
     @Test
     public void test () throws Exception
     {
-        String contextPath = "";
+        String contextPath = "/test";
         String servletMapping = "/server";
         int inactivePeriod = 5;
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
@@ -108,8 +108,22 @@ public class TestFileSessions extends AbstractTestBase
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 FileTestHelper.assertFileExists(TestServer.extractSessionId(sessionCookie), true);
                 File file2 = FileTestHelper.getFile(TestServer.extractSessionId(sessionCookie));
+                
+                System.err.println("file 1 ("+file1+","+file1.lastModified()+") file2 ("+file2+","+file2.lastModified());
+                
                 assertTrue (!file1.equals(file2));
-                assertTrue (file2.lastModified() > file1.lastModified());
+                assertTrue (file2.lastModified() >= file1.lastModified());
+                
+                String tmp = file1.getName();
+                tmp = tmp.substring(0,  tmp.indexOf("_"));
+                
+                long f1 = Long.valueOf(tmp);
+                tmp = file2.getName();
+                tmp = tmp.substring(0,  tmp.indexOf("_"));
+                long f2 = Long.valueOf(tmp);
+                assertTrue (f2>f1);
+                
+   
                 
                 //invalidate the session and verify that the session file is deleted
                 request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=remove");
@@ -118,6 +132,7 @@ public class TestFileSessions extends AbstractTestBase
                 assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
                 FileTestHelper.assertFileExists(TestServer.extractSessionId(sessionCookie), false);
                 
+                System.err.println("SESSION IS REMOVED!");
                 //make another session
                 response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
@@ -157,11 +172,12 @@ public class TestFileSessions extends AbstractTestBase
             {
                 HttpSession session = request.getSession(false);
                 session.invalidate();
-                //assertTrue(session == null);
             }
             else if ("check".equals(action))
             {
                 HttpSession session = request.getSession(false);
+                assertTrue(session != null);
+                try {Thread.currentThread().sleep(1);}catch (Exception e) {e.printStackTrace();}
             }
         }
     }
