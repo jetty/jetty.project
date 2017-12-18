@@ -1,4 +1,12 @@
-jetty-9.2.23-SNAPSHOT
+jetty-9.2.23.v20171218 - 18 December 2017
+ + 1556 Remove a timing channel in Password matching
+ + 1685 Update ALPN support for Java 8u141
+ + 1702 Update ALPN support for Java 8u144
+ + 1914 HttpClient fails to parse Content-Type response header with RFC 2045
+   charset="utf-8" syntax
+ + 2065 Backport #347 to Jetty 9.2.x
+ + 475546 ClosedChannelException when connecting to HTTPS over HTTP proxy with
+   CONNECT
 
 jetty-9.2.22.v20170606 - 06 June 2017
  + 920 no main manifest attribute, in jetty-runner-9.2.19.v20160908.jar

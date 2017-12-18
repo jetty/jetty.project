@@ -6,7 +6,7 @@
     <version>23</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.2.23-SNAPSHOT</version>
+  <version>9.2.23.v20171218</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
