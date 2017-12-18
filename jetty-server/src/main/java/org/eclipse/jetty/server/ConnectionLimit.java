@@ -30,12 +30,12 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A Connection Listener that limits the number of Connections.
+ * <p>A Connection Listener that limits the number of Connections.</p>
  * <p>This listener applies a limit to the number of connections, which when 
  * exceeded results in  a call to {@link AbstractConnector#setAccepting(boolean)} 
  * to prevent further connections being received.  It can be applied to an
  * entire server or to a specific connector.
- * <p>
+ * </p>
  * @see Connection.Listener
  */
 @ManagedObject
