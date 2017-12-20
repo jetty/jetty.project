@@ -27,11 +27,13 @@ public abstract class HttpChannel
     protected static final Logger LOG = Log.getLogger(HttpChannel.class);
 
     private final HttpDestination _destination;
+    private final TimeoutCompleteListener _totalTimeout;
     private HttpExchange _exchange;
 
     protected HttpChannel(HttpDestination destination)
     {
-        this._destination = destination;
+        _destination = destination;
+        _totalTimeout = new TimeoutCompleteListener(destination.getHttpClient().getScheduler());
     }
 
     public HttpDestination getHttpDestination()
@@ -102,7 +104,23 @@ public abstract class HttpChannel
 
     protected abstract HttpReceiver getHttpReceiver();
 
-    public abstract void send();
+    public void send()
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+        {
+            HttpRequest request = exchange.getRequest();
+            long timeoutAt = request.getTimeoutAt();
+            if (timeoutAt != -1)
+            {
+                exchange.getResponseListeners().add(_totalTimeout);
+                _totalTimeout.schedule(request, timeoutAt);
+            }
+            send(exchange);
+        }
+    }
+
+    public abstract void send(HttpExchange exchange);
 
     public abstract void release();
 

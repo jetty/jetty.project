@@ -100,6 +100,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     public Task schedule(Runnable task, long delay, TimeUnit unit)
     {
         ScheduledThreadPoolExecutor s = scheduler;
+        // TODO should this just throw ISE?
         if (s==null)
             return new Task(){
                 @Override
