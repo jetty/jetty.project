@@ -46,7 +46,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Locker;
@@ -255,16 +254,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             String actionsAt;
             try (Locker.Lock lock = _locker.lock())
             {
-                actionsAt = StdErrLog.timestamp(System.currentTimeMillis(),TimeUnit.MILLISECONDS);
+                actionsAt = Log.timestamp(System.currentTimeMillis(),TimeUnit.MILLISECONDS);
                 actions = new ArrayList<>(_actions);
                 _actions.addFirst(dump);
                 _selecting = false;
             }
             _selector.wakeup();
             keys = dump.get(5, TimeUnit.SECONDS);
-            String keysAt = StdErrLog.timestamp(System.currentTimeMillis(),TimeUnit.MILLISECONDS);
+            String keysAt = Log.timestamp(System.currentTimeMillis(),TimeUnit.MILLISECONDS);
             if (keys==null)
-                keys = Collections.singletonList("NO DUMP RESPONSE");
+                keys = Collections.singletonList("No dump keys retrieved");
             dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions @ "+actionsAt, actions),
                     new DumpableCollection("keys @ "+keysAt, keys) ));
         }

@@ -21,7 +21,6 @@ package org.eclipse.jetty.util.log;
 import java.io.PrintStream;
 import java.security.AccessControlException;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -96,7 +95,7 @@ public class StdErrLog extends AbstractLogger
     private static final String EOL = System.getProperty("line.separator");
     // Do not change output format lightly, people rely on this output format now.
     private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD","0"));
-    private static DateCache __dateCache;
+    static DateCache __dateCache;
 
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
@@ -146,15 +145,7 @@ public class StdErrLog extends AbstractLogger
     protected final String _abbrevname;
     private boolean _hideStacks = false;
 
-    public static String timestamp(long time, TimeUnit units)
-    {
-        long ms = units.toMillis(time);
-        StringBuilder buffer = new StringBuilder();
-        timestamp(buffer,__dateCache.formatNow(ms),(int)(ms%1000));
-        return buffer.toString();
-    }
-    
-    private static void timestamp(StringBuilder buffer, String date, int ms)
+    static void timestamp(StringBuilder buffer, String date, int ms)
     {
         buffer.append(date);
         if (ms > 99)
