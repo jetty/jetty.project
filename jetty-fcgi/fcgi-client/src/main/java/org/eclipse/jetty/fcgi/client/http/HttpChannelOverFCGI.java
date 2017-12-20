@@ -73,15 +73,11 @@ public class HttpChannelOverFCGI extends HttpChannel
     }
 
     @Override
-    public void send()
+    public void send(HttpExchange exchange)
     {
-        HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-        {
-            version = exchange.getRequest().getVersion();
-            idle.onOpen();
-            sender.send(exchange);
-        }
+        version = exchange.getRequest().getVersion();
+        idle.onOpen();
+        sender.send(exchange);
     }
 
     @Override
