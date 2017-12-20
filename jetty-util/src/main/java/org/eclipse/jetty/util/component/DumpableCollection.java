@@ -55,18 +55,4 @@ public class DumpableCollection implements Dumpable
         if (_collection!=null)
             ContainerLifeCycle.dump(out,indent,_collection);
     }
-    
-    public static class DumpableThread extends DumpableCollection
-    {
-        public DumpableThread(String prefix,Thread thread)
-        {
-            super(prefix+thread.getId()+"-"+thread.getName()+":"+thread.getState()+"="+thread.getPriority(),
-                    Arrays.asList(thread.getStackTrace()));
-        }
-        
-        public DumpableThread(Thread thread)
-        {
-            this("",thread);
-        }
-    }
 }

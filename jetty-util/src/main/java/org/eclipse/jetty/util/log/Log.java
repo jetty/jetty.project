@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.Uptime;
@@ -339,19 +338,5 @@ public class Log
     public static Properties getProperties()
     {
         return __props;
-    }
-
-    /** Format a timestamp.
-     * Format a timestamp using the same efficient formatter as used by Jetty implemented loggers
-     * @param time The time to format
-     * @param units The units of the time
-     * @return The formatted time string.
-     */
-    public static String timestamp(long time, TimeUnit units)
-    {
-        long ms = units.toMillis(time);
-        StringBuilder buffer = new StringBuilder();
-        StdErrLog.timestamp(buffer,StdErrLog.__dateCache.formatNow(ms),(int)(ms%1000));
-        return buffer.toString();
     }
 }

@@ -95,7 +95,7 @@ public class StdErrLog extends AbstractLogger
     private static final String EOL = System.getProperty("line.separator");
     // Do not change output format lightly, people rely on this output format now.
     private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD","0"));
-    static DateCache __dateCache;
+    private static DateCache _dateCache;
 
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
@@ -118,7 +118,7 @@ public class StdErrLog extends AbstractLogger
 
         try
         {
-            __dateCache = new DateCache("yyyy-MM-dd HH:mm:ss");
+            _dateCache = new DateCache("yyyy-MM-dd HH:mm:ss");
         }
         catch (Exception x)
         {
@@ -144,24 +144,6 @@ public class StdErrLog extends AbstractLogger
     // The abbreviated log name (used by default, unless _long is specified)
     protected final String _abbrevname;
     private boolean _hideStacks = false;
-
-    static void timestamp(StringBuilder buffer, String date, int ms)
-    {
-        buffer.append(date);
-        if (ms > 99)
-        {
-            buffer.append('.');
-        }
-        else if (ms > 9)
-        {
-            buffer.append(".0");
-        }
-        else
-        {
-            buffer.append(".00");
-        }
-        buffer.append(ms);
-    }
 
     
     public static int getLoggingLevel(Properties props,String name)
@@ -452,13 +434,13 @@ public class StdErrLog extends AbstractLogger
 
     private void format(StringBuilder buffer, String level, String msg, Object... args)
     {
-        buffer.setLength(0);
         long now = System.currentTimeMillis();
-        timestamp(buffer,__dateCache.formatNow(now),(int)(now%1000));
-        tag(buffer,level);
+        int ms=(int)(now%1000);
+        String d = _dateCache.formatNow(now);
+        tag(buffer,d,ms,level);
         format(buffer,msg,args);
     }
-    
+
     private void format(StringBuilder buffer, String level, String msg, Throwable thrown)
     {
         format(buffer,level,msg);
@@ -472,9 +454,23 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
-    private void tag(StringBuilder buffer, String tag)
+    private void tag(StringBuilder buffer, String d, int ms, String tag)
     {
-        buffer.append(tag);
+        buffer.setLength(0);
+        buffer.append(d);
+        if (ms > 99)
+        {
+            buffer.append('.');
+        }
+        else if (ms > 9)
+        {
+            buffer.append(".0");
+        }
+        else
+        {
+            buffer.append(".00");
+        }
+        buffer.append(ms).append(tag);
         
         String name=_printLongNames?_name:_abbrevname;
         String tname=Thread.currentThread().getName();

@@ -26,6 +26,8 @@ import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -254,14 +256,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             String actionsAt;
             try (Locker.Lock lock = _locker.lock())
             {
-                actionsAt = Log.timestamp(System.currentTimeMillis(),TimeUnit.MILLISECONDS);
+                actionsAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
                 actions = new ArrayList<>(_actions);
                 _actions.addFirst(dump);
                 _selecting = false;
             }
             _selector.wakeup();
             keys = dump.get(5, TimeUnit.SECONDS);
-            String keysAt = Log.timestamp(System.currentTimeMillis(),TimeUnit.MILLISECONDS);
+            String keysAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             if (keys==null)
                 keys = Collections.singletonList("No dump keys retrieved");
             dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions @ "+actionsAt, actions),
@@ -269,7 +271,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         else
         {
-            dumpBeans(out,indent);
+            super.dump(out,indent);
         }
     }
 
@@ -507,7 +509,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class DumpKeys extends Invocable.NonBlocking
     {
-        private final Exchanger<List<String>> _dump = new Exchanger<>();
+        private CountDownLatch latch = new CountDownLatch(1);
+        private List<String> keys;
         
         @Override
         public void run()
@@ -530,26 +533,22 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     }
                 }
             }
-            try
-            {
-                _dump.exchange(list,500,TimeUnit.MILLISECONDS);
-            }
-            catch (Exception e)
-            {
-                LOG.ignore(e);
-            }
+            
+            keys = list;
+            latch.countDown();
         }
 
         public List<String> get(long timeout, TimeUnit unit)
         {
             try
             {
-                return _dump.exchange(null,timeout, unit);
+                latch.await(timeout, unit);
             }
-            catch (Exception x)
+            catch (InterruptedException x)
             {
-                return null;
+                LOG.ignore(x);
             }
+            return keys;
         }
     }
 
