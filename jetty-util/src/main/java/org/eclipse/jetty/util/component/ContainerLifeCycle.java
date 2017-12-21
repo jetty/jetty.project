@@ -116,6 +116,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                             start(l);
                         }
                         break;
+                    default:
                 }
             }
         }
