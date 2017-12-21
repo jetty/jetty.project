@@ -184,15 +184,24 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         _destroyed = true;
         List<Bean> reverse = new ArrayList<>(_beans);
         Collections.reverse(reverse);
+        MultiException mex = new MultiException();
         for (Bean b : reverse)
         {
             if (b._bean instanceof Destroyable && (b._managed==Managed.MANAGED || b._managed==Managed.POJO))
             {
                 Destroyable d = (Destroyable)b._bean;
-                d.destroy();
+                try
+                {
+                    d.destroy();
+                }
+                catch(Throwable th)
+                {
+                    mex.add(th);
+                }
             }
         }
         _beans.clear();
+        mex.ifExceptionThrowRuntime();
     }
 
     /**
