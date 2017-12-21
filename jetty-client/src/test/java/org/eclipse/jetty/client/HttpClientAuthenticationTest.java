@@ -430,7 +430,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void test_NonRepeatableContent() throws Exception
+    public void test_NonReproducibleContent() throws Exception
     {
         startBasic(new EmptyServerHandler());
 
