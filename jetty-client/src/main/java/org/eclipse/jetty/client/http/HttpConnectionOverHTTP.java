@@ -142,8 +142,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         long idleTimeout = getEndPoint().getIdleTimeout();
         boolean close = delegate.onIdleTimeout(idleTimeout);
         if (close)
-            close(new TimeoutException("Idle timeout " + idleTimeout + " ms"));
+            close(new TimeoutException("Idle timeout " + idleTimeout + " ms: " + describe(getEndPoint())));
         return false;
+    }
+
+    private String describe(EndPoint ep) {
+        return ep.getLocalAddress() + "<->" + ep.getRemoteAddress();
     }
 
     @Override

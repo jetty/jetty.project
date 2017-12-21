@@ -163,7 +163,7 @@ public abstract class IdleTimeout
                         LOG.debug("{} idle timeout expired", this);
                     try
                     {
-                        onIdleExpired(new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms"));
+                        onIdleExpired(new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms " + describeIdleTimeout()));
                     }
                     finally
                     {
@@ -175,6 +175,10 @@ public abstract class IdleTimeout
             return idleLeft >= 0 ? idleLeft : 0;
         }
         return -1;
+    }
+
+    protected String describeIdleTimeout() {
+        return "[" + this + "]";
     }
 
     /**

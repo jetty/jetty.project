@@ -459,7 +459,12 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 getIdleFor(),
                 getIdleTimeout());
     }
-    
+
+    @Override
+    protected String describeIdleTimeout() {
+        return getRemoteAddress() + "<->" + getLocalAddress();
+    }
+
     public String toConnectionString()
     {
         Connection connection = getConnection();

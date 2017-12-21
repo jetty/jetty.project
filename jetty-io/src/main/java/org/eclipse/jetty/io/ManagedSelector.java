@@ -737,7 +737,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Channel {} timed out while connecting, closing it", channel);
-                connect.failed(new SocketTimeoutException("Connect Timeout"));
+                connect.failed(new SocketTimeoutException("Connect Timeout: " + channel));
             }
         }
     }
