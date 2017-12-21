@@ -40,6 +40,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -129,9 +130,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         if (graceful && !closed)
         {
             // Schedule a graceful close
-            GracefulCloseAction close = new GracefulCloseAction();
+            GracefulCloseAction close = new GracefulCloseAction(selector);
             submit(close);
             closed = close.await(getStopTimeout());
+            selector = close._selector.getAndSet(null);
         }
         
         try
@@ -143,14 +145,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             // Really stop the selector
             try (Locker.Lock lock = _locker.lock())
             {
-                if (selector!=null && selector.isOpen())
-                    selector.wakeup();
+                if (_selector!=null && _selector.isOpen())
+                    _selector.wakeup();
                 _selector = null;
             }
             Thread.yield();
 
             // Close any left over endpoints
-            if (!closed && selector.isOpen())
+            if (!closed && selector!=null && selector.isOpen())
             {
                 // close all the endpoints directly
                 selector.keys().stream()
@@ -810,7 +812,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class GracefulCloseAction extends Action
     {
-        private CountDownLatch _latch = new CountDownLatch(1);
+        private final CountDownLatch _latch = new CountDownLatch(1);
+        private final AtomicReference<Selector> _selector = new AtomicReference<>();
+        
+        GracefulCloseAction(Selector selector)
+        {
+            _selector.set(selector);
+        }
         
         @Override
         public void run()
@@ -818,7 +826,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             int count = 0;
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing endPoints on {}", ManagedSelector.this);
-            for (SelectionKey key : _selector.keys())
+            
+            Selector selector = _selector.getAndSet(null);
+            if (selector==null)
+                return;
+            
+            for (SelectionKey key : selector.keys())
             {
                 if (key.isValid())
                 {
@@ -838,8 +851,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {} endPoints on {}", count, ManagedSelector.this);                
             
-            closeNoExceptions(_selector);
-            _selector = null;
+            closeNoExceptions(selector);
             _latch.countDown();
         }
 
