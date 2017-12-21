@@ -150,7 +150,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             Thread.yield();
 
             // Close any left over endpoints
-            if (!closed && selector.isOpen())
+            if (selector!=null && selector.isOpen())
             {
                 // close all the endpoints directly
                 selector.keys().stream()
@@ -838,8 +838,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {} endPoints on {}", count, ManagedSelector.this);                
             
-            closeNoExceptions(_selector);
-            _selector = null;
             _latch.countDown();
         }
 
