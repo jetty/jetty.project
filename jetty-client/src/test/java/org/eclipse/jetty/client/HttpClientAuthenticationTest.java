@@ -444,7 +444,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(data))
         {
             @Override
-            public boolean isRepeatable()
+            public boolean isReproducible()
             {
                 return false;
             }
@@ -543,7 +543,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         }
 
         @Override
-        public boolean isRepeatable()
+        public boolean isReproducible()
         {
             return true;
         }

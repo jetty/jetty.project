@@ -86,7 +86,7 @@ public class PathContentProvider extends AbstractTypedContentProvider
     }
 
     @Override
-    public boolean isRepeatable()
+    public boolean isReproducible()
     {
         return true;
     }

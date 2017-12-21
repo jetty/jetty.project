@@ -140,10 +140,10 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             }
 
             ContentProvider requestContent = request.getContent();
-            if (requestContent != null && !requestContent.isRepeatable())
+            if (requestContent != null && !requestContent.isReproducible())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Request content not repeatable for {}", request);
+                    LOG.debug("Request content not reproducible for {}", request);
                 forwardSuccessComplete(request, response);
                 return;
             }

@@ -54,7 +54,7 @@ public class BytesContentProvider extends AbstractTypedContentProvider
     }
 
     @Override
-    public boolean isRepeatable()
+    public boolean isReproducible()
     {
         return true;
     }
@@ -83,12 +83,6 @@ public class BytesContentProvider extends AbstractTypedContentProvider
                 {
                     throw new NoSuchElementException();
                 }
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
             }
         };
     }
