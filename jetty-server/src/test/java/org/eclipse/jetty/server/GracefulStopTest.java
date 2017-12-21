@@ -22,7 +22,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -111,7 +110,7 @@ public class GracefulStopTest
         Socket client = new Socket("127.0.0.1", port);
         client.setSoTimeout(10000);
         client.getOutputStream().write((
-                "GET / HTTP/1.0\r\n"+
+                "GET / HTTP/1.1\r\n"+
                 "Host: localhost:"+port+"\r\n" +
                 "Content-Type: plain/text\r\n" +
                 "\r\n"
@@ -143,7 +142,7 @@ public class GracefulStopTest
         }
         long stop = System.nanoTime();
         
-        // No Graceful wait
+        // Check stop time was correct
         assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),stopTimeMatcher);
 
         // Connection closed
@@ -169,7 +168,7 @@ public class GracefulStopTest
     @Test
     public void testSlowCloseNotGraceful() throws Exception
     {
-        testSlowClose(0,5000,lessThan(1000L));
+        testSlowClose(0,5000,lessThan(750L));
     }
 
     /**
@@ -179,7 +178,7 @@ public class GracefulStopTest
     @Test
     public void testSlowCloseTinyGraceful() throws Exception
     {
-        testSlowClose(1,5000,lessThan(1000L));
+        testSlowClose(1,5000,lessThan(750L));
     }
 
     /**
@@ -189,7 +188,7 @@ public class GracefulStopTest
     @Test
     public void testSlowCloseGraceful() throws Exception
     {
-        testSlowClose(5000,1000,greaterThan(999L));
+        testSlowClose(5000,1000,greaterThan(750L));
     }
     
     
