@@ -167,7 +167,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {} graceful={}", this, graceful);
         if (graceful && !closed)
-            throw new TimeoutException("Non graceful shutdown of "+this);
+            throw new TimeoutException("Non graceful (>"+getStopTimeout()+"ms) shutdown of "+this);
     }
 
     @Deprecated
@@ -818,7 +818,15 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             int count = 0;
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing endPoints on {}", ManagedSelector.this);
-            for (SelectionKey key : _selector.keys())
+            Selector selector;
+            try (Locker.Lock lock = _locker.lock())
+            {
+                selector = _selector;
+                _selector = null;
+            }
+            if (selector==null)
+                return;
+            for (SelectionKey key : selector.keys())
             {
                 if (key.isValid())
                 {
