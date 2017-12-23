@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -110,6 +111,9 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     throws Exception
     {
         AnnotationParser oparser = (AnnotationParser)parser;
+
+        if (_webInfLibStats == null)
+            _webInfLibStats = new CounterStatistic();
         
         Bundle webbundle = (Bundle) context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         Set<Bundle> fragAndRequiredBundles = (Set<Bundle>)context.getAttribute(OSGiWebInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
@@ -132,12 +136,14 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
                 {
                     //a fragment indeed:
                     parseFragmentBundle(context,oparser,webbundle,bundle);
+                    _webInfLibStats.increment();
                 }
             }
         }
         //scan ourselves
         oparser.indexBundle(webbundle);
         parseWebBundle(context,oparser,webbundle);
+        _webInfLibStats.increment();
         
         //scan the WEB-INF/lib
         super.parseWebInfLib(context,parser);
@@ -154,6 +160,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
                 {
                     //a bundle indeed:
                     parseRequiredBundle(context,oparser,webbundle,requiredBundle);
+                    _webInfLibStats.increment();
                 }
             }
         }

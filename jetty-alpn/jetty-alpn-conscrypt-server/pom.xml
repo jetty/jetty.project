@@ -13,7 +13,6 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.conscrypt.server</bundle-symbolic-name>
-    <conscrypt.version>1.0.0.RC11</conscrypt.version>
   </properties>
 
   <dependencies>
@@ -40,4 +39,22 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+       <plugin>
+         <groupId>org.apache.felix</groupId>
+         <artifactId>maven-bundle-plugin</artifactId>
+         <extensions>true</extensions>
+             <configuration>
+               <instructions>
+                 <Bundle-Description>Conscrypt ALPN</Bundle-Description>
+                 <Import-Package>org.conscrypt;version="${conscrypt.version}",*</Import-Package>
+                 <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                 <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
+                 <_nouses>true</_nouses>
+               </instructions>
+             </configuration>
+       </plugin>
+    </plugins>
+  </build>
 </project>
