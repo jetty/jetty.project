@@ -32,10 +32,10 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -55,6 +55,11 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class HttpReceiverOverHTTPTest
 {
+    static
+    {
+        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME);
+    }
+    
     @Rule
     public final TestTracker tracker = new TestTracker();
 
@@ -71,7 +76,7 @@ public class HttpReceiverOverHTTPTest
     {
         return Arrays.asList(
             new Object[] { HttpCompliance.LEGACY },
-            new Object[] { HttpCompliance.WEAK },
+            new Object[] { HttpCompliance.CUSTOM0 },
             new Object[] { HttpCompliance.RFC2616 },
             new Object[] { HttpCompliance.RFC7230 }
         );
@@ -245,7 +250,7 @@ public class HttpReceiverOverHTTPTest
         try {
             Response response = listener.get(5, TimeUnit.SECONDS);
             
-            Assert.assertThat(compliance, Matchers.lessThanOrEqualTo(HttpCompliance.WEAK));
+            Assert.assertThat(compliance, Matchers.lessThanOrEqualTo(HttpCompliance.CUSTOM0));
             Assert.assertNotNull(response);
             Assert.assertEquals(200, response.getStatus());
             Assert.assertEquals("OK", response.getReason());
@@ -255,7 +260,7 @@ public class HttpReceiverOverHTTPTest
             Assert.assertEquals(1, headers.size());
             Assert.assertEquals("0", headers.get(HttpHeader.CONTENT_LENGTH));
         } catch (Exception e) {
-            Assert.assertThat(compliance, Matchers.greaterThan(HttpCompliance.WEAK));
+            Assert.assertThat(compliance, Matchers.greaterThan(HttpCompliance.CUSTOM0));
             Throwable cause = e.getCause();
             Assert.assertThat(cause, CoreMatchers.instanceOf(HttpResponseException.class));
             Assert.assertThat(cause.getMessage(), Matchers.containsString("HTTP protocol violation"));

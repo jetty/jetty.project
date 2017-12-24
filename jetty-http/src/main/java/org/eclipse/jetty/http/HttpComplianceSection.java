@@ -20,18 +20,18 @@ package org.eclipse.jetty.http;
 
 /**
  */
-public enum HttpRFC 
+public enum HttpComplianceSection 
 {     
-    CASE_SENSITIVE_FIELD_VALUES("","case-sensitive field values"),
+    USE_CASE_INSENSITIVE_FIELD_VALUE_CACHE("","Use case insensitive field value cache"),
     RFC7230_3_1_1_METHOD_CASE_SENSITIVE("https://tools.ietf.org/html/rfc7230#section-3.1.1","Method is case-sensitive"),
     RFC7230_3_2_FIELD_COLON("https://tools.ietf.org/html/rfc7230#section-3.2","Fields must have a Colon"), 
     RFC7230_3_2_CASE_INSENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2","Field name is case-insensitive"),    
-    RFC7230_3_2_4_WS_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4","Whitespace not allowed after field name"),    
+    RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4","Whitespace not allowed after field name"),    
     RFC7230_3_2_4_NO_FOLDING("https://tools.ietf.org/html/rfc7230#section-3.2.4","No line Folding"),
     RFC7230_A2_NO_HTTP_9("https://tools.ietf.org/html/rfc7230#appendix-A.2","No HTTP/0.9"),
     ; 
 
-    HttpRFC(String url,String description)
+    HttpComplianceSection(String url,String description)
     {
 
     }
