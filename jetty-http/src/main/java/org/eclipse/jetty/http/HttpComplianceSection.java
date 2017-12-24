@@ -31,8 +31,23 @@ public enum HttpComplianceSection
     RFC7230_A2_NO_HTTP_9("https://tools.ietf.org/html/rfc7230#appendix-A.2","No HTTP/0.9"),
     ; 
 
+    final String url;
+    final String description;
+    
     HttpComplianceSection(String url,String description)
     {
-
+        this.url = url;
+        this.description = description;
     }
+    
+    public String getURL()
+    {
+        return url;
+    }
+    
+    public String getDescription()
+    {
+        return description;
+    }
+    
 }

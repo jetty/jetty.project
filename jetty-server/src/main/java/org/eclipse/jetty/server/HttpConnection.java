@@ -105,7 +105,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _channel = newHttpChannel();
         _input = _channel.getRequest().getHttpInput();
         _parser = newHttpParser(compliance);
-        _recordHttpComplianceViolations=recordComplianceViolations;
+        _recordHttpComplianceViolations = recordComplianceViolations;
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }

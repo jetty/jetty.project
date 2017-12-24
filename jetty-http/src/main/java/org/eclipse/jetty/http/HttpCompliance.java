@@ -38,8 +38,13 @@ public enum HttpCompliance
 { 
     // TODO in Jetty-10 convert this enum to a class so that extra custom modes can be defined dynamically
     LEGACY(sectionsBySpec("LEGACY")), 
-    RFC2616(sectionsBySpec("RFC2616")), 
-    RFC7230(sectionsBySpec("RFC7230,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), // TODO fix in Jetty-10
+    
+    // Jetty's historic RFC2616 support incorrectly allowed no colon and case insensitive methods
+    RFC2616(sectionsBySpec("RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), 
+    
+    // TODO Jetty's current RFC7230 support incorrectly handles methods case insensitively
+    RFC7230(sectionsBySpec("RFC7230,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")),
+    
     CUSTOM0(sectionsByProperty("CUSTOM0")),
     CUSTOM1(sectionsByProperty("CUSTOM1")),
     CUSTOM2(sectionsByProperty("CUSTOM2")),
@@ -59,17 +64,25 @@ public enum HttpCompliance
         int i=0;
         
         switch(elements[i])
-        {        
+        {       
+            case "0":
+                sections = EnumSet.noneOf(HttpComplianceSection.class);
+                i++;
+                break;
+                
+            case "*":
+                i++;
+                sections = EnumSet.allOf(HttpComplianceSection.class);
+                break;
+                
             case "RFC2616":
                 sections = EnumSet.complementOf(EnumSet.of(
-                HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME,
                 HttpComplianceSection.RFC7230_3_2_4_NO_FOLDING,
                 HttpComplianceSection.RFC7230_A2_NO_HTTP_9));
                 i++;
                 break;
                 
             case "RFC7230":
-            case "*":
                 i++;
                 sections = EnumSet.allOf(HttpComplianceSection.class);
                 break;
@@ -79,10 +92,6 @@ public enum HttpCompliance
                 i++;
                 break;
                 
-            case "0":
-                sections = EnumSet.noneOf(HttpComplianceSection.class);
-                i++;
-                break;
             default:
                 sections = EnumSet.noneOf(HttpComplianceSection.class);
                 break;
@@ -134,8 +143,6 @@ public enum HttpCompliance
     {
         return __required.get(section);
     }
-    
-    
     
     private final EnumSet<HttpComplianceSection> _sections;
     

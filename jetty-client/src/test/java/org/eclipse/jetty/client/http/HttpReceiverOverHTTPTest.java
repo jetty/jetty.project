@@ -35,15 +35,12 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpCompliance;
-import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Promise;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -54,12 +51,7 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class HttpReceiverOverHTTPTest
-{
-    static
-    {
-        HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME);
-    }
-    
+{    
     @Rule
     public final TestTracker tracker = new TestTracker();
 
@@ -76,7 +68,6 @@ public class HttpReceiverOverHTTPTest
     {
         return Arrays.asList(
             new Object[] { HttpCompliance.LEGACY },
-            new Object[] { HttpCompliance.CUSTOM0 },
             new Object[] { HttpCompliance.RFC2616 },
             new Object[] { HttpCompliance.RFC7230 }
         );
@@ -233,37 +224,6 @@ public class HttpReceiverOverHTTPTest
         catch (ExecutionException e)
         {
             Assert.assertTrue(e.getCause() instanceof HttpResponseException);
-        }
-    }
-    
-    @Test
-    public void test_Receive_Invalid_Response_With_Weak_Compliance() throws Exception
-    {
-        endPoint.addInput("" +
-                "HTTP/1.1 200 OK\r\n" +
-                "Content-length : 0\r\n" +
-                "\r\n");
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        connection.getHttpChannel().receive();
-        
-        try {
-            Response response = listener.get(5, TimeUnit.SECONDS);
-            
-            Assert.assertThat(compliance, Matchers.lessThanOrEqualTo(HttpCompliance.CUSTOM0));
-            Assert.assertNotNull(response);
-            Assert.assertEquals(200, response.getStatus());
-            Assert.assertEquals("OK", response.getReason());
-            Assert.assertSame(HttpVersion.HTTP_1_1, response.getVersion());
-            HttpFields headers = response.getHeaders();
-            Assert.assertNotNull(headers);
-            Assert.assertEquals(1, headers.size());
-            Assert.assertEquals("0", headers.get(HttpHeader.CONTENT_LENGTH));
-        } catch (Exception e) {
-            Assert.assertThat(compliance, Matchers.greaterThan(HttpCompliance.CUSTOM0));
-            Throwable cause = e.getCause();
-            Assert.assertThat(cause, CoreMatchers.instanceOf(HttpResponseException.class));
-            Assert.assertThat(cause.getMessage(), Matchers.containsString("HTTP protocol violation"));
         }
     }
 

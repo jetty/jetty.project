@@ -35,8 +35,6 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import static org.eclipse.jetty.http.HttpCompliance.RFC2616;
-import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
 import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
 import static org.eclipse.jetty.http.HttpTokens.SPACE;
@@ -1068,7 +1066,7 @@ public class HttpParser
                         case HttpTokens.SPACE:
                         case HttpTokens.TAB:
                         {
-                            if (complianceViolation(HttpComplianceSection.RFC7230_3_2_4_NO_FOLDING,"Folded "+_headerString))
+                            if (complianceViolation(HttpComplianceSection.RFC7230_3_2_4_NO_FOLDING,_headerString))
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Header Folding");
 
                             // header value without name - continuation?
@@ -1279,6 +1277,7 @@ public class HttpParser
                     }
 
                     // Fallthrough
+                    
                 case WS_AFTER_NAME:
                     if (b==HttpTokens.COLON)
                     {
@@ -1293,7 +1292,7 @@ public class HttpParser
                         break;
                     }
                     
-                    if (b==HttpTokens.LINE_FEED && !complianceViolation(HttpComplianceSection.RFC7230_3_2_FIELD_COLON,null))
+                    if (b==HttpTokens.LINE_FEED)
                     {
                         if (_headerString==null)
                         {
@@ -1304,8 +1303,11 @@ public class HttpParser
                         _valueString="";
                         _length=-1;
 
-                        setState(FieldState.FIELD);
-                        break;
+                        if (!complianceViolation(HttpComplianceSection.RFC7230_3_2_FIELD_COLON,_headerString))
+                        {                        
+                            setState(FieldState.FIELD);
+                            break;
+                        }
                     }
 
                     //Ignore trailing whitespaces
