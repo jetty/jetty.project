@@ -71,7 +71,10 @@ public class AnnotationParser
     private static final Logger LOG = Log.getLogger(AnnotationParser.class);
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM6; //compatibility of api
     
-    protected Map<String, List<String>> _parsedClassNames = new ConcurrentHashMap<>();
+    /**
+     * Map of classnames scanned and the first location from which scan occurred
+     */
+    protected Map<String, Resource> _parsedClassNames = new ConcurrentHashMap<>();
     private final int _javaPlatform;
     private int _asmVersion;
     
@@ -561,17 +564,11 @@ public class AnnotationParser
      */
     public void addParsedClass (String classname, Resource location)
     {
-        List<String> list = new ArrayList<>(1);
-        if (location != null)
-            list.add(location.toString());
-
-        List<String> existing = _parsedClassNames.putIfAbsent(classname, list);
+        Resource existing = _parsedClassNames.putIfAbsent(classname, location);       
         if (existing != null)
-        {
-            existing.addAll(list);
-            LOG.warn("{} scanned from multiple locations: {}", classname, existing);
-        }
+            LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
     }
+    
 
     /**
      * Get the locations of the given classname. There may be more than one
@@ -579,13 +576,13 @@ public class AnnotationParser
      * 
      * @param classname the name of the class
      * @return an immutable list of locations
+     * 
+     * @deprecated List of duplicate locations no longer stored
      */
+    @Deprecated
     public List<String> getParsedLocations (String classname)
     {
-        List<String> list = _parsedClassNames.get(classname);
-        if (list == null)
-            return Collections.emptyList();
-        return Collections.unmodifiableList(list);
+        return Collections.emptyList();
     }
 
     /**

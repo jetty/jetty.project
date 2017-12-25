@@ -44,7 +44,7 @@ What was in the Upgrade Request and Response.
 UpgradeRequest req = session.getUpgradeRequest();
 String channelName = req.getParameterMap().get("channelName");
 
-UpgradeRespons resp = session.getUpgradeResponse();
+UpgradeResponse resp = session.getUpgradeResponse();
 String subprotocol = resp.getAcceptedSubProtocol();
 ----
 

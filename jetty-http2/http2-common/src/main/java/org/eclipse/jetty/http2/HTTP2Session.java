@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -106,13 +107,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.pushEnabled = true; // SPEC: by default, push is enabled.
         this.idleTime = System.nanoTime();
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
         addBean(flowControl);
-        super.doStart();
+        addBean(flusher);
     }
 
     @Override
@@ -286,7 +282,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         IStream stream = getStream(frame.getStreamId());
         if (stream != null)
-            stream.process(frame, Callback.NOOP);
+            stream.process(frame, new ResetCallback());
         else
             notifyReset(this, frame);
     }
@@ -547,7 +543,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             flusher.iterate();
     }
 
-
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
@@ -758,8 +753,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         IStream removed = streams.remove(stream.getId());
         if (removed != null)
         {
-            assert removed == stream;
-
             boolean local = stream.isLocal();
             if (local)
                 localStreamCount.decrementAndGet();
@@ -1116,14 +1109,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out, indent);
+        dump(out, indent, Collections.singleton(new DumpableCollection("streams", streams.values())));
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s@%x{l:%s <-> r:%s,queueSize=%d,sendWindow=%s,recvWindow=%s,streams=%d,%s}",
+        return String.format("%s@%x{l:%s <-> r:%s,sendWindow=%s,recvWindow=%s,streams=%d,%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getEndPoint().getLocalAddress(),
                 getEndPoint().getRemoteAddress(),
-                flusher.getQueueSize(),
                 sendWindow,
                 recvWindow,
                 streams.size(),
@@ -1325,6 +1324,32 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             promise.failed(x);
+        }
+    }
+
+    private class ResetCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            complete();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        private void complete()
+        {
+            flusher.iterate();
         }
     }
 

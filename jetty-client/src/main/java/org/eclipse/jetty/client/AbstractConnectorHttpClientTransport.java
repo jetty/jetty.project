@@ -35,7 +35,9 @@ import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
+@ManagedObject
 public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpClientTransport
 {
     private final int selectors;

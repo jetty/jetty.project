@@ -18,29 +18,44 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.toolchain.test.JDK;
+import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,12 +69,21 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 /**
  * HTTP2 setup.
  */
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
-public class TestJettyOSGiBootHTTP2
+public class TestJettyOSGiBootHTTP2Conscrypt
 {
     private static final String LOG_LEVEL = "WARN";
 
@@ -76,20 +100,21 @@ public class TestJettyOSGiBootHTTP2
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects", 
+                                               "sun.security", "sun.security.x509","sun.security.ssl"));
         options.addAll(http2JettyDependencies());
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.addAll(TestOSGiUtil.jspDependencies());
         //deploy a test webapp
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-openjdk8-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-http-client-transport").versionAsInProject().start());
 
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value("DEBUG"));
+        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[options.size()]);
     }
@@ -100,16 +125,15 @@ public class TestJettyOSGiBootHTTP2
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
         res.add(CoreOptions.systemProperty("jetty.http.port").value("0"));
         res.add(CoreOptions.systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
-
-        String alpnBoot = System.getProperty("mortbay-alpn-boot");
-        if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }
-        File checkALPNBoot = new File(alpnBoot);
-        if (!checkALPNBoot.exists()) { throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot); }
-
-        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + checkALPNBoot.getAbsolutePath()));
+        res.add(CoreOptions.systemProperty("jetty.sslContext.provider").value("Conscrypt"));
         
+        res.add(wrappedBundle(mavenBundle().groupId("org.conscrypt").artifactId("conscrypt-openjdk-uber").version("1.0.0.RC11"))
+                .imports("javax.net.ssl,*")
+                .exports("org.conscrypt;version=1.0.0.RC11")
+                .instructions("Bundle-NativeCode=META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so")
+                .start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-openjdk8-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
 
 
@@ -119,39 +143,27 @@ public class TestJettyOSGiBootHTTP2
         return res;
     }
  
-    @Ignore
-    @Test
-    public void checkALPNBootOnBootstrapClasspath() throws Exception
-    {
-        Class<?> alpn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.alpn.ALPN");
-        Assert.assertNotNull(alpn);
-        Assert.assertNull(alpn.getClassLoader());
-    }
-    
+  
     @Ignore
     @Test
     public void assertAllBundlesActiveOrResolved() throws Exception
     {
         TestOSGiUtil.debugBundles(bundleContext);
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        Bundle openjdk8 = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.openjdk8.server");
-        assertNotNull(openjdk8);
-        ServiceReference[] services = openjdk8.getRegisteredServices();
-        assertNotNull(services);        
-        Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
-        assertNotNull(server);
+        Bundle conscrypt = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.conscrypt.server");
+        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(conscrypt);
+        assertNotNull(conscrypt);
+        ServiceReference[] services = conscrypt.getRegisteredServices();
+        assertNotNull(services);
+        assertTrue(services.length > 0);
     }
 
-    
 
     @Test
     public void testHTTP2() throws Exception
     {
-        HttpClient httpClient = null;
-        HTTP2Client http2Client = null;
+        HTTP2Client client = new HTTP2Client();
         try 
         {
-            //get the port chosen for https
             String tmp = System.getProperty("boot.https.port");
             assertNotNull(tmp);
             int port = Integer.valueOf(tmp.trim()).intValue();
@@ -160,16 +172,17 @@ public class TestJettyOSGiBootHTTP2
             File base = path.toFile();
             File keys = path.resolve("etc").resolve("keystore").toFile();
             
-            //set up client to do http2
-            http2Client = new HTTP2Client();
+            HTTP2Client http2Client = new HTTP2Client();
             SslContextFactory sslContextFactory = new SslContextFactory();
             sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-            httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
+            sslContextFactory.setProvider("Conscrypt");
+            HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
+
             httpClient.start();
 
             ContentResponse response = httpClient.GET("https://localhost:"+port+"/jsp/jstl.jsp");
@@ -179,8 +192,7 @@ public class TestJettyOSGiBootHTTP2
         }
         finally
         {
-            if (httpClient != null) httpClient.stop();
-            if (http2Client != null) http2Client.stop();
+            if (client != null) client.stop();
         }
     }
 
