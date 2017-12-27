@@ -49,6 +49,15 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -88,7 +97,6 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
 </project>

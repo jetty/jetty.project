@@ -121,6 +121,11 @@ public class HazelcastSessionDataStoreFactory
         return onlyClient;
     }
 
+    /**
+     *
+     * @param onlyClient if <code>true</code> the session manager will only connect to an external Hazelcast instance
+     *                   and not use this JVM to start an Hazelcast instance
+     */
     public void setOnlyClient( boolean onlyClient )
     {
         this.onlyClient = onlyClient;

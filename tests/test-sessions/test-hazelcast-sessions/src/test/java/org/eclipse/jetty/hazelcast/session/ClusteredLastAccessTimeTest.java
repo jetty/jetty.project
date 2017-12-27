@@ -20,10 +20,13 @@ package org.eclipse.jetty.hazelcast.session;
 
 import org.eclipse.jetty.server.session.AbstractClusteredLastAccessTimeTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.junit.After;
 
 public class ClusteredLastAccessTimeTest
     extends AbstractClusteredLastAccessTimeTest
 {
+
+    HazelcastSessionDataStoreFactory factory;
 
     /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
@@ -31,8 +34,15 @@ public class ClusteredLastAccessTimeTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
+        factory = new HazelcastSessionDataStoreFactory();
+        factory.setMapName( Long.toString( System.currentTimeMillis() ) );
         return factory;
+    }
+
+    @After
+    public void shutdown()
+    {
+        factory.getHazelcastInstance().getMap( factory.getMapName() ).clear();
     }
 
 }

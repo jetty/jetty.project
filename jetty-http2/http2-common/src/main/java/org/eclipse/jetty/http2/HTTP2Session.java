@@ -955,6 +955,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     {
     }
 
+    void onFlushed(long bytes) throws IOException
+    {
+        flusher.onFlushed(bytes);
+    }
+
     public void disconnect()
     {
         if (LOG.isDebugEnabled())
@@ -1132,15 +1137,28 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private class ControlEntry extends HTTP2Flusher.Entry
     {
         private int bytes;
+        private int frameBytes;
 
         private ControlEntry(Frame frame, IStream stream, Callback callback)
         {
             super(frame, stream, callback);
         }
 
+        @Override
+        public int getFrameBytesRemaining()
+        {
+            return frameBytes;
+        }
+
+        @Override
+        public void onFrameBytesFlushed(int bytesFlushed)
+        {
+            frameBytes -= bytesFlushed;
+        }
+
         protected boolean generate(ByteBufferPool.Lease lease)
         {
-            bytes = generator.control(lease, frame);
+            bytes = frameBytes = generator.control(lease, frame);
             if (LOG.isDebugEnabled())
                 LOG.debug("Generated {}", frame);
             prepare();
@@ -1238,7 +1256,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private class DataEntry extends HTTP2Flusher.Entry
     {
         private int bytes;
-        private int dataRemaining;
+        private int frameBytes;
+        private int dataBytes;
         private int dataWritten;
 
         private DataEntry(DataFrame frame, IStream stream, Callback callback)
@@ -1249,35 +1268,47 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // of data frames that cannot be completely written due to
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
-            dataRemaining = frame.remaining();
+            dataBytes = frame.remaining();
         }
 
         @Override
-        public int dataRemaining()
+        public int getFrameBytesRemaining()
         {
-            return dataRemaining;
+            return frameBytes;
+        }
+
+        @Override
+        public void onFrameBytesFlushed(int bytesFlushed)
+        {
+            frameBytes -= bytesFlushed;
+        }
+
+        @Override
+        public int getDataBytesRemaining()
+        {
+            return dataBytes;
         }
 
         protected boolean generate(ByteBufferPool.Lease lease)
         {
-            int dataRemaining = dataRemaining();
+            int dataBytes = getDataBytesRemaining();
 
             int sessionSendWindow = getSendWindow();
             int streamSendWindow = stream.updateSendWindow(0);
             int window = Math.min(streamSendWindow, sessionSendWindow);
-            if (window <= 0 && dataRemaining > 0)
+            if (window <= 0 && dataBytes > 0)
                 return false;
 
-            int length = Math.min(dataRemaining, window);
+            int length = Math.min(dataBytes, window);
 
             // Only one DATA frame is generated.
-            bytes = generator.data(lease, (DataFrame)frame, length);
+            bytes = frameBytes = generator.data(lease, (DataFrame)frame, length);
             int written = bytes - Frame.HEADER_LENGTH;
             if (LOG.isDebugEnabled())
-                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, written, window, dataRemaining);
+                LOG.debug("Generated {}, length/window/data={}/{}/{}", frame, written, window, dataBytes);
 
             this.dataWritten = written;
-            this.dataRemaining -= written;
+            this.dataBytes -= written;
 
             flowControl.onDataSending(stream, written);
 
@@ -1292,7 +1323,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
             // Do we have more to send ?
             DataFrame dataFrame = (DataFrame)frame;
-            if (dataRemaining() == 0)
+            if (getDataBytesRemaining() == 0)
             {
                 // Only now we can update the close state
                 // and eventually remove the stream.
