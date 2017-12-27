@@ -89,6 +89,26 @@ public interface Invocable
     }
 
     /**
+     * Invoke a task with the calling thread, tagged to indicate
+     * that it will not block.
+     * @param task The task to invoke.
+     */
+    public static void invokeBlocking(Runnable task)
+    {
+        // a Choice exists, so we must indicate NonBlocking
+        Boolean was_non_blocking = __nonBlocking.get();
+        try
+        {
+            __nonBlocking.set(Boolean.FALSE);
+            task.run();
+        }
+        finally
+        {
+            __nonBlocking.set(was_non_blocking);
+        }
+    }
+
+    /**
      * Invoke a task with the calling thread.
      * If the task is an {@link Invocable} of {@link InvocationType#EITHER}
      * then it is invoked with {@link #invokeNonBlocking(Runnable)}, to 

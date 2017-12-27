@@ -168,6 +168,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
     private void doProduce()
     {
+        boolean blocking = !Invocable.isNonBlockingInvocation();
         boolean producing = true;
         while (isRunning() && producing)
         {
@@ -203,43 +204,89 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             }
             else
             {
-                boolean consume;
-                if (Invocable.getInvocationType(task) == InvocationType.NON_BLOCKING)
+                Invocable.InvocationType invocation = null;
+                
+                switch(Invocable.getInvocationType(task))
                 {
-                    // PRODUCE CONSUME
-                    consume = true;
-                    _nonBlocking.increment();  
-                }
-                else
-                {
-                    synchronized(this)
+                    case NON_BLOCKING:
                     {
-                        if (_producers.tryExecute(this))
-                        {
-                            // EXECUTE PRODUCE CONSUME!
-                            // We have executed a new Producer, so we can EWYK consume
-                            _state = State.PENDING;
-                            producing = false;
-                            consume = true;
-                            _blocking.increment();
-                        }
-                        else
-                        {
-                            // PRODUCE EXECUTE CONSUME!
-                            consume = false;
-                            _executed.increment();
-                        }                             
+                        // PRODUCE CONSUME
+                        invocation = InvocationType.EITHER;
+                        _nonBlocking.increment();  
                     }
+                    break;
+                    
+                    case BLOCKING:
+                    {
+                        synchronized(this)
+                        {
+                            if (_producers.tryExecute(this))
+                            {
+                                // EXECUTE PRODUCE CONSUME!
+                                // We have executed a new Producer, so we can EWYK consume
+                                _state = State.PENDING;
+                                producing = false;
+                                invocation = InvocationType.EITHER;
+                                _blocking.increment();
+                            }
+                            else
+                            {
+                                // PRODUCE EXECUTE CONSUME!
+                                _executed.increment();
+                            }                             
+                        }
+                    }
+                    break;
+                    
+                    case EITHER:
+                    {
+                        synchronized(this)
+                        {
+                            if (blocking && _producers.tryExecute(this))
+                            {
+                                // EXECUTE PRODUCE CONSUME!
+                                // We have executed a new Producer, so we can EWYK consume
+                                _state = State.PENDING;
+                                producing = false;
+                                invocation = InvocationType.BLOCKING;
+                                _blocking.increment();
+                            }
+                            else
+                            {
+                                invocation = InvocationType.NON_BLOCKING;
+                                _nonBlocking.increment();  
+                            }
+                        }
+                    }
+                    break;
+                    
+                    default:
+                        throw new IllegalStateException();
                 }
-
+                
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} p={} c={} t={}/{}", this, producing, consume, task,Invocable.getInvocationType(task));
+                    LOG.debug("{} p={} i={} t={}/{}", this, producing, invocation, task,Invocable.getInvocationType(task));
                     
                 // Consume or execute task
                 try
                 {
-                    if (consume)
-                        task.run();
+                    if (invocation!=null)
+                    {
+                        switch (invocation)
+                        {
+                            case BLOCKING:
+                                Invocable.invokeBlocking(task);
+                                break;
+                                
+                            case NON_BLOCKING:
+                                Invocable.invokeNonBlocking(task);
+                                break;
+
+                            default:
+                                task.run();
+                                break;
+                        }
+                    }
                     else
                         _executor.execute(task);
                 }

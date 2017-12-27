@@ -49,7 +49,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
-    private int reservedThreads;
+    private int reservedThreads = -1;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -154,9 +154,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     public void setReservedThreads(int threads)
     {
-        // TODO: see also HTTP2Connection.FillableCallback.
-        // TODO: currently disabled since the only value that works is 0.
-//        this.reservedThreads = threads;
+        this.reservedThreads = threads;
     }
 
     public HttpConfiguration getHttpConfiguration()

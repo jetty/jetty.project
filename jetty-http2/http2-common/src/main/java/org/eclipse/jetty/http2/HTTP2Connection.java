@@ -281,9 +281,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         @Override
         public InvocationType getInvocationType()
         {
-            // TODO: see also AbstractHTTP2ServerConnectionFactory.reservedThreads.
-            // TODO: it's non blocking here because reservedThreads=0.
-            return InvocationType.NON_BLOCKING;
+            return InvocationType.EITHER;
         }
     }
 }
