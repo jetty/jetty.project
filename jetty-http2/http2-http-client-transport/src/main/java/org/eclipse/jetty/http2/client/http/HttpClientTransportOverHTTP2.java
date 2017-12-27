@@ -62,6 +62,11 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         });
     }
 
+    public HTTP2Client getHTTP2Client()
+    {
+        return client;
+    }
+
     @ManagedAttribute(value = "The number of selectors", readonly = true)
     public int getSelectors()
     {
