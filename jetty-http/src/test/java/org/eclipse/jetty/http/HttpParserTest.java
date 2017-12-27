@@ -120,7 +120,7 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer("GET /999\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertNull(_bad);
@@ -149,7 +149,7 @@ public class HttpParserTest
         ByteBuffer buffer = BufferUtil.toBuffer("POST /222  \r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertNull(_bad);
@@ -264,7 +264,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.nullValue());
@@ -287,7 +287,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.notNullValue());
@@ -305,7 +305,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.notNullValue());
@@ -322,7 +322,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
 
         Assert.assertThat(_bad, Matchers.notNullValue());
@@ -454,7 +454,7 @@ public class HttpParserTest
                         "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler,HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         Assert.assertThat(_bad, Matchers.containsString("Illegal character"));
         Assert.assertThat(_complianceViolation,Matchers.empty());
@@ -748,7 +748,7 @@ public class HttpParserTest
                 "Connection: close\r\n" +
                 "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         Assert.assertNull(_bad);
         Assert.assertEquals("GET", _methodOrVersion);
@@ -780,7 +780,7 @@ public class HttpParserTest
                         "cOnNeCtIoN: ClOsE\r\n" +
                         "\r\n");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230);
+        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         Assert.assertNull(_bad);
         Assert.assertEquals("GET", _methodOrVersion);

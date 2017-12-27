@@ -242,7 +242,12 @@ public class HttpParser
     private static HttpCompliance compliance()
     {
         Boolean strict = Boolean.getBoolean(__STRICT);
-        return strict?HttpCompliance.LEGACY:HttpCompliance.RFC7230;
+        if (strict)
+        {
+            LOG.warn("Deprecated property used: "+__STRICT);
+            return HttpCompliance.LEGACY;
+        }
+        return HttpCompliance.RFC7230;
     }
 
     /* ------------------------------------------------------------------------------- */

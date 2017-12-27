@@ -68,8 +68,8 @@ public class HttpReceiverOverHTTPTest
     {
         return Arrays.asList(
             new Object[] { HttpCompliance.LEGACY },
-            new Object[] { HttpCompliance.RFC2616 },
-            new Object[] { HttpCompliance.RFC7230 }
+            new Object[] { HttpCompliance.RFC2616_LEGACY },
+            new Object[] { HttpCompliance.RFC7230_LEGACY }
         );
     }
     
