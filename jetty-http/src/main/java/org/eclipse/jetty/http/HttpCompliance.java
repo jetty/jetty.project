@@ -58,16 +58,16 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     /** The legacy RFC2616 support, which incorrectly excludes 
      * {@link HttpComplianceSection#RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME}, {@link HttpComplianceSection#RFC7230_3_2_FIELD_COLON}
      */
-    RFC2616(sectionsBySpec("RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), 
+    RFC2616_LEGACY(sectionsBySpec("RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), 
     
     /** The strict RFC2616 support mode */
-    RFC2616_STRICT(sectionsBySpec("RFC2616")), 
+    RFC2616(sectionsBySpec("RFC2616")), 
     
     /** Jetty's current RFC7230 support, which incorrectly excludes  {@link HttpComplianceSection#RFC7230_3_1_1_METHOD_CASE_SENSITIVE} */
-    RFC7230(sectionsBySpec("RFC7230,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")),
+    RFC7230_LEGACY(sectionsBySpec("RFC7230,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")),
 
-    /** The strict RFC7230 support mode */
-    RFC7230_STRICT(sectionsBySpec("RFC7230")),
+    /** The RFC7230 support mode */
+    RFC7230(sectionsBySpec("RFC7230")),
     
     /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM0</code> */
     CUSTOM0(sectionsByProperty("CUSTOM0")),
