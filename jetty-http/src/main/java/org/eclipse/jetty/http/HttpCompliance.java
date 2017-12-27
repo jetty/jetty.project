@@ -26,28 +26,56 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * HTTP compliance modes:
- * <dl>
- * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
- * <dt>RFC2616</dt><dd>Wrapped/Continued headers and HTTP/0.9 supported</dd>
- * <dt>LEGACY</dt><dd>(aka STRICT) Adherence to Servlet Specification requirement for
- * exact case of header names, bypassing the header caches, which are case insensitive.</dd>
+ * HTTP compliance modes for Jetty HTTP parsing and handling.
+ * A Compliance mode consists of a set of {@link HttpComplianceSection}s which are applied
+ * when the mode is enabled.
+ * <p>
+ * Currently the set of modes is an enum and cannot be dynamically extended, but future major releases may convert this
+ * to a class. To modify modes there are four custom modes that can be modified by setting the property
+ * <code>org.eclipse.jetty.http.HttpCompliance.CUSTOMn</code> (where 'n' is '0', '1', '2' or '3'), to a comma separated
+ * list of sections.  The list should start with one of the following strings:<dl>
+ * <dt>0</dt><dd>No {@link HttpComplianceSection}s</dd>
+ * <dt>*</dt><dd>All {@link HttpComplianceSection}s</dd>
+ * <dt>RFC2616</dt><dd>The set of {@link HttpComplianceSection}s application to https://tools.ietf.org/html/rfc2616,
+ * but not https://tools.ietf.org/html/rfc7230</dd>
+ * <dt>RFC7230</dt><dd>The set of {@link HttpComplianceSection}s application to https://tools.ietf.org/html/rfc7230</dd>
  * </dl>
+ * The remainder of the list can contain then names of {@link HttpComplianceSection}s to include them in the mode, or prefixed
+ * with a '-' to exclude thm from the mode.    Note that Jetty's modes may have some historic minor differences from the strict
+ * RFC compliance, for example the <code>RFC2616</code> HttpCompliance is defines as 
+ * <code>RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE</code>.
+ * <p>
+ * Note also that the {@link EnumSet} return by {@link HttpCompliance#sections()} is mutable, so that modes may 
+ * be altered in code and will affect all usages of the mode.
  */
-public enum HttpCompliance 
+public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so that extra custom modes can be defined dynamically
 { 
-    // TODO in Jetty-10 convert this enum to a class so that extra custom modes can be defined dynamically
-    LEGACY(sectionsBySpec("LEGACY")), 
+    /** A Legacy compliance mode to match jetty's behavior prior to RFC2616 and RFC7230. It only
+     * contains {@link HttpComplianceSection#RFC7230_3_1_1_METHOD_CASE_SENSITIVE}
+     */
+    LEGACY(sectionsBySpec("0,RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), 
     
-    // Jetty's historic RFC2616 support incorrectly allowed no colon and case insensitive methods
+    /** The legacy RFC2616 support, which incorrectly excludes 
+     * {@link HttpComplianceSection#RFC7230_3_2_4_NO_WS_AFTER_FIELD_NAME}, {@link HttpComplianceSection#RFC7230_3_2_FIELD_COLON}
+     */
     RFC2616(sectionsBySpec("RFC2616,-RFC7230_3_2_FIELD_COLON,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")), 
     
-    // TODO Jetty's current RFC7230 support incorrectly handles methods case insensitively
-    RFC7230(sectionsBySpec("RFC7230,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")),
+    /** The strict RFC2616 support mode */
+    RFC2616_STRICT(sectionsBySpec("RFC2616")), 
     
+    /** Jetty's current RFC7230 support, which incorrectly excludes  {@link HttpComplianceSection#RFC7230_3_1_1_METHOD_CASE_SENSITIVE} */
+    RFC7230(sectionsBySpec("RFC7230,-RFC7230_3_1_1_METHOD_CASE_SENSITIVE")),
+
+    /** The strict RFC7230 support mode */
+    RFC7230_STRICT(sectionsBySpec("RFC7230")),
+    
+    /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM0</code> */
     CUSTOM0(sectionsByProperty("CUSTOM0")),
+    /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM1</code> */
     CUSTOM1(sectionsByProperty("CUSTOM1")),
+    /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM2</code> */
     CUSTOM2(sectionsByProperty("CUSTOM2")),
+    /** Custom compliance mode that can be defined with System property <code>org.eclipse.jetty.http.HttpCompliance.CUSTOM3</code> */
     CUSTOM3(sectionsByProperty("CUSTOM3"));
   
     private static final Logger LOG = Log.getLogger(HttpParser.class);
@@ -87,11 +115,6 @@ public enum HttpCompliance
                 sections = EnumSet.allOf(HttpComplianceSection.class);
                 break;
 
-            case "LEGACY":
-                sections = EnumSet.of(HttpComplianceSection.RFC7230_3_1_1_METHOD_CASE_SENSITIVE);
-                i++;
-                break;
-                
             default:
                 sections = EnumSet.noneOf(HttpComplianceSection.class);
                 break;
@@ -151,16 +174,15 @@ public enum HttpCompliance
         _sections = sections;
     }
     
+    /**
+     * Get the set of {@link HttpComplianceSection}s supported by this compliance mode. This set
+     * is mutable, so it can be modified. Any modification will affect all usages of the mode
+     * within the same {@link ClassLoader}.
+     * @return The set of {@link HttpComplianceSection}s supported by this compliance mode.
+     */
     public EnumSet<HttpComplianceSection> sections()
     {
         return _sections;
     }
-
-    public EnumSet<HttpComplianceSection> excluding(EnumSet<HttpComplianceSection> exclusions)
-    {
-        EnumSet<HttpComplianceSection> sections =  EnumSet.copyOf(_sections);
-        sections.removeAll(exclusions);
-        return sections;
-    }
-    
+ 
 }
