@@ -32,7 +32,7 @@ import org.junit.Before;
 public class ClientSessionInvalidateCreateScavengeTest
     extends AbstractSessionInvalidateCreateScavengeTest
 {
-    private static final String MAP_NAME = "jetty_foo_session";
+    private static final String MAP_NAME = Long.toString( System.currentTimeMillis() );
 
     private HazelcastInstance hazelcastInstance;
 

@@ -68,6 +68,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         return client.getSelectors();
     }
 
+    @ManagedAttribute(value = "Whether ALPN should be used when establishing connections")
     public boolean isUseALPN()
     {
         return useALPN;

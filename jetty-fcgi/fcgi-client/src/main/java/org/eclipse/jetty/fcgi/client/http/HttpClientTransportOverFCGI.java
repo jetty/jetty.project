@@ -62,6 +62,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
         });
     }
 
+    @ManagedAttribute(value = "Whether connections are multiplexed", readonly = true)
     public boolean isMultiplexed()
     {
         return multiplexed;

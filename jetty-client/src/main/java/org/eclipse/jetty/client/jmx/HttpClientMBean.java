@@ -16,33 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.hazelcast.session;
+package org.eclipse.jetty.client.jmx;
 
-import org.eclipse.jetty.server.session.AbstractClusteredLastAccessTimeTest;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.junit.After;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.jmx.ObjectMBean;
 
-public class ClusteredLastAccessTimeTest
-    extends AbstractClusteredLastAccessTimeTest
+public class HttpClientMBean extends ObjectMBean
 {
+    public HttpClientMBean(Object managedObject)
+    {
+        super(managedObject);
+    }
 
-    HazelcastSessionDataStoreFactory factory;
-
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
-    public SessionDataStoreFactory createSessionDataStoreFactory()
+    public String getObjectContextBasis()
     {
-        factory = new HazelcastSessionDataStoreFactory();
-        factory.setMapName( Long.toString( System.currentTimeMillis() ) );
-        return factory;
+        // Returning the HttpClient name as the "context" property
+        // because it is inherited by the ObjectNames of the components
+        // of HttpClient such as the transport, the threadpool, etc.
+        HttpClient httpClient = (HttpClient)getManagedObject();
+        return httpClient.getName();
     }
-
-    @After
-    public void shutdown()
-    {
-        factory.getHazelcastInstance().getMap( factory.getMapName() ).clear();
-    }
-
 }

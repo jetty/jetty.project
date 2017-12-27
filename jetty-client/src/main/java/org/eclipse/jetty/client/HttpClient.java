@@ -146,6 +146,7 @@ public class HttpClient extends ContainerLifeCycle
     private HttpField encodingField;
     private boolean removeIdleDestinations = false;
     private boolean connectBlocking = false;
+    private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -195,8 +196,6 @@ public class HttpClient extends ContainerLifeCycle
     {
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-
-        String name = HttpClient.class.getSimpleName() + "@" + hashCode();
 
         if (executor == null)
         {
@@ -637,6 +636,27 @@ public class HttpClient extends ContainerLifeCycle
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
     {
         this.byteBufferPool = byteBufferPool;
+    }
+
+    /**
+     * @return the name of this HttpClient
+     */
+    @ManagedAttribute("The name of this HttpClient")
+    public String getName()
+    {
+        return name;
+    }
+
+    /**
+     * <p>Sets the name of this HttpClient.</p>
+     * <p>The name is also used to generate the JMX ObjectName of this HttpClient
+     * and must be set before the registration of the HttpClient MBean in the MBeanServer.</p>
+     *
+     * @param name the name of this HttpClient
+     */
+    public void setName(String name)
+    {
+        this.name = name;
     }
 
     /**

@@ -17,7 +17,7 @@
 [[jetty-websocket-api-send-message]]
 === Send Messages to Remote Endpoint
 
-The most important feature of the Session is access to the link:{JDURL}/org/eclipse/jetty/websocket/api/RemoteEndpoint.html[`org.eclipse.jetty.websocket.api.RemoteEndpoint`]needed to send messages.
+The most important feature of the Session is access to the link:{JDURL}/org/eclipse/jetty/websocket/api/RemoteEndpoint.html[`org.eclipse.jetty.websocket.api.RemoteEndpoint`] needed to send messages.
 
 With RemoteEndpoint you can choose to send TEXT or BINARY WebSocket messages, or the WebSocket PING and PONG control frames.
 
