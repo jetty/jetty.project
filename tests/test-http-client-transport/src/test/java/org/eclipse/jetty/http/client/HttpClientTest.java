@@ -496,9 +496,8 @@ public class HttpClientTest extends AbstractTest
         start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                super.handle(target, baseRequest, request, response);
                 response.getWriter().write("Jetty");
             }
         });
