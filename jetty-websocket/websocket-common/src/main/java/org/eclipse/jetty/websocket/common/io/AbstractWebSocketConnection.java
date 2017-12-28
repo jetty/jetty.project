@@ -452,7 +452,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Event for no activity on connection (read or write)
      */
     @Override
-    protected boolean onReadTimeout()
+    protected boolean onReadTimeout(Throwable timeout)
     {
         IOState state = getIOState();
         ConnectionState cstate = state.getConnectionState();

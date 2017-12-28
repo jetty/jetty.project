@@ -519,4 +519,16 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 LOG.debug(violation);
         }
     }
+
+    public boolean onConnectionReadTimeout(Throwable timeout)
+    {
+        if (_delayedForContent)
+        {
+            _delayedForContent = false;
+            getRequest().getHttpInput().failed(timeout);
+            execute(this);
+            return false;
+        }
+        return true;
+    }
 }

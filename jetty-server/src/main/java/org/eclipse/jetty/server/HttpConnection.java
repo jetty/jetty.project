@@ -286,6 +286,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 LOG.debug("{} onFillable exit {} {}", this, _channel.getState(),BufferUtil.toDetailString(_requestBuffer));
         }
     }
+    
+    @Override
+    protected boolean onReadTimeout(Throwable timeout)
+    {
+        return _channel.onConnectionReadTimeout(timeout);
+    }
 
     /* ------------------------------------------------------------ */
     /** Fill and parse data looking for content
