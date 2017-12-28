@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
@@ -58,6 +59,8 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import static org.eclipse.jetty.http.client.AbstractTest.Transport.UNIX_SOCKET;
@@ -68,8 +71,9 @@ public abstract class AbstractTest
     @Parameterized.Parameters(name = "transport: {0}")
     public static Object[] parameters() throws Exception
     {
+        if (!OS.IS_UNIX)
+            return EnumSet.complementOf(EnumSet.of(Transport.UNIX_SOCKET)).toArray();
         return Transport.values();
-        //return new Transport[]{Transport.UNIX_SOCKET};//
     }
 
 

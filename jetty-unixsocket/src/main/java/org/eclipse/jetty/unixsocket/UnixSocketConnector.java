@@ -248,14 +248,13 @@ public class UnixSocketConnector extends AbstractConnector
             UnixServerSocketChannel serverChannel = UnixServerSocketChannel.open();
 
             serverChannel.configureBlocking(getAcceptors()>0);
-            int acceptQueueSize = getAcceptQueueSize();
             try
             {
                 serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
             }
-            catch ( IOException e )
+            catch (IOException e)
             {
-                LOG.info( "cannot bind with" + bindAddress + " - " + acceptQueueSize + " - " + _unixSocket, e );
+                LOG.warn("cannot bind {} exists={} writable={}", file, file.exists(), file.canWrite());
                 throw e;
             }
             addBean(serverChannel);
