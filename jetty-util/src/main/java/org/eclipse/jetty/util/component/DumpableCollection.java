@@ -36,12 +36,6 @@ public class DumpableCollection implements Dumpable
         _collection=collection;
     }
     
-    public DumpableCollection(String name,Object... item)
-    {
-        _name=name;
-        _collection=Arrays.asList(item);
-    }
-
     @Override
     public String dump()
     {

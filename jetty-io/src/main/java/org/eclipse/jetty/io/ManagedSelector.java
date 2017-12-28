@@ -266,8 +266,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             String keysAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             if (keys==null)
                 keys = Collections.singletonList("No dump keys retrieved");
-            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions @ "+actionsAt, actions),
-                    new DumpableCollection("keys @ "+keysAt, keys) ));
+            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions@"+actionsAt, actions),
+                    new DumpableCollection("keys@"+keysAt, keys) ));
         }
         else
         {
@@ -516,12 +516,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         public void run()
         {
             Selector selector = _selector;
-            List<String> list = new ArrayList<>(selector.keys().size()+1);
             if (selector != null && selector.isOpen())
-            {
-                Set<SelectionKey> keys = selector.keys();
-                list.add(selector + " keys=" + keys.size());
-                for (SelectionKey key : keys)
+            {            
+                Set<SelectionKey> selector_keys = selector.keys();
+                List<String> list = new ArrayList<>(selector_keys.size()+1);
+                list.add(selector + " keys=" + selector_keys.size());
+                for (SelectionKey key : selector_keys)
                 {
                     try
                     {
@@ -532,9 +532,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         list.add(String.format("SelectionKey@%x[%s]->%s", key.hashCode(), x, key.attachment()));
                     }
                 }
+                keys = list;
             }
             
-            keys = list;
             latch.countDown();
         }
 
