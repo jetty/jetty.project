@@ -297,6 +297,7 @@ public class Session implements SessionHandler.SessionIf
      * @param name name of the attribute
      * @param newValue  new value of the attribute
      * @param oldValue previous value of the attribute
+     * @throws IllegalStateException if no session manager can be find
      */
     protected void callSessionAttributeListeners (String name, Object newValue, Object oldValue)
     {
@@ -915,10 +916,10 @@ public class Session implements SessionHandler.SessionIf
     }
 
     /* ------------------------------------------------------------- */
-    /** Call HttpSessionAttributeListeners as part of invalidating
-     * a Session.
+    /**
+     * Call HttpSessionAttributeListeners as part of invalidating a Session.
      * 
-     * @throws IllegalStateException
+     * @throws IllegalStateException if no session manager can be find
      */
     @Deprecated 
     protected void doInvalidate() throws IllegalStateException
@@ -931,7 +932,7 @@ public class Session implements SessionHandler.SessionIf
     /** Call HttpSessionAttributeListeners as part of invalidating
      * a Session.
      * 
-     * @throws IllegalStateException
+     * @throws IllegalStateException if no session manager can be find
      */
     protected void finishInvalidate() throws IllegalStateException
     {
