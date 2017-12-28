@@ -25,6 +25,8 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
@@ -246,7 +248,16 @@ public class UnixSocketConnector extends AbstractConnector
             UnixServerSocketChannel serverChannel = UnixServerSocketChannel.open();
 
             serverChannel.configureBlocking(getAcceptors()>0);
-            serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+            int acceptQueueSize = getAcceptQueueSize();
+            try
+            {
+                serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
+            }
+            catch ( IOException e )
+            {
+                LOG.info( "cannot bind with" + bindAddress + " - " + acceptQueueSize + " - " + _unixSocket, e );
+                throw e;
+            }
             addBean(serverChannel);
             if (LOG.isDebugEnabled())
                 LOG.debug("opened {}",serverChannel);
@@ -276,6 +287,7 @@ public class UnixSocketConnector extends AbstractConnector
                 try
                 {
                     serverChannel.close();
+
                 }
                 catch (IOException e)
                 {
@@ -283,7 +295,14 @@ public class UnixSocketConnector extends AbstractConnector
                 }
             }
 
-            new File(_unixSocket).delete();
+            try
+            {
+                Files.deleteIfExists( Paths.get(_unixSocket));
+            }
+            catch ( IOException e )
+            {
+                LOG.warn(e);
+            }
         }
     }
 
