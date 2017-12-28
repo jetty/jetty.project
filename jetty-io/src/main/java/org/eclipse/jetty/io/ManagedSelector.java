@@ -37,7 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -247,13 +246,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        super.dump(out,indent);
+
         Selector selector = _selector;
-        List<String> keys = null;
-        List<Runnable> actions = null;
         if (selector != null && selector.isOpen())
         {
             DumpKeys dump = new DumpKeys();
             String actionsAt;
+            List<Runnable> actions;
             try (Locker.Lock lock = _locker.lock())
             {
                 actionsAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
@@ -261,17 +261,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 _actions.addFirst(dump);
                 _selecting = false;
             }
-            _selector.wakeup();
-            keys = dump.get(5, TimeUnit.SECONDS);
+            selector.wakeup();
+            List<String> keys = dump.get(5, TimeUnit.SECONDS);
             String keysAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             if (keys==null)
                 keys = Collections.singletonList("No dump keys retrieved");
-            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions@"+actionsAt, actions),
-                    new DumpableCollection("keys@"+keysAt, keys) ));
-        }
-        else
-        {
-            super.dump(out,indent);
+            dump(out, indent, Arrays.asList(new DumpableCollection("actions @ "+actionsAt, actions),
+                    new DumpableCollection("keys @ "+keysAt, keys)));
         }
     }
 
