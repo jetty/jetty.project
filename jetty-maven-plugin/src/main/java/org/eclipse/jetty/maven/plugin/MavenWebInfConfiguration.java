@@ -63,10 +63,12 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         
         // knock out environmental maven and plexus classes from webAppContext
         String[] existingServerClasses = context.getServerClasses();
-        String[] newServerClasses = new String[2+(existingServerClasses==null?0:existingServerClasses.length)];
+        String[] newServerClasses = new String[4+(existingServerClasses==null?0:existingServerClasses.length)];
         newServerClasses[0] = "org.apache.maven.";
         newServerClasses[1] = "org.codehaus.plexus.";
-        System.arraycopy( existingServerClasses, 0, newServerClasses, 2, existingServerClasses.length );
+        newServerClasses[2] = "javax.enterprise.";
+        newServerClasses[3] = "javax.decorator.";
+        System.arraycopy( existingServerClasses, 0, newServerClasses, 4, existingServerClasses.length );
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Server classes:");
