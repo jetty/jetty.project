@@ -11,7 +11,6 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.unixsocket</bundle-symbolic-name>
-    <unixsocket-skipTests>true</unixsocket-skipTests>
   </properties>
   <build>
     <plugins>
@@ -20,13 +19,6 @@
         <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>
           <onlyAnalyze>org.eclipse.jetty.unixsocket.*</onlyAnalyze>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skipExec>${unixsocket-skipTests}</skipExec>
         </configuration>
       </plugin>
     </plugins>
@@ -53,12 +45,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <profiles>
-    <profile>
-      <id>unixsocket-tests</id>
-      <properties>
-        <unixsocket-skipTests>false</unixsocket-skipTests>
-      </properties>
-    </profile>
-  </profiles>
 </project>
