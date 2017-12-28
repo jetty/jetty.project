@@ -62,8 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-
-import static org.eclipse.jetty.http.client.AbstractTest.Transport.UNIX_SOCKET;
+import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
 public abstract class AbstractTest
@@ -71,6 +70,13 @@ public abstract class AbstractTest
     @Parameterized.Parameters(name = "transport: {0}")
     public static Object[] parameters() throws Exception
     {
+        String transports = System.getProperty("org.eclipse.jetty.http.client.AbstractTest.Transports");
+
+        if (transports!=null)
+            return Arrays.stream(transports.split("\\s*,\\s*"))
+                .map(Transport::valueOf)
+                .collect(Collectors.toList()).toArray();
+        
         if (!OS.IS_UNIX)
             return EnumSet.complementOf(EnumSet.of(Transport.UNIX_SOCKET)).toArray();
         return Transport.values();
@@ -155,7 +161,7 @@ public abstract class AbstractTest
 
     protected Connector newServerConnector(Server server) throws Exception
     {
-        if (transport == UNIX_SOCKET)
+        if (transport == Transport.UNIX_SOCKET)
         {
             sockFile = Files.createTempFile( "unix", ".sock" );
             Files.deleteIfExists(sockFile);
