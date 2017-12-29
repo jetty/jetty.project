@@ -832,7 +832,10 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * Create a new CachedChain 
+     * Create a new CachedChain
+     * @param filters a collection of {@link FilterHolder}
+     * @param servletHolder the servletHolder
+     * @return a new {@link CachedChain} instance
      */
     public CachedChain newCachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
     {
@@ -1590,7 +1593,7 @@ public class ServletHandler extends ScopedHandler
         /* ------------------------------------------------------------ */
         /**
          * @param filters list of {@link FilterHolder} objects
-         * @param servletHolder
+         * @param servletHolder the current {@link ServletHolder}
          */
         protected CachedChain(List<FilterHolder> filters, ServletHolder servletHolder)
         {
