@@ -82,3 +82,6 @@ etc/jetty.xml
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+
+## Verified Start Sequence by checking ports and contexts are available before starting connectors
+# jetty.server.verifiedStartSequence=false

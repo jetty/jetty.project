@@ -18,14 +18,21 @@
 
 package org.eclipse.jetty.server;
   
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.net.BindException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +43,7 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -376,6 +384,136 @@ public class NotAcceptingTest
         assertThat(asyncConnector.isAccepting(),is(true));
         
     }
+    
+    @Test
+    public void testVerifiedStartSequenceAlreadyOpened() throws Exception
+    {
+        server.setVerifiedStartSequence(true);
+        
+        try(ServerSocket alreadyOpened = new ServerSocket(0))
+        {
+            // Add a connector that can be opened
+            AtomicInteger opened0 = new AtomicInteger(0);
+            ServerConnector connector0 = new ServerConnector(server)
+            {
+                @Override
+                public void open() throws IOException
+                {
+                    super.open();
+                    opened0.set(getLocalPort());
+                }
+                
+            };
+            server.addConnector(connector0);
+            
+            // Add a connector that will fail to open with port in use
+            ServerConnector connector1 = new ServerConnector(server);
+            connector1.setPort(alreadyOpened.getLocalPort());
+            server.addConnector(connector1);
+            
+            // Add a handler to detect if handlers are started
+            AtomicBoolean handlerStarted = new AtomicBoolean(false);
+            server.setHandler(new AbstractHandler()
+            {
+                @Override
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                        throws IOException, ServletException
+                {                    
+                }
+                
+                @Override
+                public void doStart()
+                {
+                    handlerStarted.set(true);
+                }
+            });
+            
+            
+            // try to start the server
+            try
+            {
+                server.start();
+                Assert.fail();
+            }
+            catch (BindException e)
+            {
+                // expected
+                assertThat(e.getMessage(),containsString("Address already in use"));
+            }
+            
+            // Check that connector0 was opened OK
+            assertThat(opened0.get(),greaterThan(0));
+            // and it is now closed
+            assertFalse(connector0.isOpen());
+            assertFalse(connector0.isRunning());
+            
+            // Check that handlers were never started
+            assertFalse(handlerStarted.get());
+            
+            // Check that server components were stopped
+            assertFalse(server.getBean(QueuedThreadPool.class).isStarted());
+        }
+    }
+    
+    @Test
+    public void testVerifiedStartSequenceBadHandler() throws Exception
+    {
+        server.setVerifiedStartSequence(true);
+
+        // Add a connector that can be opened
+        AtomicInteger opened = new AtomicInteger(0);
+        ServerConnector connector = new ServerConnector(server)
+        {
+            @Override
+            public void open() throws IOException
+            {
+                super.open();
+                opened.set(getLocalPort());
+            }
+
+        };
+        server.addConnector(connector);
+
+
+        // Add a handler that will fail to start
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException, ServletException
+            {                    
+            }
+
+            @Override
+            public void doStart() throws Exception
+            {
+                throw new Exception("Expected failure during start");
+            }
+        });
+
+
+        // try to start the server
+        try
+        {
+            server.start();
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            // expected
+            assertThat(e.getMessage(),containsString("Expected failure during start"));
+        }
+
+        // Check that connector0 was opened OK
+        assertThat(opened.get(),greaterThan(0));
+        // and it is now closed
+        assertFalse(connector.isOpen());
+        assertFalse(connector.isRunning());
+
+        // Check that server components were stopped
+        assertFalse(server.getBean(QueuedThreadPool.class).isStarted());
+    }
+
 
     public static class HelloHandler extends AbstractHandler
     {

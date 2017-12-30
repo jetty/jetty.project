@@ -126,5 +126,6 @@
     <Set name="stopTimeout"><Property name="jetty.server.stopTimeout" default="5000"/></Set>
     <Set name="dumpAfterStart"><Property name="jetty.server.dumpAfterStart" deprecated="jetty.dump.start" default="false"/></Set>
     <Set name="dumpBeforeStop"><Property name="jetty.server.dumpBeforeStop" deprecated="jetty.dump.stop" default="false"/></Set>
+    <Set name="verifiedStartSequence"><Property name="jetty.server.verifiedStartSequence" default="false"/></Set>
 
 </Configure>

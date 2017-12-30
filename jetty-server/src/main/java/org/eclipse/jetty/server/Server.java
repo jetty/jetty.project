@@ -85,6 +85,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private boolean _verifiedStartSequence=false;
     private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
 
@@ -134,6 +135,33 @@ public class Server extends HandlerWrapper implements Attributes
         _threadPool=pool!=null?pool:new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+    }
+
+    /**
+     * @return True if the start sequence is verified by checking port availability prior
+     * to starting contexts and checking contexts prior to starting connectors.
+     */
+    public boolean isVerifiedStartSequence()
+    {
+        return _verifiedStartSequence;
+    }
+
+    /**
+     * Set if the start sequence is to be verified by in the following stages:
+     * <ul>
+     * <li>{@link NetworkConnector}s are opened with {@link NetworkConnector#open()} to check ports are
+     * available and to reserve them.</li>
+     * <li>Start the contained {@link Handler}s and beans.</li>
+     * <li>Start the {@link Connector}s
+     * </ul>
+     * If any failures are encountered at any of the stages, the start sequence is aborted without 
+     * running the subsequent stage and reversing closing any open connectors.
+     * @param verified If true the start sequence is verified by checking port availability prior
+     * to starting contexts and checking contexts prior to starting connectors.
+     */
+    public void setVerifiedStartSequence(boolean verified)
+    {
+        _verifiedStartSequence = verified;
     }
 
     /* ------------------------------------------------------------ */
@@ -346,68 +374,120 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
-        // Create an error handler if there is none
-        if (_errorHandler==null)
-            _errorHandler=getBean(ErrorHandler.class);
-        if (_errorHandler==null)
-            setErrorHandler(new ErrorHandler());
-        if (_errorHandler instanceof ErrorHandler.ErrorPageMapper)
-            LOG.warn("ErrorPageMapper not supported for Server level Error Handling");
-        _errorHandler.setServer(this);
-        
-        //If the Server should be stopped when the jvm exits, register
-        //with the shutdown handler thread.
-        if (getStopAtShutdown())
-            ShutdownThread.register(this);
-
-        //Register the Server with the handler thread for receiving
-        //remote stop commands
-        ShutdownMonitor.register(this);
-
-        //Start a thread waiting to receive "stop" commands.
-        ShutdownMonitor.getInstance().start(); // initialize
-
-        String gitHash = Jetty.GIT_HASH;
-        String timestamp = Jetty.BUILD_TIMESTAMP;
-
-        LOG.info("jetty-{}, build timestamp: {}, git hash: {}", getVersion(), timestamp, gitHash);
-        if (!Jetty.STABLE)
-        {
-            LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
-            LOG.warn("Download a stable release from http://download.eclipse.org/jetty/");
-        }
-        
-        HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
-
-        MultiException mex=new MultiException();
         try
         {
-            super.doStart();
-        }
-        catch(Throwable e)
-        {
-            mex.add(e);
-        }
+            // Create an error handler if there is none
+            if (_errorHandler==null)
+                _errorHandler=getBean(ErrorHandler.class);
+            if (_errorHandler==null)
+                setErrorHandler(new ErrorHandler());
+            if (_errorHandler instanceof ErrorHandler.ErrorPageMapper)
+                LOG.warn("ErrorPageMapper not supported for Server level Error Handling");
+            _errorHandler.setServer(this);
 
-        // start connectors last
-        for (Connector connector : _connectors)
-        {
+            //If the Server should be stopped when the jvm exits, register
+            //with the shutdown handler thread.
+            if (getStopAtShutdown())
+                ShutdownThread.register(this);
+
+            //Register the Server with the handler thread for receiving
+            //remote stop commands
+            ShutdownMonitor.register(this);
+
+            //Start a thread waiting to receive "stop" commands.
+            ShutdownMonitor.getInstance().start(); // initialize
+
+            String gitHash = Jetty.GIT_HASH;
+            String timestamp = Jetty.BUILD_TIMESTAMP;
+
+            LOG.info("jetty-{}, build timestamp: {}, git hash: {}", getVersion(), timestamp, gitHash);
+            if (!Jetty.STABLE)
+            {
+                LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
+                LOG.warn("Download a stable release from http://download.eclipse.org/jetty/");
+            }
+
+            HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
+
+            MultiException mex=new MultiException();
+
+            // Open network connectors first
+            if (_verifiedStartSequence)
+            {
+                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector->
+                {
+                    try
+                    {
+                        connector.open();
+                    }
+                    catch(Throwable e)
+                    {
+                        mex.add(e);
+                    }
+                });
+
+                // Throw now if verified start sequence and there was an open exception
+                mex.ifExceptionThrow();
+            }
+
             try
             {
-                connector.start();
+                // Start the server and components, but #start(LifeCycle) is overridden
+                // so that connectors are not started until after all other components are 
+                // started.
+                super.doStart();
             }
             catch(Throwable e)
             {
                 mex.add(e);
+                
+                // Throw now if verified start sequence and there was a doStart exception
+                if (_verifiedStartSequence)
+                    mex.ifExceptionThrow();
             }
+                
+            // start connectors last
+            for (Connector connector : _connectors)
+            {
+                try
+                {
+                    connector.start();
+                }
+                catch(Throwable e)
+                {
+                    mex.add(e);
+                }
+            }
+
+            mex.ifExceptionThrow();
+            LOG.info(String.format("Started @%dms",Uptime.getUptime()));
+        }
+        catch(Throwable x)
+        { 
+            if (_verifiedStartSequence)
+            {
+                // stop any connectors that were opened
+                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(NetworkConnector::close);
+
+                // Stop our components (including connectors
+                try
+                {
+                    super.doStop();
+                }
+                catch(Throwable e)
+                {
+                    x.addSuppressed(e);
+                }
+            }
+
+            throw x;
+        }
+        finally
+        {
+            if (isDumpAfterStart())
+                dumpStdErr();
         }
 
-        if (isDumpAfterStart())
-            dumpStdErr();
-
-        mex.ifExceptionThrow();
-
-        LOG.info(String.format("Started @%dms",Uptime.getUptime()));
     }
 
     @Override
