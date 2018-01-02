@@ -168,7 +168,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
     private void doProduce()
     {
-        boolean blocking = !Invocable.isNonBlockingInvocation();
+        boolean non_blocking = Invocable.isNonBlockingInvocation();
         boolean producing = true;
         while (isRunning() && producing)
         {
@@ -202,93 +202,112 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     }                    
                 }
             }
-            else
+            else 
             {
-                Invocable.InvocationType invocation = null;
-                
-                switch(Invocable.getInvocationType(task))
+
+                Invocable.InvocationType consume;
+            
+                if (non_blocking)
                 {
-                    case NON_BLOCKING:
+                    // The calling thread cannot block, so we only have a choice between PC and PEC modes,
+                    // based on the invocation type of the task
+                    switch(Invocable.getInvocationType(task))
                     {
-                        // PRODUCE CONSUME
-                        invocation = InvocationType.EITHER;
-                        _nonBlocking.increment();  
+                        case NON_BLOCKING:
+                        case EITHER:
+                            // PC mode
+                            consume = InvocationType.NON_BLOCKING;
+                            break;
+                            
+                        default:
+                            // PEC mode
+                            consume = null;
                     }
-                    break;
-                    
-                    case BLOCKING:
+                }
+                else
+                {
+                    // The calling thread can block, so we can choose between PC, PEC and EPC: modes,
+                    // based on the invocation type of the task and if a reserved thread is available
+                    switch(Invocable.getInvocationType(task))
                     {
-                        synchronized(this)
+                        case NON_BLOCKING:
+                            // PC mode
+                            consume = InvocationType.NON_BLOCKING;
+                            break;
+
+                        case BLOCKING:
+                            // The task is blocking, so PC is not an option. Thus we choose 
+                            // between EPC and PEC based on the availability of a reserved thread.
+                            synchronized(this)
+                            {
+                                if (_producers.tryExecute(this))
+                                {
+                                    // EPC mode!
+                                    _state = State.PENDING;
+                                    producing = false;
+                                    consume = InvocationType.BLOCKING;
+                                }
+                                else
+                                {
+                                    // PEC mode
+                                    consume = null;
+                                }   
+                                break;
+                            }
+
+                        case EITHER:
                         {
-                            if (_producers.tryExecute(this))
+                            // The task may be non blocking, so PC is an option. Thus we choose 
+                            // between EPC and PC based on the availability of a reserved thread.
+                            synchronized(this)
                             {
-                                // EXECUTE PRODUCE CONSUME!
-                                // We have executed a new Producer, so we can EWYK consume
-                                _state = State.PENDING;
-                                producing = false;
-                                invocation = InvocationType.EITHER;
-                                _blocking.increment();
-                            }
-                            else
-                            {
-                                // PRODUCE EXECUTE CONSUME!
-                                _executed.increment();
-                            }                             
-                        }
-                    }
-                    break;
-                    
-                    case EITHER:
-                    {
-                        synchronized(this)
-                        {
-                            if (blocking && _producers.tryExecute(this))
-                            {
-                                // EXECUTE PRODUCE CONSUME!
-                                // We have executed a new Producer, so we can EWYK consume
-                                _state = State.PENDING;
-                                producing = false;
-                                invocation = InvocationType.BLOCKING;
-                                _blocking.increment();
-                            }
-                            else
-                            {
-                                invocation = InvocationType.NON_BLOCKING;
-                                _nonBlocking.increment();  
+                                if (_producers.tryExecute(this))
+                                {
+                                    // EPC mode!
+                                    _state = State.PENDING;
+                                    producing = false;
+                                    consume = InvocationType.BLOCKING;
+                                }
+                                else
+                                {
+                                    // PC mode
+                                    consume = InvocationType.NON_BLOCKING;
+                                }
                             }
                         }
+                        break;
+
+                        default:
+                            throw new IllegalStateException();
                     }
-                    break;
-                    
-                    default:
-                        throw new IllegalStateException();
                 }
                 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} p={} i={} t={}/{}", this, producing, invocation, task,Invocable.getInvocationType(task));
+                    LOG.debug("{} p={} c={} t={}/{}", this, producing, consume, task,Invocable.getInvocationType(task));
                     
                 // Consume or execute task
                 try
                 {
-                    if (invocation!=null)
+                    if (consume!=null)
                     {
-                        switch (invocation)
+                        switch (consume)
                         {
-                            case BLOCKING:
-                                Invocable.invokeBlocking(task);
-                                break;
-                                
                             case NON_BLOCKING:
+                                _nonBlocking.increment();
                                 Invocable.invokeNonBlocking(task);
                                 break;
 
                             default:
+                                _nonBlocking.increment();
                                 task.run();
                                 break;
                         }
                     }
                     else
+                    {
+                        _executed.increment();
                         _executor.execute(task);
+                    }
                 }
                 catch (RejectedExecutionException e)
                 {
