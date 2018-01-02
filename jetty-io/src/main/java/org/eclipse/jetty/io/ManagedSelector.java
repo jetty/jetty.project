@@ -37,7 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -261,17 +260,17 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 _actions.addFirst(dump);
                 _selecting = false;
             }
-            _selector.wakeup();
+            selector.wakeup();
             keys = dump.get(5, TimeUnit.SECONDS);
             String keysAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
             if (keys==null)
                 keys = Collections.singletonList("No dump keys retrieved");
-            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions@"+actionsAt, actions),
-                    new DumpableCollection("keys@"+keysAt, keys) ));
+            dumpBeans(out, indent, Arrays.asList(new DumpableCollection("actions @ "+actionsAt, actions),
+                    new DumpableCollection("keys @ "+keysAt, keys)));
         }
         else
         {
-            super.dump(out,indent);
+            dumpBeans(out, indent);
         }
     }
 
