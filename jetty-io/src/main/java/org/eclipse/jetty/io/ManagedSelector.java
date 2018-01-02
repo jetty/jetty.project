@@ -513,6 +513,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 _dumps.add(selector + " keys=" + keys.size());
                 for (SelectionKey key : keys)
                 {
+                    if (key==null)
+                        continue;
                     try
                     {
                         _dumps.add(String.format("SelectionKey@%x{i=%d}->%s", key.hashCode(), key.interestOps(), key.attachment()));

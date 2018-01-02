@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -82,7 +83,8 @@ public class HttpClientLoadTest extends AbstractTest
     protected Connector newServerConnector( Server server) throws Exception {
         if (transport == UNIX_SOCKET)
         {
-            sockFile = Files.createTempFile( "unix", ".sock" );
+            sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
+            Files.deleteIfExists(sockFile);
             UnixSocketConnector
                 unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));
             unixSocketConnector.setUnixSocket( sockFile.toString() );
