@@ -55,6 +55,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import javax.servlet.http.HttpServlet;
+
+import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -163,7 +165,7 @@ public abstract class AbstractTest
     {
         if (transport == Transport.UNIX_SOCKET)
         {
-            sockFile = Files.createTempFile( "unix", ".sock" );
+            sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
             Files.deleteIfExists(sockFile);
             UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory( transport ));
             unixSocketConnector.setUnixSocket( sockFile.toString() );
