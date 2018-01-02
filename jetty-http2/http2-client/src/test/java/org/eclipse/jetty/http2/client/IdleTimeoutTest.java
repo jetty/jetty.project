@@ -603,7 +603,7 @@ public class IdleTimeoutTest extends AbstractTest
     {
         long idleTimeout = 2000;
         // Use a small thread pool to cause request queueing.
-        QueuedThreadPool serverExecutor = new QueuedThreadPool(4);
+        QueuedThreadPool serverExecutor = new QueuedThreadPool(5);
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());

@@ -425,7 +425,7 @@ public class StreamResetTest extends AbstractTest
     public void testClientResetConsumesQueuedRequestWithData() throws Exception
     {
         // Use a small thread pool.
-        QueuedThreadPool serverExecutor = new QueuedThreadPool(4);
+        QueuedThreadPool serverExecutor = new QueuedThreadPool(5);
         serverExecutor.setName("server");
         serverExecutor.setDetailedDump(true);
         server = new Server(serverExecutor);
