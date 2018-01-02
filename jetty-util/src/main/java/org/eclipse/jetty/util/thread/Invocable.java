@@ -49,9 +49,7 @@ public interface Invocable
         BLOCKING, NON_BLOCKING, EITHER
     }
 
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<Boolean>()
-    {
-    };
+    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<Boolean>();
 
     /**
      * Test if the current thread has been tagged as non blocking

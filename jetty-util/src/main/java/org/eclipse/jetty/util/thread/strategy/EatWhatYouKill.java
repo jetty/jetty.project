@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 
 /**
@@ -68,9 +67,19 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
     private enum State { IDLE, PENDING, PRODUCING, REPRODUCING }
     
-    private final LongAdder _nonBlocking = new LongAdder();
-    private final LongAdder _blocking = new LongAdder();
-    private final LongAdder _executed = new LongAdder();
+    /* The modes this strategy can work in */
+    private enum Mode 
+    { 
+        PRODUCE_CONSUME, 
+        PRODUCE_INVOKE_CONSUME, // This is just PRODUCE_CONSUME an EITHER task with NON_BLOCKING invocation
+        PRODUCE_EXCECUTE_CONSUME, 
+        EXECUTE_PRODUCE_CONSUME
+    }; 
+    
+    private final LongAdder _pcMode = new LongAdder();
+    private final LongAdder _picMode = new LongAdder();
+    private final LongAdder _pecMode = new LongAdder();
+    private final LongAdder _epcMode = new LongAdder();
     private final Producer _producer;
     private final Executor _executor;
     private final ReservedThreadExecutor _producers;
@@ -173,7 +182,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         while (isRunning() && producing)
         {
             // If we got here, then we are the thread that is producing.
-            Runnable task = null;
+            Runnable task;
             try
             {
                 task = _producer.produce();
@@ -181,6 +190,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             catch (Throwable e)
             {
                 LOG.warn(e);
+                task = null;
             }
             
             if (task==null)
@@ -204,8 +214,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             }
             else 
             {
-
-                Invocable.InvocationType consume;
+                Mode mode;
             
                 if (non_blocking)
                 {
@@ -214,14 +223,15 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     switch(Invocable.getInvocationType(task))
                     {
                         case NON_BLOCKING:
+                            mode = Mode.PRODUCE_CONSUME;
+                            break;
+                            
                         case EITHER:
-                            // PC mode
-                            consume = InvocationType.NON_BLOCKING;
+                            mode = Mode.PRODUCE_INVOKE_CONSUME;
                             break;
                             
                         default:
-                            // PEC mode
-                            consume = null;
+                            mode = Mode.PRODUCE_EXCECUTE_CONSUME;
                     }
                 }
                 else
@@ -231,8 +241,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                     switch(Invocable.getInvocationType(task))
                     {
                         case NON_BLOCKING:
-                            // PC mode
-                            consume = InvocationType.NON_BLOCKING;
+                            mode = Mode.PRODUCE_CONSUME;
                             break;
 
                         case BLOCKING:
@@ -245,12 +254,11 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                                     // EPC mode!
                                     _state = State.PENDING;
                                     producing = false;
-                                    consume = InvocationType.BLOCKING;
+                                    mode = Mode.EXECUTE_PRODUCE_CONSUME;
                                 }
                                 else
                                 {
-                                    // PEC mode
-                                    consume = null;
+                                    mode = Mode.PRODUCE_EXCECUTE_CONSUME;
                                 }   
                                 break;
                             }
@@ -266,12 +274,11 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                                     // EPC mode!
                                     _state = State.PENDING;
                                     producing = false;
-                                    consume = InvocationType.BLOCKING;
+                                    mode = Mode.EXECUTE_PRODUCE_CONSUME;
                                 }
                                 else
                                 {
-                                    // PC mode
-                                    consume = InvocationType.NON_BLOCKING;
+                                    mode = Mode.PRODUCE_INVOKE_CONSUME;
                                 }
                             }
                         }
@@ -283,30 +290,32 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 }
                 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} p={} c={} t={}/{}", this, producing, consume, task,Invocable.getInvocationType(task));
+                    LOG.debug("{} p={} m={} t={}/{}", this, producing, mode, task,Invocable.getInvocationType(task));
                     
                 // Consume or execute task
                 try
                 {
-                    if (consume!=null)
+                    switch(mode)
                     {
-                        switch (consume)
-                        {
-                            case NON_BLOCKING:
-                                _nonBlocking.increment();
-                                Invocable.invokeNonBlocking(task);
-                                break;
-
-                            default:
-                                _nonBlocking.increment();
-                                task.run();
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        _executed.increment();
-                        _executor.execute(task);
+                        case PRODUCE_CONSUME:
+                            _pcMode.increment();
+                            task.run();
+                            break;
+                            
+                        case PRODUCE_INVOKE_CONSUME:
+                            _picMode.increment();
+                            Invocable.invokeNonBlocking(task);
+                            break;
+                            
+                        case PRODUCE_EXCECUTE_CONSUME:
+                            _pecMode.increment();
+                            _executor.execute(task);
+                            break;
+                            
+                        case EXECUTE_PRODUCE_CONSUME:
+                            _epcMode.increment();
+                            task.run();
+                            break;
                     }
                 }
                 catch (RejectedExecutionException e)
@@ -335,22 +344,28 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         }
     }
 
-    @ManagedAttribute(value = "number of non blocking tasks consumed", readonly = true)
-    public long getNonBlockingTasksConsumed()
+    @ManagedAttribute(value = "number of non tasks consumed with PC", readonly = true)
+    public long getPCTasksConsumed()
     {
-        return _nonBlocking.longValue();
+        return _pcMode.longValue();
+    }
+    
+    @ManagedAttribute(value = "number of tasks executed with PIC mode", readonly = true)
+    public long getPICTasksExecuted()
+    {
+        return _picMode.longValue();
+    }
+    
+    @ManagedAttribute(value = "number of tasks executed with PEC mode", readonly = true)
+    public long getPECTasksExecuted()
+    {
+        return _pecMode.longValue();
     }
 
-    @ManagedAttribute(value = "number of blocking tasks consumed", readonly = true)
-    public long getBlockingTasksConsumed()
+    @ManagedAttribute(value = "number of tasks consumed with EPC mode", readonly = true)
+    public long getEPCTasksConsumed()
     {
-        return _blocking.longValue();
-    }
-
-    @ManagedAttribute(value = "number of blocking tasks executed", readonly = true)
-    public long getBlockingTasksExecuted()
-    {
-        return _executed.longValue();
+        return _epcMode.longValue();
     }
 
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
@@ -365,9 +380,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @ManagedOperation(value = "resets the task counts", impact = "ACTION")
     public void reset()
     {
-        _nonBlocking.reset();
-        _blocking.reset();
-        _executed.reset();
+        _pcMode.reset();
+        _epcMode.reset();
+        _pecMode.reset();
     }
 
     public String toString()
@@ -401,12 +416,14 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         builder.append(_state);
         builder.append('/');
         builder.append(_producers);
-        builder.append("[nb=");
-        builder.append(getNonBlockingTasksConsumed());
-        builder.append(",c=");
-        builder.append(getBlockingTasksConsumed());
-        builder.append(",e=");
-        builder.append(getBlockingTasksExecuted());
+        builder.append("[pc=");
+        builder.append(getPCTasksConsumed());
+        builder.append(",pic=");
+        builder.append(getPICTasksExecuted());
+        builder.append(",pec=");
+        builder.append(getPECTasksExecuted());
+        builder.append(",epc=");
+        builder.append(getEPCTasksConsumed());
         builder.append("]");
         builder.append("@");
         builder.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now()));
