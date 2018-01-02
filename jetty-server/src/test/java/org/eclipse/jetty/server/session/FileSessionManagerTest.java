@@ -40,6 +40,7 @@ import org.junit.Test;
 
 public class FileSessionManagerTest
 {
+    public static final long ONE_DAY = (1000L*60L*60L*24L);
     private static StdErrLog _log;
     private static boolean _stacks;
   
@@ -113,6 +114,12 @@ public class FileSessionManagerTest
     
     
     
+    /**
+     * When starting the filestore, check that really old expired
+     * files are deleted irrespective of context session belongs to.
+     * 
+     * @throws Exception
+     */
     @Test
     public void testDeleteOfOlderFiles() throws Exception
     {
@@ -133,28 +140,33 @@ public class FileSessionManagerTest
         FS.ensureEmpty(testDir);
         ds.setStoreDir(testDir);
         
-        //create a bunch of older files for same session abc
+        //create a really old file for session abc
         String name1 =  "100__0.0.0.0_abc";    
         File f1 = new File(testDir, name1);
         if (f1.exists())
             Assert.assertTrue(f1.delete());
         f1.createNewFile();
 
+        //create another really old file for session abc
         Thread.sleep(1100);
         String name2 = "101__0.0.0.0_abc"; 
         File f2 = new File(testDir, name2);
         if (f2.exists())
             Assert.assertTrue(f2.delete());
         f2.createNewFile();
-        
-        Thread.sleep(1100); 
-        String name3 = "102__0.0.0.0_abc";
+
+        //make one file for session abc that should not have expired
+        Thread.sleep(1100);
+        long exp = System.currentTimeMillis() + ONE_DAY;
+        String name3 = Long.toString(exp)+"__0.0.0.0_abc";
         File f3 = new File(testDir, name3);
         if (f3.exists())
             Assert.assertTrue(f3.delete());       
         f3.createNewFile();
         
         //make a file that is for a different context
+        //that expired a long time ago - should be
+        //removed by sweep on startup
         Thread.sleep(1100); 
         String name4 = "1099_foo_0.0.0.0_abc";
         File f4 = new File(testDir, name4);
@@ -162,18 +174,47 @@ public class FileSessionManagerTest
             Assert.assertTrue(f4.delete());       
         f4.createNewFile();
         
+        //make a file that is for a different context
+        //that should not have expired - ensure it is
+        //not removed
+        exp = System.currentTimeMillis() + ONE_DAY;
+        String name5 = Long.toString(exp)+"_foo_0.0.0.0_abcdefg";
+        File f5 = new File(testDir, name5);
+        if (f5.exists())
+            Assert.assertTrue(f5.delete());       
+        f5.createNewFile();
+        
+        //make a file that is for a different context
+        //that expired, but only recently - it should
+        //not be removed by the startup process
+        exp = System.currentTimeMillis() - 1000L;
+        String name6 = Long.toString(exp)+"_foo_0.0.0.0_abcdefg";
+        File f6 = new File(testDir, name5);
+        if (f6.exists())
+            Assert.assertTrue(f6.delete());       
+        f6.createNewFile();
+        
         handler.setSessionIdManager(idmgr);
         handler.start();
 
         Assert.assertTrue(!f1.exists()); 
         Assert.assertTrue(!f2.exists());
         Assert.assertTrue(f3.exists());
-        Assert.assertTrue(f4.exists());
+        Assert.assertTrue(!f4.exists());
+        Assert.assertTrue(f5.exists());
+        Assert.assertTrue(f6.exists());
     }
     
     
+    /**
+     * Tests that only the most recent file will be
+     * loaded into the cache, even if it is already
+     * expired. Other recently expired files for
+     * same session should be deleted.
+     * @throws Exception
+     */
     @Test
-    public void testSameLastModifyOnMultipleSessionFiles() throws Exception
+    public void testLoadOnlyMostRecent() throws Exception
     {
         Server server = new Server();
         SessionHandler handler = new SessionHandler();
@@ -183,6 +224,7 @@ public class FileSessionManagerTest
         server.setSessionIdManager(idmgr);
         
         FileSessionDataStore ds = new FileSessionDataStore();
+        ds.setGracePeriodSec(100); //set graceperiod to 100sec to control what we consider as very old
         ds.setDeleteUnrestorableFiles(false); //turn off deletion of unreadable session files
         DefaultSessionCache ss = new DefaultSessionCache(handler);
         handler.setSessionCache(ss);
@@ -192,48 +234,39 @@ public class FileSessionManagerTest
         FS.ensureEmpty(testDir);
         ds.setStoreDir(testDir);
         
-        //create a bunch of files for same session abc
-        String name1 =  "100__0.0.0.0_abc";    
+        long now =  System.currentTimeMillis();
+        
+        //create a file for session abc that expired 5sec ago
+        long exp = now -5000L; 
+        String name1 =  Long.toString(exp)+"__0.0.0.0_abc";    
         File f1 = new File(testDir, name1);
         if (f1.exists())
             Assert.assertTrue(f1.delete());
         f1.createNewFile();
         
-        Thread.sleep(1100); //wait so the last modify time will be different
-        String name2 = "101__0.0.0.0_abc"; 
+        //create a file for same session that expired 4 sec ago
+        exp = now - 4000L;
+        String name2 = Long.toString(exp)+"__0.0.0.0_abc"; 
         File f2 = new File(testDir, name2);
         if (f2.exists())
             Assert.assertTrue(f2.delete());
         f2.createNewFile(); 
-        
-        Thread.sleep(1100); //wait so last modify time will be different
-        String name3 = "102__0.0.0.0_abc";
+
+
+        //make a file for same session that expired 3 sec ago
+        exp = now - 3000L;
+        String name3 = Long.toString(exp)+"__0.0.0.0_abc";
         File f3 = new File(testDir, name3);
         if (f3.exists())
-            Assert.assertTrue(f3.delete());       
+            Assert.assertTrue(f3.delete());
         f3.createNewFile();
-        long lastModified = f3.lastModified();
-        
-        
-        //make a file with the same last modify time
-        String name4 = "103__0.0.0.0_abc";
-        File f4 = new File(testDir, name4);
-        if (f4.exists())
-            Assert.assertTrue(f4.delete());
-        f4.createNewFile();
-        f4.setLastModified(lastModified);
-        assertEquals(f3.lastModified(), f4.lastModified());
 
-        try
-        {
-            handler.setSessionIdManager(idmgr);
-            handler.start();
-            fail("Expected IllegalStateException");
-        }
-        catch (IllegalStateException e)
-        {
-            //expected exception
-        }
+        handler.setSessionIdManager(idmgr);
+        handler.start();
+
+        Assert.assertFalse(f1.exists());
+        Assert.assertFalse(f2.exists());
+        Assert.assertTrue(f3.exists());
     }
     
     
@@ -386,6 +419,6 @@ public class FileSessionManagerTest
         {
             nonNumber.delete();
         }
-
     }
+ 
 }
