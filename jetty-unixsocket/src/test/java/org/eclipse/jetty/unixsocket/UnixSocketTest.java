@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.unixsocket;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -60,7 +61,7 @@ public class UnixSocketTest
     {
         server = null;
         httpClient = null;
-        sockFile = Files.createTempFile( "unix", ".sock" );
+        sockFile = Files.createTempFile(new File("/tmp").toPath(), "unix", ".sock" );
         Files.deleteIfExists(sockFile);
     }
     
